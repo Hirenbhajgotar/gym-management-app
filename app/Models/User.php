@@ -65,4 +65,14 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasRole(['admin', 'gym_owner']);
     }
+
+    public function gyms()
+    {
+        return $this->hasMany(Gym::class, 'owner_id');
+    }
+
+    // public function subscription()
+    // {
+    //     return $this->hasOne(Subscription::class);
+    // }
 }
