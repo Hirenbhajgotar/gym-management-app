@@ -1,5 +1,7 @@
 <?php
 
+use App\Filament\Resources\GymResource\Widgets\GymStats;
+
 return [
     'shield_resource' => [
         'should_register_navigation' => true,
@@ -88,5 +90,4 @@ return [
     'register_role_policy' => [
         'enabled' => true,
     ],
-
 ];

@@ -14,15 +14,18 @@ class CreateGym extends CreateRecord
     protected function beforeCreate(): void
     {
         $user = auth()->user();
-        $maxGyms = $user->subscription->plan->features()
+        $maxGyms = $user?->subscription?->plan?->features()
             ->where('feature_name', 'max_gyms')
             ->first()
             ->value ?? 0;
 
-        if ($user->gyms()->count() >= $maxGyms) {
-            throw ValidationException::withMessages([
-                'gym' => "You have reached the maximum number of gyms ({$maxGyms}) for your plan.",
-            ]);
-        }
+        // dd($user->gyms()->count());
+
+
+        // if ($user->gyms()->count() >= $maxGyms) {
+        //     throw ValidationException::withMessages([
+        //         'gym' => "You have reached the maximum number of gyms ({$maxGyms}) for your plan.",
+        //     ]);
+        // }
     }
 }
