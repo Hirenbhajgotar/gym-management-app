@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MembershipPlanResource\Pages;
 use App\Filament\Resources\MembershipPlanResource\RelationManagers;
 use App\Models\MembershipPlan;
+use App\Enums\Currency;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -38,7 +39,12 @@ class MembershipPlanResource extends Resource
                     ->description('Create a membership plan for your gym')
                     ->schema([
                         Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name')
+                            ->relationship('gym', 'name', function ($query) {
+                                if (auth()->user()->hasRole('gym_owner')) {
+                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                }
+                                return $query;
+                            })
                             ->required()
                             ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
@@ -53,20 +59,21 @@ class MembershipPlanResource extends Resource
                         Forms\Components\TextInput::make('price')
                             ->numeric()
                             ->required()
-                            ->prefix('$')
+                            ->prefix(function ($get) {
+                                $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+                                return $currency?->getSymbol() ?? Currency::INR->getSymbol();
+                            })
                             ->minValue(0)
                             ->step(0.01)
                             ->placeholder('0.00')
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
-                            ->options([
-                                'USD' => 'United States Dollar (USD)',
-                                'EUR' => 'Euro (EUR)',
-                                'GBP' => 'British Pound (GBP)',
-                                'INR' => 'Indian Rupee (INR)',
-                            ])
+                            ->options(collect(Currency::cases())->mapWithKeys(
+                                fn(Currency $currency) => [$currency->value => $currency->getLabel()]
+                            ))
                             ->required()
-                            ->default('INR'),
+                            ->reactive()
+                            ->default(Currency::INR->value),
 
                         Forms\Components\Select::make('billing_cycle')
                             ->options([

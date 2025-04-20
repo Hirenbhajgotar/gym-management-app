@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\GymMemberResource\RelationManagers;
 
+use App\Enums\Currency;
+use App\Enums\PaymentMethod;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -34,32 +36,26 @@ class PaymentsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->prefix(function ($get) {
-                                $currency = $get('currency') ?? 'INR';
-                                return match ($currency) {
-                                    'INR' => '₹',
-                                    'USD' => '$',
-                                    default => '₹',
-                                };
+                                $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+                                return $currency?->getSymbol() ?? Currency::INR->getSymbol();
                             })
                             ->minValue(0)
                             ->step(0.01)
                             ->default(fn($livewire) => $livewire->ownerRecord->membershipPlan->price ?? 0)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
-                            ->options([
-                                'INR' => 'Indian Rupee (INR)',
-                                'USD' => 'United States Dollar (USD)',
-                            ])
+                            ->options(collect(Currency::cases())->mapWithKeys(
+                                fn(Currency $method) => [$method->value => $method->getLabel()]
+                            ))
                             ->required()
-                            ->default('INR')
+                            ->default(Currency::INR->value)
                             ->reactive(),
                         Forms\Components\Select::make('payment_method')
-                            ->options([
-                                'cash' => 'Cash',
-                                'upi' => 'UPI',
-                            ])
+                            ->options(collect(PaymentMethod::cases())->mapWithKeys(
+                                fn(PaymentMethod $method) => [$method->value => $method->getLabel()]
+                            ))
                             ->required()
-                            ->default('cash'),
+                            ->default(PaymentMethod::CASH->value),
                         Forms\Components\Select::make('status')
                             ->options([
                                 'completed' => 'Completed',
