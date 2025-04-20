@@ -3,12 +3,13 @@
 namespace App\Imports;
 
 use App\Models\GymMember;
+use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
+use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -33,18 +34,16 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
      */
     public function model(array $row)
     {
-        Log::info('Importing member row:', $row);
         $plan = MembershipPlan::where('gym_id', $this->gymId)
             ->where('name', $row['membership_plan_name'])
             ->first();
 
         if (!$plan) {
-            Log::warning('Membership plan not found:', ['gym_id' => $this->gymId, 'plan_name' => $row['membership_plan_name']]);
             $this->failedRows[] = $row;
             return null; // Skip if plan not found
         }
 
-        return new GymMember([
+        $member = new GymMember([
             'gym_id' => $this->gymId,
             'name' => $row['name'],
             'email' => $row['email'],
@@ -54,6 +53,25 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
             'membership_start' => $row['membership_start'] ? Carbon::parse($row['membership_start']) : now(),
             'gym_membership_plan_id' => $plan->id,
         ]);
+
+        // Save the member first to get the ID
+        $member->save();
+
+        // Create payment record if payment data exists
+        if (isset($row['payment_amount']) && $row['payment_amount'] > 0) {
+            MemberPayment::create([
+                'member_id' => $member->id,
+                'membership_plan_id' => $plan->id,
+                'amount' => $row['payment_amount'],
+                'currency' => $row['payment_currency'] ?? 'INR',
+                'payment_method' => $row['payment_method'] ?? 'cash',
+                'status' => $row['payment_status'] ?? 'completed',
+                'notes' => $row['payment_notes'] ?? null,
+                'payment_date' => $row['payment_date'] ? Carbon::parse($row['payment_date']) : now(),
+            ]);
+        }
+
+        return $member;
     }
 
     public function rules(): array
@@ -61,11 +79,17 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:gym_members,email',
-            'phone' => 'nullable|string|max:255',
+            'phone' => ['nullable', 'max:255', new ValidPhone],
             'address' => 'nullable|string|max:65535',
             'dob' => 'nullable|date',
             'membership_start' => 'nullable|date',
             'membership_plan_name' => 'required|string',
+            'payment_amount' => 'nullable|numeric|min:0',
+            'payment_currency' => 'nullable|string|in:INR,USD',
+            'payment_method' => 'nullable|string|in:cash,upi,credit_debit_card',
+            'payment_status' => 'nullable|string|in:completed,pending',
+            'payment_date' => 'nullable|date',
+            'payment_notes' => 'nullable|string',
         ];
     }
 
@@ -73,16 +97,13 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
     {
         return [
             AfterImport::class => function (AfterImport $event) {
-                Log::info('AfterImport event triggered', ['failed_rows_count' => count($this->failedRows)]);
                 if (!empty($this->failedRows)) {
                     try {
                         // Ensure imports directory exists
                         $importsDir = storage_path('app/imports');
                         if (!File::exists($importsDir)) {
                             File::makeDirectory($importsDir, 0755, true);
-                            Log::info('Created imports directory', ['path' => $importsDir]);
                         } elseif (!is_writable($importsDir)) {
-                            Log::error('Imports directory is not writable', ['path' => $importsDir]);
                             throw new \Exception('Imports directory is not writable: ' . $importsDir);
                         }
 
@@ -90,7 +111,6 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
                         $timestamp = time();
                         $filePath = 'app/imports/';
                         $fileName = "failed_rows_{$timestamp}.csv";
-                        // $path = storage_path("app/imports/failed_rows_{$timestamp}.csv");
                         $path = storage_path($filePath . $fileName);
                         $file = fopen($path, 'w');
                         if ($file === false) {
@@ -106,7 +126,6 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
                         // Store path for download
                         $downloadPath = "imports/failed_rows_{$timestamp}.csv";
                         Storage::disk('local')->put($downloadPath, file_get_contents($path));
-                        Log::info('Failed rows CSV generated', ['path' => $downloadPath]);
 
                         // Notify user
                         Notification::make()
@@ -121,7 +140,6 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
                             ->warning()
                             ->send();
                     } catch (\Exception $e) {
-                        Log::error('Failed to generate failed rows CSV', ['error' => $e->getMessage()]);
                         Notification::make()
                             ->title('Import partially failed')
                             ->body('Some rows could not be imported due to missing membership plans. Failed to generate error report.')
@@ -133,7 +151,6 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
                         ->title('Members imported successfully')
                         ->success()
                         ->send();
-                    Log::info('Import successful, no failed rows');
                 }
             },
         ];

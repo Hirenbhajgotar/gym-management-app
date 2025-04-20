@@ -300,10 +300,8 @@ class GymMemberResource extends Resource
                         try {
                             $file = $data['file']; // TemporaryUploadedFile object
                             $filePath = $file->getRealPath(); // Get the actual file path (e.g., C:\Users\SID\AppData\Local\Temp\phpEB47.tmp)
-                            Log::info('Resolved file path:', ['filePath' => $filePath]);
 
                             if (!file_exists($filePath)) {
-                                Log::error('Uploaded file not found:', ['file' => $filePath]);
                                 throw new \Exception('Uploaded file not found.');
                             }
                             Excel::import(new GymMembersImport($data['gym_id']), $filePath);
