@@ -45,7 +45,7 @@ class GymMember extends Model
 
     public function membershipPlan()
     {
-        return $this->belongsTo(Plan::class, 'membership_plan_id');
+        return $this->belongsTo(MembershipPlan::class, 'membership_plan_id');
     }
 
     public function user()
@@ -53,8 +53,8 @@ class GymMember extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // public function payments()
-    // {
-    //     return $this->hasMany(MemberPayment::class);
-    // }
+    public function payments()
+    {
+        return $this->hasMany(MemberPayment::class, 'member_id', 'id');
+    }
 }

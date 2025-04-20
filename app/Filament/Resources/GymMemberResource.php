@@ -3,15 +3,20 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\GymMemberResource\Pages;
+use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
+use App\Models\MembershipPlan;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Filament\Tables\Filters\SelectFilter;
 
 class GymMemberResource extends Resource
 {
@@ -54,7 +59,7 @@ class GymMemberResource extends Resource
                         Forms\Components\TextInput::make('phone')
                             ->tel()
                             ->maxLength(255)
-                            ->placeholder('e.g., +1 123-456-7890')
+                            ->placeholder('e.g., +91 98765-43210')
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Textarea::make('address')
                             ->maxLength(65535)
@@ -75,18 +80,53 @@ class GymMemberResource extends Resource
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name')
                             ->required()
-                            ->visible(fn() => auth()->user()->hasRole('admin'))
-                            ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
-                            ->disabled(fn() => auth()->user()->hasRole('gym_owner'))
-                            ->placeholder('Select a gym'),
+                            ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
+                            ->default(function () {
+                                if (auth()->user()->hasRole('gym_owner')) {
+                                    $gym = auth()->user()->gyms()->first();
+                                    return $gym ? $gym->id : null;
+                                }
+                                return null;
+                            })
+                            // ->disabled(fn() => auth()->user()->hasRole('gym_owner'))
+                            ->placeholder('Select a gym')
+                            ->rules([
+                                'required_if:visible,true',
+                                fn($get) => function ($attribute, $value, $fail) {
+                                    if (auth()->user()->hasRole('gym_owner') && !$value) {
+                                        $fail('You must create a gym before adding members.');
+                                    }
+                                },
+                            ]),
                         Forms\Components\Select::make('membership_plan_id')
                             ->relationship('membershipPlan', 'name', fn($query) => $query->where('is_active', true))
                             ->required()
-                            ->placeholder('Select a membership plan'),
+                            ->placeholder('Select a membership plan')
+                            ->options(function ($get) {
+                                $gymId = $get('gym_id') ?? (auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id : null);
+                                if ($gymId) {
+                                    return MembershipPlan::where('gym_id', $gymId)
+                                        ->where('is_active', true)
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+                                }
+                                return [];
+                            })
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                if ($state) {
+                                    $plan = MembershipPlan::find($state);
+                                    if ($plan && $plan->duration) {
+                                        $start = $get('membership_start') ?? now();
+                                        $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+                                    }
+                                }
+                            }),
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
                             ->native(false)
-                            ->default(now()),
+                            ->default(now())
+                            ->reactive(),
                         Forms\Components\DatePicker::make('membership_end')
                             ->placeholder('Auto-calculated based on plan')
                             ->disabled()
@@ -138,12 +178,21 @@ class GymMemberResource extends Resource
                     ->date()
                     ->badge()
                     ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
-                Tables\Columns\TextColumn::make('payments_sum_amount')
-                    ->label('Total Paid')
-                    ->money('INR')
-                    ->summarize(Tables\Columns\Summarizers\Sum::make())
+                Tables\Columns\TextColumn::make('payment_status')
+                    ->label('Payment Status')
+                    ->getStateUsing(function ($record) {
+                        $payment = $record->payments()->where('status', 'completed')->first();
+                        $status = $payment ? 'Paid' : 'Unpaid';
+                        return $status;
+                    })
                     ->badge()
-                    ->color('success'),
+                    ->color(fn($state) => $state === 'Paid' ? 'success' : 'warning'),
+                // Tables\Columns\TextColumn::make('payments_sum_amount')
+                //     ->label('Total Paid')
+                //     ->money('INR')
+                //     ->summarize(Tables\Columns\Summarizers\Sum::make())
+                //     ->badge()
+                //     ->color('success'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
@@ -152,15 +201,36 @@ class GymMemberResource extends Resource
                 Tables\Filters\SelectFilter::make('membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
-                // Tables\Filters\TrashedFilter::make(),
+                SelectFilter::make('payment_status')
+                    ->options([
+                        'paid' => 'Paid',
+                        'unpaid' => 'Unpaid',
+                    ])
+                    ->query(function ($query, array $state) {
+                        if (!empty($state['value'])) {
+                            $value = $state['value'];
+                            if ($value === 'paid') {
+                                $query->whereHas('payments', function ($q) {
+                                    $q->where('status', 'completed');
+                                });
+                            } elseif ($value === 'unpaid') {
+                                $query->whereDoesntHave('payments', function ($q) {
+                                    $q->where('status', 'completed');
+                                });
+                            }
+                        }
+                    })
+                    ->label('Payment Status'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->visible(fn() => auth()->user()->hasPermissionTo('update_gym::member')),
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
-                    ->color('danger'),
+                    ->color('danger')
+                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -168,9 +238,14 @@ class GymMemberResource extends Resource
                 ]),
             ])
             ->headerActions([
+                Tables\Actions\Action::make('download_template')
+                    ->label('Download CSV Template')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
+                    ->color('info'),
                 Tables\Actions\Action::make('import')
                     ->label('Import Members')
-                    ->icon('heroicon-o-arrow-up-tray')
+                    ->icon('heroicon-o-document-plus')
                     ->form([
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name')
@@ -199,10 +274,6 @@ class GymMemberResource extends Resource
                 }
                 return $query;
             })
-            ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
-            ])
             ->defaultSort('name')
             ->striped();
     }
@@ -210,7 +281,7 @@ class GymMemberResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // RelationManagers\PaymentsRelationManager::class,
+            PaymentsRelationManager::class,
         ];
     }
 
