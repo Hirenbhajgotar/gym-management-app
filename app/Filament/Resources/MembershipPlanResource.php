@@ -6,6 +6,7 @@ use App\Filament\Resources\MembershipPlanResource\Pages;
 use App\Filament\Resources\MembershipPlanResource\RelationManagers;
 use App\Models\MembershipPlan;
 use App\Enums\Currency;
+use App\Enums\DurationMonth;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -74,24 +75,13 @@ class MembershipPlanResource extends Resource
                             ->required()
                             ->reactive()
                             ->default(Currency::INR->value),
-
-                        Forms\Components\Select::make('billing_cycle')
-                            ->options([
-                                'monthly' => 'Monthly',
-                                'yearly' => 'Yearly',
-                            ])
-                            ->required()
-                            ->default('monthly'),
                         Forms\Components\Select::make('duration')
                             ->label('Duration (Months)')
-                            ->options([
-                                1 => '1 Month',
-                                3 => '3 Months',
-                                6 => '6 Months',
-                                12 => '1 Year',
-                            ])
+                            ->options(collect(DurationMonth::cases())->mapWithKeys(
+                                fn(DurationMonth $duration) => [$duration->value => $duration->getLabel()]
+                            ))
                             ->required()
-                            ->default(3),
+                            ->default(DurationMonth::THREE_MONTHS->value),
                         Forms\Components\Textarea::make('description')
                             ->maxLength(65535)
                             ->placeholder('e.g., Includes unlimited classes and personal training')
@@ -132,10 +122,6 @@ class MembershipPlanResource extends Resource
                 Tables\Columns\TextColumn::make('price')
                     ->money(fn($record) => $record->currency)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('billing_cycle')
-                    ->badge()
-                    ->color('info')
-                    ->formatStateUsing(fn($state) => ucfirst($state)),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->label('Active')

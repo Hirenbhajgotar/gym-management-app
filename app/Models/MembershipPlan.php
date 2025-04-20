@@ -11,7 +11,6 @@ class MembershipPlan extends Model
         'name',
         'description',
         'price',
-        'billing_cycle',
         'duration',
         'currency',
         'is_active',
