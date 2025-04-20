@@ -16,7 +16,7 @@ class GymMember extends Model
         'dob',
         'membership_start',
         'membership_end',
-        'membership_plan_id',
+        'gym_membership_plan_id',
         'user_id',
     ];
 
@@ -29,7 +29,7 @@ class GymMember extends Model
     protected static function booted()
     {
         static::saving(function ($member) {
-            if ($member->membership_start && $member->membership_plan_id) {
+            if ($member->membership_start && $member->gym_membership_plan_id) {
                 $plan = $member->membershipPlan;
                 if ($plan && $plan->duration) {
                     $member->membership_end = Carbon::parse($member->membership_start)->addMonths($plan->duration);
@@ -45,7 +45,7 @@ class GymMember extends Model
 
     public function membershipPlan()
     {
-        return $this->belongsTo(MembershipPlan::class, 'membership_plan_id');
+        return $this->belongsTo(MembershipPlan::class, 'gym_membership_plan_id');
     }
 
     public function user()

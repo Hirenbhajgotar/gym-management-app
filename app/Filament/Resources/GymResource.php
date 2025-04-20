@@ -77,6 +77,7 @@ class GymResource extends Resource
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
                     ->searchable()
+                    ->visible(fn() => auth()->user()->hasRole('admin'))
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('members_count')
@@ -111,10 +112,6 @@ class GymResource extends Resource
                 }
                 return $query;
             })
-            ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
-            ])
             ->defaultSort('name')
             ->striped();
     }

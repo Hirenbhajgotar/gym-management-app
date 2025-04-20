@@ -158,10 +158,6 @@ class MembershipPlanResource extends Resource
                 }
                 return $query;
             })
-            ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
-            ])
             ->defaultSort('name')
             ->striped();
     }

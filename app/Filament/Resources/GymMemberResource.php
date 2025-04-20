@@ -19,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Storage;
 
 class GymMemberResource extends Resource
 {
@@ -56,7 +57,7 @@ class GymMemberResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(GymMember::class, 'email', ignoreRecord: true)
-                            ->rules(['email:rfc', new ValidEmailDomain])
+                            ->rules(['email:rfc'])
                             ->validationMessages([
                                 'email' => 'Please enter a valid email address.',
                                 'email.rfc' => 'The email format is invalid.',
@@ -107,7 +108,7 @@ class GymMemberResource extends Resource
                             })
                             ->placeholder('Select a gym')
                             ->live()
-                            ->afterStateUpdated(fn(callable $set) => $set('membership_plan_id', null))
+                            ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
                             ->rules([
                                 'required_if:visible,true',
                                 fn($get) => function ($attribute, $value, $fail) {
@@ -116,7 +117,7 @@ class GymMemberResource extends Resource
                                     }
                                 },
                             ]),
-                        Forms\Components\Select::make('membership_plan_id')
+                        Forms\Components\Select::make('gym_membership_plan_id')
                             ->label('Membership Plan')
                             ->required()
                             ->placeholder('Select a membership plan')
@@ -148,7 +149,7 @@ class GymMemberResource extends Resource
                             ->default(now())
                             ->reactive()
                             ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $planId = $get('membership_plan_id');
+                                $planId = $get('gym_membership_plan_id');
                                 if ($planId && $state) {
                                     $plan = MembershipPlan::find($planId);
                                     if ($plan && $plan->duration) {
@@ -216,7 +217,7 @@ class GymMemberResource extends Resource
                         return $status;
                     })
                     ->badge()
-                    ->color(fn($state) => $state === 'Paid' ? 'success' : 'warning'),
+                    ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -228,7 +229,7 @@ class GymMemberResource extends Resource
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name')
                     ->visible(fn() => auth()->user()->hasRole('admin')),
-                Tables\Filters\SelectFilter::make('membership_plan_id')
+                Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
                 SelectFilter::make('payment_status')
@@ -278,21 +279,42 @@ class GymMemberResource extends Resource
                     ->icon('heroicon-o-document-plus')
                     ->form([
                         Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name')
+                            ->relationship('gym', 'name', function ($query) {
+                                if (auth()->user()->hasRole('gym_owner')) {
+                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                }
+                                return $query;
+                            })
                             ->required()
-                            ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id : null)
-                            ->disabled(fn() => auth()->user()->hasRole('gym_owner')),
+                            ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
                         Forms\Components\FileUpload::make('file')
                             ->label('Upload CSV/XLS')
                             ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
-                            ->required(),
+                            ->required()
+                            ->storeFiles(false) // Prevent automatic storage
+                            ->getUploadedFileNameForStorageUsing(
+                                fn($file) => 'imports/' . $file->getClientOriginalName()
+                            ),
                     ])
                     ->action(function (array $data) {
-                        Excel::import(new GymMembersImport($data['gym_id']), $data['file']);
-                        Notification::make()
-                            ->title('Members imported successfully')
-                            ->success()
-                            ->send();
+                        try {
+                            $file = $data['file']; // TemporaryUploadedFile object
+                            $filePath = $file->getRealPath(); // Get the actual file path (e.g., C:\Users\SID\AppData\Local\Temp\phpEB47.tmp)
+                            Log::info('Resolved file path:', ['filePath' => $filePath]);
+
+                            if (!file_exists($filePath)) {
+                                Log::error('Uploaded file not found:', ['file' => $filePath]);
+                                throw new \Exception('Uploaded file not found.');
+                            }
+                            Excel::import(new GymMembersImport($data['gym_id']), $filePath);
+                        } catch (\Exception $e) {
+                            Log::error('Import failed:', ['error' => $e->getMessage()]);
+                            Notification::make()
+                                ->title('Import failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     })
                     ->requiresConfirmation()
                     ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('admin')),

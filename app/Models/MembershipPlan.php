@@ -28,6 +28,6 @@ class MembershipPlan extends Model
 
     public function members()
     {
-        return $this->hasMany(GymMember::class, 'membership_plan_id');
+        return $this->hasMany(GymMember::class, 'gym_membership_plan_id');
     }
 }

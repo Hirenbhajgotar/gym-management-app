@@ -29,7 +29,7 @@ class PaymentsRelationManager extends RelationManager
                         Forms\Components\Select::make('membership_plan_id')
                             ->relationship('membershipPlan', 'name')
                             ->required()
-                            ->default(fn($livewire) => $livewire->ownerRecord->membership_plan_id)
+                            ->default(fn($livewire) => $livewire->ownerRecord->gym_membership_plan_id)
                             ->disabled()
                             ->dehydrated(true),
                         Forms\Components\TextInput::make('amount')
