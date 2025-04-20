@@ -40,9 +40,8 @@ class MembershipPlanResource extends Resource
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name')
                             ->required()
-                            ->visible(fn() => auth()->user()->hasRole('admin'))
+                            ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
-                            ->disabled(fn() => auth()->user()->hasRole('gym_owner'))
                             ->placeholder('Select a gym'),
                         Forms\Components\TextInput::make('name')
                             ->required()

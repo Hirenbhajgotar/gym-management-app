@@ -7,6 +7,8 @@ use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationMa
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
+use App\Rules\ValidEmailDomain;
+use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -54,12 +56,22 @@ class GymMemberResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(GymMember::class, 'email', ignoreRecord: true)
+                            ->rules(['email:rfc', new ValidEmailDomain])
+                            ->validationMessages([
+                                'email' => 'Please enter a valid email address.',
+                                'email.rfc' => 'The email format is invalid.',
+                                'email.dns' => 'The email domain does not exist.',
+                            ])
                             ->placeholder('e.g., john.doe@example.com')
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\TextInput::make('phone')
                             ->tel()
                             ->maxLength(255)
-                            ->placeholder('e.g., +91 98765-43210')
+                            ->rules([new ValidPhone])
+                            ->validationMessages([
+                                'phone' => 'The phone must be a valid 10-digit phone number.',
+                            ])
+                            ->placeholder('e.g., 9876543210')
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Textarea::make('address')
                             ->maxLength(65535)
@@ -78,7 +90,12 @@ class GymMemberResource extends Resource
                     ->description('Configure membership settings')
                     ->schema([
                         Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name')
+                            ->relationship('gym', 'name', function ($query) {
+                                if (auth()->user()->hasRole('gym_owner')) {
+                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                }
+                                return $query;
+                            })
                             ->required()
                             ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(function () {
@@ -88,8 +105,9 @@ class GymMemberResource extends Resource
                                 }
                                 return null;
                             })
-                            // ->disabled(fn() => auth()->user()->hasRole('gym_owner'))
                             ->placeholder('Select a gym')
+                            ->live()
+                            ->afterStateUpdated(fn(callable $set) => $set('membership_plan_id', null))
                             ->rules([
                                 'required_if:visible,true',
                                 fn($get) => function ($attribute, $value, $fail) {
@@ -99,19 +117,9 @@ class GymMemberResource extends Resource
                                 },
                             ]),
                         Forms\Components\Select::make('membership_plan_id')
-                            ->relationship('membershipPlan', 'name', fn($query) => $query->where('is_active', true))
+                            ->label('Membership Plan')
                             ->required()
                             ->placeholder('Select a membership plan')
-                            ->options(function ($get) {
-                                $gymId = $get('gym_id') ?? (auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id : null);
-                                if ($gymId) {
-                                    return MembershipPlan::where('gym_id', $gymId)
-                                        ->where('is_active', true)
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                }
-                                return [];
-                            })
                             ->reactive()
                             ->afterStateUpdated(function ($state, callable $set, $get) {
                                 if ($state) {
@@ -121,15 +129,37 @@ class GymMemberResource extends Resource
                                         $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
                                     }
                                 }
-                            }),
+                            })
+                            ->options(function (callable $get) {
+                                $gymId = $get('gym_id');
+                                if (!$gymId) return [];
+
+                                return MembershipPlan::query()
+                                    ->where('gym_id', $gymId)
+                                    ->where('is_active', true)
+                                    ->pluck('name', 'id')
+                                    ->toArray();
+                            })
+                            ->disabled(fn($get) => !$get('gym_id')),
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
+                            ->live()
                             ->native(false)
                             ->default(now())
-                            ->reactive(),
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                $planId = $get('membership_plan_id');
+                                if ($planId && $state) {
+                                    $plan = MembershipPlan::find($planId);
+                                    if ($plan && $plan->duration) {
+                                        $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+                                    }
+                                }
+                            }),
                         Forms\Components\DatePicker::make('membership_end')
                             ->placeholder('Auto-calculated based on plan')
                             ->disabled()
+                            ->native(false)
                             ->dehydrated(false),
                     ])
                     ->collapsible()
