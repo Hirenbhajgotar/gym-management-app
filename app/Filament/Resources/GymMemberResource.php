@@ -227,8 +227,16 @@ class GymMemberResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name')
-                    ->visible(fn() => auth()->user()->hasRole('admin')),
+                    ->relationship('gym', 'name', function ($query) {
+                        if (auth()->user()->hasRole('gym_owner')) {
+                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                        }
+                        if (auth()->user()->hasRole('admin')) {
+                            return $query;
+                        }
+                    })
+                    ->label('Gym')
+                    ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner')),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
