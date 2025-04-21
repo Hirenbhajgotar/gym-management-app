@@ -46,6 +46,14 @@ class GymMemberResource extends Resource
                     ->icon('heroicon-o-user')
                     ->description('Enter the member\'s personal details')
                     ->schema([
+                        Forms\Components\FileUpload::make('profile_photo')
+                            ->image()
+                            ->avatar()
+                            ->imageEditor()
+                            ->circleCropper()
+                            ->directory('member-photos')
+                            ->maxSize(2048)
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
@@ -79,6 +87,25 @@ class GymMemberResource extends Resource
                             ->placeholder('e.g., 123 Fitness Street, City')
                             ->rows(4)
                             ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+                        Forms\Components\TextInput::make('weight')
+                            ->numeric()
+                            ->suffix('kg')
+                            ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(500)
+                            ->placeholder('e.g., 75.5'),
+                        Forms\Components\TextInput::make('height')
+                            ->numeric()
+                            ->suffix('cm')
+                            ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(300)
+                            ->placeholder('e.g., 175'),
+                        Forms\Components\TextInput::make('age')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(150)
+                            ->placeholder('e.g., 25'),
                         Forms\Components\DatePicker::make('dob')
                             ->label('Date of Birth')
                             ->placeholder('Select date')
@@ -173,16 +200,20 @@ class GymMemberResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('profile_photo')
+                    ->circular()
+                    ->defaultImageUrl(function ($record) {
+                        $name = urlencode($record->name);
+                        $size = 40;
+                        $background = 'random';
+                        $color = 'FFFFFF';
+                        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
+                    })
+                    ->extraImgAttributes(['loading' => 'lazy'])
+                    ->label('Photo'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->sortable()
-                    ->formatStateUsing(fn($state) => "<div class='flex items-center gap-2'>
-                        <span class='inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-800 rounded-full'>
-                            " . strtoupper(substr($state, 0, 1)) . "
-                        </span>
-                        <span class='font-semibold'>$state</span>
-                    </div>")
-                    ->html(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->copyable()

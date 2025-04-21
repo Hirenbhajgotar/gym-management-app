@@ -4,15 +4,20 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class GymMember extends Model
 {
     protected $fillable = [
         'gym_id',
         'name',
+        'profile_photo',
         'email',
         'phone',
         'address',
+        'weight',
+        'height',
+        'age',
         'dob',
         'membership_start',
         'membership_end',
@@ -24,6 +29,9 @@ class GymMember extends Model
         'dob' => 'date',
         'membership_start' => 'date',
         'membership_end' => 'date',
+        'weight' => 'decimal:2',
+        'height' => 'decimal:2',
+        'age' => 'integer',
     ];
 
     protected static function booted()
@@ -36,6 +44,17 @@ class GymMember extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Get the user's initials
+     */
+    public function initials(): string
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
+            ->implode('');
     }
 
     public function gym()
