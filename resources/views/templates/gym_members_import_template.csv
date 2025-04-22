@@ -1,3 +1,3 @@
-name,email,phone,address,dob,membership_plan_name,membership_start,payment_amount,payment_currency,payment_method,payment_status,payment_notes,payment_date
-John Doe,john.doe@example.com,1234567890,123 Fitness St,1990-01-01,Basic,2025-01-01,3000,INR,cash,completed,payment done by John via cash,2025-01-01
-Jane Smith,Jane.smith@example.com,1234567890,123 Fitness St,1990-01-01,Basic,2025-01-01,3000,INR,cash,completed,payment done by Jane via cash,2025-01-01
+name,email,phone,address,weight,height,age,dob,membership_plan_name,membership_start,payment_amount,payment_currency,payment_method,payment_status,payment_notes,payment_date
+John Doe,john.doe@example.com,1234567890,123 Fitness St,75.5,175,25,1990-01-01,Basic,2025-01-01,3000,INR,cash,completed,payment done by John via cash,2025-01-01
+Jane Smith,Jane.smith@example.com,1234567890,123 Fitness St,65.2,165,28,1990-01-01,Basic,2025-01-01,3000,INR,cash,completed,payment done by Jane via cash,2025-01-01
