@@ -28,7 +28,7 @@ class MembershipPlanResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-        return $user->hasRole('admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
+        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
     }
 
     public static function form(Form $form): Form
@@ -47,7 +47,7 @@ class MembershipPlanResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
+                            ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
                             ->placeholder('Select a gym'),
                         Forms\Components\TextInput::make('name')
@@ -136,7 +136,7 @@ class MembershipPlanResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name')
-                    ->visible(fn() => auth()->user()->hasRole('admin')),
+                    ->visible(fn() => auth()->user()->hasRole('super_admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

@@ -35,7 +35,7 @@ class GymMemberResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-        return $user->hasRole('admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
+        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
     }
 
     public static function form(Form $form): Form
@@ -125,7 +125,7 @@ class GymMemberResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner'))
+                            ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(function () {
                                 if (auth()->user()->hasRole('gym_owner')) {
                                     $gym = auth()->user()->gyms()->first();
@@ -262,12 +262,12 @@ class GymMemberResource extends Resource
                         if (auth()->user()->hasRole('gym_owner')) {
                             return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
                         }
-                        if (auth()->user()->hasRole('admin')) {
+                        if (auth()->user()->hasRole('super_admin')) {
                             return $query;
                         }
                     })
                     ->label('Gym')
-                    ->visible(fn() => auth()->user()->hasRole('admin') || auth()->user()->hasRole('gym_owner')),
+                    ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner')),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
@@ -354,7 +354,7 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->requiresConfirmation()
-                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('admin')),
+                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
             ])
             ->modifyQueryUsing(function ($query) {
                 $user = auth()->user();

@@ -1,7 +1,5 @@
 <?php
 
-use App\Filament\Resources\GymResource\Widgets\GymStats;
-
 return [
     'shield_resource' => [
         'should_register_navigation' => true,
@@ -24,7 +22,7 @@ return [
     'super_admin' => [
         'enabled' => true,
         'name' => 'super_admin',
-        'define_via_gate' => false,
+        'define_via_gate' => true,
         'intercept_gate' => 'before', // after
     ],
 

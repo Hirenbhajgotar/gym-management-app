@@ -20,6 +20,13 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
+    // Restrict to admins or gym owners with gyms
+    public static function canAccess(array $parameters = []): bool
+    {
+        $user = auth()->user();
+        return $user->hasRole('super_admin');
+    }
+
     public static function getMiddleware(): array
     {
         return [
@@ -76,6 +83,7 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

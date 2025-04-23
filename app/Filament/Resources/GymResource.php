@@ -25,7 +25,7 @@ class GymResource extends Resource
 
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('admin');
+        return auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin');
     }
 
     public static function form(Form $form): Form
@@ -77,7 +77,7 @@ class GymResource extends Resource
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
                     ->searchable()
-                    ->visible(fn() => auth()->user()->hasRole('admin'))
+                    ->visible(fn() => auth()->user()->hasRole('super_admin'))
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('members_count')
@@ -91,7 +91,7 @@ class GymResource extends Resource
                 Tables\Filters\SelectFilter::make('owner_id')
                     ->relationship('owner', 'name')
                     ->label('Owner')
-                    ->visible(fn() => auth()->user()->hasRole('admin')),
+                    ->visible(fn() => auth()->user()->hasRole('super_admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

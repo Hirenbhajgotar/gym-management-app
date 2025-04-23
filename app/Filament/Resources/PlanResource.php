@@ -20,7 +20,7 @@ class PlanResource extends Resource
     // Restrict access to admins only
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()->hasRole('super_admin');
     }
 
     public static function form(Form $form): Form
@@ -166,6 +166,7 @@ class PlanResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
