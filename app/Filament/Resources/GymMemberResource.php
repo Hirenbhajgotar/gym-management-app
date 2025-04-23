@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse; // Add this import if not already present
+use PhpOffice\PhpSpreadsheet\Spreadsheet; // Add this import
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx; // Add this import
 
 class GymMemberResource extends Resource
 {
@@ -210,7 +213,7 @@ class GymMemberResource extends Resource
                         return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
                     })
                     ->extraImgAttributes(['loading' => 'lazy'])
-                    ->label('Photo'),
+                    ->label(''),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
@@ -308,11 +311,36 @@ class GymMemberResource extends Resource
                 ]),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('download_template')
-                    ->label('Download CSV Template')
+                Tables\Actions\ActionGroup::make([ // Group the download actions
+                    Tables\Actions\Action::make('download_csv_template')
+                        ->label('Download CSV Template')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
+                        ->color('info'),
+                    Tables\Actions\Action::make('download_xlsx_template')
+                        ->label('Download Excel Template')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function () {
+                            $path = resource_path('views/templates/gym_members_import_xlsx_template.xlsx');
+                            if (!file_exists($path)) {
+                                // Optionally create a basic one on the fly if it doesn't exist
+                                // Or just throw an error/notification
+                                Notification::make()
+                                    ->title('Template Not Found')
+                                    ->body('The Excel template file could not be found.')
+                                    ->danger()
+                                    ->send();
+                                return null; // Stop execution
+                            }
+                            return response()->download($path);
+                        })
+                        ->color('success'), // Different color for distinction
+                ])
+                    ->label('Download Templates')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
-                    ->color('info'),
+                    ->button() // Display as a button with a dropdown
+                    ->color('warning'), // Color for the main group button
+
                 Tables\Actions\Action::make('import')
                     ->label('Import Members')
                     ->icon('heroicon-o-document-plus')
