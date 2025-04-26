@@ -5,10 +5,13 @@ namespace App\Filament\Resources\GymMemberResource\RelationManagers;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use Filament\Forms;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Hash;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -114,15 +117,106 @@ class PaymentsRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->steps([
+                        Step::make('password_confirmation')
+                            ->description('Please enter your password to confirm this action')
+                            ->schema([
+                                Forms\Components\TextInput::make('password')
+                                    ->label('Your Password')
+                                    ->helperText('Please enter your password to confirm this action.')
+                                    ->revealable()
+                                    ->password()
+                                    ->required()
+                                    ->extraAttributes([
+                                        'onkeydown' => 'if(event.key === "Enter") { event.preventDefault(); }',
+                                    ])
+                                    ->rules([
+                                        'required',
+                                        fn ($get) => function ($attribute, $value, $fail) {
+                                            if (! Hash::check($value, auth()->user()->password)) {
+                                                $fail('The password is incorrect.');
+                                            }
+                                        },
+                                    ]),
+                            ]),
+                        Step::make('payment_details')
+                            ->description('Enter payment information')
+                            ->schema($this->form(new Form($this))->getComponents()),
+                    ])
+                    ->action(function ($data) {
+                        $record = $this->getRelationship()->create(collect($data)->except(['password'])->toArray());
+                        Notification::make()
+                            ->success()
+                            ->title('Payment Created')
+                            ->body('The payment has been created successfully.')
+                            ->send();
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
+                    ->steps([
+                        Step::make('password_confirmation')
+                            ->description('Please enter your password to confirm this action')
+                            ->schema([
+                                Forms\Components\TextInput::make('password')
+                                    ->label('Your Password')
+                                    ->helperText('Please enter your password to confirm this action.')
+                                    ->revealable()
+                                    ->password()
+                                    ->required()
+                                    ->extraAttributes([
+                                        'onkeydown' => 'if(event.key === "Enter") { event.preventDefault(); }',
+                                    ])
+                                    ->rules([
+                                        'required',
+                                        fn ($get) => function ($attribute, $value, $fail) {
+                                            if (! Hash::check($value, auth()->user()->password)) {
+                                                $fail('The password is incorrect.');
+                                            }
+                                        },
+                                    ]),
+                            ]),
+                        Step::make('payment_details')
+                            ->description('Update payment information')
+                            ->schema($this->form(new Form($this))->getComponents()),
+                    ])
+                    ->action(function ($data, $record) {
+                        $record->update(collect($data)->except(['password'])->toArray());
+                        Notification::make()
+                            ->success()
+                            ->title('Payment Updated')
+                            ->body('The payment has been updated successfully.')
+                            ->send();
+                    }),
+                // ->cancelParentActions(),
+
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
-                    ->color('danger'),
+                    ->color('danger')
+                    ->visible(fn () => auth()->user()->hasPermissionTo('delete_gym::member'))
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete Member Payment')
+                    ->modalDescription('Are you sure you want to delete this payment? This action requires password confirmation.')
+                    ->modalSubmitActionLabel('Confirm Delete')
+                    ->form([
+                        Forms\Components\TextInput::make('password')
+                            ->label('Your Password')
+                            ->revealable()
+                            ->password()
+                            ->required()
+                            ->rules([
+                                'required',
+                                fn ($get) => function ($attribute, $value, $fail) {
+                                    if (! Hash::check($value, auth()->user()->password)) {
+                                        $fail('The password is incorrect.');
+                                    }
+                                },
+                            ]),
+                    ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
