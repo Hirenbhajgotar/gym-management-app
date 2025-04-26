@@ -10,7 +10,7 @@ enum DurationMonth: int
 
     public function getLabel(): string
     {
-        return match($this) {
+        return match ($this) {
             self::THREE_MONTHS => '3 Months',
             self::SIX_MONTHS => '6 Months',
             self::ONE_YEAR => '1 Year',

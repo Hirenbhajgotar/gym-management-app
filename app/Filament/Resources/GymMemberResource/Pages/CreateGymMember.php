@@ -3,10 +3,9 @@
 namespace App\Filament\Resources\GymMemberResource\Pages;
 
 use App\Filament\Resources\GymMemberResource;
-use Filament\Resources\Pages\CreateRecord;
-use Filament\Forms;
 use Filament\Actions\Action;
-use Illuminate\Support\Facades\Log;
+use Filament\Forms;
+use Filament\Resources\Pages\CreateRecord;
 
 class CreateGymMember extends CreateRecord
 {
@@ -25,6 +24,7 @@ class CreateGymMember extends CreateRecord
                     ->live(),
             ])
             ->collapsible();
+
         return $parentSchema;
     }
 
@@ -34,7 +34,7 @@ class CreateGymMember extends CreateRecord
             $this->getCreateFormAction()->label('Save Member'),
             Action::make('cancel')
                 ->label('Cancel')
-                ->action(fn() => $this->redirect(GymMemberResource::getUrl('index')))
+                ->action(fn () => $this->redirect(GymMemberResource::getUrl('index')))
                 ->color('gray'),
         ];
     }
@@ -44,6 +44,7 @@ class CreateGymMember extends CreateRecord
         $data['add_payment'] = $data['add_payment'] ?? true;
         $this->addPayment = $data['add_payment'];
         unset($data['add_payment']);
+
         return $data;
     }
 
@@ -55,7 +56,7 @@ class CreateGymMember extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->addPayment
-            ? GymMemberResource::getUrl('edit', ['record' => $this->record->id]) . '#relation-manager-payments'
+            ? GymMemberResource::getUrl('edit', ['record' => $this->record->id]).'#relation-manager-payments'
             : GymMemberResource::getUrl('index');
     }
 }

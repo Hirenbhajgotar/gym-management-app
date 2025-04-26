@@ -50,7 +50,7 @@ class PlanResource extends Resource
                                     ->helperText('Auto-generated from plan name, but you can edit it')
                                     // ->reactive()
                                     ->afterStateHydrated(function ($state, callable $set, $record) {
-                                        if (!$state && $record) {
+                                        if (! $state && $record) {
                                             $set('slug', Str::slug($record->name));
                                         }
                                     }),
@@ -118,7 +118,7 @@ class PlanResource extends Resource
                                             ->label('Feature Value')
                                             ->placeholder('e.g., "Yes" or "10 GB"'),
                                     ])
-                                    ->itemLabel(fn(array $state): ?string => $state['feature_name'] ?? null)
+                                    ->itemLabel(fn (array $state): ?string => $state['feature_name'] ?? null)
                                     ->collapsible()
                                     ->defaultItems(0)
                                     ->addActionLabel('Add Feature')
@@ -129,7 +129,7 @@ class PlanResource extends Resource
                     ->columnSpanFull()
                     ->persistTab()
                     ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        if ($get('is_active') && !$get('price_monthly') && !$get('price_yearly')) {
+                        if ($get('is_active') && ! $get('price_monthly') && ! $get('price_yearly')) {
                             $set('is_active', false);
                             \Filament\Notifications\Notification::make()
                                 ->warning()
@@ -153,8 +153,8 @@ class PlanResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('slug')->searchable(),
-                Tables\Columns\TextColumn::make('price_monthly')->money(fn($record) => $record->currency)->sortable(),
-                Tables\Columns\TextColumn::make('price_yearly')->money(fn($record) => $record->currency)->sortable(),
+                Tables\Columns\TextColumn::make('price_monthly')->money(fn ($record) => $record->currency)->sortable(),
+                Tables\Columns\TextColumn::make('price_yearly')->money(fn ($record) => $record->currency)->sortable(),
                 Tables\Columns\TextColumn::make('currency')->searchable(),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
                 Tables\Columns\TextColumn::make('trial_days')->numeric()->sortable(),

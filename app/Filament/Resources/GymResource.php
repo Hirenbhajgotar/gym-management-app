@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\GymResource\Pages;
-use App\Filament\Resources\GymResource\RelationManagers;
 use App\Models\Gym;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class GymResource extends Resource
 {
@@ -63,21 +60,21 @@ class GymResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(fn($state) => "<div class='flex items-center gap-2'>
+                    ->formatStateUsing(fn ($state) => "<div class='flex items-center gap-2'>
                         <span class='inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full'>
-                            " . strtoupper(substr($state, 0, 1)) . "
+                            ".strtoupper(substr($state, 0, 1))."
                         </span>
                         <span class='font-semibold'>$state</span>
                     </div>")
                     ->html(),
                 Tables\Columns\TextColumn::make('address')
                     ->limit(50)
-                    ->tooltip(fn($state) => $state)
+                    ->tooltip(fn ($state) => $state)
                     ->wrap(),
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
                     ->searchable()
-                    ->visible(fn() => auth()->user()->hasRole('super_admin'))
+                    ->visible(fn () => auth()->user()->hasRole('super_admin'))
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('members_count')
@@ -91,7 +88,7 @@ class GymResource extends Resource
                 Tables\Filters\SelectFilter::make('owner_id')
                     ->relationship('owner', 'name')
                     ->label('Owner')
-                    ->visible(fn() => auth()->user()->hasRole('super_admin')),
+                    ->visible(fn () => auth()->user()->hasRole('super_admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -110,6 +107,7 @@ class GymResource extends Resource
                 if (auth()->user()->hasRole('gym_owner')) {
                     $query->where('owner_id', auth()->id());
                 }
+
                 return $query;
             })
             ->defaultSort('name')

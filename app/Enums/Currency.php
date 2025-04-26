@@ -9,7 +9,7 @@ enum Currency: string
 
     public function getLabel(): string
     {
-        return match($this) {
+        return match ($this) {
             self::USD => 'United States Dollar (USD)',
             self::INR => 'Indian Rupee (INR)',
         };
@@ -17,7 +17,7 @@ enum Currency: string
 
     public function getSymbol(): string
     {
-        return match($this) {
+        return match ($this) {
             self::USD => '$',
             self::INR => '₹',
         };

@@ -9,8 +9,6 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -25,11 +23,11 @@ class PaymentsRelationManager extends RelationManager
                     ->description('Record a payment for this member')
                     ->schema([
                         Forms\Components\Hidden::make('member_id')
-                            ->default(fn($livewire) => $livewire->ownerRecord->id),
+                            ->default(fn ($livewire) => $livewire->ownerRecord->id),
                         Forms\Components\Select::make('membership_plan_id')
                             ->relationship('membershipPlan', 'name')
                             ->required()
-                            ->default(fn($livewire) => $livewire->ownerRecord->gym_membership_plan_id)
+                            ->default(fn ($livewire) => $livewire->ownerRecord->gym_membership_plan_id)
                             ->disabled()
                             ->dehydrated(true),
                         Forms\Components\TextInput::make('amount')
@@ -37,22 +35,23 @@ class PaymentsRelationManager extends RelationManager
                             ->required()
                             ->prefix(function ($get) {
                                 $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+
                                 return $currency?->getSymbol() ?? Currency::INR->getSymbol();
                             })
                             ->minValue(0)
                             ->step(0.01)
-                            ->default(fn($livewire) => $livewire->ownerRecord->membershipPlan->price ?? 0)
+                            ->default(fn ($livewire) => $livewire->ownerRecord->membershipPlan->price ?? 0)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
-                                fn(Currency $method) => [$method->value => $method->getLabel()]
+                                fn (Currency $method) => [$method->value => $method->getLabel()]
                             ))
                             ->required()
                             ->default(Currency::INR->value)
                             ->reactive(),
                         Forms\Components\Select::make('payment_method')
                             ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                                fn(PaymentMethod $method) => [$method->value => $method->getLabel()]
+                                fn (PaymentMethod $method) => [$method->value => $method->getLabel()]
                             ))
                             ->required()
                             ->default(PaymentMethod::CASH->value),
@@ -88,15 +87,15 @@ class PaymentsRelationManager extends RelationManager
                     ->badge()
                     ->color('success'),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money(fn($record) => $record->currency)
+                    ->money(fn ($record) => $record->currency)
                     ->summarize(Tables\Columns\Summarizers\Sum::make()),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->badge()
                     ->color('info')
-                    ->formatStateUsing(fn($state) => ucfirst($state)),
+                    ->formatStateUsing(fn ($state) => ucfirst($state)),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn($state) => $state === 'completed' ? 'success' : 'warning'),
+                    ->color(fn ($state) => $state === 'completed' ? 'success' : 'warning'),
                 Tables\Columns\TextColumn::make('payment_date')
                     ->date()
                     ->badge()

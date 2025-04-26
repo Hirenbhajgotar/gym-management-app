@@ -7,7 +7,6 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Rules\ValidPhone;
 use Carbon\Carbon;
-use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -17,9 +16,10 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Events\AfterImport;
 
-class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithEvents
+class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValidation
 {
     protected $gymId;
+
     protected $failedRows = [];
 
     public function __construct($gymId)
@@ -28,8 +28,6 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
     }
 
     /**
-     * @param array $row
-     *
      * @return \Illuminate\Database\Eloquent\Model|null
      */
     public function model(array $row)
@@ -38,8 +36,9 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
             ->where('name', $row['membership_plan_name'])
             ->first();
 
-        if (!$plan) {
+        if (! $plan) {
             $this->failedRows[] = $row;
+
             return null; // Skip if plan not found
         }
 
@@ -103,24 +102,24 @@ class GymMembersImport implements ToModel, WithHeadingRow, WithValidation, WithE
     {
         return [
             AfterImport::class => function (AfterImport $event) {
-                if (!empty($this->failedRows)) {
+                if (! empty($this->failedRows)) {
                     try {
                         // Ensure imports directory exists
                         $importsDir = storage_path('app/imports');
-                        if (!File::exists($importsDir)) {
+                        if (! File::exists($importsDir)) {
                             File::makeDirectory($importsDir, 0755, true);
-                        } elseif (!is_writable($importsDir)) {
-                            throw new \Exception('Imports directory is not writable: ' . $importsDir);
+                        } elseif (! is_writable($importsDir)) {
+                            throw new \Exception('Imports directory is not writable: '.$importsDir);
                         }
 
                         // Generate failed rows CSV
                         $timestamp = time();
                         $filePath = 'app/imports/';
                         $fileName = "failed_rows_{$timestamp}.csv";
-                        $path = storage_path($filePath . $fileName);
+                        $path = storage_path($filePath.$fileName);
                         $file = fopen($path, 'w');
                         if ($file === false) {
-                            throw new \Exception('Failed to open file for writing: ' . $path);
+                            throw new \Exception('Failed to open file for writing: '.$path);
                         }
                         $headers = array_merge(array_keys($this->failedRows[0]), ['error']);
                         fputcsv($file, $headers);

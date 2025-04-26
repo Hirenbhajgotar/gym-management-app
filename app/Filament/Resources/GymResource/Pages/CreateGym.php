@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\GymResource\Pages;
 
 use App\Filament\Resources\GymResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +19,6 @@ class CreateGym extends CreateRecord
             ->value ?? 0;
 
         // dd($user->gyms()->count());
-
 
         // if ($user->gyms()->count() >= $maxGyms) {
         //     throw ValidationException::withMessages([

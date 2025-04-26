@@ -14,7 +14,7 @@ class ValidPhone implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!preg_match('/^[0-9]{10}$/', $value)) {
+        if (! preg_match('/^[0-9]{10}$/', $value)) {
             $fail("The $attribute must be a valid 10-digit phone number.");
         }
     }
