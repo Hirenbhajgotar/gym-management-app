@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Exports\MembersExport;
 use App\Filament\Resources\GymMemberResource\Pages;
 use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Imports\GymMembersImport;
@@ -354,6 +355,45 @@ class GymMemberResource extends Resource
                 ]),
             ])
             ->headerActions([
+                Tables\Actions\Action::make('export_members')
+                    ->label('Export Members')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->form(function () {
+                        $user = auth()->user();
+                        $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
+
+                        if ($gymCount > 1) {
+                            return [
+                                Forms\Components\Select::make('gym_id')
+                                    ->label('Select Gym')
+                                    ->options(function () {
+                                        return auth()->user()->gyms()->pluck('name', 'id');
+                                    })
+                                    ->required()
+                                    ->placeholder('Choose a gym to export members'),
+                            ];
+                        }
+
+                        return [];
+                    })
+                    ->action(function (array $data) {
+                        $user = auth()->user();
+                        $gymId = null;
+
+                        if ($user->hasRole('gym_owner')) {
+                            $gymCount = $user->gyms()->count();
+                            if ($gymCount > 1) {
+                                $gymId = $data['gym_id'];
+                            } else {
+                                $gymId = $user->gyms()->first()?->id;
+                            }
+                        }
+
+                        return Excel::download(new MembersExport($gymId), 'members-'.now()->format('Y-m-d-H-i-s').'.csv');
+                    })
+                    ->requiresConfirmation()
+                    ->visible(fn () => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
                 Tables\Actions\ActionGroup::make([ // Group the download actions
                     Tables\Actions\Action::make('download_csv_template')
                         ->label('Download CSV Template')
@@ -379,7 +419,8 @@ class GymMemberResource extends Resource
 
                             return response()->download($path);
                         })
-                        ->color('success'), // Different color for distinction
+                        ->color('success'),
+
                 ])
                     ->label('Download Templates')
                     ->icon('heroicon-o-document-arrow-down')
