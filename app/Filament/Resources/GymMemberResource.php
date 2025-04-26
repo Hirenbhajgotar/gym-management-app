@@ -7,7 +7,6 @@ use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationMa
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
-use App\Rules\ValidEmailDomain;
 use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -19,10 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse; // Add this import if not already present
-use PhpOffice\PhpSpreadsheet\Spreadsheet; // Add this import
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx; // Add this import
+use Illuminate\Support\Facades\Hash;
 
 class GymMemberResource extends Resource
 {
@@ -303,11 +299,49 @@ class GymMemberResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member')),
+                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member'))
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete Member')
+                    ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
+                    ->modalSubmitActionLabel('Confirm Delete')
+                    ->form([
+                        Forms\Components\TextInput::make('password')
+                            ->label('Your Password')
+                            ->revealable()
+                            ->password()
+                            ->required()
+                            ->rules([
+                                'required',
+                                fn($get) => function ($attribute, $value, $fail) {
+                                    if (!Hash::check($value, auth()->user()->password)) {
+                                        $fail('The password is incorrect.');
+                                    }
+                                },
+                            ]),
+                    ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete Selected Members')
+                        ->modalDescription('Are you sure you want to delete these members? This action requires password confirmation.')
+                        ->modalSubmitActionLabel('Confirm Delete')
+                        ->form([
+                            Forms\Components\TextInput::make('password')
+                                ->label('Your Password')
+                                ->revealable()
+                                ->password()
+                                ->required()
+                                ->rules([
+                                    'required',
+                                    fn($get) => function ($attribute, $value, $fail) {
+                                        if (!Hash::check($value, auth()->user()->password)) {
+                                            $fail('The password is incorrect.');
+                                        }
+                                    },
+                                ]),
+                        ]),
                 ]),
             ])
             ->headerActions([
