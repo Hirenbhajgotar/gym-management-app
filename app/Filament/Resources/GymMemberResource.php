@@ -11,6 +11,7 @@ use App\Models\MembershipPlan;
 use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Filament\Forms;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -118,6 +119,8 @@ class GymMemberResource extends Resource
                     ->icon('heroicon-o-ticket')
                     ->description('Configure membership settings')
                     ->schema([
+                        Hidden::make('user_id')
+                            ->default(fn () => auth()->id()),
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name', function ($query) {
                                 if (auth()->user()->hasRole('gym_owner')) {
