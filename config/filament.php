@@ -84,7 +84,7 @@ return [
     |
     */
 
-    'livewire_loading_delay' => 'default',
+    'livewire_loading_delay' => 'none',
 
     /*
     |--------------------------------------------------------------------------
@@ -100,7 +100,7 @@ return [
 
     'widgets' => [
         'dashboard' => [
-            \App\Filament\Widgets\GymStats::class,
+            \App\Filament\Widgets\GymStatsOverview::class,
         ],
     ],
 

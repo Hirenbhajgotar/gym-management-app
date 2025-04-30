@@ -14,10 +14,12 @@
         "filament/filament": "^3.3",
         "joaopaulolndev/filament-general-settings": "^1.0",
         "laravel/framework": "^12.0",
+        "laravel/reverb": "^1.0",
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.1.1",
         "livewire/volt": "^1.7.0",
-        "maatwebsite/excel": "^3.1"
+        "maatwebsite/excel": "^3.1",
+        "malzariey/filament-daterangepicker-filter": "^3.3"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.15",

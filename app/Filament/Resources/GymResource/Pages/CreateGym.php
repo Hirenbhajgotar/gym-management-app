@@ -3,12 +3,18 @@
 namespace App\Filament\Resources\GymResource\Pages;
 
 use App\Filament\Resources\GymResource;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 
 class CreateGym extends CreateRecord
 {
     protected static string $resource = GymResource::class;
+
+    protected function getCreatedNotification(): ?Notification
+    {
+        return null; // Disable default success notification
+    }
 
     protected function beforeCreate(): void
     {
@@ -25,5 +31,10 @@ class CreateGym extends CreateRecord
         //         'gym' => "You have reached the maximum number of gyms ({$maxGyms}) for your plan.",
         //     ]);
         // }
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return GymResource::getUrl('index'); // Redirect to index page after create
     }
 }

@@ -2,10 +2,12 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\GymStatsOverview;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Notifications\Notification;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -36,17 +38,19 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->spa()
+            ->databaseNotifications()
             // ->unsavedChangesAlerts()
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                // Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\AccountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
+                // GymStatsOverview::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -73,4 +77,44 @@ class AdminPanelProvider extends PanelProvider
                     ->setNavigationLabel('General Settings'),
             ]);
     }
+
+    // public function boot()
+    // {
+    //     Notification::macro('fromDatabase', function ($notification) {
+    //         $data = $notification->data;
+    //         $title = '';
+    //         $body = '';
+    //         $icon = 'heroicon-o-bell';
+    //         $color = 'info';
+
+    //         if (isset($data['title'])) {
+    //             $user = auth()->user();
+
+    //             // For gym_owner: Show gym and member-related notifications
+    //             if ($user->hasRole('gym_owner')) {
+    //                 $title = $data['title'];
+    //                 $body = $data['body'] ?? '';
+    //                 $color = $data['color'] ?? 'info';
+    //             }
+
+    //             // For admin: Show all notifications
+    //             if ($user->hasRole('admin')) {
+    //                 $title = $data['title'];
+    //                 $body = $data['body'] ?? '';
+    //                 $color = $data['color'] ?? 'info';
+    //             }
+    //         }
+
+    //         if (! $title) {
+    //             return null;
+    //         }
+
+    //         return Notification::make()
+    //             ->title($title)
+    //             ->body($body)
+    //             ->icon($icon)
+    //             ->color($color)
+    //             ->duration(5000);
+    //     });
+    // }
 }

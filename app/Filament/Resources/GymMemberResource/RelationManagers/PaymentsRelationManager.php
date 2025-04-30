@@ -150,6 +150,7 @@ class PaymentsRelationManager extends RelationManager
                             ->success()
                             ->title('Payment Created')
                             ->body('The payment has been created successfully.')
+                            ->sendToDatabase(auth()->user())
                             ->send();
                     }),
             ])
@@ -190,6 +191,7 @@ class PaymentsRelationManager extends RelationManager
                             ->success()
                             ->title('Payment Updated')
                             ->body('The payment has been updated successfully.')
+                            ->sendToDatabase(auth()->user())
                             ->send();
                     }),
                 // ->cancelParentActions(),

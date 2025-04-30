@@ -144,7 +144,8 @@ class MembershipPlanResource extends Resource
                     ->color('primary'),
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
-                    ->color('danger'),
+                    ->color('danger')
+                    ->successNotification(null),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

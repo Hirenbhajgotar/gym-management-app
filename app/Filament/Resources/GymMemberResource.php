@@ -415,6 +415,7 @@ class GymMemberResource extends Resource
                                     ->title('Template Not Found')
                                     ->body('The Excel template file could not be found.')
                                     ->danger()
+                                    ->sendToDatabase(auth()->user())
                                     ->send();
 
                                 return null; // Stop execution
@@ -468,6 +469,7 @@ class GymMemberResource extends Resource
                                 ->title('Import failed')
                                 ->body($e->getMessage())
                                 ->danger()
+                                ->sendToDatabase(auth()->user())
                                 ->send();
                         }
                     })
