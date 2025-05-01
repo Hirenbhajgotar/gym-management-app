@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -25,10 +24,8 @@ class Dashboard extends BaseDashboard
                             ->options(function () {
                                 return auth()->user()->gyms()->pluck('name', 'id');
                             }),
-                        DatePicker::make('startDate', Carbon::now()->startOfMonth())
-                            ->native(false),
-                        DatePicker::make('endDate', Carbon::now()->endOfMonth())
-                            ->native(false),
+                        DatePicker::make('startDate', null),
+                        DatePicker::make('endDate', null),
                     ])
                     ->columns(3),
             ]);
