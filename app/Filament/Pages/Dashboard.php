@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -15,6 +16,14 @@ class Dashboard extends BaseDashboard
 
     public function filtersForm(Form $form): Form
     {
+        // Generate month-year options (last 12 months)
+        $monthYearOptions = [];
+        $currentDate = Carbon::now();
+        for ($i = 0; $i < 12; $i++) {
+            $date = $currentDate->copy()->subMonths($i);
+            $monthYearOptions[$date->format('Y-m')] = $date->format('F Y'); // e.g., "May 2025"
+        }
+
         return $form
             ->schema([
                 Section::make()
@@ -24,10 +33,16 @@ class Dashboard extends BaseDashboard
                             ->options(function () {
                                 return auth()->user()->gyms()->pluck('name', 'id');
                             }),
-                        DatePicker::make('startDate', null),
-                        DatePicker::make('endDate', null),
+                        // DatePicker::make('startDate', null),
+                        // DatePicker::make('endDate', null),
+                        Select::make('monthYear')
+                            ->label('Select Month')
+                            ->options($monthYearOptions)
+                            ->default($currentDate->format('Y-m')) // Default to current month
+                            ->reactive(),
                     ])
-                    ->columns(3),
-            ]);
+                    ->columns(2),
+            ])
+            ->statePath('filters');
     }
 }
