@@ -5,9 +5,13 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class GymMember extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'gym_id',
         'name',
@@ -44,6 +48,50 @@ class GymMember extends Model
                 }
             }
         });
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'gym.name',
+                'name',
+                'email',
+                'phone',
+                'address',
+                'membership_start',
+                'membership_end',
+                'membershipPlan.name',
+            ])
+            ->useLogName('gym_member')
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        if ($eventName === 'updated') {
+            $changes = $this->getChanges();
+
+            // Remove timestamps from changes
+            unset($changes['updated_at']);
+
+            if (empty($changes)) {
+                return "{$this->name}'s membership was renewed at {$this->gym?->name}";
+            }
+
+            $changedFields = collect($changes)->keys()->map(function ($field) {
+                return str_replace('_', ' ', ucfirst($field));
+            })->implode(', ');
+
+            return "{$this->name}'s information was updated at {$this->gym?->name} (Changed: {$changedFields})";
+        }
+
+        return match ($eventName) {
+            'created' => "{$this->name} joined {$this->gym?->name}",
+            'deleted' => "{$this->name} was removed from {$this->gym?->name}",
+            default => parent::getDescriptionForEvent($eventName),
+        };
     }
 
     /**

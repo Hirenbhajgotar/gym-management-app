@@ -12,6 +12,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
+use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -219,6 +220,8 @@ class PaymentsRelationManager extends RelationManager
                                 },
                             ]),
                     ]),
+
+                // ActivityLogTimelineTableAction::make('Activities'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
