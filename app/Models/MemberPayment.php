@@ -53,6 +53,11 @@ class MemberPayment extends Model
         return $this->belongsTo(GymMember::class);
     }
 
+    public function gym()
+    {
+        return $this->hasOneThrough(Gym::class, GymMember::class, 'id', 'id', 'gym_member_id', 'gym_id');
+    }
+
     public function membershipPlan()
     {
         return $this->belongsTo(MembershipPlan::class);
