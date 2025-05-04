@@ -45,7 +45,7 @@ class RecentActivity extends BaseWidget
                     ->icon(fn (string $state, Activity $record): string => match ($state) {
                         'created' => match ($record->subject_type) {
                             GymMember::class => 'heroicon-m-user-plus',
-                            MemberPayment::class => 'heroicon-m-currency-dollar',
+                            MemberPayment::class => 'heroicon-m-currency-rupee',
                             default => 'heroicon-m-information-circle',
                         },
                         'updated' => 'heroicon-m-check-circle',
