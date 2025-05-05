@@ -16,6 +16,8 @@ class RecentActivity extends BaseWidget
 
     protected static ?string $pollingInterval = '60s';
 
+    protected static ?int $sort = 5;
+
     public static function canView(): bool
     {
         return auth()->user()->hasRole('gym_owner');

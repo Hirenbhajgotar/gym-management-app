@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -48,17 +50,17 @@ class MemberPayment extends Model
         };
     }
 
-    public function member()
+    public function member(): BelongsTo
     {
         return $this->belongsTo(GymMember::class);
     }
 
-    public function gym()
+    public function gym(): HasOneThrough
     {
         return $this->hasOneThrough(Gym::class, GymMember::class, 'id', 'id', 'gym_member_id', 'gym_id');
     }
 
-    public function membershipPlan()
+    public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class);
     }

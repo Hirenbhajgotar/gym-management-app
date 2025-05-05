@@ -17,6 +17,8 @@ class GymStatsOverview extends BaseWidget
 
     protected static ?string $pollingInterval = '60s'; // Refresh every 60 seconds
 
+    protected static ?int $sort = 1;
+
     public static function canView(): bool
     {
         return auth()->user()->hasRole('gym_owner');

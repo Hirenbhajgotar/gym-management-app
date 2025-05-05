@@ -14,6 +14,8 @@ class MembershipExpiryAlerts extends BaseWidget
 
     protected static ?string $pollingInterval = '60s';
 
+    protected static ?int $sort = 4;
+
     public static function canView(): bool
     {
         return auth()->user()->hasRole('gym_owner');
