@@ -1,0 +1,140 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\City;
+use App\Models\State;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\City>
+ */
+class CityFactory extends Factory
+{
+    protected $model = City::class;
+
+    // Predefined cities for each state (for India and other countries)
+    protected $citiesByState = [
+        // India States
+        'Andhra Pradesh' => ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Tirupati', 'Kadapa', 'Kakinada', 'Anantapur'],
+        'Arunachal Pradesh' => ['Itanagar', 'Naharlagun', 'Pasighat', 'Tezu', 'Roing'],
+        'Assam' => ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon', 'Tinsukia', 'Tezpur', 'Bongaigaon', 'Dhubri', 'Diphu'],
+        'Bihar' => ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Purnia', 'Begusarai', 'Katihar', 'Munger', 'Bihar Sharif'],
+        'Chhattisgarh' => ['Raipur', 'Bhilai', 'Bilaspur', 'Korba', 'Durg', 'Rajnandgaon', 'Jagdalpur', 'Raigarh', 'Ambikapur', 'Dhamtari'],
+        'Goa' => ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
+        'Gujarat' => [
+            'Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar', 'Junagadh', 'Gandhidham', 'Anand',
+            'Navsari', 'Morbi', 'Nadiad', 'Surendranagar', 'Bharuch', 'Mehsana', 'Bhuj', 'Porbandar', 'Palanpur', 'Valsad',
+            'Vapi', 'Gondal', 'Veraval', 'Godhra', 'Patan', 'Kalol', 'Dahod', 'Botad', 'Amreli', 'Deesa',
+            'Jetpur', 'Dhoraji', 'Khambhat', 'Unjha', 'Siddhpur', 'Mansa', 'Keshod', 'Wadhwan', 'Ankleshwar', 'Savarkundla',
+            'Kadi', 'Visnagar', 'Upleta', 'Disa', 'Dabhoi', 'Kapadvanj', 'Modasa', 'Mangrol', 'Viramgam', 'Wankaner',
+            'Padra', 'Himatnagar', 'Borsad', 'Vyara', 'Songadh', 'Talaja', 'Pardi', 'Mahuva', 'Thangadh', 'Umreth',
+            'Lathi', 'Kheda', 'Chhota Udaipur', 'Lunawada', 'Rajpipla', 'Dhandhuka', 'Tharad', 'Halvad', 'Bhabhar', 'Dhrangadhra',
+            'Lakhtar', 'Thara', 'Dhanera', 'Sanand', 'Halol', 'Mandvi', 'Okha', 'Dwarka', 'Kutiyana', 'Salaya',
+            'Sihor', 'Petlad', 'Bardoli', 'Kosamba', 'Anjar', 'Idar', 'Kheralu', 'Vijapur', 'Prantij', 'Chanasma',
+            'Palitana', 'Gariadhar', 'Bilimora', 'Karjan', 'Nadiad', 'Sojitra', 'Matar', 'Khedbrahma', 'Mundra', 'Jambusar',
+            'Amod', 'Gadhada', 'Jasdan', 'Limbdi', 'Palej', 'Sachin', 'Ranpur', 'Chotila', 'Morva Hadaf', 'Radhanpur',
+            'Manavadar', 'Bantva', 'Kodinar', 'Sutrapada', 'Damnagar', 'Umrala', 'Ghogha', 'Bagasara', 'Dhrol', 'Paddhari',
+            'Sayla', 'Muli', 'Nakhatrana', 'Rapar', 'Visavadar', 'Bhanvad', 'Mendarda', 'Vanthali', 'Kalavad', 'Lalpur',
+            'Vadia', 'Shihor', 'Savarkundla', 'Kukma', 'Naliya', 'Dayapar', 'Mahuva (Bhavnagar)', 'Mahuva (Surat)', 'Mandvi (Surat)', 'Kavant',
+            'Devgadh Baria', 'Santrampur', 'Garbada', 'Meghraj', 'Malia', 'Vadnagar', 'Danta', 'Thasra', 'Balasinor', 'Savli',
+            'Waghai', 'Chikhli', 'Vansda', 'Olpad', 'Kathor', 'Palsana', 'Kamrej', 'Utran', 'Adalaj', 'Matar',
+            'Mansa', 'Galteshwar', 'Umbergaon', 'Dediapada', 'Sagbara', 'Halol', 'Shinor', 'Ghoghamba', 'Jhalod', 'Limkheda',
+            'Dhanpur', 'Fatepura', 'Danta', 'Amirgadh', 'Dantiwada', 'Vadgam', 'Vav', 'Suigam', 'Lakhni', 'Deodar', 'Kankrej',
+        ],
+        'Haryana' => ['Faridabad', 'Gurgaon', 'Hisar', 'Rohtak', 'Panipat', 'Karnal', 'Sonipat', 'Yamunanagar', 'Panchkula', 'Bhiwani'],
+        'Himachal Pradesh' => ['Shimla', 'Dharamshala', 'Solan', 'Mandi', 'Palampur', 'Baddi', 'Nahan', 'Una', 'Kullu', 'Hamirpur'],
+        'Jharkhand' => ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro Steel City', 'Deoghar', 'Hazaribagh', 'Giridih', 'Ramgarh', 'Phusro', 'Chas'],
+        'Karnataka' => ['Bangalore', 'Mysore', 'Hubli-Dharwad', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davanagere', 'Bellary', 'Bijapur', 'Shimoga'],
+        'Kerala' => ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam', 'Kannur', 'Alappuzha', 'Kottayam', 'Palakkad', 'Malappuram'],
+        'Madhya Pradesh' => ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Dewas', 'Satna', 'Ratlam', 'Rewa'],
+        'Maharashtra' => ['Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Aurangabad', 'Solapur', 'Amravati', 'Kolhapur', 'Akola'],
+        'Manipur' => ['Imphal', 'Thoubal', 'Bishnupur', 'Churachandpur', 'Kakching'],
+        'Meghalaya' => ['Shillong', 'Tura', 'Nongstoin', 'Jowai', 'Williamnagar'],
+        'Mizoram' => ['Aizawl', 'Lunglei', 'Saiha', 'Champhai', 'Kolasib'],
+        'Nagaland' => ['Kohima', 'Dimapur', 'Mokokchung', 'Tuensang', 'Wokha'],
+        'Odisha' => ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur', 'Puri', 'Balasore', 'Bhadrak', 'Baripada', 'Jharsuguda'],
+        'Punjab' => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali', 'Hoshiarpur', 'Batala', 'Pathankot', 'Moga'],
+        'Rajasthan' => ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara', 'Alwar', 'Sikar', 'Pali'],
+        'Sikkim' => ['Gangtok', 'Namchi', 'Gyalshing', 'Mangan'],
+        'Tamil Nadu' => ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thoothukudi', 'Dindigul'],
+        'Telangana' => ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Ramagundam', 'Mahbubnagar', 'Nalgonda', 'Adilabad', 'Suryapet'],
+        'Tripura' => ['Agartala', 'Udaipur', 'Dharmanagar', 'Kailasahar', 'Belonia'],
+        'Uttar Pradesh' => ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi', 'Meerut', 'Allahabad (Prayagraj)', 'Bareilly', 'Aligarh', 'Moradabad'],
+        'Uttarakhand' => ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani', 'Rudrapur', 'Kashipur', 'Rishikesh', 'Pithoragarh', 'Nainital', 'Almora'],
+        'West Bengal' => ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Bardhaman', 'Malda', 'Berhampore', 'Jalpaiguri', 'Kharagpur'],
+        'Andaman and Nicobar Islands' => ['Port Blair'],
+        'Chandigarh' => ['Chandigarh'],
+        'Dadra and Nagar Haveli and Daman and Diu' => ['Daman', 'Diu', 'Silvassa'],
+        'Delhi' => ['New Delhi'],
+        'Jammu and Kashmir' => ['Srinagar', 'Jammu', 'Anantnag', 'Baramulla', 'Kathua', 'Sopore', 'Udhampur', 'Bandipora', 'Kupwara', 'Pulwama'],
+        'Ladakh' => ['Leh', 'Kargil'],
+        'Lakshadweep' => ['Kavaratti'],
+        'Puducherry' => ['Puducherry', 'Karaikal', 'Mahe', 'Yanam'],
+        // USA States
+        'California' => ['Los Angeles', 'San Diego', 'San Jose', 'San Francisco', 'Fresno'],
+        'Texas' => ['Houston', 'San Antonio', 'Dallas', 'Austin', 'Fort Worth'],
+        'Florida' => ['Miami', 'Tampa', 'Orlando', 'Jacksonville', 'Tallahassee'],
+        'New York' => ['New York City', 'Buffalo', 'Rochester', 'Yonkers', 'Syracuse'],
+        'Illinois' => ['Chicago', 'Aurora', 'Naperville', 'Joliet', 'Rockford'],
+        // Canada Provinces
+        'Ontario' => ['Toronto', 'Ottawa', 'Mississauga', 'Brampton', 'Hamilton'],
+        'Quebec' => ['Montreal', 'Quebec City', 'Laval', 'Gatineau', 'Longueuil'],
+        'British Columbia' => ['Vancouver', 'Surrey', 'Burnaby', 'Richmond', 'Kelowna'],
+        'Alberta' => ['Calgary', 'Edmonton', 'Red Deer', 'Lethbridge', 'St. Albert'],
+        'Manitoba' => ['Winnipeg', 'Brandon', 'Steinbach', 'Thompson', 'Portage la Prairie'],
+        // Australia States
+        'New South Wales' => ['Sydney', 'Newcastle', 'Wollongong', 'Maitland', 'Tamworth'],
+        'Victoria' => ['Melbourne', 'Geelong', 'Ballarat', 'Bendigo', 'Shepparton'],
+        'Queensland' => ['Brisbane', 'Gold Coast', 'Cairns', 'Townsville', 'Toowoomba'],
+        'Western Australia' => ['Perth', 'Fremantle', 'Bunbury', 'Kalgoorlie', 'Albany'],
+        'South Australia' => ['Adelaide', 'Mount Gambier', 'Whyalla', 'Murray Bridge', 'Port Augusta'],
+        // UK Regions
+        'England' => ['London', 'Birmingham', 'Manchester', 'Liverpool', 'Leeds'],
+        'Scotland' => ['Glasgow', 'Edinburgh', 'Aberdeen', 'Dundee', 'Inverness'],
+        'Wales' => ['Cardiff', 'Swansea', 'Newport', 'Wrexham', 'Barry'],
+        'Northern Ireland' => ['Belfast', 'Derry', 'Lisburn', 'Newry', 'Armagh'],
+        'Greater London' => ['London', 'Croydon', 'Barnet', 'Ealing', 'Bromley'],
+        // Japan Prefectures
+        'Tokyo' => ['Shinjuku', 'Shibuya', 'Chiyoda', 'Minato', 'Tachikawa'],
+        'Osaka' => ['Osaka City', 'Sakai', 'Higashiosaka', 'Toyonaka', 'Suita'],
+        'Hokkaido' => ['Sapporo', 'Asahikawa', 'Hakodate', 'Kushiro', 'Obihiro'],
+        'Kyoto' => ['Kyoto City', 'Uji', 'Kameoka', 'Maizuru', 'Fukuchiyama'],
+        'Fukuoka' => ['Fukuoka City', 'Kitakyushu', 'Kurume', 'Omuta', 'Iizuka'],
+        // Germany States
+        'Bavaria' => ['Munich', 'Nuremberg', 'Augsburg', 'Regensburg', 'Wurzburg'],
+        'North Rhine-Westphalia' => ['Cologne', 'Dusseldorf', 'Dortmund', 'Essen', 'Bonn'],
+        'Baden-Württemberg' => ['Stuttgart', 'Karlsruhe', 'Mannheim', 'Freiburg', 'Heidelberg'],
+        'Hesse' => ['Frankfurt', 'Wiesbaden', 'Darmstadt', 'Kassel', 'Offenbach'],
+        'Saxony' => ['Leipzig', 'Dresden', 'Chemnitz', 'Zwickau', 'Plauen'],
+    ];
+
+    public function definition(): array
+    {
+        return [
+            'state_id' => State::factory(),
+            'name' => $this->faker->city(),
+            'status' => $this->faker->boolean(90), // 90% chance of being active (1)
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    // Define a method to set the state_id and use real city names
+    public function forState($stateId, $stateName)
+    {
+        $cities = $this->citiesByState[$stateName] ?? [];
+
+        return $this->state(function () use ($stateId, $cities) {
+            $cityName = $this->faker->randomElement($cities) ?? $this->faker->city();
+
+            return [
+                'state_id' => $stateId,
+                'name' => $cityName,
+                'slug' => Str::slug($cityName),
+                'status' => 1,
+            ];
+        });
+    }
+}
