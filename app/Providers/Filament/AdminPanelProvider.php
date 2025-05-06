@@ -7,7 +7,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Notifications\Notification;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -31,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->registration()
+            // ->registration()
             ->passwordReset()
             ->emailVerification()
             ->profile(isSimple: false)
@@ -79,44 +78,4 @@ class AdminPanelProvider extends PanelProvider
                 // ActivitylogPlugin::make(),
             ]);
     }
-
-    // public function boot()
-    // {
-    //     Notification::macro('fromDatabase', function ($notification) {
-    //         $data = $notification->data;
-    //         $title = '';
-    //         $body = '';
-    //         $icon = 'heroicon-o-bell';
-    //         $color = 'info';
-
-    //         if (isset($data['title'])) {
-    //             $user = auth()->user();
-
-    //             // For gym_owner: Show gym and member-related notifications
-    //             if ($user->hasRole('gym_owner')) {
-    //                 $title = $data['title'];
-    //                 $body = $data['body'] ?? '';
-    //                 $color = $data['color'] ?? 'info';
-    //             }
-
-    //             // For admin: Show all notifications
-    //             if ($user->hasRole('admin')) {
-    //                 $title = $data['title'];
-    //                 $body = $data['body'] ?? '';
-    //                 $color = $data['color'] ?? 'info';
-    //             }
-    //         }
-
-    //         if (! $title) {
-    //             return null;
-    //         }
-
-    //         return Notification::make()
-    //             ->title($title)
-    //             ->body($body)
-    //             ->icon($icon)
-    //             ->color($color)
-    //             ->duration(5000);
-    //     });
-    // }
 }
