@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\GymMember;
 use App\Models\User;
+use App\Models\GymMember;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class GymMemberPolicy

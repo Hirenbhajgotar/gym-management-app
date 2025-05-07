@@ -57,13 +57,13 @@ class User extends Authenticatable implements FilamentUser
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return $this->hasRole(['admin', 'gym_owner']);
+        return $this->hasRole(['super_admin', 'gym_owner']);
     }
 
     public function gyms()
