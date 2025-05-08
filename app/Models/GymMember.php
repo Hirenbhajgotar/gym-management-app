@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
@@ -10,7 +11,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class GymMember extends Model
 {
-    use LogsActivity;
+    use LogsActivity, HasFactory;
 
     protected $fillable = [
         'gym_id',
@@ -101,7 +102,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 

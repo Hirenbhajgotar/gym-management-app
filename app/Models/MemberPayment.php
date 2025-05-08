@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
@@ -11,7 +12,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class MemberPayment extends Model
 {
-    use LogsActivity;
+    use LogsActivity, HasFactory;
 
     protected $fillable = [
         'member_id',

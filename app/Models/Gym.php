@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Observers\GymObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 #[ObservedBy([GymObserver::class])]
 class Gym extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'address',

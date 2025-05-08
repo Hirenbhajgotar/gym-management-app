@@ -12,11 +12,18 @@ class MembershipPlanObserver
      */
     public function created(MembershipPlan $membershipPlan): void
     {
+        $recipient = $membershipPlan?->owner ?? auth()->user();
+
+        // Skip sending notification if no recipient is available (e.g., during seeding)
+        if (!$recipient) {
+            return;
+        }
+
         Notification::make()
             ->title('New Subscription Plan Added')
             ->body("Subscription Plan '{$membershipPlan->name}' has been added successfully.")
             ->success()
-            ->sendToDatabase($membershipPlan?->owner ?? auth()->user())
+            ->sendToDatabase($recipient)
             ->send();
     }
 
@@ -33,12 +40,19 @@ class MembershipPlanObserver
      */
     public function deleted(MembershipPlan $membershipPlan): void
     {
+        $recipient = $membershipPlan?->owner ?? auth()->user();
+
+        // Skip sending notification if no recipient is available (e.g., during seeding)
+        if (!$recipient) {
+            return;
+        }
+
         $planName = $membershipPlan->name;
         Notification::make()
             ->title("{$planName} removed")
             ->body("Subscription Plan '{$planName}' has been removed successfully.")
             ->danger()
-            ->sendToDatabase($membershipPlan?->owner ?? auth()->user())
+            ->sendToDatabase($recipient)
             ->send();
     }
 
