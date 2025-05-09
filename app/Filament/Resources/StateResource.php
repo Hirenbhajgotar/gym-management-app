@@ -34,6 +34,14 @@ class StateResource extends Resource
         return parent::getEloquentQuery()->whereHas('country', function ($country) {
             $country->active();
         });
+
+        // return parent::getEloquentQuery()
+        //     ->select('states.*') // Select only states columns to avoid ambiguity
+        //     ->join('countries', function ($join) {
+        //         $join->on('states.country_id', '=', 'countries.id')
+        //             ->where('countries.status', 1); // Only active countries
+        //     })
+        //     ->with('country'); // Eager load country to avoid N+1 queries
     }
 
     public static function getFormSchema()
@@ -69,7 +77,7 @@ class StateResource extends Resource
                         $set('slug', Str::slug($record->name));
                     }
                 }),
-            Forms\Components\Toggle::make('status')
+            Forms\Components\Toggle::make('states.status')
                 ->default(true),
         ];
     }
@@ -91,7 +99,7 @@ class StateResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('status')
+                Tables\Columns\IconColumn::make('states.status')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -103,7 +111,9 @@ class StateResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('country_id')
+                    ->relationship('country', 'name')
+                    ->label('Country'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

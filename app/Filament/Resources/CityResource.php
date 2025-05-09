@@ -4,11 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CityResource\Pages;
 use App\Models\City;
+use App\Models\Country;
 use App\Models\State;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -81,6 +84,7 @@ class CityResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('state.name')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
@@ -98,7 +102,40 @@ class CityResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Filter::make('location')
+                    ->label('Filter by Country & State')
+                    ->form([
+                        Select::make('country_id')
+                            ->label('Country')
+                            ->options(Country::all()->pluck('name', 'id'))
+                            ->reactive()
+                            ->afterStateUpdated(fn(callable $set) => $set('state_id', null)),
+
+                        Select::make('state_id')
+                            ->label('State')
+                            ->options(function (callable $get) {
+                                $countryId = $get('country_id');
+
+                                if (!$countryId) {
+                                    return [];
+                                }
+
+                                return State::where('country_id', $countryId)->pluck('name', 'id');
+                            }),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['country_id'] ?? null,
+                                fn($q, $countryId) =>
+                                $q->whereHas('state.country', fn($q) => $q->where('id', $countryId))
+                            )
+                            ->when(
+                                $data['state_id'] ?? null,
+                                fn($q, $stateId) =>
+                                $q->where('state_id', $stateId)
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

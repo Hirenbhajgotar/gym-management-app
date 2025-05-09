@@ -33,10 +33,10 @@ class RecentActivity extends BaseWidget
                         MemberPayment::class,
                     ])
                     ->whereHasMorph('subject', GymMember::class, function ($query) {
-                        $query->whereHas('gym', fn ($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id));
                     })
                     ->orWhereHasMorph('subject', MemberPayment::class, function ($query) {
-                        $query->whereHas('member.gym', fn ($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
                     })
                     ->latest()
                     ->take(5)
@@ -44,7 +44,7 @@ class RecentActivity extends BaseWidget
             ->columns([
                 IconColumn::make('event')
                     ->label('')
-                    ->icon(fn (string $state, Activity $record): string => match ($state) {
+                    ->icon(fn(string $state, Activity $record): string => match ($state) {
                         'created' => match ($record->subject_type) {
                             GymMember::class => 'heroicon-m-user-plus',
                             MemberPayment::class => 'heroicon-m-currency-rupee',
@@ -54,7 +54,7 @@ class RecentActivity extends BaseWidget
                         'deleted' => 'heroicon-m-trash',
                         default => 'heroicon-m-information-circle',
                     })
-                    ->color(fn (string $state, Activity $record): string => match ($state) {
+                    ->color(fn(string $state, Activity $record): string => match ($state) {
                         'created' => match ($record->subject_type) {
                             GymMember::class => 'success',
                             MemberPayment::class => 'info',

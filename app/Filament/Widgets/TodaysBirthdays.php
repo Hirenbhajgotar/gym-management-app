@@ -15,11 +15,16 @@ class TodaysBirthdays extends BaseWidget
 
     // protected int|string|array $columnSpan = 'full';
 
+    public static function canView(): bool
+    {
+        return auth()->user()->hasRole('gym_owner');
+    }
+
     protected function getTableQuery(): Builder
     {
         // Replace with your actual query to fetch members with birthdays today
         return GymMember::query()
-            ->whereHas('gym', fn ($query) => $query->where('owner_id', auth()->user()->id))
+            ->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id))
             ->whereMonth('dob', now()->month)
             ->whereDay('dob', now()->day)
             ->orderBy('name', 'asc');
