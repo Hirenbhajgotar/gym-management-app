@@ -67,7 +67,7 @@ class CityResource extends Resource
                 Forms\Components\TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
-                    ->unique(State::class, 'slug', ignoreRecord: true)
+                    ->unique(City::class, 'slug', ignoreRecord: true)
                     ->afterStateHydrated(function ($state, callable $set, $record) {
                         if (! $state && $record) {
                             $set('slug', Str::slug($record->name));

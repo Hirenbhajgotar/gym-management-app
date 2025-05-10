@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
+use Database\Factories\CityFactory;
 use Database\Factories\StateFactory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -63,13 +64,18 @@ class CountryStateSeeder extends Seeder
 
             // Create 5 cities for each state
             foreach ($stateIds as $stateData) {
-                City::factory()
-                    ->forState($stateData['id'], $stateData['name'])
-                    ->create([
-                        'status' => 1,
-                    ]);
-                // for ($j = 0; $j < 5; $j++) {
-                // }
+                // Get the predefined cities for this state from the CityFactory
+                $cityFactory = new CityFactory();
+                $cities = $cityFactory->citiesByState[$stateData['name']] ?? [];
+                $cityCount = count($cities);
+
+                for ($j = 0; $j < $cityCount; $j++) {
+                    City::factory()
+                        ->forState($stateData['id'], $stateData['name'])
+                        ->create([
+                            'status' => 1,
+                        ]);
+                }
             }
         }
     }
