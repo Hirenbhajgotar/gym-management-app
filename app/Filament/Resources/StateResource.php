@@ -19,7 +19,7 @@ class StateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Location';
 
     public static function canAccess(array $parameters = []): bool
     {

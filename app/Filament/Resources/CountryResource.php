@@ -16,7 +16,7 @@ class CountryResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-globe-americas';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Location';
 
     public static function canAccess(array $parameters = []): bool
     {
