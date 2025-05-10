@@ -46,8 +46,7 @@ class MembershipPlanResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->visible(fn () => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
-                            ->default(fn () => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
+                            // ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
                             ->placeholder('Select a gym'),
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -70,7 +69,7 @@ class MembershipPlanResource extends Resource
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
-                                fn (Currency $currency) => [$currency->value => $currency->getLabel()]
+                                fn(Currency $currency) => [$currency->value => $currency->getLabel()]
                             ))
                             ->required()
                             ->reactive()
@@ -78,7 +77,7 @@ class MembershipPlanResource extends Resource
                         Forms\Components\Select::make('duration')
                             ->label('Duration (Months)')
                             ->options(collect(DurationMonth::cases())->mapWithKeys(
-                                fn (DurationMonth $duration) => [$duration->value => $duration->getLabel()]
+                                fn(DurationMonth $duration) => [$duration->value => $duration->getLabel()]
                             ))
                             ->required()
                             ->default(DurationMonth::THREE_MONTHS->value),
@@ -108,9 +107,9 @@ class MembershipPlanResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => "<div class='flex items-center gap-2'>
+                    ->formatStateUsing(fn($state) => "<div class='flex items-center gap-2'>
                         <span class='inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-800 rounded-full'>
-                            ".strtoupper(substr($state, 0, 1))."
+                            " . strtoupper(substr($state, 0, 1)) . "
                         </span>
                         <span class='font-semibold'>$state</span>
                     </div>")
@@ -120,7 +119,7 @@ class MembershipPlanResource extends Resource
                     ->badge()
                     ->color('primary'),
                 Tables\Columns\TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency)
+                    ->money(fn($record) => $record->currency)
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
@@ -135,8 +134,7 @@ class MembershipPlanResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name')
-                    ->visible(fn () => auth()->user()->hasRole('super_admin')),
+                    ->relationship('gym', 'name'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -147,11 +145,11 @@ class MembershipPlanResource extends Resource
                     ->color('danger')
                     ->successNotification(null),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            // ->bulkActions([
+            //     Tables\Actions\BulkActionGroup::make([
+            //         Tables\Actions\DeleteBulkAction::make(),
+            //     ]),
+            // ])
             ->modifyQueryUsing(function ($query) {
                 $user = auth()->user();
                 if ($user->hasRole('gym_owner')) {

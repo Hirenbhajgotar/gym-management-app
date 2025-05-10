@@ -14,7 +14,7 @@ class RecentActivity extends BaseWidget
 {
     protected static ?string $heading = 'Recent Activity';
 
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = '900s';
 
     protected static ?int $sort = 5;
 

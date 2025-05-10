@@ -120,7 +120,7 @@ class GymMemberResource extends Resource
                     ->description('Configure membership settings')
                     ->schema([
                         Hidden::make('user_id')
-                            ->default(fn () => auth()->id()),
+                            ->default(fn() => auth()->id()),
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name', function ($query) {
                                 if (auth()->user()->hasRole('gym_owner')) {
@@ -130,7 +130,7 @@ class GymMemberResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->visible(fn () => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
+                            ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
                             ->default(function () {
                                 if (auth()->user()->hasRole('gym_owner')) {
                                     $gym = auth()->user()->gyms()->first();
@@ -142,10 +142,10 @@ class GymMemberResource extends Resource
                             })
                             ->placeholder('Select a gym')
                             ->live()
-                            ->afterStateUpdated(fn (callable $set) => $set('gym_membership_plan_id', null))
+                            ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
                             ->rules([
                                 'required_if:visible,true',
-                                fn ($get) => function ($attribute, $value, $fail) {
+                                fn($get) => function ($attribute, $value, $fail) {
                                     if (auth()->user()->hasRole('gym_owner') && ! $value) {
                                         $fail('You must create a gym before adding members.');
                                     }
@@ -177,7 +177,7 @@ class GymMemberResource extends Resource
                                     ->pluck('name', 'id')
                                     ->toArray();
                             })
-                            ->disabled(fn ($get) => ! $get('gym_id')),
+                            ->disabled(fn($get) => ! $get('gym_id')),
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
                             ->live()
@@ -249,7 +249,7 @@ class GymMemberResource extends Resource
                 Tables\Columns\TextColumn::make('membership_end')
                     ->date()
                     ->badge()
-                    ->color(fn ($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
+                    ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment Status')
                     ->getStateUsing(function ($record) {
@@ -259,7 +259,7 @@ class GymMemberResource extends Resource
                         return $status;
                     })
                     ->badge()
-                    ->color(fn ($state) => $state === 'Paid' ? 'success' : 'danger'),
+                    ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -278,7 +278,7 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->label('Gym')
-                    ->visible(fn () => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner')),
+                    ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner')),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
@@ -307,11 +307,11 @@ class GymMemberResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->visible(fn () => auth()->user()->hasPermissionTo('update_gym::member')),
+                    ->visible(fn() => auth()->user()->hasPermissionTo('update_gym::member')),
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn () => auth()->user()->hasPermissionTo('delete_gym::member'))
+                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member'))
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member')
 
@@ -325,7 +325,7 @@ class GymMemberResource extends Resource
                             ->required()
                             ->rules([
                                 'required',
-                                fn ($get) => function ($attribute, $value, $fail) {
+                                fn($get) => function ($attribute, $value, $fail) {
                                     if (! Hash::check($value, auth()->user()->password)) {
                                         $fail('The password is incorrect.');
                                     }
@@ -348,7 +348,7 @@ class GymMemberResource extends Resource
                                 ->required()
                                 ->rules([
                                     'required',
-                                    fn ($get) => function ($attribute, $value, $fail) {
+                                    fn($get) => function ($attribute, $value, $fail) {
                                         if (! Hash::check($value, auth()->user()->password)) {
                                             $fail('The password is incorrect.');
                                         }
@@ -393,15 +393,15 @@ class GymMemberResource extends Resource
                             }
                         }
 
-                        return Excel::download(new MembersExport($gymId), 'members-'.now()->format('Y-m-d-H-i-s').'.csv');
+                        return Excel::download(new MembersExport($gymId), 'members-' . now()->format('Y-m-d-H-i-s') . '.csv');
                     })
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
+                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
                 Tables\Actions\ActionGroup::make([ // Group the download actions
                     Tables\Actions\Action::make('download_csv_template')
                         ->label('Download CSV Template')
                         ->icon('heroicon-o-document-arrow-down')
-                        ->action(fn () => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
+                        ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
                         ->color('info'),
                     Tables\Actions\Action::make('download_xlsx_template')
                         ->label('Download Excel Template')
@@ -444,14 +444,14 @@ class GymMemberResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->default(fn () => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
+                            ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
                         Forms\Components\FileUpload::make('file')
                             ->label('Upload CSV/XLS')
                             ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
                             ->required()
                             ->storeFiles(false) // Prevent automatic storage
                             ->getUploadedFileNameForStorageUsing(
-                                fn ($file) => 'imports/'.$file->getClientOriginalName()
+                                fn($file) => 'imports/' . $file->getClientOriginalName()
                             ),
                     ])
                     ->action(function (array $data) {
@@ -474,7 +474,7 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
+                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
             ])
             ->modifyQueryUsing(function ($query) {
                 $user = auth()->user();

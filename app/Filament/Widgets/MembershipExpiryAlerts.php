@@ -12,7 +12,7 @@ class MembershipExpiryAlerts extends BaseWidget
 {
     protected static ?string $heading = 'Membership Expiry Alerts';
 
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = '900s';
 
     protected static ?int $sort = 4;
 
@@ -26,7 +26,7 @@ class MembershipExpiryAlerts extends BaseWidget
         return $table
             ->query(
                 GymMember::query()
-                    ->whereHas('gym', fn ($query) => $query->where('owner_id', auth()->user()->id))
+                    ->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id))
                     ->where('membership_end', '<=', now()->addDays(15)) // Expired or expiring within 15 days
                     ->orderBy('membership_end', 'asc')
                     ->take(5)
@@ -46,7 +46,7 @@ class MembershipExpiryAlerts extends BaseWidget
                     ->sortable(),
                 BadgeColumn::make('status')
                     ->label('Status')
-                    ->getStateUsing(fn ($record) => $record->membership_end < now() ? 'Expired' : 'Expiring Soon')
+                    ->getStateUsing(fn($record) => $record->membership_end < now() ? 'Expired' : 'Expiring Soon')
                     ->colors([
                         'danger' => 'Expired',
                         'warning' => 'Expiring Soon',

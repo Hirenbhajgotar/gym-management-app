@@ -26,11 +26,11 @@ class ListCountries extends ListRecords
             'all' => Tab::make('All')->badge(Country::query()->count())
                 ->icon('heroicon-o-globe-alt'),
             'active' => Tab::make('Active')
-                ->modifyQueryUsing(fn(Builder $query) => $query->active())
+                ->modifyQueryUsing(fn (Builder $query) => $query->active())
                 ->badge(Country::query()->active()->count())
                 ->icon('heroicon-o-check-circle'),
             'inactive' => Tab::make('Inactive')
-                ->modifyQueryUsing(fn(Builder $query) => $query->inActive())
+                ->modifyQueryUsing(fn (Builder $query) => $query->inActive())
                 ->badge(Country::query()->inactive()->count())
                 ->icon('heroicon-o-x-circle'),
         ];

@@ -23,6 +23,11 @@ class PlanResource extends Resource
         return auth()->user()->hasRole('super_admin');
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -118,7 +123,7 @@ class PlanResource extends Resource
                                             ->label('Feature Value')
                                             ->placeholder('e.g., "Yes" or "10 GB"'),
                                     ])
-                                    ->itemLabel(fn (array $state): ?string => $state['feature_name'] ?? null)
+                                    ->itemLabel(fn(array $state): ?string => $state['feature_name'] ?? null)
                                     ->collapsible()
                                     ->defaultItems(0)
                                     ->addActionLabel('Add Feature')
@@ -153,8 +158,8 @@ class PlanResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('slug')->searchable(),
-                Tables\Columns\TextColumn::make('price_monthly')->money(fn ($record) => $record->currency)->sortable(),
-                Tables\Columns\TextColumn::make('price_yearly')->money(fn ($record) => $record->currency)->sortable(),
+                Tables\Columns\TextColumn::make('price_monthly')->money(fn($record) => $record->currency)->sortable(),
+                Tables\Columns\TextColumn::make('price_yearly')->money(fn($record) => $record->currency)->sortable(),
                 Tables\Columns\TextColumn::make('currency')->searchable(),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
                 Tables\Columns\TextColumn::make('trial_days')->numeric()->sortable(),

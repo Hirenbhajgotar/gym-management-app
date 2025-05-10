@@ -11,7 +11,7 @@ class GymRevenueChart extends ChartWidget
 {
     protected static ?string $heading = 'Monthly Revenue (Past 12 Months)';
 
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = '900s';
 
     protected static ?int $sort = 2;
 
@@ -44,12 +44,12 @@ class GymRevenueChart extends ChartWidget
 
         // Base query for MemberPayment
         $query = MemberPayment::query()
-            ->whereHas('member.gym', fn ($query) => $query->where('owner_id', auth()->user()->id));
+            ->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
 
         // Apply gym filter if not "All Gyms"
         $selectedGym = $this->filter;
         if ($selectedGym && $selectedGym !== 'all') {
-            $query->whereHas('member.gym', fn ($query) => $query->where('id', $selectedGym));
+            $query->whereHas('member.gym', fn($query) => $query->where('id', $selectedGym));
         }
 
         $payments = Trend::query($query)
