@@ -145,11 +145,11 @@ class MembershipPlanResource extends Resource
                     ->color('danger')
                     ->successNotification(null),
             ])
-            // ->bulkActions([
-            //     Tables\Actions\BulkActionGroup::make([
-            //         Tables\Actions\DeleteBulkAction::make(),
-            //     ]),
-            // ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->modifyQueryUsing(function ($query) {
                 $user = auth()->user();
                 if ($user->hasRole('gym_owner')) {

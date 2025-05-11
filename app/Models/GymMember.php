@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -27,6 +28,7 @@ class GymMember extends Model
         'membership_start',
         'membership_end',
         'gym_membership_plan_id',
+        'trainer_id',
         'user_id',
     ];
 
@@ -63,6 +65,7 @@ class GymMember extends Model
                 'membership_start',
                 'membership_end',
                 'membershipPlan.name',
+                'trainer.name',
             ])
             ->useLogName('gym_member')
             ->logOnlyDirty()
@@ -106,6 +109,20 @@ class GymMember extends Model
             ->implode('');
     }
 
+    public function avatar(): string
+    {
+        if ($this->profile_photo) {
+            return $this->profile_photo;
+        }
+
+        $name = urlencode($this->name);
+        $size = 40;
+        $background = 'random';
+        $color = 'FFFFFF';
+
+        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
+    }
+
     public function gym()
     {
         return $this->belongsTo(Gym::class, 'gym_id');
@@ -114,6 +131,11 @@ class GymMember extends Model
     public function membershipPlan()
     {
         return $this->belongsTo(MembershipPlan::class, 'gym_membership_plan_id');
+    }
+
+    public function trainer(): BelongsTo
+    {
+        return $this->belongsTo(Trainer::class);
     }
 
     public function user()

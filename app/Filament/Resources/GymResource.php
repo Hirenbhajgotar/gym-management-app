@@ -125,8 +125,8 @@ class GymResource extends Resource
     {
         return [
             'index' => Pages\ListGyms::route('/'),
-            'create' => Pages\CreateGym::route('/create'),
-            'edit' => Pages\EditGym::route('/{record}/edit'),
+            // 'create' => Pages\CreateGym::route('/create'),
+            // 'edit' => Pages\EditGym::route('/{record}/edit'),
         ];
     }
 }

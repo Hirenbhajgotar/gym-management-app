@@ -17,4 +17,9 @@ class EditMembershipPlan extends EditRecord
                 ->successNotification(null),
         ];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return MembershipPlanResource::getUrl('index'); // Redirect to index page after create
+    }
 }

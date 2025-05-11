@@ -6,6 +6,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
+use App\Models\Trainer;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -41,6 +42,12 @@ class GymOwnerSeeder extends Seeder
                 $numPlans = rand(1, 3);
                 $plans = MembershipPlan::factory()
                     ->count($numPlans)
+                    ->create(['gym_id' => $gym->id]);
+
+                // Create 1-3 trainers for each gym
+                $numTrainers = rand(1, 3);
+                Trainer::factory()
+                    ->count($numTrainers)
                     ->create(['gym_id' => $gym->id]);
 
                 // Create 1-5 Gym Members for each gym

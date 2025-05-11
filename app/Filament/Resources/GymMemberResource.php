@@ -8,6 +8,7 @@ use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationMa
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
+use App\Models\Trainer;
 use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -30,7 +31,7 @@ class GymMemberResource extends Resource
 
     protected static ?string $navigationLabel = 'Members';
 
-    protected static ?string $navigationGroup = 'Gym Management';
+    protected static ?string $navigationGroup = 'Users';
 
     // Restrict to admins or gym owners with gyms
     public static function canAccess(array $parameters = []): bool
@@ -178,6 +179,26 @@ class GymMemberResource extends Resource
                                     ->toArray();
                             })
                             ->disabled(fn($get) => ! $get('gym_id')),
+                        Forms\Components\Select::make('trainer_id')
+                            ->label('Assign Trainer')
+                            ->options(function (callable $get) {
+                                $gymId = $get('gym_id');
+                                if (!$gymId) {
+                                    return [];
+                                }
+                                return Trainer::where('gym_id', $gymId)
+                                    ->available()
+                                    ->pluck('name', 'id')
+                                    ->prepend('None', null); // Allow "No Trainer" option
+                            })
+                            ->reactive()
+                            ->nullable()
+                            ->afterStateHydrated(function ($state, callable $set, $record) {
+                                if (!$state && $record) {
+                                    $set('trainer_id', null);
+                                }
+                            })
+                            ->helperText('Leave as "None" if the member does not want a personal trainer.'),
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
                             ->live()
@@ -277,8 +298,7 @@ class GymMemberResource extends Resource
                             return $query;
                         }
                     })
-                    ->label('Gym')
-                    ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner')),
+                    ->label('Gym'),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name')
                     ->label('Plan'),
