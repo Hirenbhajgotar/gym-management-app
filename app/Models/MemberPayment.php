@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ class MemberPayment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_date' => 'date',
+        'status' => PaymentStatus::class,
     ];
 
     public function getActivitylogOptions(): LogOptions

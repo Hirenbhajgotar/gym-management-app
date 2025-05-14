@@ -266,10 +266,12 @@ class GymMemberResource extends Resource
                 Tables\Columns\TextColumn::make('membership_start')
                     ->date()
                     ->badge()
+                    ->icon('heroicon-o-calendar')
                     ->color('info'),
                 Tables\Columns\TextColumn::make('membership_end')
                     ->date()
                     ->badge()
+                    ->icon('far-calendar-alt')
                     ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment Status')
@@ -281,6 +283,7 @@ class GymMemberResource extends Resource
                     })
                     ->badge()
                     ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
+
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -354,28 +357,28 @@ class GymMemberResource extends Resource
                     ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->requiresConfirmation()
-                        ->modalHeading('Delete Selected Members')
-                        ->modalDescription('Are you sure you want to delete these members? This action requires password confirmation.')
-                        ->modalSubmitActionLabel('Confirm Delete')
-                        ->form([
-                            Forms\Components\TextInput::make('password')
-                                ->label('Your Password')
-                                ->revealable()
-                                ->password()
-                                ->required()
-                                ->rules([
-                                    'required',
-                                    fn($get) => function ($attribute, $value, $fail) {
-                                        if (! Hash::check($value, auth()->user()->password)) {
-                                            $fail('The password is incorrect.');
-                                        }
-                                    },
-                                ]),
-                        ]),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make()
+                //         ->requiresConfirmation()
+                //         ->modalHeading('Delete Selected Members')
+                //         ->modalDescription('Are you sure you want to delete these members? This action requires password confirmation.')
+                //         ->modalSubmitActionLabel('Confirm Delete')
+                //         ->form([
+                //             Forms\Components\TextInput::make('password')
+                //                 ->label('Your Password')
+                //                 ->revealable()
+                //                 ->password()
+                //                 ->required()
+                //                 ->rules([
+                //                     'required',
+                //                     fn($get) => function ($attribute, $value, $fail) {
+                //                         if (! Hash::check($value, auth()->user()->password)) {
+                //                             $fail('The password is incorrect.');
+                //                         }
+                //                     },
+                //                 ]),
+                //         ]),
+                // ]),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('export_members')

@@ -32,6 +32,13 @@ class TrainerResource extends Resource
         return $user->hasRole(['super_admin', 'gym_owner']);
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        /** @var class-string<Model> $modelClass */
+        $modelClass = static::$model;
+        return (string) $modelClass::count();
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()

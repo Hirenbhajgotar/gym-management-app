@@ -69,13 +69,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
-                FilamentGeneralSettingsPlugin::make()
-                    ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
-                    ->setSort(3)
-                    ->setIcon('heroicon-o-cog')
-                    ->setNavigationGroup('Settings')
-                    ->setTitle('General Settings')
-                    ->setNavigationLabel('General Settings'),
+                // FilamentGeneralSettingsPlugin::make()
+                //     ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
+                //     ->setSort(3)
+                //     ->setIcon('heroicon-o-cog')
+                //     ->setNavigationGroup('Settings')
+                //     ->setTitle('General Settings')
+                //     ->setNavigationLabel('General Settings'),
                 PhosphorIcons::make(),
 
                 // ActivitylogPlugin::make(),
