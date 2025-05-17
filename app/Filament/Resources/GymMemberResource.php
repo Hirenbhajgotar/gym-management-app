@@ -38,7 +38,7 @@ class GymMemberResource extends Resource
     {
         $user = auth()->user();
 
-        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
+        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
     }
 
     public static function form(Form $form): Form
@@ -131,16 +131,15 @@ class GymMemberResource extends Resource
                                 return $query;
                             })
                             ->required()
-                            ->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('gym_owner'))
-                            ->default(function () {
-                                if (auth()->user()->hasRole('gym_owner')) {
-                                    $gym = auth()->user()->gyms()->first();
+                            // ->default(function () {
+                            //     if (auth()->user()->hasRole('gym_owner')) {
+                            //         $gym = auth()->user()->gyms()->first();
 
-                                    return $gym ? $gym->id : null;
-                                }
+                            //         return $gym ? $gym->id : null;
+                            //     }
 
-                                return null;
-                            })
+                            //     return null;
+                            // })
                             ->placeholder('Select a gym')
                             ->live()
                             ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
@@ -232,14 +231,14 @@ class GymMemberResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('profile_photo')
                     ->circular()
-                    ->defaultImageUrl(function ($record) {
-                        $name = urlencode($record->name);
-                        $size = 40;
-                        $background = 'random';
-                        $color = 'FFFFFF';
+                    // ->defaultImageUrl(function ($record) {
+                    //     $name = urlencode($record->name);
+                    //     $size = 40;
+                    //     $background = 'random';
+                    //     $color = 'FFFFFF';
 
-                        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
-                    })
+                    //     return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
+                    // })
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
                 Tables\Columns\TextColumn::make('name')
@@ -271,7 +270,7 @@ class GymMemberResource extends Resource
                 Tables\Columns\TextColumn::make('membership_end')
                     ->date()
                     ->badge()
-                    ->icon('far-calendar-alt')
+                    ->icon('heroicon-o-calendar')
                     ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment Status')
@@ -466,8 +465,8 @@ class GymMemberResource extends Resource
 
                                 return $query;
                             })
-                            ->required()
-                            ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
+                            ->required(),
+                        // ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
                         Forms\Components\FileUpload::make('file')
                             ->label('Upload CSV/XLS')
                             ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
@@ -504,8 +503,24 @@ class GymMemberResource extends Resource
                 if ($user->hasRole('gym_owner')) {
                     $query->whereIn('gym_id', $user->gyms()->pluck('id'));
                 }
-
                 return $query;
+                // $optimizedQuery = $query
+                //     ->select('gym_members.*')
+                //     ->leftJoin('gyms', 'gym_members.gym_id', '=', 'gyms.id')
+                //     ->leftJoin('membership_plans', 'gym_members.gym_membership_plan_id', '=', 'membership_plans.id')
+                //     ->leftJoin('member_payments', function ($join) {
+                //         $join->on('gym_members.id', '=', 'member_payments.member_id')
+                //             ->where('member_payments.status', 'completed');
+                //     })
+                //     ->groupBy('gym_members.id')
+                //     ->with(['gym', 'membershipPlan'])
+                //     ->addSelect([
+                //         'has_completed_payment' => DB::raw('IF(COUNT(member_payments.id) > 0, 1, 0)')
+                //     ]);
+
+                // Log::info('GymMemberResource Query', ['query' => $optimizedQuery->toSql(), 'bindings' => $optimizedQuery->getBindings()]);
+
+                // return $optimizedQuery;
             })
             ->defaultSort('name')
             ->striped();

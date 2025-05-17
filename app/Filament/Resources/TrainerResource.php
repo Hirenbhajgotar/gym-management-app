@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -34,9 +35,17 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        /** @var class-string<Model> $modelClass */
-        $modelClass = static::$model;
-        return (string) $modelClass::count();
+        return cache()->remember('trainer_navigation_badge_count_' . auth()->id(), now()->addMinutes(15), function () {
+            /** @var class-string<Model> $modelClass */
+            $modelClass = static::$model;
+            $query = $modelClass::query();
+            if (auth()->user()->hasRole('gym_owner')) {
+                $query->whereHas('gym', function ($q) {
+                    $q->where('owner_id', auth()->id());
+                });
+            }
+            return (string) $query->count();
+        });
     }
 
     public static function getEloquentQuery(): Builder
@@ -64,6 +73,14 @@ class TrainerResource extends Resource
                     ->relationship('gym', 'name')
                     ->required()
                     ->options(function () {
+                        // Cache gym options to avoid duplicate queries
+                        // return cache()->remember('trainers_gym_options_' . auth()->id(), now()->addHours(2), function () {
+                        //     if (auth()->user()->hasRole('gym_owner')) {
+                        //         return Gym::where('owner_id', auth()->id())->pluck('name', 'id');
+                        //     }
+                        //     return Gym::pluck('name', 'id');
+                        // });
+
                         if (auth()->user()->hasRole('gym_owner')) {
                             return Gym::where('owner_id', auth()->id())->pluck('name', 'id');
                         }
@@ -154,6 +171,15 @@ class TrainerResource extends Resource
                         if (auth()->user()->hasRole('super_admin')) {
                             return $query;
                         }
+                        // Cache gym options for the filter
+                        // return cache()->remember('trainers_gym_filter_options_' . auth()->id(), now()->addHours(2), function () use ($query) {
+                        //     if (auth()->user()->hasRole('gym_owner')) {
+                        //         return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                        //     }
+                        //     if (auth()->user()->hasRole('super_admin')) {
+                        //         return $query;
+                        //     }
+                        // });
                     })
                     ->label('Gym'),
                 Tables\Filters\Filter::make('basic_salary')
@@ -176,9 +202,9 @@ class TrainerResource extends Resource
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ]);
     }
 

@@ -26,7 +26,7 @@ class MembershipPlanResource extends Resource
     {
         $user = auth()->user();
 
-        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner') && $user->gyms()->exists());
+        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
     }
 
     public static function form(Form $form): Form
