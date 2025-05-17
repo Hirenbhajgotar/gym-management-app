@@ -231,14 +231,6 @@ class GymMemberResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('profile_photo')
                     ->circular()
-                    // ->defaultImageUrl(function ($record) {
-                    //     $name = urlencode($record->name);
-                    //     $size = 40;
-                    //     $background = 'random';
-                    //     $color = 'FFFFFF';
-
-                    //     return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
-                    // })
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
                 Tables\Columns\TextColumn::make('name')
@@ -272,16 +264,16 @@ class GymMemberResource extends Resource
                     ->badge()
                     ->icon('heroicon-o-calendar')
                     ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
-                Tables\Columns\TextColumn::make('payment_status')
-                    ->label('Payment Status')
-                    ->getStateUsing(function ($record) {
-                        $payment = $record->payments()->where('status', 'completed')->first();
-                        $status = $payment ? 'Paid' : 'Unpaid';
+                // Tables\Columns\TextColumn::make('payment_status')
+                //     ->label('Payment Status')
+                //     ->getStateUsing(function ($record) {
+                //         $payment = $record->payments()->where('status', 'completed')->first();
+                //         $status = $payment ? 'Paid' : 'Unpaid';
 
-                        return $status;
-                    })
-                    ->badge()
-                    ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
+                //         return $status;
+                //     })
+                //     ->badge()
+                //     ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
 
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
