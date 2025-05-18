@@ -25,7 +25,9 @@ class PlanResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        return cache()->remember('plan_navigation_badge_count_' . auth()->id(), now()->addMinutes(15), function () {
+            return static::getModel()::count();
+        });
     }
 
     public static function form(Form $form): Form

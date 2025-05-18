@@ -250,10 +250,10 @@ class GymMemberResource extends Resource
                     ->label('Gym')
                     ->badge()
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('membershipPlan.name')
-                    ->label('Plan')
-                    ->badge()
-                    ->color('success'),
+                // Tables\Columns\TextColumn::make('membershipPlan.name')
+                //     ->label('Plan')
+                //     ->badge()
+                //     ->color('success'),
                 Tables\Columns\TextColumn::make('membership_start')
                     ->date()
                     ->badge()
