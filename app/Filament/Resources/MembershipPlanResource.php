@@ -134,7 +134,14 @@ class MembershipPlanResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name'),
+                    ->relationship('gym', 'name', function ($query) {
+                        if (auth()->user()->hasRole('gym_owner')) {
+                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                        }
+                        if (auth()->user()->hasRole('super_admin')) {
+                            return $query;
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

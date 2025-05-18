@@ -85,9 +85,7 @@ class GymResource extends Resource
                     ->alignCenter(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('owner_id')
-                    ->relationship('owner', 'name')
-                    ->label('Owner'),
+                // 
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
