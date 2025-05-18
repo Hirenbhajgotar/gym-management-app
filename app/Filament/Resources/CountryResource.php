@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Clusters\Location;
 use App\Filament\Resources\CountryResource\Pages;
 use App\Models\Country;
 use Filament\Forms;
@@ -14,9 +15,11 @@ class CountryResource extends Resource
 {
     protected static ?string $model = Country::class;
 
+    protected static ?string $cluster = Location::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-globe-americas';
 
-    protected static ?string $navigationGroup = 'Location';
+    protected static ?int $navigationSort = 3;
 
     public static function canAccess(array $parameters = []): bool
     {

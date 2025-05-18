@@ -17,6 +17,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
+    protected static ?int $navigationSort = 1;
+
     // Restrict to admins or gym owners with gyms
     public static function canAccess(array $parameters = []): bool
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Clusters\Location;
 use App\Filament\Resources\CityResource\Pages;
 use App\Models\City;
 use App\Models\Country;
@@ -20,9 +21,11 @@ class CityResource extends Resource
 {
     protected static ?string $model = City::class;
 
+    protected static ?string $cluster = Location::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationGroup = 'Location';
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(array $parameters = []): bool
     {

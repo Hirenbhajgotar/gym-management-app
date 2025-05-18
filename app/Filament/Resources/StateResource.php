@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Clusters\Location;
 use App\Filament\Resources\StateResource\Pages;
 use App\Models\Country;
 use App\Models\State;
@@ -17,9 +18,11 @@ class StateResource extends Resource
 {
     protected static ?string $model = State::class;
 
+    protected static ?string $cluster = Location::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
-    protected static ?string $navigationGroup = 'Location';
+    protected static ?int $navigationSort = 2;
 
     public static function canAccess(array $parameters = []): bool
     {

@@ -17,6 +17,8 @@ class PlanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
+    protected static ?int $navigationSort = 3;
+
     // Restrict access to admins only
     public static function canAccess(array $parameters = []): bool
     {
