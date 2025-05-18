@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\GymResource\Pages;
+use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -39,11 +40,10 @@ class GymResource extends Resource
                             ->placeholder('e.g., Fitness Hub')
                             ->autofocus()
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\Textarea::make('address')
-                            ->maxLength(65535)
-                            ->placeholder('e.g., 123 Fitness Street, City, Country')
-                            ->rows(4)
-                            ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
+                        AddressForm::make('address')
+                            ->columnSpan('full'),
+
                         Forms\Components\Hidden::make('owner_id')
                             ->default(auth()->id()),
                     ])
@@ -67,7 +67,7 @@ class GymResource extends Resource
                         <span class='font-semibold'>$state</span>
                     </div>")
                     ->html(),
-                Tables\Columns\TextColumn::make('address')
+                Tables\Columns\TextColumn::make('address.fullAddress')
                     ->limit(50)
                     ->tooltip(fn($state) => $state)
                     ->wrap(),

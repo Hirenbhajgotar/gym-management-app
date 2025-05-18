@@ -6,6 +6,8 @@ namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -66,7 +68,7 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasRole(['super_admin', 'gym_owner']);
     }
 
-    public function gyms()
+    public function gyms(): HasMany
     {
         return $this->hasMany(Gym::class, 'owner_id');
     }
