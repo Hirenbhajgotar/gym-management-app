@@ -59,14 +59,7 @@ class GymResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->sortable()
-                    ->formatStateUsing(fn($state) => "<div class='flex items-center gap-2'>
-                        <span class='inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full'>
-                            " . strtoupper(substr($state, 0, 1)) . "
-                        </span>
-                        <span class='font-semibold'>$state</span>
-                    </div>")
-                    ->html(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('address.fullAddress')
                     ->limit(50)
                     ->tooltip(fn($state) => $state)

@@ -67,7 +67,7 @@ class AddressForm extends Field
                         ->live()
                         ->afterStateUpdated(fn(callable $set) => $set('state_id', null)),
                     Forms\Components\Select::make('state_id')
-                        ->label('State')
+                        ->label('State / Province')
                         ->options(function (callable $get) {
                             $countryId = $get('country_id');
                             if (!$countryId) {
@@ -99,7 +99,7 @@ class AddressForm extends Field
             Forms\Components\Grid::make(3)
                 ->schema([
                     Forms\Components\TextInput::make('postal_code')
-                        ->label('Postal Code')
+                        ->label('Zip / Postal code')
                         ->maxLength(20),
                     Forms\Components\TextInput::make('latitude')
                         ->label('Latitude')

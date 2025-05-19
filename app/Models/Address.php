@@ -47,13 +47,15 @@ class Address extends Model
     {
         return Attribute::make(
             get: function ($value) {
-                return implode(', ', array_filter([
-                    $this->street,
-                    $this->city?->name,
-                    $this->state?->name,
-                    $this->country?->name,
-                    $this->postal_code,
-                ]));
+                $address = $this->street . ', ' . $this->postal_code . ' ' . $this->city?->name;
+                return $address;
+                // return implode(', ', array_filter([
+                //     $this->street,
+                //     $this->city?->name,
+                //     $this->state?->name,
+                //     $this->country?->name,
+                //     $this->postal_code,
+                // ]));
             },
         );
     }
