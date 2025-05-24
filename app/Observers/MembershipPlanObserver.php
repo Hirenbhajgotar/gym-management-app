@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\MembershipPlan;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 
 class MembershipPlanObserver
@@ -25,6 +26,8 @@ class MembershipPlanObserver
             ->success()
             ->sendToDatabase($recipient)
             ->send();
+
+        event(new DatabaseNotificationsSent($recipient));
     }
 
     /**
@@ -54,6 +57,8 @@ class MembershipPlanObserver
             ->danger()
             ->sendToDatabase($recipient)
             ->send();
+
+        event(new DatabaseNotificationsSent($recipient));
     }
 
     /**

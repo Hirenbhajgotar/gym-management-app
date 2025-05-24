@@ -7,6 +7,7 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Rules\ValidPhone;
 use Carbon\Carbon;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -109,17 +110,17 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                         if (! File::exists($importsDir)) {
                             File::makeDirectory($importsDir, 0755, true);
                         } elseif (! is_writable($importsDir)) {
-                            throw new \Exception('Imports directory is not writable: '.$importsDir);
+                            throw new \Exception('Imports directory is not writable: ' . $importsDir);
                         }
 
                         // Generate failed rows CSV
                         $timestamp = time();
                         $filePath = 'app/imports/';
                         $fileName = "failed_rows_{$timestamp}.csv";
-                        $path = storage_path($filePath.$fileName);
+                        $path = storage_path($filePath . $fileName);
                         $file = fopen($path, 'w');
                         if ($file === false) {
-                            throw new \Exception('Failed to open file for writing: '.$path);
+                            throw new \Exception('Failed to open file for writing: ' . $path);
                         }
                         $headers = array_merge(array_keys($this->failedRows[0]), ['error']);
                         fputcsv($file, $headers);
@@ -132,6 +133,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                         $downloadPath = "imports/failed_rows_{$timestamp}.csv";
                         Storage::disk('local')->put($downloadPath, file_get_contents($path));
 
+                        $recipient = auth()->user();
                         // Notify user
                         Notification::make()
                             ->title('Some rows failed to import')
@@ -143,13 +145,20 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                                     ->openUrlInNewTab(),
                             ])
                             ->warning()
+                            ->sendToDatabase($recipient)
                             ->send();
+
+                        event(new DatabaseNotificationsSent($recipient));
                     } catch (\Exception $e) {
+                        $recipient = auth()->user();
                         Notification::make()
                             ->title('Import partially failed')
                             ->body('Some rows could not be imported due to missing membership plans. Failed to generate error report.')
                             ->warning()
+                            ->sendToDatabase($recipient)
                             ->send();
+
+                        event(new DatabaseNotificationsSent($recipient));
                     }
                 } else {
                     Notification::make()

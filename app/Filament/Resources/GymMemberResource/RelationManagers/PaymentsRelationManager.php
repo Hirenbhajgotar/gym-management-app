@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -147,12 +148,16 @@ class PaymentsRelationManager extends RelationManager
                     ])
                     ->action(function ($data) {
                         $record = $this->getRelationship()->create(collect($data)->except(['password'])->toArray());
+                        $recipient = auth()->user();
+
                         Notification::make()
                             ->success()
                             ->title('Payment Created')
                             ->body('The payment has been created successfully.')
-                            ->sendToDatabase(auth()->user())
+                            ->sendToDatabase($recipient)
                             ->send();
+
+                        event(new DatabaseNotificationsSent($recipient));
                     }),
             ])
             ->actions([
@@ -188,12 +193,16 @@ class PaymentsRelationManager extends RelationManager
                     ])
                     ->action(function ($data, $record) {
                         $record->update(collect($data)->except(['password'])->toArray());
+                        $recipient = auth()->user();
+
                         Notification::make()
                             ->success()
                             ->title('Payment Updated')
                             ->body('The payment has been updated successfully.')
-                            ->sendToDatabase(auth()->user())
+                            ->sendToDatabase($recipient)
                             ->send();
+
+                        event(new DatabaseNotificationsSent($recipient));
                     }),
                 // ->cancelParentActions(),
 

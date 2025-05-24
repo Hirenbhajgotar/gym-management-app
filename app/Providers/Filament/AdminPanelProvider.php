@@ -43,7 +43,8 @@ class AdminPanelProvider extends PanelProvider
                 'Users',
                 'Gym Management',
             ])
-            // ->databaseNotifications()
+            ->databaseNotifications()
+            ->databaseNotificationsPolling(null)
             // ->unsavedChangesAlerts()
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

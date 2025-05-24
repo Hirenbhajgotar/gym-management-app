@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -432,6 +433,7 @@ class GymMemberResource extends Resource
                             if (! file_exists($path)) {
                                 // Optionally create a basic one on the fly if it doesn't exist
                                 // Or just throw an error/notification
+
                                 Notification::make()
                                     ->title('Template Not Found')
                                     ->body('The Excel template file could not be found.')
@@ -486,12 +488,15 @@ class GymMemberResource extends Resource
                             Excel::import(new GymMembersImport($data['gym_id']), $filePath);
                         } catch (\Exception $e) {
                             Log::error('Import failed:', ['error' => $e->getMessage()]);
+                            $recipient = auth()->user();
                             Notification::make()
                                 ->title('Import failed')
                                 ->body($e->getMessage())
                                 ->danger()
-                                ->sendToDatabase(auth()->user())
+                                ->sendToDatabase($recipient)
                                 ->send();
+
+                            event(new DatabaseNotificationsSent($recipient));
                         }
                     })
                     ->requiresConfirmation()

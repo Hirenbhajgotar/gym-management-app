@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Gym;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 
 class GymObserver
@@ -12,12 +13,16 @@ class GymObserver
      */
     public function created(Gym $gym): void
     {
+        $recipient = $gym?->owner ?? auth()->user();
+
         Notification::make()
             ->title('New Gym Added')
             ->body("Gym '{$gym->name}' has been added successfully.")
             ->success()
-            ->sendToDatabase($gym?->owner ?? auth()->user())
+            ->sendToDatabase($recipient)
             ->send();
+
+        event(new DatabaseNotificationsSent($recipient));
     }
 
     /**
@@ -33,13 +38,16 @@ class GymObserver
      */
     public function deleted(Gym $gym): void
     {
+        $recipient = $gym?->owner ?? auth()->user();
         $gymName = $gym->name;
         Notification::make()
             ->title("{$gymName} removed")
             ->body("Gym '{$gymName}' has been removed successfully.")
             ->danger()
-            ->sendToDatabase($gym?->owner ?? auth()->user())
+            ->sendToDatabase($recipient)
             ->send();
+
+        event(new DatabaseNotificationsSent($recipient));
     }
 
     /**
