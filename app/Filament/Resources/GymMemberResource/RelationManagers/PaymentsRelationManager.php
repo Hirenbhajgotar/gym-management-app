@@ -4,6 +4,9 @@ namespace App\Filament\Resources\GymMemberResource\RelationManagers;
 
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Models\MembershipPlan;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
@@ -12,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
 
@@ -24,16 +28,38 @@ class PaymentsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Section::make('Payment Details')
-                    ->icon('heroicon-o-currency-dollar')
+                    ->icon('heroicon-o-credit-card')
                     ->description('Record a payment for this member')
                     ->schema([
                         Forms\Components\Hidden::make('member_id')
                             ->default(fn($livewire) => $livewire->ownerRecord->id),
                         Forms\Components\Select::make('membership_plan_id')
-                            ->relationship('membershipPlan', 'name')
+                            ->label('Membership Plan')
+                            ->placeholder('Select a membership plan')
+                            ->reactive()
                             ->required()
-                            ->default(fn($livewire) => $livewire->ownerRecord->gym_membership_plan_id)
-                            ->disabled()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                if ($state) {
+                                    $plan = MembershipPlan::find($state);
+                                    if ($plan && $plan->duration) {
+                                        $start = $get('membership_start') ?? now();
+                                        $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+                                        $set('amount', $plan->price);
+                                    }
+                                }
+                            })
+                            ->options(function (callable $get) {
+                                $gymId = $this->ownerRecord->gym_id;
+                                if (! $gymId) {
+                                    return [];
+                                }
+
+                                return MembershipPlan::query()
+                                    ->where('gym_id', $gymId)
+                                    ->where('is_active', true)
+                                    ->pluck('name', 'id')
+                                    ->toArray();
+                            })
                             ->dehydrated(true),
                         Forms\Components\TextInput::make('amount')
                             ->numeric()
@@ -45,7 +71,6 @@ class PaymentsRelationManager extends RelationManager
                             })
                             ->minValue(0)
                             ->step(0.01)
-                            ->default(fn($livewire) => $livewire->ownerRecord->membershipPlan->price ?? 0)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
@@ -60,23 +85,43 @@ class PaymentsRelationManager extends RelationManager
                             ))
                             ->required()
                             ->default(PaymentMethod::CASH->value),
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'completed' => 'Completed',
-                                'pending' => 'Pending',
-                            ])
+                        Forms\Components\DatePicker::make('membership_start')
+                            ->placeholder('Select start date')
+                            ->live()
                             ->required()
-                            ->default('completed'),
+                            ->default(now())
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                $planId = $get('membership_plan_id');
+                                if ($planId && $state) {
+                                    $plan = MembershipPlan::find($planId);
+                                    if ($plan && $plan->duration) {
+                                        $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+                                    }
+                                }
+                            }),
+                        Forms\Components\DatePicker::make('membership_end')
+                            ->placeholder('Auto-calculated based on plan')
+                            ->required(),
+                        // Forms\Components\Select::make('status')
+                        //     ->options([
+                        //         'completed' => 'Completed',
+                        //         'pending' => 'Pending',
+                        //     ])
+                        //     ->required()
+                        //     ->default('completed'),
+                        Forms\Components\ToggleButtons::make('status')
+                            ->inline()
+                            ->options(PaymentStatus::class)
+                            ->required(),
                         Forms\Components\Textarea::make('notes')
                             ->maxLength(65535)
                             ->placeholder('e.g., Paid via UPI ID: user@upi')
                             ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\DatePicker::make('payment_date')
                             ->required()
-                            ->default(now())
-                            ->native(false),
+                            ->default(now()),
                     ])
-                    ->collapsible()
                     ->columns(2),
             ])
             ->columns(1);
@@ -121,7 +166,8 @@ class PaymentsRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->steps([
-                        Step::make('password_confirmation')
+                        Step::make('Password Confirmation')
+                            ->icon('heroicon-o-lock-closed')
                             ->description('Please enter your password to confirm this action')
                             ->schema([
                                 Forms\Components\TextInput::make('password')
@@ -142,12 +188,47 @@ class PaymentsRelationManager extends RelationManager
                                         },
                                     ]),
                             ]),
-                        Step::make('payment_details')
+                        Step::make('Payment Details')
+                            ->icon('heroicon-o-credit-card')
                             ->description('Enter payment information')
                             ->schema($this->form(new Form($this))->getComponents()),
                     ])
                     ->action(function ($data) {
-                        $record = $this->getRelationship()->create(collect($data)->except(['password'])->toArray());
+                        // Map payment status to gym_members payment_status
+                        $statusMap = [
+                            'pending' => 0,
+                            'completed' => 1,
+                            'failed' => 2,
+                            'expired' => 3,
+                        ];
+
+                        // Get the member record
+                        $member = $this->ownerRecord;
+
+                        // Get the previous payment (if any) to mark it as expired
+                        $lastPayment = $this->getRelationship()
+                            ->where('member_id', $member->id)
+                            ->where('status', 'completed')
+                            ->orderBy('payment_date', 'desc')
+                            ->first();
+
+                        // Create the new payment
+                        $paymentData = collect($data)->except(['password'])->toArray();
+                        $record = $this->getRelationship()->create($paymentData);
+
+                        // Update the member's payment_status based on the new payment's status
+                        $member->update([
+                            'payment_status' => $statusMap[$paymentData['status']] ?? 0,
+                        ]);
+
+                        // If there was a previous payment, mark it as expired
+                        if ($lastPayment) {
+                            $lastPayment->update([
+                                'status' => 'expired',
+                            ]);
+                        }
+
+                        // $record = $this->getRelationship()->create(collect($data)->except(['password'])->toArray());
                         $recipient = auth()->user();
 
                         Notification::make()
@@ -166,7 +247,8 @@ class PaymentsRelationManager extends RelationManager
                     ->color('primary')
                     ->modalHeading(fn($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
                     ->steps([
-                        Step::make('password_confirmation')
+                        Step::make('Password Confirmation')
+                            ->icon('heroicon-o-lock-closed')
                             ->description('Please enter your password to confirm this action')
                             ->schema([
                                 Forms\Components\TextInput::make('password')
@@ -187,12 +269,30 @@ class PaymentsRelationManager extends RelationManager
                                         },
                                     ]),
                             ]),
-                        Step::make('payment_details')
+                        Step::make('Payment Details')
+                            ->icon('heroicon-o-credit-card')
                             ->description('Update payment information')
                             ->schema($this->form(new Form($this))->getComponents()),
                     ])
                     ->action(function ($data, $record) {
-                        $record->update(collect($data)->except(['password'])->toArray());
+                        // Map payment status to gym_members payment_status
+                        $statusMap = [
+                            'pending' => 0,
+                            'completed' => 1,
+                            'failed' => 2,
+                            'expired' => 3,
+                        ];
+
+                        // Update the payment record
+                        $paymentData = collect($data)->except(['password'])->toArray();
+                        $record->update($paymentData);
+
+                        // Update the member's payment_status based on the updated payment's status
+                        $member = $this->ownerRecord;
+                        $member->update([
+                            'payment_status' => $statusMap[$paymentData['status']] ?? 0,
+                        ]);
+
                         $recipient = auth()->user();
 
                         Notification::make()
@@ -237,6 +337,10 @@ class PaymentsRelationManager extends RelationManager
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('payment_date', 'desc');
+            ->modifyQueryUsing(function (Builder $query) {
+                // Sort by status (completed first) and then by payment_date (desc)
+                return $query->orderByRaw("CASE WHEN status = 'completed' THEN 0 ELSE 1 END")
+                    ->orderBy('payment_date', 'desc');
+            });
     }
 }

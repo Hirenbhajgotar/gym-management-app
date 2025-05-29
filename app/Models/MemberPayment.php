@@ -24,11 +24,15 @@ class MemberPayment extends Model
         'status',
         'notes',
         'payment_date',
+        'membership_start',
+        'membership_end',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_date' => 'date',
+        'membership_start' => 'date',
+        'membership_end' => 'date',
         'status' => PaymentStatus::class,
     ];
 
@@ -36,7 +40,7 @@ class MemberPayment extends Model
     {
         return LogOptions::defaults()
             ->useLogName('member_payment')
-            ->logOnly(['member.name', 'membershipPlan.name', 'amount', 'currency', 'payment_method', 'status', 'notes', 'payment_date'])
+            ->logOnly(['member.name', 'membershipPlan.name', 'amount', 'currency', 'payment_method', 'status', 'notes', 'payment_date', 'membership_start', 'membership_end'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

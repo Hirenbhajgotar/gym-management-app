@@ -14,12 +14,15 @@ enum PaymentStatus: string implements HasLabel, HasColor, HasIcon
 
     case FAILED = 'failed';
 
+    case EXPIRED = 'expired';
+
     public function getLabel(): string
     {
         return match ($this) {
             self::PENDING => 'Pending',
             self::COMPLETED => 'Completed',
             self::FAILED => 'Failed',
+            self::EXPIRED => 'Expired',
         };
     }
 
@@ -29,6 +32,7 @@ enum PaymentStatus: string implements HasLabel, HasColor, HasIcon
             self::PENDING => 'warning',
             self::COMPLETED => 'success',
             self::FAILED => 'danger',
+            self::EXPIRED => 'danger',
         };
     }
 
@@ -38,6 +42,7 @@ enum PaymentStatus: string implements HasLabel, HasColor, HasIcon
             self::PENDING => 'heroicon-m-arrow-path',
             self::COMPLETED => 'heroicon-m-check-badge',
             self::FAILED => 'heroicon-m-x-circle',
+            self::EXPIRED => 'heroicon-m-clock',
         };
     }
 }

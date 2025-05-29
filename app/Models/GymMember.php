@@ -30,6 +30,7 @@ class GymMember extends Model
         'dob',
         'membership_start',
         'membership_end',
+        'payment_status',
         'gym_membership_plan_id',
         'trainer_id',
         'user_id',
