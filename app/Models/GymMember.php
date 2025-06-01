@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Observers\GymMemberObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -43,6 +44,7 @@ class GymMember extends Model
         'weight' => 'decimal:2',
         'height' => 'decimal:2',
         'age' => 'integer',
+        'payment_status' => PaymentStatus::class,
     ];
 
     protected static function booted()

@@ -15,9 +15,13 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Container\Attributes\Log;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log as FacadesLog;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
+
+use function Illuminate\Log\log;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -194,14 +198,6 @@ class PaymentsRelationManager extends RelationManager
                             ->schema($this->form(new Form($this))->getComponents()),
                     ])
                     ->action(function ($data) {
-                        // Map payment status to gym_members payment_status
-                        $statusMap = [
-                            'pending' => 0,
-                            'completed' => 1,
-                            'failed' => 2,
-                            'expired' => 3,
-                        ];
-
                         // Get the member record
                         $member = $this->ownerRecord;
 
@@ -218,7 +214,7 @@ class PaymentsRelationManager extends RelationManager
 
                         // Update the member's payment_status based on the new payment's status
                         $member->update([
-                            'payment_status' => $statusMap[$paymentData['status']] ?? 0,
+                            'payment_status' => $paymentData['status'] ?? null,
                         ]);
 
                         // If there was a previous payment, mark it as expired
@@ -246,6 +242,22 @@ class PaymentsRelationManager extends RelationManager
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
                     ->modalHeading(fn($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
+                    ->visible(function ($record) {
+                        return $record->status->value !== PaymentStatus::EXPIRED->value; // Hide Edit button for expired payments
+                    })
+                    ->before(function ($record) {
+                        // Prevent access via URL for expired payments
+                        if ($record->status->value === PaymentStatus::EXPIRED->value) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Action Not Allowed')
+                                ->body('This payment is expired and cannot be edited. Please create a new payment for corrections.')
+                                ->persistent()
+                                ->send();
+
+                            throw new \Exception('Cannot edit an expired payment.');
+                        }
+                    })
                     ->steps([
                         Step::make('Password Confirmation')
                             ->icon('heroicon-o-lock-closed')
@@ -275,14 +287,6 @@ class PaymentsRelationManager extends RelationManager
                             ->schema($this->form(new Form($this))->getComponents()),
                     ])
                     ->action(function ($data, $record) {
-                        // Map payment status to gym_members payment_status
-                        $statusMap = [
-                            'pending' => 0,
-                            'completed' => 1,
-                            'failed' => 2,
-                            'expired' => 3,
-                        ];
-
                         // Update the payment record
                         $paymentData = collect($data)->except(['password'])->toArray();
                         $record->update($paymentData);
@@ -290,7 +294,7 @@ class PaymentsRelationManager extends RelationManager
                         // Update the member's payment_status based on the updated payment's status
                         $member = $this->ownerRecord;
                         $member->update([
-                            'payment_status' => $statusMap[$paymentData['status']] ?? 0,
+                            'payment_status' => $paymentData['status'] ?? null,
                         ]);
 
                         $recipient = auth()->user();
@@ -309,7 +313,9 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member'))
+                    ->visible(function ($record) {
+                        return auth()->user()->hasPermissionTo('delete_gym::member') && $record->status->value !== PaymentStatus::EXPIRED->value; // Hide Delete button for expired payments
+                    })
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member Payment')
                     ->modalDescription('Are you sure you want to delete this payment? This action requires password confirmation.')
@@ -340,7 +346,7 @@ class PaymentsRelationManager extends RelationManager
             ->modifyQueryUsing(function (Builder $query) {
                 // Sort by status (completed first) and then by payment_date (desc)
                 return $query->orderByRaw("CASE WHEN status = 'completed' THEN 0 ELSE 1 END")
-                    ->orderBy('payment_date', 'desc');
+                    ->orderBy('payment_date', 'desc')->orderBy('created_at', 'desc');
             });
     }
 }

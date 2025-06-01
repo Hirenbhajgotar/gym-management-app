@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Str;
 
 class GymMemberResource extends Resource
 {
@@ -143,7 +144,7 @@ class GymMemberResource extends Resource
                             // })
                             ->placeholder('Select a gym')
                             ->live()
-                            ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
+                            // ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
                             ->rules([
                                 'required_if:visible,true',
                                 fn($get) => function ($attribute, $value, $fail) {
@@ -152,33 +153,33 @@ class GymMemberResource extends Resource
                                     }
                                 },
                             ]),
-                        Forms\Components\Select::make('gym_membership_plan_id')
-                            ->label('Membership Plan')
-                            ->required()
-                            ->placeholder('Select a membership plan')
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                if ($state) {
-                                    $plan = MembershipPlan::find($state);
-                                    if ($plan && $plan->duration) {
-                                        $start = $get('membership_start') ?? now();
-                                        $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
-                                    }
-                                }
-                            })
-                            ->options(function (callable $get) {
-                                $gymId = $get('gym_id');
-                                if (! $gymId) {
-                                    return [];
-                                }
+                        // Forms\Components\Select::make('gym_membership_plan_id')
+                        //     ->label('Membership Plan')
+                        //     ->required()
+                        //     ->placeholder('Select a membership plan')
+                        //     ->reactive()
+                        //     ->afterStateUpdated(function ($state, callable $set, $get) {
+                        //         if ($state) {
+                        //             $plan = MembershipPlan::find($state);
+                        //             if ($plan && $plan->duration) {
+                        //                 $start = $get('membership_start') ?? now();
+                        //                 $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+                        //             }
+                        //         }
+                        //     })
+                        //     ->options(function (callable $get) {
+                        //         $gymId = $get('gym_id');
+                        //         if (! $gymId) {
+                        //             return [];
+                        //         }
 
-                                return MembershipPlan::query()
-                                    ->where('gym_id', $gymId)
-                                    ->where('is_active', true)
-                                    ->pluck('name', 'id')
-                                    ->toArray();
-                            })
-                            ->disabled(fn($get) => ! $get('gym_id')),
+                        //         return MembershipPlan::query()
+                        //             ->where('gym_id', $gymId)
+                        //             ->where('is_active', true)
+                        //             ->pluck('name', 'id')
+                        //             ->toArray();
+                        //     })
+                        //     ->disabled(fn($get) => ! $get('gym_id')),
                         Forms\Components\Select::make('trainer_id')
                             ->label('Assign Trainer')
                             ->options(function (callable $get) {
@@ -199,26 +200,26 @@ class GymMemberResource extends Resource
                                 }
                             })
                             ->helperText('Leave as "None" if the member does not want a personal trainer.'),
-                        Forms\Components\DatePicker::make('membership_start')
-                            ->placeholder('Select start date')
-                            ->live()
-                            ->native(false)
-                            ->default(now())
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $planId = $get('gym_membership_plan_id');
-                                if ($planId && $state) {
-                                    $plan = MembershipPlan::find($planId);
-                                    if ($plan && $plan->duration) {
-                                        $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
-                                    }
-                                }
-                            }),
-                        Forms\Components\DatePicker::make('membership_end')
-                            ->placeholder('Auto-calculated based on plan')
-                            ->disabled()
-                            ->native(false)
-                            ->dehydrated(false),
+                        // Forms\Components\DatePicker::make('membership_start')
+                        //     ->placeholder('Select start date')
+                        //     ->live()
+                        //     ->native(false)
+                        //     ->default(now())
+                        //     ->reactive()
+                        //     ->afterStateUpdated(function ($state, callable $set, $get) {
+                        //         $planId = $get('gym_membership_plan_id');
+                        //         if ($planId && $state) {
+                        //             $plan = MembershipPlan::find($planId);
+                        //             if ($plan && $plan->duration) {
+                        //                 $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+                        //             }
+                        //         }
+                        //     }),
+                        // Forms\Components\DatePicker::make('membership_end')
+                        //     ->placeholder('Auto-calculated based on plan')
+                        //     ->disabled()
+                        //     ->native(false)
+                        //     ->dehydrated(false),
                     ])
                     ->collapsible()
                     ->columns(2),
@@ -261,20 +262,82 @@ class GymMemberResource extends Resource
                     ->icon('heroicon-o-calendar')
                     ->color('info'),
                 Tables\Columns\TextColumn::make('membership_end')
-                    ->date()
-                    ->badge()
-                    ->icon('heroicon-o-calendar')
-                    ->color(fn($state) => now()->greaterThan($state) ? 'danger' : 'warning'),
-                // Tables\Columns\TextColumn::make('payment_status')
-                //     ->label('Payment Status')
-                //     ->getStateUsing(function ($record) {
-                //         $payment = $record->payments()->where('status', 'completed')->first();
-                //         $status = $payment ? 'Paid' : 'Unpaid';
+                    ->formatStateUsing(function ($state) {
+                        if (!$state) {
+                            return 'Not Set';
+                        }
 
-                //         return $status;
-                //     })
-                //     ->badge()
-                //     ->color(fn($state) => $state === 'Paid' ? 'success' : 'danger'),
+                        $now = now(); // June 1, 2025
+                        $membershipEnd = Carbon::parse(date('Y-m-d', strtotime($state)));
+
+                        // Check if membership has already expired
+                        if ($now->greaterThan($membershipEnd)) {
+                            return 'Expired';
+                        }
+
+                        // Check if membership ends within 2 months (on or before July 31, 2025)
+                        $diffInMonths = $now->diffInMonths($membershipEnd, false);
+                        if ($diffInMonths <= 2 && $diffInMonths >= 0) {
+                            $diffInDays = round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
+                            return "Expire in {$diffInDays} " . Str::plural('day', $diffInDays);
+                        }
+
+                        // Otherwise, show as a regular date
+                        return $membershipEnd->toFormattedDateString(); // e.g., "Aug 15, 2025"
+                    })
+                    ->badge()
+                    ->icon(function ($state) {
+                        if (!$state) {
+                            return 'heroicon-o-calendar'; // Default icon for "Not Set"
+                        }
+
+                        $now = now(); // June 1, 2025, 12:43 AM IST
+                        $membershipEnd = Carbon::parse($state);
+
+                        // Check if membership has already expired
+                        if ($now->greaterThan($membershipEnd)) {
+                            return 'heroicon-m-x-circle'; // Icon for expired
+                        }
+
+                        // Check if membership ends within 2 months (on or before July 31, 2025)
+                        $diffInMonths = $now->diffInMonths($membershipEnd, false);
+                        if ($diffInMonths <= 2 && $diffInMonths >= 0) {
+                            return 'heroicon-o-exclamation-circle'; // Icon for nearing expiration
+                        }
+
+                        // Default icon for more than 2 months
+                        return 'heroicon-o-calendar';
+                    })
+                    ->color(function ($state) {
+                        if (!$state) {
+                            return 'gray'; // Default color for "Not Set"
+                        }
+
+                        $now = now(); // June 1, 2025
+                        $membershipEnd = Carbon::parse($state);
+
+                        $diffInDays = $now->diffInDays($membershipEnd, false);
+                        if ($diffInDays <= 60 && $diffInDays >= 14) {
+                            return 'warning';
+                        }
+
+                        // Check if membership has expired or is within 2 weeks
+                        if ($diffInDays <= 14 && $diffInDays >= 0 || $now->greaterThan($membershipEnd)) {
+                            return 'danger';
+                        }
+
+                        // Check if membership ends within 1 month (on or before July 1, 2025)
+                        $diffInMonths = $now->diffInMonths($membershipEnd, false);
+                        if ($diffInMonths <= 2 && $diffInDays > 14) {
+                            return 'warning';
+                        }
+
+                        // More than 2 month
+                        return 'info';
+                    }),
+                Tables\Columns\TextColumn::make('payment_status')
+                    ->label('Payment Status')
+                    ->badge(),
 
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
