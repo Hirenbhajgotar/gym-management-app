@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Currency;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Resources\GymMemberResource\Pages;
 use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
@@ -47,184 +50,197 @@ class GymMemberResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Personal Information')
-                    ->icon('heroicon-o-user')
-                    ->description('Enter the member\'s personal details')
+                Forms\Components\Group::make()
                     ->schema([
-                        Forms\Components\FileUpload::make('profile_photo')
-                            ->image()
-                            ->avatar()
-                            ->imageEditor()
-                            ->circleCropper()
-                            ->directory('member-photos')
-                            ->maxSize(2048)
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('e.g., John Doe')
-                            ->autofocus()
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\TextInput::make('email')
-                            ->email()
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(GymMember::class, 'email', ignoreRecord: true)
-                            ->rules(['email:rfc'])
-                            ->validationMessages([
-                                'email' => 'Please enter a valid email address.',
-                                'email.rfc' => 'The email format is invalid.',
-                                'email.dns' => 'The email domain does not exist.',
-                            ])
-                            ->placeholder('e.g., john.doe@example.com')
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\TextInput::make('phone')
-                            ->tel()
-                            ->maxLength(255)
-                            ->rules([new ValidPhone])
-                            ->validationMessages([
-                                'phone' => 'The phone must be a valid 10-digit phone number.',
-                            ])
-                            ->placeholder('e.g., 9876543210')
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\Textarea::make('address')
-                            ->maxLength(65535)
-                            ->placeholder('e.g., 123 Fitness Street, City')
-                            ->rows(4)
-                            ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\TextInput::make('weight')
-                            ->numeric()
-                            ->suffix('kg')
-                            ->step(0.01)
-                            ->minValue(0)
-                            ->maxValue(500)
-                            ->placeholder('e.g., 75.5'),
-                        Forms\Components\TextInput::make('height')
-                            ->numeric()
-                            ->suffix('cm')
-                            ->step(0.01)
-                            ->minValue(0)
-                            ->maxValue(300)
-                            ->placeholder('e.g., 175'),
-                        Forms\Components\TextInput::make('age')
-                            ->numeric()
-                            ->minValue(0)
-                            ->maxValue(150)
-                            ->placeholder('e.g., 25'),
-                        Forms\Components\DatePicker::make('dob')
-                            ->label('Date of Birth')
-                            ->placeholder('Select date')
-                            ->native(false),
+                        Forms\Components\Section::make()
+                            ->schema(static::getDetailsFormSchema())
+                            ->columns(2),
+
+                        Forms\Components\Section::make()
+                            ->schema(static::getMembershipFormSchema())
+                            ->columns(2),
                     ])
-                    ->collapsible()
-                    ->columns(2),
-                Forms\Components\Section::make('Membership Details')
-                    ->icon('heroicon-o-ticket')
-                    ->description('Configure membership settings')
-                    ->schema([
-                        Hidden::make('user_id')
-                            ->default(fn() => auth()->id()),
-                        Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name', function ($query) {
-                                if (auth()->user()->hasRole('gym_owner')) {
-                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
-                                }
-
-                                return $query;
-                            })
-                            ->required()
-                            // ->default(function () {
-                            //     if (auth()->user()->hasRole('gym_owner')) {
-                            //         $gym = auth()->user()->gyms()->first();
-
-                            //         return $gym ? $gym->id : null;
-                            //     }
-
-                            //     return null;
-                            // })
-                            ->placeholder('Select a gym')
-                            ->live()
-                            // ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
-                            ->rules([
-                                'required_if:visible,true',
-                                fn($get) => function ($attribute, $value, $fail) {
-                                    if (auth()->user()->hasRole('gym_owner') && ! $value) {
-                                        $fail('You must create a gym before adding members.');
-                                    }
-                                },
-                            ]),
-                        // Forms\Components\Select::make('gym_membership_plan_id')
-                        //     ->label('Membership Plan')
-                        //     ->required()
-                        //     ->placeholder('Select a membership plan')
-                        //     ->reactive()
-                        //     ->afterStateUpdated(function ($state, callable $set, $get) {
-                        //         if ($state) {
-                        //             $plan = MembershipPlan::find($state);
-                        //             if ($plan && $plan->duration) {
-                        //                 $start = $get('membership_start') ?? now();
-                        //                 $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
-                        //             }
-                        //         }
-                        //     })
-                        //     ->options(function (callable $get) {
-                        //         $gymId = $get('gym_id');
-                        //         if (! $gymId) {
-                        //             return [];
-                        //         }
-
-                        //         return MembershipPlan::query()
-                        //             ->where('gym_id', $gymId)
-                        //             ->where('is_active', true)
-                        //             ->pluck('name', 'id')
-                        //             ->toArray();
-                        //     })
-                        //     ->disabled(fn($get) => ! $get('gym_id')),
-                        Forms\Components\Select::make('trainer_id')
-                            ->label('Assign Trainer')
-                            ->options(function (callable $get) {
-                                $gymId = $get('gym_id');
-                                if (!$gymId) {
-                                    return [];
-                                }
-                                return Trainer::where('gym_id', $gymId)
-                                    ->available()
-                                    ->pluck('name', 'id')
-                                    ->prepend('None', null); // Allow "No Trainer" option
-                            })
-                            ->reactive()
-                            ->nullable()
-                            ->afterStateHydrated(function ($state, callable $set, $record) {
-                                if (!$state && $record) {
-                                    $set('trainer_id', null);
-                                }
-                            })
-                            ->helperText('Leave as "None" if the member does not want a personal trainer.'),
-                        // Forms\Components\DatePicker::make('membership_start')
-                        //     ->placeholder('Select start date')
-                        //     ->live()
-                        //     ->native(false)
-                        //     ->default(now())
-                        //     ->reactive()
-                        //     ->afterStateUpdated(function ($state, callable $set, $get) {
-                        //         $planId = $get('gym_membership_plan_id');
-                        //         if ($planId && $state) {
-                        //             $plan = MembershipPlan::find($planId);
-                        //             if ($plan && $plan->duration) {
-                        //                 $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
-                        //             }
-                        //         }
-                        //     }),
-                        // Forms\Components\DatePicker::make('membership_end')
-                        //     ->placeholder('Auto-calculated based on plan')
-                        //     ->disabled()
-                        //     ->native(false)
-                        //     ->dehydrated(false),
-                    ])
-                    ->collapsible()
-                    ->columns(2),
             ])
             ->columns(1);
+        // ->schema([            
+        //     Forms\Components\Section::make('Personal Information')
+        //         ->icon('heroicon-o-user')
+        //         ->description('Enter the member\'s personal details')
+        //         ->schema([
+        //             Forms\Components\FileUpload::make('profile_photo')
+        //                 ->image()
+        //                 ->avatar()
+        //                 ->imageEditor()
+        //                 ->circleCropper()
+        //                 ->directory('member-photos')
+        //                 ->maxSize(2048)
+        //                 ->columnSpanFull(),
+        //             Forms\Components\TextInput::make('name')
+        //                 ->required()
+        //                 ->maxLength(255)
+        //                 ->placeholder('e.g., John Doe')
+        //                 ->autofocus()
+        //                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+        //             Forms\Components\TextInput::make('email')
+        //                 ->email()
+        //                 ->required()
+        //                 ->maxLength(255)
+        //                 ->unique(GymMember::class, 'email', ignoreRecord: true)
+        //                 ->rules(['email:rfc'])
+        //                 ->validationMessages([
+        //                     'email' => 'Please enter a valid email address.',
+        //                     'email.rfc' => 'The email format is invalid.',
+        //                     'email.dns' => 'The email domain does not exist.',
+        //                 ])
+        //                 ->placeholder('e.g., john.doe@example.com')
+        //                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+        //             Forms\Components\TextInput::make('phone')
+        //                 ->tel()
+        //                 ->maxLength(255)
+        //                 ->rules([new ValidPhone])
+        //                 ->validationMessages([
+        //                     'phone' => 'The phone must be a valid 10-digit phone number.',
+        //                 ])
+        //                 ->placeholder('e.g., 9876543210')
+        //                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+        //             Forms\Components\Textarea::make('address')
+        //                 ->maxLength(65535)
+        //                 ->placeholder('e.g., 123 Fitness Street, City')
+        //                 ->rows(4)
+        //                 ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+        //             Forms\Components\TextInput::make('weight')
+        //                 ->numeric()
+        //                 ->suffix('kg')
+        //                 ->step(0.01)
+        //                 ->minValue(0)
+        //                 ->maxValue(500)
+        //                 ->placeholder('e.g., 75.5'),
+        //             Forms\Components\TextInput::make('height')
+        //                 ->numeric()
+        //                 ->suffix('cm')
+        //                 ->step(0.01)
+        //                 ->minValue(0)
+        //                 ->maxValue(300)
+        //                 ->placeholder('e.g., 175'),
+        //             Forms\Components\TextInput::make('age')
+        //                 ->numeric()
+        //                 ->minValue(0)
+        //                 ->maxValue(150)
+        //                 ->placeholder('e.g., 25'),
+        //             Forms\Components\DatePicker::make('dob')
+        //                 ->label('Date of Birth')
+        //                 ->placeholder('Select date')
+        //                 ->native(false),
+        //         ])
+        //         ->collapsible()
+        //         ->columns(2),
+        //     Forms\Components\Section::make('Membership Details')
+        //         ->icon('heroicon-o-ticket')
+        //         ->description('Configure membership settings')
+        //         ->schema([
+        //             Hidden::make('user_id')
+        //                 ->default(fn() => auth()->id()),
+        //             Forms\Components\Select::make('gym_id')
+        //                 ->relationship('gym', 'name', function ($query) {
+        //                     if (auth()->user()->hasRole('gym_owner')) {
+        //                         return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+        //                     }
+
+        //                     return $query;
+        //                 })
+        //                 ->required()
+        //                 // ->default(function () {
+        //                 //     if (auth()->user()->hasRole('gym_owner')) {
+        //                 //         $gym = auth()->user()->gyms()->first();
+
+        //                 //         return $gym ? $gym->id : null;
+        //                 //     }
+
+        //                 //     return null;
+        //                 // })
+        //                 ->placeholder('Select a gym')
+        //                 ->live()
+        //                 // ->afterStateUpdated(fn(callable $set) => $set('gym_membership_plan_id', null))
+        //                 ->rules([
+        //                     'required_if:visible,true',
+        //                     fn($get) => function ($attribute, $value, $fail) {
+        //                         if (auth()->user()->hasRole('gym_owner') && ! $value) {
+        //                             $fail('You must create a gym before adding members.');
+        //                         }
+        //                     },
+        //                 ]),
+        //             // Forms\Components\Select::make('gym_membership_plan_id')
+        //             //     ->label('Membership Plan')
+        //             //     ->required()
+        //             //     ->placeholder('Select a membership plan')
+        //             //     ->reactive()
+        //             //     ->afterStateUpdated(function ($state, callable $set, $get) {
+        //             //         if ($state) {
+        //             //             $plan = MembershipPlan::find($state);
+        //             //             if ($plan && $plan->duration) {
+        //             //                 $start = $get('membership_start') ?? now();
+        //             //                 $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+        //             //             }
+        //             //         }
+        //             //     })
+        //             //     ->options(function (callable $get) {
+        //             //         $gymId = $get('gym_id');
+        //             //         if (! $gymId) {
+        //             //             return [];
+        //             //         }
+
+        //             //         return MembershipPlan::query()
+        //             //             ->where('gym_id', $gymId)
+        //             //             ->where('is_active', true)
+        //             //             ->pluck('name', 'id')
+        //             //             ->toArray();
+        //             //     })
+        //             //     ->disabled(fn($get) => ! $get('gym_id')),
+        //             Forms\Components\Select::make('trainer_id')
+        //                 ->label('Assign Trainer')
+        //                 ->options(function (callable $get) {
+        //                     $gymId = $get('gym_id');
+        //                     if (!$gymId) {
+        //                         return [];
+        //                     }
+        //                     return Trainer::where('gym_id', $gymId)
+        //                         ->available()
+        //                         ->pluck('name', 'id')
+        //                         ->prepend('None', null); // Allow "No Trainer" option
+        //                 })
+        //                 ->reactive()
+        //                 ->nullable()
+        //                 ->afterStateHydrated(function ($state, callable $set, $record) {
+        //                     if (!$state && $record) {
+        //                         $set('trainer_id', null);
+        //                     }
+        //                 })
+        //                 ->helperText('Leave as "None" if the member does not want a personal trainer.'),
+        //             // Forms\Components\DatePicker::make('membership_start')
+        //             //     ->placeholder('Select start date')
+        //             //     ->live()
+        //             //     ->native(false)
+        //             //     ->default(now())
+        //             //     ->reactive()
+        //             //     ->afterStateUpdated(function ($state, callable $set, $get) {
+        //             //         $planId = $get('gym_membership_plan_id');
+        //             //         if ($planId && $state) {
+        //             //             $plan = MembershipPlan::find($planId);
+        //             //             if ($plan && $plan->duration) {
+        //             //                 $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+        //             //             }
+        //             //         }
+        //             //     }),
+        //             // Forms\Components\DatePicker::make('membership_end')
+        //             //     ->placeholder('Auto-calculated based on plan')
+        //             //     ->disabled()
+        //             //     ->native(false)
+        //             //     ->dehydrated(false),
+        //         ])
+        //         ->collapsible()
+        //         ->columns(2),
+        // ])
+        // ->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -606,6 +622,130 @@ class GymMemberResource extends Resource
             'index' => Pages\ListGymMembers::route('/'),
             'create' => Pages\CreateGymMember::route('/create'),
             'edit' => Pages\EditGymMember::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getDetailsFormSchema(): array
+    {
+        return [
+            Forms\Components\FileUpload::make('profile_photo')
+                ->image()
+                ->avatar()
+                ->imageEditor()
+                ->circleCropper()
+                ->directory('member-photos')
+                ->maxSize(2048)
+                ->columnSpanFull(),
+            Forms\Components\TextInput::make('name')
+                ->required()
+                ->maxLength(255)
+                ->placeholder('e.g., John Doe')
+                ->autofocus()
+                ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+            Forms\Components\TextInput::make('email')
+                ->email()
+                ->required()
+                ->maxLength(255)
+                ->unique(GymMember::class, 'email', ignoreRecord: true)
+                ->rules(['email:rfc'])
+                ->validationMessages([
+                    'email' => 'Please enter a valid email address.',
+                    'email.rfc' => 'The email format is invalid.',
+                    'email.dns' => 'The email domain does not exist.',
+                ])
+                ->placeholder('e.g., john.doe@example.com')
+                ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+            Forms\Components\TextInput::make('phone')
+                ->tel()
+                ->maxLength(255)
+                ->rules([new ValidPhone])
+                ->validationMessages([
+                    'phone' => 'The phone must be a valid 10-digit phone number.',
+                ])
+                ->placeholder('e.g., 9876543210')
+                ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+            Forms\Components\Textarea::make('address')
+                ->maxLength(65535)
+                ->placeholder('e.g., 123 Fitness Street, City')
+                ->rows(4)
+                ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+            Forms\Components\TextInput::make('weight')
+                ->numeric()
+                ->suffix('kg')
+                ->step(0.01)
+                ->minValue(0)
+                ->maxValue(500)
+                ->placeholder('e.g., 75.5'),
+            Forms\Components\TextInput::make('height')
+                ->numeric()
+                ->suffix('cm')
+                ->step(0.01)
+                ->minValue(0)
+                ->maxValue(300)
+                ->placeholder('e.g., 175'),
+            Forms\Components\TextInput::make('age')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(150)
+                ->placeholder('e.g., 25'),
+            Forms\Components\DatePicker::make('dob')
+                ->label('Date of Birth')
+                ->placeholder('Select date'),
+        ];
+    }
+
+    public static function getMembershipFormSchema(): array
+    {
+        return [
+            Hidden::make('user_id')
+                ->default(fn() => auth()->id()),
+
+            Forms\Components\Section::make('Membership Details')
+                ->icon('heroicon-o-ticket')
+                ->description('Configure membership settings')
+                ->schema([
+                    Forms\Components\Select::make('gym_id')
+                        ->relationship('gym', 'name', function ($query) {
+                            if (auth()->user()->hasRole('gym_owner')) {
+                                return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                            }
+
+                            return $query;
+                        })
+                        ->required()
+                        ->placeholder('Select a gym')
+                        ->live()
+                        ->rules([
+                            'required_if:visible,true',
+                            fn($get) => function ($attribute, $value, $fail) {
+                                if (auth()->user()->hasRole('gym_owner') && ! $value) {
+                                    $fail('You must create a gym before adding members.');
+                                }
+                            },
+                        ]),
+
+                    Forms\Components\Select::make('trainer_id')
+                        ->label('Assign Trainer')
+                        ->options(function (callable $get) {
+                            $gymId = $get('gym_id');
+                            if (!$gymId) {
+                                return [];
+                            }
+                            return Trainer::where('gym_id', $gymId)
+                                ->available()
+                                ->pluck('name', 'id')
+                                ->prepend('None', null); // Allow "No Trainer" option
+                        })
+                        ->reactive()
+                        ->nullable()
+                        ->afterStateHydrated(function ($state, callable $set, $record) {
+                            if (!$state && $record) {
+                                $set('trainer_id', null);
+                            }
+                        })
+                        ->helperText('Leave as "None" if the member does not want a personal trainer.'),
+                ])
+                ->columns(2),
         ];
     }
 }
