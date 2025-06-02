@@ -681,14 +681,26 @@ class GymMemberResource extends Resource
                 ->minValue(0)
                 ->maxValue(300)
                 ->placeholder('e.g., 175'),
+
+            Forms\Components\DatePicker::make('dob')
+                ->label('Date of Birth')
+                ->placeholder('Select date of birth')
+                ->reactive()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    if ($state) {
+                        $dob = Carbon::parse($state);
+                        $age = floor($dob->diffInYears(now())); // Calculate age based on current date
+                        $set('age', $age);
+                    } else {
+                        $set('age', null); // Clear age if dob is empty
+                    }
+                }),
+
             Forms\Components\TextInput::make('age')
                 ->numeric()
                 ->minValue(0)
                 ->maxValue(150)
                 ->placeholder('e.g., 25'),
-            Forms\Components\DatePicker::make('dob')
-                ->label('Date of Birth')
-                ->placeholder('Select date'),
         ];
     }
 
