@@ -2,17 +2,13 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\Currency;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Resources\GymMemberResource\Pages;
 use App\Filament\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
+use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
-use App\Models\MembershipPlan;
 use App\Models\Trainer;
-use App\Rules\ValidPhone;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
@@ -668,11 +664,9 @@ class GymMemberResource extends Resource
                 )
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
-            Forms\Components\Textarea::make('address')
-                ->maxLength(65535)
-                ->placeholder('e.g., 123 Fitness Street, City')
-                ->rows(4)
-                ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+            AddressForm::make('address')
+                ->columnSpan('full'),
+
             Forms\Components\TextInput::make('weight')
                 ->numeric()
                 ->suffix('kg')

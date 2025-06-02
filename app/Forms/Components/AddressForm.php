@@ -57,12 +57,17 @@ class AddressForm extends Field
         return [
             Forms\Components\TextInput::make('street')
                 ->label('Street Address')
+                ->required()
+                ->placeholder('e.g., 123 Main St')
                 ->maxLength(255),
             Forms\Components\Grid::make(3)
                 ->schema([
                     Forms\Components\Select::make('country_id')
                         ->label('Country')
-                        ->options(Country::active()->pluck('name', 'id'))
+                        ->searchable()
+                        ->getSearchResultsUsing(fn(string $query) => Country::where('name', 'like', "%{$query}%")->pluck('name', 'id'))
+                        ->getOptionLabelUsing(fn($value): ?string => Country::firstWhere('id', $value)?->getAttribute('name'))
+                        // ->options(Country::active()->pluck('name', 'id'))
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn(callable $set) => $set('state_id', null)),
