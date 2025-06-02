@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
+use libphonenumber\PhoneNumberType;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class GymMemberResource extends Resource
 {
@@ -655,15 +657,17 @@ class GymMemberResource extends Resource
                 ])
                 ->placeholder('e.g., john.doe@example.com')
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-            Forms\Components\TextInput::make('phone')
-                ->tel()
-                ->maxLength(255)
-                ->rules([new ValidPhone])
-                ->validationMessages([
-                    'phone' => 'The phone must be a valid 10-digit phone number.',
-                ])
-                ->placeholder('e.g., 9876543210')
+
+            PhoneInput::make('phone')
+                ->defaultCountry('IN')
+                ->required()
+                ->validateFor(
+                    country: ['IN', 'PK', 'BD', 'US'], // default: 'AUTO'
+                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
+                    lenient: true, // default: false
+                )
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
             Forms\Components\Textarea::make('address')
                 ->maxLength(65535)
                 ->placeholder('e.g., 123 Fitness Street, City')
