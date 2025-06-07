@@ -12,6 +12,7 @@
         "php": "^8.2",
         "bezhansalleh/filament-shield": "^3.3",
         "codeat3/blade-phosphor-icons": "^2.3",
+        "eightynine/filament-excel-import": "^3.1",
         "filafly/filament-phosphor-icons": "^0.2.0",
         "filament/filament": "^3.3",
         "flowframe/laravel-trend": "^0.4.0",
