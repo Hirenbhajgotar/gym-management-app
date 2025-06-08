@@ -1,6 +1,8 @@
 <?php
 
+use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Notification;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
@@ -17,8 +19,8 @@ Route::middleware(['auth'])->group(function () {
     // Download failed rows CSV
     Route::get('/download-failed-rows/{file}', function ($file) {
         \Illuminate\Support\Facades\Log::info('Attempting to download failed rows CSV', ['file' => $file]);
-        $fullPath = 'imports/'.$file;
-        $storagePath = storage_path('app/'.$fullPath);
+        $fullPath = 'imports/' . $file;
+        $storagePath = storage_path('app/' . $fullPath);
         if (Storage::disk('local')->exists($fullPath)) {
             \Illuminate\Support\Facades\Log::info('File found, initiating download', ['file' => $fullPath, 'storage_path' => $storagePath]);
 
@@ -35,6 +37,20 @@ Route::middleware(['auth'])->group(function () {
             ->with('error', 'File not found.');
     })->name('download.failed.rows');
 
+    Route::get('/filament/failed-import-download/{importId}', function ($importId) {
+        $import = Import::where('id', $importId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        // Serve the file
+        $fullPath = Storage::disk('public')->path($import->file_path);
+        if (!file_exists($fullPath)) {
+            abort(404, 'File not found.');
+        }
+
+        return response()->download($fullPath, basename($fullPath));
+    })->name('filament.failed-import.download');
+
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
@@ -42,4 +58,4 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -5,6 +5,8 @@ namespace App\Imports;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
+use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -23,9 +25,22 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
     protected $failedFilePath;
     protected $expectedHeaders = [];
 
+    // Property to be defined in child classes
+    public $importModel;
+
     public function __construct()
     {
-        parent::__construct(static::class, []); // Pass model and attributes to parent
+        // Ensure the importModel property is defined in the child class
+        if (!isset($this->importModel)) {
+            throw new \Exception('The $importModel property must be defined in the child import class: ' . static::class);
+        }
+
+        // Verify the model class exists
+        if (!class_exists($this->importModel)) {
+            throw new \Exception("Model class {$this->importModel} does not exist in " . static::class);
+        }
+
+        parent::__construct($this->importModel, []); // Pass model and attributes to parent
 
         // Create an import record in Filament's imports table
         $this->importRecord = Import::create([
@@ -38,6 +53,41 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
             'successful_rows' => 0,
             'user_id' => auth()->id(),
         ]);
+    }
+
+    public function collection(Collection $collection)
+    {
+        // Filter out empty rows
+        $filteredCollection = $collection->filter(function ($row) {
+            return !empty(array_filter($row->toArray()));
+        });
+
+        $this->beforeCollection($filteredCollection);
+
+        foreach ($filteredCollection as $row) {
+            $data = $row->toArray();
+            try {
+                $this->processRow($data);
+                $this->successfulRows++;
+                Log::info('Row imported successfully.', ['row' => $data]);
+            } catch (\Exception $e) {
+                $this->failedRows++;
+                $failedRow = $data;
+                $failedRow['error'] = $e->getMessage();
+                $this->failedData[] = $failedRow;
+                FailedImportRow::create([
+                    'import_id' => $this->importRecord->id,
+                    'data' => json_encode($failedRow),
+                    'validation_error' => $e->getMessage(),
+                ]);
+            }
+            $this->importRecord->update([
+                'processed_rows' => $this->successfulRows + $this->failedRows,
+                'successful_rows' => $this->successfulRows,
+            ]);
+        }
+
+        $this->afterCollection($filteredCollection);
     }
 
     // Override beforeCollection to validate headers and set total rows
@@ -54,46 +104,44 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         ]);
     }
 
-    // Override beforeCreateRecord to handle row processing with try-catch
-    protected function beforeCreateRecord(array $data, $row): void
+    // Abstract method for child classes to implement row processing
+    abstract protected function processRow($row);
+
+    // Method to set expected headers (to be called by child classes)
+    protected function setExpectedHeaders(array $headers)
     {
-        try {
-            // Process the row using the abstract method
-            $this->processRow($row);
-
-            $this->successfulRows++;
-            Log::info('Row imported successfully.', ['row' => $data]);
-        } catch (\Exception $e) {
-            $this->failedRows++;
-            $this->failedData[] = $data;
-
-            // Store failed row in Filament's failed_import_rows table
-            FailedImportRow::create([
-                'import_id' => $this->importRecord->id,
-                'data' => json_encode($data),
-                'validation_error' => $e->getMessage(),
-            ]);
-
-            Log::error('Failed to import row.', [
-                'row' => $data,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Throw exception to prevent default creation by EnhancedDefaultImport
-            throw $e;
-        }
-
-        // Update processed rows
-        $this->importRecord->update([
-            'processed_rows' => $this->successfulRows + $this->failedRows,
-            'successful_rows' => $this->successfulRows,
-        ]);
+        $this->expectedHeaders = $headers;
     }
 
-    // Override afterCreateRecord (optional, can be used by child classes)
-    protected function afterCreateRecord(array $data, $row): void
+    protected function generateFailedRowsExcel()
     {
-        // Child classes can override this if needed
+        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
+        $filePath = 'failed_imports/' . $fileName;
+
+        Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings {
+            protected $data;
+
+            public function __construct(array $data)
+            {
+                $this->data = $data;
+            }
+
+            public function array(): array
+            {
+                return $this->data;
+            }
+
+            public function headings(): array
+            {
+                if (empty($this->data)) {
+                    return [];
+                }
+                $keys = array_keys($this->data[0]);
+                return $keys; // Includes 'error' column
+            }
+        }, $filePath, 'public');
+
+        $this->failedFilePath = $filePath;
     }
 
     // Override afterCollection to handle failed rows and notifications
@@ -114,54 +162,45 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         $this->sendNotification($collection->count());
     }
 
-    // Abstract method for child classes to implement row processing
-    abstract protected function processRow($row);
-
-    // Method to set expected headers (to be called by child classes)
-    protected function setExpectedHeaders(array $headers)
-    {
-        $this->expectedHeaders = $headers;
-    }
-
-    protected function generateFailedRowsExcel()
-    {
-        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
-        $filePath = 'failed_imports/' . $fileName;
-
-        // Generate Excel file using Maatwebsite Excel
-        Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray {
-            protected $data;
-
-            public function __construct(array $data)
-            {
-                $this->data = $data;
-            }
-
-            public function array(): array
-            {
-                return $this->data;
-            }
-        }, $filePath, 'public');
-
-        $this->failedFilePath = $filePath;
-    }
-
     protected function sendNotification(int $totalRows)
     {
         $successfulRows = number_format($this->successfulRows) . ' ' . Str::plural('row', $this->successfulRows);
         $message = "Your import has completed and {$successfulRows} imported.";
+        $recipient = auth()->user();
 
         if ($this->failedRows > 0) {
             $failedRows = number_format($this->failedRows) . ' ' . Str::plural('row', $this->failedRows);
-            $downloadUrl = Storage::disk('public')->url($this->failedFilePath);
-            $message .= " {$failedRows} failed to import. <a href='{$downloadUrl}' target='_blank'>Download failed rows</a>.";
-        }
+            $message .= " {$failedRows} failed to import.";
 
-        Notification::make()
-            ->success()
-            ->title('Import Completed')
-            ->body($message)
-            ->persistent()
-            ->send();
+            $downloadUrl = route('filament.failed-import.download', [
+                'importId' => $this->importRecord?->id,
+            ]);
+
+            Notification::make()
+                ->danger()
+                ->title('Import Completed')
+                ->body($message)
+                ->actions([
+                    Action::make('download_failed_rows')
+                        ->label('Download information about the failed row')
+                        ->url($downloadUrl)
+                        ->openUrlInNewTab()
+                        ->markAsRead()
+                        ->color('danger'),
+                ])
+                ->sendToDatabase($recipient)
+                ->send();
+
+            event(new DatabaseNotificationsSent($recipient));
+        } else {
+            Notification::make()
+                ->danger()
+                ->title('Import Completed')
+                ->body($message)
+                ->sendToDatabase($recipient)
+                ->send();
+
+            event(new DatabaseNotificationsSent($recipient));
+        }
     }
 }
