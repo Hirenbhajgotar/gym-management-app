@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use App\Jobs\ProcessExcelImport;
+use App\Models\User;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
@@ -12,11 +14,13 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Facades\Excel;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollection, WithHeadingRow
+abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue
 {
     protected $successfulRows = 0;
     protected $failedRows = 0;
@@ -46,7 +50,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         $this->importRecord = Import::create([
             'completed_at' => null,
             'file_name' => 'import_' . now()->timestamp . '.xlsx',
-            'file_path' => 'temp', // Will update later
+            'file_path' => 'temp',
             'importer' => static::class,
             'processed_rows' => 0,
             'total_rows' => 0,
@@ -66,21 +70,36 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
 
         foreach ($filteredCollection as $row) {
             $data = $row->toArray();
-            try {
-                $this->processRow($data);
-                $this->successfulRows++;
-                Log::info('Row imported successfully.', ['row' => $data]);
-            } catch (\Exception $e) {
+
+            // Validate the row using the rules defined in the child class
+            $validator = Validator::make($data, $this->rules());
+            if ($validator->fails()) {
                 $this->failedRows++;
                 $failedRow = $data;
-                $failedRow['error'] = $e->getMessage();
+                $failedRow['error'] = implode(', ', $validator->errors()->all());
                 $this->failedData[] = $failedRow;
                 FailedImportRow::create([
                     'import_id' => $this->importRecord->id,
                     'data' => json_encode($failedRow),
-                    'validation_error' => $e->getMessage(),
+                    'validation_error' => $failedRow['error'],
                 ]);
+            } else {
+                try {
+                    $this->processRow($data);
+                    $this->successfulRows++;
+                } catch (\Exception $e) {
+                    $this->failedRows++;
+                    $failedRow = $data;
+                    $failedRow['error'] = $e->getMessage();
+                    $this->failedData[] = $failedRow;
+                    FailedImportRow::create([
+                        'import_id' => $this->importRecord->id,
+                        'data' => json_encode($failedRow),
+                        'validation_error' => $e->getMessage(),
+                    ]);
+                }
             }
+
             $this->importRecord->update([
                 'processed_rows' => $this->successfulRows + $this->failedRows,
                 'successful_rows' => $this->successfulRows,
@@ -88,6 +107,19 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         }
 
         $this->afterCollection($filteredCollection);
+    }
+
+    public function chunkSize(): int
+    {
+        return 1000; // Process 1000 rows at a time
+    }
+
+    // Implement WithValidation's rules method
+    public function rules(): array
+    {
+        // // Child classes must implement this method
+        // throw new \Exception('The rules() method must be implemented in the child import class: ' . static::class);
+        return [];
     }
 
     // Override beforeCollection to validate headers and set total rows
@@ -159,14 +191,24 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         ]);
 
         // Send notification
-        $this->sendNotification($collection->count());
+        $this->sendNotification();
     }
 
-    protected function sendNotification(int $totalRows)
+    protected function sendNotification()
     {
         $successfulRows = number_format($this->successfulRows) . ' ' . Str::plural('row', $this->successfulRows);
         $message = "Your import has completed and {$successfulRows} imported.";
-        $recipient = auth()->user();
+
+        // Retrieve the user using the user_id from the Import record
+        $recipient = User::find($this->importRecord->user_id);
+
+        if (!$recipient) {
+            Log::warning('User not found for import notification.', [
+                'import_id' => $this->importRecord->id,
+                'user_id' => $this->importRecord->user_id,
+            ]);
+            return;
+        }
 
         if ($this->failedRows > 0) {
             $failedRows = number_format($this->failedRows) . ' ' . Str::plural('row', $this->failedRows);
@@ -201,6 +243,36 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
                 ->send();
 
             event(new DatabaseNotificationsSent($recipient));
+        }
+    }
+
+    public function failed(\Throwable $exception)
+    {
+        if ($this->importRecord) {
+            $this->importRecord->update([
+                'completed_at' => now(),
+                'file_path' => 'N/A',
+            ]);
+        }
+
+        // Retrieve the user using the user_id from the Import record
+        $recipient = User::find($this->importRecord->user_id);
+
+        if ($recipient) {
+
+            Notification::make()
+                ->danger()
+                ->title('Import Failed')
+                ->body('An error occurred while processing your import: ' . $exception->getMessage())
+                ->sendToDatabase($recipient)
+                ->send();
+
+            event(new DatabaseNotificationsSent($recipient));
+        } else {
+            Log::warning('User not found for import failure notification.', [
+                'import_id' => $this->importRecord->id,
+                'user_id' => $this->importRecord->user_id,
+            ]);
         }
     }
 }

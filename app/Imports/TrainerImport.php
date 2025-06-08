@@ -4,17 +4,11 @@ namespace App\Imports;
 
 use App\Models\Gym;
 use App\Models\Trainer;
-use EightyNine\ExcelImport\EnhancedDefaultImport;
-use Filament\Notifications\Notification;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Illuminate\Validation\Rule;
+
 
 class TrainerImport extends BaseExcelImport
 {
-
     public $importModel = Trainer::class;
 
     public function __construct()
@@ -36,34 +30,41 @@ class TrainerImport extends BaseExcelImport
         ]);
     }
 
+    public function rules(): array
+    {
+        return [
+            'gym' => 'required|exists:gyms,name',
+            'name' => 'required|max:255',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('trainers', 'email'),
+            ],
+            'phone' => 'nullable|numeric',
+            'specialization' => 'nullable|string|max:255',
+            'experience_years' => 'nullable|integer|min:0',
+            'is_available' => 'nullable|in:Yes,No,0,1',
+            'available_hours' => 'nullable|string|max:255',
+            'basic_salary' => 'nullable|numeric|min:0',
+            'pt_salary_per_member' => 'nullable|numeric|min:0',
+        ];
+    }
+
     protected function processRow($row)
     {
-        // Get gym name and find corresponding gym_id
-        $gymName = $row['gym'] ?? null;
-        if (!$gymName) {
-            throw new \Exception('Missing gym name.');
-        }
-
+        $gymName = $row['gym'];
         $gym = Gym::where('name', $gymName)->first();
-        if (!$gym) {
-            throw new \Exception("Gym not found: {$gymName}");
-        }
 
-        // Handle is_available transformation
+        // Handle is_available transformation (validation ensures valid values)
         $isAvailable = null;
         if (isset($row['is_available'])) {
-            if ($row['is_available'] === 'Yes' || $row['is_available'] === 1) {
-                $isAvailable = 1;
-            } elseif ($row['is_available'] === 'No' || $row['is_available'] === 0) {
-                $isAvailable = 0;
-            } else {
-                throw new \Exception("Invalid value for is_available: {$row['is_available']}");
-            }
+            $isAvailable = in_array($row['is_available'], ['Yes', 1]) ? 1 : 0;
         }
 
         // Map Excel row data to Trainer model
         $data = [
-            'gym_id' => $gym->id,
+            'gym_id' => $gym?->id ?? null,
             'name' => $row['name'] ?? null,
             'email' => $row['email'] ?? null,
             'phone' => $row['phone'] ?? null, // Already cleaned in mutateBeforeValidationUsing
@@ -76,19 +77,7 @@ class TrainerImport extends BaseExcelImport
             'currency' => $row['currency'] ?? 'INR', // Default to INR if not provided
         ];
 
-        // Validate required fields
-        if (!$data['name'] || !$data['email']) {
-            throw new \Exception('Missing required fields: name or email.');
-        }
-
-        // Use firstOrCreate to handle duplicates
-        $existingTrainer = Trainer::where('email', $data['email'])->first();
-        if ($existingTrainer) {
-            throw new \Exception("Duplicate email: {$data['email']} already exists.");
-        }
-
-        // dd($data);
-        // Use insert for bulk import
+        // Create the record (duplicate email check is handled by validation)
         Trainer::create($data);
     }
 }
