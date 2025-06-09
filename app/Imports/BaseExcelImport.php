@@ -46,6 +46,12 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
 
         parent::__construct($this->importModel, []); // Pass model and attributes to parent
 
+        Notification::make()
+            ->info()
+            ->title('Import Started')
+            ->body('Your import is being processed in the background. You will be notified once it is complete.')
+            ->send();
+
         // Create an import record in Filament's imports table
         $this->importRecord = Import::create([
             'completed_at' => null,
