@@ -3,20 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Currency;
+use App\Filament\Exports\TrainerExporter;
 use App\Filament\Resources\TrainerResource\Pages;
-use App\Filament\Resources\TrainerResource\RelationManagers;
 use App\Models\Gym;
 use App\Models\Trainer;
 use App\Tables\Columns\AssignedMembersColumn;
+use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
-use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TrainerResource extends Resource
 {
@@ -202,9 +201,15 @@ class TrainerResource extends Resource
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
+                Tables\Actions\BulkActionGroup::make([
+                    ExportBulkAction::make()
+                        ->label('Export Trainers')
+                        ->icon('heroicon-o-arrow-up-tray')
+                        ->exporter(TrainerExporter::class)
+                        ->formats([ExportFormat::Xlsx]),
+
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
     }
 

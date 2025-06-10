@@ -25,11 +25,13 @@ class ManageTrainers extends ManageRecords
         return [
             ExportAction::make()
                 ->label('Export Trainers')
+                ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(TrainerExporter::class)
                 ->formats([ExportFormat::Xlsx]),
-            // ->columnMapping(false),
 
             ExcelImportAction::make()
+                ->label('Import Trainers')
+                ->color('gray')
                 ->uploadField(
                     fn($upload) => $upload
                         ->label("Import Trainers")
