@@ -30,6 +30,7 @@ class SuperAdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/SuperAdmin/Resources'), for: 'App\\Filament\\SuperAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/SuperAdmin/Pages'), for: 'App\\Filament\\SuperAdmin\\Pages')
+            ->discoverClusters(in: app_path('Filament/SuperAdmin/Clusters'), for: 'App\\Filament\\SuperAdmin\\Clusters')
             ->pages([
                 Pages\Dashboard::class,
             ])
