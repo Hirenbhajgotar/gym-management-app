@@ -30,6 +30,11 @@ class Gym extends Model
         return $this->hasMany(GymMember::class);
     }
 
+    public function trainers(): HasMany
+    {
+        return $this->hasMany(Trainer::class);
+    }
+
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');

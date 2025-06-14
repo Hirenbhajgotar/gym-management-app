@@ -157,14 +157,14 @@ class MembershipPlanResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->modifyQueryUsing(function ($query) {
-                $user = auth()->user();
-                if ($user->hasRole('gym_owner')) {
-                    $query->whereIn('gym_id', $user->gyms()->pluck('id'));
-                }
+            // ->modifyQueryUsing(function ($query) {
+            //     $user = auth()->user();
+            //     if ($user->hasRole('gym_owner')) {
+            //         $query->whereIn('gym_id', $user->gyms()->pluck('id'));
+            //     }
 
-                return $query;
-            })
+            //     return $query;
+            // })
             ->defaultSort('name')
             ->striped();
     }

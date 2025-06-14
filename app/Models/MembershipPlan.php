@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 #[ObservedBy([MembershipPlanObserver::class])]
@@ -29,14 +30,19 @@ class MembershipPlan extends Model
         'is_active' => 'boolean',
     ];
 
-    public function gym()
+    public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
-    public function members()
+    public function members(): HasMany
     {
         return $this->hasMany(GymMember::class, 'gym_membership_plan_id');
+    }
+
+    public function membershipPlans(): HasMany
+    {
+        return $this->hasMany(MembershipPlan::class, 'gym_id');
     }
 
     public function owner(): HasOneThrough

@@ -34,35 +34,38 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return cache()->remember('trainer_navigation_badge_count_' . auth()->id(), now()->addMinutes(15), function () {
-            /** @var class-string<Model> $modelClass */
-            $modelClass = static::$model;
-            $query = $modelClass::query();
-            if (auth()->user()->hasRole('gym_owner')) {
-                $query->whereHas('gym', function ($q) {
-                    $q->where('owner_id', auth()->id());
-                });
-            }
-            return (string) $query->count();
-        });
+        // return cache()->remember('trainer_navigation_badge_count_' . auth()->id(), now()->addMinutes(15), function () {
+        //     /** @var class-string<Model> $modelClass */
+        //     $modelClass = static::$model;
+        //     $query = $modelClass::query();
+        //     if (auth()->user()->hasRole('gym_owner')) {
+        //         $query->whereHas('gym', function ($q) {
+        //             $q->where('owner_id', auth()->id());
+        //         });
+        //     }
+        //     return (string) $query->count();
+        // });
+        $modelClass = static::$model;
+        $query = $modelClass::query();
+        return $query->count();
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery()
-            ->select('trainers.*')
-            ->join('gyms', function ($join) {
-                $join->on('trainers.gym_id', '=', 'gyms.id');
-            })
-            ->with(['gym', 'members'])
-            ->withCount('members');
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     $query = parent::getEloquentQuery()
+    //         ->select('trainers.*')
+    //         ->join('gyms', function ($join) {
+    //             $join->on('trainers.gym_id', '=', 'gyms.id');
+    //         })
+    //         ->with(['gym', 'members'])
+    //         ->withCount('members');
 
-        if (auth()->user()->hasRole('gym_owner')) {
-            $query->whereIn('gyms.owner_id', [auth()->id()]);
-        }
+    //     if (auth()->user()->hasRole('gym_owner')) {
+    //         $query->whereIn('gyms.owner_id', [auth()->id()]);
+    //     }
 
-        return $query;
-    }
+    //     return $query;
+    // }
 
     public static function form(Form $form): Form
     {

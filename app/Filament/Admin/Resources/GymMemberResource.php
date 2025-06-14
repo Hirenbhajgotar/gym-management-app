@@ -400,30 +400,30 @@ class GymMemberResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
             ])
-            ->modifyQueryUsing(function ($query) {
-                $user = auth()->user();
-                if ($user->hasRole('gym_owner')) {
-                    $query->whereIn('gym_id', $user->gyms()->pluck('id'));
-                }
-                return $query;
-                // $optimizedQuery = $query
-                //     ->select('gym_members.*')
-                //     ->leftJoin('gyms', 'gym_members.gym_id', '=', 'gyms.id')
-                //     ->leftJoin('membership_plans', 'gym_members.gym_membership_plan_id', '=', 'membership_plans.id')
-                //     ->leftJoin('member_payments', function ($join) {
-                //         $join->on('gym_members.id', '=', 'member_payments.member_id')
-                //             ->where('member_payments.status', 'completed');
-                //     })
-                //     ->groupBy('gym_members.id')
-                //     ->with(['gym', 'membershipPlan'])
-                //     ->addSelect([
-                //         'has_completed_payment' => DB::raw('IF(COUNT(member_payments.id) > 0, 1, 0)')
-                //     ]);
+            // ->modifyQueryUsing(function ($query) {
+            //     $user = auth()->user();
+            //     if ($user->hasRole('gym_owner')) {
+            //         $query->whereIn('gym_id', $user->gyms()->pluck('id'));
+            //     }
+            //     return $query;
+            //     // $optimizedQuery = $query
+            //     //     ->select('gym_members.*')
+            //     //     ->leftJoin('gyms', 'gym_members.gym_id', '=', 'gyms.id')
+            //     //     ->leftJoin('membership_plans', 'gym_members.gym_membership_plan_id', '=', 'membership_plans.id')
+            //     //     ->leftJoin('member_payments', function ($join) {
+            //     //         $join->on('gym_members.id', '=', 'member_payments.member_id')
+            //     //             ->where('member_payments.status', 'completed');
+            //     //     })
+            //     //     ->groupBy('gym_members.id')
+            //     //     ->with(['gym', 'membershipPlan'])
+            //     //     ->addSelect([
+            //     //         'has_completed_payment' => DB::raw('IF(COUNT(member_payments.id) > 0, 1, 0)')
+            //     //     ]);
 
-                // Log::info('GymMemberResource Query', ['query' => $optimizedQuery->toSql(), 'bindings' => $optimizedQuery->getBindings()]);
+            //     // Log::info('GymMemberResource Query', ['query' => $optimizedQuery->toSql(), 'bindings' => $optimizedQuery->getBindings()]);
 
-                // return $optimizedQuery;
-            })
+            //     // return $optimizedQuery;
+            // })
             ->defaultSort('name')
             ->striped();
     }

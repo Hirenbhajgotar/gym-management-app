@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\GymStatsOverview;
+use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
@@ -19,6 +20,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Joaopaulolndev\FilamentGeneralSettings\FilamentGeneralSettingsPlugin;
 use Rmsramos\Activitylog\ActivitylogPlugin;
@@ -40,7 +42,10 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->spa()
-            // ->tenant(Gym::class)
+            ->tenant(Gym::class)
+            ->tenantMiddleware([
+                ApplyTenantScopes::class,
+            ], isPersistent: true)
             ->navigationGroups([
                 'Users',
                 'Gym Management',
