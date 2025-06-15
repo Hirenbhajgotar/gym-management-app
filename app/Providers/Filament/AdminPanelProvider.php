@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile(isSimple: false)
             ->colors([
                 'primary' => Color::Amber,
+                'danger' => Color::Red,
             ])
             ->spa()
             ->tenant(Gym::class, slugAttribute: 'slug')

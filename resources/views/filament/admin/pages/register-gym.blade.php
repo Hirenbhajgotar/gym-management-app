@@ -1,13 +1,68 @@
 <x-filament-panels::page.simple heading="Register Gym" subheading="Fill in the details to set up your gym in the system.">
+    @php
+        $currentGymCount = \App\Models\Gym::where('owner_id', auth()->id())->count();
+        $hasReachedLimit = $currentGymCount >= $totalGyms;
+        $remainingGyms = $totalGyms - $currentGymCount;
+    @endphp
+
+    @if ($hasReachedLimit)
+        <div class="mb-6 p-6 bg-danger-50 border border-danger-200 rounded-lg ">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <x-filament::icon icon="heroicon-o-exclamation-triangle"
+                        class="h-6 w-6 text-danger-500 dark:text-danger-400 " />
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-danger-600 dark:text-danger-400">
+                        Gym Registration Limit Reached
+                    </h3>
+                    <div class="mt-2 text-sm">
+                        <p>You have already registered {{ $currentGymCount }} gym(s), which is the maximum allowed.
+                            Please contact our support team if you need to register additional gyms.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <x-filament::icon icon="heroicon-s-exclamation-circle"
+                        class="h-6 w-6 text-gray-500 dark:text-gray-400 " />
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        <strong>{{ $remainingGyms }}</strong> gym registrations remaining ({{ $currentGymCount }}/3
+                        used)
+                    </p>
+                </div>
+            </div>
+        </div> --}}
+    @endif
     <!-- Form Start -->
     <div class="w-full">
         <x-filament-panels::form wire:submit="register">
             {{ $this->form }}
 
-            <x-filament-panels::form.actions :actions="$this->getCachedFormActions()" :full-width="$this->hasFullWidthFormActions()" />
+            @if (!$hasReachedLimit)
+                <x-filament-panels::form.actions :actions="$this->getCachedFormActions()" :full-width="$this->hasFullWidthFormActions()" />
+            @endif
         </x-filament-panels::form>
     </div>
     <!-- Form End -->
+
+    @if ($hasReachedLimit)
+        <div class="mt-6 text-center">
+            <div
+                class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium text-gray-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Registration Disabled - Limit Reached
+            </div>
+        </div>
+    @endif
 
     <style>
         .fi-simple-main {

@@ -7,12 +7,15 @@ use App\Models\Gym;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\RegisterTenant;
 use Illuminate\Support\Str;
 
 class RegisterGym extends RegisterTenant
 {
     protected static string $view = 'filament.admin.pages.register-gym';
+
+    public $totalGyms = 10; // Maximum gyms allowed per owner
 
     public static function getLabel(): string
     {
@@ -56,11 +59,75 @@ class RegisterGym extends RegisterTenant
             ->columns(1); // This sets the main form to single column (full width)
     }
 
+    protected function hasReachedGymLimit(): bool
+    {
+        $gymCount = Gym::where('owner_id', auth()->id())->count();
+        return $gymCount >= $this->totalGyms;
+    }
+
+    protected function getGymLimitDescription(): string
+    {
+        $currentCount = Gym::where('owner_id', auth()->id())->count();
+        $remaining = $this->totalGyms - $currentCount;
+
+        if ($remaining <= 0) {
+            return '⚠️ You have reached the maximum limit of ' . $this->totalGyms . ' gyms. Contact support to register more gyms.';
+        }
+
+        return "📍 You can register {$remaining} more gym(s). Current: {$currentCount}/{$this->totalGyms}";
+    }
+
+    protected function getFormActions(): array
+    {
+        if ($this->hasReachedGymLimit()) {
+            return [];
+        }
+
+        return parent::getFormActions();
+    }
+
+    public function register(): void
+    {
+        // Double-check the limit before processing
+        if ($this->hasReachedGymLimit()) {
+            Notification::make()
+                ->title('Registration Failed')
+                ->body('You have reached the maximum limit of 3 gyms.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        parent::register();
+    }
+
     protected function handleRegistration(array $data): Gym
     {
-        $data['owner_id'] = auth()->id();
+        // Final check before creating the gym
+        if ($this->hasReachedGymLimit()) {
+            throw new \Exception('Gym limit exceeded. Cannot register more than 3 gyms.');
+        }
 
+        $data['owner_id'] = auth()->id();
         $gym = Gym::create($data);
+
+        // Show success notification with remaining count
+        $remainingCount = 2 - Gym::where('owner_id', auth()->id())->count();
+
+        if ($remainingCount > 0) {
+            Notification::make()
+                ->title('Gym Registered Successfully!')
+                ->body("You can register {$remainingCount} more gym(s).")
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Gym Registered Successfully!')
+                ->body('You have reached the maximum limit of 3 gyms.')
+                ->success()
+                ->send();
+        }
 
         return $gym;
     }
