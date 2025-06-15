@@ -2,7 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\GymStatsOverview;
+use App\Filament\Admin\Pages\Tenancy\RegisterGym;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
@@ -42,10 +42,11 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->spa()
-            ->tenant(Gym::class)
+            ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 ApplyTenantScopes::class,
             ], isPersistent: true)
+            ->tenantRegistration(RegisterGym::class)
             ->navigationGroups([
                 'Users',
                 'Gym Management',
