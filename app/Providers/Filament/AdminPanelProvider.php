@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
@@ -10,20 +11,15 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Joaopaulolndev\FilamentGeneralSettings\FilamentGeneralSettingsPlugin;
-use Rmsramos\Activitylog\ActivitylogPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -48,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
                 ApplyTenantScopes::class,
             ], isPersistent: true)
             ->tenantRegistration(RegisterGym::class)
+            ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
                 'Users',
                 'Gym Management',
