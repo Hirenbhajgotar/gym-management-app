@@ -9,6 +9,7 @@ use Filament\FilamentManager;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\EditTenantProfile;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Str;
@@ -65,5 +66,13 @@ class EditGymProfile extends EditTenantProfile
 
         $this->redirect($redirectUrl);
         // $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
+    }
+
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Gym Profile Updated')
+            ->body('Your gym profile has been successfully updated.');
     }
 }
