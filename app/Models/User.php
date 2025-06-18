@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -81,30 +81,30 @@ class User extends Authenticatable implements FilamentUser
         return false;
     }
 
-    // public function getTenants(Panel $panel): array|Collection
-    // {
-    //     if ($panel->getId() === 'admin') {
-    //         if ($this->hasRole('gym_owner')) {
-    //             return $this->gyms;
-    //         }
-    //         if ($this->hasRole('team_member')) {
-    //             return $this->teamMember->gyms;
-    //         }
-    //     }
+    public function getTenants(Panel $panel): array|Collection
+    {
+        if ($panel->getId() === 'admin') {
+            if ($this->hasRole('gym_owner')) {
+                return $this->gyms;
+            }
+            if ($this->hasRole('team_member')) {
+                return $this->teamMember->gyms;
+            }
+        }
 
-    //     return collect();
-    // }
+        return collect();
+    }
 
-    // public function canAccessTenant(Model $tenant): bool
-    // {
-    //     if ($this->hasRole('gym_owner')) {
-    //         return $this->gyms->contains($tenant);
-    //     }
-    //     if ($this->hasRole('team_member')) {
-    //         return $this->teamMember->gyms->contains($tenant);
-    //     }
-    //     return false;
-    // }
+    public function canAccessTenant(Model $tenant): bool
+    {
+        if ($this->hasRole('gym_owner')) {
+            return $this->gyms->contains($tenant);
+        }
+        if ($this->hasRole('team_member')) {
+            return $this->teamMember->gyms->contains($tenant);
+        }
+        return false;
+    }
 
     public function gyms(): HasMany
     {

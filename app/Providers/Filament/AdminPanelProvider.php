@@ -2,26 +2,24 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\GymStatsOverview;
+use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
+use App\Filament\Admin\Pages\Tenancy\RegisterGym;
+use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Joaopaulolndev\FilamentGeneralSettings\FilamentGeneralSettingsPlugin;
-use Rmsramos\Activitylog\ActivitylogPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -38,9 +36,15 @@ class AdminPanelProvider extends PanelProvider
             ->profile(isSimple: false)
             ->colors([
                 'primary' => Color::Amber,
+                'danger' => Color::Red,
             ])
             ->spa()
-            // ->tenant(Gym::class)
+            ->tenant(Gym::class, slugAttribute: 'slug')
+            ->tenantMiddleware([
+                ApplyTenantScopes::class,
+            ], isPersistent: true)
+            ->tenantRegistration(RegisterGym::class)
+            ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
                 'Users',
                 'Gym Management',

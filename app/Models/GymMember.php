@@ -130,12 +130,12 @@ class GymMember extends Model
         return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
     }
 
-    public function gym()
+    public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
-    public function membershipPlan()
+    public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class, 'gym_membership_plan_id');
     }
