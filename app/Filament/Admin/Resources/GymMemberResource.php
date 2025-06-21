@@ -30,11 +30,16 @@ class GymMemberResource extends Resource
 {
     protected static ?string $model = GymMember::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
-
-    protected static ?string $navigationLabel = 'Members';
+    protected static ?string $navigationLabel = 'Gym Members';
 
     protected static ?string $navigationGroup = 'Users';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $modelClass = static::$model;
+        $query = $modelClass::query();
+        return $query->count();
+    }
 
     // Restrict to admins or gym owners with gyms
     public static function canAccess(array $parameters = []): bool

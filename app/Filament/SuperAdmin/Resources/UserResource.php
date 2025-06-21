@@ -23,12 +23,12 @@ class UserResource extends Resource
     protected static ?int $navigationSort = 1;
 
     // Restrict to admins or gym owners with gyms
-    public static function canAccess(array $parameters = []): bool
-    {
-        $user = auth()->user();
+    // public static function canAccess(array $parameters = []): bool
+    // {
+    //     $user = auth()->user();
 
-        return $user->hasRole('super_admin');
-    }
+    //     return $user->hasRole('super_admin');
+    // }
 
     public static function getMiddleware(): array
     {

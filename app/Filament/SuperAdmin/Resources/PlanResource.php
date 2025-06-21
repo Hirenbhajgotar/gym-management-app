@@ -23,10 +23,10 @@ class PlanResource extends Resource
     protected static ?int $navigationSort = 3;
 
     // Restrict access to admins only
-    public static function canAccess(array $parameters = []): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
+    // public static function canAccess(array $parameters = []): bool
+    // {
+    //     return auth()->user()->hasRole('super_admin');
+    // }
 
     public static function getNavigationBadge(): ?string
     {

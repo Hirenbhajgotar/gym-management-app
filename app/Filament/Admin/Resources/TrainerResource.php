@@ -21,8 +21,7 @@ class TrainerResource extends Resource
 {
     protected static ?string $model = Trainer::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    protected static ?string $navigationIcon = 'phosphor-person-simple-throw';
+    // protected static ?string $navigationIcon = 'phosphor-person-simple-throw';
 
     protected static ?string $navigationGroup = 'Users';
 
@@ -34,17 +33,6 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        // return cache()->remember('trainer_navigation_badge_count_' . auth()->id(), now()->addMinutes(15), function () {
-        //     /** @var class-string<Model> $modelClass */
-        //     $modelClass = static::$model;
-        //     $query = $modelClass::query();
-        //     if (auth()->user()->hasRole('gym_owner')) {
-        //         $query->whereHas('gym', function ($q) {
-        //             $q->where('owner_id', auth()->id());
-        //         });
-        //     }
-        //     return (string) $query->count();
-        // });
         $modelClass = static::$model;
         $query = $modelClass::query();
         return $query->count();
