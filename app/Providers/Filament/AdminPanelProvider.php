@@ -80,7 +80,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                // \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
                 // FilamentGeneralSettingsPlugin::make()
                 //     ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
                 //     ->setSort(3)

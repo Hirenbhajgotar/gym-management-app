@@ -21,12 +21,12 @@ class CountryResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    public static function canAccess(array $parameters = []): bool
-    {
-        $user = auth()->user();
+    // public static function canAccess(array $parameters = []): bool
+    // {
+    //     $user = auth()->user();
 
-        return $user->hasRole('super_admin');
-    }
+    //     return $user->hasRole('super_admin');
+    // }
 
     public static function getFormSchema()
     {
