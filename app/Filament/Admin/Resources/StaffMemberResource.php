@@ -27,7 +27,9 @@ class StaffMemberResource extends Resource
 {
     protected static ?string $model = StaffMember::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    // protected static ?string $navigationIcon = 'heroicon-o-users';
+
+    protected static ?string $navigationGroup = 'Users';
 
     protected static bool $isScopedToTenant = false;
 
@@ -40,6 +42,13 @@ class StaffMemberResource extends Resource
     public static function getPluralLabel(): string
     {
         return 'Staff Members';
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $modelClass = static::$model;
+        $query = $modelClass::query();
+        return $query->count();
     }
 
     public static function form(Form $form): Form
