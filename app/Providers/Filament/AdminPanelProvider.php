@@ -11,6 +11,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -46,8 +47,12 @@ class AdminPanelProvider extends PanelProvider
             ->tenantRegistration(RegisterGym::class)
             ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
-                'Users',
-                'Gym Management',
+                NavigationGroup::make()
+                    ->label('Users')
+                    ->icon('heroicon-o-users'),
+                NavigationGroup::make()
+                    ->label('Gym Management')
+                    ->icon('heroicon-o-building-storefront'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)

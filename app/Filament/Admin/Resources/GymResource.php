@@ -15,11 +15,11 @@ class GymResource extends Resource
 {
     protected static ?string $model = Gym::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-office';
-
     protected static ?string $navigationLabel = 'Gyms';
 
     protected static ?string $navigationGroup = 'Gym Management';
+
+    protected static bool $isDiscovered = false;
 
     public static function canAccess(array $parameters = []): bool
     {

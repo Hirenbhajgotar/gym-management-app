@@ -30,9 +30,7 @@ class GymMemberResource extends Resource
 {
     protected static ?string $model = GymMember::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-users';
-
-    protected static ?string $navigationLabel = 'Members';
+    protected static ?string $navigationLabel = 'Gym Members';
 
     protected static ?string $navigationGroup = 'Users';
 
