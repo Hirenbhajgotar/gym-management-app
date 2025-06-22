@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'staff' => [ // New guard for staff panel
+            'driver' => 'session',
+            'provider' => 'staff',
+        ],
     ],
 
     /*
@@ -63,6 +67,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'staff' => [ // New provider for staff members
+            'driver' => 'eloquent',
+            'model' => App\Models\StaffMember::class,
         ],
 
         // 'users' => [

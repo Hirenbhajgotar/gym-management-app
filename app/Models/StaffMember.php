@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasTenants;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 
-class StaffMember extends Authenticatable
+class StaffMember extends Authenticatable implements FilamentUser, HasTenants
 {
     use HasFactory, Notifiable;
 
@@ -38,6 +42,30 @@ class StaffMember extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Only allow access to the customer panel
+        if ($panel->getId() === 'staff') {
+            return true; // or add your own logic
+        }
+
+        return false;
+    }
+
+    public function getTenants(Panel $panel): array|Collection
+    {
+        if ($panel->getId() === 'staff') {
+            return $this->gyms;
+        }
+
+        return collect();
+    }
+
+    public function canAccessTenant(Model $tenant): bool
+    {
+        return $this->gyms->contains($tenant);
     }
 
     /**

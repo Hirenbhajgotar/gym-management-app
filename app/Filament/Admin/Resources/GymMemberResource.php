@@ -45,8 +45,12 @@ class GymMemberResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-
-        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        if (filament()->getId() === 'admin') {
+            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        } else if (filament()->getId() === 'staff') {
+            return true;
+        }
+        return false;
     }
 
     public static function form(Form $form): Form

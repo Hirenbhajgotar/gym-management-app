@@ -21,14 +21,17 @@ class TrainerResource extends Resource
 {
     protected static ?string $model = Trainer::class;
 
-    // protected static ?string $navigationIcon = 'phosphor-person-simple-throw';
-
     protected static ?string $navigationGroup = 'Users';
 
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-        return $user->hasRole(['super_admin', 'gym_owner']);
+        if (filament()->getId() === 'admin') {
+            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        } else if (filament()->getId() === 'staff') {
+            return true;
+        }
+        return false;
     }
 
     public static function getNavigationBadge(): ?string
@@ -63,13 +66,6 @@ class TrainerResource extends Resource
                     ->relationship('gym', 'name')
                     ->required()
                     ->options(function () {
-                        // Cache gym options to avoid duplicate queries
-                        // return cache()->remember('trainers_gym_options_' . auth()->id(), now()->addHours(2), function () {
-                        //     if (auth()->user()->hasRole('gym_owner')) {
-                        //         return Gym::where('owner_id', auth()->id())->pluck('name', 'id');
-                        //     }
-                        //     return Gym::pluck('name', 'id');
-                        // });
 
                         if (auth()->user()->hasRole('gym_owner')) {
                             return Gym::where('owner_id', auth()->id())->pluck('name', 'id');
@@ -155,21 +151,12 @@ class TrainerResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_available'),
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        }
-                        if (auth()->user()->hasRole('super_admin')) {
-                            return $query;
-                        }
-                        // Cache gym options for the filter
-                        // return cache()->remember('trainers_gym_filter_options_' . auth()->id(), now()->addHours(2), function () use ($query) {
-                        //     if (auth()->user()->hasRole('gym_owner')) {
-                        //         return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        //     }
-                        //     if (auth()->user()->hasRole('super_admin')) {
-                        //         return $query;
-                        //     }
-                        // });
+                        // if (auth()->user()->hasRole('gym_owner')) {
+                        //     return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                        // }
+                        // if (auth()->user()->hasRole('super_admin')) {
+                        //     return $query;
+                        // }
                     })
                     ->label('Gym'),
                 Tables\Filters\Filter::make('basic_salary')
