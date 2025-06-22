@@ -10,10 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Spatie\Permission\Traits\HasRoles;
 
 class StaffMember extends Authenticatable implements FilamentUser, HasTenants
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'name',
@@ -43,6 +44,9 @@ class StaffMember extends Authenticatable implements FilamentUser, HasTenants
             'password' => 'hashed',
         ];
     }
+
+    // Set the guard name for Spatie Permission
+    protected string $guard_name = 'staff';
 
     public function canAccessPanel(Panel $panel): bool
     {

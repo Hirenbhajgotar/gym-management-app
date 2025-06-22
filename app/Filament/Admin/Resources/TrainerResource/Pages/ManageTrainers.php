@@ -49,9 +49,6 @@ class ManageTrainers extends ManageRecords
                     sampleButtonLabel: 'Download Sample Excel'
                 ),
 
-            // ImportAction::make()
-            //     ->importer(TrainerImporter::class),
-
             Actions\CreateAction::make(),
         ];
     }

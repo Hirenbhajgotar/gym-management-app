@@ -106,6 +106,12 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+        'staff' => [
+            'provider' => 'staff',
+            'table' => 'password_reset_tokens', // You might want a separate table
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

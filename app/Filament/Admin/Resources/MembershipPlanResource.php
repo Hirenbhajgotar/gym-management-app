@@ -43,14 +43,18 @@ class MembershipPlanResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name', function ($query) {
-                                if (auth()->user()->hasRole('gym_owner')) {
+                                if (filament()->getId() === 'admin') {
+                                    if (auth()->user()->hasRole('gym_owner')) {
+                                        return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                    }
+                                } else if (filament()->getId() === 'staff') {
+                                    // Staff can see all gyms
                                     return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
                                 }
 
                                 return $query;
                             })
                             ->required()
-                            // ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
                             ->placeholder('Select a gym'),
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -139,10 +143,14 @@ class MembershipPlanResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        }
-                        if (auth()->user()->hasRole('super_admin')) {
+                        if (filament()->getId() === 'admin') {
+                            if (auth()->user()->hasRole('gym_owner')) {
+                                return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                            }
+                            if (auth()->user()->hasRole('super_admin')) {
+                                return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                            }
+                        } else if (filament()->getId() === 'staff') {
                             return $query;
                         }
                     }),

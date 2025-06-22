@@ -9,6 +9,7 @@ use App\Models\Gym;
 use App\Models\Trainer;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Tables;
 use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class TrainerResource extends Resource
 {
@@ -25,12 +27,11 @@ class TrainerResource extends Resource
 
     public static function canAccess(array $parameters = []): bool
     {
-        $user = auth()->user();
-        if (filament()->getId() === 'admin') {
-            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } else if (filament()->getId() === 'staff') {
+        if (filament()->getId() === 'admin' || filament()->getId() === 'staff') {
+            // return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
             return true;
         }
+
         return false;
     }
 
@@ -66,9 +67,10 @@ class TrainerResource extends Resource
                     ->relationship('gym', 'name')
                     ->required()
                     ->options(function () {
-
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return Gym::where('owner_id', auth()->id())->pluck('name', 'id');
+                        if (filament()->getId() === 'admin') {
+                            return Gym::where('owner_id', Auth::guard('web')->user()->id())->pluck('name', 'id');
+                        } else if (filament()->getId() === 'staff') {
+                            return Gym::whereIn('id', Auth::guard('staff')->user()->gyms()->pluck('id'))->pluck('name', 'id');
                         }
                         return Gym::pluck('name', 'id');
                     }),
@@ -151,12 +153,12 @@ class TrainerResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_available'),
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
-                        // if (auth()->user()->hasRole('gym_owner')) {
-                        //     return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        // }
-                        // if (auth()->user()->hasRole('super_admin')) {
-                        //     return $query;
-                        // }
+                        if (filament()->getId() === 'admin') {
+                            return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->pluck('id'));
+                        } else if (filament()->getId() === 'staff') {
+                            return $query->whereIn('id', Auth::guard('staff')->user()?->gyms()->get()->pluck('id'));
+                        }
+                        return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->pluck('id'));
                     })
                     ->label('Gym'),
                 Tables\Filters\Filter::make('basic_salary')
