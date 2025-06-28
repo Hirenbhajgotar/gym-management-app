@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Contracts\GymUser;
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -20,7 +22,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -71,11 +73,16 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     {
         // return $this->hasRole(['super_admin', 'gym_owner']);
         if ($panel->getId() === 'super-admin') {
+            // dd($this->getRoleNames());
             return $this->hasRole('super_admin');
         }
 
         if ($panel->getId() === 'admin') {
-            return $this->hasAnyRole(['gym_owner', 'team_member']);
+            return $this->hasAnyRole(['gym_owner']);
+        }
+
+        if ($panel->getId() === 'staff') {
+            return $this->hasAnyRole(['staff_member', 'receptionist']);
         }
 
         return false;
@@ -83,25 +90,41 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function getTenants(Panel $panel): array|Collection
     {
-        if ($panel->getId() === 'admin') {
-            if ($this->hasRole('gym_owner')) {
-                return $this->gyms;
-            }
-            if ($this->hasRole('team_member')) {
-                return $this->teamMember->gyms;
-            }
-        }
+        return $this->gyms;
+        // if ($panel->getId() === 'admin') {
+        //     // if ($this->hasRole('gym_owner')) {
+        //     //     return $this->gyms;
+        //     // }
+        //     // if ($this->hasRole('team_member')) {
+        //     //     return $this->teamMember->gyms;
+        //     // }
+        //     return $this->gyms;
+        // }
 
         return collect();
     }
 
     public function canAccessTenant(Model $tenant): bool
     {
-        if ($this->hasRole('gym_owner')) {
-            return $this->gyms->contains($tenant);
-        }
+        return $this->gyms->contains($tenant);
+        // if ($this->hasRole('gym_owner')) {
+        //     return $this->gyms->contains($tenant);
+        // }
         return false;
     }
+
+    // public function canManageGym(int $gymId): bool
+    // {
+    //     if ($this->hasRole('super_admin')) {
+    //         return true;
+    //     }
+
+    //     if ($this->hasRole('gym_owner')) {
+    //         return $this->gyms()->where('gyms.id', $gymId)->exists();
+    //     }
+
+    //     return false;
+    // }
 
     // Gyms this user owns
     public function gyms(): HasMany

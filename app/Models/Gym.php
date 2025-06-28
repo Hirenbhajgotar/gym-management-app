@@ -61,4 +61,18 @@ class Gym extends Model
 
         return $slug;
     }
+
+    /** @return HasMany<\App\Models\GymMember, self> */
+    public function gymMembers(): HasMany
+    {
+        return $this->hasMany(\App\Models\GymMember::class);
+    }
+
+
+    /** @return HasMany<\App\Models\MembershipPlan, self> */
+    public function membershipPlans(): HasMany
+    {
+        return $this->hasMany(\App\Models\MembershipPlan::class);
+    }
+
 }

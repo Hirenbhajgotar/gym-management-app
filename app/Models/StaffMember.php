@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\GymUser;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -71,6 +72,18 @@ class StaffMember extends Authenticatable implements FilamentUser, HasTenants
     {
         return $this->gyms->contains($tenant);
     }
+
+    // public function canManageGym(int $gymId): bool
+    // {
+    //     return $this->gyms()->where('gyms.id', $gymId)->exists();
+    // }
+
+    // public function hasRole(string $role): bool
+    // {
+    //     // If using Spatie Permission, this method is already available
+    //     // If using custom roles, implement your logic here
+    //     return parent::hasRole($role);
+    // }
 
     /**
      * Get the gyms that this staff member is associated with.

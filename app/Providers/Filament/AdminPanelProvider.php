@@ -42,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->spa()
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
+                // SyncShieldTenant::class,
                 ApplyTenantScopes::class,
             ], isPersistent: true)
             ->tenantRegistration(RegisterGym::class)
@@ -86,6 +87,23 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 // \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                // FilamentShieldPlugin::make()
+                //     ->gridColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 3
+                //     ])
+                //     ->sectionColumnSpan(1)
+                //     ->checkboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 4,
+                //     ])
+                //     ->resourceCheckboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //     ]),
+
                 // FilamentGeneralSettingsPlugin::make()
                 //     ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
                 //     ->setSort(3)

@@ -29,6 +29,8 @@ class SuperAdminPanelProvider extends PanelProvider
                 'primary' => Color::Emerald,
             ])
             ->login()
+            ->authGuard('web')
+            ->authPasswordBroker('users')
             ->spa()
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
@@ -60,6 +62,24 @@ class SuperAdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                // FilamentShieldPlugin::make()
+                //     ->gridColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 3
+                //     ])
+                //     ->sectionColumnSpan(1)
+                //     ->checkboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 4,
+                //     ])
+                //     ->resourceCheckboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //     ]),
             ]);
     }
 }

@@ -16,8 +16,6 @@ class MembershipPlanResource extends Resource
 {
     protected static ?string $model = MembershipPlan::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-ticket';
-
     protected static ?string $navigationLabel = 'Membership Plans';
 
     protected static ?string $navigationGroup = 'Gym Management';
@@ -28,7 +26,7 @@ class MembershipPlanResource extends Resource
         if (filament()->getId() === 'admin') {
             return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
         } else if (filament()->getId() === 'staff') {
-            return true;
+            return $user->hasRole('receptionist');
         }
         return false;
     }
