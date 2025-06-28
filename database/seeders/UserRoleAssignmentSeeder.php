@@ -17,24 +17,126 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('🚀 Starting Advanced User Role Assignment...');
+        $choices = [
+            'Do you want to create only super-admin user?',
+            'Do you want to create demo users?',
+            'Do you want to assign roles to existing users?',
+            'Do you want to update existing user roles?',
+        ];
 
-        // Option 1: Create new users with roles
-        if ($this->command->confirm('Do you want to create demo users?', true)) {
-            $this->createDemoUsers();
-        }
+        $selectedChoice = $this->command->choice(
+            "Select option for:",
+            $choices,
+            0
+        );
 
-        // Option 2: Assign roles to existing users
-        if ($this->command->confirm('Do you want to assign roles to existing users?', false)) {
-            $this->assignRolesToExistingUsers();
-        }
+        switch ($selectedChoice) {
+            case 'Do you want to create only super-admin user?':
+                $this->createSuperAdminUser();
+                break;
 
-        // Option 3: Update/reassign roles
-        if ($this->command->confirm('Do you want to update existing user roles?', false)) {
-            $this->updateExistingUserRoles();
+            case 'Do you want to create demo users?':
+                $this->createDemoUsers();
+                break;
+
+            case 'Do you want to assign roles to existing users?':
+                $this->assignRolesToExistingUsers();
+                break;
+
+            case 'Do you want to update existing user roles?':
+                $this->updateExistingUserRoles();
+                break;
+
+            default:
+                $this->command->fail('Invalid choice selected.');
+                break;
         }
 
         $this->displayFinalSummary();
+    }
+
+    public function createSuperAdminUser()
+    {
+        $this->command->info('🔐 Creating Super-Admin User...');
+        $this->command->newLine();
+
+        // Prompt for user details
+        $name = $this->command->ask('Enter the super-admin name');
+
+        if (empty($name)) {
+            $this->command->fail('Name cannot be empty.');
+            return;
+        }
+
+        $email = $this->command->ask('Enter the super-admin email');
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->command->fail('Please enter a valid email address.');
+            return;
+        }
+
+        // Check if email already exists
+        if (User::where('email', $email)->exists()) {
+            $this->command->fail("User with email '{$email}' already exists.");
+            return;
+        }
+
+        $password = $this->command->secret('Enter the super-admin password (minimum 8 characters)');
+
+        if (empty($password) || strlen($password) < 8) {
+            $this->command->fail('Password must be at least 8 characters long. Exiting...');
+            return;
+        }
+
+        $confirmPassword = $this->command->secret('Confirm the password');
+
+        if ($password !== $confirmPassword) {
+            $this->command->fail('Passwords do not match. Exiting...');
+            return;
+        }
+
+        try {
+            // Create the super-admin user
+            $superAdmin = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => Hash::make($password),
+                'email_verified_at' => now(), // Auto-verify super-admin
+            ]);
+
+            // Assign super_admin role (assuming you have a super_admin role)
+            $superAdminRole = Role::where('name', 'super_admin')->first();
+
+            if (!$superAdminRole) {
+                // Create super_admin role if it doesn't exist
+                $superAdminRole = Role::create([
+                    'name' => 'super_admin',
+                    'guard_name' => 'web'
+                ]);
+
+                $this->command->warn('Super-admin role was created as it did not exist.');
+            }
+
+            $superAdmin->assignRole($superAdminRole);
+
+            $this->command->info("✅ Super-admin user '{$name}' created successfully!");
+            $this->command->table(
+                ['Field', 'Value'],
+                [
+                    ['Name', $name],
+                    ['Email', $email],
+                    ['Role', 'super_admin'],
+                    ['Status', 'Active & Verified'],
+                    ['Created At', $superAdmin->created_at->format('Y-m-d H:i:s')]
+                ]
+            );
+
+            $this->command->newLine();
+            $this->command->info('🎉 Super-admin user has been created and is ready to use!');
+        } catch (\Exception $e) {
+            $this->command->error('Failed to create super-admin user: ' . $e->getMessage());
+            $this->command->fail('Please check your database connection and try again.');
+        }
     }
 
     /**
