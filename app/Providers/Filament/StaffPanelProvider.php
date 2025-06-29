@@ -32,7 +32,7 @@ class StaffPanelProvider extends PanelProvider
         return $panel
             ->id('staff')
             ->path('staff')
-            ->authGuard('staff')
+            // ->authGuard('web')
             ->login()
             ->colors([
                 'primary' => Color::Amber,

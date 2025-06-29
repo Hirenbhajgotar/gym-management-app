@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\StaffMember;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class StaffMemberCreate extends Notification
+class ReceptionistCreate extends Notification
 {
     use Queueable;
 
@@ -16,7 +17,7 @@ class StaffMemberCreate extends Notification
      * Create a new notification instance.
      */
     public function __construct(
-        public StaffMember $staffMember,
+        public User $user,
         public string $password
     ) {}
 
@@ -37,9 +38,9 @@ class StaffMemberCreate extends Notification
     {
         return (new MailMessage)
             ->subject('Welcome to Team!')
-            ->greeting('Hello ' . $this->staffMember->name . '!')
+            ->greeting('Hello ' . $this->user->name . '!')
             ->line('You have been added as a staff member. Please use the following credentials to log in:')
-            ->line('Email: ' . $this->staffMember->email)
+            ->line('Email: ' . $this->user->email)
             ->line('Password: ' . $this->password)
             ->line('Please login and change your password for security.')
             ->action('Login Now', url('/staff-member/login'))
