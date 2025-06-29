@@ -73,7 +73,6 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     {
         // return $this->hasRole(['super_admin', 'gym_owner']);
         if ($panel->getId() === 'super-admin') {
-            // dd($this->getRoleNames());
             return $this->hasRole('super_admin');
         }
 
@@ -113,23 +112,17 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         return false;
     }
 
-    // public function canManageGym(int $gymId): bool
+    // Gyms this user owns
+    // public function gyms(): HasMany
     // {
-    //     if ($this->hasRole('super_admin')) {
-    //         return true;
-    //     }
-
-    //     if ($this->hasRole('gym_owner')) {
-    //         return $this->gyms()->where('gyms.id', $gymId)->exists();
-    //     }
-
-    //     return false;
+    //     return $this->hasMany(Gym::class, 'owner_id');
     // }
 
-    // Gyms this user owns
-    public function gyms(): HasMany
+    public function gyms()
     {
-        return $this->hasMany(Gym::class, 'owner_id');
+        return $this->belongsToMany(Gym::class, 'gym_user')
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
     }
 
     // public function subscription()

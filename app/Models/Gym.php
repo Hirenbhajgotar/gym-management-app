@@ -22,6 +22,13 @@ class Gym extends Model
         'owner_id',
     ];
 
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'gym_user')
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -74,5 +81,4 @@ class Gym extends Model
     {
         return $this->hasMany(\App\Models\MembershipPlan::class);
     }
-
 }

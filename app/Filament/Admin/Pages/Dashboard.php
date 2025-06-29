@@ -31,7 +31,7 @@ class Dashboard extends BaseDashboard
                         Select::make('gymId')
                             ->label('Select Gym')
                             ->options(function () {
-                                return auth()->user()->gyms()->pluck('name', 'id');
+                                return auth()->user()->gyms()->get()->pluck('name', 'id');
                             }),
                         // DatePicker::make('startDate', null),
                         // DatePicker::make('endDate', null),

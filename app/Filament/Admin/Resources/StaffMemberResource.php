@@ -33,6 +33,9 @@ class StaffMemberResource extends Resource
 
     protected static bool $isScopedToTenant = false;
 
+    protected static bool $isDiscovered = false;
+
+
 
     public static function getLabel(): string
     {

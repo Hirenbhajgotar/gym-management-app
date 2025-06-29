@@ -25,6 +25,7 @@ class TrainerResource extends Resource
 
     protected static ?string $navigationGroup = 'Users';
 
+
     public static function canAccess(array $parameters = []): bool
     {
         if (filament()->getId() === 'admin' || filament()->getId() === 'staff') {
@@ -70,7 +71,7 @@ class TrainerResource extends Resource
                         if (filament()->getId() === 'admin') {
                             return Gym::where('owner_id', Auth::guard('web')->user()->id())->pluck('name', 'id');
                         } else if (filament()->getId() === 'staff') {
-                            return Gym::whereIn('id', Auth::guard('staff')->user()->gyms()->pluck('id'))->pluck('name', 'id');
+                            return Gym::whereIn('id', Auth::guard('staff')->user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
                         }
                         return Gym::pluck('name', 'id');
                     }),
@@ -154,11 +155,11 @@ class TrainerResource extends Resource
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
                         if (filament()->getId() === 'admin') {
-                            return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->pluck('id'));
+                            return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
                         } else if (filament()->getId() === 'staff') {
                             return $query->whereIn('id', Auth::guard('staff')->user()?->gyms()->get()->pluck('id'));
                         }
-                        return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->pluck('id'));
+                        return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
                     })
                     ->label('Gym'),
                 Tables\Filters\Filter::make('basic_salary')

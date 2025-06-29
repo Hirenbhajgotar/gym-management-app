@@ -20,6 +20,7 @@ class MembershipPlanResource extends Resource
 
     protected static ?string $navigationGroup = 'Gym Management';
 
+
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
@@ -43,11 +44,11 @@ class MembershipPlanResource extends Resource
                             ->relationship('gym', 'name', function ($query) {
                                 if (filament()->getId() === 'admin') {
                                     if (auth()->user()->hasRole('gym_owner')) {
-                                        return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                        return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                     }
                                 } else if (filament()->getId() === 'staff') {
                                     // Staff can see all gyms
-                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                 }
 
                                 return $query;
@@ -143,10 +144,10 @@ class MembershipPlanResource extends Resource
                     ->relationship('gym', 'name', function ($query) {
                         if (filament()->getId() === 'admin') {
                             if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
                             }
                             if (auth()->user()->hasRole('super_admin')) {
-                                return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
+                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
                             }
                         } else if (filament()->getId() === 'staff') {
                             return $query;
