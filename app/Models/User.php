@@ -71,7 +71,6 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        // return $this->hasRole(['super_admin', 'gym_owner']);
         if ($panel->getId() === 'super-admin') {
             return $this->hasRole('super_admin');
         }
@@ -90,33 +89,12 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     public function getTenants(Panel $panel): array|Collection
     {
         return $this->gyms;
-        // if ($panel->getId() === 'admin') {
-        //     // if ($this->hasRole('gym_owner')) {
-        //     //     return $this->gyms;
-        //     // }
-        //     // if ($this->hasRole('team_member')) {
-        //     //     return $this->teamMember->gyms;
-        //     // }
-        //     return $this->gyms;
-        // }
-
-        return collect();
     }
 
     public function canAccessTenant(Model $tenant): bool
     {
         return $this->gyms->contains($tenant);
-        // if ($this->hasRole('gym_owner')) {
-        //     return $this->gyms->contains($tenant);
-        // }
-        return false;
     }
-
-    // Gyms this user owns
-    // public function gyms(): HasMany
-    // {
-    //     return $this->hasMany(Gym::class, 'owner_id');
-    // }
 
     public function gyms()
     {

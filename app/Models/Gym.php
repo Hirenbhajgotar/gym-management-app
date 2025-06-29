@@ -29,17 +29,6 @@ class Gym extends Model
             ->withTimestamps();
     }
 
-    public function owner(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
-
-    public function staffMembers()
-    {
-        return $this->belongsToMany(StaffMember::class, 'gym_staff_members')
-            ->withPivot('is_active');
-    }
-
     public function members(): HasMany
     {
         return $this->hasMany(GymMember::class);
