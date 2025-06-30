@@ -63,7 +63,7 @@
                             </div>
 
                             @error('rating')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -79,7 +79,7 @@
                                              dark:placeholder-gray-400 dark:focus:ring-primary-500 dark:focus:border-primary-500
                                              transition-colors duration-200"></textarea>
                             @error('feedback')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -92,17 +92,19 @@
                                 <x-filament::input type="email" wire:model="email" placeholder="your@email.com" />
                             </x-filament::input.wrapper>
                             @error('email')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <!-- Buttons -->
                         <div class="flex space-x- gap-x-4 pt-6 border-t border-gray-100 dark:border-gray-700">
-                            <x-filament::button wire:click="closeFeedback" color="gray" outlined="true">
+                            <x-filament::button wire:click="closeFeedback" wire:target="submitFeedback" color="gray"
+                                outlined="true">
                                 Maybe Later
                             </x-filament::button>
 
-                            <x-filament::button type="submit" icon="heroicon-o-sparkles">
+                            <x-filament::button type="submit" icon="heroicon-o-sparkles" wire:loading.attr="disabled"
+                                wire:target="submitFeedback">
                                 Submit Feedback
                             </x-filament::button>
                         </div>
