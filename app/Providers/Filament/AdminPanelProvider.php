@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
+use App\Filament\Components\FeedbackPopup;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
@@ -21,6 +22,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -114,6 +116,16 @@ class AdminPanelProvider extends PanelProvider
                 PhosphorIcons::make(),
 
                 // ActivitylogPlugin::make(),
-            ]);
+            ])
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+            );
+    }
+
+    public function boot(): void
+    {
+        // Register the Livewire component
+        Livewire::component('feedback-popup', FeedbackPopup::class);
     }
 }
