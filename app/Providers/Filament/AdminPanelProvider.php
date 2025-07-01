@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
 use App\Filament\Components\FeedbackPopup;
+use App\Filament\Components\FeedbackTrigger;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
@@ -120,6 +121,11 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::body.end',
                 fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+            )
+            // Add feedback button to sidebar bottom
+            ->renderHook(
+                'panels::sidebar.nav.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
             );
     }
 
@@ -127,5 +133,6 @@ class AdminPanelProvider extends PanelProvider
     {
         // Register the Livewire component
         Livewire::component('feedback-popup', FeedbackPopup::class);
+        Livewire::component('feedback-trigger', FeedbackTrigger::class);
     }
 }

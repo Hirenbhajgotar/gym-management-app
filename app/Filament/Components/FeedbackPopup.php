@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Livewire\Component;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 
 class FeedbackPopup extends Component
 {
@@ -23,6 +24,12 @@ class FeedbackPopup extends Component
     {
         // Check if feedback popup should be shown
         $this->checkAndShowPopup();
+    }
+
+    #[On('open-feedback-modal')]
+    public function openModal()
+    {
+        $this->showModal = true;
     }
 
     protected function checkAndShowPopup()
