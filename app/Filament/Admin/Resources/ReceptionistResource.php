@@ -8,11 +8,14 @@ use App\Models\Receptionist;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -135,6 +138,109 @@ class ReceptionistResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('managePermissions')
+                    ->label('Manage Permissions')
+                    ->icon('heroicon-o-shield-check')
+                    ->color('warning')
+                    ->form([
+                        Select::make('gym_id')
+                            ->label('Select Gym')
+                            ->options(function (Model $record) {
+                                $user = auth()->user();
+                                $userGymIds = $user->gyms()->pluck('gyms.id');
+
+                                return $record->gyms()
+                                    ->whereIn('gyms.id', $userGymIds)
+                                    ->get()
+                                    ->pluck('name', 'id');
+                            })
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, Model $record) {
+                                if ($state) {
+                                    $pivot = $record->gyms()->where('gyms.id', $state)->first()?->pivot;
+                                    $permissions = $pivot ? json_decode($pivot->permissions, true) : [];
+
+                                    $set('manage_members', $permissions['manage_members'] ?? false);
+                                    $set('manage_subscriptions', $permissions['manage_subscriptions'] ?? false);
+                                    $set('manage_payments', $permissions['manage_payments'] ?? false);
+                                    $set('manage_classes', $permissions['manage_classes'] ?? false);
+                                    $set('view_reports', $permissions['view_reports'] ?? false);
+                                    $set('manage_equipment', $permissions['manage_equipment'] ?? false);
+                                    $set('active', $pivot ? $pivot->active : true);
+                                }
+                            }),
+
+                        Section::make('Permissions')
+                            ->schema([
+                                Toggle::make('active')
+                                    ->label('Active Status')
+                                    ->helperText('Enable/disable this receptionist for the selected gym'),
+
+                                Grid::make(2)
+                                    ->schema([
+                                        Toggle::make('manage_members')
+                                            ->label('Manage Members')
+                                            ->helperText('Add, edit, and view member profiles'),
+
+                                        Toggle::make('manage_subscriptions')
+                                            ->label('Manage Subscriptions')
+                                            ->helperText('Create and modify member subscriptions'),
+
+                                        Toggle::make('manage_payments')
+                                            ->label('Manage Payments')
+                                            ->helperText('Process payments and view payment history'),
+
+                                        Toggle::make('manage_classes')
+                                            ->label('Manage Classes')
+                                            ->helperText('Schedule classes and manage bookings'),
+
+                                        Toggle::make('view_reports')
+                                            ->label('View Reports')
+                                            ->helperText('Access gym reports and analytics'),
+
+                                        Toggle::make('manage_equipment')
+                                            ->label('Manage Equipment')
+                                            ->helperText('Track and maintain gym equipment'),
+                                    ]),
+                            ])
+                            ->visible(fn(callable $get) => $get('gym_id')),
+                    ])
+                    ->action(function (array $data, Model $record): void {
+                        $gymId = $data['gym_id'];
+
+                        $permissions = [
+                            'manage_members' => $data['manage_members'] ?? false,
+                            'manage_subscriptions' => $data['manage_subscriptions'] ?? false,
+                            'manage_payments' => $data['manage_payments'] ?? false,
+                            'manage_classes' => $data['manage_classes'] ?? false,
+                            'view_reports' => $data['view_reports'] ?? false,
+                            'manage_equipment' => $data['manage_equipment'] ?? false,
+                        ];
+
+                        $record->gyms()->updateExistingPivot($gymId, [
+                            'permissions' => json_encode($permissions),
+                            'active' => $data['active'] ?? true,
+                        ]);
+
+                        Notification::make()
+                            ->title('Permissions Updated')
+                            ->body('Receptionist permissions have been successfully updated.')
+                            ->success()
+                            ->send();
+                    })
+                    ->modalHeading('Manage Receptionist Permissions')
+                    ->modalDescription('Configure what this receptionist can do in your gyms.')
+                    ->modalSubmitActionLabel('Update Permissions')
+                    ->visible(function (Model $record): bool {
+                        $user = auth()->user();
+                        $userGymIds = $user->gyms()->pluck('gyms.id');
+
+                        return $record->gyms()
+                            ->whereIn('gyms.id', $userGymIds)
+                            ->exists();
+                    }),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
