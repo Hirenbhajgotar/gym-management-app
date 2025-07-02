@@ -15,12 +15,14 @@ class Feedback extends Model
         'rating',
         'feedback',
         'email',
+        'files',
         'submitted_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'rating' => 'integer',
+        'files' => 'array',
     ];
 
     public function user(): BelongsTo

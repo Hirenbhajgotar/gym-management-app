@@ -31,70 +31,7 @@
 
                     <!-- Form -->
                     <form wire:submit.prevent="submitFeedback" class="p-6 space-y-6 bg-white dark:bg-gray-800">
-
-                        <!-- Rating -->
-                        <div x-data="{
-                            hoveredRating: 0,
-                            selectedRating: @entangle('rating'),
-                            setRating(rating) {
-                                this.selectedRating = rating;
-                                $wire.set('rating', rating);
-                            }
-                        }">
-                            <label class="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-2">
-                                How would you rate your experience?
-                            </label>
-                            <div class="flex space-x-2 justify-center"
-                                @mouseleave="hoveredRating = selectedRating || 0">
-                                @for ($i = 1; $i <= 5; $i++)
-                                    <button type="button" @click="setRating({{ $i }})"
-                                        @mouseenter="hoveredRating = {{ $i }}"
-                                        class="transition-all duration-200 transform hover:scale-110 focus:outline-none  rounded p-1"
-                                        :class="{
-                                            'text-primary-400': selectedRating >= {{ $i }} || (
-                                                hoveredRating >=
-                                                {{ $i }} && hoveredRating > 0),
-                                            'text-gray-300 dark:text-gray-600': selectedRating < {{ $i }} &&
-                                                (hoveredRating < {{ $i }} || hoveredRating === 0)
-                                        }">
-                                        <x-filament::icon icon="heroicon-s-star" class="h-8 w-8" />
-                                    </button>
-                                @endfor
-                            </div>
-
-                            @error('rating')
-                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Feedback Text -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-2">
-                                Tell us more about your experience
-                            </label>
-                            <textarea wire:model="feedback" rows="4" placeholder="What did you like? What could we improve?"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm resize-none
-                                             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                                             dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-                                             dark:placeholder-gray-400 dark:focus:ring-primary-500 dark:focus:border-primary-500
-                                             transition-colors duration-200"></textarea>
-                            @error('feedback')
-                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Email (Optional) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-2">
-                                Email (optional - for follow-up)
-                            </label>
-                            <x-filament::input.wrapper>
-                                <x-filament::input type="email" wire:model="email" placeholder="your@email.com" />
-                            </x-filament::input.wrapper>
-                            @error('email')
-                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        {{ $this->form }}
 
                         <!-- Buttons -->
                         <div class="flex space-x- gap-x-4 pt-6 border-t border-gray-100 dark:border-gray-700">

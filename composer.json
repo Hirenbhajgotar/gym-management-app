@@ -23,6 +23,7 @@
         "livewire/volt": "^1.7.0",
         "maatwebsite/excel": "^3.1",
         "malzariey/filament-daterangepicker-filter": "^3.3",
+        "mokhosh/filament-rating": "^1.4",
         "rmsramos/activitylog": "^1.0",
         "spatie/laravel-permission": "^6.20",
         "ysfkaya/filament-phone-input": "^3.1"
