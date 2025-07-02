@@ -3,6 +3,7 @@
 namespace App\Filament\Components;
 
 use App\Models\Feedback;
+use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -42,9 +43,10 @@ class FeedbackPopup extends Component implements HasForms
     protected function checkAndShowPopup()
     {
         $userId = Auth::id();
-        $cacheKey = "feedback_popup_shown_{$userId}_" . now()->format('Y-m-d');
+        $weekKey = $this->getWeekKey();
+        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
 
-        // Check if popup was already shown today
+        // Check if popup was already shown this week
         if (!Cache::has($cacheKey)) {
             $this->showModal = true;
         }
@@ -84,12 +86,14 @@ class FeedbackPopup extends Component implements HasForms
         $data['user_id'] = $userId;
         $data['submitted_at'] = now();
 
-        // Store feedback in database (you'll need to create this model)
+        // Store feedback in database
         Feedback::create($data);
 
         // Mark popup as shown for today
-        $cacheKey = "feedback_popup_shown_{$userId}_" . now()->format('Y-m-d');
-        Cache::put($cacheKey, true, now()->endOfDay());
+        // Mark popup as shown for this week
+        $weekKey = $this->getWeekKey();
+        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
+        Cache::put($cacheKey, true, now()->endOfWeek());
 
         $this->showModal = false;
 
@@ -106,11 +110,22 @@ class FeedbackPopup extends Component implements HasForms
     {
         // Mark popup as shown for today even if closed without submitting
         $userId = Auth::id();
-        $cacheKey = "feedback_popup_shown_{$userId}_" . now()->format('Y-m-d');
-        Cache::put($cacheKey, true, now()->endOfDay());
+        $weekKey = $this->getWeekKey();
+        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
+        Cache::put($cacheKey, true, now()->endOfWeek());
 
         $this->showModal = false;
     }
+
+    /**
+     * Generate a unique key for the current week
+     * Format: YYYY-WW (e.g., 2024-52, 2025-01)
+     */
+    private function getWeekKey(): string
+    {
+        return now()->format('Y-W');
+    }
+
 
     public function render()
     {
