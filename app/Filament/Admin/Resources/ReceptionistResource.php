@@ -12,6 +12,8 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -25,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 
 class ReceptionistResource extends Resource
 {
@@ -147,415 +150,362 @@ class ReceptionistResource extends Resource
                 //     ->form([
                 //         Toggle::make('active')
                 //             ->label('Active Status')
-                //             ->helperText('Enable/disable this receptionist across all gyms'),
+                //             ->helperText('Enable/disable this receptionist across all gyms')
+                //             ->default(function (Model $record): bool {
+                //                 return $record->gyms()->wherePivot('active', true)->exists();
+                //             }),
 
-                //         Section::make('Resource Permissions')
-                //             ->schema([
-                //                 // GymMember Resource
-                //                 Toggle::make('toggle_GymMember')
-                //                     ->label('Manage Gym Members')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::GymMember',
-                //                             'view::GymMember',
-                //                             'create::GymMember',
-                //                             'update::GymMember',
-                //                             'delete::GymMember',
-                //                             'member_check_in',
-                //                             'member_check_out',
-                //                             'freeze_membership',
-                //                             'unfreeze_membership',
-                //                             'bulk_member_actions',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('GymMember_permissions')
-                //                     ->label('Gym Member Permissions')
-                //                     ->options([
-                //                         'view_any::GymMember' => 'View Any Members',
-                //                         'view::GymMember' => 'View Member',
-                //                         'create::GymMember' => 'Create Member',
-                //                         'update::GymMember' => 'Update Member',
-                //                         'delete::GymMember' => 'Delete Member',
-                //                         'member_check_in' => 'Check In Member',
-                //                         'member_check_out' => 'Check Out Member',
-                //                         'freeze_membership' => 'Freeze Membership',
-                //                         'unfreeze_membership' => 'Unfreeze Membership',
-                //                         'bulk_member_actions' => 'Bulk Member Actions',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::GymMember',
-                //                         'view::GymMember',
-                //                         'create::GymMember',
-                //                         'update::GymMember',
-                //                         'delete::GymMember',
-                //                         'member_check_in',
-                //                         'member_check_out',
-                //                         'freeze_membership',
-                //                         'unfreeze_membership',
-                //                         'bulk_member_actions',
-                //                     ], $record->hasPermissionTo('view_any::GymMember'))),
+                //         Tabs::make('permission_tabs')
+                //             ->tabs([
+                //                 Tab::make('Resource Permissions')
+                //                     ->icon('heroicon-o-cube')
+                //                     ->schema([
+                //                         Section::make('Member Management')
+                //                             ->schema([
+                //                                 Toggle::make('toggle_gym_member')
+                //                                     ->label('Enable All Member Permissions')
+                //                                     ->reactive()
+                //                                     ->default(function (Model $record): bool {
+                //                                         return $record->hasPermissionTo('view_any_gym_member');
+                //                                     })
+                //                                     ->afterStateUpdated(function ($state, callable $set) {
+                //                                         $permissions = [
+                //                                             'view_any_gym_member',
+                //                                             'view_gym_member',
+                //                                             'create_gym_member',
+                //                                             'update_gym_member',
+                //                                             'delete_gym_member',
+                //                                         ];
+                //                                         foreach ($permissions as $permission) {
+                //                                             $set($permission, $state);
+                //                                         }
+                //                                     }),
 
-                //                 // Subscription Resource
-                //                 Toggle::make('toggle_Subscription')
-                //                     ->label('Manage Subscriptions')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::Subscription',
-                //                             'view::Subscription',
-                //                             'create::Subscription',
-                //                             'update::Subscription',
-                //                             'transfer_membership',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Subscription_permissions')
-                //                     ->label('Subscription Permissions')
-                //                     ->options([
-                //                         'view_any::Subscription' => 'View Any Subscriptions',
-                //                         'view::Subscription' => 'View Subscription',
-                //                         'create::Subscription' => 'Create Subscription',
-                //                         'update::Subscription' => 'Update Subscription',
-                //                         'transfer_membership' => 'Transfer Membership',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::Subscription',
-                //                         'view::Subscription',
-                //                         'create::Subscription',
-                //                         'update::Subscription',
-                //                         'transfer_membership',
-                //                     ], $record->hasPermissionTo('view_any::Subscription'))),
+                //                                 CheckboxList::make('gym_member_permissions')
+                //                                     ->label('Member Permissions')
+                //                                     ->options([
+                //                                         'view_any_gym_member' => 'View Any Members',
+                //                                         'view_gym_member' => 'View Member Details',
+                //                                         'create_gym_member' => 'Create New Member',
+                //                                         'update_gym_member' => 'Update Member Info',
+                //                                         'delete_gym_member' => 'Delete Member',
+                //                                     ])
+                //                                     ->columns(2)
+                //                                     ->default(function (Model $record): array {
+                //                                         $permissions = [
+                //                                             'view_any_gym_member',
+                //                                             'view_gym_member',
+                //                                             'create_gym_member',
+                //                                             'update_gym_member',
+                //                                             'delete_gym_member',
+                //                                         ];
+                //                                         return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                                     }),
+                //                             ])
+                //                             ->collapsible(),
 
-                //                 // MembershipPlan Resource
-                //                 Toggle::make('toggle_MembershipPlan')
-                //                     ->label('Manage Membership Plans')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::MembershipPlan',
-                //                             'view::MembershipPlan',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('MembershipPlan_permissions')
-                //                     ->label('Membership Plan Permissions')
-                //                     ->options([
-                //                         'view_any::MembershipPlan' => 'View Any Plans',
-                //                         'view::MembershipPlan' => 'View Plan',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::MembershipPlan',
-                //                         'view::MembershipPlan',
-                //                     ], $record->hasPermissionTo('view_any::MembershipPlan'))),
+                //                         // Section::make('Subscription Management')
+                //                         //     ->schema([
+                //                         //         Toggle::make('toggle_subscription')
+                //                         //             ->label('Enable All Subscription Permissions')
+                //                         //             ->reactive()
+                //                         //             ->default(function (Model $record): bool {
+                //                         //                 return $record->hasPermissionTo('view_any::Subscription');
+                //                         //             })
+                //                         //             ->afterStateUpdated(function ($state, callable $set) {
+                //                         //                 $permissions = [
+                //                         //                     'view_any_subscription',
+                //                         //                     'view_subscription',
+                //                         //                     'create_subscription',
+                //                         //                     'update_subscription',
+                //                         //                     'delete_subscription',
+                //                         //                     'transfer_membership',
+                //                         //                 ];
+                //                         //                 foreach ($permissions as $permission) {
+                //                         //                     $set($permission, $state);
+                //                         //                 }
+                //                         //             }),
 
-                //                 // Payment Resource
-                //                 Toggle::make('toggle_Payment')
-                //                     ->label('Manage Payments')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::Payment',
-                //                             'view::Payment',
-                //                             'create::Payment',
-                //                             'update::Payment',
-                //                             'process_payments',
-                //                             'refund_payments',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Payment_permissions')
-                //                     ->label('Payment Permissions')
-                //                     ->options([
-                //                         'view_any::Payment' => 'View Any Payments',
-                //                         'view::Payment' => 'View Payment',
-                //                         'create::Payment' => 'Create Payment',
-                //                         'update::Payment' => 'Update Payment',
-                //                         'process_payments' => 'Process Payments',
-                //                         'refund_payments' => 'Refund Payments',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::Payment',
-                //                         'view::Payment',
-                //                         'create::Payment',
-                //                         'update::Payment',
-                //                         'process_payments',
-                //                         'refund_payments',
-                //                     ], $record->hasPermissionTo('view_any::Payment'))),
+                //                         //         CheckboxList::make('subscription_permissions')
+                //                         //             ->label('Subscription Permissions')
+                //                         //             ->options([
+                //                         //                 'view_any::Subscription' => 'View Any Subscriptions',
+                //                         //                 'view::Subscription' => 'View Subscription Details',
+                //                         //                 'create::Subscription' => 'Create New Subscription',
+                //                         //                 'update::Subscription' => 'Update Subscription',
+                //                         //                 'delete::Subscription' => 'Delete Subscription',
+                //                         //                 'transfer_membership' => 'Transfer Membership',
+                //                         //             ])
+                //                         //             ->columns(2)
+                //                         //             ->default(function (Model $record): array {
+                //                         //                 $permissions = [
+                //                         //                     'view_any::Subscription',
+                //                         //                     'view::Subscription',
+                //                         //                     'create::Subscription',
+                //                         //                     'update::Subscription',
+                //                         //                     'delete::Subscription',
+                //                         //                     'transfer_membership',
+                //                         //                 ];
+                //                         //                 return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                         //             }),
+                //                         //     ])
+                //                         //     ->collapsible(),
 
-                //                 // Class and Booking Resources
-                //                 Toggle::make('toggle_ClassBooking')
-                //                     ->label('Manage Classes & Bookings')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::Class',
-                //                             'view::Class',
-                //                             'view_any::Booking',
-                //                             'view::Booking',
-                //                             'create::Booking',
-                //                             'update::Booking',
-                //                             'delete::Booking',
-                //                             'book_classes_for_members',
-                //                             'cancel_bookings',
-                //                             'manage_waiting_lists',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('ClassBooking_permissions')
-                //                     ->label('Class & Booking Permissions')
-                //                     ->options([
-                //                         'view_any::Class' => 'View Any Classes',
-                //                         'view::Class' => 'View Class',
-                //                         'view_any::Booking' => 'View Any Bookings',
-                //                         'view::Booking' => 'View Booking',
-                //                         'create::Booking' => 'Create Booking',
-                //                         'update::Booking' => 'Update Booking',
-                //                         'delete::Booking' => 'Delete Booking',
-                //                         'book_classes_for_members' => 'Book Classes',
-                //                         'cancel_bookings' => 'Cancel Bookings',
-                //                         'manage_waiting_lists' => 'Manage Waiting Lists',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::Class',
-                //                         'view::Class',
-                //                         'view_any::Booking',
-                //                         'view::Booking',
-                //                         'create::Booking',
-                //                         'update::Booking',
-                //                         'delete::Booking',
-                //                         'book_classes_for_members',
-                //                         'cancel_bookings',
-                //                         'manage_waiting_lists',
-                //                     ], $record->hasPermissionTo('view_any::Class'))),
+                //                         // Section::make('Payment Management')
+                //                         //     ->schema([
+                //                         //         Toggle::make('toggle_payment')
+                //                         //             ->label('Enable All Payment Permissions')
+                //                         //             ->reactive()
+                //                         //             ->default(function (Model $record): bool {
+                //                         //                 return $record->hasPermissionTo('view_any::Payment');
+                //                         //             })
+                //                         //             ->afterStateUpdated(function ($state, callable $set) {
+                //                         //                 $permissions = [
+                //                         //                     'view_any_payment',
+                //                         //                     'view_payment',
+                //                         //                     'create_payment',
+                //                         //                     'update_payment',
+                //                         //                     'process_payments',
+                //                         //                     'refund_payments',
+                //                         //                 ];
+                //                         //                 foreach ($permissions as $permission) {
+                //                         //                     $set($permission, $state);
+                //                         //                 }
+                //                         //             }),
 
-                //                 // Attendance Resource
-                //                 Toggle::make('toggle_Attendance')
-                //                     ->label('Manage Attendance')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::Attendance',
-                //                             'view::Attendance',
-                //                             'create::Attendance',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Attendance_permissions')
-                //                     ->label('Attendance Permissions')
-                //                     ->options([
-                //                         'view_any::Attendance' => 'View Any Attendance',
-                //                         'view::Attendance' => 'View Attendance',
-                //                         'create::Attendance' => 'Create Attendance',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::Attendance',
-                //                         'view::Attendance',
-                //                         'create::Attendance',
-                //                     ], $record->hasPermissionTo('view_any::Attendance'))),
+                //                         //         CheckboxList::make('payment_permissions')
+                //                         //             ->label('Payment Permissions')
+                //                         //             ->options([
+                //                         //                 'view_any::Payment' => 'View Any Payments',
+                //                         //                 'view::Payment' => 'View Payment Details',
+                //                         //                 'create::Payment' => 'Create Payment',
+                //                         //                 'update::Payment' => 'Update Payment',
+                //                         //                 'process_payments' => 'Process Payments',
+                //                         //                 'refund_payments' => 'Refund Payments',
+                //                         //             ])
+                //                         //             ->columns(2)
+                //                         //             ->default(function (Model $record): array {
+                //                         //                 $permissions = [
+                //                         //                     'view_any::Payment',
+                //                         //                     'view::Payment',
+                //                         //                     'create::Payment',
+                //                         //                     'update::Payment',
+                //                         //                     'process_payments',
+                //                         //                     'refund_payments',
+                //                         //                 ];
+                //                         //                 return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                         //             }),
+                //                         //     ])
+                //                         //     ->collapsible(),
 
-                //                 // Trainer and Equipment Resources (view-only)
-                //                 Toggle::make('toggle_TrainerEquipment')
-                //                     ->label('View Trainers & Equipment')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_any::Trainer',
-                //                             'view::Trainer',
-                //                             'view_any::Equipment',
-                //                             'view::Equipment',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('TrainerEquipment_permissions')
-                //                     ->label('Trainer & Equipment Permissions')
-                //                     ->options([
-                //                         'view_any::Trainer' => 'View Any Trainers',
-                //                         'view::Trainer' => 'View Trainer',
-                //                         'view_any::Equipment' => 'View Any Equipment',
-                //                         'view::Equipment' => 'View Equipment',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_any::Trainer',
-                //                         'view::Trainer',
-                //                         'view_any::Equipment',
-                //                         'view::Equipment',
-                //                     ], $record->hasPermissionTo('view_any::Trainer'))),
+                //                         Section::make('Other Resources')
+                //                             ->schema([
+                //                                 Toggle::make('toggle_other_resources')
+                //                                     ->label('Enable View Access to Other Resources')
+                //                                     ->reactive()
+                //                                     ->default(function (Model $record): bool {
+                //                                         return $record->hasPermissionTo('view_any_trainer');
+                //                                     })
+                //                                     ->afterStateUpdated(function ($state, callable $set) {
+                //                                         $permissions = [
+                //                                             'view_any_trainer',
+                //                                             'view_trainer',
+                //                                             'view_any_membership_plan',
+                //                                             'view_membership_plan',
+                //                                         ];
+                //                                         foreach ($permissions as $permission) {
+                //                                             $set($permission, $state);
+                //                                         }
+                //                                     }),
 
-                //                 // Receptionist Profile
-                //                 Toggle::make('toggle_Receptionist')
-                //                     ->label('Manage Profile')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view::Receptionist',
-                //                             'update::Receptionist',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Receptionist_permissions')
-                //                     ->label('Profile Permissions')
-                //                     ->options([
-                //                         'view::Receptionist' => 'View Profile',
-                //                         'update::Receptionist' => 'Update Profile',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view::Receptionist',
-                //                         'update::Receptionist',
-                //                     ], $record->hasPermissionTo('view::Receptionist'))),
+                //                                 CheckboxList::make('other_resource_permissions')
+                //                                     ->label('Other Resource Permissions')
+                //                                     ->options([
+                //                                         'view_any_trainer' => 'View Any Trainers',
+                //                                         'view_trainer' => 'View Trainer Details',
+                //                                         'view_any_membership_plan' => 'View Any Membership Plans',
+                //                                         'view_membership_plan' => 'View Membership Plan Details',
+                //                                     ])
+                //                                     ->columns(2)
+                //                                     ->default(function (Model $record): array {
+                //                                         $permissions = [
+                //                                             'view_any_trainer',
+                //                                             'view_trainer',
+                //                                             // 'view_any_equipment',
+                //                                             // 'view_equipment',
+                //                                             'view_any_membership_plan',
+                //                                             'view_membership_plan',
+                //                                             // 'view_any_class',
+                //                                             // 'view_class',
+                //                                         ];
+                //                                         return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                                     }),
+                //                             ])
+                //                             ->collapsible(),
+                //                     ]),
 
-                //                 // Page Permissions
-                //                 Toggle::make('toggle_Pages')
-                //                     ->label('Access Pages')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'page_Dashboard',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Pages_permissions')
-                //                     ->label('Page Access')
-                //                     ->options([
-                //                         'page_Dashboard' => 'Access Dashboard',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'page_Dashboard',
-                //                     ], $record->hasPermissionTo('page_Dashboard'))),
+                //                 Tab::make('Page Permissions')
+                //                     ->icon('heroicon-o-document-text')
+                //                     ->schema([
+                //                         Section::make('Page Access')
+                //                             ->schema([
+                //                                 Toggle::make('toggle_all_pages')
+                //                                     ->label('Enable All Page Access')
+                //                                     ->reactive()
+                //                                     ->default(function (Model $record): bool {
+                //                                         return $record->hasPermissionTo('page_dashboard');
+                //                                     })
+                //                                     ->afterStateUpdated(function ($state, callable $set) {
+                //                                         $permissions = [
+                //                                             'page_dashboard',
+                //                                             'page_reports',
+                //                                             'page_settings',
+                //                                             'page_analytics',
+                //                                             // 'page_gym_profile',
+                //                                             // 'access_admin_panel',
+                //                                         ];
+                //                                         foreach ($permissions as $permission) {
+                //                                             $set($permission, $state);
+                //                                         }
+                //                                     }),
 
-                //                 // Widget Permissions
-                //                 Toggle::make('toggle_Widgets')
-                //                     ->label('Access Widgets')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'widget_GymStatsOverview',
-                //                             'widget_RecentActivity',
-                //                             'widget_TodaysBirthdays',
-                //                             'widget_ClassBookings',
-                //                             'widget_PaymentSummary',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Widgets_permissions')
-                //                     ->label('Widget Access')
-                //                     ->options([
-                //                         'widget_GymStatsOverview' => 'Gym Stats Overview',
-                //                         'widget_RecentActivity' => 'Recent Activity',
-                //                         'widget_TodaysBirthdays' => 'Today\'s Birthdays',
-                //                         'widget_ClassBookings' => 'Class Bookings',
-                //                         'widget_PaymentSummary' => 'Payment Summary',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'widget_GymStatsOverview',
-                //                         'widget_RecentActivity',
-                //                         'widget_TodaysBirthdays',
-                //                         'widget_ClassBookings',
-                //                         'widget_PaymentSummary',
-                //                     ], $record->hasPermissionTo('widget_GymStatsOverview'))),
+                //                                 CheckboxList::make('page_permissions')
+                //                                     ->label('Page Access Permissions')
+                //                                     ->options([
+                //                                         'page_dashboard' => 'Dashboard Page',
+                //                                         'page_reports' => 'Reports Page',
+                //                                         'page_settings' => 'Settings Page',
+                //                                         'page_analytics' => 'Analytics Page',
+                //                                         // 'page_gym_profile' => 'Gym Profile Page',
+                //                                         // 'page_import_export' => 'Import/Export Page',
+                //                                     ])
+                //                                     ->columns(2)
+                //                                     ->default(function (Model $record): array {
+                //                                         $permissions = [
+                //                                             'page_dashboard',
+                //                                             'page_reports',
+                //                                             'page_settings',
+                //                                             'page_analytics',
+                //                                             // 'page_gym_profile',
+                //                                             // 'page_import_export',
+                //                                         ];
+                //                                         return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                                     }),
+                //                             ]),
+                //                     ]),
 
-                //                 // Custom Permissions
-                //                 Toggle::make('toggle_Communication')
-                //                     ->label('Manage Communication')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'send_notifications',
-                //                             'send_bulk_emails',
-                //                             'send_sms',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Communication_permissions')
-                //                     ->label('Communication Permissions')
-                //                     ->options([
-                //                         'send_notifications' => 'Send Notifications',
-                //                         'send_bulk_emails' => 'Send Bulk Emails',
-                //                         'send_sms' => 'Send SMS',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'send_notifications',
-                //                         'send_bulk_emails',
-                //                         'send_sms',
-                //                     ], $record->hasPermissionTo('send_notifications'))),
+                //                 Tab::make('Widget Permissions')
+                //                     ->icon('heroicon-o-squares-2x2')
+                //                     ->schema([
+                //                         Section::make('Dashboard Widgets')
+                //                             ->schema([
+                //                                 Toggle::make('toggle_all_widgets')
+                //                                     ->label('Enable All Widget Access')
+                //                                     ->reactive()
+                //                                     ->default(function (Model $record): bool {
+                //                                         return $record->hasPermissionTo('widget_gym_stats_overview');
+                //                                     })
+                //                                     ->afterStateUpdated(function ($state, callable $set) {
+                //                                         $permissions = [
+                //                                             'widget_gym_stats_overview',
+                //                                             'widget_recent_activity',
+                //                                             'widget_todays_birthdays',
+                //                                             'widget_gym_revenue_chart',
+                //                                             'widget_membership_expiry_alerts_chart',
+                //                                             // 'widget_payment_summary',
+                //                                             // 'widget_class_bookings',
+                //                                             // 'widget_attendance_chart',
+                //                                         ];
+                //                                         foreach ($permissions as $permission) {
+                //                                             $set($permission, $state);
+                //                                         }
+                //                                     }),
 
-                //                 Toggle::make('toggle_Reports')
-                //                     ->label('Manage Reports')
-                //                     ->reactive()
-                //                     ->afterStateUpdated(function ($state, callable $set) {
-                //                         $permissions = [
-                //                             'view_attendance_reports',
-                //                             'export_member_data',
-                //                         ];
-                //                         foreach ($permissions as $permission) {
-                //                             $set($permission, $state);
-                //                         }
-                //                     }),
-                //                 CheckboxList::make('Reports_permissions')
-                //                     ->label('Report Permissions')
-                //                     ->options([
-                //                         'view_attendance_reports' => 'View Attendance Reports',
-                //                         'export_member_data' => 'Export Member Data',
-                //                     ])
-                //                     ->columns(2)
-                //                     ->default(fn($record) => array_fill_keys([
-                //                         'view_attendance_reports',
-                //                         'export_member_data',
-                //                     ], $record->hasPermissionTo('view_attendance_reports'))),
-                //             ]),
+                //                                 CheckboxList::make('widget_permissions')
+                //                                     ->label('Widget Access Permissions')
+                //                                     ->options([
+                //                                         'widget_gym_stats_overview' => 'Gym Stats Overview',
+                //                                         'widget_recent_activity' => 'Recent Activity',
+                //                                         'widget_todays_birthdays' => 'Today\'s Birthdays',
+                //                                         'widget_gym_revenue_chart' => 'Revenue Chart',
+                //                                         'widget_membership_expiry_alerts_chart' => 'Membership Expiry Alerts',
+                //                                         // 'widget_payment_summary' => 'Payment Summary',
+                //                                         // 'widget_class_bookings' => 'Class Bookings',
+                //                                         // 'widget_attendance_chart' => 'Attendance Chart',
+                //                                     ])
+                //                                     ->columns(2)
+                //                                     ->default(function (Model $record): array {
+                //                                         $permissions = [
+                //                                             'widget_gym_stats_overview',
+                //                                             'widget_recent_activity',
+                //                                             'widget_todays_birthdays',
+                //                                             'widget_gym_revenue_chart',
+                //                                             'widget_membership_expiry_alerts_chart',
+                //                                             // 'widget_payment_summary',
+                //                                             // 'widget_class_bookings',
+                //                                             // 'widget_attendance_chart',
+                //                                         ];
+                //                                         return array_filter($permissions, fn($perm) => $record->hasPermissionTo($perm));
+                //                                     }),
+                //                             ]),
+                //                     ]),
+                //             ])
+                //             ->activeTab(1)
+                //             ->persistTabInQueryString(),
                 //     ])
                 //     ->action(function (array $data, Model $record): void {
-                //         $permissions = array_filter($data, fn($key) => !in_array($key, ['active']), ARRAY_FILTER_USE_KEY);
+                //         // Collect all permissions from all tabs
+                //         $allPermissions = [];
 
-                //         $record->syncPermissions(array_keys(array_filter($permissions)));
+                //         // Resource permissions
+                //         if (isset($data['gym_member_permissions']) && is_array($data['gym_member_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['gym_member_permissions']);
+                //         }
 
-                //         $record->gyms()->sync($record->gyms()->pluck('id')->mapWithKeys(function ($gymId) use ($data) {
-                //             return [$gymId => ['active' => $data['active'] ?? true]];
-                //         }));
+                //         if (isset($data['subscription_permissions']) && is_array($data['subscription_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['subscription_permissions']);
+                //         }
+
+                //         if (isset($data['payment_permissions']) && is_array($data['payment_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['payment_permissions']);
+                //         }
+
+                //         if (isset($data['other_resource_permissions']) && is_array($data['other_resource_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['other_resource_permissions']);
+                //         }
+
+                //         // Page permissions
+                //         if (isset($data['page_permissions']) && is_array($data['page_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['page_permissions']);
+                //         }
+
+                //         // Widget permissions
+                //         if (isset($data['widget_permissions']) && is_array($data['widget_permissions'])) {
+                //             $allPermissions = array_merge($allPermissions, $data['widget_permissions']);
+                //         }
+
+                //         // Remove duplicates and filter valid permissions
+                //         $allPermissions = array_unique($allPermissions);
+                //         $validPermissions = array_filter($allPermissions, function ($permission) {
+                //             return !empty($permission) && Permission::where('name', $permission)->exists();
+                //         });
+
+                //         // Sync permissions to the specific receptionist
+                //         $record->syncPermissions($validPermissions);
+
+                //         // Update active status in pivot table
+                //         $record->gyms()->update(['active' => $data['active'] ?? true]);
 
                 //         Notification::make()
-                //             ->title('Permissions Updated')
-                //             ->body('Receptionist permissions have been successfully updated.')
+                //             ->title('Permissions Updated Successfully')
+                //             ->body("Updated permissions for {$record->name}. Total permissions: " . count($validPermissions))
                 //             ->success()
                 //             ->send();
                 //     })
-                //     ->modalHeading('Manage Receptionist Permissions')
-                //     ->modalDescription('Configure resource, page, widget, and custom permissions.')
+                //     ->modalHeading(fn(Model $record): string => "Manage Permissions for {$record->name}")
+                //     ->modalDescription('Configure resource access, page access, and widget permissions using the tabs below.')
                 //     ->modalSubmitActionLabel('Update Permissions')
+                //     ->modalWidth('7xl')
                 //     ->visible(function (Model $record): bool {
                 //         $user = auth()->user();
                 //         $userGymIds = $user->gyms()->pluck('gyms.id');
