@@ -22,19 +22,19 @@ class GymRevenueChart extends ChartWidget
         return auth()->user()->hasRole('gym_owner');
     }
 
-    protected function getFilters(): ?array
-    {
-        // Fetch all gyms for the current gym_owner
-        $gyms = Gym::where('owner_id', auth()->user()->id)
-            ->pluck('name', 'id')
-            ->toArray();
+    // protected function getFilters(): ?array
+    // {
+    //     // Fetch all gyms for the current gym_owner
+    //     $gyms = Gym::where('owner_id', auth()->user()->id)
+    //         ->pluck('name', 'id')
+    //         ->toArray();
 
-        // Add "All Gyms" as the default option
-        return array_merge(
-            ['all' => 'All Gyms'],
-            $gyms
-        );
-    }
+    //     // Add "All Gyms" as the default option
+    //     return array_merge(
+    //         ['all' => 'All Gyms'],
+    //         $gyms
+    //     );
+    // }
 
     protected function getData(): array
     {
@@ -43,8 +43,8 @@ class GymRevenueChart extends ChartWidget
         $startDate = now()->subMonths(11)->startOfMonth();
 
         // Base query for MemberPayment
-        $query = MemberPayment::query()
-            ->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+        $query = MemberPayment::query();
+        // ->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
 
         // Apply gym filter if not "All Gyms"
         $selectedGym = $this->filter;

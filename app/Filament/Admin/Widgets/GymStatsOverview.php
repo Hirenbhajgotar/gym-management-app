@@ -42,22 +42,27 @@ class GymStatsOverview extends BaseWidget
         $previousStart = $previousEnd->copy()->startOfMonth();
 
         // Total Members (filtered for gym_owner)
-        $totalMembers = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
-            // ->whereBetween('created_at', [$currentStart, $currentEnd])
-            ->count();
+        // $totalMembers = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->count();
+
+        $totalMembers = 10; // Placeholder for total members, replace with actual query
 
         // Members Joined in Current Period
-        $membersJoinedCurrent = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
-            ->whereBetween('created_at', [$currentStart, $currentEnd])
-            ->count();
+        // $membersJoinedCurrent = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->whereBetween('created_at', [$currentStart, $currentEnd])
+        //     ->count();
+
+        $membersJoinedCurrent = 10; // Placeholder for members joined in current period, replace with actual query
 
         // Members Joined in Previous Period
-        $membersJoinedPrevious = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
-            ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->count();
+        // $membersJoinedPrevious = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->whereBetween('created_at', [$previousStart, $previousEnd])
+        //     ->count();
+
+        $membersJoinedPrevious = 10; // Placeholder for members joined in previous period, replace with actual query
 
         // Dynamic styling for Members Joined
         $changeDirection = '';
@@ -78,15 +83,19 @@ class GymStatsOverview extends BaseWidget
         }
 
         // Revenue Calculation
-        $currentRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
-            ->whereBetween('payment_date', [$currentStart, $currentEnd])
-            ->sum('amount');
+        // $currentRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+        //     ->whereBetween('payment_date', [$currentStart, $currentEnd])
+        //     ->sum('amount');
 
-        $previousRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
-            ->whereBetween('payment_date', [$previousStart, $previousEnd])
-            ->sum('amount');
+        $currentRevenue = 10; // Placeholder for current revenue, replace with actual query
+
+        // $previousRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+        //     ->whereBetween('payment_date', [$previousStart, $previousEnd])
+        //     ->sum('amount');
+
+        $previousRevenue = 10; // Placeholder for previous revenue, replace with actual query
 
         // Dynamic styling for Revenue
         $revenueDescription = $selectedGym ? 'Revenue from ' . $selectedGym->name : 'Total revenue from all gyms';
@@ -116,10 +125,12 @@ class GymStatsOverview extends BaseWidget
         for ($i = $periodsBack - 1; $i >= 0; $i--) {
             $periodStart = $currentStart->copy()->subMonths($i)->startOfMonth();
             $periodEnd = $periodStart->copy()->endOfMonth();
-            $revenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-                ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
-                ->whereBetween('payment_date', [$periodStart, $periodEnd])
-                ->sum('amount');
+            // $revenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+            //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+            //     ->whereBetween('payment_date', [$periodStart, $periodEnd])
+            //     ->sum('amount');
+
+            $revenue = 100; // Placeholder for revenue, replace with actual query
             $revenueChartData[] = $revenue;
             $revenueChartLabels[] = $periodStart->format('M Y');
         }
@@ -130,10 +141,12 @@ class GymStatsOverview extends BaseWidget
         for ($i = $periodsBack - 1; $i >= 0; $i--) {
             $periodStart = $currentStart->copy()->subMonths($i)->startOfMonth();
             $periodEnd = $periodStart->copy()->endOfMonth();
-            $count = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-                ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
-                ->whereBetween('created_at', [$periodStart, $periodEnd])
-                ->count();
+            // $count = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+            //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+            //     ->whereBetween('created_at', [$periodStart, $periodEnd])
+            //     ->count();
+
+            $count = 10; // Placeholder for member count, replace with actual query
             $memberChartData[] = $count;
             $memberChartLabels[] = $periodStart->format('M Y');
         }

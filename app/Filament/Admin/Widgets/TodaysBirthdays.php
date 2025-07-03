@@ -24,7 +24,7 @@ class TodaysBirthdays extends BaseWidget
     {
         // Replace with your actual query to fetch members with birthdays today
         return GymMember::query()
-            ->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id))
+            ->whereHas('gym')
             ->whereMonth('dob', now()->month)
             ->whereDay('dob', now()->day)
             ->orderBy('name', 'asc');

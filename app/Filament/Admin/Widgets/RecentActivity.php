@@ -33,10 +33,10 @@ class RecentActivity extends BaseWidget
                         MemberPayment::class,
                     ])
                     ->whereHasMorph('subject', GymMember::class, function ($query) {
-                        $query->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('gym');
                     })
                     ->orWhereHasMorph('subject', MemberPayment::class, function ($query) {
-                        $query->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('member.gym');
                     })
                     ->latest()
                     ->take(5)

@@ -76,7 +76,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         }
 
         if ($panel->getId() === 'admin') {
-            return $this->hasAnyRole(['gym_owner']);
+            return $this->hasAnyRole(['gym_owner', 'receptionist']);
         }
 
         if ($panel->getId() === 'staff') {
