@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Filament\Admin\Clusters\Attendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\RelationManagers;
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
 use App\Models\Attendances as ModelsAttendances;
 use App\Models\GymMember;
 use App\Models\GymMemberAttendance;
@@ -239,6 +240,13 @@ class GymMemberAttendanceResource extends Resource
             'index' => Pages\ListGymMemberAttendances::route('/'),
             'create' => Pages\CreateGymMemberAttendance::route('/create'),
             'edit' => Pages\EditGymMemberAttendance::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getWidgets(): array
+    {
+        return [
+            MemberAttendanceStats::class,
         ];
     }
 }

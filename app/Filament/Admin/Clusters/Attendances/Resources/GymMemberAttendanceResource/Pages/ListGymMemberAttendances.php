@@ -19,13 +19,18 @@ class ListGymMemberAttendances extends ListRecords
         ];
     }
 
+    protected function getHeaderWidgets(): array
+    {
+        return GymMemberAttendanceResource::getWidgets();
+    }
+
     public function getTabs(): array
     {
         return [
             null => Tab::make('All'),
             'Present' => Tab::make()->query(fn($query) => $query->active()->where('status', AttendanceStatus::Present->value)),
             'Completed' => Tab::make()->query(fn($query) => $query->completed()->where('status', AttendanceStatus::Completed->value)),
-            'Absent' => Tab::make()->query(fn($query) => $query->absent()->where('status', AttendanceStatus::Absent->value)),
+            // 'Absent' => Tab::make()->query(fn($query) => $query->absent()->where('status', AttendanceStatus::Absent->value)),
         ];
     }
 }
