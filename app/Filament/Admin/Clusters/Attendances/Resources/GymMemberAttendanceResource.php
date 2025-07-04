@@ -34,7 +34,7 @@ class GymMemberAttendanceResource extends Resource
 {
     protected static ?string $model = ModelsAttendances::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $cluster = Attendances::class;
 
@@ -51,6 +51,14 @@ class GymMemberAttendanceResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->check();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()
+            ->where('attendanceable_type', GymMember::class);
+
+        return $query;
     }
 
     public static function form(Form $form): Form

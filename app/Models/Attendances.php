@@ -38,7 +38,6 @@ class Attendances extends Model
     {
         return Attribute::make(
             get: function ($value) {
-                // return $value;
                 if (!$this->check_out_time) {
                     return null;
                 }
