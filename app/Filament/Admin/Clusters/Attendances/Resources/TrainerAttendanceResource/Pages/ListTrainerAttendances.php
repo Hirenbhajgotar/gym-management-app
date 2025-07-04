@@ -19,13 +19,13 @@ class ListTrainerAttendances extends ListRecords
         ];
     }
 
-    public function getTabs(): array
-    {
-        return [
-            null => Tab::make('All'),
-            'Present' => Tab::make()->query(fn($query) => $query->active()->where('status', AttendanceStatus::Present->value)),
-            'Completed' => Tab::make()->query(fn($query) => $query->completed()->where('status', AttendanceStatus::Completed->value)),
-            'Absent' => Tab::make()->query(fn($query) => $query->absent()->where('status', AttendanceStatus::Absent->value)),
-        ];
-    }
+    // public function getTabs(): array
+    // {
+    //     return [
+    //         null => Tab::make('All'),
+    //         'Present' => Tab::make()->query(fn($query) => $query->active()->where('status', AttendanceStatus::Present->value)),
+    //         'Completed' => Tab::make()->query(fn($query) => $query->completed()->where('status', AttendanceStatus::Completed->value)),
+    //         'Absent' => Tab::make()->query(fn($query) => $query->absent()->where('status', AttendanceStatus::Absent->value)),
+    //     ];
+    // }
 }

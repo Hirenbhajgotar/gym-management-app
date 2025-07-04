@@ -13,7 +13,7 @@ class CreateGymMemberAttendance extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['attendanceable_type'] = GymMember::class;
+        $data['attendanceable_type'] = static::$resource::getAttendanceableType();
         return $data;
     }
 

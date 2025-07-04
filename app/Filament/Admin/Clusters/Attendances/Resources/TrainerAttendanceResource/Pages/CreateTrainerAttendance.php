@@ -10,6 +10,13 @@ class CreateTrainerAttendance extends CreateRecord
 {
     protected static string $resource = TrainerAttendanceResource::class;
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        // $data['attendanceable_type'] = GymMember::class;
+        $data['attendanceable_type'] = static::$resource::getAttendanceableType();
+        return $data;
+    }
+
     protected function getRedirectUrl(): string
     {
         return TrainerAttendanceResource::getUrl('index');

@@ -24,8 +24,8 @@ enum AttendanceStatus: string implements HasIcon, HasColor, HasLabel
     public function getColor(): string | array | null
     {
         return match ($this) {
-            self::Present => 'info',
-            self::Completed => 'success',
+            self::Present => 'success',
+            self::Completed => 'info',
             self::Absent => 'danger',
         };
     }
