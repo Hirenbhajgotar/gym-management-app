@@ -70,4 +70,9 @@ class Gym extends Model
     {
         return $this->hasMany(\App\Models\MembershipPlan::class);
     }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendances::class);
+    }
 }

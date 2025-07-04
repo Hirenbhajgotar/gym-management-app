@@ -243,12 +243,10 @@ class GymMemberResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
-                    ->color('primary')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('update_gym::member')),
+                    ->color('primary'),
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member'))
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member')
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
@@ -29,6 +30,10 @@ class ApplyTenantScopes
         );
 
         MembershipPlan::addGlobalScope(
+            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+        );
+
+        Attendances::addGlobalScope(
             fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
