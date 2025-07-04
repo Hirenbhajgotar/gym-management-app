@@ -96,6 +96,13 @@ class Attendances extends Model
             ->whereNotNull('check_out_time');
     }
 
+    // Scope for absent attendance
+    public function scopeAbsent($query)
+    {
+        return $query->whereNull('check_in_time')
+            ->whereNull('check_out_time');
+    }
+
     // Get today's attendance for a specific member
     public static function getTodayAttendance($memberId, $gymId, $attendanceableType)
     {
