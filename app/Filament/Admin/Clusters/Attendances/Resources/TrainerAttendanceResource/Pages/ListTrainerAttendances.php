@@ -19,6 +19,11 @@ class ListTrainerAttendances extends ListRecords
         ];
     }
 
+    protected function getHeaderWidgets(): array
+    {
+        return TrainerAttendanceResource::getWidgets();
+    }
+
     // public function getTabs(): array
     // {
     //     return [

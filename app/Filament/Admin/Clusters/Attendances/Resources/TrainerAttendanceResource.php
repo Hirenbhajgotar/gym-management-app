@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Filament\Admin\Clusters\Attendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\RelationManagers;
+use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Widgets\TrainerAttendanceStats;
 use App\Filament\BaseResources\BaseAttendanceResource;
 use App\Models\Attendances as ModelsAttendances;
 use App\Models\Trainer;
@@ -28,11 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TrainerAttendanceResource extends BaseAttendanceResource
 {
-    // protected static ?string $model = ModelsAttendances::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
-
-    // protected static ?string $cluster = Attendances::class;
 
     public static function getLabel(): string
     {
@@ -72,6 +69,13 @@ class TrainerAttendanceResource extends BaseAttendanceResource
             'index' => Pages\ListTrainerAttendances::route('/'),
             'create' => Pages\CreateTrainerAttendance::route('/create'),
             'edit' => Pages\EditTrainerAttendance::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getWidgets(): array
+    {
+        return [
+            TrainerAttendanceStats::class,
         ];
     }
 }

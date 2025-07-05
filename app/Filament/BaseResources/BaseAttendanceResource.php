@@ -60,12 +60,16 @@ abstract class BaseAttendanceResource extends Resource
                     ->schema([
                         Select::make('attendanceable_id')
                             ->label(static::getLabelForSelect())
-                            ->options(function () use ($currentGymId, $attendanceableModel) {
-                                $modelClass = $attendanceableModel;
-                                return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
-                            })
                             ->required()
-                            ->searchable(),
+                            ->searchable()
+                            // ->options(function () use ($currentGymId, $attendanceableModel) {
+                            //     $modelClass = $attendanceableModel;
+                            //     return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
+                            // })
+                            ->getSearchResultsUsing(function (string $search) use ($attendanceableModel, $currentGymId) {
+                                $modelClass = $attendanceableModel;
+                                return $modelClass::where('name', 'like', "%{$search}%")->where('gym_id', $currentGymId)->limit(50)->pluck('name', 'id')->toArray();
+                            }),
 
                         ToggleButtons::make('status')
                             ->inline()

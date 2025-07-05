@@ -69,9 +69,9 @@ class TrainerResource extends Resource
                     ->required()
                     ->options(function () {
                         if (filament()->getId() === 'admin') {
-                            return Gym::where('owner_id', Auth::guard('web')->user()->id())->pluck('name', 'id');
+                            return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
                         } else if (filament()->getId() === 'staff') {
-                            return Gym::whereIn('id', Auth::guard('staff')->user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
+                            return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
                         }
                         return Gym::pluck('name', 'id');
                     }),
