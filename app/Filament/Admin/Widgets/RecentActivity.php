@@ -16,7 +16,9 @@ class RecentActivity extends BaseWidget
 
     protected static ?string $pollingInterval = '900s';
 
-    protected static ?int $sort = 5;
+    protected int | string | array $columnSpan = 'full';
+
+    protected static ?int $sort = 7;
 
     public static function canView(): bool
     {

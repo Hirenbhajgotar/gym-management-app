@@ -164,6 +164,30 @@ class AttendanceService
         ];
     }
 
+    public static function getUserTypeStatsForToday(int $gymId, string $userType, string $entityModel): array
+    {
+        $today = Carbon::today();
+
+        $query = Attendances::where('gym_id', $gymId)
+            ->where('attendanceable_type', $userType);
+
+        return [
+            'active_count' => $query->where('status', AttendanceStatus::Present)
+                ->whereDate('check_in_time', $today)
+                ->whereNull('check_out_time')->count(),
+
+            'absent_count' => app($entityModel)->where('gym_id', $gymId)
+                ->whereNotIn(
+                    'id',
+                    $query->whereDate('check_in_time', $today)->pluck('attendanceable_id')
+                )->count(),
+
+            'completed_count' => $query->where('status', AttendanceStatus::Completed)
+                ->whereDate('check_in_time', $today)
+                ->whereNotNull('check_out_time')->count(),
+        ];
+    }
+
     /**
      * Get currently checked in members and trainers
      */

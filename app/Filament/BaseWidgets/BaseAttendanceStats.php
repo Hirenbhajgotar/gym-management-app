@@ -4,6 +4,7 @@ namespace App\Filament\BaseWidgets;
 
 use App\Enums\AttendanceStatus;
 use App\Models\Attendances;
+use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -23,29 +24,16 @@ abstract class BaseAttendanceStats extends BaseWidget
         $entityName = $this->getEntityName();
         $entityModel = $this->getEntityModel();
 
-        $totalPresent = Attendances::where('attendanceable_type', $attendanceableType)
-            ->where('gym_id', $currentGymId)
-            ->whereDate('check_in_time', $today)
-            ->whereNull('check_out_time')
-            ->where('status', AttendanceStatus::Present)
-            ->count();
+        $todayStats = AttendanceService::getUserTypeStatsForToday($currentGymId, $attendanceableType, $entityModel);
 
-        $totalCompleted = Attendances::where('attendanceable_type', $attendanceableType)
-            ->where('gym_id', $currentGymId)
-            ->whereDate('check_in_time', $today)
-            ->whereNotNull('check_out_time')
-            ->where('status', AttendanceStatus::Completed)
-            ->count();
+        $totalPresent = $todayStats['active_count'] ?? 0;
 
-        $totalAbsent = $entityModel::where('gym_id', $currentGymId)
-            ->whereNotIn('id', Attendances::where('attendanceable_type', $attendanceableType)
-                ->where('gym_id', $currentGymId)
-                ->whereDate('check_in_time', $today)
-                ->pluck('attendanceable_id'))
-            ->count();
+        $totalCompleted = $todayStats['completed_count'] ?? 0;
+
+        $totalAbsent = $todayStats['absent_count'] ?? 0;
 
         return [
-            Stat::make('Present Today', $totalPresent)
+            Stat::make('Active Today', $totalPresent)
                 ->description("{$entityName} currently checked in")
                 ->descriptionIcon('heroicon-o-user-group')
                 ->color('success'),

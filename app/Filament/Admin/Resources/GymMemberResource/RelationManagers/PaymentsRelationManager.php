@@ -314,7 +314,7 @@ class PaymentsRelationManager extends RelationManager
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->visible(function ($record) {
-                        return auth()->user()->hasPermissionTo('delete_gym::member') && $record->status->value !== PaymentStatus::EXPIRED->value; // Hide Delete button for expired payments
+                        return auth()->user()->hasPermissionTo('delete_gym_member') && $record->status->value !== PaymentStatus::EXPIRED->value; // Hide Delete button for expired payments
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member Payment')
