@@ -7,6 +7,7 @@ use App\Filament\Admin\Clusters\Attendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\RelationManagers;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
+use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseResources\BaseAttendanceResource;
 use App\Models\Attendances as ModelsAttendances;
 use App\Models\GymMember;
@@ -84,4 +85,9 @@ class GymMemberAttendanceResource extends BaseAttendanceResource
             MemberAttendanceStats::class,
         ];
     }
+
+    // public static function getOptionFormSchema()
+    // {
+    //     return GymMemberResource::getFormSchema();
+    // }
 }

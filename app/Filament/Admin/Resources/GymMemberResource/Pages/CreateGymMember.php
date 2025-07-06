@@ -212,7 +212,7 @@ class CreateGymMember extends CreateRecord
                     Forms\Components\Select::make('gym_id')
                         ->relationship('gym', 'name', function ($query) {
                             if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                             }
 
                             return $query;

@@ -10,6 +10,7 @@ use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
@@ -56,19 +57,24 @@ class GymMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make()
-                            ->schema(static::getDetailsFormSchema())
-                            ->columns(2),
-
-                        Forms\Components\Section::make()
-                            ->schema(static::getMembershipFormSchema())
-                            ->columns(2),
-                    ])
-            ])
+            ->schema(self::getFormSchema())
             ->columns(1);
+    }
+
+    public static function getFormSchema(): array
+    {
+        return [
+            Forms\Components\Group::make()
+                ->schema([
+                    Forms\Components\Section::make()
+                        ->schema(static::getDetailsFormSchema())
+                        ->columns(2),
+
+                    Forms\Components\Section::make()
+                        ->schema(static::getMembershipFormSchema())
+                        ->columns(2),
+                ])
+        ];
     }
 
     public static function table(Table $table): Table
@@ -244,6 +250,7 @@ class GymMemberResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
+
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
@@ -495,12 +502,14 @@ class GymMemberResource extends Resource
                 ->directory('member-photos')
                 ->maxSize(2048)
                 ->columnSpanFull(),
+
             Forms\Components\TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->placeholder('e.g., John Doe')
                 ->autofocus()
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
             Forms\Components\TextInput::make('email')
                 ->email()
                 ->required()
@@ -535,6 +544,7 @@ class GymMemberResource extends Resource
                 ->minValue(0)
                 ->maxValue(500)
                 ->placeholder('e.g., 75.5'),
+
             Forms\Components\TextInput::make('height')
                 ->numeric()
                 ->suffix('cm')
@@ -577,15 +587,7 @@ class GymMemberResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('gym_id')
                         ->relationship('gym', 'name', function ($query) {
-                            if (filament()->getId() === 'admin') {
-                                if (auth()->user()->hasRole('gym_owner')) {
-                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                                }
-                            } else if (filament()->getId() === 'staff') {
-                                return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                            }
-
-                            return $query;
+                            return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('name', 'id'));
                         })
                         ->required()
                         ->placeholder('Select a gym')
@@ -608,10 +610,11 @@ class GymMemberResource extends Resource
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            $gymId = $get('gym_id');
-                            if (!$gymId) {
-                                return [];
-                            }
+                            // $gymId = $get('gym_id');
+                            // if (!$gymId) {
+                            //     return [];
+                            // }
+                            $gymId = Filament::getTenant()->id;
                             return Trainer::where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')

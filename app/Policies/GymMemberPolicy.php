@@ -15,7 +15,7 @@ class GymMemberPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_gym::member');
+        return $user->can('view_any_gym_member');
     }
 
     /**
@@ -23,7 +23,7 @@ class GymMemberPolicy
      */
     public function view(User $user, GymMember $gymMember): bool
     {
-        return $user->can('view_gym::member');
+        return $user->can('view_gym_member');
     }
 
     /**
@@ -31,7 +31,7 @@ class GymMemberPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_gym::member');
+        return $user->can('create_gym_member');
     }
 
     /**
@@ -39,7 +39,7 @@ class GymMemberPolicy
      */
     public function update(User $user, GymMember $gymMember): bool
     {
-        return $user->can('update_gym::member');
+        return $user->can('update_gym_member');
     }
 
     /**
@@ -47,7 +47,7 @@ class GymMemberPolicy
      */
     public function delete(User $user, GymMember $gymMember): bool
     {
-        return $user->can('delete_gym::member');
+        return $user->can('delete_gym_member');
     }
 
     /**
@@ -55,7 +55,7 @@ class GymMemberPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_gym::member');
+        return $user->can('delete_any_gym_member');
     }
 
     /**
@@ -63,7 +63,7 @@ class GymMemberPolicy
      */
     public function forceDelete(User $user, GymMember $gymMember): bool
     {
-        return $user->can('force_delete_gym::member');
+        return $user->can('force_delete_gym_member');
     }
 
     /**
@@ -71,7 +71,7 @@ class GymMemberPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_gym::member');
+        return $user->can('force_delete_any_gym_member');
     }
 
     /**
@@ -79,7 +79,7 @@ class GymMemberPolicy
      */
     public function restore(User $user, GymMember $gymMember): bool
     {
-        return $user->can('restore_gym::member');
+        return $user->can('restore_gym_member');
     }
 
     /**
@@ -87,7 +87,7 @@ class GymMemberPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_gym::member');
+        return $user->can('restore_any_gym_member');
     }
 
     /**
@@ -95,7 +95,7 @@ class GymMemberPolicy
      */
     public function replicate(User $user, GymMember $gymMember): bool
     {
-        return $user->can('replicate_gym::member');
+        return $user->can('replicate_gym_member');
     }
 
     /**
@@ -103,6 +103,6 @@ class GymMemberPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_gym::member');
+        return $user->can('reorder_gym_member');
     }
 }

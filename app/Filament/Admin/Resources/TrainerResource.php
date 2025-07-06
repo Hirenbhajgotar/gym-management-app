@@ -63,63 +63,157 @@ class TrainerResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\Select::make('gym_id')
-                    ->relationship('gym', 'name')
-                    ->required()
-                    ->options(function () {
-                        if (filament()->getId() === 'admin') {
-                            return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
-                        } else if (filament()->getId() === 'staff') {
-                            return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
-                        }
-                        return Gym::pluck('name', 'id');
-                    }),
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->unique(Trainer::class, 'email', ignoreRecord: true),
-                Forms\Components\TextInput::make('phone')
-                    ->tel()
-                    ->maxLength(20),
-                Forms\Components\Select::make('specialization')
-                    ->options([
-                        'Strength Training' => 'Strength Training',
-                        'Yoga' => 'Yoga',
-                        'Cardio' => 'Cardio',
-                        'CrossFit' => 'CrossFit',
-                    ]),
-                Forms\Components\TextInput::make('experience_years')
-                    ->numeric()
-                    ->minValue(0)
-                    ->maxValue(50),
-                Forms\Components\TextInput::make('certifications')
-                    ->maxLength(255),
-                Forms\Components\Toggle::make('is_available')
-                    ->default(true),
-                Forms\Components\TextInput::make('available_hours')
-                    ->placeholder('Enter the hours the trainer is available (e.g., 9 AM - 5 PM)')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('basic_salary')
-                    ->numeric()
-                    ->minValue(0)
-                    ->required()
-                    ->default(0.00),
-                Forms\Components\TextInput::make('pt_salary_per_member')
-                    ->numeric()
-                    ->minValue(0)
-                    ->required()
-                    ->default(0.00),
-                Forms\Components\Select::make('currency')
-                    ->options(collect(Currency::cases())->mapWithKeys(
-                        fn(Currency $currency) => [$currency->value => $currency->getLabel()]
-                    ))
-                    ->required()
-                    ->default(Currency::INR->value),
-            ]);
+            ->schema(self::getFormSchema());
+    }
+
+    public static function getFormSchema(): array
+    {
+        return [
+            // Basic Information Section
+            Forms\Components\Section::make('Basic Information')
+                ->description('Enter trainer\'s personal details')
+                ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255)
+                        ->placeholder('Enter trainer full name')
+                        ->columnSpan(2),
+
+                    Forms\Components\TextInput::make('email')
+                        ->email()
+                        ->required()
+                        ->unique(Trainer::class, 'email', ignoreRecord: true)
+                        ->placeholder('trainer@example.com')
+                        ->suffixIcon('heroicon-m-envelope')
+                        ->columnSpan(1),
+
+                    Forms\Components\TextInput::make('phone')
+                        ->tel()
+                        ->maxLength(20)
+                        ->placeholder('+91 9876543210')
+                        ->suffixIcon('heroicon-m-phone')
+                        ->columnSpan(1),
+                ])
+                ->columns(2)
+                ->collapsible(),
+
+            // Gym Assignment Section
+            // Forms\Components\Section::make('Gym Assignment')
+            //     ->description('Select the gym where this trainer will work')
+            //     ->schema([
+            //         Forms\Components\Select::make('gym_id')
+            //             ->label('Gym')
+            //             ->relationship('gym', 'name')
+            //             ->required()
+            //             ->searchable()
+            //             ->preload()
+            //             ->options(function () {
+            //                 return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
+            //             })
+            //             ->placeholder('Select a gym')
+            //             ->columnSpan(2),
+            //     ])
+            //     ->columns(2)
+            //     ->collapsible(),
+
+            // Professional Information Section
+            Forms\Components\Section::make('Professional Information')
+                ->description('Training specialization and experience details')
+                ->schema([
+                    Forms\Components\Select::make('specialization')
+                        ->label('Primary Specialization')
+                        ->options([
+                            'Strength Training' => 'Strength Training',
+                            'Yoga' => 'Yoga',
+                            'Cardio' => 'Cardio',
+                            'CrossFit' => 'CrossFit',
+                            'Pilates' => 'Pilates',
+                            'Functional Training' => 'Functional Training',
+                            'Martial Arts' => 'Martial Arts',
+                            'Dance Fitness' => 'Dance Fitness',
+                            'Nutrition Coaching' => 'Nutrition Coaching',
+                            'Rehabilitation' => 'Rehabilitation',
+                        ])
+                        ->searchable()
+                        ->placeholder('Select specialization')
+                        ->columnSpan(1),
+
+                    Forms\Components\TextInput::make('experience_years')
+                        ->label('Years of Experience')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(50)
+                        ->step(1)
+                        ->suffix('years')
+                        ->placeholder('0')
+                        ->columnSpan(1),
+
+                    Forms\Components\Textarea::make('certifications')
+                        ->label('Certifications')
+                        ->placeholder('List all relevant certifications (e.g., NASM-CPT, ACE, ACSM)')
+                        ->maxLength(500)
+                        ->rows(3)
+                        ->columnSpan(2),
+                ])
+                ->columns(2)
+                ->collapsible(),
+
+            // Availability Section
+            Forms\Components\Section::make('Availability')
+                ->description('Set trainer availability and working hours')
+                ->schema([
+                    Forms\Components\Toggle::make('is_available')
+                        ->label('Currently Available')
+                        ->default(true)
+                        ->inline(false)
+                        ->columnSpan(1),
+
+                    Forms\Components\TextInput::make('available_hours')
+                        ->label('Available Hours')
+                        ->placeholder('e.g., 9:00 AM - 5:00 PM, Monday-Friday')
+                        ->maxLength(255)
+                        ->columnSpan(1),
+                ])
+                ->columns(2)
+                ->collapsible(),
+
+            // Compensation Section
+            Forms\Components\Section::make('Compensation')
+                ->description('Salary and payment information')
+                ->schema([
+                    Forms\Components\Select::make('currency')
+                        ->options(collect(Currency::cases())->mapWithKeys(
+                            fn(Currency $currency) => [$currency->value => $currency->getLabel()]
+                        ))
+                        ->required()
+                        ->default(Currency::INR->value)
+                        ->columnSpan(2),
+
+                    Forms\Components\TextInput::make('basic_salary')
+                        ->label('Basic Salary')
+                        ->numeric()
+                        ->minValue(0)
+                        ->required()
+                        ->default(0.00)
+                        ->step(0.01)
+                        ->prefix(fn($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
+                        ->placeholder('0.00')
+                        ->columnSpan(1),
+
+                    Forms\Components\TextInput::make('pt_salary_per_member')
+                        ->label('Personal Training Rate (Per Member)')
+                        ->numeric()
+                        ->minValue(0)
+                        ->required()
+                        ->default(0.00)
+                        ->step(0.01)
+                        ->prefix(fn($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
+                        ->placeholder('0.00')
+                        ->columnSpan(1),
+                ])
+                ->columns(2)
+                ->collapsible(),
+        ];
     }
 
     public static function table(Table $table): Table
@@ -198,6 +292,8 @@ class TrainerResource extends Resource
     {
         return [
             'index' => Pages\ManageTrainers::route('/'),
+            'create' => Pages\CreateTrainer::route('/create'),
+            'edit' => Pages\EditTrainer::route('/{record}/edit'),
         ];
     }
 }

@@ -71,6 +71,7 @@ class AddressForm extends Field
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn(callable $set) => $set('state_id', null)),
+
                     Forms\Components\Select::make('state_id')
                         ->label('State / Province')
                         ->options(function (callable $get) {
@@ -86,6 +87,7 @@ class AddressForm extends Field
                         ->live()
                         ->afterStateUpdated(fn(callable $set) => $set('city_id', null))
                         ->disabled(fn(callable $get) => !$get('country_id')),
+
                     Forms\Components\Select::make('city_id')
                         ->label('City')
                         ->options(function (callable $get) {
@@ -106,11 +108,13 @@ class AddressForm extends Field
                     Forms\Components\TextInput::make('postal_code')
                         ->label('Zip / Postal code')
                         ->maxLength(20),
+
                     Forms\Components\TextInput::make('latitude')
                         ->label('Latitude')
                         ->numeric()
                         ->minValue(-90)
                         ->maxValue(90),
+
                     Forms\Components\TextInput::make('longitude')
                         ->label('Longitude')
                         ->numeric()

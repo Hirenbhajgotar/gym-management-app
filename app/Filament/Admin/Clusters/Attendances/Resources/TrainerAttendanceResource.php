@@ -7,6 +7,7 @@ use App\Filament\Admin\Clusters\Attendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\RelationManagers;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Widgets\TrainerAttendanceStats;
+use App\Filament\Admin\Resources\TrainerResource;
 use App\Filament\BaseResources\BaseAttendanceResource;
 use App\Models\Attendances as ModelsAttendances;
 use App\Models\Trainer;
@@ -61,6 +62,11 @@ class TrainerAttendanceResource extends BaseAttendanceResource
         return [
             //
         ];
+    }
+
+    public static function getOptionFormSchema()
+    {
+        return TrainerResource::getFormSchema();
     }
 
     public static function getPages(): array

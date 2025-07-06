@@ -9,6 +9,7 @@ use App\Filament\Widgets\MemberAttendanceStats;
 use App\Models\Attendance;
 use App\Models\Attendances;
 use App\Models\GymMember;
+use App\Models\Trainer;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
@@ -54,22 +55,50 @@ abstract class BaseAttendanceResource extends Resource
         $currentGymId = Filament::getTenant()->id;
         $attendanceableModel = static::getAttendanceableType();
 
+        $select = Select::make('attendanceable_id')
+            ->label(static::getLabelForSelect())
+            ->required()
+            ->searchable()
+            // ->preload()
+            ->options(function () use ($currentGymId, $attendanceableModel) {
+                $modelClass = $attendanceableModel;
+                return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
+            });
+
+        // Conditionally add createOptionForm if getOptionFormSchema() exists in the child class
+        if (method_exists(static::class, 'getOptionFormSchema')) {
+            $select
+                ->createOptionForm(static::getOptionFormSchema())
+                ->createOptionUsing(function (array $data) {
+                    $data['gym_id'] = Filament::getTenant()->id;
+                    $modelClass = static::getAttendanceableType();
+                    $attendance = $modelClass::create($data);
+                    return $attendance->id;
+                });
+        }
+
         return $form
             ->schema([
                 Section::make('Attendance Details')
                     ->schema([
-                        Select::make('attendanceable_id')
-                            ->label(static::getLabelForSelect())
-                            ->required()
-                            ->searchable()
-                            // ->options(function () use ($currentGymId, $attendanceableModel) {
-                            //     $modelClass = $attendanceableModel;
-                            //     return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
-                            // })
-                            ->getSearchResultsUsing(function (string $search) use ($attendanceableModel, $currentGymId) {
-                                $modelClass = $attendanceableModel;
-                                return $modelClass::where('name', 'like', "%{$search}%")->where('gym_id', $currentGymId)->limit(50)->pluck('name', 'id')->toArray();
-                            }),
+                        // Select::make('attendanceable_id')
+                        //     ->label(static::getLabelForSelect())
+                        //     ->required()
+                        //     ->searchable()
+                        //     ->options(function () use ($currentGymId, $attendanceableModel) {
+                        //         $modelClass = $attendanceableModel;
+                        //         return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
+                        //     })
+                        //     ->createOptionForm(static::getOptionFormSchema())
+                        //     ->createOptionUsing(function (array $data) {
+                        //         // Create the new attendance record and return its ID
+                        //         $data['gym_id'] = Filament::getTenant()->id;
+                        //         $attendance = Trainer::create($data);
+
+                        //         return $attendance->id;
+                        //     }),
+
+                        $select,
 
                         ToggleButtons::make('status')
                             ->inline()
