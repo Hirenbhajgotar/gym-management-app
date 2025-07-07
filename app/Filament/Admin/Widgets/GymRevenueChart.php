@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Models\Gym;
 use App\Models\MemberPayment;
+use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 
@@ -41,16 +42,16 @@ class GymRevenueChart extends ChartWidget
         // Define the start and end date for the past 12 months
         $endDate = now();
         $startDate = now()->subMonths(11)->startOfMonth();
-
+        $tenantId = Filament::getTenant()?->id;
         // Base query for MemberPayment
-        $query = MemberPayment::query();
-        // ->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+        $query = MemberPayment::query()
+            ->whereHas('member.gym', fn($query) => $query->where('id', $tenantId));
 
         // Apply gym filter if not "All Gyms"
         $selectedGym = $this->filter;
-        if ($selectedGym && $selectedGym !== 'all') {
-            $query->whereHas('member.gym', fn($query) => $query->where('id', $selectedGym));
-        }
+        // if ($selectedGym && $selectedGym !== 'all') {
+        //     $query->whereHas('member.gym', fn($query) => $query->where('id', $selectedGym));
+        // }
 
         $payments = Trend::query($query)
             ->dateColumn('payment_date')
