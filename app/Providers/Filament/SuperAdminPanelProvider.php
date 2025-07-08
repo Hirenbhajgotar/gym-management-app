@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\SuperAdmin\Pages\Pulse;
+use App\Filament\SuperAdmin\Pages\PulseDashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -37,12 +39,14 @@ class SuperAdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->resources([
                 // GymResource::class,
+
             ])
             ->discoverResources(in: app_path('Filament/SuperAdmin/Resources'), for: 'App\\Filament\\SuperAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/SuperAdmin/Pages'), for: 'App\\Filament\\SuperAdmin\\Pages')
             ->discoverClusters(in: app_path('Filament/SuperAdmin/Clusters'), for: 'App\\Filament\\SuperAdmin\\Clusters')
             ->pages([
                 Pages\Dashboard::class,
+                // PulseDashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/SuperAdmin/Widgets'), for: 'App\\Filament\\SuperAdmin\\Widgets')
             ->widgets([
