@@ -75,4 +75,9 @@ class Gym extends Model
     {
         return $this->hasMany(Attendances::class);
     }
+
+    public function businessDetail()
+    {
+        return $this->hasOne(BusinessDetail::class);
+    }
 }

@@ -21,7 +21,7 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::get('gym-register', GymOwnerRegister::class)->name('gym.register');
+Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
 // Route::view('gym-register', 'gym-register')->name('gym.register');
 
 Route::middleware(['auth'])->group(function () {
