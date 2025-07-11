@@ -22,7 +22,7 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
-// Route::view('gym-register', 'gym-register')->name('gym.register');
+
 
 Route::middleware(['auth'])->group(function () {
     // Download failed rows CSV
