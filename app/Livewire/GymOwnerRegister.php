@@ -7,70 +7,59 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
 use Exception;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Component;
+use Illuminate\Support\Str;
 
 class GymOwnerRegister extends Component
 {
     public $currentStep = 1;
-    public $totalSteps = 4;
+    public $totalSteps = 5;
 
     // Personal Information
-    #[Validate('required|string|max:50')]
     public $name = '';
 
-    #[Validate('required|email|max:255')]
     public $email = '';
 
-    #[Validate('required|string|max:20')]
     public $phone = '';
 
-    #[Validate('required|string|min:8|confirmed')]
     public $password = '';
 
-    #[Validate('required|string|min:8')]
     public $password_confirmation = '';
 
     // Location Details (AddressForm integration)
     public $address = [
         'street' => '',
-        'city_id' => '',
-        'state_id' => '',
-        'country_id' => '',
+        'city_id' => null,
+        'state_id' => null,
+        'country_id' => null,
         'postal_code' => '',
         'latitude' => null,
         'longitude' => null,
     ];
 
     // Business Information
-    #[Validate('required|string|max:100')]
     public $gym_name = '';
 
-    #[Validate('required|string')]
     public $business_type = '';
 
-    #[Validate('required|string')]
     public $number_of_locations = '';
 
-    #[Validate('nullable|integer|min:0|max:50')]
     public $years_in_business = '';
 
-    #[Validate('nullable|string|max:500')]
     public $business_description = '';
 
     // Additional Information
-    #[Validate('nullable|url|max:255')]
     public $website = '';
 
-    #[Validate('nullable|string')]
     public $gym_size = '';
 
-    #[Validate('nullable|string|max:500')]
     public $special_requirements = '';
 
     public $isLoading = false;
@@ -128,9 +117,23 @@ class GymOwnerRegister extends Component
                 $this->validate([
                     'name' => 'required|string|max:50',
                     'email' => 'required|email|max:255|unique:users,email',
-                    'phone' => 'required|string|max:20',
-                    'password' => 'required|string|min:8|confirmed',
+                    'phone' => 'required|phone:IN',
+                    'password' => [
+                        'required',
+                        'string',
+                        'confirmed',
+                        Password::min(8)
+                            ->letters()
+                            ->mixedCase()
+                            ->numbers()
+                            ->symbols()
+                            ->uncompromised(),
+                    ],
                     'password_confirmation' => 'required|string|min:8',
+                ], [
+                    'phone.required' => 'The phone number is required.',
+                    'phone.phone' => 'Please enter a valid phone number.',
+                    'email.unique' => 'The email has already been taken. Please use a different email address.',
                 ]);
                 break;
             case 2:
@@ -157,6 +160,9 @@ class GymOwnerRegister extends Component
                     'gym_size' => 'nullable|string',
                     'special_requirements' => 'nullable|string|max:500',
                 ]);
+                break;
+            case 5:
+                // No validation for thank you step
                 break;
         }
     }
@@ -230,13 +236,11 @@ class GymOwnerRegister extends Component
                     ->success()
                     ->sendToDatabase($superAdmin)
                     ->send();
+
+                event(new DatabaseNotificationsSent($superAdmin));
             }
 
-            // Log in the user
-            Auth::login($user);
-
-            // Redirect to admin dashboard
-            return redirect()->route('admin.dashboard');
+            $this->currentStep = $this->totalSteps;
         } catch (Exception $e) {
             DB::rollBack();
             Log::error($e);
@@ -253,6 +257,7 @@ class GymOwnerRegister extends Component
             2 => 'Business Information',
             3 => 'Location Details',
             4 => 'Additional Information',
+            5 => 'Thank You',
             default => 'Step ' . $step
         };
     }
@@ -264,6 +269,7 @@ class GymOwnerRegister extends Component
             2 => 'Details about your gym business',
             3 => 'Where is your gym located?',
             4 => 'Optional information to help us serve you better',
+            5 => 'Thank you for registering with us!',
             default => ''
         };
     }
@@ -275,9 +281,18 @@ class GymOwnerRegister extends Component
             2 => 'M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-1.72L21.378 6.032a.75.75 0 00-.378-1.335l-1.318-.39a1.5 1.5 0 00-1.127.205l-1.19.658a3.004 3.004 0 01-3.073.084L12 4.25l-2.292 1.004a3.004 3.004 0 01-3.073-.084l-1.19-.658a1.5 1.5 0 00-1.127-.205l-1.318.39a.75.75 0 00-.378 1.335L21.378 6.032a.75.75 0 00-.378 1.335l-1.318.39a1.5 1.5 0 01-1.127-.205l-1.19-.658a3.004 3.004 0 00-3.073-.084L12 8.25l-2.292-1.004a3.004 3.004 0 00-3.073.084l-1.19.658a1.5 1.5 0 01-1.127.205l-1.318-.39a.75.75 0 01-.378-1.335z',
             3 => 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
             4 => 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0-1.125-.504-1.125-1.125V11.25a9 9 0 00-9-9z',
+            5 => 'M12 11c0-3.866 3.582-7 8-7 1.06 0 2.073.22 3 .604V3a1 1 0 10-2 0v1.5a6.986 6.986 0 00-5.742 2.897L12 11zm0 0c0 3.866-3.582 7-8 7-1.06 0-2.073-.22-3-.604V21a1 1 0 102 0v-1.5a6.986 6.986 0 005.742-2.897L12 13zM4.5 11a7.468 7.468 0 00-1.985.264 1 1 0 00-.343 1.62l1.055 1.055a1 1 0 001.62-.343A5.99 5.99 0 014.5 11zm12 0a7.468 7.468 0 001.985.264 1 1 0 00.343-1.62l-1.055-1.055a1 1 0 00-1.62.343A5.99 5.99 0 0016.5 11z',
             default => 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z'
         };
     }
+
+    public function generatePassword()
+    {
+        // Laravel's built-in password generator
+        $this->password = Str::password(12);
+        $this->password_confirmation = $this->password;
+    }
+
 
     #[Layout('frontend.layouts.app')]
     public function render()

@@ -80,14 +80,22 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         }
 
         if ($panel->getId() === 'admin') {
-            return $this->hasAnyRole(['gym_owner', 'receptionist']);
+            return $this->hasActiveRole(['gym_owner', 'receptionist']);
         }
 
         if ($panel->getId() === 'staff') {
-            return $this->hasAnyRole(['staff_member', 'receptionist']);
+            return $this->hasActiveRole(['staff_member', 'receptionist']);
         }
 
         return false;
+    }
+
+    /**
+     * Check if user has any of the given roles and is active.
+     */
+    private function hasActiveRole(array $roles): bool
+    {
+        return $this->hasAnyRole($roles) && $this->is_active;
     }
 
     public function getTenants(Panel $panel): array|Collection

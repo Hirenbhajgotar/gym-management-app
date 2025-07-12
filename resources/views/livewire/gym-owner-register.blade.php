@@ -111,9 +111,43 @@
                                 @enderror
                             </div>
 
-                            <div x-data="{ showPassword: false }">
-                                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password
-                                    *</label>
+                            <div x-data="{ 
+                                showPassword: false, 
+                                showHelp: false,
+                                generating: false,
+                                async generatePassword() {
+                                    this.generating = true;
+                                    try {
+                                        await $wire.generatePassword();
+                                        this.showPassword = true;
+                                        setTimeout(() => this.showPassword = false, 3000);
+                                    } catch (error) {
+                                        console.error('Error generating password:', error);
+                                    } finally {
+                                        this.generating = false;
+                                    }
+                                }
+                            }">
+                                <label for="password" class="text-sm font-medium text-gray-700 mb-2">
+                                    Password *
+                                    <button type="button" @click="showHelp = !showHelp"  aria-label="Toggle password requirements" class="ml-1 text-gray-400 hover:text-gray-600">
+                                        <svg class="h-4 w-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </button>
+                                </label>
+                                <a href="javascript:void(0)" @click.prevent="generatePassword()" 
+                                class="text-sm float-right !text-green-600 hover:!text-green-700 font-medium transition-colors duration-200 flex items-center gap-1"
+                                :class="{ 'opacity-50 cursor-not-allowed': generating }">
+                                    <svg x-show="!generating" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                    </svg>
+                                    <svg x-show="generating" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-text="generating ? 'Generating...' : 'Generate Password'"></span>
+                                </a>
                                 <div class="relative">
                                     <input :type="showPassword ? 'text' : 'password'" wire:model="password"
                                         id="password"
@@ -137,6 +171,53 @@
                                         </svg>
                                     </button>
                                 </div>
+
+                                <!-- Password Requirements Helper Text -->
+                                <div x-show="showHelp" x-transition class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                    <h4 class="text-sm font-medium text-blue-900 mb-2">Password Requirements:</h4>
+                                    <ul class="text-sm text-blue-800 space-y-1">
+                                        <li class="flex items-center">
+                                            <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            At least 8 characters long
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Include uppercase letters (A-Z)
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Include lowercase letters (a-z)
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Include numbers (0-9)
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Include special characters (!@#$%^&*)
+                                        </li>
+                                    </ul>
+                                    <p class="text-xs text-blue-700 mt-2">
+                                        <strong>Tip:</strong> Use a passphrase with mixed case, numbers, and symbols for better security.
+                                    </p>
+                                </div>
+
+                                <!-- Simple Helper Text (Alternative - always visible) -->
+                                <p class="mt-1 text-sm text-gray-600">
+                                    Choose a strong password with at least 8 characters, including uppercase, lowercase, numbers, and symbols.
+                                    <span class="text-green-600 font-medium">Or click "Generate" for a secure password.</span>
+                                </p>
+
                                 @error('password')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -430,10 +511,33 @@
                     </div>
                 @endif
 
+                {{-- Step 5: Thank You --}}
+                @if ($currentStep === 5)
+                    <div class="space-y-6 text-center">
+                        <div class="flex justify-center mb-4">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Thank You for Registering!</h2>
+                        <p class="text-gray-600 mb-4">Your registration has been successfully submitted. We will review your application and contact you soon at <strong>{{ $email }}</strong>. In the meantime, you can explore our website.</p>
+                        <div class="mt-6">
+                            <x-filament::button href="{{ route('home') }}" tag="a" color="gray"
+                                class="text-gray-100 !text-gray-100 bg-blue-600 !bg-blue-600 hover:bg-blue-700 !hover:bg-blue-700">
+                                Go to Homepage
+                            </x-filament::button>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Navigation Buttons --}}
                 <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
                     <div>
-                        @if ($currentStep > 1)
+                        @if ($currentStep > 1 && $currentStep < $totalSteps)
                             <x-filament::button type="button" icon="heroicon-o-arrow-long-left"
                                 wire:loading.attr="disabled" wire:click="previousStep" wire:target="previousStep"
                                 color="gray">
@@ -442,14 +546,14 @@
                         @endif
                     </div>
                     <div>
-                        @if ($currentStep < $totalSteps)
+                        @if ($currentStep < ($totalSteps - 1))
                             <x-filament::button type="button" icon="heroicon-o-arrow-long-right"
                                 icon-position="after" wire:loading.attr="disabled" wire:click="nextStep"
                                 wire:target="nextStep" color="gray">
                                 Next
                             </x-filament::button>
-                        @else
-                            <x-filament::button type="submit" wire:loading.attr="disabled" wire:click="submit"
+                        @elseif ($currentStep === ($totalSteps - 1))
+                            <x-filament::button type="submit" wire:loading.attr="disabled"
                                 wire:target="submit" color="gray"
                                 class="text-gray-100 !text-gray-100 bg-blue-600 !bg-blue-600 hover:bg-blue-700 !hover:bg-blue-700">
                                 Submit
