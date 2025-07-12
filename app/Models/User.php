@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Contracts\GymUser;
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
@@ -20,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -31,6 +34,8 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         'name',
         'email',
         'password',
+        'phone',
+        'is_active'
     ];
 
     /**
@@ -53,6 +58,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -69,44 +75,44 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        // return $this->hasRole(['super_admin', 'gym_owner']);
         if ($panel->getId() === 'super-admin') {
             return $this->hasRole('super_admin');
         }
 
         if ($panel->getId() === 'admin') {
-            return $this->hasAnyRole(['gym_owner', 'team_member']);
+            return $this->hasActiveRole(['gym_owner', 'receptionist']);
+        }
+
+        if ($panel->getId() === 'staff') {
+            return $this->hasActiveRole(['staff_member', 'receptionist']);
         }
 
         return false;
+    }
+
+    /**
+     * Check if user has any of the given roles and is active.
+     */
+    private function hasActiveRole(array $roles): bool
+    {
+        return $this->hasAnyRole($roles) && $this->is_active;
     }
 
     public function getTenants(Panel $panel): array|Collection
     {
-        if ($panel->getId() === 'admin') {
-            if ($this->hasRole('gym_owner')) {
-                return $this->gyms;
-            }
-            if ($this->hasRole('team_member')) {
-                return $this->teamMember->gyms;
-            }
-        }
-
-        return collect();
+        return $this->gyms;
     }
 
     public function canAccessTenant(Model $tenant): bool
     {
-        if ($this->hasRole('gym_owner')) {
-            return $this->gyms->contains($tenant);
-        }
-        return false;
+        return $this->gyms->contains($tenant);
     }
 
-    // Gyms this user owns
-    public function gyms(): HasMany
+    public function gyms()
     {
-        return $this->hasMany(Gym::class, 'owner_id');
+        return $this->belongsToMany(Gym::class, 'gym_user')
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
     }
 
     // public function subscription()

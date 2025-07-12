@@ -6,6 +6,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -27,7 +28,7 @@ class GymStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $user = auth()->user();
-        $gymId = $this->filters['gymId'] ?? null;
+        $gymId = Filament::getTenant()->id ?? null;
         $monthYear = $this->filters['monthYear'] ?: Carbon::now()->format('Y-m');
 
         $selectedGym = $gymId ? Gym::find($gymId) : null;
@@ -42,22 +43,31 @@ class GymStatsOverview extends BaseWidget
         $previousStart = $previousEnd->copy()->startOfMonth();
 
         // Total Members (filtered for gym_owner)
-        $totalMembers = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
-            // ->whereBetween('created_at', [$currentStart, $currentEnd])
-            ->count();
+        // $totalMembers = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->count();
+
+        $totalMembers = GymMember::where('gym_id', $gymId)->count(); // Placeholder for total members, replace with actual query
 
         // Members Joined in Current Period
-        $membersJoinedCurrent = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        // $membersJoinedCurrent = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->whereBetween('created_at', [$currentStart, $currentEnd])
+        //     ->count();
+
+        $membersJoinedCurrent = GymMember::where('gym_id', $gymId)
             ->whereBetween('created_at', [$currentStart, $currentEnd])
-            ->count();
+            ->count(); // Placeholder for members joined in current period, replace with actual query
 
         // Members Joined in Previous Period
-        $membersJoinedPrevious = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        // $membersJoinedPrevious = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+        //     ->whereBetween('created_at', [$previousStart, $previousEnd])
+        //     ->count();
+
+        $membersJoinedPrevious = GymMember::where('gym_id', $gymId)
             ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->count();
+            ->count(); // Placeholder for members joined in previous period, replace with actual query
 
         // Dynamic styling for Members Joined
         $changeDirection = '';
@@ -78,15 +88,23 @@ class GymStatsOverview extends BaseWidget
         }
 
         // Revenue Calculation
-        $currentRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
-            ->whereBetween('payment_date', [$currentStart, $currentEnd])
-            ->sum('amount');
+        // $currentRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+        //     ->whereBetween('payment_date', [$currentStart, $currentEnd])
+        //     ->sum('amount');
 
-        $previousRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-            ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+        $currentRevenue = MemberPayment::when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+            ->whereBetween('payment_date', [$currentStart, $currentEnd])
+            ->sum('amount'); // Placeholder for current revenue, replace with actual query
+
+        // $previousRevenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+        //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+        //     ->whereBetween('payment_date', [$previousStart, $previousEnd])
+        //     ->sum('amount');
+
+        $previousRevenue = MemberPayment::when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
             ->whereBetween('payment_date', [$previousStart, $previousEnd])
-            ->sum('amount');
+            ->sum('amount'); // Placeholder for previous revenue, replace with actual query
 
         // Dynamic styling for Revenue
         $revenueDescription = $selectedGym ? 'Revenue from ' . $selectedGym->name : 'Total revenue from all gyms';
@@ -116,10 +134,15 @@ class GymStatsOverview extends BaseWidget
         for ($i = $periodsBack - 1; $i >= 0; $i--) {
             $periodStart = $currentStart->copy()->subMonths($i)->startOfMonth();
             $periodEnd = $periodStart->copy()->endOfMonth();
-            $revenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
-                ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+            // $revenue = MemberPayment::whereHas('member.gym', fn($query) => $query->where('owner_id', $user->id))
+            //     ->when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
+            //     ->whereBetween('payment_date', [$periodStart, $periodEnd])
+            //     ->sum('amount');
+
+            $revenue = MemberPayment::when($gymId, fn($query) => $query->whereHas('member', fn($q) => $q->where('gym_id', $gymId)))
                 ->whereBetween('payment_date', [$periodStart, $periodEnd])
                 ->sum('amount');
+
             $revenueChartData[] = $revenue;
             $revenueChartLabels[] = $periodStart->format('M Y');
         }
@@ -130,10 +153,15 @@ class GymStatsOverview extends BaseWidget
         for ($i = $periodsBack - 1; $i >= 0; $i--) {
             $periodStart = $currentStart->copy()->subMonths($i)->startOfMonth();
             $periodEnd = $periodStart->copy()->endOfMonth();
-            $count = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
-                ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+            // $count = GymMember::whereHas('gym', fn($query) => $query->where('owner_id', $user->id))
+            //     ->when($gymId, fn($query) => $query->where('gym_id', $gymId))
+            //     ->whereBetween('created_at', [$periodStart, $periodEnd])
+            //     ->count();
+
+            $count = GymMember::when($gymId, fn($query) => $query->where('gym_id', $gymId))
                 ->whereBetween('created_at', [$periodStart, $periodEnd])
                 ->count();
+
             $memberChartData[] = $count;
             $memberChartLabels[] = $periodStart->format('M Y');
         }

@@ -22,15 +22,11 @@ class Gym extends Model
         'owner_id',
     ];
 
-    public function owner(): BelongsTo
+    public function users()
     {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
-
-    public function staffMembers()
-    {
-        return $this->belongsToMany(StaffMember::class, 'gym_staff_members')
-            ->withPivot('is_active');
+        return $this->belongsToMany(User::class, 'gym_user')
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
     }
 
     public function members(): HasMany
@@ -60,5 +56,28 @@ class Gym extends Model
         }
 
         return $slug;
+    }
+
+    /** @return HasMany<\App\Models\GymMember, self> */
+    public function gymMembers(): HasMany
+    {
+        return $this->hasMany(\App\Models\GymMember::class);
+    }
+
+
+    /** @return HasMany<\App\Models\MembershipPlan, self> */
+    public function membershipPlans(): HasMany
+    {
+        return $this->hasMany(\App\Models\MembershipPlan::class);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendances::class);
+    }
+
+    public function businessDetail()
+    {
+        return $this->hasOne(BusinessDetail::class);
     }
 }

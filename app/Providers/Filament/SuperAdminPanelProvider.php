@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\SuperAdmin\Pages\Pulse;
+use App\Filament\SuperAdmin\Pages\PulseDashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,18 +31,22 @@ class SuperAdminPanelProvider extends PanelProvider
                 'primary' => Color::Emerald,
             ])
             ->login()
+            ->authGuard('web')
+            ->authPasswordBroker('users')
             ->spa()
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
             ->sidebarCollapsibleOnDesktop()
             ->resources([
                 // GymResource::class,
+
             ])
             ->discoverResources(in: app_path('Filament/SuperAdmin/Resources'), for: 'App\\Filament\\SuperAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/SuperAdmin/Pages'), for: 'App\\Filament\\SuperAdmin\\Pages')
             ->discoverClusters(in: app_path('Filament/SuperAdmin/Clusters'), for: 'App\\Filament\\SuperAdmin\\Clusters')
             ->pages([
                 Pages\Dashboard::class,
+                // PulseDashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/SuperAdmin/Widgets'), for: 'App\\Filament\\SuperAdmin\\Widgets')
             ->widgets([
@@ -60,6 +66,24 @@ class SuperAdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                // FilamentShieldPlugin::make()
+                //     ->gridColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 3
+                //     ])
+                //     ->sectionColumnSpan(1)
+                //     ->checkboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 4,
+                //     ])
+                //     ->resourceCheckboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //     ]),
             ]);
     }
 }

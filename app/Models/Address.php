@@ -49,13 +49,6 @@ class Address extends Model
             get: function ($value) {
                 $address = $this->street . ', ' . $this->postal_code . ' ' . $this->city?->name;
                 return $address;
-                // return implode(', ', array_filter([
-                //     $this->street,
-                //     $this->city?->name,
-                //     $this->state?->name,
-                //     $this->country?->name,
-                //     $this->postal_code,
-                // ]));
             },
         );
     }

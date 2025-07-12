@@ -16,7 +16,9 @@ class RecentActivity extends BaseWidget
 
     protected static ?string $pollingInterval = '900s';
 
-    protected static ?int $sort = 5;
+    protected int | string | array $columnSpan = 'full';
+
+    protected static ?int $sort = 7;
 
     public static function canView(): bool
     {
@@ -33,10 +35,10 @@ class RecentActivity extends BaseWidget
                         MemberPayment::class,
                     ])
                     ->whereHasMorph('subject', GymMember::class, function ($query) {
-                        $query->whereHas('gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('gym');
                     })
                     ->orWhereHasMorph('subject', MemberPayment::class, function ($query) {
-                        $query->whereHas('member.gym', fn($query) => $query->where('owner_id', auth()->user()->id));
+                        $query->whereHas('member.gym');
                     })
                     ->latest()
                     ->take(5)

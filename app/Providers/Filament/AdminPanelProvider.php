@@ -2,8 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\Pulse;
 use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
+use App\Filament\Components\FeedbackPopup;
+use App\Filament\Components\FeedbackTrigger;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
@@ -21,6 +24,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -42,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->spa()
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
+                // SyncShieldTenant::class,
                 ApplyTenantScopes::class,
             ], isPersistent: true)
             ->tenantRegistration(RegisterGym::class)
@@ -86,6 +91,23 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 // \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                // FilamentShieldPlugin::make()
+                //     ->gridColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 3
+                //     ])
+                //     ->sectionColumnSpan(1)
+                //     ->checkboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 4,
+                //     ])
+                //     ->resourceCheckboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //     ]),
+
                 // FilamentGeneralSettingsPlugin::make()
                 //     ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
                 //     ->setSort(3)
@@ -96,6 +118,22 @@ class AdminPanelProvider extends PanelProvider
                 PhosphorIcons::make(),
 
                 // ActivitylogPlugin::make(),
-            ]);
+            ])
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+            )
+            // Add feedback button to sidebar bottom
+            ->renderHook(
+                'panels::sidebar.nav.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+            );
+    }
+
+    public function boot(): void
+    {
+        // Register the Livewire component
+        Livewire::component('feedback-popup', FeedbackPopup::class);
+        Livewire::component('feedback-trigger', FeedbackTrigger::class);
     }
 }

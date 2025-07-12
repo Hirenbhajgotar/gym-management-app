@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Frontend\HomeController;
+use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Notification;
 use Illuminate\Notifications\DatabaseNotification;
@@ -7,13 +9,25 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+// Route::get('/', function () {
+//     return view('welcome');
+// })->name('home');
+
+Route::get('/', HomeController::class)->name('home');
+
+Route::get('/thank-you', function () {
+    if (!session()->has('success')) {
+        return redirect()->route('home');
+    }
+    return view('thank-you');
+})->name('thank-you');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
+
 
 Route::middleware(['auth'])->group(function () {
     // Download failed rows CSV

@@ -1,6 +1,7 @@
 <x-filament-panels::page.simple heading="Register Gym" subheading="Fill in the details to set up your gym in the system.">
     @php
-        $currentGymCount = \App\Models\Gym::where('owner_id', auth()->id())->count();
+        // $currentGymCount = \App\Models\Gym::where('owner_id', auth()->id())->count();
+        $currentGymCount = $this->authUserGyms;
         $hasReachedLimit = $currentGymCount >= $totalGyms;
         $remainingGyms = $totalGyms - $currentGymCount;
     @endphp

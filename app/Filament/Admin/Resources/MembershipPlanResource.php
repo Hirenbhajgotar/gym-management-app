@@ -16,17 +16,20 @@ class MembershipPlanResource extends Resource
 {
     protected static ?string $model = MembershipPlan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-ticket';
-
     protected static ?string $navigationLabel = 'Membership Plans';
 
     protected static ?string $navigationGroup = 'Gym Management';
 
+
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-
-        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        if (filament()->getId() === 'admin') {
+            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        } else if (filament()->getId() === 'staff') {
+            return $user->hasRole('receptionist');
+        }
+        return false;
     }
 
     public static function form(Form $form): Form
@@ -39,14 +42,18 @@ class MembershipPlanResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name', function ($query) {
-                                if (auth()->user()->hasRole('gym_owner')) {
-                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                if (filament()->getId() === 'admin') {
+                                    if (auth()->user()->hasRole('gym_owner')) {
+                                        return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
+                                    }
+                                } else if (filament()->getId() === 'staff') {
+                                    // Staff can see all gyms
+                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                 }
 
                                 return $query;
                             })
                             ->required()
-                            // ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()->gyms()->first()->id ?? null : null)
                             ->placeholder('Select a gym'),
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -135,10 +142,14 @@ class MembershipPlanResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        }
-                        if (auth()->user()->hasRole('super_admin')) {
+                        if (filament()->getId() === 'admin') {
+                            if (auth()->user()->hasRole('gym_owner')) {
+                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
+                            }
+                            if (auth()->user()->hasRole('super_admin')) {
+                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
+                            }
+                        } else if (filament()->getId() === 'staff') {
                             return $query;
                         }
                     }),

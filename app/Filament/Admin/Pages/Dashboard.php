@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -28,11 +29,11 @@ class Dashboard extends BaseDashboard
             ->schema([
                 Section::make()
                     ->schema([
-                        Select::make('gymId')
-                            ->label('Select Gym')
-                            ->options(function () {
-                                return auth()->user()->gyms()->pluck('name', 'id');
-                            }),
+                        // Select::make('gymId')
+                        //     ->label('Select Gym')
+                        //     ->options(function () {
+                        //         return auth()->user()->gyms()->get()->pluck('name', 'id');
+                        //     }),
                         // DatePicker::make('startDate', null),
                         // DatePicker::make('endDate', null),
                         Select::make('monthYear')

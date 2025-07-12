@@ -10,6 +10,7 @@ use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
@@ -45,26 +46,35 @@ class GymMemberResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-
-        return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        if (filament()->getId() === 'admin') {
+            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
+        } else if (filament()->getId() === 'staff') {
+            return true;
+        }
+        return false;
     }
 
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make()
-                            ->schema(static::getDetailsFormSchema())
-                            ->columns(2),
-
-                        Forms\Components\Section::make()
-                            ->schema(static::getMembershipFormSchema())
-                            ->columns(2),
-                    ])
-            ])
+            ->schema(self::getFormSchema())
             ->columns(1);
+    }
+
+    public static function getFormSchema(): array
+    {
+        return [
+            Forms\Components\Group::make()
+                ->schema([
+                    Forms\Components\Section::make()
+                        ->schema(static::getDetailsFormSchema())
+                        ->columns(2),
+
+                    Forms\Components\Section::make()
+                        ->schema(static::getMembershipFormSchema())
+                        ->columns(2),
+                ])
+        ];
     }
 
     public static function table(Table $table): Table
@@ -189,21 +199,29 @@ class GymMemberResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('gym_id')
                     ->relationship('gym', 'name', function ($query) {
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return $query->whereIn('id', auth()->user()?->gyms()->pluck('id'));
-                        }
-                        if (auth()->user()->hasRole('super_admin')) {
-                            return $query;
+                        if (filament()->getId() === 'admin') {
+                            if (auth()->user()->hasRole('gym_owner')) {
+                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
+                            }
+                            if (auth()->user()->hasRole('super_admin')) {
+                                return $query;
+                            }
+                        } else if (filament()->getId() === 'staff') {
+                            return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
                         }
                     })
                     ->label('Gym'),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name', function ($query) {
-                        if (auth()->user()->hasRole('gym_owner')) {
-                            return $query->whereIn('gym_id', auth()->user()?->gyms()->pluck('id'));
-                        }
-                        if (auth()->user()->hasRole('super_admin')) {
-                            return $query;
+                        if (filament()->getId() === 'admin') {
+                            if (auth()->user()->hasRole('gym_owner')) {
+                                return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
+                            }
+                            if (auth()->user()->hasRole('super_admin')) {
+                                return $query;
+                            }
+                        } else if (filament()->getId() === 'staff') {
+                            return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
                         }
                     })
                     ->label('Plan'),
@@ -231,12 +249,11 @@ class GymMemberResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
-                    ->color('primary')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('update_gym::member')),
+                    ->color('primary'),
+
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn() => auth()->user()->hasPermissionTo('delete_gym::member'))
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member')
 
@@ -289,14 +306,19 @@ class GymMemberResource extends Resource
                     ->color('success')
                     ->form(function () {
                         $user = auth()->user();
-                        $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
+                        $gymCount = 0;
+                        if (filament()->getId() === 'admin') {
+                            $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
+                        } else if (filament()->getId() === 'staff') {
+                            $gymCount = $user->gyms()->count();
+                        }
 
                         if ($gymCount > 1) {
                             return [
                                 Forms\Components\Select::make('gym_id')
                                     ->label('Select Gym')
                                     ->options(function () {
-                                        return auth()->user()->gyms()->pluck('name', 'id');
+                                        return auth()->user()->gyms()->get()->pluck('name', 'id');
                                     })
                                     ->required()
                                     ->placeholder('Choose a gym to export members'),
@@ -309,7 +331,16 @@ class GymMemberResource extends Resource
                         $user = auth()->user();
                         $gymId = null;
 
-                        if ($user->hasRole('gym_owner')) {
+                        if (filament()->getId() === 'admin') {
+                            if ($user->hasRole('gym_owner')) {
+                                $gymCount = $user->gyms()->count();
+                                if ($gymCount > 1) {
+                                    $gymId = $data['gym_id'];
+                                } else {
+                                    $gymId = $user->gyms()->first()?->id;
+                                }
+                            }
+                        } else if (filament()->getId() === 'staff') {
                             $gymCount = $user->gyms()->count();
                             if ($gymCount > 1) {
                                 $gymId = $data['gym_id'];
@@ -320,8 +351,7 @@ class GymMemberResource extends Resource
 
                         return Excel::download(new MembersExport($gymId), 'members-' . now()->format('Y-m-d-H-i-s') . '.csv');
                     })
-                    ->requiresConfirmation()
-                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
+                    ->requiresConfirmation(),
                 Tables\Actions\ActionGroup::make([ // Group the download actions
                     Tables\Actions\Action::make('download_csv_template')
                         ->label('Download CSV Template')
@@ -363,14 +393,18 @@ class GymMemberResource extends Resource
                     ->form([
                         Forms\Components\Select::make('gym_id')
                             ->relationship('gym', 'name', function ($query) {
-                                if (auth()->user()->hasRole('gym_owner')) {
-                                    return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
+                                if (filament()->getId() === 'admin') {
+                                    if (auth()->user()->hasRole('gym_owner')) {
+                                        return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
+                                    }
+                                } else if (filament()->getId() === 'staff') {
+                                    // Staff can see all gyms
+                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                 }
 
                                 return $query;
                             })
                             ->required(),
-                        // ->default(fn() => auth()->user()->hasRole('gym_owner') ? auth()->user()?->gyms()?->first()?->id : null),
                         Forms\Components\FileUpload::make('file')
                             ->label('Upload CSV/XLS')
                             ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
@@ -403,7 +437,15 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->requiresConfirmation()
-                    ->visible(fn() => auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin')),
+                    ->visible(function () {
+                        $user = auth()->user();
+                        if (filament()->getId() === 'admin') {
+                            return $user->hasRole('gym_owner') || $user->hasRole('super_admin');
+                        } else if (filament()->getId() === 'staff') {
+                            return true; // Staff can import members
+                        }
+                        return false;
+                    }),
             ])
             // ->modifyQueryUsing(function ($query) {
             //     $user = auth()->user();
@@ -460,12 +502,14 @@ class GymMemberResource extends Resource
                 ->directory('member-photos')
                 ->maxSize(2048)
                 ->columnSpanFull(),
+
             Forms\Components\TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->placeholder('e.g., John Doe')
                 ->autofocus()
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
             Forms\Components\TextInput::make('email')
                 ->email()
                 ->required()
@@ -500,6 +544,7 @@ class GymMemberResource extends Resource
                 ->minValue(0)
                 ->maxValue(500)
                 ->placeholder('e.g., 75.5'),
+
             Forms\Components\TextInput::make('height')
                 ->numeric()
                 ->suffix('cm')
@@ -542,11 +587,7 @@ class GymMemberResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('gym_id')
                         ->relationship('gym', 'name', function ($query) {
-                            if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()->gyms()->pluck('id'));
-                            }
-
-                            return $query;
+                            return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                         })
                         ->required()
                         ->placeholder('Select a gym')
@@ -554,8 +595,14 @@ class GymMemberResource extends Resource
                         ->rules([
                             'required_if:visible,true',
                             fn($get) => function ($attribute, $value, $fail) {
-                                if (auth()->user()->hasRole('gym_owner') && ! $value) {
-                                    $fail('You must create a gym before adding members.');
+                                if (filament()->getId() === 'admin') {
+                                    if (auth()->user()->hasRole('gym_owner') && ! $value) {
+                                        $fail('You must create a gym before adding members.');
+                                    }
+                                } else if (filament()->getId() === 'staff') {
+                                    if (! $value) {
+                                        $fail('You must select a gym to assign this member.');
+                                    }
                                 }
                             },
                         ]),
@@ -563,10 +610,11 @@ class GymMemberResource extends Resource
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            $gymId = $get('gym_id');
-                            if (!$gymId) {
-                                return [];
-                            }
+                            // $gymId = $get('gym_id');
+                            // if (!$gymId) {
+                            //     return [];
+                            // }
+                            $gymId = Filament::getTenant()->id;
                             return Trainer::where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')
