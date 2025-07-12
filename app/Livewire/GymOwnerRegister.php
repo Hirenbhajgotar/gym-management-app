@@ -263,8 +263,8 @@ class GymOwnerRegister extends Component
     {
         return match ($step) {
             1 => 'Tell us about yourself',
-            2 => 'Details about your gym business',
-            3 => 'Where is your gym located?',
+            2 => 'Details about your business',
+            3 => 'Where is your business located?',
             4 => 'Optional information to help us serve you better',
             default => ''
         };
