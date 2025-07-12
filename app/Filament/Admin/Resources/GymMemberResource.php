@@ -587,7 +587,7 @@ class GymMemberResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('gym_id')
                         ->relationship('gym', 'name', function ($query) {
-                            return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('name', 'id'));
+                            return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                         })
                         ->required()
                         ->placeholder('Select a gym')

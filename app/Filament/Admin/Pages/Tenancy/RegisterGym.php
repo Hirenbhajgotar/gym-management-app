@@ -117,11 +117,12 @@ class RegisterGym extends RegisterTenant
             throw new \Exception('Gym limit exceeded. Cannot register more than 3 gyms.');
         }
 
-        // $data['owner_id'] = auth()->id();
         $gym = Gym::create($data);
 
+        // Associate the user with the new gym and assign the 'gym_owner' role.
+        $gym->users()->attach(auth()->user(), ['role' => 'gym_owner']);
+
         // Show success notification with remaining count
-        // $remainingCount = 2 - Gym::where('owner_id', auth()->id())->count();
         $remainingCount = 2 - $this->authUserGyms;
 
         if ($remainingCount > 0) {
