@@ -8,6 +8,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -37,6 +38,11 @@ class SuperAdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
             ->sidebarCollapsibleOnDesktop()
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-o-cog-6-tooth'),
+            ])
             ->resources([
                 // GymResource::class,
 
