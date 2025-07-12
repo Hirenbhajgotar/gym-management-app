@@ -42,6 +42,10 @@ class FeedbackPopup extends Component implements HasForms
 
     protected function checkAndShowPopup()
     {
+        if (!Auth::check()) {
+            return;
+        }
+
         $userId = Auth::id();
         $weekKey = $this->getWeekKey();
         $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
