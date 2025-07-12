@@ -15,7 +15,12 @@ use Livewire\Volt\Volt;
 
 Route::get('/', HomeController::class)->name('home');
 
-
+Route::get('/thank-you', function () {
+    if (!session()->has('success')) {
+        return redirect()->route('home');
+    }
+    return view('thank-you');
+})->name('thank-you');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
