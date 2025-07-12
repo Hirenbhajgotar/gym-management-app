@@ -4,7 +4,6 @@ namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources;
 
 use App\Filament\SuperAdmin\Clusters\GymManagement;
 use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
-use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\RelationManagers;
 use App\Models\BusinessType;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
@@ -13,8 +12,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
 class BusinessTypeResource extends Resource
@@ -53,6 +50,7 @@ class BusinessTypeResource extends Resource
                             ->hint('Used for URL routing. Auto-generated from name.')
                             ->hintColor('secondary')
                             ->disabled()
+                            ->dehydrated()
                             ->columnSpan(['lg' => 2]),
 
                         Forms\Components\Toggle::make('is_active')
