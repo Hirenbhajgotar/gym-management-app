@@ -1,37 +1,37 @@
 <x-filament-panels::page>
-    <div class="filament-widget-grid">
-        <div class="grid grid-cols-12 gap-6">
-            <!-- Server Metrics - Full width -->
-            <div class="col-span-12">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseServers::class)
-            </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-            <!-- Usage and Cache - Half width each -->
-            <div class="col-span-12 md:col-span-6">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseUsage::class)
-            </div>
-            <div class="col-span-12 md:col-span-6">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseCache::class)
-            </div>
+    <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-12">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseServers::class)
+        </div>
 
-            <!-- Exceptions and Queues - Half width each -->
-            <div class="col-span-12 md:col-span-6">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions::class)
-            </div>
-            <div class="col-span-12 md:col-span-6">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseQueues::class)
-            </div>
+        <!-- Usage, Cache, Requests - One-third width each -->
+        <div class="col-span-12 md:col-span-4 row-span-2">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseUsage::class)
+        </div>
+        <div class="col-span-12 md:col-span-8">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowRequests::class)
+        </div>
+        <div class="col-span-12 md:col-span-8">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseQueues::class)
+        </div>
 
-            <!-- Slow Queries - Third width -->
-            <div class="col-span-12 md:col-span-4">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowQueries::class)
-            </div>
-            <div class="col-span-12 md:col-span-4">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowRequests::class)
-            </div>
-            <div class="col-span-12 md:col-span-4">
-                @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowOutGoingRequests::class)
-            </div>
+
+        <!-- Exceptions and Queues - Half width each -->
+        <div class="col-span-12 md:col-span-6">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions::class)
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseCache::class)
+        </div>
+
+        <!-- Slow Queries and Outgoing Requests - Half width each -->
+        <div class="col-span-12 md:col-span-6">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowQueries::class)
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            @livewire(\Dotswan\FilamentLaravelPulse\Widgets\PulseSlowOutGoingRequests::class)
         </div>
     </div>
 </x-filament-panels::page>
