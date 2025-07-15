@@ -2,11 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -19,7 +21,8 @@ class UserRoleAssignmentSeeder extends Seeder
     {
         $choices = [
             'Do you want to create only super-admin user?',
-            'Do you want to create demo users?',
+            'Do you want to create demo users for specific gym?',
+            'Do you want to create demo users for all gyms?',
             'Do you want to assign roles to existing users?',
             'Do you want to update existing user roles?',
         ];
@@ -35,8 +38,12 @@ class UserRoleAssignmentSeeder extends Seeder
                 $this->createSuperAdminUser();
                 break;
 
-            case 'Do you want to create demo users?':
-                $this->createDemoUsers();
+            case 'Do you want to create demo users for specific gym?':
+                $this->createDemoUsersForGym();
+                break;
+
+            case 'Do you want to create demo users for all gyms?':
+                $this->createDemoUsersForAllGyms();
                 break;
 
             case 'Do you want to assign roles to existing users?':
@@ -53,6 +60,51 @@ class UserRoleAssignmentSeeder extends Seeder
         }
 
         $this->displayFinalSummary();
+    }
+
+    private function ensureRolesExist($gymId = null): void
+    {
+        $roles = [
+            'super_admin',
+            'gym_owner',
+            'trainer',
+            'receptionist',
+            'member'
+        ];
+
+        foreach ($roles as $roleName) {
+            try {
+                // For gym-specific roles
+                if ($gymId && $roleName !== 'super_admin') {
+                    if (!Role::where('name', $roleName)
+                        ->where('guard_name', 'web')
+                        ->where('gym_id', $gymId)
+                        ->exists()) {
+                        Role::create([
+                            'name' => $roleName,
+                            'guard_name' => 'web',
+                            'gym_id' => $gymId
+                        ]);
+                        $this->command->info("Created role '{$roleName}' for gym {$gymId}");
+                    }
+                }
+                // For global roles (super_admin)
+                elseif ($roleName === 'super_admin') {
+                    if (!Role::where('name', $roleName)
+                        ->where('guard_name', 'web')
+                        ->whereNull('gym_id')
+                        ->exists()) {
+                        Role::create([
+                            'name' => $roleName,
+                            'guard_name' => 'web'
+                        ]);
+                        $this->command->info("Created global role '{$roleName}'");
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->command->error("Failed to create role {$roleName}: " . $e->getMessage());
+            }
+        }
     }
 
     public function createSuperAdminUser()
@@ -101,10 +153,10 @@ class UserRoleAssignmentSeeder extends Seeder
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($password),
-                'email_verified_at' => now(), // Auto-verify super-admin
+                'email_verified_at' => now(),
             ]);
 
-            // Assign super_admin role (assuming you have a super_admin role)
+            // Assign super_admin role (global role)
             $superAdminRole = Role::where('name', 'super_admin')->first();
 
             if (!$superAdminRole) {
@@ -119,6 +171,17 @@ class UserRoleAssignmentSeeder extends Seeder
 
             $superAdmin->assignRole($superAdminRole);
 
+            // Optionally, attach super admin to all gyms or keep them global
+            if ($this->command->confirm('Do you want to attach super-admin to all gyms?', false)) {
+                $gyms = Gym::all();
+                foreach ($gyms as $gym) {
+                    $superAdmin->gyms()->attach($gym->id, [
+                        'role' => 'super_admin',
+                        'active' => true
+                    ]);
+                }
+            }
+
             $this->command->info("✅ Super-admin user '{$name}' created successfully!");
             $this->command->table(
                 ['Field', 'Value'],
@@ -126,6 +189,7 @@ class UserRoleAssignmentSeeder extends Seeder
                     ['Name', $name],
                     ['Email', $email],
                     ['Role', 'super_admin'],
+                    ['Gym Access', 'Global (All Gyms)'],
                     ['Status', 'Active & Verified'],
                     ['Created At', $superAdmin->created_at->format('Y-m-d H:i:s')]
                 ]
@@ -140,32 +204,86 @@ class UserRoleAssignmentSeeder extends Seeder
     }
 
     /**
-     * Create demo users with roles
+     * Create demo users for a specific gym
      */
-    private function createDemoUsers(): void
+    private function createDemoUsersForGym(): void
     {
-        $this->command->info('📝 Creating demo users...');
+        $this->command->info('📝 Creating demo users for specific gym...');
 
+        // Get available gyms
+        $gyms = $this->getAvailableGyms();
+
+        if (empty($gyms)) {
+            $this->command->error('No gyms found. Please create gyms first.');
+            return;
+        }
+
+        $selectedGym = $this->command->choice(
+            'Select gym:',
+            array_column($gyms, 'name'),
+            0
+        );
+
+        $gym = collect($gyms)->firstWhere('name', $selectedGym);
+
+        $this->command->info("Creating demo users for gym: {$gym['name']}");
+        $this->createDemoUsers($gym['id']);
+    }
+
+    /**
+     * Create demo users for all gyms
+     */
+    private function createDemoUsersForAllGyms(): void
+    {
+        $this->command->info('📝 Creating demo users for all gyms...');
+
+        $gyms = $this->getAvailableGyms();
+
+        if (empty($gyms)) {
+            $this->command->fail('No gyms found. Please create gyms first.');
+            return;
+        }
+
+        foreach ($gyms as $gym) {
+            $this->command->info("Creating demo users for gym: {$gym['name']}");
+            $this->createDemoUsers($gym['id']);
+            $this->command->newLine();
+        }
+    }
+
+    /**
+     * Get available gyms
+     */
+    private function getAvailableGyms(): array
+    {
+        if (class_exists(Gym::class)) {
+            return Gym::select('id', 'name')->get()->toArray();
+        }
+
+        return [];
+    }
+
+    /**
+     * Create demo users with roles for specific gym
+     */
+    private function createDemoUsers($gymId): void
+    {
         $users = [
-            // Admin Users
-            [
-                'name' => 'Super Administrator',
-                'email' => 'superadmin@gym.com',
-                'role' => 'super_admin',
-                'profile_data' => null,
-            ],
+            // Gym Owner (one per gym)
             [
                 'name' => 'Gym Owner',
-                'email' => 'owner@gym.com',
+                'email' => "owner.gym{$gymId}@gym.com",
                 'role' => 'gym_owner',
+                'gym_id' => $gymId,
                 'profile_data' => null,
             ],
 
             // Trainer Users
             [
                 'name' => 'John Trainer',
-                'email' => 'john.trainer@gym.com',
+                'email' => "john.trainer.gym{$gymId}@gym.com",
                 'role' => 'trainer',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'specialization' => 'Weight Training, Bodybuilding',
                     'phone' => '+1234567890',
@@ -175,8 +293,9 @@ class UserRoleAssignmentSeeder extends Seeder
             ],
             [
                 'name' => 'Sarah Fitness',
-                'email' => 'sarah.fitness@gym.com',
+                'email' => "sarah.fitness.gym{$gymId}@gym.com",
                 'role' => 'trainer',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'specialization' => 'Cardio, Yoga, Pilates',
                     'phone' => '+1234567891',
@@ -186,8 +305,9 @@ class UserRoleAssignmentSeeder extends Seeder
             ],
             [
                 'name' => 'Mike Strong',
-                'email' => 'mike.strong@gym.com',
+                'email' => "mike.strong.gym{$gymId}@gym.com",
                 'role' => 'trainer',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'specialization' => 'CrossFit, Functional Training',
                     'phone' => '+1234567892',
@@ -199,8 +319,9 @@ class UserRoleAssignmentSeeder extends Seeder
             // Receptionist Users
             [
                 'name' => 'Alice Reception',
-                'email' => 'alice.reception@gym.com',
+                'email' => "alice.reception.gym{$gymId}@gym.com",
                 'role' => 'receptionist',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'phone' => '+1234567893',
                     'shift' => 'morning',
@@ -210,8 +331,9 @@ class UserRoleAssignmentSeeder extends Seeder
             ],
             [
                 'name' => 'Bob Front Desk',
-                'email' => 'bob.frontdesk@gym.com',
+                'email' => "bob.frontdesk.gym{$gymId}@gym.com",
                 'role' => 'receptionist',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'phone' => '+1234567894',
                     'shift' => 'evening',
@@ -223,8 +345,9 @@ class UserRoleAssignmentSeeder extends Seeder
             // Member Users
             [
                 'name' => 'Emma Member',
-                'email' => 'emma.member@gmail.com',
+                'email' => "emma.member.gym{$gymId}@gmail.com",
                 'role' => 'member',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'phone' => '+1234567895',
                     'join_date' => now()->subMonths(3),
@@ -233,8 +356,9 @@ class UserRoleAssignmentSeeder extends Seeder
             ],
             [
                 'name' => 'Tom Member',
-                'email' => 'tom.member@gmail.com',
+                'email' => "tom.member.gym{$gymId}@gmail.com",
                 'role' => 'member',
+                'gym_id' => $gymId,
                 'profile_data' => [
                     'phone' => '+1234567897',
                     'join_date' => now()->subMonths(1),
@@ -245,52 +369,124 @@ class UserRoleAssignmentSeeder extends Seeder
 
         foreach ($users as $userData) {
             $user = $this->createOrUpdateUser($userData);
-            $this->createProfileForUser($user, $userData['role'], $userData['profile_data']);
+            $this->createProfileForUser($user, $userData['role'], $userData['profile_data'], $userData['gym_id']);
         }
     }
 
     /**
      * Assign roles to existing users
      */
-    private function assignRolesToExistingUsers(): void
+    private function assignRolesToExistingUsers()
     {
         $this->command->info('👥 Assigning roles to existing users...');
 
-        $usersWithoutRoles = User::doesntHave('roles')->get();
+        $gyms = $this->getAvailableGyms();
+        $selectedGym = $this->command->choice(
+            'Select gym:',
+            array_column($gyms, 'name'),
+            0
+        );
+        $gym = collect($gyms)->firstWhere('name', $selectedGym);
+        $gymId = $gym['id'];
+
+        // Ensure all required roles exist
+        $this->ensureRolesExist($gymId);
+
+        // Get users who don't have roles assigned
+        $usersWithoutRoles = User::doesntHave('roles')
+            ->whereHas('gyms', function ($query) use ($gymId) {
+                $query->where('gyms.id', $gymId); // Assuming 'gyms' is your Gym model's table name
+            })->get();
+
 
         if ($usersWithoutRoles->isEmpty()) {
             $this->command->info('ℹ️  All users already have roles assigned.');
-            return;
+            return true;
         }
 
-        $roles = Role::pluck('name')->toArray();
+        $roles = Role::where('guard_name', 'web')
+            ->where(function ($query) use ($gymId) {
+                $query->where('gym_id', $gymId)
+                    ->orWhereNull('gym_id'); // Include global roles like super_admin
+            })
+            ->pluck('name')
+            ->toArray();
 
         foreach ($usersWithoutRoles as $user) {
             $this->command->info("User: {$user->name} ({$user->email})");
 
+            // Select role for user
             $selectedRole = $this->command->choice(
                 "Select role for {$user->name}:",
                 $roles,
                 0
             );
 
-            $user->assignRole($selectedRole);
-            $this->command->info("✅ Assigned role '{$selectedRole}' to {$user->name}");
+            // Fetch the specific role based on gym context
+            $roleQuery = Role::where('name', $selectedRole)
+                ->where('guard_name', 'web');
+
+            if ($selectedRole === 'super_admin') {
+                $roleQuery->whereNull('gym_id'); // Global role
+            } else {
+                $roleQuery->where('gym_id', $gymId); // Gym-specific role
+            }
+
+            $role = $roleQuery->first();
+
+            if (!$role) {
+                $this->command->error("Role '{$selectedRole}' not found for gym ID: {$gymId}");
+                continue;
+            }
+
+            setPermissionsTeamId($gymId);
+            // Assign role
+            $user->assignRole($role);
+
+            // If not super admin, attach to gym(s)
+            if ($selectedRole !== 'super_admin') {
+                if ($gymId) {
+                    // Attach to specific gym
+                    $user->gyms()->syncWithoutDetaching([$gymId => [
+                        'role' => $selectedRole,
+                        'active' => true
+                    ]]);
+                    $this->command->info("✅ Assigned role '{$selectedRole}' to {$user->name} for gym ID: {$gymId}");
+                }
+            } else {
+                $this->command->info("✅ Assigned global role '{$selectedRole}' to {$user->name}");
+            }
         }
     }
 
     /**
      * Update existing user roles
      */
-    private function updateExistingUserRoles(): void
+    private function updateExistingUserRoles()
     {
         $this->command->info('🔄 Updating existing user roles...');
 
-        $usersWithRoles = User::has('roles')->with('roles')->get();
+        // Option to work with specific gym or all gyms
+        $workWithGym = $this->command->confirm('Do you want to work with a specific gym?', false);
+
+        $gymId = null;
+        if ($workWithGym) {
+            $gyms = $this->getAvailableGyms();
+            $selectedGym = $this->command->choice(
+                'Select gym:',
+                array_column($gyms, 'name'),
+                0
+            );
+            $gym = collect($gyms)->firstWhere('name', $selectedGym);
+            $gymId = $gym['id'];
+        }
+
+        $query = User::has('roles')->with(['roles', 'gyms']);
+        $usersWithRoles = $query->get();
 
         if ($usersWithRoles->isEmpty()) {
-            $this->command->info('ℹ️  No users with roles found.');
-            return;
+            $this->command->fail('ℹ️  No users with roles found.');
+            return true;
         }
 
         $roles = Role::pluck('name')->toArray();
@@ -298,7 +494,13 @@ class UserRoleAssignmentSeeder extends Seeder
 
         foreach ($usersWithRoles as $user) {
             $currentRoles = $user->roles->pluck('name')->implode(', ');
-            $this->command->info("User: {$user->name} ({$user->email}) - Current roles: {$currentRoles}");
+            $gymRoles = $user->gyms->map(function ($gym) {
+                return "Gym {$gym->name}: {$gym->pivot->role}";
+            })->implode(', ');
+
+            $this->command->info("User: {$user->name} ({$user->email})");
+            $this->command->info("  Current roles: {$currentRoles}");
+            $this->command->info("  Gym roles: {$gymRoles}");
 
             if ($this->command->confirm("Update roles for {$user->name}?", false)) {
                 $selectedRole = $this->command->choice(
@@ -308,9 +510,32 @@ class UserRoleAssignmentSeeder extends Seeder
 
                 if ($selectedRole === 'Remove all roles') {
                     $user->syncRoles([]);
+                    $user->gyms()->detach();
                     $this->command->info("✅ Removed all roles from {$user->name}");
                 } else {
                     $user->syncRoles([$selectedRole]);
+
+                    // Update gym roles
+                    if ($selectedRole !== 'super_admin') {
+                        if ($gymId) {
+                            $user->gyms()->syncWithoutDetaching([$gymId => [
+                                'role' => $selectedRole,
+                                'active' => true
+                            ]]);
+                        } else {
+                            // Update all gym relationships with new role
+                            $gymIds = $user->gyms->pluck('id')->toArray();
+                            $syncData = [];
+                            foreach ($gymIds as $id) {
+                                $syncData[$id] = [
+                                    'role' => $selectedRole,
+                                    'active' => true
+                                ];
+                            }
+                            $user->gyms()->sync($syncData);
+                        }
+                    }
+
                     $this->command->info("✅ Updated role to '{$selectedRole}' for {$user->name}");
                 }
             }
@@ -327,7 +552,7 @@ class UserRoleAssignmentSeeder extends Seeder
             [
                 'name' => $userData['name'],
                 'email' => $userData['email'],
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'email_verified_at' => now(),
             ]
         );
@@ -337,8 +562,22 @@ class UserRoleAssignmentSeeder extends Seeder
             $user->assignRole($userData['role']);
         }
 
+        // Attach to gym with role in pivot table
+        if (!$user->gyms()->where('gym_id', $userData['gym_id'])->exists()) {
+            $user->gyms()->attach($userData['gym_id'], [
+                'role' => $userData['role'],
+                'active' => true
+            ]);
+        } else {
+            // Update existing relationship
+            $user->gyms()->updateExistingPivot($userData['gym_id'], [
+                'role' => $userData['role'],
+                'active' => true
+            ]);
+        }
+
         $action = $user->wasRecentlyCreated ? 'Created' : 'Updated';
-        $this->command->info("✅ {$action} user: {$user->email} with role: {$userData['role']}");
+        $this->command->info("✅ {$action} user: {$user->email} with role: {$userData['role']} for gym ID: {$userData['gym_id']}");
 
         return $user;
     }
@@ -346,7 +585,7 @@ class UserRoleAssignmentSeeder extends Seeder
     /**
      * Create profile for user based on role
      */
-    private function createProfileForUser(User $user, string $role, ?array $profileData): void
+    private function createProfileForUser(User $user, string $role, ?array $profileData, int $gymId): void
     {
         if (!$profileData) {
             return;
@@ -356,9 +595,10 @@ class UserRoleAssignmentSeeder extends Seeder
             case 'trainer':
                 if (class_exists(Trainer::class)) {
                     Trainer::firstOrCreate(
-                        ['user_id' => $user->id],
+                        ['user_id' => $user->id, 'gym_id' => $gymId],
                         array_merge([
                             'user_id' => $user->id,
+                            'gym_id' => $gymId,
                             'name' => $user->name,
                             'email' => $user->email,
                             'status' => 'active',
@@ -369,24 +609,31 @@ class UserRoleAssignmentSeeder extends Seeder
 
             case 'receptionist':
                 if (class_exists(User::class)) {
-                    User::firstOrCreate(
-                        ['user_id' => $user->id],
+                    $user = User::firstOrCreate(
+                        ['id' => $user->id],
                         array_merge([
-                            'user_id' => $user->id,
+                            'id' => $user->id,
+                            // 'gym_id' => $gymId,
                             'name' => $user->name,
                             'email' => $user->email,
                             'status' => 'active',
                         ], $profileData)
                     );
+
+                    $user->gyms()->attach($gymId, [
+                        'role' => 'receptionist',
+                        'active' => true
+                    ]);
                 }
                 break;
 
             case 'member':
                 if (class_exists(GymMember::class)) {
                     GymMember::firstOrCreate(
-                        ['user_id' => $user->id],
+                        ['user_id' => $user->id, 'gym_id' => $gymId],
                         array_merge([
                             'user_id' => $user->id,
+                            'gym_id' => $gymId,
                             'name' => $user->name,
                             'email' => $user->email,
                             'status' => 'active',
@@ -402,29 +649,71 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     private function displayFinalSummary(): void
     {
-        $this->command->info("\n" . str_repeat('=', 70));
-        $this->command->info('📊 FINAL USER ROLE SUMMARY');
-        $this->command->info(str_repeat('=', 70));
+        $this->command->info("\n" . str_repeat('=', 80));
+        $this->command->info('📊 FINAL USER ROLE SUMMARY (GYM-WISE)');
+        $this->command->info(str_repeat('=', 80));
 
-        $roles = Role::withCount('users')->get();
+        $gyms = $this->getAvailableGyms();
 
-        foreach ($roles as $role) {
-            $this->command->info("🔹 {$role->name}: {$role->users_count} users");
+        // Global users summary (users with roles but no gym assignment)
+        $globalUsers = User::has('roles')->doesntHave('gyms')->with('roles')->get();
+        if ($globalUsers->isNotEmpty()) {
+            $this->command->info('🌍 GLOBAL USERS:');
+            $globalRoleCounts = [];
+            foreach ($globalUsers as $user) {
+                foreach ($user->roles as $role) {
+                    $globalRoleCounts[$role->name] = ($globalRoleCounts[$role->name] ?? 0) + 1;
+                }
+            }
+            foreach ($globalRoleCounts as $roleName => $count) {
+                $this->command->info("  🔹 {$roleName}: {$count} users");
+            }
+            $this->command->info('');
+        }
+
+        // Gym-wise summary
+        foreach ($gyms as $gym) {
+            $this->command->info("🏢 GYM: {$gym['name']} (ID: {$gym['id']})");
+
+            // Get users for this gym from pivot table
+            $gymUsers = DB::table('gym_user')
+                ->join('users', 'gym_user.user_id', '=', 'users.id')
+                ->where('gym_user.gym_id', $gym['id'])
+                ->where('gym_user.active', true)
+                ->select('gym_user.role', 'users.name', 'users.email')
+                ->get();
+
+            $roleCounts = [];
+            foreach ($gymUsers as $gymUser) {
+                $roleCounts[$gymUser->role] = ($roleCounts[$gymUser->role] ?? 0) + 1;
+            }
+
+            if (!empty($roleCounts)) {
+                foreach ($roleCounts as $roleName => $count) {
+                    $this->command->info("  🔹 {$roleName}: {$count} users");
+                }
+            } else {
+                $this->command->info("  ℹ️  No users assigned to this gym");
+            }
+            $this->command->info('');
         }
 
         $totalUsers = User::count();
         $usersWithRoles = User::has('roles')->count();
         $usersWithoutRoles = $totalUsers - $usersWithRoles;
+        $totalGymAssignments = DB::table('gym_user')->where('active', true)->count();
 
-        $this->command->info(str_repeat('-', 70));
+        $this->command->info(str_repeat('-', 80));
+        $this->command->info("📈 OVERALL SUMMARY:");
         $this->command->info("📈 Total users: {$totalUsers}");
         $this->command->info("✅ Users with roles: {$usersWithRoles}");
         $this->command->info("❌ Users without roles: {$usersWithoutRoles}");
+        $this->command->info("🏢 Total gym assignments: {$totalGymAssignments}");
 
         if ($usersWithoutRoles > 0) {
             $this->command->warn("⚠️  {$usersWithoutRoles} users don't have roles assigned!");
         }
 
-        $this->command->info(str_repeat('=', 70));
+        $this->command->info(str_repeat('=', 80));
     }
 }

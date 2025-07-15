@@ -8,6 +8,7 @@ use App\Filament\Admin\Pages\Tenancy\RegisterGym;
 use App\Filament\Components\FeedbackPopup;
 use App\Filament\Components\FeedbackTrigger;
 use App\Http\Middleware\ApplyTenantScopes;
+use App\Http\Middleware\TeamsPermission;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
@@ -85,6 +86,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

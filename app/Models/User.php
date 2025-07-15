@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Contracts\GymUser;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -75,6 +77,17 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
+        if (Session::has('permission_team_id')) {
+            setPermissionsTeamId(Session::get('permission_team_id'));
+            $user = auth()->user();
+
+            // Clear cached permissions and reload roles for the current team context
+            if ($user) {
+                $user->forgetCachedPermissions();
+                $user->load('roles');
+            }
+        }
+
         if ($panel->getId() === 'super-admin') {
             return $this->hasRole('super_admin');
         }

@@ -9,6 +9,7 @@ use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\Trainer;
+use App\Models\User;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -20,11 +21,13 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
+use Spatie\Permission\Models\Role;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class GymMemberResource extends Resource
@@ -45,7 +48,18 @@ class GymMemberResource extends Resource
     // Restrict to admins or gym owners with gyms
     public static function canAccess(array $parameters = []): bool
     {
+        // Set the permissions team ID based on the current Filament tenant
+        $tenantId = Filament::getTenant()->id;
+        setPermissionsTeamId($tenantId);
+
         $user = auth()->user();
+
+        // Clear cached permissions and reload roles for the current team context
+        if ($user) {
+            $user->forgetCachedPermissions();
+            $user->load('roles');
+        }
+
         if (filament()->getId() === 'admin') {
             return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
         } else if (filament()->getId() === 'staff') {
