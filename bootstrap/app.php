@@ -17,11 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //     'set.permissions.team' => TeamsPermission::class,
         // ]);
 
-        // $middleware->web([
-        //     // Other web middleware...
-        //     // \Filament\Http\Middleware\IdentifyTenant::class,
-        //     TeamsPermission::class, // Add custom middleware here
-        // ]);
+        $middleware->web([
+            TeamsPermission::class, // Add custom middleware here
+        ]);
 
         $middleware->priority([
             TeamsPermission::class,

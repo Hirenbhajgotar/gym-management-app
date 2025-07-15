@@ -247,15 +247,8 @@ class ReceptionistPermissionsPage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        $currentTenant = Filament::getTenant();
-
-        // if (!$currentTenant) {
-        //     return false;
-        // }
-
         // Check if user has gym_owner role for this specific gym
-        // return auth()->user()->hasRole('gym_owner', $currentTenant);
-        return true; // For now, allow access to all authenticated users
+        return auth()->user()->hasRole('gym_owner');
     }
 
     protected function getActions(): array
