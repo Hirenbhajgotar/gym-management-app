@@ -48,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->tenantMiddleware([
                 // SyncShieldTenant::class,
                 ApplyTenantScopes::class,
+                TeamsPermission::class,
             ], isPersistent: true)
             ->tenantRegistration(RegisterGym::class)
             ->tenantProfile(EditGymProfile::class)
@@ -86,7 +87,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                TeamsPermission::class,
+                // TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

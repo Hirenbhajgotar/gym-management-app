@@ -42,6 +42,7 @@ class StaffPanelProvider extends PanelProvider
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 ApplyTenantScopes::class,
+                TeamsPermission::class,
             ], isPersistent: true)
             ->navigationGroups([
                 NavigationGroup::make()
@@ -78,7 +79,7 @@ class StaffPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                TeamsPermission::class,
+                // TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
