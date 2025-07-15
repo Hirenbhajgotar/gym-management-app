@@ -7,6 +7,7 @@ use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 class TeamsPermission
@@ -18,33 +19,49 @@ class TeamsPermission
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $tenant = null;
+        if (Filament::getTenant() || Session::has('permission_team_id')) {
+            $tenantId = Filament::getTenant()?->id ?? Session::get('permission_team_id');
 
-        // Check if we have a tenant parameter in the route
-        if ($request->route() && $request->route()->parameter('tenant')) {
-            $tenantModel = app(config('filament.tenant_model', Gym::class));
-            $tenant = $tenantModel::where('slug', $request->route()->parameter('tenant'))->first();
+            $this->setTeamId($tenantId);
+        } else {
+            $tenant = null;
 
-            Session::put('permission_team_id', $tenant?->id);
+            // Check if we have a tenant parameter in the route
+            if ($request->route() && $request->route()->parameter('tenant')) {
+                $tenantModel = app(config('filament.tenant_model', Gym::class));
+                $tenant = $tenantModel::where('slug', $request->route()->parameter('tenant'))->first();
+            }
+
+            // Fallback to Filament::getTenant()
+            if (!$tenant) {
+                $tenant = Filament::getTenant();
+            }
+
+            $this->setTeamId($tenant?->id);
         }
 
-        // Fallback to Filament::getTenant()
-        if (!$tenant) {
-            $tenant = Filament::getTenant();
-        }
+        return $next($request);
+    }
 
-        if ($tenant) {
-            setPermissionsTeamId($tenant->id);
+    private function setTeamId($tenantId = null)
+    {
+        $user = auth()->user();
+
+        if ($tenantId) {
+            $permissionRegistrar = app(PermissionRegistrar::class);
+
+            Session::put('permission_team_id', $tenantId);
+
+            setPermissionsTeamId($tenantId);
+
+            $permissionRegistrar->forgetCachedPermissions();
 
             // Clear cached permissions for the current user
-            $user = auth()->user();
-
-            // Clear cached permissions and reload roles for the current team context
             if ($user) {
                 $user->forgetCachedPermissions();
+                // Reload user's roles to ensure role checks use the updated team context
                 $user->load('roles');
             }
         }
-        return $next($request);
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
+use Filament\Events\TenantSet;
+use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        FacadesEvent::listen(
+            TenantSet::class,
+            UpdateSpatiePermissionCacheOnTenantSwitch::class
+        );
     }
 }

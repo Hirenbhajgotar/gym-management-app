@@ -49,7 +49,7 @@ class ReceptionistResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->check() && auth()->user()->hasAnyRole(['gym_owner', 'receptionist']);
+        return auth()->check() && auth()->user()->hasAnyRole(['gym_owner']);
     }
 
     public static function form(Form $form): Form

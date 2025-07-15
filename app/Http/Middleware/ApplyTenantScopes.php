@@ -10,6 +10,7 @@ use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApplyTenantScopes
@@ -21,15 +22,17 @@ class ApplyTenantScopes
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $tenantId = Filament::getTenant()->id;
-        setPermissionsTeamId($tenantId);
+        $tenantId = Filament::getTenant()?->id ?? Session::get('permission_team_id');
+        if ($tenantId) {
+            setPermissionsTeamId($tenantId);
 
-        $user = auth()->user();
+            $user = auth()->user();
 
-        // Clear cached permissions and reload roles for the current team context
-        if ($user) {
-            $user->forgetCachedPermissions();
-            $user->load('roles');
+            // Clear cached permissions and reload roles for the current team context
+            if ($user) {
+                $user->forgetCachedPermissions();
+                $user->load('roles');
+            }
         }
 
         Trainer::addGlobalScope(

@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Http\Middleware\ApplyTenantScopes;
+use App\Http\Middleware\TeamsPermission;
 use App\Models\Gym;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -76,6 +77,8 @@ class StaffPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

@@ -8,6 +8,7 @@ use App\Contracts\GymUser;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,11 +19,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasTenants
+class User extends Authenticatable implements FilamentUser, HasTenants, HasName
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
@@ -64,6 +64,11 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         ];
     }
 
+    public function getFilamentName(): string
+    {
+        return $this->name;
+    }
+
     /**
      * Get the user's initials
      */
@@ -77,30 +82,24 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        if (Session::has('permission_team_id')) {
-            setPermissionsTeamId(Session::get('permission_team_id'));
-            $user = auth()->user();
-
-            // Clear cached permissions and reload roles for the current team context
-            if ($user) {
-                $user->forgetCachedPermissions();
-                $user->load('roles');
-            }
+        if (!auth()->check()) {
+            return false;
         }
 
         if ($panel->getId() === 'super-admin') {
             return $this->hasRole('super_admin');
         }
 
-        if ($panel->getId() === 'admin') {
-            return $this->hasActiveRole(['gym_owner', 'receptionist']);
-        }
-
-        if ($panel->getId() === 'staff') {
-            return $this->hasActiveRole(['staff_member', 'receptionist']);
+        if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
+            return $this->hasActiveTenant();
         }
 
         return false;
+    }
+
+    private function hasActiveTenant(): bool
+    {
+        return $this->gyms->isNotEmpty() && $this->is_active;
     }
 
     /**
