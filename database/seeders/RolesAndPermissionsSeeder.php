@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Gym;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -16,6 +17,18 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Get all teams/tenants
+        $gyms = Gym::all();
+
+        if ($gyms->isEmpty()) {
+            $this->command->warn('⚠️ No gyms found. Creating default gym...');
+            $gym = Gym::create([
+                'name' => 'Default gym',
+                'slug' => 'default-gym',
+            ]);
+            $gyms = collect([$gym]);
+        }
 
         // Define your models/resources - these should match your Filament Resources
         $resources = [
@@ -56,6 +69,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'export',
             'import',
         ];
+
 
         // Create permissions for each resource
         $allPermissions = [];
@@ -135,21 +149,38 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create Super Admin role with all permissions
         $superAdminRole = Role::firstOrCreate([
             'name' => 'super_admin',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
         $superAdminRole->syncPermissions($allPermissions);
 
+        // Process each gym
+        foreach ($gyms as $gym) {
+            $this->createGymRoles($gym, $allPermissions);
+        }
+        $this->command->info('✅ Tenant-specific roles and permissions have been seeded successfully!');
+
+        // Display summary
+        $this->displaySummary($gyms);
+    }
+
+    /**
+     * Create roles for a specific gym
+     */
+    private function createGymRoles(Gym $gym, array $allPermissions)
+    {
         // Create Gym Owner role with all permissions (same as super admin)
         $gymOwnerRole = Role::firstOrCreate([
             'name' => 'gym_owner',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
         $gymOwnerRole->syncPermissions($allPermissions);
 
         // Create Trainer role with limited permissions
         $trainerRole = Role::firstOrCreate([
             'name' => 'trainer',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $trainerPermissions = [
@@ -203,7 +234,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create Receptionist role with customer service permissions
         $receptionistRole = Role::firstOrCreate([
             'name' => 'receptionist',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $receptionistPermissions = [
@@ -267,7 +299,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create Member role (if you want members to have limited access)
         $memberRole = Role::firstOrCreate([
             'name' => 'member',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $memberPermissions = [
@@ -291,16 +324,28 @@ class RolesAndPermissionsSeeder extends Seeder
         $memberRole->syncPermissions(
             Permission::whereIn('name', $memberPermissions)->get()
         );
+    }
 
-        $this->command->info('✅ Filament v3 style roles and permissions have been seeded successfully!');
+    /**
+     * Display summary of created roles and permissions
+     */
+    private function displaySummary($gyms)
+    {
+        $this->command->info('📊 Summary:');
 
-        // Display summary
-        $this->command->info('📊 Created roles:');
-        $this->command->info("   🔹 super_admin ({$superAdminRole->permissions->count()} permissions)");
-        $this->command->info("   🔹 gym_owner ({$gymOwnerRole->permissions->count()} permissions)");
-        $this->command->info("   🔹 trainer ({$trainerRole->permissions->count()} permissions)");
-        $this->command->info("   🔹 receptionist ({$receptionistRole->permissions->count()} permissions)");
-        $this->command->info("   🔹 member ({$memberRole->permissions->count()} permissions)");
-        $this->command->info("📈 Total permissions created: " . Permission::count());
+        foreach ($gyms as $gym) {
+            $this->command->info("   🏢 Gym: {$gym->name}");
+
+            $gymRoles = Role::where('gym_id', $gym->id)->get();
+            foreach ($gymRoles as $role) {
+                $permissionCount = $role->permissions()->count();
+                $this->command->info("      🔹 {$role->name} ({$permissionCount} permissions)");
+            }
+        }
+
+        $totalPermissions = Permission::count();
+        $totalRoles = Role::count();
+        $this->command->info("📈 Total permissions created: {$totalPermissions}");
+        $this->command->info("👥 Total roles created: {$totalRoles}");
     }
 }

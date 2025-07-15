@@ -21,6 +21,17 @@ class ApplyTenantScopes
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $tenantId = Filament::getTenant()->id;
+        setPermissionsTeamId($tenantId);
+
+        $user = auth()->user();
+
+        // Clear cached permissions and reload roles for the current team context
+        if ($user) {
+            $user->forgetCachedPermissions();
+            $user->load('roles');
+        }
+
         Trainer::addGlobalScope(
             fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
