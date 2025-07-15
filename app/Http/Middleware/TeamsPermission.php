@@ -32,11 +32,6 @@ class TeamsPermission
                 $tenant = $tenantModel::where('slug', $request->route()->parameter('tenant'))->first();
             }
 
-            // Fallback to Filament::getTenant()
-            if (!$tenant) {
-                $tenant = Filament::getTenant();
-            }
-
             $this->setTeamId($tenant?->id);
         }
 

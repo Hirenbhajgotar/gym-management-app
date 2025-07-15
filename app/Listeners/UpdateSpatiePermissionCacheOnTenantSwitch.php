@@ -29,14 +29,12 @@ class UpdateSpatiePermissionCacheOnTenantSwitch
         $permissionRegistrar = app(PermissionRegistrar::class);
 
         if ($tenantId) {
-            app(PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-
             setPermissionsTeamId($tenantId);
 
             Session::put('permission_team_id', $tenantId);
         }
 
-        // Optionally, clear the cache to ensure new permissions are loaded
+        // Clear the permission cache to apply the new tenant's permissions immediately.
         $permissionRegistrar->forgetCachedPermissions();
     }
 }
