@@ -8,6 +8,7 @@ use App\Filament\Components\FeedbackPopup;
 use App\Filament\Components\FeedbackTrigger;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Http\Middleware\TeamsPermission;
+use App\Livewire\Filament\ErrorReportModal;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
@@ -130,6 +131,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::sidebar.nav.end',
                 fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+            )
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
             );
     }
 
@@ -138,5 +143,6 @@ class AdminPanelProvider extends PanelProvider
         // Register the Livewire component
         Livewire::component('feedback-popup', FeedbackPopup::class);
         Livewire::component('feedback-trigger', FeedbackTrigger::class);
+        Livewire::component('error-report-modal', ErrorReportModal::class);
     }
 }

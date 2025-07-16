@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Clusters\Permissions\Pages;
 
 use App\Filament\Admin\Clusters\Permissions;
+use App\Helpers\NotificationHelper;
 use App\Models\User;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
@@ -13,6 +15,8 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -188,46 +192,58 @@ class ReceptionistPermissionsPage extends Page implements HasForms
 
     public function save(): void
     {
-        $data = $this->form->getState();
-        $currentTenant = Filament::getTenant();
+        try {
+            DB::beginTransaction();
 
-        // Get or create the receptionist role for the current gym
-        $role = Role::firstOrCreate([
-            'name' => 'receptionist',
-            'guard_name' => 'web',
-            'gym_id' => $currentTenant->id,
-        ]);
+            $data = $this->form->getState();
+            $currentTenant = Filament::getTenant();
 
-        // Collect all permissions from the form
-        $allPermissions = [];
-        foreach ($data as $permissions) {
-            if (is_array($permissions)) {
-                $allPermissions = array_merge($allPermissions, $permissions);
-            }
-        }
-
-        // Get or create team-specific permissions
-        $gymPermissions = [];
-        foreach ($allPermissions as $permissionName) {
-            $permission = Permission::firstOrCreate([
-                'name' => $permissionName,
+            // Get or create the receptionist role for the current gym
+            $role = Role::firstOrCreate([
+                'name' => 'receptionist',
                 'guard_name' => 'web',
                 'gym_id' => $currentTenant->id,
             ]);
-            $gymPermissions[] = $permission;
+
+            // Collect all permissions from the form
+            $allPermissions = [];
+            foreach ($data as $permissions) {
+                if (is_array($permissions)) {
+                    $allPermissions = array_merge($allPermissions, $permissions);
+                }
+            }
+
+            // Get or create team-specific permissions
+            $gymPermissions = [];
+            foreach ($allPermissions as $permissionName) {
+                $permission = Permission::firstOrCreate([
+                    'name' => $permissionName,
+                    'guard_name' => 'web',
+                    'gym_id' => $currentTenant->id,
+                ]);
+                $gymPermissions[] = $permission;
+            }
+
+            // Sync permissions only for this gym's role
+            $role->syncPermissions($gymPermissions);
+
+            // Update all receptionist users in this gym
+            $this->updateReceptionistUsers($role, $currentTenant);
+
+            DB::commit();
+
+            Notification::make()
+                ->title('Receptionist Permissions Updated')
+                ->body('Permissions have been updated for the current gym.')
+                ->success()
+                ->send();
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error($e);
+
+            NotificationHelper::unexpectedError('setting permission to receptionist', $e)->send();
         }
-
-        // Sync permissions only for this gym's role
-        $role->syncPermissions($gymPermissions);
-
-        // Update all receptionist users in this gym
-        $this->updateReceptionistUsers($role, $currentTenant);
-
-        Notification::make()
-            ->title('Receptionist Permissions Updated')
-            ->body('Permissions have been updated for the current gym.')
-            ->success()
-            ->send();
     }
 
     private function updateReceptionistUsers(Role $role, $tenant): void
