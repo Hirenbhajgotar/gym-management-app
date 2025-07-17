@@ -24,6 +24,8 @@ class ErrorReportResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    private static ?array $badgeData = null;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -31,15 +33,11 @@ class ErrorReportResource extends Resource
                 Forms\Components\Section::make('Error Details')
                     ->schema([
                         Forms\Components\Select::make('status')
-                            ->options(collect(ErrorStatus::cases())->mapWithKeys(
-                                fn($method) => [$method->value => $method->getLabel()]
-                            ))
+                            ->options(ErrorStatus::class)
                             ->required(),
 
                         Forms\Components\Select::make('priority')
-                            ->options(collect(ErrorPriority::cases())->mapWithKeys(
-                                fn($method) => [$method->value => $method->getLabel()]
-                            ))
+                            ->options(ErrorPriority::class)
                             ->required(),
 
                         Forms\Components\TextInput::make('error_type'),
@@ -113,6 +111,7 @@ class ErrorReportResource extends Resource
 
                 Tables\Filters\SelectFilter::make('error_type')
                     ->options([
+                        'auto_reported' => 'Auto Reported',
                         'user_reported' => 'User Reported',
                         'exception' => 'Exception',
                         'validation' => 'Validation',
@@ -128,7 +127,7 @@ class ErrorReportResource extends Resource
                     Tables\Actions\BulkAction::make('markResolved')
                         ->label('Mark as Resolved')
                         ->icon('heroicon-m-check-circle')
-                        ->action(fn(Collection $records) => $records->each->update(['status' => ErrorStatus::RESOLVED->value]))
+                        ->action(fn(Collection $records) => static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED->value]))
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
@@ -151,15 +150,34 @@ class ErrorReportResource extends Resource
         ];
     }
 
+    private static function getBadgeData(): array
+    {
+        if (self::$badgeData === null) {
+            $stats = static::getModel()::where('status', ErrorStatus::PENDING->value)
+                ->selectRaw('count(*) as count, (SUM(CASE WHEN priority = ? THEN 1 ELSE 0 END) > 0) as has_critical', [ErrorPriority::CRITICAL->value])
+                ->first();
+
+            self::$badgeData = [
+                'count' => (int) $stats->count,
+                'has_critical' => (bool) $stats->has_critical,
+            ];
+        }
+        return self::$badgeData;
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('status', ErrorStatus::PENDING->value)->count() ?: null;
+        $count = self::getBadgeData()['count'];
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return static::getModel()::where('status', ErrorStatus::PENDING->value)->where('priority', ErrorPriority::CRITICAL->value)->exists()
-            ? 'danger'
-            : 'warning';
+        $data = self::getBadgeData();
+        if ($data['count'] === 0) {
+            // No badge is shown, so no color is needed.
+            return null;
+        }
+        return $data['has_critical'] ? 'danger' : 'warning';
     }
 }
