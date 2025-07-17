@@ -39,7 +39,8 @@ class NotificationHelper
                     ->dispatch('open-error-report-modal', ['data' => [
                         'errorMessage' => $message,
                         'exceptionId' => $exceptionId,
-                    ]]),
+                    ]])
+                    ->close(),
 
                 Action::make('dismiss')
                     ->label('Dismiss')
