@@ -45,7 +45,12 @@ class ErrorReport extends Model
 
     public function scopePending($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', ErrorStatus::PENDING->value);
+    }
+
+    public function scopeResolved($query)
+    {
+        return $query->where('status', ErrorStatus::RESOLVED->value);
     }
 
     public function scopeHighPriority($query)

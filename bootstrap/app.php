@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\CleanResolvedErrorReportsCommand;
 use App\Http\Middleware\ErrorContextMiddleware;
 use App\Http\Middleware\TeamsPermission;
 use App\Services\ErrorReportService;
@@ -99,4 +100,8 @@ return Application::configure(basePath: dirname(__DIR__))
         //         ], 422);
         //     }
         // });
-    })->create();
+    })
+    ->withCommands([
+        // CleanResolvedErrorReportsCommand::class
+    ])
+    ->create();
