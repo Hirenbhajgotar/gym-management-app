@@ -102,6 +102,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // });
     })
     ->withCommands([
-        // CleanResolvedErrorReportsCommand::class
+        CleanResolvedErrorReportsCommand::class
     ])
     ->create();

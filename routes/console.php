@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 
-Schedule::command('errors:clean-resolved')->dailyAt('1');
+Schedule::command('errors:clean-resolved')->dailyAt('01:00');

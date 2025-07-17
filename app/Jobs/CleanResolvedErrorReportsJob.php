@@ -35,17 +35,9 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
         try {
             $cutoffDate = Carbon::now()->subDays(15);
 
-            // Find resolved error reports older than 15 days
-            $resolvedErrors = ErrorReport::resolved()
+            $deletedCount = ErrorReport::resolved()
                 ->where('updated_at', '<', $cutoffDate)
-                ->get();
-
-            $deletedCount = 0;
-
-            foreach ($resolvedErrors as $error) {
-                $error->delete();
-                $deletedCount++;
-            }
+                ->delete();
 
             Log::info('Cleaned resolved error reports', [
                 'deleted_count' => $deletedCount,
@@ -53,8 +45,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to clean resolved error reports', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'exception' => $e
             ]);
 
             throw $e; // Re-throw to trigger job retry
@@ -64,8 +55,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error('CleanResolvedErrorReportsJob failed permanently', [
-            'error' => $exception->getMessage(),
-            'trace' => $exception->getTraceAsString()
+            'exception' => $exception
         ]);
     }
 }
