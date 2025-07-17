@@ -6,8 +6,6 @@ use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
 use App\Services\ErrorReportService;
-use App\Services\ExceptionStorageService;
-use Exception;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -50,11 +48,7 @@ class ErrorReportModal extends Component implements HasForms
     {
         $this->errorMessage = $data['errorMessage'];
 
-        // Retrieve exception data from session
-        if (isset($data['exceptionId']) && $data['exceptionId']) {
-            $exceptionStorage = app(ExceptionStorageService::class);
-            $this->exceptionData = $exceptionStorage->retrieve($data['exceptionId']);
-        }
+        $this->exceptionId = $data['exceptionId'];
 
         $this->isOpen = true;
 
@@ -152,21 +146,11 @@ class ErrorReportModal extends Component implements HasForms
 
         $errorReportService = app(ErrorReportService::class);
 
-        // Create exception object from stored data if available
-        $exception = null;
-        if ($this->exceptionData) {
-            $exception = new Exception(
-                $this->exceptionData['message'],
-                intval($this->exceptionData['code'] ?? 0),
-            );
-        }
-
-        $errorReportService->reportError(
-            errorMessage: $this->errorMessage,
+        $errorReportService->manuallyReportException(
             userDescription: $this->data['description'],
-            exception: $exception,
-            priority: $this->data['priority'] ?? '',
-            error_category: $this->data['error_category'],
+            priority: $this->data['priority'] ?? ErrorPriority::MEDIUM->value,
+            errorCategory: $this->data['error_category'],
+            exceptionId: $this->exceptionId,
         );
 
         $this->closeModal();

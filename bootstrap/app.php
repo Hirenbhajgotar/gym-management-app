@@ -36,16 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         // Custom exception reporting
         $exceptions->report(function (Throwable $e) {
-            Log::info('Exception reported via withExceptions', [
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-
             // Skip if error reporting is disabled
-            if (!config('app.auto_error_reporting', true)) {
-                Log::info('Auto error reporting is disabled');
+            if (!config('error-reporting.auto_reporting', true)) {
                 return;
             }
 
@@ -71,11 +63,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
             } catch (Exception $exception) {
                 Log::error('Failed to auto-report error via withExceptions', [
-                    'original_exception' => get_class($e),
-                    'original_message' => $e->getMessage(),
-                    'error_reporting_exception' => get_class($exception),
-                    'error_reporting_message' => $exception->getMessage(),
-                    'trace' => $exception->getTraceAsString()
+                    'original_exception' => $e,
+                    'reporting_exception' => $exception,
                 ]);
             }
         });

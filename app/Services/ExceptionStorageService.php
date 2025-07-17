@@ -34,10 +34,13 @@ class ExceptionStorageService
     {
         $data = Session::get($id);
 
-        if ($data) {
+        return $data;
+    }
+
+    public function clearExceptionStorageData(?string $id = null): void
+    {
+        if ($id && Session::has($id)) {
             Session::forget($id); // Clean up after retrieval
         }
-
-        return $data;
     }
 }

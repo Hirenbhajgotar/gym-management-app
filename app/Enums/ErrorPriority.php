@@ -48,7 +48,7 @@ enum ErrorPriority: string implements HasLabel, HasColor, HasIcon
         return match ($this) {
             self::LOW => 'heroicon-o-exclamation-circle',
             self::MEDIUM => 'heroicon-o-exclamation-triangle',
-            self::HIGH => 'heroicon-o-exclamation-circle',
+            self::HIGH => 'heroicon-o-shield-exclamation',
             self::CRITICAL => 'heroicon-o-x-circle',
         };
     }

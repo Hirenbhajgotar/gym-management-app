@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
+use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\FilesystemException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -13,42 +14,44 @@ use Throwable;
 
 class ErrorReportService
 {
-    public function reportError(string $errorMessage, ?string $userDescription = null, ?Throwable $exception = null, string $errorType = 'user_reported', string $priority = 'medium', string $error_category = 'other'): ErrorReport
+    public function reportError(string $errorMessage, ?string $userDescription = null, ?Throwable $exception = null, string $errorType = 'user_reported', string $priority = 'medium', string $errorCategory = 'other', ?string $exceptionId = null): ErrorReport
     {
-        $context = [
-            'url' => Request::url(),
-            'method' => Request::method(),
-            'user_agent' => Request::header('User-Agent'),
-            'ip' => Request::ip(),
-            'referer' => Request::header('Referer'),
-            'route' => Request::route()?->getName(),
-            'request_data' => $this->sanitizeRequestData(Request::all()),
-        ];
+        try {
+            $context = $this->buildContext(); // Collect context data once
 
-        $stackTrace = null;
-        $errorHash = null;
+            // Handle exception or exception ID data
+            $exceptionData = $this->extractExceptionData($exception, $exceptionId);
 
-        if ($exception) {
-            $stackTrace = $exception->getTraceAsString();
-            $context['file'] = $exception->getFile();
-            $context['line'] = $exception->getLine();
-            $context['exception_class'] = get_class($exception);
-            $errorHash = $this->generateErrorHash($exception);
+            $context['file'] = $exceptionData['file'];
+            $context['line'] = $exceptionData['line'];
+            $context['exception_class'] = $exceptionData['exceptionClass'];
+            $stackTrace = $exceptionData['stackTrace'];
+            $errorHash = $exceptionData['errorHash'];
+
+            if ($exceptionId) {
+                resolve(ExceptionStorageService::class)->clearExceptionStorageData($exceptionId);
+            }
+
+            return ErrorReport::create([
+                'user_id' => Auth::id(),
+                'error_type' => $errorType,
+                'error_message' => $errorMessage,
+                'error_hash' => $errorHash,
+                'stack_trace' => $stackTrace,
+                'context' => $context,
+                'user_description' => $userDescription,
+                'priority' => $priority,
+                'category' => $errorCategory,
+                'occurred_at' => now(),
+                'last_occurrence' => now(),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to create ErrorReport', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
         }
-
-        return ErrorReport::create([
-            'user_id' => Auth::id(),
-            'error_type' => $errorType,
-            'error_message' => $errorMessage,
-            'error_hash' => $errorHash,
-            'stack_trace' => $stackTrace,
-            'context' => $context,
-            'user_description' => $userDescription,
-            'priority' => $priority,
-            'category' => $error_category,
-            'occurred_at' => now(),
-            'last_occurrence' => now(),
-        ]);
     }
 
     public function reportException(Throwable $exception, ?string $userDescription = null, string $reportType = 'exception'): ErrorReport
@@ -69,6 +72,77 @@ class ErrorReportService
         );
     }
 
+    public function manuallyReportException(?string $userDescription = null, string $priority = 'medium', string $errorCategory = 'other', string $errorType = 'user_reported', ?string $exceptionId = null): ErrorReport
+    {
+        $exceptionData = $this->extractExceptionData(exceptionId: $exceptionId);
+
+        $errorMessage = $exceptionData['errorMessage'] ?? 'Error message not available or stored. Please check storage.';
+
+        return $this->reportError(
+            errorMessage: $errorMessage,
+            userDescription: $userDescription,
+            priority: $priority,
+            errorType: $errorType,
+            errorCategory: $errorCategory,
+            exceptionId: $exceptionId,
+        );
+    }
+
+    /**
+     * Builds the context array with request data
+     */
+    private function buildContext(): array
+    {
+        return [
+            'url' => request()->url(),
+            'method' => request()->method(),
+            'user_agent' => request()->header('User-Agent'),
+            'ip' => request()->ip(),
+            'referer' => request()->header('Referer'),
+            'route' => request()->route()?->getName(),
+            'request_data' => $this->sanitizeRequestData(request()->all()),
+        ];
+    }
+
+    /**
+     * Extracts stack trace and error hash from exception or exception ID
+     */
+    private function extractExceptionData(?Throwable $exception = null, ?string $exceptionId = null): array
+    {
+        $stackTrace = null;
+        $errorHash = null;
+        $file = null;
+        $line = null;
+        $exception_class = null;
+
+        if ($exceptionId) {
+            $exceptionData = resolve(ExceptionStorageService::class)->retrieve($exceptionId);
+            if ($exceptionData) {
+                $stackTrace = $exceptionData['trace'] ?? null;
+                $file = $exceptionData['file'];
+                $line = $exceptionData['line'];
+                $exception_class = $exceptionData['class'];
+                $errorMessage = $exceptionData['message'];
+            }
+        } elseif ($exception) {
+            $stackTrace = $exception->getTraceAsString();
+            $file = $exception->getFile();
+            $line = $exception->getLine();
+            $exception_class = get_class($exception);
+            $errorHash = $this->generateErrorHash($exception);
+            $errorMessage = $exception->getMessage();
+        }
+
+        return [
+            'errorMessage' => $errorMessage,
+            'stackTrace' => $stackTrace,
+            'file' => $file,
+            'line' => $line,
+            'exceptionClass' => $exception_class,
+            'errorHash' => $errorHash
+        ];
+    }
+
     private function sanitizeRequestData(array $data): array
     {
         $sensitiveFields = ['password', 'password_confirmation', 'token', 'api_key', 'secret'];
@@ -85,55 +159,62 @@ class ErrorReportService
 
     public function determinePriority(Throwable $exception): string
     {
-        // Critical errors
-        if (
-            $exception instanceof \Error ||
-            $exception instanceof \ParseError ||
-            $exception instanceof \TypeError
-        ) {
-            return ErrorPriority::CRITICAL->value;
-        }
-
-        // Critical database errors
-        if ($exception instanceof \Illuminate\Database\QueryException) {
-            // Check for specific critical database errors
-            $errorCode = $exception->getCode();
-            if (in_array($errorCode, ['HY000', '42000', '42S02'])) {
+        try {
+            // Critical errors
+            if (
+                $exception instanceof \Error ||
+                $exception instanceof \ParseError ||
+                $exception instanceof \TypeError
+            ) {
                 return ErrorPriority::CRITICAL->value;
             }
-            return ErrorPriority::HIGH->value;
-        }
 
-        // High priority errors
-        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
-            return $exception->getStatusCode() >= 500 ? ErrorPriority::HIGH->value : ErrorPriority::MEDIUM->value;
-        }
+            // Critical database errors
+            if ($exception instanceof \Illuminate\Database\QueryException) {
+                // Check for specific critical database errors
+                $errorCode = $exception->getCode();
+                if (in_array($errorCode, ['HY000', '42000', '42S02'])) {
+                    return ErrorPriority::CRITICAL->value;
+                }
+                return ErrorPriority::HIGH->value;
+            }
 
-        // File system errors
-        if ($exception instanceof FilesystemException) {
-            return ErrorPriority::HIGH->value;
-        }
+            // High priority errors
+            if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                return $exception->getStatusCode() >= 500 ? ErrorPriority::HIGH->value : ErrorPriority::MEDIUM->value;
+            }
 
-        // Mail errors
-        if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportException) {
-            return ErrorPriority::HIGH->value;
-        }
+            // File system errors
+            if ($exception instanceof FilesystemException) {
+                return ErrorPriority::HIGH->value;
+            }
 
-        // Queue failures
-        if ($exception instanceof \Illuminate\Queue\MaxAttemptsExceededException) {
-            return ErrorPriority::HIGH->value;
-        }
+            // Mail errors
+            if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportException) {
+                return ErrorPriority::HIGH->value;
+            }
 
-        // Memory/timeout errors
-        if (
-            strpos($exception->getMessage(), 'memory') !== false ||
-            strpos($exception->getMessage(), 'timeout') !== false ||
-            strpos($exception->getMessage(), 'execution time') !== false
-        ) {
-            return ErrorPriority::HIGH->value;
-        }
+            // Queue failures
+            if ($exception instanceof \Illuminate\Queue\MaxAttemptsExceededException) {
+                return ErrorPriority::HIGH->value;
+            }
 
-        return ErrorPriority::MEDIUM->value;
+            // Memory/timeout errors
+            if (
+                strpos($exception->getMessage(), 'memory') !== false ||
+                strpos($exception->getMessage(), 'timeout') !== false ||
+                strpos($exception->getMessage(), 'execution time') !== false
+            ) {
+                return ErrorPriority::HIGH->value;
+            }
+
+            return ErrorPriority::MEDIUM->value;
+        } catch (Exception $e) {
+            Log::error('Error determining priority, falling back to medium', [
+                'error' => $e->getMessage()
+            ]);
+            return 'medium'; // Fallback to string value
+        }
     }
 
     /**

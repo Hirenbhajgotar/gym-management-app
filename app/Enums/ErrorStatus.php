@@ -15,9 +15,9 @@ enum ErrorStatus: string implements HasLabel, HasColor, HasIcon
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::PENDING => 'pending',
-            self::INVESTIGATING => 'investigating',
-            self::RESOLVED => 'resolved',
+            self::PENDING => 'Pending',
+            self::INVESTIGATING => 'Investigating',
+            self::RESOLVED => 'Resolved',
         };
     }
 
