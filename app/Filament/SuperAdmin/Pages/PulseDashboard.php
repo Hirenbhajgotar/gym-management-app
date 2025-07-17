@@ -20,8 +20,6 @@ class PulseDashboard extends Page
 {
     use HasFiltersAction;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
-
     protected static ?string $navigationLabel = 'Pulse Dashboard';
 
     protected static ?string $navigationGroup = 'Monitoring';
