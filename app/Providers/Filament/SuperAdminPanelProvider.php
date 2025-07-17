@@ -30,6 +30,9 @@ class SuperAdminPanelProvider extends PanelProvider
             ->path('super-admin')
             ->colors([
                 'primary' => Color::Emerald,
+                'orange' => Color::Orange,
+                'blue' => Color::Blue,
+                'violet' => Color::Violet,
             ])
             ->login()
             ->authGuard('web')
@@ -42,6 +45,10 @@ class SuperAdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-cog-6-tooth'),
+
+                NavigationGroup::make()
+                    ->label('Monitoring')
+                    ->icon('heroicon-o-chart-bar'),
             ])
             ->resources([
                 // GymResource::class,
