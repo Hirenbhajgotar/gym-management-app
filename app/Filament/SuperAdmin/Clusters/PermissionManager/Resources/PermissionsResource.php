@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources;
+namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Enums\PermissionCategory;
-use App\Filament\SuperAdmin\Clusters\GymManagement;
-use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\PermissionsResource\Pages;
-use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\PermissionsResource\RelationManagers;
+use App\Filament\SuperAdmin\Clusters\PermissionManager;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\RelationManagers;
 use App\Models\Permission as ModelsPermission;
 use App\Models\Permissions;
 use Filament\Forms;
@@ -28,7 +28,9 @@ class PermissionsResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
 
-    protected static ?string $cluster = GymManagement::class;
+    protected static ?string $cluster = PermissionManager::class;
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

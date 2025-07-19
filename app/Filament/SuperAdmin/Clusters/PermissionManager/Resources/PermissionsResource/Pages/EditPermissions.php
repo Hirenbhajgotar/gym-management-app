@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources\PermissionsResource\Pages;
+namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
 
-use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\PermissionsResource;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
