@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Permissions\Pages;
 
+use App\Enums\PermissionCategory;
 use App\Filament\Admin\Clusters\Permissions;
 use App\Filament\Admin\Widgets\RolePermissionsStatsWidget;
 use App\Helpers\NotificationHelper;
@@ -17,10 +18,12 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use ValueError;
 
 class ReceptionistPermissionsPage extends Page implements HasForms
 {
@@ -47,255 +50,41 @@ class ReceptionistPermissionsPage extends Page implements HasForms
 
     public function form(Form $form): Form
     {
+        $permissionsByCategory = $this->getPermissionsByCategory();
+
         return $form
             ->schema([
                 Tabs::make('Permissions')
                     ->tabs([
                         Tabs\Tab::make('Resources')
                             ->icon('heroicon-o-squares-2x2')
-                            ->schema([
-                                Section::make('Members Resource')
-                                    ->description('Manage member-related permissions for receptionists')
-                                    ->icon('heroicon-o-users')
-                                    ->schema([
-                                        CheckboxList::make('gym_member_permissions')
-                                            ->label('Member Permissions')
-                                            ->options([
-                                                'view_gym_member' => 'View Member',
-                                                'view_any_gym_member' => 'View Any Member',
-                                                'create_gym_member' => 'Create Member',
-                                                'edit_gym_member' => 'Edit Member',
-                                                'delete_gym_member' => 'Delete Member',
-                                                'restore_gym_member' => 'Restore Member',
-                                                'force_delete_gym_member' => 'Force Delete Member',
-                                                'replicate_gym_member' => 'Replicate Member',
-                                                'reorder_gym_member' => 'Reorder Member',
-                                                'export_gym_member' => 'Export Member',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'view_gym_member' => 'Can view member profiles and information',
-                                                'view_any_gym_member' => 'Can view all members in the system',
-                                                'create_gym_member' => 'Can register new members',
-                                                'edit_gym_member' => 'Can update member information',
-                                                'delete_gym_member' => 'Can delete member records',
-                                                'restore_gym_member' => 'Can restore deleted member records',
-                                                'force_delete_gym_member' => 'Can permanently delete member records',
-                                                'replicate_gym_member' => 'Can replicate member records',
-                                                'reorder_gym_member' => 'Can reorder member records',
-                                                'export_gym_member' => 'Can export member data',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-
-                                Section::make('Memberships Resource')
-                                    ->description('Manage membership-related permissions for receptionists')
-                                    ->icon('heroicon-o-credit-card')
-                                    ->schema([
-                                        CheckboxList::make('membership_plan_permissions')
-                                            ->label('Membership Permissions')
-                                            ->options([
-                                                'view_membership_plan' => 'View Memberships',
-                                                'view_any_membership_plan' => 'View Any Memberships',
-                                                'create_membership_plan' => 'Create Memberships',
-                                                'edit_membership_plan' => 'Edit Memberships',
-                                                'delete_membership_plan' => 'Delete Memberships',
-                                                'restore_membership_plan' => 'Restore Memberships',
-                                                'force_delete_membership_plan' => 'Force Delete Memberships',
-                                                'replicate_membership_plan' => 'Replicate Memberships',
-                                                'reorder_membership_plan' => 'Reorder Memberships',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'view_membership_plan' => 'Can view membership records',
-                                                'view_any_membership_plan' => 'Can view all membership records',
-                                                'create_membership_plan' => 'Can create new memberships',
-                                                'edit_membership_plan' => 'Can modify membership details',
-                                                'delete_membership_plan' => 'Can delete memberships',
-                                                'restore_membership_plan' => 'Can restore deleted memberships',
-                                                'force_delete_membership_plan' => 'Can permanently delete memberships',
-                                                'replicate_membership_plan' => 'Can replicate membership records',
-                                                'reorder_membership_plan' => 'Can reorder membership records',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-
-                                // Section::make('Payments Resource')
-                                //     ->description('Manage payment-related permissions for receptionists')
-                                //     ->icon('heroicon-o-banknotes')
-                                //     ->schema([
-                                //         CheckboxList::make('payment_permissions')
-                                //             ->label('Payment Permissions')
-                                //             ->options([
-                                //                 'view_payment' => 'View Payments',
-                                //                 'view_any_payment' => 'View Any Payments',
-                                //                 'create_payment' => 'Create Payments',
-                                //                 'edit_payment' => 'Edit Payments',
-                                //                 'delete_payment' => 'Delete Payments',
-                                //                 'restore_payment' => 'Restore Payments',
-                                //                 'force_delete_payment' => 'Force Delete Payments',
-                                //                 'export_payment' => 'Export Payments',
-                                //             ])
-                                //             ->columns(2)
-                                //             ->descriptions([
-                                //                 'view_payment' => 'Can view payment records',
-                                //                 'view_any_payment' => 'Can view all payment records',
-                                //                 'create_payment' => 'Can process new payments',
-                                //                 'edit_payment' => 'Can modify payment details',
-                                //                 'delete_payment' => 'Can delete payment records',
-                                //                 'restore_payment' => 'Can restore deleted payments',
-                                //                 'force_delete_payment' => 'Can permanently delete payments',
-                                //                 'export_payment' => 'Can export payment data',
-                                //             ])
-                                //             ->gridDirection('row'),
-                                //     ])
-                                //     ->collapsible(),
-
-                                // Section::make('Classes Resource')
-                                //     ->description('Manage class-related permissions for receptionists')
-                                //     ->icon('heroicon-o-academic-cap')
-                                //     ->schema([
-                                //         CheckboxList::make('class_permissions')
-                                //             ->label('Class Permissions')
-                                //             ->options([
-                                //                 'view_class' => 'View Classes',
-                                //                 'view_any_class' => 'View Any Classes',
-                                //                 'create_class' => 'Create Classes',
-                                //                 'edit_class' => 'Edit Classes',
-                                //                 'delete_class' => 'Delete Classes',
-                                //                 'restore_class' => 'Restore Classes',
-                                //                 'book_class' => 'Book Classes',
-                                //                 'manage_class_bookings' => 'Manage Class Bookings',
-                                //             ])
-                                //             ->columns(2)
-                                //             ->descriptions([
-                                //                 'view_class' => 'Can view class schedules',
-                                //                 'view_any_class' => 'Can view all classes',
-                                //                 'create_class' => 'Can schedule new classes',
-                                //                 'edit_class' => 'Can modify class details',
-                                //                 'delete_class' => 'Can cancel classes',
-                                //                 'restore_class' => 'Can restore cancelled classes',
-                                //                 'book_class' => 'Can book classes for members',
-                                //                 'manage_class_bookings' => 'Can manage member class bookings',
-                                //             ])
-                                //             ->gridDirection('row'),
-                                //     ])
-                                //     ->collapsible(),
-                            ]),
+                            ->schema($this->buildCategoryTabs($permissionsByCategory, [
+                                'attendance',
+                                'gym_member',
+                                'membership_plan',
+                                'receptionist',
+                                'trainer',
+                            ])),
 
                         Tabs\Tab::make('Widgets')
                             ->icon('heroicon-o-chart-bar')
-                            ->schema([
-                                Section::make('Dashboard Widgets')
-                                    ->description('Control access to dashboard widgets and analytics')
-                                    ->icon('heroicon-o-presentation-chart-bar')
-                                    ->schema([
-                                        CheckboxList::make('widget_permissions')
-                                            ->label('Widget Access')
-                                            ->options([
-                                                'widget_stats_overview' => 'Member Statistics Widget',
-                                                'widget_gym_revenue_chart' => 'Revenue Widget',
-                                                'widget_recent_members' => 'Recent Members Widget',
-                                                'widget_membership_expiry_alerts_chart' => 'Overdue Payments Widget',
-                                                'widget_todays_birthdays' => 'Membership Birthday Widget',
-                                                'widget_trainer_performance' => 'Trainer Performance Widget',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'widget_stats_overview' => 'Can view member statistics on dashboard',
-                                                'widget_gym_revenue_chart' => 'Can view revenue information on dashboard',
-                                                'widget_recent_members' => 'Can view recent members on dashboard',
-                                                'widget_membership_expiry_alerts_chart' => 'Can view Overdue Payments on dashboard',
-                                                'widget_todays_birthdays' => 'Can view Members birthday on dashboard',
-                                                'widget_trainer_performance' => 'Can view trainers performance on dashboard',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-                            ]),
+                            ->schema($this->buildCategoryTabs($permissionsByCategory, [
+                                'widgets',
+                            ])),
 
                         Tabs\Tab::make('Reports')
                             ->icon('heroicon-o-document-chart-bar')
-                            ->schema([
-                                Section::make('Report Access')
-                                    ->description('Configure report generation and viewing permissions')
-                                    ->icon('heroicon-o-clipboard-document-list')
-                                    ->schema([
-                                        CheckboxList::make('report_permissions')
-                                            ->label('Report Permissions')
-                                            ->options([
-                                                'page_reports' => 'Access Reports Page',
-                                                'view_financial_reports' => 'View Financial Reports',
-                                                'view_member_reports' => 'View Member Reports',
-                                                'view_trainer_reports' => 'View Trainer Reports',
-                                                'view_equipment_reports' => 'View Equipment Reports',
-                                                'export_reports' => 'Export Reports',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'page_reports' => 'Can access the reports section',
-                                                'view_financial_reports' => 'Can view financial and revenue reports',
-                                                'view_member_reports' => 'Can view member-related reports',
-                                                'view_trainer_reports' => 'Can view trainer performance reports',
-                                                'view_equipment_reports' => 'Can view equipment usage reports',
-                                                'export_reports' => 'Can export reports to various formats',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-                            ]),
+                            ->schema($this->buildCategoryTabs($permissionsByCategory, [
+                                'report',
+                            ])),
 
                         Tabs\Tab::make('Other')
                             ->icon('heroicon-o-cog-6-tooth')
-                            ->schema([
-                                Section::make('System Features')
-                                    ->description('Additional system features and administrative permissions')
-                                    ->icon('heroicon-o-wrench-screwdriver')
-                                    ->schema([
-                                        CheckboxList::make('system_permissions')
-                                            ->label('System Permissions')
-                                            ->options([
-                                                'manage_settings' => 'Manage Gym Settings',
-                                                'view_analytics' => 'View Analytics',
-                                                'export_data' => 'Export Data',
-                                                'import_data' => 'Import Data',
-                                                'manage_backups' => 'Backup Data',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'manage_settings' => 'Can modify configuration settings',
-                                                'view_analytics' => 'Can view analytics',
-                                                'export_data' => 'Can export data',
-                                                'import_data' => 'Can import data',
-                                                'manage_backups' => 'Can create data backups',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-
-                                Section::make('Communication')
-                                    ->description('Communication and messaging permissions')
-                                    ->icon('heroicon-o-chat-bubble-left-right')
-                                    ->schema([
-                                        CheckboxList::make('communication_permissions')
-                                            ->label('Communication Permissions')
-                                            ->options([
-                                                'send_notifications' => 'Send Notifications',
-                                                'send_bulk_emails' => 'Send Bulk Emails',
-                                                'manage_announcements' => 'Manage Announcements',
-                                            ])
-                                            ->columns(2)
-                                            ->descriptions([
-                                                'send_notifications' => 'Can send individual notifications to members',
-                                                'send_bulk_emails' => 'Can send bulk emails to multiple members',
-                                                'manage_announcements' => 'Can create and manage gym announcements',
-                                            ])
-                                            ->gridDirection('row'),
-                                    ])
-                                    ->collapsible(),
-                            ]),
+                            ->schema($this->buildCategoryTabs($permissionsByCategory, [
+                                'communication',
+                                'setting',
+                                'general',
+                            ])),
                     ]),
             ])
             ->statePath('data');
@@ -651,5 +440,78 @@ class ReceptionistPermissionsPage extends Page implements HasForms
                 'roleDisplayName' => 'Receptionist',
             ]),
         ];
+    }
+
+    private function getPermissionsByCategory(): array
+    {
+        // Get all permissions from database grouped by category
+        $permissions = Permission::select('name', 'display_name', 'description', 'category')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('category');
+
+        return $permissions->toArray();
+    }
+
+    // Build category-based sections dynamically
+    private function buildCategoryTabs(array $permissionsByCategory, ?array $includeCategory = []): array
+    {
+        $filteredCategory = Arr::only($permissionsByCategory, $includeCategory);
+        // dd($permissionsByCategory, $filteredCategory);
+        $sections = [];
+
+        foreach ($filteredCategory as $category => $permissions) {
+            if (empty($category)) {
+                continue; // Skip permissions without category
+            }
+
+            try {
+                $permissionCategory = PermissionCategory::from($category);
+                $categoryName = $permissionCategory->getLabel();
+                $categoryIcon = $permissionCategory->getIcon();
+            } catch (ValueError) {
+                $categoryName = ucfirst(str_replace('_', ' ', $category));
+                $categoryIcon = 'heroicon-o-folder';
+            }
+
+            $fieldName = $category . '_permissions';
+
+            $options = [];
+            $descriptions = [];
+
+            foreach ($permissions as $permission) {
+                $options[$permission['name']] = $permission['display_name'] ?? ucfirst(str_replace('_', ' ', $permission['name']));
+                $descriptions[$permission['name']] = $permission['description'] ?? '';
+            }
+
+            $sections[] = Section::make($categoryName . ' Resource')
+                ->description('Manage ' . strtolower($categoryName) . '-related permissions for receptionists')
+                ->icon($categoryIcon)
+                ->schema([
+                    CheckboxList::make($fieldName)
+                        ->label($categoryName . ' Permissions')
+                        ->options($options)
+                        ->columns(2)
+                        ->descriptions($descriptions)
+                        ->gridDirection('row')
+                        ->bulkToggleable(),
+                ])
+                ->collapsible();
+        }
+
+        return $sections;
+    }
+
+    // Get appropriate icon for each category
+    private function getCategoryIcon(string $category): string
+    {
+        try {
+            $permissionCategory = PermissionCategory::from($category);
+            return $permissionCategory->getIcon() ?? 'heroicon-o-folder';
+        } catch (ValueError) {
+            // If category doesn't exist in enum, return default icon
+            return 'heroicon-o-folder';
+        }
     }
 }
