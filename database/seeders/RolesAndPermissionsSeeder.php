@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Gym;
+use App\Models\Permission as ModelsPermission;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -77,7 +78,7 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach ($resources as $resource) {
             foreach ($resourceActions as $action) {
                 $permissionName = $action . '_' . $resource;
-                $permission = Permission::firstOrCreate([
+                $permission = ModelsPermission::firstOrCreate([
                     'name' => $permissionName,
                     'guard_name' => 'web'
                 ]);
@@ -139,7 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($filamentPermissions as $permissionName) {
-            $permission = Permission::firstOrCreate([
+            $permission = ModelsPermission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web'
             ]);
