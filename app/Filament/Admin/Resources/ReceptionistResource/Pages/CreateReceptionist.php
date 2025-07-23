@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\ReceptionistCreate;
 use App\Notifications\StaffMemberCreate;
 use Filament\Actions;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,18 @@ class CreateReceptionist extends CreateRecord
         $receptionist = User::create($data);
 
         $receptionist->assignRole('receptionist');
+
+        $currentUser = auth()->user();
+        $currentTenant = Filament::getTenant();
+
+        if ($currentTenant) {
+            $receptionist->gyms()->attach($currentTenant->id, [
+                'role' => 'receptionist',
+                'active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         // Send welcome email notification
         $receptionist->notify(new ReceptionistCreate($receptionist, $plainPassword));
