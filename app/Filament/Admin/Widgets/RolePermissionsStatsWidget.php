@@ -224,9 +224,6 @@ class RolePermissionsStatsWidget extends BaseWidget
     {
         $role = $this->currentRole;
 
-        $lastPermissions = $role->permissions()->last();
-        Log::info('last', $lastPermissions);
-
         return $role && $role->updated_at ? $role->updated_at->diffForHumans() : 'Never';
     }
 
@@ -276,7 +273,7 @@ class RolePermissionsStatsWidget extends BaseWidget
      */
     public static function canView(): bool
     {
-        $allowRoles = (auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('admin') ||  auth()->user()->hasRole('super_admin'));
+        $allowRoles = auth()->user()->hasRole(['super_admin', 'admin', 'gym_owner']);
 
         $currentPanel = Filament::getCurrentPanel();
 

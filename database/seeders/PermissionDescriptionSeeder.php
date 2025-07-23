@@ -137,7 +137,7 @@ class PermissionDescriptionSeeder extends Seeder
                 ], [
                     'display_name' => ucwords(str_replace(['_', '-'], ' ', $permissionName)),
                     'description' => ucwords(str_replace(['_', '-'], ' ', $description)),
-                    'category' => PermissionCategory::tryFrom($category)->value ?? NULL
+                    'category' => PermissionCategory::tryFrom($category)->value ?? null
                 ]);
             }
         } catch (Exception $e) {

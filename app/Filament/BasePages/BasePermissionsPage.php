@@ -112,7 +112,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
         // Get the role for the current gym
         $role = Role::where('name', $roleName)
-            ->where('gym_id', $currentTenant->id)
+            ->where('gym_id', $currentTenant?->id)
             ->first();
 
         if (!$role) {
@@ -120,7 +120,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role = Role::create([
                 'name' => $roleName,
                 'guard_name' => 'web',
-                'gym_id' => $currentTenant->id,
+                'gym_id' => $currentTenant?->id,
             ]);
         }
 

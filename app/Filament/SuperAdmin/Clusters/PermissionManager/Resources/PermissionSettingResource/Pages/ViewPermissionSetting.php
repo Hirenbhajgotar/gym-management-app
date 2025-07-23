@@ -49,6 +49,9 @@ class ViewPermissionSetting extends ViewRecord
                                 TextEntry::make('widgets')
                                     ->label('Widgets')
                                     ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['widgets'] ?? []))),
+                                TextEntry::make('reports')
+                                    ->label('reports')
+                                    ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['reports'] ?? []))),
                                 TextEntry::make('other')
                                     ->label('Other')
                                     ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['other'] ?? []))),

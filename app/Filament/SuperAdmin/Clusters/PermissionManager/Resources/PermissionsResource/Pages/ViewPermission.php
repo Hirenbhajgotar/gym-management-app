@@ -58,7 +58,7 @@ class ViewPermission extends ViewRecord
                         Grid::make(2)
                             ->schema([
                                 TextEntry::make('roles_count')
-                                    ->label('Direct Users')
+                                    ->label('Assigned Roles Count')
                                     ->badge()
                                     ->color('success'),
 

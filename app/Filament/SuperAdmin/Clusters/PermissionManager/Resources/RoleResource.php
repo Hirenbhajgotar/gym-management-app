@@ -162,4 +162,9 @@ class RoleResource extends Resource
         return parent::getEloquentQuery()
             ->with(['permissions']);
     }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()->hasRole('super_admin');
+    }
 }

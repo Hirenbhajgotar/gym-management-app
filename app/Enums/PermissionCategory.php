@@ -44,7 +44,7 @@ enum PermissionCategory: string implements HasLabel, HasIcon
             self::WIDGETS => 'Widgets',
             self::REPORT => 'Reports',
             self::SETTING => 'Settings',
-            self::SYSTEM => 'systems',
+            self::SYSTEM => 'Systems',
             self::COMMUNICATION => 'Communication',
             self::GENERAL => 'General',
         };
