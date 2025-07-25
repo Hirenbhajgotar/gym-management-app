@@ -40,7 +40,7 @@ class CreateGymMember extends CreateRecord
                     ->cancelAction($this->getCancelFormAction())
                     ->submitAction($this->getSubmitFormAction())
                     ->skippable($this->hasSkippableSteps())
-                    ->contained(false),
+                    ->contained(true),
             ])
             ->columns(null);
     }
