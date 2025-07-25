@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
 use App\Filament\Admin\Resources\ReceptionistResource\Pages;
@@ -54,6 +55,7 @@ class ReceptionistResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->role(DefaultRole::RECEPTIONIST->value)
             ->with(['employeeDetails', 'address']);
     }
 
@@ -87,15 +89,21 @@ class ReceptionistResource extends Resource
                     ->searchable(),
                 TextColumn::make('email')
                     ->searchable()
-                    ->icon('heroicon-o-phone'),
+                    ->icon('heroicon-o-envelope'),
 
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
                     ->icon('heroicon-o-phone'),
 
-                Tables\Columns\TextColumn::make('hire_date')
+                Tables\Columns\TextColumn::make('employeeDetails.hire_date')
                     ->date()
                     ->sortable(),
+
+                TextColumn::make('employeeDetails.monthly_salary')
+                    ->label('Monthly Salary')
+                    ->money('INR')  // Changed from EUR to INR (Indian Rupee)
+                    ->sortable()
+                    ->searchable()
             ])
             ->filters([
                 //
