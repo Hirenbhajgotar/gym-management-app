@@ -270,20 +270,4 @@ class ViewManager extends ViewRecord
                     ->collapsible(),
             ]);
     }
-
-    // protected function mutateFormDataBeforeFill(array $data): array
-    // {
-    //     // Load the employee details and address data
-    //     $user = $this->record;
-
-    //     if ($user->employeeDetails) {
-    //         $data['employeeDetails'] = $user->employeeDetails->toArray();
-    //     }
-
-    //     if ($user->address) {
-    //         $data['address'] = $user->address->toArray();
-    //     }
-
-    //     return $data;
-    // }
 }

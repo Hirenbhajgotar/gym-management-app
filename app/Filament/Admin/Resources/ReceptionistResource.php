@@ -133,6 +133,7 @@ class ReceptionistResource extends Resource
             'index' => Pages\ListReceptionists::route('/'),
             'create' => Pages\CreateReceptionist::route('/create'),
             'edit' => Pages\EditReceptionist::route('/{record}/edit'),
+            'view' => Pages\ViewReceptionist::route('/{record}'),
         ];
     }
 
