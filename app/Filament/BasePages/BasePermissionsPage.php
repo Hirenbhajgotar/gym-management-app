@@ -22,6 +22,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\ActionSize;
 use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -237,17 +238,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     protected function getActions(): array
     {
         return [
-            Action::make('reset_permissions')
-                ->label('Reset to Default')
-                ->color('gray')
-                ->icon('heroicon-o-arrow-path')
-                ->requiresConfirmation()
-                ->modalHeading('Reset Permissions')
-                ->modalDescription('Are you sure you want to reset all ' . strtolower($this->getRoleDisplayName()) . ' permissions to default values? This action cannot be undone.')
-                ->modalSubmitActionLabel('Reset Permissions')
-                ->action(function () {
-                    $this->resetToDefaultPermissions();
-                }),
+            $this->getResetPermissionAction(),
 
             // Action::make('quick_setup')
             //     ->label('Quick Setup')
@@ -257,6 +248,33 @@ abstract class BasePermissionsPage extends Page implements HasForms
             //         $this->quickSetupPermissions();
             //     }),
         ];
+    }
+
+    /**
+     * Returns an action that allows resetting permissions to their default values.
+     *
+     * The action creates a modal with a confirmation prompt before performing the reset,
+     * ensuring that the user is aware that this operation cannot be undone. It uses the
+     * `resetToDefaultPermissions` method to perform the actual reset of permissions for
+     * the current role.
+     *
+     * @return \Filament\Actions\Action
+     */
+
+    public function getResetPermissionAction()
+    {
+        return Action::make('reset_permissions')
+            ->label('Reset to Default')
+            ->color('gray')
+            ->icon('heroicon-o-arrow-path')
+            ->requiresConfirmation()
+            ->modalHeading('Reset Permissions')
+            ->modalDescription('Are you sure you want to reset all ' . strtolower($this->getRoleDisplayName()) . ' permissions to default values? This action cannot be undone.')
+            ->modalSubmitActionLabel('Reset Permissions')
+            ->size(ActionSize::Large)
+            ->action(function () {
+                $this->resetToDefaultPermissions();
+            });
     }
 
     private function resetToDefaultPermissions(): void

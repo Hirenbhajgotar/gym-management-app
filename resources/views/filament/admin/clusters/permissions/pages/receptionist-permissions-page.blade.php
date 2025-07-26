@@ -18,10 +18,7 @@
                                 Save Permissions
                             </x-filament::button>
 
-                            <x-filament::button type="button" color="gray" size="lg" wire:click="$refresh"
-                                icon="heroicon-o-arrow-path">
-                                Refresh
-                            </x-filament::button>
+                            {{ $this->getResetPermissionAction() }}
                         </div>
                     </div>
                 </form>
