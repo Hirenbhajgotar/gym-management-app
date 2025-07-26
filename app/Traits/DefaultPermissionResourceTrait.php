@@ -39,6 +39,13 @@ trait DefaultPermissionResourceTrait
         $this->defaultPermissionResource = $this->permissionSetting?->default_resources;
     }
 
+    /**
+     * Return the default permissions associated with the currently set role.
+     *
+     * If no role is set or no permission setting exists for the role, an empty array is returned.
+     *
+     * @return array<string>
+     */
     public function getDefaultPermissions(): array
     {
         return $this->permissionSetting?->default_permissions ?? [];

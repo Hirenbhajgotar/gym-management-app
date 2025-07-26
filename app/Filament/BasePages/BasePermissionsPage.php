@@ -198,6 +198,8 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
             DB::commit();
 
+            $this->dispatch('refreshRolePermissionsStats');
+
             Notification::make()
                 ->title($this->getRoleDisplayName() . ' Permissions Updated')
                 ->body('Permissions have been updated for the current gym.')
@@ -287,6 +289,8 @@ abstract class BasePermissionsPage extends Page implements HasForms
             DB::commit();
 
             $this->loadRolePermissions();
+
+            $this->dispatch('refreshRolePermissionsStats');
 
             Notification::make()
                 ->title('Permissions Reset')
