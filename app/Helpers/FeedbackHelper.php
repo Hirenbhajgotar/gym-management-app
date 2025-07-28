@@ -4,7 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\Cache;
 
-class Parser
+class FeedbackHelper
 {
     /**
      * Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.

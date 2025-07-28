@@ -69,11 +69,6 @@ class EditReceptionist extends EditRecord
             $userData['password'] =  $data['password'];
         }
 
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
-        }
-
-        // dd($userData);
         // Update the main user record
         $record->update($userData);
 
@@ -95,7 +90,7 @@ class EditReceptionist extends EditRecord
         return ReceptionistResource::getUrl('index'); // Redirect to index page after create
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function getSavedNotification(): ?Notification
     {
         return Notification::make()
             ->title('Receptionist Updated')

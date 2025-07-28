@@ -27,8 +27,8 @@ class ViewReceptionist extends ViewRecord
         return $infolist
             ->schema([
                 // Profile Section with Avatar and Key Details
-                Components\Section::make('Manager Profile')
-                    ->description('Key information about the manager')
+                Components\Section::make('Receptionist Profile')
+                    ->description('Key information about the receptionist')
                     ->icon('heroicon-o-user-circle')
                     ->schema([
                         Components\Split::make([
@@ -212,7 +212,7 @@ class ViewReceptionist extends ViewRecord
 
                 // Skills Section
                 Components\Section::make('Skills & Competencies')
-                    ->description('Manager capabilities and expertise')
+                    ->description('Receptionist capabilities and expertise')
                     ->icon('heroicon-o-academic-cap')
                     ->schema([
                         Components\TextEntry::make('employeeDetails.skills')

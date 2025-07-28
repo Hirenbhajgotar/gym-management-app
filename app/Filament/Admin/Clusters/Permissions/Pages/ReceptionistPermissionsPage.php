@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Permissions\Pages;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Widgets\RolePermissionsStatsWidget;
 use App\Filament\BasePages\BasePermissionsPage;
 
@@ -16,12 +17,12 @@ class ReceptionistPermissionsPage extends BasePermissionsPage
 
     protected function getRoleName(): string
     {
-        return 'receptionist';
+        return DefaultRole::RECEPTIONIST->value;
     }
 
     protected function getRoleDisplayName(): string
     {
-        return 'Receptionist';
+        return DefaultRole::RECEPTIONIST->getLabel();
     }
 
 

@@ -41,10 +41,6 @@ class CreateReceptionist extends CreateRecord
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
-        }
-
         // Create the user first
         $receptionist = User::create($userData);
 

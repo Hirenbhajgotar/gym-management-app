@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Helpers\Parser;
+use App\Helpers\FeedbackHelper;
 use App\Models\BusinessType;
 use App\Models\Gym;
 use App\Models\User;
@@ -220,7 +220,7 @@ class GymOwnerRegister extends Component
             DB::commit();
 
             // Store feedback cache
-            Parser::storeFeedbackCache($user?->id, 15);
+            FeedbackHelper::storeFeedbackCache($user?->id, 15);
 
             // Show success message
             session()->flash('success', 'Registration submitted successfully! We will review your application and contact you soon.');

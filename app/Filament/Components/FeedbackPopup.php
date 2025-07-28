@@ -2,9 +2,8 @@
 
 namespace App\Filament\Components;
 
-use App\Helpers\Parser;
+use App\Helpers\FeedbackHelper;
 use App\Models\Feedback;
-use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -47,7 +46,7 @@ class FeedbackPopup extends Component implements HasForms
             return;
         }
 
-        $cacheKey = Parser::getFeedbackCacheKey(Auth::id());
+        $cacheKey = FeedbackHelper::getFeedbackCacheKey(Auth::id());
 
         // Check if popup was already shown this week
         if (!Cache::has($cacheKey)) {
@@ -94,7 +93,7 @@ class FeedbackPopup extends Component implements HasForms
 
         // Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
         // This prevents users from getting annoyed by the popup and allows us to only show it every 25 days.
-        Parser::storeFeedbackCache($userId, 25);
+        FeedbackHelper::storeFeedbackCache($userId, 25);
 
         $this->showModal = false;
 
@@ -110,7 +109,7 @@ class FeedbackPopup extends Component implements HasForms
     {
         // Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
         // This prevents users from getting annoyed by the popup and allows us to only show it every 25 days.
-        Parser::storeFeedbackCache(Auth::id(), 25);
+        FeedbackHelper::storeFeedbackCache(Auth::id(), 25);
 
         $this->showModal = false;
     }
