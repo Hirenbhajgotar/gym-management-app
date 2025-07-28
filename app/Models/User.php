@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -37,7 +38,8 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
         'email',
         'password',
         'phone',
-        'is_active'
+        'is_active',
+        'email_verified_at'
     ];
 
     /**
@@ -121,6 +123,16 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
         return $this->belongsToMany(Gym::class, 'gym_user')
             ->withPivot(['role', 'active'])
             ->withTimestamps();
+    }
+
+    public function employeeDetails(): HasOne
+    {
+        return $this->hasOne(EmployeeDetail::class, 'user_id');
+    }
+
+    public function address(): MorphOne
+    {
+        return $this->morphOne(Address::class, 'addressable');
     }
 
     // public function subscription()

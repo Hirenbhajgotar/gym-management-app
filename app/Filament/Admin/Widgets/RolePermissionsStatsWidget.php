@@ -8,6 +8,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
 use Spatie\Permission\Models\Role;
 
 class RolePermissionsStatsWidget extends BaseWidget
@@ -42,6 +43,13 @@ class RolePermissionsStatsWidget extends BaseWidget
             'description' => 'Training staff permissions',
         ],
     ];
+
+    #[On('refreshRolePermissionsStats')]
+    public function refreshWidget()
+    {
+        $this->dispatch('$refresh');
+    }
+
 
     /**
      * Configure the widget for a specific role

@@ -9,6 +9,7 @@ enum DefaultRole: string implements HasLabel
     case ADMIN = 'admin';
     case GYM_OWNER = 'gym_owner';
     case RECEPTIONIST = 'receptionist';
+    case MANAGER = 'manager';
     case SUPER_ADMIN = 'super_admin';
     case TRAINER = 'trainer';
 
@@ -19,6 +20,7 @@ enum DefaultRole: string implements HasLabel
             self::ADMIN => 'Admin',
             self::GYM_OWNER => 'Gym Owner',
             self::RECEPTIONIST => 'Receptionist',
+            self::MANAGER => 'Manager',
             self::TRAINER => 'Trainer',
         };
     }

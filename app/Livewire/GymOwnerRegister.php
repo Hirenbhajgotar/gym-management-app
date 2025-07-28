@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Helpers\Parser;
 use App\Models\BusinessType;
 use App\Models\Gym;
 use App\Models\User;
@@ -9,7 +10,6 @@ use App\Notifications\UserActionNotification;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -193,7 +193,7 @@ class GymOwnerRegister extends Component
             ]);
 
             // Create Address for Gym
-            $address = $gym->address()->create([
+            $gym->address()->create([
                 'street' => $this->address['street'],
                 'city_id' => $this->address['city_id'],
                 'state_id' => $this->address['state_id'],
@@ -204,7 +204,7 @@ class GymOwnerRegister extends Component
             ]);
 
             // Create Business Detail for Gym
-            $businessDetail = $gym->businessDetail()->create([
+            $gym->businessDetail()->create([
                 'gym_id' => $gym->id,
                 'business_type_id' => $this->business_type ?: null,
                 'years_in_business' => $this->years_in_business,
@@ -218,6 +218,9 @@ class GymOwnerRegister extends Component
             // Attach User to Gym in pivot table
             $user->gyms()->attach($gym->id, ['role' => 'gym_owner']);
             DB::commit();
+
+            // Store feedback cache
+            Parser::storeFeedbackCache($user?->id, 15);
 
             // Show success message
             session()->flash('success', 'Registration submitted successfully! We will review your application and contact you soon.');
