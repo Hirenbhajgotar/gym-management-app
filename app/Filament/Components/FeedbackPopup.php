@@ -2,6 +2,7 @@
 
 namespace App\Filament\Components;
 
+use App\Helpers\Parser;
 use App\Models\Feedback;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
@@ -46,9 +47,7 @@ class FeedbackPopup extends Component implements HasForms
             return;
         }
 
-        $userId = Auth::id();
-        $weekKey = $this->getWeekKey();
-        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
+        $cacheKey = Parser::getFeedbackCacheKey(Auth::id());
 
         // Check if popup was already shown this week
         if (!Cache::has($cacheKey)) {
@@ -93,11 +92,9 @@ class FeedbackPopup extends Component implements HasForms
         // Store feedback in database
         Feedback::create($data);
 
-        // Mark popup as shown for today
-        // Mark popup as shown for this week
-        $weekKey = $this->getWeekKey();
-        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
-        Cache::put($cacheKey, true, now()->endOfWeek());
+        // Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
+        // This prevents users from getting annoyed by the popup and allows us to only show it every 25 days.
+        Parser::storeFeedbackCache($userId, 25);
 
         $this->showModal = false;
 
@@ -106,30 +103,17 @@ class FeedbackPopup extends Component implements HasForms
             ->success()
             ->send();
 
-        // $this->reset(['rating', 'feedback', 'email']);
         $this->form->fill();
     }
 
     public function closeFeedback()
     {
-        // Mark popup as shown for today even if closed without submitting
-        $userId = Auth::id();
-        $weekKey = $this->getWeekKey();
-        $cacheKey = "feedback_popup_shown_{$userId}_{$weekKey}";
-        Cache::put($cacheKey, true, now()->endOfWeek());
+        // Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
+        // This prevents users from getting annoyed by the popup and allows us to only show it every 25 days.
+        Parser::storeFeedbackCache(Auth::id(), 25);
 
         $this->showModal = false;
     }
-
-    /**
-     * Generate a unique key for the current week
-     * Format: YYYY-WW (e.g., 2024-52, 2025-01)
-     */
-    private function getWeekKey(): string
-    {
-        return now()->format('Y-W');
-    }
-
 
     public function render()
     {
