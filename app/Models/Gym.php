@@ -19,7 +19,6 @@ class Gym extends Model
     protected $fillable = [
         'name',
         'slug',
-        'owner_id',
     ];
 
     public function users()

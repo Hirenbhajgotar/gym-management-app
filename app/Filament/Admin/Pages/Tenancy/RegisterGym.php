@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\Tenancy;
 
+use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use Filament\Forms\Components\Section;
@@ -120,7 +121,8 @@ class RegisterGym extends RegisterTenant
         $gym = Gym::create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
-        $gym->users()->attach(auth()->user(), ['role' => 'gym_owner']);
+        $gym->users()->attach(auth()->user(), ['role' => DefaultRole::GYM_OWNER->value]);
+
 
         // Show success notification with remaining count
         $remainingCount = 2 - $this->authUserGyms;

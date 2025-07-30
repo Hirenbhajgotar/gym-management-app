@@ -20,46 +20,34 @@ class UserRoleAssignmentSeeder extends Seeder
     public function run(): void
     {
         $choices = [
-            'Do you want to create only super-admin user?',
-            'Do you want to create demo users for specific gym?',
-            'Do you want to create demo users for all gyms?',
-            'Do you want to assign roles to existing users?',
-            'Do you want to update existing user roles?',
+            'Create only super-admin user',
+            'Create demo users for selected gym',
+            'Create demo users for all gyms',
+            'Assign roles to existing users',
+            'Update existing user roles',
         ];
 
         $selectedChoice = $this->command->choice(
-            "Select option for:",
+            'Select seeding option:',
             $choices,
             0
         );
 
-        switch ($selectedChoice) {
-            case 'Do you want to create only super-admin user?':
-                $this->createSuperAdminUser();
-                break;
-
-            case 'Do you want to create demo users for specific gym?':
-                $this->createDemoUsersForGym();
-                break;
-
-            case 'Do you want to create demo users for all gyms?':
-                $this->createDemoUsersForAllGyms();
-                break;
-
-            case 'Do you want to assign roles to existing users?':
-                $this->assignRolesToExistingUsers();
-                break;
-
-            case 'Do you want to update existing user roles?':
-                $this->updateExistingUserRoles();
-                break;
-
-            default:
-                $this->command->fail('Invalid choice selected.');
-                break;
+        try {
+            match ($selectedChoice) {
+                'Create only super-admin user' => $this->createSuperAdminUser(),
+                'Create demo users for selected gym' => $this->createDemoUsersForSelectedGym(),
+                'Create demo users for all gyms' => $this->createDemoUsersForAllGyms(),
+                'Assign roles to existing users' => $this->assignRolesToExistingUsers(),
+                'Update existing user roles' => $this->updateExistingUserRoles(),
+                default => $this->command->error('Invalid choice selected.'),
+            };
+        } catch (\Exception $e) {
+            $this->command->error('Error: ' . $e->getMessage());
+            $this->command->error('Please check your database connection and try again.');
+        } finally {
+            $this->displayFinalSummary();
         }
-
-        $this->displayFinalSummary();
     }
 
     private function ensureRolesExist($gymId = null): void
@@ -412,21 +400,45 @@ class UserRoleAssignmentSeeder extends Seeder
             ->pluck('name')
             ->toArray();
 
+        if (empty($roles)) {
+            $this->command->error("❌ No roles found for gym ID: {$gymId} or globally.");
+            return;
+        }
+
+        // Add 'skip' option to the roles list
+        $roleChoices = array_merge(['skip'], $roles); // Prepend 'skip' to the choices
+
+        $usersProcessed = 0;
+        $usersSkipped = 0;
+        $usersAssigned = 0;
+
         foreach ($usersWithoutRoles as $user) {
+            $this->command->info("---");
             $this->command->info("User: {$user->name} ({$user->email})");
 
             // Select role for user
-            $selectedRole = $this->command->choice(
+            $selectedOption = $this->command->choice(
                 "Select role for {$user->name}:",
-                $roles,
+                $roleChoices,
                 0
             );
 
+            // Check if user chose to skip
+            if ($selectedOption === 'skip') {
+                $this->command->comment("⏭️ Skipped assigning a role to {$user->name} ({$user->email}) for gym ID: {$gymId}");
+                $usersSkipped++;
+                $usersProcessed++;
+                continue; // Move to the next user
+            }
+
+            // If not skipping, proceed with role assignment logic
+            $selectedRoleName = $selectedOption;
+
             // Fetch the specific role based on gym context
-            $roleQuery = Role::where('name', $selectedRole)
+            $roleQuery = Role::where('name', $selectedRoleName)
                 ->where('guard_name', 'web');
 
-            if ($selectedRole === 'super_admin') {
+            if ($selectedRoleName === 'super_admin') {
                 $roleQuery->whereNull('gym_id'); // Global role
             } else {
                 $roleQuery->where('gym_id', $gymId); // Gym-specific role
@@ -435,7 +447,9 @@ class UserRoleAssignmentSeeder extends Seeder
             $role = $roleQuery->first();
 
             if (!$role) {
-                $this->command->error("Role '{$selectedRole}' not found for gym ID: {$gymId}");
+                $this->command->error("Role '{$selectedRoleName}' not found for gym ID: {$gymId}");
+                $usersSkipped++; // Consider it skipped due to error
+                $usersProcessed++;
                 continue;
             }
 
@@ -444,17 +458,17 @@ class UserRoleAssignmentSeeder extends Seeder
             $user->assignRole($role);
 
             // If not super admin, attach to gym(s)
-            if ($selectedRole !== 'super_admin') {
+            if ($selectedRoleName !== 'super_admin') {
                 if ($gymId) {
                     // Attach to specific gym
                     $user->gyms()->syncWithoutDetaching([$gymId => [
-                        'role' => $selectedRole,
+                        'role' => $selectedRoleName,
                         'active' => true
                     ]]);
-                    $this->command->info("✅ Assigned role '{$selectedRole}' to {$user->name} for gym ID: {$gymId}");
+                    $this->command->info("✅ Assigned role '{$selectedRoleName}' to {$user->name} for gym ID: {$gymId}");
                 }
             } else {
-                $this->command->info("✅ Assigned global role '{$selectedRole}' to {$user->name}");
+                $this->command->info("✅ Assigned global role '{$selectedRoleName}' to {$user->name}");
             }
         }
     }

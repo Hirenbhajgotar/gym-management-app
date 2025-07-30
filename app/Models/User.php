@@ -89,6 +89,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
         }
 
         if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
+            // Then check for tenant-specific access
             return $this->hasActiveTenant();
         }
 
@@ -115,6 +116,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
 
     public function canAccessTenant(Model $tenant): bool
     {
+        // Check if user is associated with this gym through pivot table
         return $this->gyms->contains($tenant);
     }
 

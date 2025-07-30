@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission as ModelsPermission;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -43,11 +44,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'membership_plan',
             'trainer',
             'receptionist',
-            // 'payment',
+            'manager',
+            'attendance',
+            'payment',
             // 'equipment',
             // 'workout',
             // 'schedule',
-            // 'attendance',
             // 'subscription',
             // 'invoice',
             // 'report',
@@ -74,6 +76,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create permissions for each resource
         $allPermissions = [];
+        $gymOwnerPermissions = [];
+        $gymManagerPermissions = [];
 
         foreach ($resources as $resource) {
             foreach ($resourceActions as $action) {
@@ -83,6 +87,16 @@ class RolesAndPermissionsSeeder extends Seeder
                     'guard_name' => 'web'
                 ]);
                 $allPermissions[] = $permission;
+
+                // Add gym owner permissions
+                if (in_array($resource, ['user', 'trainer', 'receptionist', 'manager', 'gym_member', 'gym', 'membership_plan', 'attendance', 'payment'])) {
+                    $gymOwnerPermissions[] = $permission;
+                }
+
+                // Add gym manager permissions
+                if (in_array($resource, ['user', 'trainer', 'receptionist', 'gym_member', 'gym', 'membership_plan', 'attendance', 'payment'])) {
+                    $gymManagerPermissions[] = $permission;
+                }
             }
         }
 
@@ -149,14 +163,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create Super Admin role with all permissions
         $superAdminRole = Role::firstOrCreate([
-            'name' => 'super_admin',
+            'name' => DefaultRole::SUPER_ADMIN->value,
             'guard_name' => 'web',
         ]);
         $superAdminRole->syncPermissions($allPermissions);
 
         // Process each gym
         foreach ($gyms as $gym) {
-            $this->createGymRoles($gym, $allPermissions);
+            $this->createGymRoles($gym, $gymOwnerPermissions, $gymManagerPermissions);
         }
         $this->command->info('✅ Tenant-specific roles and permissions have been seeded successfully!');
 
@@ -167,15 +181,22 @@ class RolesAndPermissionsSeeder extends Seeder
     /**
      * Create roles for a specific gym
      */
-    private function createGymRoles(Gym $gym, array $allPermissions)
+    private function createGymRoles(Gym $gym, array $gymOwnerPermissions, array $gymManagerPermissions)
     {
         // Create Gym Owner role with all permissions (same as super admin)
         $gymOwnerRole = Role::firstOrCreate([
-            'name' => 'gym_owner',
+            'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
             'gym_id' => $gym->id,
         ]);
-        $gymOwnerRole->syncPermissions($allPermissions);
+        $gymOwnerRole->syncPermissions($gymOwnerPermissions);
+
+        $gymOwnerRole = Role::firstOrCreate([
+            'name' => DefaultRole::MANAGER->value,
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
+        ]);
+        $gymOwnerRole->syncPermissions($gymManagerPermissions);
 
         // Create Trainer role with limited permissions
         $trainerRole = Role::firstOrCreate([

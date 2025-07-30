@@ -2,11 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Enums\DefaultRole;
 use App\Helpers\FeedbackHelper;
 use App\Models\BusinessType;
 use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
+use App\Services\RolesAndPermissionsService;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
@@ -183,14 +185,16 @@ class GymOwnerRegister extends Component
                 'password' => $this->password,
             ]);
 
-            // Assign gym_owner role
-            $user->assignRole('gym_owner');
-
             // Create Gym with unique slug
             $gym = Gym::create([
                 'name' => $this->gym_name,
                 'slug' => Gym::generateUniqueSlug($this->gym_name),
             ]);
+
+            app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+            // Assign gym_owner role
+            $user->assignRole(DefaultRole::GYM_OWNER->value);
 
             // Create Address for Gym
             $gym->address()->create([
