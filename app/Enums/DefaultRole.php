@@ -13,7 +13,6 @@ enum DefaultRole: string implements HasLabel
     case RECEPTIONIST = 'receptionist';
     case TRAINER = 'trainer';
     case GYM_MEMBER = 'gym_member';
-    case TESTER = 'tester';
 
     public function getLabel(): string
     {
