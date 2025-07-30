@@ -29,6 +29,11 @@ class RegisterGym extends RegisterTenant
         return 'Register Gym';
     }
 
+    public static function canView(): bool
+    {
+        return true;
+    }
+
     public function form(Form $form): Form
     {
         return $form
