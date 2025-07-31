@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\PermissionCategory;
 use App\Models\Permission;
 use Exception;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 
@@ -28,11 +27,12 @@ class PermissionDescriptionSeeder extends Seeder
                 'membership_plan' => 'Memberships',
                 'trainer' => 'Trainer',
                 'receptionist' => 'Receptionist',
-                // 'payment',
+                'payment' => 'Payment',
                 // 'equipment',
                 // 'workout',
                 // 'schedule',
                 'attendance' => 'Attendance',
+                'manager' => 'Manager',
                 // 'subscription',
                 // 'invoice',
                 // 'report',
@@ -58,20 +58,20 @@ class PermissionDescriptionSeeder extends Seeder
             foreach ($resources as $resourceKey => $resource) {
                 foreach ($resourceActions as $action) {
 
-                    $permissionName = $action . '_' . $resourceKey;
-                    $displayName = ucwords(str_replace(['_', '-'], ' ', $action . '_' . $resource));
-                    $description = ucwords(str_replace(['_', '-'], ' ', 'can_' . $displayName));
+                    $permissionName = $action.'_'.$resourceKey;
+                    $displayName = ucwords(str_replace(['_', '-'], ' ', $action.'_'.$resource));
+                    $description = ucwords(str_replace(['_', '-'], ' ', 'can_'.$displayName));
                     $category = PermissionCategory::tryFrom($resourceKey)->value ?? null;
 
                     // dd($permissionName, $displayName, $description, $category);
 
                     $permission = Permission::updateOrCreate([
                         'name' => $permissionName,
-                        'guard_name' => 'web'
+                        'guard_name' => 'web',
                     ], [
                         'display_name' => $displayName,
                         'description' => $description,
-                        'category' => $category
+                        'category' => $category,
                     ]);
                     // $allPermissions[] = $permission;
                 }
@@ -130,14 +130,14 @@ class PermissionDescriptionSeeder extends Seeder
             ];
 
             foreach ($filamentPermissions as $permissionName => $category) {
-                $description = 'can_' . $permissionName;
+                $description = 'can_'.$permissionName;
                 Permission::updateOrCreate([
                     'name' => $permissionName,
-                    'guard_name' => 'web'
+                    'guard_name' => 'web',
                 ], [
                     'display_name' => ucwords(str_replace(['_', '-'], ' ', $permissionName)),
                     'description' => ucwords(str_replace(['_', '-'], ' ', $description)),
-                    'category' => PermissionCategory::tryFrom($category)->value ?? null
+                    'category' => PermissionCategory::tryFrom($category)->value ?? null,
                 ]);
             }
         } catch (Exception $e) {

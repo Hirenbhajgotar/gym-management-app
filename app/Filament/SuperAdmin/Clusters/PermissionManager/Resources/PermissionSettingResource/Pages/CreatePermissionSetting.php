@@ -14,4 +14,10 @@ class CreatePermissionSetting extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    // protected function mutateFormDataBeforeCreate(array $data): array
+    // {
+    //     $data['default_permissions'] = PermissionSettingResource::extractPermissionsFromFormData($data);
+    //     return $data;
+    // }
 }

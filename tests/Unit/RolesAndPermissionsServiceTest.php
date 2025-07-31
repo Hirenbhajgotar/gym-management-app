@@ -1,0 +1,225 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Enums\DefaultRole;
+use App\Enums\PermissionCategory;
+use App\Models\Gym;
+use App\Models\PermissionSetting;
+use App\Models\User;
+use App\Services\RolesAndPermissionsService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
+use App\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class RolesAndPermissionsServiceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected RolesAndPermissionsService $service;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->service = new RolesAndPermissionsService();
+    }
+
+    /** @test */
+    public function it_creates_default_tenant_roles_for_a_gym()
+    {
+        // Create a user and gym
+        $user = User::factory()->create();
+        $gym = Gym::factory()->create();
+
+        // Create permissions first (required for the syncPermissions call)
+        $permissions = [
+            'view_any_user',
+            'view_user',
+            'create_user',
+            'update_user',
+            'delete_user'
+        ];
+
+        foreach ($permissions as $permissionName) {
+            Permission::create([
+                'name' => $permissionName,
+                'guard_name' => 'web'
+            ]);
+        }
+
+        // Create a permission setting for gym_owner role
+        PermissionSetting::create([
+            'role' => 'gym_owner',
+            'default_permissions' => $permissions
+        ]);
+
+        // Call the service method
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assert that roles were created for the gym
+        $tenantRoles = DefaultRole::tenantRoles();
+        foreach ($tenantRoles as $role) {
+            $this->assertDatabaseHas('roles', [
+                'name' => $role->value,
+                'guard_name' => 'web',
+                'gym_id' => $gym->id
+            ]);
+        }
+
+        // Assert that permissions were assigned to the gym_owner role
+        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $this->assertNotNull($gymOwnerRole);
+        $this->assertCount(count($permissions), $gymOwnerRole->permissions);
+    }
+
+    /** @test */
+    public function it_does_not_create_roles_when_user_is_null()
+    {
+        $gym = Gym::factory()->create();
+
+        // Call the service method with null user
+        $this->service->createDefaultTenantRolesAndAssignPermissions(null, $gym);
+
+        // Assert that no roles were created
+        $this->assertDatabaseMissing('roles', [
+            'gym_id' => $gym->id
+        ]);
+    }
+
+    /** @test */
+    public function it_does_not_create_roles_when_gym_is_null()
+    {
+        $user = User::factory()->create();
+
+        // Call the service method with null gym
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user, null);
+
+        // Assert that no roles were created
+        $this->assertDatabaseCount('roles', 0);
+    }
+
+    /** @test */
+    public function it_does_not_create_roles_when_both_user_and_gym_are_null()
+    {
+        // Call the service method with null user and gym
+        $this->service->createDefaultTenantRolesAndAssignPermissions(null, null);
+
+        // Assert that no roles were created
+        $this->assertDatabaseCount('roles', 0);
+    }
+
+    /** @test */
+    public function it_assigns_permissions_to_roles_based_on_permission_settings()
+    {
+        // Create a user and gym
+        $user = User::factory()->create();
+        $gym = Gym::factory()->create();
+
+        // Create permissions
+        $permissions = [
+            'view_any_user',
+            'view_user',
+            'create_user'
+        ];
+
+        foreach ($permissions as $permissionName) {
+            Permission::create([
+                'name' => $permissionName,
+                'guard_name' => 'web'
+            ]);
+        }
+
+        // Create permission settings for all tenant roles
+        $tenantRoles = DefaultRole::tenantRoles();
+        foreach ($tenantRoles as $role) {
+            PermissionSetting::create([
+                'role' => $role->value,
+                'default_permissions' => $permissions
+            ]);
+        }
+
+        // Call the service method
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assert that each role has the correct permissions
+        foreach ($tenantRoles as $role) {
+            $roleModel = Role::where('name', $role->value)->where('gym_id', $gym->id)->first();
+            $this->assertNotNull($roleModel);
+            $this->assertCount(count($permissions), $roleModel->permissions);
+        }
+    }
+
+    /** @test */
+    public function it_handles_roles_without_permission_settings()
+    {
+        // Create a user and gym
+        $user = User::factory()->create();
+        $gym = Gym::factory()->create();
+
+        // Create permissions
+        Permission::create([
+            'name' => 'view_any_user',
+            'guard_name' => 'web'
+        ]);
+
+        // Create a permission setting for only one role
+        PermissionSetting::create([
+            'role' => 'manager',
+            'default_permissions' => ['view_any_user']
+        ]);
+
+        // Call the service method
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assert that all roles were created
+        $tenantRoles = DefaultRole::tenantRoles();
+        foreach ($tenantRoles as $role) {
+            $this->assertDatabaseHas('roles', [
+                'name' => $role->value,
+                'guard_name' => 'web',
+                'gym_id' => $gym->id
+            ]);
+        }
+
+        // Assert that only the manager role has permissions
+        $managerRole = Role::where('name', 'manager')->where('gym_id', $gym->id)->first();
+        $this->assertNotNull($managerRole);
+        $this->assertCount(1, $managerRole->permissions);
+
+        // Assert that other roles have no permissions
+        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $this->assertNotNull($gymOwnerRole);
+        $this->assertCount(0, $gymOwnerRole->permissions);
+    }
+
+    /** @test */
+    public function it_handles_empty_permission_settings()
+    {
+        // Create a user and gym
+        $user = User::factory()->create();
+        $gym = Gym::factory()->create();
+
+        // Create a permission setting with empty permissions
+        PermissionSetting::create([
+            'role' => 'gym_owner',
+            'default_permissions' => []
+        ]);
+
+        // Call the service method
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assert that roles were created
+        $this->assertDatabaseHas('roles', [
+            'name' => 'gym_owner',
+            'guard_name' => 'web',
+            'gym_id' => $gym->id
+        ]);
+
+        // Assert that the role has no permissions
+        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $this->assertNotNull($gymOwnerRole);
+        $this->assertCount(0, $gymOwnerRole->permissions);
+    }
+}

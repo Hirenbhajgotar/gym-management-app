@@ -16,7 +16,8 @@ class RegisterGym extends RegisterTenant
 {
     protected static string $view = 'filament.admin.pages.register-gym';
 
-    public $totalGyms = 10; // Maximum gyms allowed per owner
+    public int $totalGyms = 10; // Maximum gyms allowed per owner
+
     public $authUserGyms = 0;
 
     public function __construct()
@@ -74,6 +75,7 @@ class RegisterGym extends RegisterTenant
     protected function hasReachedGymLimit(): bool
     {
         $gymCount = $this->authUserGyms;
+
         // $gymCount = Gym::where('owner_id', auth()->id())->count();
         return $gymCount >= $this->totalGyms;
     }
@@ -85,7 +87,7 @@ class RegisterGym extends RegisterTenant
         $remaining = $this->totalGyms - $currentCount;
 
         if ($remaining <= 0) {
-            return '⚠️ You have reached the maximum limit of ' . $this->totalGyms . ' gyms. Contact support to register more gyms.';
+            return '⚠️ You have reached the maximum limit of '.$this->totalGyms.' gyms. Contact support to register more gyms.';
         }
 
         return "📍 You can register {$remaining} more gym(s). Current: {$currentCount}/{$this->totalGyms}";
@@ -127,7 +129,6 @@ class RegisterGym extends RegisterTenant
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
         $gym->users()->attach(auth()->user(), ['role' => DefaultRole::GYM_OWNER->value]);
-
 
         // Show success notification with remaining count
         $remainingCount = 2 - $this->authUserGyms;

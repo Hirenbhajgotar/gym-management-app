@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Enums\DefaultRole;
+use App\Enums\PermissionCategory;
 use App\Models\Gym;
+use App\Models\Permission;
 use App\Models\PermissionSetting;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
@@ -12,10 +14,6 @@ class RolesAndPermissionsService
 {
     /**
      * Create default roles for a gym tenant.
-     *
-     * @param User|null $user
-     * @param Gym|null $tenant
-     * @return void
      */
     public function createDefaultTenantRolesAndAssignPermissions(?User $user = null, ?Gym $tenant = null): void
     {
@@ -26,12 +24,12 @@ class RolesAndPermissionsService
         // Get all tenant-specific roles
         $roles = DefaultRole::tenantRoles();
 
-        $roleData = array_map(fn($role) => [
-            'name'         => $role->value,
-            'guard_name'   => 'web',
-            'gym_id'       => $tenant->id,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+        $roleData = array_map(fn ($role) => [
+            'name' => $role->value,
+            'guard_name' => 'web',
+            'gym_id' => $tenant->id,
+            'created_at' => now(),
+            'updated_at' => now(),
         ], $roles);
 
         // Use bulk insert to minimize DB queries
@@ -48,5 +46,109 @@ class RolesAndPermissionsService
                 $roleModel->syncPermissions($permissionSetting->default_permissions);
             }
         }
+    }
+
+    public function getDefaultPermissions(?string $role = null)
+    {
+        $permissionsData = $this->getPermissions();
+
+        $data = [];
+        foreach ($permissionsData as $userRole => $rolePermissions) {
+            $data[$userRole] = [];
+
+            foreach ($rolePermissions as $category => $permissions) {
+                // Extract permission names from each category and merge them
+                $permissionNames = collect($permissions)->pluck('name')->toArray();
+                $data[$userRole] = array_merge($data[$userRole], $permissionNames);
+            }
+
+            // Remove duplicates (if any) and reindex array
+            $data[$userRole] = array_values(array_unique($data[$userRole]));
+        }
+
+        if (! $role) {
+            return $data;
+        }
+
+        return $data[$role] ?? $data;
+    }
+
+    public function getPermissions(): array
+    {
+        // Fetch all permissions once and group them by category
+        $permissionsByCategory = Permission::orderBy('category')
+            ->get(['id', 'name', 'category']) // Select only required columns
+            ->groupBy('category')
+            ->toArray();
+
+        // Define roles and their allowed categories
+        $roleCategories = [
+            DefaultRole::GYM_OWNER->value => $this->getGymOwnersCategories(),
+            DefaultRole::MANAGER->value => $this->getManagerCategories(),
+            DefaultRole::RECEPTIONIST->value => $this->getReceptionistCategories(),
+        ];
+
+        $result = [];
+
+        foreach ($roleCategories as $role => $categories) {
+            $result[$role] = array_intersect_key($permissionsByCategory, array_flip($categories));
+        }
+
+        return $result;
+    }
+
+    public function getGymOwnersCategories(): array
+    {
+        return [
+            PermissionCategory::USER->value,
+            PermissionCategory::PERMISSION->value,
+            PermissionCategory::GYM_MEMBER->value,
+            PermissionCategory::MEMBERSHIP_PLAN->value,
+            PermissionCategory::TRAINER->value,
+            PermissionCategory::RECEPTIONIST->value,
+            PermissionCategory::ATTENDANCE->value,
+            PermissionCategory::WIDGETS->value,
+            PermissionCategory::REPORT->value,
+            PermissionCategory::SETTING->value,
+            PermissionCategory::COMMUNICATION->value,
+            PermissionCategory::GENERAL->value,
+            PermissionCategory::MANAGER->value,
+            PermissionCategory::PAYMENT->value,
+        ];
+    }
+
+    public function getManagerCategories(): array
+    {
+        return [
+            PermissionCategory::USER->value,
+            PermissionCategory::PERMISSION->value,
+            PermissionCategory::GYM_MEMBER->value,
+            PermissionCategory::MEMBERSHIP_PLAN->value,
+            PermissionCategory::TRAINER->value,
+            PermissionCategory::RECEPTIONIST->value,
+            PermissionCategory::ATTENDANCE->value,
+            PermissionCategory::WIDGETS->value,
+            PermissionCategory::REPORT->value,
+            PermissionCategory::SETTING->value,
+            PermissionCategory::COMMUNICATION->value,
+            PermissionCategory::GENERAL->value,
+            PermissionCategory::PAYMENT->value,
+        ];
+    }
+
+    public function getReceptionistCategories(): array
+    {
+        return [
+            PermissionCategory::USER->value,
+            PermissionCategory::GYM_MEMBER->value,
+            PermissionCategory::MEMBERSHIP_PLAN->value,
+            PermissionCategory::TRAINER->value,
+            PermissionCategory::ATTENDANCE->value,
+            PermissionCategory::WIDGETS->value,
+            PermissionCategory::REPORT->value,
+            PermissionCategory::COMMUNICATION->value,
+            PermissionCategory::GENERAL->value,
+            PermissionCategory::PAYMENT->value,
+        ];
     }
 }

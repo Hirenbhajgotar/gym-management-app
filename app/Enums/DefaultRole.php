@@ -69,4 +69,17 @@ enum DefaultRole: string implements HasLabel
             // self::GYM_OWNER,
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function getOwnersRoles(): array
+    {
+        return [
+            self::MANAGER,
+            self::RECEPTIONIST,
+            self::TRAINER,
+            self::GYM_MEMBER,
+        ];
+    }
 }

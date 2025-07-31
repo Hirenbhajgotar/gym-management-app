@@ -7,7 +7,6 @@ use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\RelationManagers;
 use App\Models\Permission as ModelsPermission;
-use App\Models\Permissions;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;

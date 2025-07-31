@@ -6,18 +6,21 @@ use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\RelationManagers;
+use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\Permission;
 use App\Models\PermissionSetting;
 use Filament\Forms;
-use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
+use ValueError;
 
 class PermissionSettingResource extends Resource
 {
@@ -33,58 +36,144 @@ class PermissionSettingResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('role')
-                    ->options(DefaultRole::class)
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->helperText('Enter a unique role name (e.g., manager, trainer).'),
+                Section::make()->schema([
 
-                Forms\Components\Select::make('default_permissions')
-                    ->multiple()
-                    ->options(fn() => Permission::whereNotNull('category')
-                        ->where('category', '!=', '')
-                        ->orderBy('category')
-                        ->orderBy('name')
-                        ->get()
-                        ->groupBy('category')
-                        ->mapWithKeys(function ($permissions, $category) {
-                            return [$category => $permissions->pluck('name', 'name')->toArray()];
-                        })->toArray())
-                    ->searchable()
-                    ->optionsLimit(300)
-                    ->searchingMessage('Searching permissions...')
-                    ->noSearchResultsMessage('No permissions found.')
-                    ->helperText('Select default permissions to assign to this role, grouped by category.'),
+                    Forms\Components\Select::make('role')
+                        ->options(DefaultRole::class)
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->helperText('Enter a unique role name (e.g., manager, trainer).'),
 
-                Forms\Components\Fieldset::make('Default Resources')
-                    ->schema([
-                        Forms\Components\Select::make('default_resources.resources')
-                            ->label('Resources')
-                            ->multiple()
-                            ->options(PermissionCategory::class)
-                            ->default([])
-                            ->helperText('Select resource categories for this role.'),
-                        Forms\Components\Select::make('default_resources.widgets')
-                            ->label('Widgets')
-                            ->multiple()
-                            ->options(PermissionCategory::class)
-                            ->default([])
-                            ->helperText('Select widget categories for this role.'),
-                        Forms\Components\Select::make('default_resources.reports')
-                            ->label('Reports')
-                            ->multiple()
-                            ->options(PermissionCategory::class)
-                            ->default([])
-                            ->helperText('Select report categories for this role.'),
-                        Forms\Components\Select::make('default_resources.other')
-                            ->label('Other')
-                            ->multiple()
-                            ->options(PermissionCategory::class)
-                            ->default([])
-                            ->helperText('Select other categories for this role.'),
-                    ])
-                    ->columns(1),
+                    Forms\Components\Select::make('default_permissions')
+                        ->multiple()
+                        ->options(fn () => Permission::whereNotNull('category')
+                            ->where('category', '!=', '')
+                            ->orderBy('category')
+                            ->orderBy('name')
+                            ->get()
+                            ->groupBy('category')
+                            ->mapWithKeys(function ($permissions, $category) {
+                                return [$category => $permissions->pluck('name', 'name')->toArray()];
+                            })->toArray())
+                        ->searchable()
+                        ->optionsLimit(300)
+                        ->searchingMessage('Searching permissions...')
+                        ->noSearchResultsMessage('No permissions found.')
+                        ->helperText('Select default permissions to assign to this role, grouped by category.'),
+
+                    // Default Permissions (grouped by category)
+                    // Section::make('Default Permissions')->schema(
+                    //     static::buildPermissionsCheckbox(),
+                    // )->collapsible(),
+
+                    Forms\Components\Fieldset::make('Default Resources')
+                        ->schema([
+                            Forms\Components\Select::make('default_resources.resources')
+                                ->label('Resources')
+                                ->multiple()
+                                ->options(PermissionCategory::class)
+                                ->default([])
+                                ->helperText('Select resource categories for this role.'),
+                            Forms\Components\Select::make('default_resources.widgets')
+                                ->label('Widgets')
+                                ->multiple()
+                                ->options(PermissionCategory::class)
+                                ->default([])
+                                ->helperText('Select widget categories for this role.'),
+                            Forms\Components\Select::make('default_resources.reports')
+                                ->label('Reports')
+                                ->multiple()
+                                ->options(PermissionCategory::class)
+                                ->default([])
+                                ->helperText('Select report categories for this role.'),
+                            Forms\Components\Select::make('default_resources.other')
+                                ->label('Other')
+                                ->multiple()
+                                ->options(PermissionCategory::class)
+                                ->default([])
+                                ->helperText('Select other categories for this role.'),
+                        ])
+                        ->columns(1),
+                ]),
             ]);
+    }
+
+    public static function extractPermissionsFromFormData(array $data): array
+    {
+        $permissions = [];
+
+        // Get all category-based permission fields
+        $categoryWisePermissions = Permission::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->get()
+            ->groupBy('category')
+            ->keys()
+            ->toArray();
+
+        foreach ($categoryWisePermissions as $category) {
+            $fieldName = $category.'_permissions';
+            if (isset($data[$fieldName]) && is_array($data[$fieldName])) {
+                $permissions = array_merge($permissions, $data[$fieldName]);
+                // Remove the category-specific field from data to avoid saving it separately
+                unset($data[$fieldName]);
+            }
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    private static function buildPermissionsCheckbox(): array
+    {
+        $categoryWisePermissions = Permission::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('category')
+            ->toArray();
+
+        $checkboxOptions = [];
+        foreach ($categoryWisePermissions as $category => $permissions) {
+            try {
+                $permissionCategory = PermissionCategory::from($category);
+                $categoryName = $permissionCategory->getLabel();
+                $categoryIcon = $permissionCategory->getIcon();
+            } catch (ValueError) {
+                $categoryName = ucfirst(str_replace('_', ' ', $category));
+                $categoryIcon = 'heroicon-o-folder';
+            }
+
+            $options = [];
+            $descriptions = [];
+
+            foreach ($permissions as $permission) {
+                $options[$permission['name']] = $permission['display_name'] ?? ucfirst(str_replace('_', ' ', $permission['name']));
+                $descriptions[$permission['name']] = $permission['description'] ?? '';
+            }
+
+            // dd($options);
+
+            $checkboxOptions[] = CheckboxList::make($category.'_permissions')
+                ->label($categoryName.' Permissions')
+                ->options($options)
+                ->columns(3)
+                ->descriptions($descriptions)
+                ->gridDirection('row')
+                ->bulkToggleable()
+                ->afterStateHydrated(function (CheckboxList $component, ?Model $record) use ($category) {
+                    if ($record && $record->default_permissions) {
+                        // Get permissions for this category from the stored default_permissions
+                        $categoryPermissions = Permission::where('category', $category)
+                            ->pluck('name')
+                            ->toArray();
+
+                        $selectedPermissions = array_intersect($record->default_permissions, $categoryPermissions);
+                        $component->state($selectedPermissions);
+                    }
+                });
+        }
+
+        return $checkboxOptions;
     }
 
     public static function table(Table $table): Table
@@ -111,7 +200,7 @@ class PermissionSettingResource extends Resource
 
                 TextColumn::make('default_permissions')
                     ->label('Default Permissions')
-                    ->getStateUsing(fn($record) => implode(', ', $record->default_permissions ?? []))
+                    ->getStateUsing(fn ($record) => implode(', ', $record->default_permissions ?? []))
                     ->limit(50),
 
                 TextColumn::make('created_at')
@@ -127,9 +216,28 @@ class PermissionSettingResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+
+                    Tables\Actions\Action::make('importPermissions')
+                        ->label('Import Permissions')
+                        ->icon('heroicon-o-cloud-arrow-down')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading(fn ($record) => "Import Permissions for {$record->role->value}")
+                        ->modalDescription('This will import default permissions for this specific role.')
+                        ->action(function ($record) {
+                            ImportDefaultPermissionsJob::dispatch($record->role->value, auth()->id());
+
+                            Notification::make()
+                                ->title('Permissions Import Queued')
+                                ->body("Default permissions are being imported for role: {$record->role->value}")
+                                ->success()
+                                ->send();
+                        }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
