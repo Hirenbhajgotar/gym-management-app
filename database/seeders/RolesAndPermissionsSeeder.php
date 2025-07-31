@@ -7,6 +7,7 @@ use App\Models\Gym;
 use App\Models\Permission as ModelsPermission;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -153,12 +154,24 @@ class RolesAndPermissionsSeeder extends Seeder
             'export_reports',
         ];
 
+        $gymOwnerExceptPermissions = ['access_admin_panel', 'clear_cache', 'run_commands', 'manage_integrations', 'page_system_health'];
+        $filamentManagerPermissions = ['access_admin_panel', 'clear_cache', 'run_commands', 'manage_integrations', 'page_system_health', 'page_register_gym', 'page_edit_gym_profile'];
+
         foreach ($filamentPermissions as $permissionName) {
             $permission = ModelsPermission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web'
             ]);
             $allPermissions[] = $permission;
+
+            // Add gym owner permissions
+            if (!in_array($resource, $gymOwnerExceptPermissions)) {
+                $gymOwnerPermissions[] = $permission;
+            }
+
+            if (!in_array($resource, $filamentManagerPermissions)) {
+                $gymManagerPermissions[] = $permission;
+            }
         }
 
         // Create Super Admin role with all permissions
