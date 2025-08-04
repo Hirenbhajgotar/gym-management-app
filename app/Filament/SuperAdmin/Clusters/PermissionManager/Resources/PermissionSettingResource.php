@@ -6,18 +6,17 @@ use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\RelationManagers;
+use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\Permission;
 use App\Models\PermissionSetting;
 use Filament\Forms;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PermissionSettingResource extends Resource
 {
@@ -127,9 +126,28 @@ class PermissionSettingResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+
+                    Tables\Actions\Action::make('importPermissions')
+                        ->label('Import Permissions')
+                        ->icon('heroicon-o-cloud-arrow-down')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading(fn($record) => "Import Permissions for {$record->role->value}")
+                        ->modalDescription('This will import default permissions for this specific role.')
+                        ->action(function ($record) {
+                            ImportDefaultPermissionsJob::dispatch($record->role->value, auth()->id());
+
+                            Notification::make()
+                                ->title('Permissions Import Queued')
+                                ->body("Default permissions are being imported for role: {$record->role->value}")
+                                ->success()
+                                ->send();
+                        }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

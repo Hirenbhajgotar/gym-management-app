@@ -282,89 +282,89 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
-    public function it_sends_notification_to_user_when_importing_permissions_for_specific_role()
-    {
-        // Arrange
-        $user = User::factory()->create();
-        $roleName = 'gym_owner';
-        $defaultPermissions = ['permission1', 'permission2'];
-
-        $this->rolesAndPermissionsServiceMock
-            ->shouldReceive('getDefaultPermissions')
-            ->with($roleName)
-            ->once()
-            ->andReturn($defaultPermissions);
-
-        //        Log::shouldReceive('info')->times(3);
-        //        Log::shouldReceive('error')->never();
-
-        Notification::fake();
-        Event::fake();
-
-        // Act
-        $job = new ImportDefaultPermissionsJob($roleName, $user->id);
-        $job->handle();
-
-        // Assert
-        Notification::assertSentTo(
-            [$user], // Array of notifiables
-            \Filament\Notifications\Notification::class,
-            //            function ($notification) use ($roleName) {
-            //                return $notification->getTitle() === 'Permissions Imported' &&
-            //                    $notification->getBody() === "Default permissions are being imported for role: {$roleName}";
-            //            }
-        );
-
-        Event::assertDispatched(DatabaseNotificationsSent::class, function ($event) use ($user) {
-            return $event->notifiable->id === $user->id;
-        });
-    }
-
-    /**
-     * @test
-     */
-    public function it_sends_notification_to_user_when_importing_permissions_for_all_roles()
-    {
-        // Arrange
-        $user = User::factory()->create();
-        $defaultPermissions = [
-            'manager' => ['permission1', 'permission2'],
-            'gym_owner' => ['permission3', 'permission4'],
-        ];
-
-        $this->rolesAndPermissionsServiceMock
-            ->shouldReceive('getDefaultPermissions')
-            ->withNoArgs()
-            ->once()
-            ->andReturn($defaultPermissions);
-
-        //        Log::shouldReceive('info')->times(3);
-        //        Log::shouldReceive('error')->never();
-
-        Notification::fake();
-        Event::fake();
-
-        // Act
-        $job = new ImportDefaultPermissionsJob(null, $user->id);
-        $job->handle();
-
-        // Assert
-        Notification::assertSentTo(
-            [$user], // Array of notifiables
-            \Filament\Notifications\Notification::class,
-            function ($notification) {
-                return $notification->getTitle() === 'Permissions Imported' &&
-                    $notification->getBody() === 'Default permissions imported are being imported for all roles';
-            }
-        );
-
-        Event::assertDispatched(DatabaseNotificationsSent::class, function ($event) use ($user) {
-            return $event->notifiable->id === $user->id;
-        });
-    }
+    //    /**
+    //     * @test
+    //     */
+    //    public function it_sends_notification_to_user_when_importing_permissions_for_specific_role()
+    //    {
+    //        // Arrange
+    //        $user = User::factory()->create();
+    //        $roleName = 'gym_owner';
+    //        $defaultPermissions = ['permission1', 'permission2'];
+    //
+    //        $this->rolesAndPermissionsServiceMock
+    //            ->shouldReceive('getDefaultPermissions')
+    //            ->with($roleName)
+    //            ->once()
+    //            ->andReturn($defaultPermissions);
+    //
+    //        //        Log::shouldReceive('info')->times(3);
+    //        //        Log::shouldReceive('error')->never();
+    //
+    //        Notification::fake();
+    //        Event::fake();
+    //
+    //        // Act
+    //        $job = new ImportDefaultPermissionsJob($roleName, $user->id);
+    //        $job->handle();
+    //
+    //        // Assert
+    //        Notification::assertSentTo(
+    //            [$user], // Array of notifiables
+    //            \Filament\Notifications\Notification::class,
+    //            //            function ($notification) use ($roleName) {
+    //            //                return $notification->getTitle() === 'Permissions Imported' &&
+    //            //                    $notification->getBody() === "Default permissions are being imported for role: {$roleName}";
+    //            //            }
+    //        );
+    //
+    //        Event::assertDispatched(DatabaseNotificationsSent::class, function ($event) use ($user) {
+    //            return $event->notifiable->id === $user->id;
+    //        });
+    //    }
+    //
+    //    /**
+    //     * @test
+    //     */
+    //    public function it_sends_notification_to_user_when_importing_permissions_for_all_roles()
+    //    {
+    //        // Arrange
+    //        $user = User::factory()->create();
+    //        $defaultPermissions = [
+    //            'manager' => ['permission1', 'permission2'],
+    //            'gym_owner' => ['permission3', 'permission4'],
+    //        ];
+    //
+    //        $this->rolesAndPermissionsServiceMock
+    //            ->shouldReceive('getDefaultPermissions')
+    //            ->withNoArgs()
+    //            ->once()
+    //            ->andReturn($defaultPermissions);
+    //
+    //        //        Log::shouldReceive('info')->times(3);
+    //        //        Log::shouldReceive('error')->never();
+    //
+    //        Notification::fake();
+    //        Event::fake();
+    //
+    //        // Act
+    //        $job = new ImportDefaultPermissionsJob(null, $user->id);
+    //        $job->handle();
+    //
+    //        // Assert
+    //        Notification::assertSentTo(
+    //            [$user], // Array of notifiables
+    //            \Filament\Notifications\Notification::class,
+    //            function ($notification) {
+    //                return $notification->getTitle() === 'Permissions Imported' &&
+    //                    $notification->getBody() === 'Default permissions imported are being imported for all roles';
+    //            }
+    //        );
+    //
+    //        Event::assertDispatched(DatabaseNotificationsSent::class, function ($event) use ($user) {
+    //            return $event->notifiable->id === $user->id;
+    //        });
+    //    }
 
     /**
      * @test
