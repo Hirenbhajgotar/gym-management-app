@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Pages\Tenancy;
 use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
+use App\Services\RolesAndPermissionsService;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -48,9 +49,9 @@ class RegisterGym extends RegisterTenant
                             ->autofocus()
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state, $context) {
-                                // if ($context === 'create') {
-                                // }
-                                $set('slug', Gym::generateUniqueSlug($state));
+                                if ($state) {
+                                    $set('slug', Gym::generateUniqueSlug($state));
+                                }
                             })
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
@@ -76,18 +77,16 @@ class RegisterGym extends RegisterTenant
     {
         $gymCount = $this->authUserGyms;
 
-        // $gymCount = Gym::where('owner_id', auth()->id())->count();
         return $gymCount >= $this->totalGyms;
     }
 
     protected function getGymLimitDescription(): string
     {
-        // $currentCount = Gym::where('owner_id', auth()->id())->count();
         $currentCount = $this->authUserGyms;
         $remaining = $this->totalGyms - $currentCount;
 
         if ($remaining <= 0) {
-            return '⚠️ You have reached the maximum limit of '.$this->totalGyms.' gyms. Contact support to register more gyms.';
+            return '⚠️ You have reached the maximum limit of ' . $this->totalGyms . ' gyms. Contact support to register more gyms.';
         }
 
         return "📍 You can register {$remaining} more gym(s). Current: {$currentCount}/{$this->totalGyms}";
@@ -125,10 +124,17 @@ class RegisterGym extends RegisterTenant
             throw new \Exception('Gym limit exceeded. Cannot register more than 3 gyms.');
         }
 
+        $user = auth()->user();
+
         $gym = Gym::create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
-        $gym->users()->attach(auth()->user(), ['role' => DefaultRole::GYM_OWNER->value]);
+        $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
+
+        app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assign gym_owner role
+        $user->assignRole(DefaultRole::GYM_OWNER->value);
 
         // Show success notification with remaining count
         $remainingCount = 2 - $this->authUserGyms;

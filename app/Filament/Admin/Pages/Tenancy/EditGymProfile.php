@@ -34,8 +34,6 @@ class EditGymProfile extends EditTenantProfile
                             ->autofocus()
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state, $context) {
-                                // if ($context === 'create') {
-                                // }
                                 $set('slug', Gym::generateUniqueSlug($state));
                             })
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
