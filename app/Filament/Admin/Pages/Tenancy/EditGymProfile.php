@@ -63,7 +63,6 @@ class EditGymProfile extends EditTenantProfile
         $redirectUrl = route($this->getRouteName(), ['tenant' => $this->tenant->slug]);
 
         $this->redirect($redirectUrl);
-        // $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
     }
 
     protected function getSavedNotification(): ?Notification
