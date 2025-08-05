@@ -28,6 +28,7 @@ class PermissionDescriptionSeeder extends Seeder
                 'trainer' => 'Trainer',
                 'receptionist' => 'Receptionist',
                 'payment' => 'Payment',
+                'permission' => 'Permission',
                 // 'equipment',
                 // 'workout',
                 // 'schedule',
@@ -58,9 +59,9 @@ class PermissionDescriptionSeeder extends Seeder
             foreach ($resources as $resourceKey => $resource) {
                 foreach ($resourceActions as $action) {
 
-                    $permissionName = $action.'_'.$resourceKey;
-                    $displayName = ucwords(str_replace(['_', '-'], ' ', $action.'_'.$resource));
-                    $description = ucwords(str_replace(['_', '-'], ' ', 'can_'.$displayName));
+                    $permissionName = $action . '_' . $resourceKey;
+                    $displayName = ucwords(str_replace(['_', '-'], ' ', $action . '_' . $resource));
+                    $description = ucwords(str_replace(['_', '-'], ' ', 'can_' . $displayName));
                     $category = PermissionCategory::tryFrom($resourceKey)->value ?? null;
 
                     // dd($permissionName, $displayName, $description, $category);
@@ -130,7 +131,7 @@ class PermissionDescriptionSeeder extends Seeder
             ];
 
             foreach ($filamentPermissions as $permissionName => $category) {
-                $description = 'can_'.$permissionName;
+                $description = 'can_' . $permissionName;
                 Permission::updateOrCreate([
                     'name' => $permissionName,
                     'guard_name' => 'web',

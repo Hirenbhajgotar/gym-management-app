@@ -10,6 +10,7 @@ use App\Models\PermissionSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsService
 {
@@ -166,7 +167,18 @@ class RolesAndPermissionsService
             ->first();
 
         if ($role) {
+            $permissionRegistrar = app(PermissionRegistrar::class);
+
+            $permissionRegistrar->forgetCachedPermissions();
+
             setPermissionsTeamId($tenant->id);
+
+            if ($user) {
+                $user->forgetCachedPermissions();
+                // Reload user's roles to ensure role checks use the updated team context
+                $user->load('roles');
+            }
+
             // Assign the role to the user
             $user->assignRole($role);
 

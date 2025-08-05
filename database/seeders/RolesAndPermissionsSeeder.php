@@ -48,6 +48,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manager',
             'attendance',
             'payment',
+            'permission',
             // 'equipment',
             // 'workout',
             // 'schedule',
@@ -90,7 +91,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $allPermissions[] = $permission;
 
                 // Add gym owner permissions
-                if (in_array($resource, ['user', 'trainer', 'receptionist', 'manager', 'gym_member', 'gym', 'membership_plan', 'attendance', 'payment'])) {
+                if (in_array($resource, ['user', 'trainer', 'receptionist', 'manager', 'gym_member', 'gym', 'membership_plan', 'attendance', 'payment', 'permission'])) {
                     $gymOwnerPermissions[] = $permission;
                 }
 
