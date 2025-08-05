@@ -8,6 +8,7 @@ use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\PermissionSetting;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Spatie\Permission\Models\Role;
 
 class RolesAndPermissionsService
@@ -24,7 +25,7 @@ class RolesAndPermissionsService
         // Get all tenant-specific roles
         $roles = DefaultRole::tenantRoles();
 
-        $roleData = array_map(fn ($role) => [
+        $roleData = array_map(fn($role) => [
             'name' => $role->value,
             'guard_name' => 'web',
             'gym_id' => $tenant->id,
@@ -150,5 +151,28 @@ class RolesAndPermissionsService
             PermissionCategory::GENERAL->value,
             PermissionCategory::PAYMENT->value,
         ];
+    }
+
+    /**
+     * Assigns a role to a user for a given gym.
+     *
+     * @throws \Exception If the role does not exist for the given gym.
+     */
+    public function assignRoleToTenant(Gym $tenant, User $user, DefaultRole $roleName): void
+    {
+        // Ensure the role exists for the tenant
+        $role = Role::where('name', $roleName->value)
+            ->where('gym_id', $tenant->id)
+            ->first();
+
+        if ($role) {
+            setPermissionsTeamId($tenant->id);
+            // Assign the role to the user
+            $user->assignRole($role);
+
+            // setPermissionsTeamId(Filament::getTenantId());
+        } else {
+            throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
+        }
     }
 }

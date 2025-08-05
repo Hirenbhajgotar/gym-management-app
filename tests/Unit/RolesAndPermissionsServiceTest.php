@@ -11,7 +11,7 @@ use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use App\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase
@@ -20,11 +20,25 @@ class RolesAndPermissionsServiceTest extends TestCase
 
     protected RolesAndPermissionsService $service;
 
+    protected $userMock;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->service = new RolesAndPermissionsService();
+
+        $this->app->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Mock the User
+        // $this->userMock = Mockery::mock(User::class);
+        // $this->app->instance(User::class, $this->userMock);
     }
+
+    // protected function tearDown(): void
+    // {
+    //     Mockery::close();
+    //     parent::tearDown();
+    // }
 
     /** @test */
     public function it_creates_default_tenant_roles_for_a_gym()
@@ -221,5 +235,46 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(0, $gymOwnerRole->permissions);
+    }
+
+    /** @test */
+    public function it_assigns_role_to_user_when_role_exists()
+    {
+        // Arrange: Create gym, user, and role
+        $gym = Gym::factory()->create();
+        $user = User::factory()->create();
+        $role = Role::factory()->create([
+            'name' => DefaultRole::GYM_OWNER->value,
+            'gym_id' => $gym->id,
+        ]);
+
+        // Act: Call the method
+        $this->service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
+
+        // Assert: Check that user has the role assigned
+        $this->assertTrue($user->hasRole($role->name));
+
+        // Or check the pivot table directly if you prefer
+        $this->assertDatabaseHas('model_has_roles', [
+            'role_id' => $role->id,
+            'model_type' => User::class,
+            'model_id' => $user->id,
+        ]);
+    }
+
+    /** @test */
+    public function it_throws_exception_when_role_does_not_exist()
+    {
+        // Arrange: Create gym and user, no role
+        $gym = Gym::factory()->create();
+        $user = User::factory()->create();
+
+        $service = new RolesAndPermissionsService();
+
+        // Act & Assert: Expect exception when role is missing
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Role " . DefaultRole::GYM_OWNER->value . " does not exist for this tenant.");
+
+        $service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
     }
 }

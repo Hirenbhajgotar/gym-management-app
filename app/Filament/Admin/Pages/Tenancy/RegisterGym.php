@@ -48,6 +48,7 @@ class RegisterGym extends RegisterTenant
                             ->placeholder('e.g., Fitness Hub')
                             ->autofocus()
                             ->reactive()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(function (callable $set, $state, $context) {
                                 if ($state) {
                                     $set('slug', Gym::generateUniqueSlug($state));
@@ -131,10 +132,11 @@ class RegisterGym extends RegisterTenant
         // Associate the user with the new gym and assign the 'gym_owner' role.
         $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
 
+        // Create default roles and permissions for the gym
         app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
-        // Assign gym_owner role
-        $user->assignRole(DefaultRole::GYM_OWNER->value);
+        // Assign the gym to the user
+        app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
         // Show success notification with remaining count
         $remainingCount = 2 - $this->authUserGyms;

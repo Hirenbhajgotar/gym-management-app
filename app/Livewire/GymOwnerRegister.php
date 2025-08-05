@@ -193,10 +193,11 @@ class GymOwnerRegister extends Component
                 'slug' => Gym::generateUniqueSlug($this->gym_name),
             ]);
 
+            // Create default roles and permissions for the gym
             app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
-            // Assign gym_owner role
-            $user->assignRole(DefaultRole::GYM_OWNER->value);
+            // Assign the gym to the user
+            app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
             // Create Address for Gym
             $gym->address()->create([
@@ -238,7 +239,7 @@ class GymOwnerRegister extends Component
                 $superAdmin->notify(new UserActionNotification('created', $user, "Gym: {$gym->name}"));
 
                 Notification::make()
-                    ->title('New Business Added - '.$gym->name)
+                    ->title('New Business Added - ' . $gym->name)
                     ->body("A new business '{$gym->name}' has been registered by '{$user->name}'. Please review their application.")
                     ->success()
                     ->sendToDatabase($superAdmin)
@@ -265,7 +266,7 @@ class GymOwnerRegister extends Component
             2 => 'Business Information',
             3 => 'Location Details',
             4 => 'Additional Information',
-            default => 'Step '.$step
+            default => 'Step ' . $step
         };
     }
 
