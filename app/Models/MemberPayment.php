@@ -16,6 +16,7 @@ class MemberPayment extends Model
     use LogsActivity, HasFactory;
 
     protected $fillable = [
+        'gym_id',
         'member_id',
         'membership_plan_id',
         'amount',
@@ -62,9 +63,9 @@ class MemberPayment extends Model
         return $this->belongsTo(GymMember::class);
     }
 
-    public function gym(): HasOneThrough
+    public function gym(): BelongsTo
     {
-        return $this->hasOneThrough(Gym::class, GymMember::class, 'id', 'id', 'gym_member_id', 'gym_id');
+        return $this->belongsTo(Gym::class, 'gym_id');
     }
 
     public function membershipPlan(): BelongsTo

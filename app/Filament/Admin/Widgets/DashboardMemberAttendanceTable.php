@@ -22,7 +22,7 @@ class DashboardMemberAttendanceTable extends BaseWidget
 
     protected static ?string $pollingInterval = '900s';
 
-    protected static ?int $sort = 6;
+    protected static ?int $sort = 7;
 
     public function table(Table $table): Table
     {

@@ -11,7 +11,7 @@ class DashboardMemberAttendance extends BaseAttendanceStats
 {
     protected static ?string $pollingInterval = '900s'; // Refresh every 60 seconds
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 6;
 
     protected function getAttendanceableType(): string
     {

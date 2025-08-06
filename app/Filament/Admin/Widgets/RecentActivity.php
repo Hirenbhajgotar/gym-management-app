@@ -18,7 +18,7 @@ class RecentActivity extends BaseWidget
 
     protected int | string | array $columnSpan = 'full';
 
-    protected static ?int $sort = 7;
+    protected static ?int $sort = 1000;
 
     public static function canView(): bool
     {

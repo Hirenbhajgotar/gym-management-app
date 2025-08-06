@@ -178,4 +178,19 @@ class GymMember extends Model
     {
         return $this->currentAttendance() !== null;
     }
+
+    public function scopeMembershipActive($query)
+    {
+        return $query->where('membership_end', '>=', today());
+    }
+
+    public function scopeMembershipExpired($query)
+    {
+        return $query->where('membership_end', '<', today());
+    }
+
+    public function scopeHasTrainer($query)
+    {
+        return $query->whereNotNull('trainer_id');
+    }
 }

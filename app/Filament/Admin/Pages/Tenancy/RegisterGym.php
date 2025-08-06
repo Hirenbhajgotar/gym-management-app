@@ -138,23 +138,6 @@ class RegisterGym extends RegisterTenant
         // Assign the gym to the user
         app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
-        // Show success notification with remaining count
-        $remainingCount = 2 - $this->authUserGyms;
-
-        if ($remainingCount > 0) {
-            Notification::make()
-                ->title('Gym Registered Successfully!')
-                ->body("You can register {$remainingCount} more gym(s).")
-                ->success()
-                ->send();
-        } else {
-            Notification::make()
-                ->title('Gym Registered Successfully!')
-                ->body('You have reached the maximum limit of 3 gyms.')
-                ->success()
-                ->send();
-        }
-
         return $gym;
     }
 }
