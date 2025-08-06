@@ -15,6 +15,10 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-enable pcntl
 
 
+# ✅ Install Redis using PECL
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

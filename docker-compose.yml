@@ -43,6 +43,14 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:alpine
+    container_name: gym-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: gym-phpmyadmin
