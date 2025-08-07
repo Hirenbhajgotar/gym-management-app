@@ -3,13 +3,11 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
-use App\Filament\Exports\TrainerExporter;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
-use App\Models\Gym;
+use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -25,7 +23,6 @@ class TrainerResource extends Resource
 
     protected static ?string $navigationGroup = 'Users';
 
-
     public static function canAccess(array $parameters = []): bool
     {
         if (filament()->getId() === 'admin' || filament()->getId() === 'staff') {
@@ -40,6 +37,7 @@ class TrainerResource extends Resource
     {
         $modelClass = static::$model;
         $query = $modelClass::query();
+
         return $query->count();
     }
 
@@ -250,9 +248,10 @@ class TrainerResource extends Resource
                     ->relationship('gym', 'name', function ($query) {
                         if (filament()->getId() === 'admin') {
                             return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
-                        } else if (filament()->getId() === 'staff') {
+                        } elseif (filament()->getId() === 'staff') {
                             return $query->whereIn('id', Auth::guard('staff')->user()?->gyms()->get()->pluck('id'));
                         }
+
                         return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
                     })
                     ->label('Gym'),

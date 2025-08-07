@@ -4,8 +4,12 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
+use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Resources\ManagerResource\Pages;
+use App\Filament\Exports\ManagerExporter;
 use Filament\Tables;
+use Filament\Actions;
+use Illuminate\Database\Eloquent\Builder;
 
 class ManagerResource extends BaseEmployeeResource
 {
@@ -61,6 +65,34 @@ class ManagerResource extends BaseEmployeeResource
             Tables\Actions\ViewAction::make(),
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),
+        ];
+    }
+
+    /**
+     * Header actions that are common to all Manager resource pages.
+     *
+     * @return array
+     */
+    public static function getCommonHeaderActions(): array
+    {
+        return [
+            // Permissions action 
+            Actions\Action::make('managePermissions')
+                ->label('Manage Permissions')
+                ->color('info')
+                ->icon('heroicon-o-key')
+                ->outlined()
+                ->url(fn(): string => ManagerPermissionsPage::getUrl()),
+
+            // Export action
+            Actions\ExportAction::make()
+                ->label('Export ' . static::getPluralLabel())
+                ->icon('heroicon-o-arrow-up-tray')
+                ->exporter(ManagerExporter::class)
+                ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+
+            // Create action
+            Actions\CreateAction::make(),
         ];
     }
 }

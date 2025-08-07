@@ -4,8 +4,12 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
+use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Filament\Admin\Resources\ReceptionistResource\Pages;
+use App\Filament\Exports\ReceptionistExporter;
 use Filament\Tables;
+use Filament\Actions;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReceptionistResource extends BaseEmployeeResource
 {
@@ -61,6 +65,34 @@ class ReceptionistResource extends BaseEmployeeResource
             Tables\Actions\ViewAction::make(),
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),
+        ];
+    }
+
+    /**
+     * Header actions that are common to all Receptionist resource pages.
+     *
+     * @return array
+     */
+    public static function getCommonHeaderActions(): array
+    {
+        return [
+            // Permissions action
+            Actions\Action::make('managePermissions')
+                ->label('Manage Permissions')
+                ->color('info')
+                ->icon('heroicon-o-key')
+                ->outlined()
+                ->url(fn(): string => ReceptionistPermissionsPage::getUrl()),
+
+            // Export action
+            Actions\ExportAction::make()
+                ->label('Export ' . static::getPluralLabel())
+                ->icon('heroicon-o-arrow-up-tray')
+                ->exporter(ReceptionistExporter::class)
+                ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+
+            // Create action
+            Actions\CreateAction::make(),
         ];
     }
 }

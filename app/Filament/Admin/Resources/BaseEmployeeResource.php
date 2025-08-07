@@ -412,4 +412,5 @@ abstract class BaseEmployeeResource extends Resource
     abstract protected static function getSalaryPrefix(): string;
     abstract protected static function getSkillsOptions(): array;
     abstract protected static function getTableActions(): array;
+    abstract public static function getCommonHeaderActions(): array;
 }
