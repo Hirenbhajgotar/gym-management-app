@@ -313,178 +313,154 @@ class GymMemberResource extends Resource
                 //         ]),
                 // ]),
             ])
-            ->headerActions([
-                Tables\Actions\Action::make('export_members')
-                    ->label('Export Members')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->form(function () {
-                        $user = auth()->user();
-                        $gymCount = 0;
-                        if (filament()->getId() === 'admin') {
-                            $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
-                        } else if (filament()->getId() === 'staff') {
-                            $gymCount = $user->gyms()->count();
-                        }
+            // ->headerActions([
+            //     Tables\Actions\Action::make('export_members')
+            //         ->label('Export Members')
+            //         ->icon('heroicon-o-arrow-down-tray')
+            //         ->color('success')
+            //         ->form(function () {
+            //             $user = auth()->user();
+            //             $gymCount = 0;
+            //             if (filament()->getId() === 'admin') {
+            //                 $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
+            //             } else if (filament()->getId() === 'staff') {
+            //                 $gymCount = $user->gyms()->count();
+            //             }
 
-                        if ($gymCount > 1) {
-                            return [
-                                Forms\Components\Select::make('gym_id')
-                                    ->label('Select Gym')
-                                    ->options(function () {
-                                        return auth()->user()->gyms()->get()->pluck('name', 'id');
-                                    })
-                                    ->required()
-                                    ->placeholder('Choose a gym to export members'),
-                            ];
-                        }
+            //             if ($gymCount > 1) {
+            //                 return [
+            //                     Forms\Components\Select::make('gym_id')
+            //                         ->label('Select Gym')
+            //                         ->options(function () {
+            //                             return auth()->user()->gyms()->get()->pluck('name', 'id');
+            //                         })
+            //                         ->required()
+            //                         ->placeholder('Choose a gym to export members'),
+            //                 ];
+            //             }
 
-                        return [];
-                    })
-                    ->action(function (array $data) {
-                        $user = auth()->user();
-                        $gymId = null;
+            //             return [];
+            //         })
+            //         ->action(function (array $data) {
+            //             $user = auth()->user();
+            //             $gymId = null;
 
-                        if (filament()->getId() === 'admin') {
-                            if ($user->hasRole('gym_owner')) {
-                                $gymCount = $user->gyms()->count();
-                                if ($gymCount > 1) {
-                                    $gymId = $data['gym_id'];
-                                } else {
-                                    $gymId = $user->gyms()->first()?->id;
-                                }
-                            }
-                        } else if (filament()->getId() === 'staff') {
-                            $gymCount = $user->gyms()->count();
-                            if ($gymCount > 1) {
-                                $gymId = $data['gym_id'];
-                            } else {
-                                $gymId = $user->gyms()->first()?->id;
-                            }
-                        }
+            //             if (filament()->getId() === 'admin') {
+            //                 if ($user->hasRole('gym_owner')) {
+            //                     $gymCount = $user->gyms()->count();
+            //                     if ($gymCount > 1) {
+            //                         $gymId = $data['gym_id'];
+            //                     } else {
+            //                         $gymId = $user->gyms()->first()?->id;
+            //                     }
+            //                 }
+            //             } else if (filament()->getId() === 'staff') {
+            //                 $gymCount = $user->gyms()->count();
+            //                 if ($gymCount > 1) {
+            //                     $gymId = $data['gym_id'];
+            //                 } else {
+            //                     $gymId = $user->gyms()->first()?->id;
+            //                 }
+            //             }
 
-                        return Excel::download(new MembersExport($gymId), 'members-' . now()->format('Y-m-d-H-i-s') . '.csv');
-                    })
-                    ->requiresConfirmation(),
-                Tables\Actions\ActionGroup::make([ // Group the download actions
-                    Tables\Actions\Action::make('download_csv_template')
-                        ->label('Download CSV Template')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
-                        ->color('info'),
-                    Tables\Actions\Action::make('download_xlsx_template')
-                        ->label('Download Excel Template')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->action(function () {
-                            $path = resource_path('views/templates/gym_members_import_xlsx_template.xlsx');
-                            if (! file_exists($path)) {
-                                // Optionally create a basic one on the fly if it doesn't exist
-                                // Or just throw an error/notification
+            //             return Excel::download(new MembersExport($gymId), 'members-' . now()->format('Y-m-d-H-i-s') . '.csv');
+            //         })
+            //         ->requiresConfirmation(),
+            //     Tables\Actions\ActionGroup::make([ // Group the download actions
+            //         Tables\Actions\Action::make('download_csv_template')
+            //             ->label('Download CSV Template')
+            //             ->icon('heroicon-o-document-arrow-down')
+            //             ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
+            //             ->color('info'),
+            //         Tables\Actions\Action::make('download_xlsx_template')
+            //             ->label('Download Excel Template')
+            //             ->icon('heroicon-o-document-arrow-down')
+            //             ->action(function () {
+            //                 $path = resource_path('views/templates/gym_members_import_xlsx_template.xlsx');
+            //                 if (! file_exists($path)) {
+            //                     // Optionally create a basic one on the fly if it doesn't exist
+            //                     // Or just throw an error/notification
 
-                                Notification::make()
-                                    ->title('Template Not Found')
-                                    ->body('The Excel template file could not be found.')
-                                    ->danger()
-                                    ->sendToDatabase(auth()->user())
-                                    ->send();
+            //                     Notification::make()
+            //                         ->title('Template Not Found')
+            //                         ->body('The Excel template file could not be found.')
+            //                         ->danger()
+            //                         ->sendToDatabase(auth()->user())
+            //                         ->send();
 
-                                return null; // Stop execution
-                            }
+            //                     return null; // Stop execution
+            //                 }
 
-                            return response()->download($path);
-                        })
-                        ->color('success'),
+            //                 return response()->download($path);
+            //             })
+            //             ->color('success'),
 
-                ])
-                    ->label('Download Templates')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->button() // Display as a button with a dropdown
-                    ->color('warning'), // Color for the main group button
+            //     ])
+            //         ->label('Download Templates')
+            //         ->icon('heroicon-o-document-arrow-down')
+            //         ->button() // Display as a button with a dropdown
+            //         ->color('warning'), // Color for the main group button
 
-                Tables\Actions\Action::make('import')
-                    ->label('Import Members')
-                    ->icon('heroicon-o-document-plus')
-                    ->form([
-                        Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name', function ($query) {
-                                if (filament()->getId() === 'admin') {
-                                    if (auth()->user()->hasRole('gym_owner')) {
-                                        return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                                    }
-                                } else if (filament()->getId() === 'staff') {
-                                    // Staff can see all gyms
-                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                                }
+            //     Tables\Actions\Action::make('import')
+            //         ->label('Import Members')
+            //         ->icon('heroicon-o-document-plus')
+            //         ->form([
+            //             Forms\Components\Select::make('gym_id')
+            //                 ->relationship('gym', 'name', function ($query) {
+            //                     if (filament()->getId() === 'admin') {
+            //                         if (auth()->user()->hasRole('gym_owner')) {
+            //                             return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
+            //                         }
+            //                     } else if (filament()->getId() === 'staff') {
+            //                         // Staff can see all gyms
+            //                         return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
+            //                     }
 
-                                return $query;
-                            })
-                            ->required(),
-                        Forms\Components\FileUpload::make('file')
-                            ->label('Upload CSV/XLS')
-                            ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
-                            ->required()
-                            ->storeFiles(false) // Prevent automatic storage
-                            ->getUploadedFileNameForStorageUsing(
-                                fn($file) => 'imports/' . $file->getClientOriginalName()
-                            ),
-                    ])
-                    ->action(function (array $data) {
-                        try {
-                            $file = $data['file']; // TemporaryUploadedFile object
-                            $filePath = $file->getRealPath(); // Get the actual file path (e.g., C:\Users\SID\AppData\Local\Temp\phpEB47.tmp)
+            //                     return $query;
+            //                 })
+            //                 ->required(),
+            //             Forms\Components\FileUpload::make('file')
+            //                 ->label('Upload CSV/XLS')
+            //                 ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+            //                 ->required()
+            //                 ->storeFiles(false) // Prevent automatic storage
+            //                 ->getUploadedFileNameForStorageUsing(
+            //                     fn($file) => 'imports/' . $file->getClientOriginalName()
+            //                 ),
+            //         ])
+            //         ->action(function (array $data) {
+            //             try {
+            //                 $file = $data['file']; // TemporaryUploadedFile object
+            //                 $filePath = $file->getRealPath(); // Get the actual file path (e.g., C:\Users\SID\AppData\Local\Temp\phpEB47.tmp)
 
-                            if (! file_exists($filePath)) {
-                                throw new \Exception('Uploaded file not found.');
-                            }
-                            Excel::import(new GymMembersImport($data['gym_id']), $filePath);
-                        } catch (\Exception $e) {
-                            Log::error('Import failed:', ['error' => $e->getMessage()]);
-                            $recipient = auth()->user();
-                            Notification::make()
-                                ->title('Import failed')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->sendToDatabase($recipient)
-                                ->send();
+            //                 if (! file_exists($filePath)) {
+            //                     throw new \Exception('Uploaded file not found.');
+            //                 }
+            //                 Excel::import(new GymMembersImport($data['gym_id']), $filePath);
+            //             } catch (\Exception $e) {
+            //                 Log::error('Import failed:', ['error' => $e->getMessage()]);
+            //                 $recipient = auth()->user();
+            //                 Notification::make()
+            //                     ->title('Import failed')
+            //                     ->body($e->getMessage())
+            //                     ->danger()
+            //                     ->sendToDatabase($recipient)
+            //                     ->send();
 
-                            event(new DatabaseNotificationsSent($recipient));
-                        }
-                    })
-                    ->requiresConfirmation()
-                    ->visible(function () {
-                        $user = auth()->user();
-                        if (filament()->getId() === 'admin') {
-                            return $user->hasRole('gym_owner') || $user->hasRole('super_admin');
-                        } else if (filament()->getId() === 'staff') {
-                            return true; // Staff can import members
-                        }
-                        return false;
-                    }),
-            ])
-            // ->modifyQueryUsing(function ($query) {
-            //     $user = auth()->user();
-            //     if ($user->hasRole('gym_owner')) {
-            //         $query->whereIn('gym_id', $user->gyms()->pluck('id'));
-            //     }
-            //     return $query;
-            //     // $optimizedQuery = $query
-            //     //     ->select('gym_members.*')
-            //     //     ->leftJoin('gyms', 'gym_members.gym_id', '=', 'gyms.id')
-            //     //     ->leftJoin('membership_plans', 'gym_members.gym_membership_plan_id', '=', 'membership_plans.id')
-            //     //     ->leftJoin('member_payments', function ($join) {
-            //     //         $join->on('gym_members.id', '=', 'member_payments.member_id')
-            //     //             ->where('member_payments.status', 'completed');
-            //     //     })
-            //     //     ->groupBy('gym_members.id')
-            //     //     ->with(['gym', 'membershipPlan'])
-            //     //     ->addSelect([
-            //     //         'has_completed_payment' => DB::raw('IF(COUNT(member_payments.id) > 0, 1, 0)')
-            //     //     ]);
-
-            //     // Log::info('GymMemberResource Query', ['query' => $optimizedQuery->toSql(), 'bindings' => $optimizedQuery->getBindings()]);
-
-            //     // return $optimizedQuery;
-            // })
+            //                 event(new DatabaseNotificationsSent($recipient));
+            //             }
+            //         })
+            //         ->requiresConfirmation()
+            //         ->visible(function () {
+            //             $user = auth()->user();
+            //             if (filament()->getId() === 'admin') {
+            //                 return $user->hasRole('gym_owner') || $user->hasRole('super_admin');
+            //             } else if (filament()->getId() === 'staff') {
+            //                 return true; // Staff can import members
+            //             }
+            //             return false;
+            //         }),
+            // ])
             ->defaultSort('name')
             ->striped();
     }
