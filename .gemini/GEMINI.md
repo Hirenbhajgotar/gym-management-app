@@ -315,13 +315,6 @@ avatar, badge, brand, breadcrumbs, button, callout, checkbox, dropdown, field, h
 - Use `wire:loading` and `wire:dirty` for delightful loading states.
 - Add `wire:key` in loops:
 
-    ```blade
-    @foreach ($items as $item)
-        <div wire:key="item-{{ $item->id }}">
-            {{ $item->name }}
-        </div>
-    @endforeach
-    ```
 
 - Prefer lifecycle hooks like `mount()`, `updatedFoo()`) for initialization and reactive side effects:
 
@@ -541,10 +534,10 @@ $delete = fn(Product $product) => $product->delete();
 - In Tailwind v4, you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives used in v3:
 
 <code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff"
-   - @tailwind base;
-   - @tailwind components;
-   - @tailwind utilities;
-   + @import "tailwindcss";
+   - tailwind base;
+   - tailwind components;
+   - tailwind utilities;
+   + import "tailwindcss";
 </code-snippet>
 
 

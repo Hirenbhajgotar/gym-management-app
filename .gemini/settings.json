@@ -18,9 +18,13 @@
             }
         },
         "laravel-boost": {
-            "command": "php",
+            "command": "docker-compose",
             "args": [
-                "./artisan",
+                "exec",
+                "-T", // Optional: Disables TTY allocation if needed for background/server processes
+                "app", // Replace with your PHP service name, e.g., "php-fpm" or "laravel"
+                "php",
+                "artisan",
                 "boost:mcp"
             ]
         },

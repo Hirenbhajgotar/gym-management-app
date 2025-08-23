@@ -27,16 +27,26 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy project files
-COPY . /var/www/html
+# Copy composer files
+COPY composer.json composer.lock ./
 
 # Install PHP dependencies
-RUN composer install --no-interaction --optimize-autoloader
+RUN composer install --no-interaction --optimize-autoloader --no-scripts
 
-# Install Node.js dependencies and build assets
-RUN npm install && npm run build
+# Copy package.json files
+COPY package.json package-lock.json ./
+
+# Install Node.js dependencies
+RUN npm install
+
+# Copy the rest of the application files
+COPY . .
+
+# Run composer scripts and build assets
+RUN composer install --no-interaction --optimize-autoloader && npm run build
 
 # Copy the entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
