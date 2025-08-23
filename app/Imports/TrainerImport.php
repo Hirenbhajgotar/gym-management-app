@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\Gym;
 use App\Models\Trainer;
+use Filament\Facades\Filament;
 use Illuminate\Validation\Rule;
 
 
@@ -17,7 +18,6 @@ class TrainerImport extends BaseExcelImport
 
         // Set expected headers for validation
         $this->setExpectedHeaders([
-            'gym',
             'name',
             'email',
             'phone',
@@ -33,7 +33,6 @@ class TrainerImport extends BaseExcelImport
     public function rules(): array
     {
         return [
-            'gym' => 'required|exists:gyms,name',
             'name' => 'required|max:255',
             'email' => [
                 'required',
@@ -53,9 +52,8 @@ class TrainerImport extends BaseExcelImport
 
     protected function processRow($row)
     {
-        $gymName = $row['gym'];
-        $gym = Gym::where('name', $gymName)->first();
-
+        // $gym = Filament::getTenant();
+        // dd($row);
         // Handle is_available transformation (validation ensures valid values)
         $isAvailable = null;
         if (isset($row['is_available'])) {
@@ -64,7 +62,8 @@ class TrainerImport extends BaseExcelImport
 
         // Map Excel row data to Trainer model
         $data = [
-            'gym_id' => $gym?->id ?? null,
+            // 'gym_id' => $gym?->id ?? null,
+            'gym_id' => $row['gym_id'] ?? null,
             'name' => $row['name'] ?? null,
             'email' => $row['email'] ?? null,
             'phone' => $row['phone'] ?? null, // Already cleaned in mutateBeforeValidationUsing

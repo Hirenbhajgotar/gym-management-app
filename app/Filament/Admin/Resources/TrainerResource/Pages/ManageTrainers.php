@@ -11,6 +11,7 @@ use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Actions\ImportAction;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -47,7 +48,13 @@ class ManageTrainers extends ManageRecords
                 ->sampleFileExcel(
                     url: url('import/templates/xls/trainers-sample.xlsx'),
                     sampleButtonLabel: 'Download Sample Excel'
-                ),
+                )
+                // Use the additional form fields data
+                ->beforeImport(function (array $data, $livewire, $excelImportAction) {
+                    $excelImportAction->customImportData([
+                        'gym_id' => Filament::getTenant()?->id ?? null,
+                    ]);
+                }),
 
             Actions\CreateAction::make(),
         ];

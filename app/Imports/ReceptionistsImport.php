@@ -6,29 +6,26 @@ use App\Enums\DefaultRole;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class ReceptionistsImport extends BaseEmployeeImporter
+class ReceptionistsImport extends BaseEmployeeImporter implements WithBatchInserts, WithChunkReading
 {
-    /**
-     * Get the default role for the receptionist being imported.
-     *
-     * @return DefaultRole The role assigned to the receptionist.
-     */
     protected function getRole(): DefaultRole
     {
         return DefaultRole::RECEPTIONIST;
     }
 
-    /**
-     * Retrieve the list of expected headers for the receptionist import.
-     *
-     * This method returns an array of string values representing the column
-     * headers that are expected to be present in the import file. These
-     * headers correspond to the fields required for importing receptionist
-     * data.
-     *
-     * @return array An array of header names expected in the import file.
-     */
+    public function batchSize(): int
+    {
+        return 500;
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
+    }
+
     protected function getExpectedHeaders(): array
     {
         return [
@@ -51,16 +48,6 @@ class ReceptionistsImport extends BaseEmployeeImporter
         ];
     }
 
-    /**
-     * Define validation rules for the receptionist import process.
-     *
-     * This method returns an array of validation rules to apply to each field
-     * in the import data. The rules ensure that the data is properly formatted
-     * and meets the necessary criteria for successful import.
-     *
-     * @return array An associative array where keys are field names and values
-     *               are arrays of validation rules applicable to those fields.
-     */
     public function setRules(): array
     {
         return [

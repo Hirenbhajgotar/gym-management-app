@@ -46,25 +46,25 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             try {
-                $errorReportService = app(ErrorReportService::class);
+                // $errorReportService = app(ErrorReportService::class);
 
-                // Skip certain types of exceptions
-                if ($errorReportService->shouldSkipAutoReporting($e)) {
-                    Log::info('Skipping auto reporting for this exception');
-                    return;
-                }
+                // // Skip certain types of exceptions
+                // if ($errorReportService->shouldSkipAutoReporting($e)) {
+                //     Log::info('Skipping auto reporting for this exception');
+                //     return;
+                // }
 
-                // Determine if this should be auto-reported based on severity
-                $shouldAutoReport = $errorReportService->shouldAutoReport($e);
-                Log::info('Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'));
+                // // Determine if this should be auto-reported based on severity
+                // $shouldAutoReport = $errorReportService->shouldAutoReport($e);
+                // Log::info('Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'));
 
-                if ($shouldAutoReport) {
-                    $errorReport = $errorReportService->reportException($e, null, 'auto_reported');
-                    Log::info('Error report created via withExceptions', [
-                        'error_report_id' => $errorReport->id ?? 'null',
-                        'error_hash' => $errorReport->error_hash ?? 'null'
-                    ]);
-                }
+                // if ($shouldAutoReport) {
+                //     $errorReport = $errorReportService->reportException($e, null, 'auto_reported');
+                //     Log::info('Error report created via withExceptions', [
+                //         'error_report_id' => $errorReport->id ?? 'null',
+                //         'error_hash' => $errorReport->error_hash ?? 'null'
+                //     ]);
+                // }
             } catch (Exception $exception) {
                 Log::error('Failed to auto-report error via withExceptions', [
                     'original_exception' => $e,
