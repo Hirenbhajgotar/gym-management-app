@@ -1,7 +1,9 @@
 <?php
 
+use App\Console\Commands\CleanInvalidExportsCommand;
 use App\Console\Commands\CleanResolvedErrorReportsCommand;
 use App\Http\Middleware\ErrorContextMiddleware;
+use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
 use App\Services\ErrorReportService;
 use Illuminate\Foundation\Application;
@@ -25,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web([
             TeamsPermission::class, // Add custom middleware here
             ErrorContextMiddleware::class,
+            ExportDownloadMiddleware::class,
         ]);
 
         $middleware->priority([
@@ -102,6 +105,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // });
     })
     ->withCommands([
+        CleanInvalidExportsCommand::class,
         CleanResolvedErrorReportsCommand::class
     ])
     ->create();

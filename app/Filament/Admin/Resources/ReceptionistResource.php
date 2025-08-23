@@ -7,8 +7,10 @@ use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Filament\Admin\Resources\ReceptionistResource\Pages;
 use App\Filament\Exports\ReceptionistExporter;
-use Filament\Tables;
+use App\Imports\ReceptionistsImport;
+use EightyNine\ExcelImport\ExcelImportAction;
 use Filament\Actions;
+use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 
 class ReceptionistResource extends BaseEmployeeResource
@@ -70,8 +72,6 @@ class ReceptionistResource extends BaseEmployeeResource
 
     /**
      * Header actions that are common to all Receptionist resource pages.
-     *
-     * @return array
      */
     public static function getCommonHeaderActions(): array
     {
@@ -90,6 +90,27 @@ class ReceptionistResource extends BaseEmployeeResource
                 ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ReceptionistExporter::class)
                 ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+
+            ExcelImportAction::make()
+                ->label('Import Receptionists')
+                ->color('gray')
+                ->uploadField(
+                    fn($upload) => $upload
+                        ->label('Import Receptionists')
+                )
+                ->use(ReceptionistsImport::class)
+                ->mutateBeforeValidationUsing(function (array $data): array {
+                    // Clean phone number before validation
+                    if (isset($data['phone'])) {
+                        $data['phone'] = preg_replace('/[^0-9]/', '', $data['phone']);
+                    }
+
+                    return $data;
+                })
+                ->sampleFileExcel(
+                    url: url('import/templates/xls/employee-sample.xlsx'),
+                    sampleButtonLabel: 'Download Sample Excel'
+                ),
 
             // Create action
             Actions\CreateAction::make(),

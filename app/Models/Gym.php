@@ -6,7 +6,7 @@ use App\Observers\GymObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ class Gym extends Model
         'slug',
     ];
 
-    public function users()
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'gym_user')
             ->withPivot(['role', 'active'])
@@ -62,7 +62,6 @@ class Gym extends Model
     {
         return $this->hasMany(\App\Models\GymMember::class);
     }
-
 
     /** @return HasMany<\App\Models\MembershipPlan, self> */
     public function membershipPlans(): HasMany

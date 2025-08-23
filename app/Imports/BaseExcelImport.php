@@ -2,46 +2,53 @@
 
 namespace App\Imports;
 
-use App\Jobs\ProcessExcelImport;
 use App\Models\User;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Facades\Excel;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Facades\Excel;
 
-abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue
+abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQueue, ToCollection, WithChunkReading, WithHeadingRow
 {
     protected $successfulRows = 0;
+
     protected $failedRows = 0;
+
     protected $failedData = [];
+
     protected $importRecord;
+
     protected $failedFilePath;
+
     protected $expectedHeaders = [];
 
     // Property to be defined in child classes
     public $importModel;
 
+    /**
+     * @throws \Exception
+     */
     public function __construct()
     {
         // Ensure the importModel property is defined in the child class
-        if (!isset($this->importModel)) {
-            throw new \Exception('The $importModel property must be defined in the child import class: ' . static::class);
+        if (! isset($this->importModel)) {
+            throw new \Exception("The $this->importModel property must be defined in the child import class: ".static::class);
         }
 
         // Verify the model class exists
-        if (!class_exists($this->importModel)) {
-            throw new \Exception("Model class {$this->importModel} does not exist in " . static::class);
+        if (! class_exists($this->importModel)) {
+            throw new \Exception("Model class {$this->importModel} does not exist in ".static::class);
         }
 
         parent::__construct($this->importModel, []); // Pass model and attributes to parent
@@ -55,7 +62,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         // Create an import record in Filament's imports table
         $this->importRecord = Import::create([
             'completed_at' => null,
-            'file_name' => 'import_' . now()->timestamp . '.xlsx',
+            'file_name' => 'import_'.now()->timestamp.'.xlsx',
             'file_path' => 'temp',
             'importer' => static::class,
             'processed_rows' => 0,
@@ -65,11 +72,11 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
         ]);
     }
 
-    public function collection(Collection $collection)
+    public function collection(Collection $collection): void
     {
         // Filter out empty rows
         $filteredCollection = $collection->filter(function ($row) {
-            return !empty(array_filter($row->toArray()));
+            return ! empty(array_filter($row->toArray()));
         });
 
         $this->beforeCollection($filteredCollection);
@@ -132,7 +139,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
     protected function beforeCollection(Collection $collection): void
     {
         // Validate headers if expectedHeaders are defined
-        if (!empty($this->expectedHeaders)) {
+        if (! empty($this->expectedHeaders)) {
             $this->validateHeaders($this->expectedHeaders, $collection);
         }
 
@@ -146,17 +153,18 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
     abstract protected function processRow($row);
 
     // Method to set expected headers (to be called by child classes)
-    protected function setExpectedHeaders(array $headers)
+    protected function setExpectedHeaders(array $headers): void
     {
         $this->expectedHeaders = $headers;
     }
 
-    protected function generateFailedRowsExcel()
+    protected function generateFailedRowsExcel(): void
     {
-        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
-        $filePath = 'failed_imports/' . $fileName;
+        $fileName = 'failed_rows_'.$this->importRecord->id.'_'.now()->timestamp.'.xlsx';
+        $filePath = 'failed_imports/'.$fileName;
 
-        Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings {
+        Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
+        {
             protected $data;
 
             public function __construct(array $data)
@@ -175,6 +183,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
                     return [];
                 }
                 $keys = array_keys($this->data[0]);
+
                 return $keys; // Includes 'error' column
             }
         }, $filePath, 'public');
@@ -202,22 +211,23 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
 
     protected function sendNotification()
     {
-        $successfulRows = number_format($this->successfulRows) . ' ' . Str::plural('row', $this->successfulRows);
+        $successfulRows = number_format($this->successfulRows).' '.Str::plural('row', $this->successfulRows);
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Retrieve the user using the user_id from the Import record
         $recipient = User::find($this->importRecord->user_id);
 
-        if (!$recipient) {
+        if (! $recipient) {
             Log::warning('User not found for import notification.', [
                 'import_id' => $this->importRecord->id,
                 'user_id' => $this->importRecord->user_id,
             ]);
+
             return;
         }
 
         if ($this->failedRows > 0) {
-            $failedRows = number_format($this->failedRows) . ' ' . Str::plural('row', $this->failedRows);
+            $failedRows = number_format($this->failedRows).' '.Str::plural('row', $this->failedRows);
             $message .= " {$failedRows} failed to import.";
 
             $downloadUrl = route('filament.failed-import.download', [
@@ -239,7 +249,6 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
                 ->sendToDatabase($recipient)
                 ->send();
 
-            event(new DatabaseNotificationsSent($recipient));
         } else {
             Notification::make()
                 ->danger()
@@ -248,8 +257,8 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
                 ->sendToDatabase($recipient)
                 ->send();
 
-            event(new DatabaseNotificationsSent($recipient));
         }
+        event(new DatabaseNotificationsSent($recipient));
     }
 
     public function failed(\Throwable $exception)
@@ -269,7 +278,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ToCollec
             Notification::make()
                 ->danger()
                 ->title('Import Failed')
-                ->body('An error occurred while processing your import: ' . $exception->getMessage())
+                ->body('An error occurred while processing your import: '.$exception->getMessage())
                 ->sendToDatabase($recipient)
                 ->send();
 

@@ -32,7 +32,6 @@ class TrainerResource extends Resource
 
         return false;
     }
-
     public static function getNavigationBadge(): ?string
     {
         $modelClass = static::$model;

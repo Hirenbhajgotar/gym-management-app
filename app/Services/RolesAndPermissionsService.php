@@ -26,7 +26,7 @@ class RolesAndPermissionsService
         // Get all tenant-specific roles
         $roles = DefaultRole::tenantRoles();
 
-        $roleData = array_map(fn($role) => [
+        $roleData = array_map(fn ($role) => [
             'name' => $role->value,
             'guard_name' => 'web',
             'gym_id' => $tenant->id,
@@ -159,8 +159,12 @@ class RolesAndPermissionsService
      *
      * @throws \Exception If the role does not exist for the given gym.
      */
-    public function assignRoleToTenant(Gym $tenant, User $user, DefaultRole $roleName): void
+    public function assignRoleToTenant(?Gym $tenant, User $user, DefaultRole $roleName): void
     {
+        if (! $tenant) {
+            throw new \Exception('Gym not found.');
+        }
+
         // Ensure the role exists for the tenant
         $role = Role::where('name', $roleName->value)
             ->where('gym_id', $tenant->id)

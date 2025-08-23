@@ -7,6 +7,8 @@ use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Resources\ManagerResource\Pages;
 use App\Filament\Exports\ManagerExporter;
+use App\Imports\ManagersImport;
+use EightyNine\ExcelImport\ExcelImportAction;
 use Filament\Tables;
 use Filament\Actions;
 use Illuminate\Database\Eloquent\Builder;
@@ -90,6 +92,27 @@ class ManagerResource extends BaseEmployeeResource
                 ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ManagerExporter::class)
                 ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+
+            ExcelImportAction::make()
+                ->label('Import Managers')
+                ->color('gray')
+                ->uploadField(
+                    fn($upload) => $upload
+                        ->label('Import Managers')
+                )
+                ->use(ManagersImport::class)
+                ->mutateBeforeValidationUsing(function (array $data): array {
+                    // Clean phone number before validation
+                    if (isset($data['phone'])) {
+                        $data['phone'] = preg_replace('/[^0-9]/', '', $data['phone']);
+                    }
+
+                    return $data;
+                })
+                ->sampleFileExcel(
+                    url: url('import/templates/xls/employee-sample.xlsx'),
+                    sampleButtonLabel: 'Download Sample Excel'
+                ),
 
             // Create action
             Actions\CreateAction::make(),

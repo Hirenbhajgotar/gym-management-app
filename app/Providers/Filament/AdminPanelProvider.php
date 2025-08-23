@@ -45,6 +45,11 @@ class AdminPanelProvider extends PanelProvider
                 'danger' => Color::Red,
             ])
             ->spa()
+            ->spaUrlExceptions(fn(): array => [
+                // Allow all files in the import/templates directory
+                // Allow the download of the sample file
+                url('import/templates/*')
+            ])
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 // SyncShieldTenant::class,
