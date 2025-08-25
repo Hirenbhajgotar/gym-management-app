@@ -29,5 +29,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_HOST_MYSQL" value="127.0.0.1"/>
     </php>
 </phpunit>

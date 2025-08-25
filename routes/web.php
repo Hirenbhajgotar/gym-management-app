@@ -72,4 +72,15 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
+Route::get('/download-sample/{file}', function ($file, \Illuminate\Http\Request $request) {
+    $fileName = $request->get('fileName', 'sample.xlsx');
+    $path = 'import/templates/xls/' . $file;
+    if (!Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+    return Storage::disk('public')->download($path, $fileName);
+})->name('download.sample');
+
 require __DIR__ . '/auth.php';
+
+Route::get('/download-sample-excel/{type}', [\App\Http\Controllers\ImportController::class, 'downloadSample'])->name('download.sample.excel');
