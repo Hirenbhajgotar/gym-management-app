@@ -3,19 +3,20 @@
 namespace App\Filament\Actions\Imports;
 
 use Closure;
-use Throwable;
 use Filament\Actions\Action;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\Actions\Action as ActionsAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
-use Filament\Notifications\Notification;
-use Filament\Forms\Components\Actions\Action as ActionsAction;
+use Filament\Notifications\Actions\Action as NotificationsActionsAction;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
-use Illuminate\Support\Arr;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
+use Throwable;
 
 /**
  * A custom Filament action for importing data from Excel files.
@@ -101,46 +102,22 @@ class ExcelImportAction extends Action
                 return;
             }
 
-            try {
-                // Instantiate the importer and import the data.
-                $importer = new $importerClass($modelClass);
-                Excel::import($importer, $filePath);
+            // Instantiate the importer and queue the import.
+            $importer = new $importerClass($modelClass);
+            Excel::queueImport($importer, $filePath);
 
-                $failedRows = $importer->failures();
-
-                // Handle failed rows, if any.
-                if (! empty($failedRows)) {
-                    $this->handleFailedRows($failedRows);
-                } else {
-                    Notification::make()
-                        ->title('Import Successful')
-                        ->body('All records have been imported successfully.')
-                        ->success()
-                        ->send();
-                }
-            } catch (Throwable $e) {
-                // Notify the user of any errors during the import process.
-                Notification::make()
-                    ->title('Import Error')
-                    ->body('An unexpected error occurred during the import process. Please check the file and try again.')
-                    ->danger()
-                    ->send();
-
-                Log::error('Import Error', ['exception' => $e]);
-            } finally {
-                // Clean up the uploaded file.
-                if (file_exists($filePath)) {
-                    unlink($filePath);
-                }
-            }
+            Notification::make()
+                ->title('Import Queued')
+                ->body('The import has been queued and will be processed in the background.')
+                ->success()
+                ->send();
         });
     }
 
     /**
      * Set the importer class for the action.
      *
-     * @param  string|Closure  $importer The importer class.
-     * @return static
+     * @param  string|Closure  $importer  The importer class.
      */
     public function importer(string|Closure $importer): static
     {
@@ -168,64 +145,62 @@ class ExcelImportAction extends Action
      * This method generates an Excel file with the failed rows and their validation errors,
      * and provides a download link to the user.
      *
-     * @param  array|Collection  $failures The array of failed rows.
+     * @param  array|Collection  $failures  The array of failed rows.
      */
     protected function handleFailedRows(array|Collection $failures): void
     {
-        $failedRowsData = [];
-        foreach ($failures as $failure) {
-            $attribute = $failure->attribute(); // either heading key (if using heading row concern) or column index
-            $errors = $failure->errors(); // Actual error messages from Laravel validator
-
-            // $failedRowsData[] = array_merge($failure->values(), ['errors' => implode(', ', $failure->errors())]);
-            $failedRowsData[] = [
-                $attribute => implode(', ', $errors)
+        $failedRows = $failures->map(function ($failure) use ($failures) {
+            return [
+                'row_number' => $failure->row(),
+                'attribute' => $failure->attribute(),
+                'errors' => implode(', ', $failure->errors()),
+                'values' => implode(', ', $failure->values()),
             ];
-        }
+        })->all();
 
-        $failedRowsData = Arr::collapse($failedRowsData);
-
-        $headings = array_keys($failedRowsData);
-
-        // dd($failedRowsData, $headings);
-
-        // Create an anonymous class for exporting the failed rows.
-        $export = new class($failedRowsData, $headings) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
+        $export = new class($failedRows) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
         {
-            public function __construct(
-                private readonly array $data,
-                private readonly array $headings
-            ) {}
+            protected array $data;
 
-            public function collection(): \Illuminate\Support\Collection
+            public function __construct(array $data)
             {
-                return collect($this->data);
+                $this->data = $data;
+            }
+
+            public function array(): array
+            {
+                return $this->data;
             }
 
             public function headings(): array
             {
-                return $this->headings;
+                return [
+                    'Row Number',
+                    'Attribute',
+                    'Errors',
+                    'Values',
+                ];
             }
         };
 
-        // Store the failed imports file and get its URL.
-        $fileName = 'failed_imports_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-        $path = 'failed-imports/' . $fileName;
+        $fileName = 'failed_imports_' . now()->timestamp . '.xlsx';
+        $path = 'failed_imports/' . $fileName;
         Excel::store($export, $path, 'public');
 
         $downloadUrl = Storage::disk('public')->url($path);
 
         $recipient = Auth::user();
-        // Notify the user about the partially successful import.
         Notification::make()
             ->title('Import Partially Successful')
             ->body('Some records failed to import. Please check the downloaded file for details.')
             ->danger()
             ->actions([
-                Action::make('download_failed_rows')
+                NotificationsActionsAction::make('download_failed_rows')
                     ->label('Download Failed Rows')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url($downloadUrl, shouldOpenInNewTab: true),
+                    ->url($downloadUrl, shouldOpenInNewTab: true)
+                    ->markAsRead()
+                    ->color('danger'),
             ])
             ->sendToDatabase($recipient);
 
