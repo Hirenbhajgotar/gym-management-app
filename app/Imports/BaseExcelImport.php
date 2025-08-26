@@ -44,12 +44,12 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     {
         // Ensure the importModel property is defined in the child class
         if (! isset($this->importModel)) {
-            throw new \Exception("The $this->importModel property must be defined in the child import class: ".static::class);
+            throw new \Exception("The $this->importModel property must be defined in the child import class: " . static::class);
         }
 
         // Verify the model class exists
         if (! class_exists($this->importModel)) {
-            throw new \Exception("Model class {$this->importModel} does not exist in ".static::class);
+            throw new \Exception("Model class {$this->importModel} does not exist in " . static::class);
         }
 
         parent::__construct($this->importModel, []); // Pass model and attributes to parent
@@ -63,7 +63,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         // Create an import record in Filament's imports table
         $this->importRecord = Import::create([
             'completed_at' => null,
-            'file_name' => 'import_'.now()->timestamp.'.xlsx',
+            'file_name' => 'import_' . now()->timestamp . '.xlsx',
             'file_path' => 'temp',
             'importer' => static::class,
             'processed_rows' => 0,
@@ -161,8 +161,8 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
 
     protected function generateFailedRowsExcel(): void
     {
-        $fileName = 'failed_rows_'.$this->importRecord->id.'_'.now()->timestamp.'.xlsx';
-        $filePath = 'failed_imports/'.$fileName;
+        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
+        $filePath = 'failed_imports/' . $fileName;
 
         Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
         {
@@ -212,7 +212,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
 
     protected function sendNotification()
     {
-        $successfulRows = number_format($this->successfulRows).' '.Str::plural('row', $this->successfulRows);
+        $successfulRows = number_format($this->successfulRows) . ' ' . Str::plural('row', $this->successfulRows);
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Retrieve the user using the user_id from the Import record
@@ -228,7 +228,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         }
 
         if ($this->failedRows > 0) {
-            $failedRows = number_format($this->failedRows).' '.Str::plural('row', $this->failedRows);
+            $failedRows = number_format($this->failedRows) . ' ' . Str::plural('row', $this->failedRows);
             $message .= " {$failedRows} failed to import.";
 
             $downloadUrl = route('filament.failed-import.download', [
@@ -277,7 +277,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
             Notification::make()
                 ->danger()
                 ->title('Import Failed')
-                ->body('An error occurred while processing your import: '.$exception->getMessage())
+                ->body('An error occurred while processing your import: ' . $exception->getMessage())
                 ->sendToDatabase($recipient)
                 ->send();
 
@@ -286,7 +286,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
             Notification::make()
                 ->danger()
                 ->title('Import Failed')
-                ->body('An error occurred while processing your import: '.$exception->getMessage())
+                ->body('An error occurred while processing your import: ' . $exception->getMessage())
                 ->send();
 
             Log::warning('User not found for import failure notification.', [

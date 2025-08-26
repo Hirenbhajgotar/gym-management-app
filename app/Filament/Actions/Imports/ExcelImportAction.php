@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions\Imports;
 
+use App\Models\User;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Actions\Action as ActionsAction;
@@ -105,12 +106,19 @@ class ExcelImportAction extends Action
             // Instantiate the importer and queue the import.
             $importer = new $importerClass($modelClass);
             Excel::queueImport($importer, $filePath);
+            // Excel::import($importer, $filePath);
 
-            Notification::make()
-                ->title('Import Queued')
-                ->body('The import has been queued and will be processed in the background.')
-                ->success()
-                ->send();
+            // Notification::make()
+            //     ->title('Import Queued')
+            //     ->body('The import has been queued and will be processed in the background.')
+            //     ->success()
+            //     ->send();
+
+            // $failedRows = $importer->failures();
+
+            // if (! empty($failedRows)) {
+            //     $this->handleFailedRows($failedRows);
+            // }
         });
     }
 
@@ -202,7 +210,8 @@ class ExcelImportAction extends Action
                     ->markAsRead()
                     ->color('danger'),
             ])
-            ->sendToDatabase($recipient);
+            ->sendToDatabase($recipient)
+            ->send();
 
         event(new DatabaseNotificationsSent($recipient));
     }

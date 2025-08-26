@@ -18,9 +18,13 @@
             }
         },
         "laravel-boost": {
-            "command": "php",
+            "command": "docker-compose",
             "args": [
-                "./artisan",
+                "exec",
+                "-T",
+                "app",
+                "php",
+                "artisan",
                 "boost:mcp"
             ]
         }
