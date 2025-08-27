@@ -4,11 +4,12 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
+use App\Filament\Actions\Imports\ExcelImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Resources\ManagerResource\Pages;
 use App\Filament\Exports\ManagerExporter;
 use App\Imports\ManagersImport;
-use EightyNine\ExcelImport\ExcelImportAction;
+use App\Models\User;
 use Filament\Tables;
 use Filament\Actions;
 use Illuminate\Database\Eloquent\Builder;
@@ -78,7 +79,7 @@ class ManagerResource extends BaseEmployeeResource
     public static function getCommonHeaderActions(): array
     {
         return [
-            // Permissions action 
+            // Permissions action
             Actions\Action::make('managePermissions')
                 ->label('Manage Permissions')
                 ->color('info')
@@ -93,25 +94,16 @@ class ManagerResource extends BaseEmployeeResource
                 ->exporter(ManagerExporter::class)
                 ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
 
+            // Import action
             ExcelImportAction::make()
                 ->label('Import Managers')
-                ->color('gray')
-                ->uploadField(
-                    fn($upload) => $upload
-                        ->label('Import Managers')
-                )
-                ->use(ManagersImport::class)
-                ->mutateBeforeValidationUsing(function (array $data): array {
-                    // Clean phone number before validation
-                    if (isset($data['phone'])) {
-                        $data['phone'] = preg_replace('/[^0-9]/', '', $data['phone']);
-                    }
-
-                    return $data;
-                })
-                ->sampleFileExcel(
+                ->importer(ManagersImport::class)
+                ->use(User::class)
+                ->modalHeading('Import Managers')
+                ->sampleFile(
                     url: url('import/templates/xls/employee-sample.xlsx'),
-                    sampleButtonLabel: 'Download Sample Excel'
+                    fileName: 'manager-sample.xlsx',
+                    sampleButtonLabel: 'Download Sample File'
                 ),
 
             // Create action

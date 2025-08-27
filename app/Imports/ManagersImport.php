@@ -5,79 +5,86 @@ namespace App\Imports;
 use App\Enums\DefaultRole;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
-use Illuminate\Support\Collection;
+use App\Models\EmployeeDetail;
+use App\Models\User;
+use App\Services\RolesAndPermissionsService;
+use Filament\Facades\Filament;
 use Illuminate\Validation\Rule;
-use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ManagersImport extends BaseEmployeeImporter
+class ManagersImport extends BaseImporter implements WithColumnFormatting
 {
-    /**
-     * Get the default role for the receptionist being imported.
-     *
-     * @return DefaultRole The role assigned to the receptionist.
-     */
-    protected function getRole(): DefaultRole
-    {
-        return DefaultRole::MANAGER;
-    }
+    protected array $dateColumns = [
+        'date_of_birth',
+        'hire_date',
+    ];
 
-    /**
-     * Retrieve the list of expected headers for the receptionist import.
-     *
-     * This method returns an array of string values representing the column
-     * headers that are expected to be present in the import file. These
-     * headers correspond to the fields required for importing receptionist
-     * data.
-     *
-     * @return array An array of header names expected in the import file.
-     */
-    protected function getExpectedHeaders(): array
+    public function columnFormats(): array
     {
         return [
-            'name',
-            'email',
-            'phone',
-            'password',
-            'date_of_birth',
-            'gender',
-            'marital_status',
-            'monthly_salary',
-            'emergency_contact_name',
-            'emergency_contact_phone',
-            'emergency_contact_email',
-            'emergency_contact_relationship',
-            'hire_date',
-            'employment_type',
-            'skills',
-            'notes',
+            'date_of_birth' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'hire_date' => NumberFormat::FORMAT_DATE_YYYYMMDD,
         ];
     }
 
-    /**
-     * Define validation rules for the receptionist import process.
-     *
-     * This method returns an array of validation rules to apply to each field
-     * in the import data. The rules ensure that the data is properly formatted
-     * and meets the necessary criteria for successful import.
-     *
-     * @return array An associative array where keys are field names and values
-     *               are arrays of validation rules applicable to those fields.
-     */
-    public function setRules(): array
+    public function processRow($row): void
+    {
+        $managerRole = DefaultRole::MANAGER;
+
+        // Get the current tenant (gym) from Filament.
+        $tenant = Filament::getTenant();
+
+        // Create a new user with basic information from the imported row.
+        $user = User::create([
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'password' => $row['password'], // Hash the password for security.
+            'phone' => $row['phone'] ?? null,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+
+        // Attach the user to the current gym with the specified role.
+        $user->gyms()->attach($tenant->id, ['role' => $managerRole->value]);
+
+        // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
+        app(RolesAndPermissionsService::class)->assignRoleToTenant($tenant, $user, $managerRole);
+
+        // Create the employee's detailed profile.
+        EmployeeDetail::create([
+            'user_id' => $user->id, // Link to the created user.
+            'date_of_birth' => $row['date_of_birth'] ?? null,
+            'gender' => $row['gender'] ?? null,
+            'marital_status' => $row['marital_status'] ?? null,
+            'monthly_salary' => $row['monthly_salary'] ?? null,
+            'emergency_contact_name' => $row['emergency_contact_name'] ?? null,
+            'emergency_contact_phone' => $row['emergency_contact_phone'] ?? null,
+            'emergency_contact_email' => $row['emergency_contact_email'] ?? null,
+            'emergency_contact_relationship' => $row['emergency_contact_relationship'] ?? null,
+            'hire_date' => $row['hire_date'] ?? null,
+            'employment_type' => $row['employment_type'] ?? null,
+            'skills' => $row['skills'] ? explode(',', $row['skills']) : null, // Convert comma-separated skills to an array.
+            'notes' => $row['notes'] ?? null,
+        ]);
+    }
+
+    public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'max:20'],
             'password' => ['required', 'string', 'min:8'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', Rule::enum(GenderEnum::class)],
             'marital_status' => ['nullable', 'string', Rule::enum(MaritalStatusEnum::class)],
             'monthly_salary' => ['nullable', 'numeric', 'min:0'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
-            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_phone' => ['nullable', 'max:20'],
             'emergency_contact_email' => ['nullable', 'string', 'email', 'max:255'],
-            'emergency_contact_relationship' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_relationship' => ['nullable', 'max:255'],
             'hire_date' => ['nullable', 'date', 'before_or_equal:today'],
             'employment_type' => ['nullable', 'string', 'max:255'],
             'skills' => ['nullable', 'string'], // Will be converted to array later
