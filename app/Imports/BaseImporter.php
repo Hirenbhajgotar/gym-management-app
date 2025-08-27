@@ -9,6 +9,7 @@ use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -25,9 +26,9 @@ use Maatwebsite\Excel\Concerns\WithSkipDuplicates;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Facades\Excel;
 
-abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue
+abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkReading
 {
-    use Importable;
+    use Importable, SerializesModels;
 
     protected int $successfulRows = 0;
     protected int $failedRows = 0;
@@ -156,6 +157,13 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
         $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
         $filePath = 'failed_imports/' . $fileName;
 
+        // $failedRows = FailedImportRow::where('import_id', $this->importRecord->id)->get();
+        // $dataToExport = $failedRows->map(function ($failedRow) {
+        //     $data = json_decode($failedRow->data, true);
+        //     $data['error'] = $failedRow->validation_error;
+        //     return $data;
+        // })->all();
+
         $excel = (new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
         {
             protected $data;
@@ -163,7 +171,6 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
             public function __construct(array $data)
             {
                 $this->data = $data;
-                // dd($this->data);
             }
 
             public function array(): array
@@ -182,7 +189,6 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
             }
         });
 
-        // dd($excel, $fileName);
         Excel::store($excel, $filePath, 'public');
         $this->failedFilePath = $filePath;
     }

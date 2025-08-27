@@ -105,20 +105,7 @@ class ExcelImportAction extends Action
 
             // Instantiate the importer and queue the import.
             $importer = new $importerClass($modelClass);
-            Excel::queueImport($importer, $filePath);
-            // Excel::import($importer, $filePath);
-
-            // Notification::make()
-            //     ->title('Import Queued')
-            //     ->body('The import has been queued and will be processed in the background.')
-            //     ->success()
-            //     ->send();
-
-            // $failedRows = $importer->failures();
-
-            // if (! empty($failedRows)) {
-            //     $this->handleFailedRows($failedRows);
-            // }
+            Excel::import($importer, $filePath);
         });
     }
 
