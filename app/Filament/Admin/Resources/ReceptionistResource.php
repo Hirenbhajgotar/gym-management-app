@@ -4,11 +4,13 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
+use App\Filament\Actions\Imports\ExcelImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Filament\Admin\Resources\ReceptionistResource\Pages;
 use App\Filament\Exports\ReceptionistExporter;
 use App\Imports\ReceptionistsImport;
-use EightyNine\ExcelImport\ExcelImportAction;
+use App\Models\User;
+use EightyNine\ExcelImport\Facades\ExcelImportAction as FacadesExcelImportAction;
 use Filament\Actions;
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
@@ -91,25 +93,15 @@ class ReceptionistResource extends BaseEmployeeResource
                 ->exporter(ReceptionistExporter::class)
                 ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
 
+            // Import action
             ExcelImportAction::make()
                 ->label('Import Receptionists')
-                ->color('gray')
-                ->uploadField(
-                    fn($upload) => $upload
-                        ->label('Import Receptionists')
-                )
-                ->use(ReceptionistsImport::class)
-                ->mutateBeforeValidationUsing(function (array $data): array {
-                    // Clean phone number before validation
-                    if (isset($data['phone'])) {
-                        $data['phone'] = preg_replace('/[^0-9]/', '', $data['phone']);
-                    }
-
-                    return $data;
-                })
-                ->sampleFileExcel(
+                ->importer(ReceptionistsImport::class)
+                ->use(User::class)
+                ->modalHeading('Import Receptionists')
+                ->sampleFile(
                     url: url('import/templates/xls/employee-sample.xlsx'),
-                    sampleButtonLabel: 'Download Sample Excel'
+                    sampleButtonLabel: 'Download Sample File'
                 ),
 
             // Create action

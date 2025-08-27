@@ -32,7 +32,6 @@ class ManageTrainers extends ManageRecords
                 ->importer(TrainerImport::class)
                 ->use(Trainer::class)
                 ->modalHeading('Import Trainers')
-                ->modalSubmitActionLabel('Import Trainers')
                 ->sampleFile(
                     url: url('import/templates/xls/trainers-sample.xlsx'),
                     sampleButtonLabel: 'Download Sample File'

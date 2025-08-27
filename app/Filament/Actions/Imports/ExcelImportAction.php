@@ -81,6 +81,7 @@ class ExcelImportAction extends Action
             ->color('gray')
             ->modalWidth('xl')
             ->modalFooterActionsAlignment('right')
+            ->modalSubmitActionLabel('Import')
             ->closeModalByClickingAway(false);
 
         // Set the default form for the modal.
