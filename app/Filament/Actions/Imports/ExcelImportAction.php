@@ -49,6 +49,8 @@ class ExcelImportAction extends Action
      */
     protected ?string $sampleUrl = null;
 
+    protected ?string $sampleFileName = null;
+
     /**
      * The label for the sample file download button.
      *
@@ -250,8 +252,13 @@ class ExcelImportAction extends Action
     private function getSampleExcelButton(): ActionsAction
     {
         $action = ActionsAction::make($this->sampleButtonLabel ?: __('Download Sample File'));
+
         if (is_string($this->sampleUrl)) {
-            $action->url($this->sampleUrl);
+            $action->url($this->sampleUrl, shouldOpenInNewTab: true);
+
+            if ($this->sampleFileName) {
+                $action->extraAttributes(['download' => $this->sampleFileName]);
+            }
         } else {
             $action->action(fn() => $this->downloadSampleExcelFile());
         }
@@ -263,12 +270,14 @@ class ExcelImportAction extends Action
      * Set the URL for the sample file.
      *
      * @param  string  $url The URL of the sample file.
+     * @param  string|null  $fileName The name of the file to be downloaded.
      * @param  string|null  $sampleButtonLabel The label for the download button.
      * @return static
      */
-    public function sampleFile(string $url, ?string $sampleButtonLabel = null): static
+    public function sampleFile(string $url, ?string $fileName = null, ?string $sampleButtonLabel = null): static
     {
         $this->sampleUrl = $url;
+        $this->sampleFileName = $fileName;
         $this->sampleButtonLabel = $sampleButtonLabel;
 
         return $this;

@@ -101,6 +101,7 @@ class ReceptionistResource extends BaseEmployeeResource
                 ->modalHeading('Import Receptionists')
                 ->sampleFile(
                     url: url('import/templates/xls/employee-sample.xlsx'),
+                    fileName: 'receptionist-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
                 ),
 
