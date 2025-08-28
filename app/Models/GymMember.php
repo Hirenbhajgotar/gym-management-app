@@ -18,7 +18,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[ObservedBy([GymMemberObserver::class])]
 class GymMember extends Model
 {
-    use LogsActivity, HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'gym_id',
@@ -26,7 +26,6 @@ class GymMember extends Model
         'profile_photo',
         'email',
         'phone',
-        'address',
         'weight',
         'height',
         'age',
@@ -113,7 +112,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 

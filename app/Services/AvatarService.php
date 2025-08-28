@@ -1,5 +1,7 @@
 <?php
+
 // app/Services/AvatarService.php
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
@@ -10,16 +12,16 @@ class AvatarService
     public static function generate($name, $size = 128, $background = '3498db', $color = 'ffffff')
     {
         // $initials = self::getInitials($name);
-        $filename = md5($name . time()) . '.png';
-        $path = 'avatars2/' . $filename;
+        $filename = md5($name.time()).'.png';
+        $path = 'avatars2/'.$filename;
 
         // Ensure the avatars directory exists
-        if (!file_exists(public_path('avatars2'))) {
+        if (! file_exists(public_path('avatars2'))) {
             mkdir(public_path('avatars2'), 0755, true);
         }
 
         // Generate the UI Avatars URL
-        $url = "https://ui-avatars.com/api/?name=" . urlencode($name) . "&size={$size}&background={$background}&color={$color}";
+        $url = 'https://ui-avatars.com/api/?name='.urlencode($name)."&size={$size}&background={$background}&color={$color}";
 
         // Fetch the image
         $response = Http::get($url);
@@ -27,6 +29,7 @@ class AvatarService
         if ($response->successful()) {
             // Save the image to public/avatars/
             Storage::disk('public')->put($path, $response->body());
+
             return $path;
         }
 

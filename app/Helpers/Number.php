@@ -16,7 +16,7 @@ class Number
      */
     public static function abbreviateCurrency($value, $maxValue = 50000, $in = 'INR')
     {
-        if (!$value) {
+        if (! $value) {
             // If the value is 0, return the formatted currency.
             return SupportNumber::currency($value, in: $in);
         }
@@ -28,5 +28,13 @@ class Number
 
         // If the value is greater than the maximum, abbreviate the number.
         return SupportNumber::abbreviate($value, maxPrecision: 2);
+    }
+
+    /**
+     * Clear phone number formats.
+     */
+    public static function clearPhoneNumberFormat(string $phoneNumber): string
+    {
+        return preg_replace('/[^0-9]/', '', $phoneNumber);
     }
 }

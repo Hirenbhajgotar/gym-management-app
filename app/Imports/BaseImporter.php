@@ -246,7 +246,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
     protected function generateFailedRowsExcel(): void
     {
         // Generate a unique file name and path for the failed rows report.
-        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
+        $fileName = 'failed_rows_'  .  $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
         $filePath = 'failed_imports/' . $fileName;
 
         // Create an anonymous class to handle the export of failed data to Excel.

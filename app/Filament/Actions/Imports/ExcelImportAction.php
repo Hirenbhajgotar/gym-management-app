@@ -13,11 +13,8 @@ use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\Validators\ValidationException;
-use Throwable;
 
 /**
  * A custom Filament action for importing data from Excel files.
@@ -30,38 +27,28 @@ class ExcelImportAction extends Action
 {
     /**
      * The importer class to be used for processing the Excel file.
-     *
-     * @var string|Closure|null
      */
     protected string|Closure|null $importer = null;
 
     /**
      * The model class associated with the import.
-     *
-     * @var string|Closure|null
      */
     protected string|Closure|null $model = null;
 
     /**
      * The URL for the sample Excel file.
-     *
-     * @var string|null
      */
     protected ?string $sampleUrl = null;
 
-    protected ?string $sampleFileName = null;
+    protected ?string $sampleFileName = 'sample.xlsx';
 
     /**
      * The label for the sample file download button.
-     *
-     * @var string|null
      */
     protected ?string $sampleButtonLabel = 'Download Sample File';
 
     /**
      * Get the default name for the action.
-     *
-     * @return string|null
      */
     public static function getDefaultName(): ?string
     {
@@ -87,7 +74,7 @@ class ExcelImportAction extends Action
             ->closeModalByClickingAway(false);
 
         // Set the default form for the modal.
-        $this->form(fn(): array => $this->defaultForm());
+        $this->form(fn (): array => $this->defaultForm());
 
         // Define the main action logic.
         $this->action(function (array $data) {
@@ -127,8 +114,7 @@ class ExcelImportAction extends Action
     /**
      * Set the model class for the action.
      *
-     * @param  string|Closure  $model The model class.
-     * @return static
+     * @param  string|Closure  $model  The model class.
      */
     public function use(string|Closure $model): static
     {
@@ -147,7 +133,7 @@ class ExcelImportAction extends Action
      */
     protected function handleFailedRows(array|Collection $failures): void
     {
-        $failedRows = $failures->map(function ($failure) use ($failures) {
+        $failedRows = $failures->map(function ($failure) {
             return [
                 'row_number' => $failure->row(),
                 'attribute' => $failure->attribute(),
@@ -181,8 +167,8 @@ class ExcelImportAction extends Action
             }
         };
 
-        $fileName = 'failed_imports_' . now()->timestamp . '.xlsx';
-        $path = 'failed_imports/' . $fileName;
+        $fileName = 'failed_imports_'.now()->timestamp.'.xlsx';
+        $path = 'failed_imports/'.$fileName;
         Excel::store($export, $path, 'public');
 
         $downloadUrl = Storage::disk('public')->url($path);
@@ -208,8 +194,6 @@ class ExcelImportAction extends Action
 
     /**
      * Create the file upload component for the form.
-     *
-     * @return FileUpload
      */
     private function fileUpload(): FileUpload
     {
@@ -232,8 +216,6 @@ class ExcelImportAction extends Action
 
     /**
      * Get the default form components.
-     *
-     * @return array
      */
     private function defaultForm(): array
     {
@@ -246,8 +228,6 @@ class ExcelImportAction extends Action
 
     /**
      * Get the action for downloading the sample Excel file.
-     *
-     * @return ActionsAction
      */
     private function getSampleExcelButton(): ActionsAction
     {
@@ -260,7 +240,7 @@ class ExcelImportAction extends Action
                 $action->extraAttributes(['download' => $this->sampleFileName]);
             }
         } else {
-            $action->action(fn() => $this->downloadSampleExcelFile());
+            $action->action(fn () => $this->downloadSampleExcelFile());
         }
 
         return $action;
@@ -269,10 +249,9 @@ class ExcelImportAction extends Action
     /**
      * Set the URL for the sample file.
      *
-     * @param  string  $url The URL of the sample file.
-     * @param  string|null  $fileName The name of the file to be downloaded.
-     * @param  string|null  $sampleButtonLabel The label for the download button.
-     * @return static
+     * @param  string  $url  The URL of the sample file.
+     * @param  string|null  $fileName  The name of the file to be downloaded.
+     * @param  string|null  $sampleButtonLabel  The label for the download button.
      */
     public function sampleFile(string $url, ?string $fileName = null, ?string $sampleButtonLabel = null): static
     {

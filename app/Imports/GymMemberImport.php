@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Imports;
+
+use App\Enums\PaymentStatus;
+use App\Helpers\DateHelper;
+use App\Helpers\Number;
+use App\Models\City;
+use App\Models\GymMember;
+use App\Models\MembershipPlan;
+use App\Services\AvatarService;
+use Filament\Facades\Filament;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+
+class GymMemberImport extends BaseImporter implements WithColumnFormatting
+{
+    protected array $dateColumns = [
+        'dob',
+        'membership_start',
+    ];
+
+    public function columnFormats(): array
+    {
+        return [
+            'dob' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'membership_start' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+        ];
+    }
+
+    public function processRow($row): void
+    {
+        $tenant = Filament::getTenant();
+
+        $membershipPlan = null;
+        if (isset($row['membership_plan'])) {
+            $membershipPlan = MembershipPlan::where('name', $row['membership_plan'])->first();
+
+            if (! $membershipPlan) {
+                throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
+            }
+        }
+
+        $trainer = null;
+        if (isset($row['trainer_email'])) {
+            $trainer = \App\Models\Trainer::where('email', $row['trainer_email'])->first();
+        }
+
+        if (isset($row['dob'])) {
+            $row['age'] = DateHelper::calculateAge($row['dob']);
+        }
+
+        if (isset($row['phone'])) {
+            $row['phone'] = Number::clearPhoneNumberFormat($row['phone']);
+        }
+
+        $profileImagePath = null;
+        if (isset($row['name'])) {
+            $profileImagePath = app(AvatarService::class)->generate($row['name']);
+        }
+
+        $gymMember = GymMember::create([
+            'gym_id' => $tenant->id,
+            'name' => $row['name'],
+            'profile_photo' => $profileImagePath,
+            'email' => $row['email'],
+            'phone' => $row['phone'] ?? null,
+            'weight' => $row['weight'] ?? null,
+            'height' => $row['height'] ?? null,
+            'age' => $row['age'] ?? null,
+            'dob' => $row['dob'] ?? null,
+            'membership_start' => $row['membership_start'] ?? now(),
+            'payment_status' => $row['payment_status'] ?? PaymentStatus::PENDING,
+            'gym_membership_plan_id' => $membershipPlan->id ?? null,
+            'trainer_id' => $trainer?->id ?? null,
+        ]);
+
+        if (isset($row['address'])) {
+            $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
+
+            $gymMember->address()->create(['street' => $row['address'], 'city' => $city?->id ?? null, 'state' => $city?->state_id ?? null, 'country' => $city?->state?->country_id ?? null, 'postal_code' => $row['zip_code'] ?? null]);
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:gym_members,email'],
+            'phone' => ['nullable', 'max:20'],
+            'address' => ['nullable', 'string'],
+            'weight' => ['nullable', 'numeric'],
+            'height' => ['nullable', 'numeric'],
+            'age' => ['nullable', 'integer'],
+            'dob' => ['nullable', 'date'],
+            'city' => ['nullable', 'string', 'exists:cities,slug'],
+            'zip_code' => ['nullable', 'string', 'max:20'],
+            'membership_start' => ['nullable', 'date'],
+            'payment_status' => ['nullable', 'string', Rule::enum(PaymentStatus::class)],
+            'membership_plan' => ['nullable', 'string'],
+            'trainer_email' => ['nullable', 'string', 'exists:trainers,email'],
+        ];
+    }
+}
