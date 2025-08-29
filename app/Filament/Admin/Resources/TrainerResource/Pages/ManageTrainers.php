@@ -33,7 +33,7 @@ class ManageTrainers extends ManageRecords
                 ->use(Trainer::class)
                 ->modalHeading('Import Trainers')
                 ->sampleFile(
-                    url: url('import/templates/xls/trainers-sample.xlsx'),
+                    urlOrData: url('import/templates/xls/trainers-sample.xlsx'),
                     sampleButtonLabel: 'Download Sample File'
                 ),
 

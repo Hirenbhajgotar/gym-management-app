@@ -32,7 +32,7 @@ class ListGymMembers extends ListRecords
                 ->use(GymMember::class)
                 ->modalHeading('Import Members')
                 ->sampleFile(
-                    url: url('import/templates/xls/member-sample.xlsx'),
+                    urlOrData: url('import/templates/xls/member-sample.xlsx'),
                     fileName: 'member-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
                 ),
