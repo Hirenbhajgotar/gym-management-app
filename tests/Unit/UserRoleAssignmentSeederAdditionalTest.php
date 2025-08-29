@@ -3,13 +3,11 @@
 namespace Tests\Unit;
 
 use App\Models\Gym;
-use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use Spatie\Permission\Models\Role;
@@ -20,13 +18,14 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     use RefreshDatabase;
 
     protected UserRoleAssignmentSeeder $seeder;
+
     protected $mockCommand;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder();
+        $this->seeder = new UserRoleAssignmentSeeder;
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
@@ -49,7 +48,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         // Create global role
@@ -87,7 +86,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         // Create tenant role
@@ -114,7 +113,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             'user_id' => $user->id,
             'gym_id' => $gym->id,
             'role' => 'trainer',
-            'active' => true
+            'active' => true,
         ]);
     }
 
@@ -125,7 +124,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $role = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
@@ -153,7 +152,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $oldRole = Role::create(['name' => 'gym_owner', 'guard_name' => 'web']);
@@ -165,8 +164,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->with('Select context:', ['Global Roles', 'Specific Gym Roles'], 0)
             ->andReturn('Global Roles');
         $this->mockCommand->shouldReceive('info')->with("User: {$user->name} ({$user->email})");
-        $this->mockCommand->shouldReceive('info')->with("  Current Global Roles: gym_owner");
-        $this->mockCommand->shouldReceive('info')->with("  Associated Tenant Roles: None");
+        $this->mockCommand->shouldReceive('info')->with('  Current Global Roles: gym_owner');
+        $this->mockCommand->shouldReceive('info')->with('  Associated Tenant Roles: None');
         $this->mockCommand->shouldReceive('confirm')
             ->with("Update roles for {$user->name} in the selected context?", false)
             ->andReturn(true);
@@ -196,7 +195,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $role = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
@@ -207,8 +206,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->with('Select context:', ['Global Roles', 'Specific Gym Roles'], 0)
             ->andReturn('Global Roles');
         $this->mockCommand->shouldReceive('info')->with("User: {$user->name} ({$user->email})");
-        $this->mockCommand->shouldReceive('info')->with("  Current Global Roles: super_admin");
-        $this->mockCommand->shouldReceive('info')->with("  Associated Tenant Roles: None");
+        $this->mockCommand->shouldReceive('info')->with('  Current Global Roles: super_admin');
+        $this->mockCommand->shouldReceive('info')->with('  Associated Tenant Roles: None');
         $this->mockCommand->shouldReceive('confirm')
             ->with("Update roles for {$user->name} in the selected context?", false)
             ->andReturn(true);
@@ -236,7 +235,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $oldRole = Role::create(['name' => 'trainer', 'guard_name' => 'web', 'gym_id' => $gym->id]);
@@ -274,7 +273,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             'user_id' => $user->id,
             'gym_id' => $gym->id,
             'role' => 'manager',
-            'active' => true
+            'active' => true,
         ]);
     }
 
@@ -287,7 +286,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $role = Role::create(['name' => 'trainer', 'guard_name' => 'web', 'gym_id' => $gym->id]);
@@ -321,7 +320,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertFalse($user->fresh()->hasRole('trainer'));
         $this->assertDatabaseMissing('gym_user', [
             'user_id' => $user->id,
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
     }
 
@@ -350,8 +349,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for all gyms...');
-        $this->mockCommand->shouldReceive('info')->with("Creating demo users for gym: Gym 1");
-        $this->mockCommand->shouldReceive('info')->with("Creating demo users for gym: Gym 2");
+        $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 1');
+        $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 2');
         $this->mockCommand->shouldReceive('newLine')->times(2);
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
@@ -364,10 +363,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
 
         // Verify users were created for both gyms
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym1->id}@gym.com"
+            'email' => "owner.gym{$gym1->id}@gym.com",
         ]);
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym2->id}@gym.com"
+            'email' => "owner.gym{$gym2->id}@gym.com",
         ]);
     }
 
@@ -394,7 +393,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $existingUser = User::create([
             'name' => 'Old Name',
             'email' => 'john.trainer.gym1@gym.com',
-            'password' => Hash::make('oldpassword')
+            'password' => Hash::make('oldpassword'),
         ]);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
@@ -411,7 +410,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             'role' => 'trainer',
             'gym_id' => $gym->id,
             'profile_data' => ['specialization' => 'Weight Training'],
-            'is_global_role' => false
+            'is_global_role' => false,
         ];
 
         // Create or update user
@@ -433,7 +432,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         // Use reflection to call private method
@@ -447,7 +446,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         // Verify no trainer profile was created
         $this->assertDatabaseMissing('trainers', [
             'user_id' => $user->id,
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
     }
 
@@ -476,14 +475,14 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
         $this->mockCommand->shouldReceive('info')->with("🏢 GYM: Test Gym (ID: {$gym->id})");
-        $this->mockCommand->shouldReceive('info')->with("  ℹ️  No users assigned to this gym via pivot table");
+        $this->mockCommand->shouldReceive('info')->with('  ℹ️  No users assigned to this gym via pivot table');
         $this->mockCommand->shouldReceive('info')->with('');
         $this->mockCommand->shouldReceive('info')->with(str_repeat('-', 80));
-        $this->mockCommand->shouldReceive('info')->with("📈 OVERALL SUMMARY:");
-        $this->mockCommand->shouldReceive('info')->with("📈 Total users: 0");
-        $this->mockCommand->shouldReceive('info')->with("✅ Users with any Spatie role (global/tenant): 0");
-        $this->mockCommand->shouldReceive('info')->with("❌ Users without any Spatie role: 0");
-        $this->mockCommand->shouldReceive('info')->with("🏢 Total active gym assignments (pivot entries): 0");
+        $this->mockCommand->shouldReceive('info')->with('📈 OVERALL SUMMARY:');
+        $this->mockCommand->shouldReceive('info')->with('📈 Total users: 0');
+        $this->mockCommand->shouldReceive('info')->with('✅ Users with any Spatie role (global/tenant): 0');
+        $this->mockCommand->shouldReceive('info')->with('❌ Users without any Spatie role: 0');
+        $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
 
         // Use reflection to call private method
         $reflection = new \ReflectionClass($this->seeder);
@@ -500,17 +499,17 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
         $this->mockCommand->shouldReceive('info')->with(str_repeat('-', 80));
-        $this->mockCommand->shouldReceive('info')->with("📈 OVERALL SUMMARY:");
-        $this->mockCommand->shouldReceive('info')->with("📈 Total users: 1");
-        $this->mockCommand->shouldReceive('info')->with("✅ Users with any Spatie role (global/tenant): 0");
-        $this->mockCommand->shouldReceive('info')->with("❌ Users without any Spatie role: 1");
-        $this->mockCommand->shouldReceive('info')->with("🏢 Total active gym assignments (pivot entries): 0");
+        $this->mockCommand->shouldReceive('info')->with('📈 OVERALL SUMMARY:');
+        $this->mockCommand->shouldReceive('info')->with('📈 Total users: 1');
+        $this->mockCommand->shouldReceive('info')->with('✅ Users with any Spatie role (global/tenant): 0');
+        $this->mockCommand->shouldReceive('info')->with('❌ Users without any Spatie role: 1');
+        $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
         $this->mockCommand->shouldReceive('warn')->with("⚠️  1 users don't have any Spatie roles assigned!");
 
         // Use reflection to call private method

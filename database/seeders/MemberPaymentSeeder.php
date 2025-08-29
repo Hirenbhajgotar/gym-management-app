@@ -17,6 +17,7 @@ class MemberPaymentSeeder extends Seeder
 
         if ($members->isEmpty()) {
             $this->command->warn('⚠️  No members found - nothing to seed.');
+
             return;
         }
 
@@ -61,8 +62,7 @@ class MemberPaymentSeeder extends Seeder
 
         // Chunk insert for speed
         collect($payments)->chunk(500)->each(
-            fn($chunk) =>
-            MemberPayment::insert($chunk->toArray())
+            fn ($chunk) => MemberPayment::insert($chunk->toArray())
         );
 
         $this->command->info('✅ Seeded ' . count($payments) . ' payments for ' . $members->count() . ' members.');

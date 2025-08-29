@@ -6,7 +6,6 @@ use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
 use App\Notifications\ReceptionistCreate;
-use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;

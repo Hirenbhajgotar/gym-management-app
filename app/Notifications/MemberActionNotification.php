@@ -35,7 +35,7 @@ class MemberActionNotification extends Notification implements ShouldQueue
                 'has_details' => ! is_null($details),
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error creating member notification: '.$e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Error creating member notification: ' . $e->getMessage(), [
                 'action' => $action,
                 'error' => $e->getMessage(),
             ]);

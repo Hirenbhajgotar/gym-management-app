@@ -41,13 +41,13 @@ class PulseDashboard extends Page
             ActionGroup::make([
                 Action::make('1h')
                     ->label('1 Hour')
-                    ->action(fn() => $this->redirect($this->getUrl())),
+                    ->action(fn () => $this->redirect($this->getUrl())),
                 Action::make('24h')
                     ->label('24 Hours')
-                    ->action(fn() => $this->redirect($this->getUrl(['period' => '24_hours']))),
+                    ->action(fn () => $this->redirect($this->getUrl(['period' => '24_hours']))),
                 Action::make('7d')
                     ->label('7 Days')
-                    ->action(fn() => $this->redirect($this->getUrl(['period' => '7_days']))),
+                    ->action(fn () => $this->redirect($this->getUrl(['period' => '7_days']))),
             ])
                 ->label('Time Period')
                 ->icon('heroicon-m-funnel')
@@ -60,7 +60,7 @@ class PulseDashboard extends Page
                 ->icon('heroicon-m-arrow-path')
                 ->size(ActionSize::Small)
                 ->color('gray')
-                ->action(fn() => $this->redirect($this->getUrl(request()->query()))),
+                ->action(fn () => $this->redirect($this->getUrl(request()->query()))),
         ];
     }
 
@@ -74,7 +74,7 @@ class PulseDashboard extends Page
             PulseQueues::class,
             PulseSlowQueries::class,
             PulseSlowRequests::class,
-            PulseSlowOutGoingRequests::class
+            PulseSlowOutGoingRequests::class,
         ];
     }
 }

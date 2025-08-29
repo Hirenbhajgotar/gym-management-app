@@ -126,9 +126,9 @@ class CreateGymMember extends CreateRecord
 
             // Ensure required member data is available
             if (
-                !isset($this->paymentData['membership_plan_id']) ||
-                !isset($this->paymentData['membership_start']) ||
-                !isset($this->paymentData['membership_end'])
+                ! isset($this->paymentData['membership_plan_id']) ||
+                ! isset($this->paymentData['membership_start']) ||
+                ! isset($this->paymentData['membership_end'])
             ) {
                 Log::error('Missing required member data for email notification', [
                     'member_id' => $this->record->id,
@@ -136,6 +136,7 @@ class CreateGymMember extends CreateRecord
                     'has_start_date' => isset($this->paymentData['membership_start']),
                     'has_end_date' => isset($this->paymentData['membership_end']),
                 ]);
+
                 return;
             }
 
@@ -149,7 +150,7 @@ class CreateGymMember extends CreateRecord
         }
 
         // Create the payment if payment data is provided
-        if (!empty($this->paymentData['membership_plan_id'])) {
+        if (! empty($this->paymentData['membership_plan_id'])) {
             $this->record->payments()->create([
                 'member_id' => $this->record->id,
                 'membership_plan_id' => $this->paymentData['membership_plan_id'],
@@ -203,7 +204,7 @@ class CreateGymMember extends CreateRecord
     {
         return [
             Hidden::make('user_id')
-                ->default(fn() => auth()->id()),
+                ->default(fn () => auth()->id()),
 
             Forms\Components\Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
@@ -222,7 +223,7 @@ class CreateGymMember extends CreateRecord
                         ->live()
                         ->rules([
                             'required_if:visible,true',
-                            fn($get) => function ($attribute, $value, $fail) {
+                            fn ($get) => function ($attribute, $value, $fail) {
                                 if (auth()->user()->hasRole('gym_owner') && ! $value) {
                                     $fail('You must create a gym before adding members.');
                                 }
@@ -233,9 +234,10 @@ class CreateGymMember extends CreateRecord
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
                             $gymId = $get('gym_id');
-                            if (!$gymId) {
+                            if (! $gymId) {
                                 return [];
                             }
+
                             return Trainer::where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')
@@ -244,7 +246,7 @@ class CreateGymMember extends CreateRecord
                         ->reactive()
                         ->nullable()
                         ->afterStateHydrated(function ($state, callable $set, $record) {
-                            if (!$state && $record) {
+                            if (! $state && $record) {
                                 $set('trainer_id', null);
                             }
                         })
@@ -267,7 +269,7 @@ class CreateGymMember extends CreateRecord
                         })
                         ->options(function (callable $get) {
                             $gymId = $get('gym_id');
-                            if (!$gymId) {
+                            if (! $gymId) {
                                 return [];
                             }
 
@@ -310,6 +312,7 @@ class CreateGymMember extends CreateRecord
                         ->required()
                         ->prefix(function ($get) {
                             $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+
                             return $currency?->getSymbol() ?? Currency::INR->getSymbol();
                         })
                         ->minValue(0)
@@ -318,7 +321,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(Currency::INR->value)
@@ -326,7 +329,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('payment_method')
                         ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(PaymentMethod::CASH->value),

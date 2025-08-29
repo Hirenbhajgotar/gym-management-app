@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
 use App\Filament\Admin\Resources\ManagerResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListManagers extends ListRecords

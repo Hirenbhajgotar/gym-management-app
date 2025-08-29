@@ -2,8 +2,6 @@
 
 namespace App\Filament\Exports;
 
-use Filament\Actions\Exports\ExportColumn;
-use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 class ReceptionistExporter extends BaseEmployeeExporter

@@ -66,7 +66,7 @@ class EditManager extends EditRecord
 
         // Update password only if a new value is provided
         if (filled($data['password'])) {
-            $userData['password'] =  $data['password'];
+            $userData['password'] = $data['password'];
         }
 
         // dd($userData);

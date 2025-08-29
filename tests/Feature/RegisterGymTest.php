@@ -2,24 +2,22 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Gym;
 use App\Models\State;
+use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Mockery;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class RegisterGymTest extends TestCase
 {
@@ -48,7 +46,7 @@ class RegisterGymTest extends TestCase
 
         // A regular user that already owns a gym
         $this->gymOwner = User::factory()->create();
-        $this->tenant   = Gym::factory()
+        $this->tenant = Gym::factory()
             ->hasAttached($this->gymOwner, ['role' => DefaultRole::GYM_OWNER->value], 'users')
             ->create();
     }
@@ -153,7 +151,7 @@ class RegisterGymTest extends TestCase
 
         // Act: Instantiate RegisterGym and set authenticated user
         $this->actingAs($this->gymOwner);
-        $registerGym = new RegisterGym();
+        $registerGym = new RegisterGym;
 
         // Assert: hasReachedGymLimit returns true
         $result = $this->invokeProtectedMethod($registerGym, 'hasReachedGymLimit');

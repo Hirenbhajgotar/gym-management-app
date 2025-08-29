@@ -26,7 +26,7 @@ class GymMemberExporter extends Exporter
             ExportColumn::make('membership_start'),
             ExportColumn::make('membership_end'),
             ExportColumn::make('payment_status')
-                ->formatStateUsing(fn($state) => $state?->value ?? 'N/A'),
+                ->formatStateUsing(fn ($state) => $state?->value ?? 'N/A'),
             ExportColumn::make('trainer.name'),
             ExportColumn::make('membershipPlan.name'),
             ExportColumn::make('created_at'),

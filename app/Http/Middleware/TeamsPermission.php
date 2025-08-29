@@ -34,6 +34,7 @@ class TeamsPermission
 
             $this->setTeamId($tenant?->id);
         }
+
         return $next($request);
     }
 

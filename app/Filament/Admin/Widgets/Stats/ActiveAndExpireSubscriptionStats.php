@@ -56,7 +56,7 @@ class ActiveAndExpireSubscriptionStats extends BaseWidget
         return auth()->user()->hasRole([
             DefaultRole::GYM_OWNER->value,
             DefaultRole::MANAGER->value,
-            DefaultRole::RECEPTIONIST->value
+            DefaultRole::RECEPTIONIST->value,
         ]);
     }
 }

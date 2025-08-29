@@ -38,11 +38,12 @@ class Attendances extends Model
     {
         return Attribute::make(
             get: function ($value) {
-                if (!$this->check_out_time) {
+                if (! $this->check_out_time) {
                     return null;
                 }
 
                 $diff = $this->check_in_time->diff($this->check_out_time);
+
                 return $diff->format('%H:%I:%S');
             },
         );
@@ -52,7 +53,7 @@ class Attendances extends Model
     {
         return Attribute::make(
             get: function ($value) {
-                if (!$this->check_in_time || !$this->check_out_time) {
+                if (! $this->check_in_time || ! $this->check_out_time) {
                     return null;
                 }
 
@@ -65,7 +66,7 @@ class Attendances extends Model
     {
         return Attribute::make(
             get: function ($value) {
-                return $this->check_in_time && !$this->check_out_time;
+                return $this->check_in_time && ! $this->check_out_time;
             },
         );
     }

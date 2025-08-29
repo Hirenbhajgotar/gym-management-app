@@ -3,7 +3,6 @@
 namespace App\Filament\SuperAdmin\Resources\FeedbackResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\FeedbackResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateFeedback extends CreateRecord

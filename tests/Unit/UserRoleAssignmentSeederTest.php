@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\Gym;
-use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
@@ -20,13 +19,14 @@ class UserRoleAssignmentSeederTest extends TestCase
     use RefreshDatabase;
 
     protected UserRoleAssignmentSeeder $seeder;
+
     protected $mockCommand;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder();
+        $this->seeder = new UserRoleAssignmentSeeder;
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
@@ -48,7 +48,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('choice')
             ->once()
             ->with(
-                "Select option for:",
+                'Select option for:',
                 Mockery::type('array'),
                 0
             )
@@ -69,26 +69,26 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
         $this->mockCommand->shouldReceive('info')->with('🌍 GLOBAL USERS (Users with Global Roles like super_admin, gym_owner):');
-        $this->mockCommand->shouldReceive('info')->with("  🔹 super_admin: 1 users");
+        $this->mockCommand->shouldReceive('info')->with('  🔹 super_admin: 1 users');
         $this->mockCommand->shouldReceive('info')->with('');
         $this->mockCommand->shouldReceive('info')->with(str_repeat('-', 80));
-        $this->mockCommand->shouldReceive('info')->with("📈 OVERALL SUMMARY:");
-        $this->mockCommand->shouldReceive('info')->with("📈 Total users: 1");
-        $this->mockCommand->shouldReceive('info')->with("✅ Users with any Spatie role (global/tenant): 1");
-        $this->mockCommand->shouldReceive('info')->with("❌ Users without any Spatie role: 0");
-        $this->mockCommand->shouldReceive('info')->with("🏢 Total active gym assignments (pivot entries): 0");
+        $this->mockCommand->shouldReceive('info')->with('📈 OVERALL SUMMARY:');
+        $this->mockCommand->shouldReceive('info')->with('📈 Total users: 1');
+        $this->mockCommand->shouldReceive('info')->with('✅ Users with any Spatie role (global/tenant): 1');
+        $this->mockCommand->shouldReceive('info')->with('❌ Users without any Spatie role: 0');
+        $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
 
         $this->seeder->run();
 
         $this->assertDatabaseHas('users', [
             'name' => 'Super Admin',
-            'email' => 'admin@example.com'
+            'email' => 'admin@example.com',
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => 'super_admin',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
     }
 
@@ -101,7 +101,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('choice')
             ->once()
             ->with(
-                "Select option for:",
+                'Select option for:',
                 Mockery::type('array'),
                 0
             )
@@ -111,7 +111,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('choice')
             ->with('Select gym:', ['Test Gym'], 0)
             ->andReturn('Test Gym');
-        $this->mockCommand->shouldReceive('info')->with("Creating demo users for gym: Test Gym");
+        $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Test Gym');
 
         // Mock all the user creation info messages
         $this->mockCommand->shouldReceive('info')->withArgs(function ($message) {
@@ -136,10 +136,10 @@ class UserRoleAssignmentSeederTest extends TestCase
 
         // Verify demo users were created
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym->id}@gym.com"
+            'email' => "owner.gym{$gym->id}@gym.com",
         ]);
         $this->assertDatabaseHas('users', [
-            'email' => "alex.manager.gym{$gym->id}@gym.com"
+            'email' => "alex.manager.gym{$gym->id}@gym.com",
         ]);
     }
 
@@ -157,11 +157,11 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
         $this->mockCommand->shouldReceive('info')->with(str_repeat('-', 80));
-        $this->mockCommand->shouldReceive('info')->with("📈 OVERALL SUMMARY:");
-        $this->mockCommand->shouldReceive('info')->with("📈 Total users: 0");
-        $this->mockCommand->shouldReceive('info')->with("✅ Users with any Spatie role (global/tenant): 0");
-        $this->mockCommand->shouldReceive('info')->with("❌ Users without any Spatie role: 0");
-        $this->mockCommand->shouldReceive('info')->with("🏢 Total active gym assignments (pivot entries): 0");
+        $this->mockCommand->shouldReceive('info')->with('📈 OVERALL SUMMARY:');
+        $this->mockCommand->shouldReceive('info')->with('📈 Total users: 0');
+        $this->mockCommand->shouldReceive('info')->with('✅ Users with any Spatie role (global/tenant): 0');
+        $this->mockCommand->shouldReceive('info')->with('❌ Users without any Spatie role: 0');
+        $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
 
         $this->seeder->run();
     }
@@ -181,13 +181,13 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->assertDatabaseHas('roles', [
             'name' => 'super_admin',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => 'gym_owner',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
     }
 
@@ -210,7 +210,7 @@ class UserRoleAssignmentSeederTest extends TestCase
             $this->assertDatabaseHas('roles', [
                 'name' => $role,
                 'guard_name' => 'web',
-                'gym_id' => $gym->id
+                'gym_id' => $gym->id,
             ]);
         }
     }
@@ -236,7 +236,7 @@ class UserRoleAssignmentSeederTest extends TestCase
                 $this->assertDatabaseHas('roles', [
                     'name' => $role,
                     'guard_name' => 'web',
-                    'gym_id' => $gym->id
+                    'gym_id' => $gym->id,
                 ]);
             }
         }
@@ -285,7 +285,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         User::create([
             'name' => 'Existing User',
             'email' => 'existing@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -359,28 +359,28 @@ class UserRoleAssignmentSeederTest extends TestCase
 
         // Verify users were created with correct roles
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym->id}@gym.com"
+            'email' => "owner.gym{$gym->id}@gym.com",
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
 
         // Verify gym_user pivot entries
         $this->assertDatabaseHas('gym_user', [
             'gym_id' => $gym->id,
             'role' => 'gym_owner',
-            'active' => true
+            'active' => true,
         ]);
 
         $this->assertDatabaseHas('gym_user', [
             'gym_id' => $gym->id,
             'role' => 'trainer',
-            'active' => true
+            'active' => true,
         ]);
     }
 
@@ -406,7 +406,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->assertDatabaseHas('trainers', [
             'gym_id' => $gym->id,
             'name' => 'John Trainer',
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
     }
 
@@ -432,7 +432,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->assertDatabaseHas('gym_members', [
             'gym_id' => $gym->id,
             'name' => 'Emma Member',
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
     }
 
@@ -475,7 +475,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         // Create a role and assign it
@@ -489,23 +489,23 @@ class UserRoleAssignmentSeederTest extends TestCase
             'role' => 'manager',
             'active' => true,
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
 
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
         $this->mockCommand->shouldReceive('info')->with('🌍 GLOBAL USERS (Users with Global Roles like super_admin, gym_owner):');
-        $this->mockCommand->shouldReceive('info')->with("  🔹 super_admin: 1 users");
+        $this->mockCommand->shouldReceive('info')->with('  🔹 super_admin: 1 users');
         $this->mockCommand->shouldReceive('info')->with('');
         $this->mockCommand->shouldReceive('info')->with("🏢 GYM: Test Gym (ID: {$gym->id})");
-        $this->mockCommand->shouldReceive('info')->with("  🔹 manager: 1 users");
+        $this->mockCommand->shouldReceive('info')->with('  🔹 manager: 1 users');
         $this->mockCommand->shouldReceive('info')->with('');
         $this->mockCommand->shouldReceive('info')->with(str_repeat('-', 80));
-        $this->mockCommand->shouldReceive('info')->with("📈 OVERALL SUMMARY:");
-        $this->mockCommand->shouldReceive('info')->with("📈 Total users: 1");
-        $this->mockCommand->shouldReceive('info')->with("✅ Users with any Spatie role (global/tenant): 1");
-        $this->mockCommand->shouldReceive('info')->with("❌ Users without any Spatie role: 0");
-        $this->mockCommand->shouldReceive('info')->with("🏢 Total active gym assignments (pivot entries): 1");
+        $this->mockCommand->shouldReceive('info')->with('📈 OVERALL SUMMARY:');
+        $this->mockCommand->shouldReceive('info')->with('📈 Total users: 1');
+        $this->mockCommand->shouldReceive('info')->with('✅ Users with any Spatie role (global/tenant): 1');
+        $this->mockCommand->shouldReceive('info')->with('❌ Users without any Spatie role: 0');
+        $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 1');
 
         // Use reflection to call private method
         $reflection = new \ReflectionClass($this->seeder);
@@ -553,7 +553,7 @@ class UserRoleAssignmentSeederTest extends TestCase
             'role' => 'gym_owner',
             'gym_id' => 1,
             'profile_data' => null,
-            'is_global_role' => true
+            'is_global_role' => true,
         ];
 
         // Create global role
@@ -585,7 +585,7 @@ class UserRoleAssignmentSeederTest extends TestCase
             'role' => 'trainer',
             'gym_id' => $gym->id,
             'profile_data' => ['specialization' => 'Weight Training'],
-            'is_global_role' => false
+            'is_global_role' => false,
         ];
 
         // Create tenant role
@@ -608,7 +608,7 @@ class UserRoleAssignmentSeederTest extends TestCase
             'user_id' => $user->id,
             'gym_id' => $gym->id,
             'role' => 'trainer',
-            'active' => true
+            'active' => true,
         ]);
     }
 }

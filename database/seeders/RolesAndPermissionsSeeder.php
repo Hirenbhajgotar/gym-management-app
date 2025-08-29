@@ -5,9 +5,7 @@ namespace Database\Seeders;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission as ModelsPermission;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Arr;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -75,7 +73,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'import',
         ];
 
-
         // Create permissions for each resource
         $allPermissions = [];
         $gymOwnerPermissions = [];
@@ -86,7 +83,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissionName = $action . '_' . $resource;
                 $permission = ModelsPermission::firstOrCreate([
                     'name' => $permissionName,
-                    'guard_name' => 'web'
+                    'guard_name' => 'web',
                 ]);
                 $allPermissions[] = $permission;
 
@@ -161,16 +158,16 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach ($filamentPermissions as $permissionName) {
             $permission = ModelsPermission::firstOrCreate([
                 'name' => $permissionName,
-                'guard_name' => 'web'
+                'guard_name' => 'web',
             ]);
             $allPermissions[] = $permission;
 
             // Add gym owner permissions
-            if (!in_array($resource, $gymOwnerExceptPermissions)) {
+            if (! in_array($resource, $gymOwnerExceptPermissions)) {
                 $gymOwnerPermissions[] = $permission;
             }
 
-            if (!in_array($resource, $filamentManagerPermissions)) {
+            if (! in_array($resource, $filamentManagerPermissions)) {
                 $gymManagerPermissions[] = $permission;
             }
         }

@@ -45,10 +45,10 @@ class AdminPanelProvider extends PanelProvider
                 'danger' => Color::Red,
             ])
             ->spa()
-            ->spaUrlExceptions(fn(): array => [
+            ->spaUrlExceptions(fn (): array => [
                 // Allow all files in the import/templates directory
                 // Allow the download of the sample file
-                url('import/templates/*')
+                url('import/templates/*'),
             ])
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
@@ -130,16 +130,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
             )
             // Add feedback button to sidebar bottom
             ->renderHook(
                 'panels::sidebar.nav.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
             )
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
             );
     }
 

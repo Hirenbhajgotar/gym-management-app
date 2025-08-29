@@ -8,22 +8,16 @@ use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\Importable;
-use Maatwebsite\Excel\Concerns\SkipsFailures;
-use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithSkipDuplicates;
-use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -33,14 +27,18 @@ use Maatwebsite\Excel\Facades\Excel;
  * It includes functionality for tracking successful and failed rows, generating a report of failed rows,
  * and sending notifications upon completion.
  */
-abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkReading, WithBatchInserts
+abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunkReading, WithHeadingRow
 {
     use Importable, SerializesModels;
 
     protected int $successfulRows = 0;
+
     protected int $failedRows = 0;
+
     protected array $failedData = [];
+
     protected $importRecord;
+
     protected ?string $failedFilePath = null;
 
     /**
@@ -74,7 +72,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
      *
      * This method must be implemented by subclasses to define how each row of data is handled.
      *
-     * @param array $row The data from a single row of the import file.
+     * @param  array  $row  The data from a single row of the import file.
      */
     abstract protected function processRow(array $row);
 
@@ -114,7 +112,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
      * and then processes each valid row. It also handles failed validations
      * and exceptions during processing.
      *
-     * @param Collection $collection The collection of rows from the import file.
+     * @param  Collection  $collection  The collection of rows from the import file.
      */
     public function collection(Collection $collection): void
     {
@@ -122,8 +120,9 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
         $filteredCollection = $collection->filter(function ($row) {
             // Convert row to array and remove null or empty values.
             $filteredRow = array_filter($row->toArray(), function ($value) {
-                return !is_null($value) && $value !== '';
+                return ! is_null($value) && $value !== '';
             });
+
             // A row is considered not empty if it has at least one non-empty value.
             return ! empty($filteredRow);
         });
@@ -139,7 +138,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
 
             // Filter out null or empty values from the row data.
             $data = array_filter($rowData, function ($value) {
-                return !is_null($value) && $value !== '';
+                return ! is_null($value) && $value !== '';
             });
 
             // Transform date columns before validation.
@@ -199,7 +198,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
      * This method checks for columns specified in the $dateColumns property
      * and converts Excel date serial numbers to 'Y-m-d' formatted strings.
      *
-     * @param array $data The data array containing the row values.
+     * @param  array  $data  The data array containing the row values.
      */
     protected function transformDates(array &$data): void
     {
@@ -218,7 +217,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
      * This method is called after all rows in the collection have been processed.
      * It generates an Excel file for failed rows (if any) and sends a final notification.
      *
-     * @param Collection $collection The collection of rows that was processed.
+     * @param  Collection  $collection  The collection of rows that was processed.
      */
     protected function afterCollection(Collection $collection): void
     {
@@ -246,7 +245,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
     protected function generateFailedRowsExcel(): void
     {
         // Generate a unique file name and path for the failed rows report.
-        $fileName = 'failed_rows_'  .  $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
+        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
         $filePath = 'failed_imports/' . $fileName;
 
         // Create an anonymous class to handle the export of failed data to Excel.
@@ -352,7 +351,7 @@ abstract class BaseImporter implements ToCollection, WithHeadingRow, WithChunkRe
      * It updates the import record, sends a failure notification to the user,
      * and logs the exception.
      *
-     * @param \Throwable $exception The exception that caused the job to fail.
+     * @param  \Throwable  $exception  The exception that caused the job to fail.
      */
     public function failed(\Throwable $exception): void
     {

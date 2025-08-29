@@ -65,7 +65,7 @@ abstract class BaseEmployeeResource extends Resource
                                 'wire:target' => 'create',
                             ])
                     )
-                    ->contained(true)
+                    ->contained(true),
             ]);
     }
 
@@ -85,10 +85,10 @@ abstract class BaseEmployeeResource extends Resource
                     ->offIcon('heroicon-o-exclamation-triangle')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->getStateUsing(fn($record) => !is_null($record->email_verified_at))
+                    ->getStateUsing(fn ($record) => ! is_null($record->email_verified_at))
                     ->updateStateUsing(function ($record, $state) {
                         $record->update([
-                            'email_verified_at' => $state ? now() : null
+                            'email_verified_at' => $state ? now() : null,
                         ]);
                     }),
 
@@ -104,7 +104,7 @@ abstract class BaseEmployeeResource extends Resource
                     ->label('Monthly Salary')
                     ->money(Currency::INR->value)
                     ->sortable()
-                    ->searchable()
+                    ->searchable(),
             ])
             ->filters([
                 //
@@ -186,7 +186,7 @@ abstract class BaseEmployeeResource extends Resource
                                     country: ['IN', 'PK', 'BD', 'US'],
                                     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
                                     lenient: true,
-                                )
+                                ),
                         ]),
 
                     Grid::make(3)
@@ -265,7 +265,7 @@ abstract class BaseEmployeeResource extends Resource
                 ->icon('heroicon-o-map-pin')
                 ->schema([
                     AddressForm::make('address')
-                        ->columnSpan('full')
+                        ->columnSpan('full'),
                 ]),
         ];
     }
@@ -340,13 +340,13 @@ abstract class BaseEmployeeResource extends Resource
                                 ->label('Password')
                                 ->revealable()
                                 ->password()
-                                ->required(fn(string $operation): bool => $operation === 'create')
+                                ->required(fn (string $operation): bool => $operation === 'create')
                                 ->minLength(8)
                                 ->rules([
-                                    fn($state) => filled($state) ? 'regex:/[A-Z]/' : '',
-                                    fn($state) => filled($state) ? 'regex:/[a-z]/' : '',
-                                    fn($state) => filled($state) ? 'regex:/[0-9]/' : '',
-                                    fn($state) => filled($state) ? 'regex:/[!@#$%^&*(),.?":{}|<>]/' : '',
+                                    fn ($state) => filled($state) ? 'regex:/[A-Z]/' : '',
+                                    fn ($state) => filled($state) ? 'regex:/[a-z]/' : '',
+                                    fn ($state) => filled($state) ? 'regex:/[0-9]/' : '',
+                                    fn ($state) => filled($state) ? 'regex:/[!@#$%^&*(),.?":{}|<>]/' : '',
                                 ])
                                 ->prefixIcon('heroicon-o-lock-closed')
                                 ->validationMessages([
@@ -367,13 +367,13 @@ abstract class BaseEmployeeResource extends Resource
                             Forms\Components\TextInput::make('passwordConfirmation')
                                 ->label('Confirm Password')
                                 ->password()
-                                ->required(fn(string $operation): bool => $operation === 'create')
+                                ->required(fn (string $operation): bool => $operation === 'create')
                                 ->minLength(8)
                                 ->same('password')
                                 ->dehydrated(false)
                                 ->revealable()
                                 ->prefixIcon('heroicon-o-lock-closed'),
-                        ])
+                        ]),
                 ]),
 
             Section::make('Account Settings')
@@ -409,8 +409,12 @@ abstract class BaseEmployeeResource extends Resource
 
     // Abstract methods that child classes must implement
     abstract protected static function getEmployeeRole(): string;
+
     abstract protected static function getSalaryPrefix(): string;
+
     abstract protected static function getSkillsOptions(): array;
+
     abstract protected static function getTableActions(): array;
+
     abstract public static function getCommonHeaderActions(): array;
 }

@@ -4,12 +4,11 @@
 
 namespace App\Filament\BasePages;
 
+use App\Enums\PermissionCategory;
 use App\Filament\Admin\Clusters\Permissions;
+use App\Helpers\NotificationHelper;
 use App\Models\Permission;
 use App\Models\User;
-use App\Models\PermissionSetting;
-use App\Enums\PermissionCategory;
-use App\Helpers\NotificationHelper;
 use App\Traits\DefaultPermissionResourceTrait;
 use Exception;
 use Filament\Actions\Action;
@@ -23,17 +22,16 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\ActionSize;
-use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Filament;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use ValueError;
 
 abstract class BasePermissionsPage extends Page implements HasForms
 {
-    use InteractsWithForms, DefaultPermissionResourceTrait;
+    use DefaultPermissionResourceTrait, InteractsWithForms;
 
     protected static ?string $cluster = Permissions::class;
     // protected static string $view = 'filament.admin.clusters.permissions.pages.base-permissions-page';
@@ -41,13 +39,18 @@ abstract class BasePermissionsPage extends Page implements HasForms
     public ?array $data = [];
 
     public $defaultResources;
+
     public $defaultWidgets;
+
     public $defaultReports;
+
     public $defaultOtherResource;
 
     // Abstract properties that child classes must define
     abstract protected function getRoleName(): string;
+
     abstract protected function getRoleDisplayName(): string;
+
     // abstract protected function getDefaultPermissions(): array;
     abstract protected function getQuickSetupPermissions(): array;
 
@@ -80,7 +83,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
         $defaultWidgets = $this->getDefaultWidgets();
         $defaultReports = $this->getDefaultReports();
         $defaultOtherResource = $this->getOtherDefaultResource();
-
 
         return $form
             ->schema([
@@ -116,7 +118,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             ->where('gym_id', $currentTenant?->id)
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             // If role doesn't exist for this gym, create it
             $role = Role::create([
                 'name' => $roleName,
@@ -140,7 +142,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
         // Group permissions by category for form filling - only include categories that should be displayed
         foreach ($permissionsByCategory as $category => $permissions) {
-            if (empty($category) || !in_array($category, $allCategories)) {
+            if (empty($category) || ! in_array($category, $allCategories)) {
                 continue;
             }
 
@@ -170,7 +172,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role = Role::firstOrCreate([
                 'name' => $roleName,
                 'guard_name' => 'web',
-                'gym_id' => $currentTenant?->id
+                'gym_id' => $currentTenant?->id,
             ]);
 
             // Collect all permissions from the form
@@ -260,7 +262,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
      *
      * @return \Filament\Actions\Action
      */
-
     public function getResetPermissionAction()
     {
         return Action::make('reset_permissions')
@@ -437,6 +438,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         try {
             $permissionCategory = PermissionCategory::from($category);
+
             return $permissionCategory->getIcon() ?? 'heroicon-o-folder';
         } catch (ValueError) {
             // If category doesn't exist in enum, return default icon

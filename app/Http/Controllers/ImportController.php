@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ImportController extends Controller
@@ -26,9 +25,7 @@ class ImportController extends Controller
 
         $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromArray
         {
-            public function __construct(private readonly array $data)
-            {
-            }
+            public function __construct(private readonly array $data) {}
 
             public function array(): array
             {

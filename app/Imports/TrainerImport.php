@@ -5,7 +5,6 @@ namespace App\Imports;
 use App\Enums\Currency;
 use App\Models\Trainer;
 use Filament\Facades\Filament;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 

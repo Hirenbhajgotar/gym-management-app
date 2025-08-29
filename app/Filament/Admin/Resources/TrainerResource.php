@@ -32,6 +32,7 @@ class TrainerResource extends Resource
 
         return false;
     }
+
     public static function getNavigationBadge(): ?string
     {
         $modelClass = static::$model;
@@ -180,7 +181,7 @@ class TrainerResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
-                            fn(Currency $currency) => [$currency->value => $currency->getLabel()]
+                            fn (Currency $currency) => [$currency->value => $currency->getLabel()]
                         ))
                         ->required()
                         ->default(Currency::INR->value)
@@ -193,7 +194,7 @@ class TrainerResource extends Resource
                         ->required()
                         ->default(0.00)
                         ->step(0.01)
-                        ->prefix(fn($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
+                        ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
                         ->placeholder('0.00')
                         ->columnSpan(1),
 
@@ -204,7 +205,7 @@ class TrainerResource extends Resource
                         ->required()
                         ->default(0.00)
                         ->step(0.01)
-                        ->prefix(fn($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
+                        ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
                         ->placeholder('0.00')
                         ->columnSpan(1),
                 ])
@@ -230,14 +231,14 @@ class TrainerResource extends Resource
                 AssignedMembersColumn::make('assigned_members')
                     ->label('Assigned Members'),
                 Tables\Columns\TextColumn::make('basic_salary')
-                    ->money(fn($record) => $record->currency),
+                    ->money(fn ($record) => $record->currency),
                 Tables\Columns\TextColumn::make('pt_salary_per_member')
                     ->label('PT Salary/Member')
-                    ->money(fn($record) => $record->currency),
+                    ->money(fn ($record) => $record->currency),
                 Tables\Columns\TextColumn::make('total_earnings')
                     ->label('Total Earnings')
-                    ->money(fn($record) => $record->currency)
-                    ->getStateUsing(fn($record) => $record->total_earnings),
+                    ->money(fn ($record) => $record->currency)
+                    ->getStateUsing(fn ($record) => $record->total_earnings),
                 Tables\Columns\IconColumn::make('is_available')
                     ->boolean(),
             ])
@@ -265,8 +266,8 @@ class TrainerResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['basic_salary_min'], fn($q, $min) => $q->where('basic_salary', '>=', $min))
-                            ->when($data['basic_salary_max'], fn($q, $max) => $q->where('basic_salary', '<=', $max));
+                            ->when($data['basic_salary_min'], fn ($q, $min) => $q->where('basic_salary', '>=', $min))
+                            ->when($data['basic_salary_max'], fn ($q, $max) => $q->where('basic_salary', '<=', $max));
                     }),
             ])
             ->actions([

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\DefaultRole;
-use Illuminate\Foundation\Testing\WithFaker;
 use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Models\Address;
 use App\Models\City;
@@ -21,9 +20,12 @@ class EditGymProfileTest extends TestCase
     use RefreshDatabase;
 
     protected User $superAdmin;
+
     protected User $gymOwner;
+
     protected User $otherUser;
-    protected Gym  $tenant;
+
+    protected Gym $tenant;
 
     protected function setUp(): void
     {
@@ -35,7 +37,7 @@ class EditGymProfileTest extends TestCase
         $this->superAdmin = User::factory()->create()->assignRole(DefaultRole::SUPER_ADMIN->value);
 
         $this->gymOwner = User::factory()->create()->assignRole(DefaultRole::GYM_OWNER->value);
-        $this->tenant   = Gym::factory()
+        $this->tenant = Gym::factory()
             ->hasAttached($this->gymOwner, ['role' => DefaultRole::GYM_OWNER->value], 'users')
             ->has(Address::factory()->for(Gym::factory()), 'address') // existing address
             ->create();

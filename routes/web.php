@@ -4,7 +4,6 @@ use App\Livewire\Frontend\HomeController;
 use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Notification;
-use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
@@ -16,9 +15,10 @@ use Livewire\Volt\Volt;
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('/thank-you', function () {
-    if (!session()->has('success')) {
+    if (! session()->has('success')) {
         return redirect()->route('home');
     }
+
     return view('thank-you');
 })->name('thank-you');
 
@@ -27,7 +27,6 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
-
 
 Route::middleware(['auth'])->group(function () {
     // Download failed rows CSV
@@ -58,7 +57,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Serve the file
         $fullPath = Storage::disk('public')->path($import->file_path);
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             abort(404, 'File not found.');
         }
 
@@ -75,9 +74,10 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/download-sample/{file}', function ($file, \Illuminate\Http\Request $request) {
     $fileName = $request->get('fileName', 'sample.xlsx');
     $path = 'import/templates/xls/' . $file;
-    if (!Storage::disk('public')->exists($path)) {
+    if (! Storage::disk('public')->exists($path)) {
         abort(404);
     }
+
     return Storage::disk('public')->download($path, $fileName);
 })->name('download.sample');
 

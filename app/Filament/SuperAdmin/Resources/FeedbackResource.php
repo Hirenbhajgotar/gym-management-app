@@ -3,25 +3,20 @@
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages;
-use App\Filament\SuperAdmin\Resources\FeedbackResource\RelationManagers;
 use App\Models\Feedback;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
-use Filament\Infolists\Components\ImageEntry;
-use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Storage;
 use Mokhosh\FilamentRating\Columns\RatingColumn;
 use Mokhosh\FilamentRating\Components\Rating;
 use Mokhosh\FilamentRating\Entries\RatingEntry;
-use Filament\Infolists\Components;
 
 class FeedbackResource extends Resource
 {
@@ -156,10 +151,10 @@ class FeedbackResource extends Resource
                                         // if (in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
                                         //     return "
                                         //         <div class='inline-block m-2'>
-                                        //             <img src='{$fileUrl}' 
-                                        //                  alt='{$fileName}' 
-                                        //                  class='w-24 h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 shadow-sm' 
-                                        //                  onclick='openImageModal(\"{$fileUrl}\", \"{$fileName}\")' 
+                                        //             <img src='{$fileUrl}'
+                                        //                  alt='{$fileName}'
+                                        //                  class='w-24 h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200 shadow-sm'
+                                        //                  onclick='openImageModal(\"{$fileUrl}\", \"{$fileName}\")'
                                         //                  title='Click to view full size - {$fileName}' />
                                         //             <p class='text-xs text-gray-600 mt-1 text-center max-w-24 truncate'>{$fileName}</p>
                                         //         </div>
@@ -167,9 +162,9 @@ class FeedbackResource extends Resource
                                         // } else {
                                         //     return "
                                         //         <div class='inline-block m-2'>
-                                        //             <a href='{$fileUrl}' 
-                                        //                target='_blank' 
-                                        //                download='{$fileName}' 
+                                        //             <a href='{$fileUrl}'
+                                        //                target='_blank'
+                                        //                download='{$fileName}'
                                         //                class='flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 w-24'>
                                         //                 <svg class='w-8 h-8 text-gray-400 mb-2' fill='currentColor' viewBox='0 0 20 20'>
                                         //                     <path fill-rule='evenodd' d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z' clip-rule='evenodd'></path>
@@ -252,10 +247,11 @@ class FeedbackResource extends Resource
                                             });
                                         </script>
                                         ";
+
                                     return new \Illuminate\Support\HtmlString($filesList);
                                 })
                                 ->html(),
-                        ])
+                        ]),
                     ])
                     ->collapsible(),
             ]);

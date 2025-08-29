@@ -16,7 +16,7 @@ class MembershipPlanObserver
         $recipient = $membershipPlan?->owner ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
-        if (!$recipient) {
+        if (! $recipient) {
             return;
         }
 
@@ -46,7 +46,7 @@ class MembershipPlanObserver
         $recipient = $membershipPlan?->owner ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
-        if (!$recipient) {
+        if (! $recipient) {
             return;
         }
 

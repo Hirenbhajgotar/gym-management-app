@@ -9,8 +9,11 @@ use App\Filament\BasePages\BasePermissionsPage;
 class ManagerPermissionsPage extends BasePermissionsPage
 {
     protected ?string $heading = 'Manager Permissions';
+
     protected static ?string $title = 'Manager';
+
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+
     protected static ?string $slug = 'manager';
 
     protected static string $view = 'filament.admin.clusters.permissions.pages.receptionist-permissions-page';

@@ -5,16 +5,13 @@ namespace App\Filament\SuperAdmin\Resources;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
-use App\Filament\SuperAdmin\Resources\ErrorReportResource\RelationManagers;
 use App\Models\ErrorReport;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ErrorReportResource extends Resource
 {
@@ -127,7 +124,7 @@ class ErrorReportResource extends Resource
                     Tables\Actions\BulkAction::make('markResolved')
                         ->label('Mark as Resolved')
                         ->icon('heroicon-m-check-circle')
-                        ->action(fn(Collection $records) => static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED->value]))
+                        ->action(fn (Collection $records) => static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED->value]))
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
@@ -162,12 +159,14 @@ class ErrorReportResource extends Resource
                 'has_critical' => (bool) $stats->has_critical,
             ];
         }
+
         return self::$badgeData;
     }
 
     public static function getNavigationBadge(): ?string
     {
         $count = self::getBadgeData()['count'];
+
         return $count > 0 ? (string) $count : null;
     }
 
@@ -178,6 +177,7 @@ class ErrorReportResource extends Resource
             // No badge is shown, so no color is needed.
             return null;
         }
+
         return $data['has_critical'] ? 'danger' : 'warning';
     }
 }

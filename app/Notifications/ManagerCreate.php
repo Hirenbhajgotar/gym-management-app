@@ -7,7 +7,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class ManagerCreate extends Notification implements ShouldQueue
@@ -15,8 +14,11 @@ class ManagerCreate extends Notification implements ShouldQueue
     use Queueable;
 
     private User $user;
+
     private string $password;
+
     private string $loginUrl;
+
     private string $appName;
 
     /**
@@ -84,6 +86,7 @@ class ManagerCreate extends Notification implements ShouldQueue
     private function sanitizeUserName(): string
     {
         $name = $this->user->name ?? 'Team Member';
+
         return Str::limit(strip_tags($name), 50);
     }
 
@@ -116,7 +119,7 @@ class ManagerCreate extends Notification implements ShouldQueue
      */
     private function getCredentialsHeader(): string
     {
-        return "**Your Login Credentials:**";
+        return '**Your Login Credentials:**';
     }
 
     /**
@@ -145,7 +148,7 @@ class ManagerCreate extends Notification implements ShouldQueue
      */
     private function getSecurityNotice(): string
     {
-        return "🔒 **Important Security Notice:** Please log in immediately and change your password. For security reasons, this temporary password.";
+        return '🔒 **Important Security Notice:** Please log in immediately and change your password. For security reasons, this temporary password.';
     }
 
     /**

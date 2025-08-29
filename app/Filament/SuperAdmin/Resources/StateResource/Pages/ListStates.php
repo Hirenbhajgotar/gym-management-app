@@ -3,7 +3,6 @@
 namespace App\Filament\SuperAdmin\Resources\StateResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\StateResource;
-use App\Models\Country;
 use App\Models\State;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
@@ -40,11 +39,11 @@ class ListStates extends ListRecords
             'all' => Tab::make('All')->badge($counts->total)
                 ->icon('heroicon-o-globe-alt'),
             'active' => Tab::make('Active')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('states.status', 1))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('states.status', 1))
                 ->badge($counts->active_count)
                 ->icon('heroicon-o-check-circle'),
             'inactive' => Tab::make('Inactive')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('states.status', 0))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('states.status', 0))
                 ->badge($counts->inactive_count)
                 ->icon('heroicon-o-x-circle'),
         ];

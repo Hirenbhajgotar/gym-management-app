@@ -2,14 +2,12 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Enums\AttendanceStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Tables;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -18,7 +16,7 @@ class DashboardMemberAttendanceTable extends BaseWidget
 {
     protected static ?string $heading = 'Today\'s Member Attendance';
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $pollingInterval = '900s';
 
@@ -65,7 +63,7 @@ class DashboardMemberAttendanceTable extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\Action::make('open')
-                    ->url(fn(Attendances $record): string => GymMemberResource::getUrl('edit', ['record' => $record->attendanceable_id])),
+                    ->url(fn (Attendances $record): string => GymMemberResource::getUrl('edit', ['record' => $record->attendanceable_id])),
             ]);
     }
 }

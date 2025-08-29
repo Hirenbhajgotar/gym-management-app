@@ -2,14 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
-use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Actions\FilterAction;
+use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
 
 class Dashboard extends BaseDashboard
@@ -50,8 +49,6 @@ class Dashboard extends BaseDashboard
 
     /**
      * Get the header actions for the component.
-     *
-     * @return array
      */
     protected function getHeaderActions(): array
     {

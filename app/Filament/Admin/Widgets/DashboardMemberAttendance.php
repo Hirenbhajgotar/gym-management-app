@@ -4,8 +4,6 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Filament\BaseWidgets\BaseAttendanceStats;
 use App\Models\GymMember;
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class DashboardMemberAttendance extends BaseAttendanceStats
 {

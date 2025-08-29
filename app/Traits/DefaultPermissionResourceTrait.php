@@ -7,7 +7,9 @@ use App\Models\PermissionSetting;
 trait DefaultPermissionResourceTrait
 {
     private $defaultPermissionResource = null;
+
     public $permissionSettingRole = null;
+
     public $permissionSetting = null;
 
     protected function getDefaultResources(): array
@@ -51,9 +53,9 @@ trait DefaultPermissionResourceTrait
         return $this->permissionSetting?->default_permissions ?? [];
     }
 
-    protected function getPermissionsSettings(?string $role = null): PermissionSetting|null
+    protected function getPermissionsSettings(?string $role = null): ?PermissionSetting
     {
-        if (!$role) {
+        if (! $role) {
             return null;
         }
 
@@ -188,7 +190,7 @@ trait DefaultPermissionResourceTrait
                     'view_payment',
                     'create_payment',
                     'edit_payment',
-                ]
+                ],
             ],
             'manager' => [
                 'default' => [
@@ -223,7 +225,7 @@ trait DefaultPermissionResourceTrait
                     'edit_trainer',
                     'delete_trainer',
                     'manage_staff',
-                ]
+                ],
             ],
             'trainer' => [
                 'default' => [
@@ -253,8 +255,8 @@ trait DefaultPermissionResourceTrait
                     'create_workout_plan',
                     'edit_workout_plan',
                     'assign_workout_plan',
-                ]
-            ]
+                ],
+            ],
         ];
 
         return $permissionMap[$role][$type] ?? [];
@@ -270,27 +272,27 @@ trait DefaultPermissionResourceTrait
                 'resources' => ['gym_member', 'membership_plan', 'attendance', 'payment'],
                 'widgets' => ['widgets'],
                 'reports' => ['report'],
-                'other' => ['communication', 'setting', 'general']
+                'other' => ['communication', 'setting', 'general'],
             ],
             'manager' => [
                 'resources' => ['gym_member', 'membership_plan', 'trainer', 'receptionist', 'attendance', 'payment', 'equipment', 'class'],
                 'widgets' => ['widgets'],
                 'reports' => ['report'],
-                'other' => ['communication', 'setting', 'general', 'system']
+                'other' => ['communication', 'setting', 'general', 'system'],
             ],
             'trainer' => [
                 'resources' => ['gym_member', 'class', 'attendance', 'equipment', 'training_session', 'workout_plan', 'nutrition_plan'],
                 'widgets' => ['widgets'],
                 'reports' => ['report'],
-                'other' => ['communication', 'general']
-            ]
+                'other' => ['communication', 'general'],
+            ],
         ];
 
         return $categoryMap[$role] ?? [
             'resources' => ['gym_member', 'membership_plan'],
             'widgets' => ['widgets'],
             'reports' => ['report'],
-            'other' => ['communication', 'setting', 'general']
+            'other' => ['communication', 'setting', 'general'],
         ];
     }
 
@@ -329,11 +331,12 @@ trait DefaultPermissionResourceTrait
                 'manage_gym_settings',
                 'delete_gym',
                 'transfer_ownership',
-            ]
+            ],
         ];
 
         $restricted = $restrictedPermissions[$role] ?? [];
-        return !in_array($permission, $restricted);
+
+        return ! in_array($permission, $restricted);
     }
 
     /**
@@ -356,7 +359,7 @@ trait DefaultPermissionResourceTrait
                 'view_gym_member',
                 'view_class',
                 'mark_attendance',
-            ]
+            ],
         ];
 
         return $autoSelect[$role] ?? [];
@@ -382,7 +385,7 @@ trait DefaultPermissionResourceTrait
         foreach ($permissions as $permission) {
             if (isset($dependencies[$permission])) {
                 foreach ($dependencies[$permission] as $dependency) {
-                    if (!in_array($dependency, $permissions)) {
+                    if (! in_array($dependency, $permissions)) {
                         $errors[] = "Permission '{$permission}' requires '{$dependency}' to be selected.";
                     }
                 }
@@ -391,7 +394,7 @@ trait DefaultPermissionResourceTrait
 
         // Role-specific validations
         if ($role === 'trainer') {
-            if (in_array('manage_class_bookings', $permissions) && !in_array('view_class', $permissions)) {
+            if (in_array('manage_class_bookings', $permissions) && ! in_array('view_class', $permissions)) {
                 $errors[] = "Trainers need 'view_class' permission to manage class bookings.";
             }
         }
@@ -406,18 +409,18 @@ trait DefaultPermissionResourceTrait
     {
         $suggestions = [];
 
-        if (in_array('view_gym_member', $selectedPermissions) && !in_array('create_gym_member', $selectedPermissions)) {
+        if (in_array('view_gym_member', $selectedPermissions) && ! in_array('create_gym_member', $selectedPermissions)) {
             $suggestions[] = 'create_gym_member';
         }
 
-        if (in_array('create_gym_member', $selectedPermissions) && !in_array('edit_gym_member', $selectedPermissions)) {
+        if (in_array('create_gym_member', $selectedPermissions) && ! in_array('edit_gym_member', $selectedPermissions)) {
             $suggestions[] = 'edit_gym_member';
         }
 
-        if (in_array('view_class', $selectedPermissions) && $role === 'trainer' && !in_array('mark_attendance', $selectedPermissions)) {
+        if (in_array('view_class', $selectedPermissions) && $role === 'trainer' && ! in_array('mark_attendance', $selectedPermissions)) {
             $suggestions[] = 'mark_attendance';
         }
 
-        return array_filter($suggestions, fn($permission) => $this->isPermissionAllowedForRole($permission, $role));
+        return array_filter($suggestions, fn ($permission) => $this->isPermissionAllowedForRole($permission, $role));
     }
 }

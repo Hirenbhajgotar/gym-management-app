@@ -4,9 +4,7 @@ namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\RelationManagers;
 use App\Models\Permission;
-use Filament\Forms;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
@@ -18,7 +16,6 @@ use Filament\Tables\Columns\TagsColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Spatie\Permission\Models\Role;
 
 class RoleResource extends Resource

@@ -20,7 +20,7 @@ class ExportDownloadMiddleware
             if ($exportId) {
                 $export = Export::find($exportId);
 
-                if ($export && !$this->validateExportFile($export)) {
+                if ($export && ! $this->validateExportFile($export)) {
                     Log::error('Export file validation failed in middleware', [
                         'export_id' => $export->id,
                         'file_name' => $export->file_name,
@@ -43,6 +43,7 @@ class ExportDownloadMiddleware
     protected function isExportDownloadRequest(Request $request): bool
     {
         $path = $request->path();
+
         return str_contains($path, 'filament') &&
             str_contains($path, 'export') &&
             str_contains($path, 'download');
@@ -69,33 +70,36 @@ class ExportDownloadMiddleware
     protected function validateExportFile(Export $export): bool
     {
         try {
-            if (!$export->file_name || !$export->file_disk) {
+            if (! $export->file_name || ! $export->file_disk) {
                 Log::error('Export file validation failed: missing file_name or file_disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
             $disk = Storage::disk($export->file_disk);
-            if (!$disk->exists($export->file_name)) {
+            if (! $disk->exists($export->file_name)) {
                 Log::error('Export file validation failed: file does not exist on disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
             // Check if the file is readable
             $stream = $disk->readStream($export->file_name);
-            if (!$stream) {
+            if (! $stream) {
                 Log::error('Export file validation failed: cannot read file stream', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
@@ -109,6 +113,7 @@ class ExportDownloadMiddleware
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return false;
         }
     }

@@ -7,7 +7,6 @@ use App\Enums\PermissionCategory;
 use App\Models\Permission;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\TestCase;
 use Tests\TestCase as TestsTestCase;
 
 class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCase
@@ -19,7 +18,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService();
+        $this->service = new RolesAndPermissionsService;
     }
 
     /** @test */
@@ -237,7 +236,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
                 Permission::create([
                     'name' => $permission,
                     'category' => $category,
-                    'guard_name' => 'web'
+                    'guard_name' => 'web',
                 ]);
             }
         }

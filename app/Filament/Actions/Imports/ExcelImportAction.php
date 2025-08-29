@@ -167,8 +167,8 @@ class ExcelImportAction extends Action
             }
         };
 
-        $fileName = 'failed_imports_'.now()->timestamp.'.xlsx';
-        $path = 'failed_imports/'.$fileName;
+        $fileName = 'failed_imports_' . now()->timestamp . '.xlsx';
+        $path = 'failed_imports/' . $fileName;
         Excel::store($export, $path, 'public');
 
         $downloadUrl = Storage::disk('public')->url($path);

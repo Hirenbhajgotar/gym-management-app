@@ -3,7 +3,6 @@
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePermissionSetting extends CreateRecord

@@ -40,7 +40,7 @@ class CleanResolvedErrorReportsCommand extends Command
         } catch (Exception $e) {
             $this->error('Failed to dispatch cleanup job: ' . $e->getMessage());
             Log::error('Failed to dispatch CleanResolvedErrorReportsJob', [
-                'exception' => $e
+                'exception' => $e,
             ]);
 
             return self::FAILURE;

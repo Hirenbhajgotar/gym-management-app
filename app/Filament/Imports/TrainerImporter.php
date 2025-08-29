@@ -14,7 +14,7 @@ class TrainerImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            
+
             ImportColumn::make('name')
                 ->rules(['max:255']),
             ImportColumn::make('email')

@@ -3,15 +3,15 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\TrainerResource\Pages\ManageTrainers;
+use App\Imports\TrainerImport;
 use App\Models\Trainer;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
-use App\Imports\TrainerImport;
-use Maatwebsite\Excel\Concerns\FromArray;
 
 class ExcelImportTest extends TestCase
 {
@@ -61,9 +61,7 @@ class ExcelImportTest extends TestCase
     {
         $export = new class($data) implements FromArray
         {
-            public function __construct(private readonly array $data)
-            {
-            }
+            public function __construct(private readonly array $data) {}
 
             public function array(): array
             {

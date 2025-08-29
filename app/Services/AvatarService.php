@@ -12,8 +12,8 @@ class AvatarService
     public static function generate($name, $size = 128, $background = '3498db', $color = 'ffffff')
     {
         // $initials = self::getInitials($name);
-        $filename = md5($name.time()).'.png';
-        $path = 'avatars2/'.$filename;
+        $filename = md5($name . time()) . '.png';
+        $path = 'avatars2/' . $filename;
 
         // Ensure the avatars directory exists
         if (! file_exists(public_path('avatars2'))) {
@@ -21,7 +21,7 @@ class AvatarService
         }
 
         // Generate the UI Avatars URL
-        $url = 'https://ui-avatars.com/api/?name='.urlencode($name)."&size={$size}&background={$background}&color={$color}";
+        $url = 'https://ui-avatars.com/api/?name=' . urlencode($name) . "&size={$size}&background={$background}&color={$color}";
 
         // Fetch the image
         $response = Http::get($url);

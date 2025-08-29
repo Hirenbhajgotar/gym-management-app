@@ -40,7 +40,7 @@ class PermissionSettingResource extends Resource
 
                 Forms\Components\Select::make('default_permissions')
                     ->multiple()
-                    ->options(fn() => Permission::whereNotNull('category')
+                    ->options(fn () => Permission::whereNotNull('category')
                         ->where('category', '!=', '')
                         ->orderBy('category')
                         ->orderBy('name')
@@ -110,7 +110,7 @@ class PermissionSettingResource extends Resource
 
                 TextColumn::make('default_permissions')
                     ->label('Default Permissions')
-                    ->getStateUsing(fn($record) => implode(', ', $record->default_permissions ?? []))
+                    ->getStateUsing(fn ($record) => implode(', ', $record->default_permissions ?? []))
                     ->limit(50),
 
                 TextColumn::make('created_at')
@@ -136,7 +136,7 @@ class PermissionSettingResource extends Resource
                         ->icon('heroicon-o-cloud-arrow-down')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalHeading(fn($record) => "Import Permissions for {$record->role->value}")
+                        ->modalHeading(fn ($record) => "Import Permissions for {$record->role->value}")
                         ->modalDescription('This will import default permissions for this specific role.')
                         ->action(function ($record) {
                             ImportDefaultPermissionsJob::dispatch($record->role->value, auth()->id());

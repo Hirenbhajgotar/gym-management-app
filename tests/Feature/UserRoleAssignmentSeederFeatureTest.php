@@ -21,7 +21,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Mock the interactive inputs by creating a custom seeder that doesn't require interaction
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 // Override to create super admin without interaction
@@ -69,7 +70,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
         // Run the seeder via Artisan
         $exitCode = Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         $this->assertEquals(0, $exitCode);
@@ -77,13 +78,13 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         // Verify the super admin was created
         $this->assertDatabaseHas('users', [
             'name' => 'Test Super Admin',
-            'email' => 'admin@test.com'
+            'email' => 'admin@test.com',
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => 'super_admin',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         // Verify user has the role
@@ -94,7 +95,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     /** @test */
     public function it_creates_all_required_global_roles()
     {
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $this->callEnsureRolesExist();
@@ -114,20 +116,20 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         });
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify global roles were created
         $this->assertDatabaseHas('roles', [
             'name' => 'super_admin',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => 'gym_owner',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
     }
 
@@ -137,7 +139,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
         $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $this->callEnsureRolesExist(); // This should create tenant roles for all gyms
@@ -157,7 +160,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         });
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         $tenantRoles = ['manager', 'receptionist', 'trainer', 'member'];
@@ -167,7 +170,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $this->assertDatabaseHas('roles', [
                     'name' => $role,
                     'guard_name' => 'web',
-                    'gym_id' => $gym->id
+                    'gym_id' => $gym->id,
                 ]);
             }
         }
@@ -178,11 +181,12 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (!empty($gyms)) {
+                if (! empty($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -194,6 +198,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $reflection = new \ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
+
                 return $method->invoke($this);
             }
 
@@ -219,41 +224,41 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         });
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify demo users were created
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym->id}@gym.com"
+            'email' => "owner.gym{$gym->id}@gym.com",
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
 
         // Verify gym_user pivot entries
         $this->assertDatabaseHas('gym_user', [
             'gym_id' => $gym->id,
             'role' => 'gym_owner',
-            'active' => true
+            'active' => true,
         ]);
 
         // Verify trainer profile was created
         $this->assertDatabaseHas('trainers', [
             'gym_id' => $gym->id,
             'name' => 'John Trainer',
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
 
         // Verify member profile was created
         $this->assertDatabaseHas('gym_members', [
             'gym_id' => $gym->id,
             'name' => 'Emma Member',
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
     }
 
@@ -263,7 +268,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
         $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $this->callEnsureRolesExist(); // Create roles for all gyms
@@ -279,6 +285,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $reflection = new \ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
+
                 return $method->invoke($this);
             }
 
@@ -304,23 +311,23 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         });
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify users were created for both gyms
         foreach ([$gym1, $gym2] as $gym) {
             $this->assertDatabaseHas('users', [
-                'email' => "owner.gym{$gym->id}@gym.com"
+                'email' => "owner.gym{$gym->id}@gym.com",
             ]);
 
             $this->assertDatabaseHas('users', [
-                'email' => "john.trainer.gym{$gym->id}@gym.com"
+                'email' => "john.trainer.gym{$gym->id}@gym.com",
             ]);
 
             $this->assertDatabaseHas('gym_user', [
                 'gym_id' => $gym->id,
                 'role' => 'gym_owner',
-                'active' => true
+                'active' => true,
             ]);
         }
 
@@ -331,7 +338,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $this->assertDatabaseHas('roles', [
                     'name' => $role,
                     'guard_name' => 'web',
-                    'gym_id' => $gym->id
+                    'gym_id' => $gym->id,
                 ]);
             }
         }
@@ -342,7 +349,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $this->callEnsureRolesExist();
@@ -363,11 +371,11 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
         // Run the seeder twice
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify only one instance of each role exists
@@ -385,11 +393,12 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (!empty($gyms)) {
+                if (! empty($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -401,6 +410,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $reflection = new \ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
+
                 return $method->invoke($this);
             }
 
@@ -427,11 +437,11 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
         // Run the seeder twice
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify only one instance of each user exists
@@ -451,7 +461,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         // Don't create any gyms
 
-        $seeder = new class extends UserRoleAssignmentSeeder {
+        $seeder = new class extends UserRoleAssignmentSeeder
+        {
             public function run(): void
             {
                 $this->callEnsureRolesExist(); // Should only create global roles
@@ -471,20 +482,20 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         });
 
         Artisan::call('db:seed', [
-            '--class' => UserRoleAssignmentSeeder::class
+            '--class' => UserRoleAssignmentSeeder::class,
         ]);
 
         // Verify global roles were created
         $this->assertDatabaseHas('roles', [
             'name' => 'super_admin',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => 'gym_owner',
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         // Verify no tenant roles were created

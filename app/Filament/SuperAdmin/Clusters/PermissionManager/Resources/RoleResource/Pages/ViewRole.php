@@ -4,12 +4,12 @@ namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResou
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ViewRecord;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Pages\ViewRecord;
 
 class ViewRole extends ViewRecord
 {

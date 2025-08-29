@@ -1,5 +1,7 @@
 <?php
+
 // app/Services/AvatarService.php
+
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;
@@ -29,7 +31,7 @@ class AttendanceService
     public static function checkIn(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (!in_array($userType, self::$attendanceModels)) {
+        if (! in_array($userType, self::$attendanceModels)) {
             throw new \Exception('Invalid user type.');
         }
 
@@ -65,7 +67,7 @@ class AttendanceService
     public static function checkOut(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (!in_array($userType, self::$attendanceModels)) {
+        if (! in_array($userType, self::$attendanceModels)) {
             throw new \Exception('Invalid user type.');
         }
 
@@ -75,7 +77,7 @@ class AttendanceService
             ->active()
             ->first();
 
-        if (!$attendance) {
+        if (! $attendance) {
             throw new \Exception('No active check-in found for this user.');
         }
 
@@ -98,7 +100,7 @@ class AttendanceService
     public static function markAbsent(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (!in_array($userType, [GymMember::class, Trainer::class])) {
+        if (! in_array($userType, [GymMember::class, Trainer::class])) {
             throw new \Exception('Invalid user type.');
         }
 
@@ -277,7 +279,7 @@ class AttendanceService
     public static function generateUserReport(int $userId, string $userType, int $gymId, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Validate user type
-        if (!in_array($userType, self::$attendanceModels)) {
+        if (! in_array($userType, self::$attendanceModels)) {
             throw new \Exception('Invalid user type.');
         }
 
@@ -374,7 +376,7 @@ class AttendanceService
             $user = User::find($userId);
         }
 
-        if (!$user) {
+        if (! $user) {
             throw new \Exception('User not found or does not belong to this gym.');
         }
     }

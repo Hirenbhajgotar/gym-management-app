@@ -44,7 +44,7 @@ class UserActionNotification extends Notification
             ->line("A new gym owner has been {$this->action}:")
             ->line("Name: {$this->user->name}")
             ->line("Email: {$this->user->email}")
-            ->when($this->details, fn($mail) => $mail->line("Details: {$this->details}"))
+            ->when($this->details, fn ($mail) => $mail->line("Details: {$this->details}"))
             ->action('View Users', url('/admin/users'));
     }
 

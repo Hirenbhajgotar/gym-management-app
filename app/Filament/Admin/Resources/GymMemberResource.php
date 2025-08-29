@@ -21,13 +21,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
-use Spatie\Permission\Models\Role;
+use Maatwebsite\Excel\Facades\Excel;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class GymMemberResource extends Resource
@@ -42,6 +40,7 @@ class GymMemberResource extends Resource
     {
         $modelClass = static::$model;
         $query = $modelClass::query();
+
         return $query->count();
     }
 
@@ -62,9 +61,10 @@ class GymMemberResource extends Resource
 
         if (filament()->getId() === 'admin') {
             return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } else if (filament()->getId() === 'staff') {
+        } elseif (filament()->getId() === 'staff') {
             return true;
         }
+
         return false;
     }
 
@@ -87,7 +87,7 @@ class GymMemberResource extends Resource
                     Forms\Components\Section::make()
                         ->schema(static::getMembershipFormSchema())
                         ->columns(2),
-                ])
+                ]),
         ];
     }
 
@@ -127,7 +127,7 @@ class GymMemberResource extends Resource
                     ->color('info'),
                 Tables\Columns\TextColumn::make('membership_end')
                     ->formatStateUsing(function ($state) {
-                        if (!$state) {
+                        if (! $state) {
                             return 'Not Set';
                         }
 
@@ -143,6 +143,7 @@ class GymMemberResource extends Resource
                         $diffInMonths = $now->diffInMonths($membershipEnd, false);
                         if ($diffInMonths <= 2 && $diffInMonths >= 0) {
                             $diffInDays = round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
+
                             return "Expire in {$diffInDays} " . Str::plural('day', $diffInDays);
                         }
 
@@ -151,7 +152,7 @@ class GymMemberResource extends Resource
                     })
                     ->badge()
                     ->icon(function ($state) {
-                        if (!$state) {
+                        if (! $state) {
                             return 'heroicon-o-calendar'; // Default icon for "Not Set"
                         }
 
@@ -173,7 +174,7 @@ class GymMemberResource extends Resource
                         return 'heroicon-o-calendar';
                     })
                     ->color(function ($state) {
-                        if (!$state) {
+                        if (! $state) {
                             return 'gray'; // Default color for "Not Set"
                         }
 
@@ -220,7 +221,7 @@ class GymMemberResource extends Resource
                             if (auth()->user()->hasRole('super_admin')) {
                                 return $query;
                             }
-                        } else if (filament()->getId() === 'staff') {
+                        } elseif (filament()->getId() === 'staff') {
                             return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
                         }
                     })
@@ -234,7 +235,7 @@ class GymMemberResource extends Resource
                             if (auth()->user()->hasRole('super_admin')) {
                                 return $query;
                             }
-                        } else if (filament()->getId() === 'staff') {
+                        } elseif (filament()->getId() === 'staff') {
                             return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
                         }
                     })
@@ -281,7 +282,7 @@ class GymMemberResource extends Resource
                             ->required()
                             ->rules([
                                 'required',
-                                fn($get) => function ($attribute, $value, $fail) {
+                                fn ($get) => function ($attribute, $value, $fail) {
                                     if (! Hash::check($value, auth()->user()->password)) {
                                         $fail('The password is incorrect.');
                                     }
@@ -569,7 +570,7 @@ class GymMemberResource extends Resource
     {
         return [
             Hidden::make('user_id')
-                ->default(fn() => auth()->id()),
+                ->default(fn () => auth()->id()),
 
             Forms\Components\Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
@@ -584,12 +585,12 @@ class GymMemberResource extends Resource
                         ->live()
                         ->rules([
                             'required_if:visible,true',
-                            fn($get) => function ($attribute, $value, $fail) {
+                            fn ($get) => function ($attribute, $value, $fail) {
                                 if (filament()->getId() === 'admin') {
                                     if (auth()->user()->hasRole('gym_owner') && ! $value) {
                                         $fail('You must create a gym before adding members.');
                                     }
-                                } else if (filament()->getId() === 'staff') {
+                                } elseif (filament()->getId() === 'staff') {
                                     if (! $value) {
                                         $fail('You must select a gym to assign this member.');
                                     }
@@ -605,6 +606,7 @@ class GymMemberResource extends Resource
                             //     return [];
                             // }
                             $gymId = Filament::getTenant()->id;
+
                             return Trainer::where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')
@@ -613,7 +615,7 @@ class GymMemberResource extends Resource
                         ->reactive()
                         ->nullable()
                         ->afterStateHydrated(function ($state, callable $set, $record) {
-                            if (!$state && $record) {
+                            if (! $state && $record) {
                                 $set('trainer_id', null);
                             }
                         })

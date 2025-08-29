@@ -5,7 +5,6 @@ namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\RelationManagers;
 use App\Models\Permission as ModelsPermission;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
@@ -18,7 +17,6 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Spatie\Permission\Models\Permission;
 
 class PermissionsResource extends Resource

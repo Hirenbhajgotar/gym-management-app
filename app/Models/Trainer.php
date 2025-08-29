@@ -53,6 +53,7 @@ class Trainer extends Model
     public function getTotalEarningsAttribute(): float
     {
         $assignedMembersCount = $this->members()->count();
+
         return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
     }
 

@@ -45,7 +45,6 @@ class ReceptionistsImport extends BaseImporter implements WithColumnFormatting
             'email_verified_at' => now(),
         ]);
 
-
         // Attach the user to the current gym with the specified role.
         $user->gyms()->attach($tenant->id, ['role' => $receptionistRole->value]);
 

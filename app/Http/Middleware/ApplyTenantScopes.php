@@ -11,7 +11,6 @@ use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApplyTenantScopes
@@ -24,23 +23,23 @@ class ApplyTenantScopes
     public function handle(Request $request, Closure $next): Response
     {
         Trainer::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         GymMember::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         MembershipPlan::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         Attendances::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         MemberPayment::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         return $next($request);

@@ -7,7 +7,6 @@ use App\Helpers\Number as HelpersNumber;
 use App\Models\MemberPayment;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Number;
 
 /**
  * Dashboard card that shows daily / weekly / monthly / yearly collections.

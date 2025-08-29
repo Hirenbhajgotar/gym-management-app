@@ -1,107 +1,310 @@
-# Project Overview
+# Gym Management System - AI Code Assistant Context
 
-This is a Laravel 12 application for a gym management system. It utilizes a multi-tenancy architecture with Filament for the admin panel. The application includes features for managing gyms, members, payments, and staff. It uses Livewire and Volt for dynamic interfaces and Spatie's `laravel-permission` for role-based access control.
+## System Overview
 
-# Core Technologies
+This is a **Laravel 12** multi-tenant gym management system with modern architecture and comprehensive features for managing gyms, members, payments, and staff.
 
-This project leverages a modern tech stack to deliver a robust and scalable application. Below is a detailed breakdown of the core technologies and packages used.
+### Core Architecture
 
-### Backend
+- **Multi-tenancy**: Database-per-tenant approach for complete data isolation
+- **Admin Panels**: Multiple Filament panels (SuperAdmin, GymOwner, Manager, Trainer, Staff)
+- **Authentication**: Laravel Sanctum with Spatie Permission-based RBAC
+- **Real-time**: Laravel Reverb WebSocket server with Laravel Echo
 
-| Technology | Version | Description |
-| --- | --- | --- |
-| PHP | ^8.2 | The core programming language for the application. |
-| Laravel | ^12.0 | A web application framework with expressive, elegant syntax. |
-| Filament | ^3.3 | A collection of tools for rapidly building beautiful TALL stack admin panels, forms, and tables. |
-| Livewire | ^3 | A full-stack framework for Laravel that allows you to build dynamic interfaces using simple Blade templates.|
-| Volt | ^1.7.0 | A functional and class-based API for Livewire that supports single-file components. |
-| Spatie Permission | ^6.20 | A package for managing user permissions and roles. |
-| Laravel Reverb | ^1.0 | A first-party, scalable WebSocket server for Laravel applications, providing real-time event broadcasting. |
-| Laravel Pulse | ^1.4 | A real-time application performance monitoring tool and dashboard for Laravel. |
-| Maatwebsite Excel | ^3.1 | A package for handling Excel and CSV files, used for import/export functionality. |
-| Laravel Pint | ^1.22 | An opinionated PHP code style fixer for minimalists. |
-| PHPUnit | ^11.5.3 | The testing framework used for unit and feature tests. |
+## Tech Stack & Versions
+
+### Backend Framework
+
+- **PHP**: ^8.2 (Constructor property promotion, type declarations required)
+- **Laravel**: ^12.0 (Streamlined structure, no middleware directory)
+- **Filament**: ^3.3 (Admin panels, forms, tables - Server-driven UI)
+- **Livewire**: ^3.0 (Dynamic interfaces, Alpine.js included)
+- **Volt**: ^1.7.0 (Single-file Livewire components)
+
+### Key Packages
+
+- **Spatie Permission**: ^6.20 (Roles: SuperAdmin, GymOwner, Manager, Trainer, Receptionist)
+- **Laravel Reverb**: ^1.0 (Real-time WebSocket server)
+- **Laravel Pulse**: ^1.4 (Performance monitoring)
+- **Maatwebsite Excel**: ^3.1 (Import/export functionality)
+- **Laravel Pint**: ^1.22 (Code formatting - MUST run before commits)
 
 ### Frontend
 
-| Technology | Version | Description |
-| --- | --- | --- |
-| Vite | ^6.0 | A next-generation frontend tooling that provides a faster and leaner development experience. |
-| Tailwind CSS | ^4.0.7 | A utility-first CSS framework for rapidly building custom designs. |
-| Alpine.js | - | A rugged, minimal framework for composing JavaScript behavior in your markup. (Included with Livewire) |
-| Laravel Echo | ^2.0.2 | A JavaScript library that makes it painless to subscribe to channels and listen for events broadcast by Laravel. |
-| Pusher-JS | ^8.4.0 | The client-side library for Pusher, used by Laravel Echo to receive real-time events. |
+- **Vite**: ^6.0 (Build tool)
+- **Tailwind CSS**: ^4.0.7 (Utility-first, v4 syntax)
+- **Flux UI**: v2 Free (Livewire component library)
+- **Laravel Echo**: ^2.0.2 (WebSocket client)
+- **Alpine.js**: Included with Livewire
 
 ### Database
 
-| Technology | Description |
-| --- | --- |
-| MySQL | The relational database used for data storage, inferred from the `docker-compose.yml` file. |
+- **MySQL**: Primary database (multi-tenant setup)
 
-# Architecture
+## Directory Structure (Laravel 12)
 
-The application is built on a multi-tenancy model, where each gym operates as a separate tenant. This ensures data isolation and a customized experience for each gym.
+```
+app/
+├── Console/Commands/          # Auto-registered commands
+├── Filament/
+|   |-- Admin/                # Admin panel
+|   |   |-- Resources/        # Admin resources
+|   |   └── Pages/          # Custom admin pages
+|   |-- SuperAdmin/         # SuperAdmin panel
+|   |   |-- Resources/      # SuperAdmin resources
+|   |   └── Pages/           # Custom super-admin pages
+├── Http/
+│   ├── Controllers/         # Standard controllers
+│   └── Requests/           # Form validation classes
+├── Livewire/               # Livewire components (v3 namespace)
+├── Models/                 # Eloquent models with relationships
+└── Policies/              # Authorization policies
 
-- **Multi-tenancy:** The application uses a database-per-tenant approach (can be confirmed by checking tenancy package config). This provides strong data separation between different gyms.
-- **Filament Panels:** The application features multiple Filament panels:
-  - **SuperAdmin Panel:** For global application management.
-  - **Admin Panel:** For gym owners to manage their specific gym.
-  - **Staff Panel:** For gym managers/receptionist to manage their specific gym.
-- **Roles and Permissions:** Spatie's `laravel-permission` package is used to control access to different parts of the application. Roles like `SuperAdmin`, `GymOwner`, `Manager`, `Trainer`, and `Receptionist` have specific permissions.
-- **Directory Structure:** The application follows a standard Laravel 11+ directory structure, with some additions for Filament resources and Livewire/Volt components.
+bootstrap/
+├── app.php                # Middleware, exceptions, routing config
+└── providers.php          # Service providers
 
-# Development Environment
+resources/views/
+├── components/            # Blade components
+├── livewire/             # Livewire views
+└── volt/                 # Volt single-file components
 
-## Prerequisites
-
-- PHP 8.2
-- Node.js & npm
-- Composer
-- Docker (optional, for local development with Laravel Sail)
-
-## Setup and Execution
-
-1. **Install Dependencies:**
-
-    ```bash
-    composer install
-    npm install
-    ```
-
-2. **Environment Configuration:**
-    - Copy `.env.example` to `.env`.
-    - Generate an application key: `php artisan key:generate`
-    - Configure your database and other environment variables in `.env`.
-
-3. **Database Migration:**
-
-    ```bash
-    php artisan migrate
-    ```
-
-4. **Start Development Servers:**
-    The `dev` script in `composer.json` starts the Laravel server, the queue listener, and the Vite development server concurrently.
-
-    ```bash
-    composer run dev
-    ```
-
-## Testing
-
-The project uses PHPUNIT for testing. Run the test suite with:
-
-```bash
-php artisan test
+routes/
+├── web.php               # Web routes
+├── api.php              # API routes
+└── console.php          # Artisan commands
 ```
 
-# Development Conventions & Workflow
+## Development Commands & Workflow
 
-- **Code Formatting:** Laravel Pint is used for code formatting. Run `vendor/bin/pint` to format your code before committing.
-- **Database Migrations:** All database schema changes are managed through migration files.
-- **Frontend Assets:** Frontend assets are compiled and managed by Vite.
-- **Admin Panel:** The admin panel is built with Filament. Follow existing conventions in `app/Filament` when adding new resources or pages.
-- **Dynamic Components:** Use Livewire and Volt for creating dynamic, interactive components.
-- **Authentication & Authorization:** Laravel's built-in authentication is used, with Spatie's `laravel-permission` for fine-grained authorization.
+### Setup Commands
+
+```bash
+# Dependencies
+composer install && npm install
+
+# Environment
+cp .env.example .env
+php artisan key:generate
+
+# Database
+php artisan migrate
+php artisan db:seed
+
+# Development server (concurrent: Laravel + Queue + Vite)
+composer run dev
+```
+
+### Code Quality
+
+```bash
+# Format code (REQUIRED before commits)
+vendor/bin/pint --dirty
+
+# Run tests (feature tests preferred)
+php artisan test
+php artisan test --filter=UserTest
+
+# Build frontend assets
+npm run build  # Production
+npm run dev    # Development
+```
+
+### Artisan Commands (Key Patterns)
+
+```bash
+# Always use --no-interaction for scripts
+php artisan make:model User --factory --seeder --migration --policy
+php artisan make:livewire Posts/CreatePost
+php artisan make:volt dashboard --test
+php artisan filament:resource UserResource --generate
+```
+
+## Code Conventions & Standards
+
+### PHP Standards
+
+- **Constructor promotion**: `public function __construct(public User $user) {}`
+- **Type declarations**: Always use return types and parameter hints
+- **Curly braces**: Required for all control structures
+- **PHPDoc**: Use array shapes, avoid inline comments
+
+### Laravel Patterns
+
+- **Models**: Use `casts()` method over `$casts` property
+- **Validation**: Form Request classes, not inline validation
+- **Relationships**: Type-hinted methods, eager loading for N+1 prevention
+- **Configuration**: Use `config()` never `env()` outside config files
+- **URLs**: Named routes with `route()` function
+
+### Filament Conventions
+
+- **Components**: Use `static make()` methods
+- **Relationships**: Use `->relationship()` for selects/checkboxes
+- **Testing**: Use `livewire(ResourceClass::class)` assertions
+- **Resources**: Auto-generate pages in `Resources/[Name]/Pages/`
+
+### Livewire 3 Patterns
+
+- **Namespace**: `App\Livewire` (not `App\Http\Livewire`)
+- **Events**: `$this->dispatch()` (not `emit`)
+- **Models**: `wire:model.live` for real-time, `wire:model` deferred
+- **Loading states**: `wire:loading`, `wire:dirty`, `wire:target`
+- **Keys in loops**: Always use `wire:key`
+
+### Volt Component Structure
+
+```php
+<?php
+use Livewire\Volt\Component;
+use App\Models\User;
+
+new class extends Component {
+    public string $search = '';
+    public ?User $selectedUser = null;
+    
+    public function mount(): void 
+    {
+        // Initialization
+    }
+    
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+    
+    // Computed properties
+    public function getUsers()
+    {
+        return User::when($this->search, 
+            fn($q) => $q->where('name', 'like', "%{$this->search}%")
+        )->paginate(10);
+    }
+}; ?>
+
+<div>
+    <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." />
+    
+    @foreach($this->users as $user)
+        <div wire:key="user-{{ $user->id }}">
+            {{ $user->name }}
+        </div>
+    @endforeach
+</div>
+```
+
+### Tailwind 4 Usage
+
+```html
+<!-- Spacing: Use gap utilities, not margins -->
+<div class="flex gap-4">
+    <div>Item 1</div>
+    <div>Item 2</div>
+</div>
+
+<!-- Opacity: Use slash notation (v4 syntax) -->
+<div class="bg-black/20 text-white/80"></div>
+
+<!-- Dark mode support (if existing pages support it) -->
+<div class="bg-white dark:bg-gray-900"></div>
+```
+
+### Flux UI Components (Free Edition)
+
+Available components: `avatar`, `badge`, `brand`, `breadcrumbs`, `button`, `callout`, `checkbox`, `dropdown`, `field`, `heading`, `icon`, `input`, `modal`, `navbar`, `profile`, `radio`, `select`, `separator`, `switch`, `text`, `textarea`, `tooltip`
+
+```html
+<flux:button variant="primary" wire:click="save" wire:loading.attr="disabled">
+    <span wire:loading.remove>Save</span>
+    <span wire:loading>Saving...</span>
+</flux:button>
+```
+
+## Testing Patterns
+
+### Feature Tests (Preferred)
+
+```php
+use Tests\TestCase;
+use Livewire\Volt\Volt;
+use App\Models\User;
+
+test('user can create post', function () {
+    $user = User::factory()->create();
+    
+    Volt::test('posts.create')
+        ->actingAs($user)
+        ->set('form.title', 'Test Post')
+        ->set('form.content', 'Test content')
+        ->call('create')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+        
+    expect(Post::where('title', 'Test Post')->exists())->toBeTrue();
+});
+```
+
+### Filament Tests
+
+```php
+test('admin can view users table', function () {
+    $admin = User::factory()->admin()->create();
+    $users = User::factory(3)->create();
+    
+    actingAs($admin);
+    
+    livewire(ListUsers::class)
+        ->assertCanSeeTableRecords($users)
+        ->searchTable($users->first()->name)
+        ->assertCanSeeTableRecords($users->take(1));
+});
+```
+
+## Multi-tenancy Context
+
+- Each gym is a separate tenant with isolated data
+- Tenant switching handled automatically by middleware
+- Database connections per tenant
+- Shared resources in main database (super admin features)
+
+## Role-Based Access Control
+
+- **SuperAdmin**: Global system management
+- **GymOwner**: Full gym management
+- **Manager**: Gym operations management  
+- **Trainer**: Member training management
+- **Receptionist**: Front desk operations
+
+## Performance Considerations
+
+- **Eager loading**: Prevent N+1 queries with `->with()`
+- **Queues**: Use `ShouldQueue` for heavy operations
+- **Caching**: Laravel cache for frequently accessed data
+- **Real-time**: Selective broadcasting with private channels
+
+## Error Handling & Debugging
+
+- **Laravel Pulse**: Monitor application performance
+- **Form validation**: Always use Form Request classes
+- **Exception handling**: Custom exception handlers in `bootstrap/app.php`
+- **Logging**: Structured logging with context
+
+## Security Best Practices
+
+- **Authorization**: Gates and policies for all actions
+- **Validation**: Server-side validation for all inputs
+- **CSRF**: Laravel's built-in CSRF protection
+- **Sanctum**: API authentication and SPA auth
+- **Permission checks**: Verify access in Livewire actions
+
+## AI Assistant Guidelines
+
+- **Search first**: Use documentation search before suggesting solutions
+- **Follow conventions**: Match existing code patterns and structure
+- **Test coverage**: Every change requires corresponding tests
+- **Code quality**: Run Pint formatter before finalizing
+- **Version specific**: Ensure suggestions match package versions
+- **Performance**: Consider N+1 queries and caching implications
 
 # Guidlines
 
@@ -231,7 +434,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## Comments
 
-- Prefer PHPDoc blocks over comments. Never use comments within the code itself unless there is something _very_ complex going on.
+- Prefer PHPDoc blocks over comments. Never use comments within the code itself unless there is something *very* complex going on.
 
 ## PHPDoc Blocks
 
@@ -696,14 +899,14 @@ $delete = fn(Product $product) => $product->delete();
 
 | Deprecated | Replacement |
 |------------+--------------|
-| bg-opacity-_| bg-black/_ |
-| text-opacity-_| text-black/_ |
-| border-opacity-_| border-black/_ |
-| divide-opacity-_| divide-black/_ |
-| ring-opacity-_| ring-black/_ |
-| placeholder-opacity-_| placeholder-black/_ |
-| flex-shrink-_| shrink-_ |
-| flex-grow-_| grow-_ |
+| bg-opacity-*| bg-black/* |
+| text-opacity-*| text-black/* |
+| border-opacity-*| border-black/* |
+| divide-opacity-*| divide-black/* |
+| ring-opacity-*| ring-black/* |
+| placeholder-opacity-*| placeholder-black/* |
+| flex-shrink-*| shrink-* |
+| flex-grow-*| grow-* |
 | overflow-ellipsis | text-ellipsis |
 | decoration-slice | box-decoration-slice |
 | decoration-clone | box-decoration-clone |

@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Filament\Admin\Resources\ReceptionistResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListReceptionists extends ListRecords

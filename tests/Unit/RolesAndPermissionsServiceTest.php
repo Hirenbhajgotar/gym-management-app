@@ -3,15 +3,14 @@
 namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
-use App\Enums\PermissionCategory;
 use App\Models\Gym;
+use App\Models\Permission;
 use App\Models\PermissionSetting;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
-use App\Models\Permission;
-use App\Models\Role;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase
@@ -25,7 +24,7 @@ class RolesAndPermissionsServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService();
+        $this->service = new RolesAndPermissionsService;
 
         $this->app->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -53,20 +52,20 @@ class RolesAndPermissionsServiceTest extends TestCase
             'view_user',
             'create_user',
             'update_user',
-            'delete_user'
+            'delete_user',
         ];
 
         foreach ($permissions as $permissionName) {
             Permission::create([
                 'name' => $permissionName,
-                'guard_name' => 'web'
+                'guard_name' => 'web',
             ]);
         }
 
         // Create a permission setting for gym_owner role
         PermissionSetting::create([
             'role' => 'gym_owner',
-            'default_permissions' => $permissions
+            'default_permissions' => $permissions,
         ]);
 
         // Call the service method
@@ -78,7 +77,7 @@ class RolesAndPermissionsServiceTest extends TestCase
             $this->assertDatabaseHas('roles', [
                 'name' => $role->value,
                 'guard_name' => 'web',
-                'gym_id' => $gym->id
+                'gym_id' => $gym->id,
             ]);
         }
 
@@ -98,7 +97,7 @@ class RolesAndPermissionsServiceTest extends TestCase
 
         // Assert that no roles were created
         $this->assertDatabaseMissing('roles', [
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
     }
 
@@ -135,13 +134,13 @@ class RolesAndPermissionsServiceTest extends TestCase
         $permissions = [
             'view_any_user',
             'view_user',
-            'create_user'
+            'create_user',
         ];
 
         foreach ($permissions as $permissionName) {
             Permission::create([
                 'name' => $permissionName,
-                'guard_name' => 'web'
+                'guard_name' => 'web',
             ]);
         }
 
@@ -150,7 +149,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         foreach ($tenantRoles as $role) {
             PermissionSetting::create([
                 'role' => $role->value,
-                'default_permissions' => $permissions
+                'default_permissions' => $permissions,
             ]);
         }
 
@@ -175,13 +174,13 @@ class RolesAndPermissionsServiceTest extends TestCase
         // Create permissions
         Permission::create([
             'name' => 'view_any_user',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         // Create a permission setting for only one role
         PermissionSetting::create([
             'role' => 'manager',
-            'default_permissions' => ['view_any_user']
+            'default_permissions' => ['view_any_user'],
         ]);
 
         // Call the service method
@@ -193,7 +192,7 @@ class RolesAndPermissionsServiceTest extends TestCase
             $this->assertDatabaseHas('roles', [
                 'name' => $role->value,
                 'guard_name' => 'web',
-                'gym_id' => $gym->id
+                'gym_id' => $gym->id,
             ]);
         }
 
@@ -218,7 +217,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         // Create a permission setting with empty permissions
         PermissionSetting::create([
             'role' => 'gym_owner',
-            'default_permissions' => []
+            'default_permissions' => [],
         ]);
 
         // Call the service method
@@ -228,7 +227,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertDatabaseHas('roles', [
             'name' => 'gym_owner',
             'guard_name' => 'web',
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
 
         // Assert that the role has no permissions
@@ -269,11 +268,11 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gym = Gym::factory()->create();
         $user = User::factory()->create();
 
-        $service = new RolesAndPermissionsService();
+        $service = new RolesAndPermissionsService;
 
         // Act & Assert: Expect exception when role is missing
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Role " . DefaultRole::GYM_OWNER->value . " does not exist for this tenant.");
+        $this->expectExceptionMessage('Role ' . DefaultRole::GYM_OWNER->value . ' does not exist for this tenant.');
 
         $service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
     }

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Exports;
 
-use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 class ManagerExporter extends BaseEmployeeExporter

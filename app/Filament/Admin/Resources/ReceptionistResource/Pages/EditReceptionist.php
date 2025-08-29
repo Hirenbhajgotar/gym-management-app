@@ -5,7 +5,6 @@ namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use Filament\Actions;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -66,7 +65,7 @@ class EditReceptionist extends EditRecord
 
         // Update password only if a new value is provided
         if (filled($data['password'])) {
-            $userData['password'] =  $data['password'];
+            $userData['password'] = $data['password'];
         }
 
         // Update the main user record

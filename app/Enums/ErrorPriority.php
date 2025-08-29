@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum ErrorPriority: string implements HasLabel, HasColor, HasIcon
+enum ErrorPriority: string implements HasColor, HasIcon, HasLabel
 {
     case LOW = 'low';
     case MEDIUM = 'medium';
@@ -33,7 +33,7 @@ enum ErrorPriority: string implements HasLabel, HasColor, HasIcon
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::LOW => 'gray',

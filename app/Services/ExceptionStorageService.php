@@ -2,9 +2,8 @@
 
 namespace App\Services;
 
-use Throwable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
+use Throwable;
 
 class ExceptionStorageService
 {

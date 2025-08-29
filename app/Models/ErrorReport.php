@@ -35,7 +35,7 @@ class ErrorReport extends Model
         'last_occurrence' => 'datetime',
         'status' => ErrorStatus::class,
         'priority' => ErrorPriority::class,
-        'category' => ErrorCategory::class
+        'category' => ErrorCategory::class,
     ];
 
     public function user(): BelongsTo

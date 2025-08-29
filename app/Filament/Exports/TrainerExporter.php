@@ -25,16 +25,16 @@ class TrainerExporter extends Exporter
                 ->counts('members'),
             ExportColumn::make('is_available')
                 ->label('Is Available')
-                ->getStateUsing(fn($record) => $record->is_available ? 'Yes' : 'No'),
+                ->getStateUsing(fn ($record) => $record->is_available ? 'Yes' : 'No'),
             ExportColumn::make('available_hours'),
             ExportColumn::make('basic_salary')
                 ->label('Basic Salary')
-                ->getStateUsing(fn($record) => $record->basic_salary),
+                ->getStateUsing(fn ($record) => $record->basic_salary),
             ExportColumn::make('pt_salary_per_member')
                 ->label('PT Salary/Member'),
             ExportColumn::make('total_earnings')
                 ->label('Total Earnings')
-                ->getStateUsing(fn($record) => $record->total_earnings),
+                ->getStateUsing(fn ($record) => $record->total_earnings),
         ];
     }
 

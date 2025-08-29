@@ -41,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Custom exception reporting
         $exceptions->report(function (Throwable $e) {
             // Skip if error reporting is disabled
-            if (!config('error-reporting.auto_reporting', true)) {
+            if (! config('error-reporting.auto_reporting', true)) {
                 return;
             }
 
@@ -106,6 +106,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withCommands([
         CleanInvalidExportsCommand::class,
-        CleanResolvedErrorReportsCommand::class
+        CleanResolvedErrorReportsCommand::class,
     ])
     ->create();

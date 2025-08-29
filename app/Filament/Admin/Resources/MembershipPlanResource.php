@@ -20,15 +20,15 @@ class MembershipPlanResource extends Resource
 
     protected static ?string $navigationGroup = 'Gym Management';
 
-
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
         if (filament()->getId() === 'admin') {
             return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } else if (filament()->getId() === 'staff') {
+        } elseif (filament()->getId() === 'staff') {
             return $user->hasRole('receptionist');
         }
+
         return false;
     }
 
@@ -46,7 +46,7 @@ class MembershipPlanResource extends Resource
                                     if (auth()->user()->hasRole('gym_owner')) {
                                         return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                     }
-                                } else if (filament()->getId() === 'staff') {
+                                } elseif (filament()->getId() === 'staff') {
                                     // Staff can see all gyms
                                     return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
                                 }
@@ -76,7 +76,7 @@ class MembershipPlanResource extends Resource
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
-                                fn(Currency $currency) => [$currency->value => $currency->getLabel()]
+                                fn (Currency $currency) => [$currency->value => $currency->getLabel()]
                             ))
                             ->required()
                             ->reactive()
@@ -84,7 +84,7 @@ class MembershipPlanResource extends Resource
                         Forms\Components\Select::make('duration')
                             ->label('Duration (Months)')
                             ->options(collect(DurationMonth::cases())->mapWithKeys(
-                                fn(DurationMonth $duration) => [$duration->value => $duration->getLabel()]
+                                fn (DurationMonth $duration) => [$duration->value => $duration->getLabel()]
                             ))
                             ->required()
                             ->default(DurationMonth::THREE_MONTHS->value),
@@ -114,7 +114,7 @@ class MembershipPlanResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(fn($state) => "<div class='flex items-center gap-2'>
+                    ->formatStateUsing(fn ($state) => "<div class='flex items-center gap-2'>
                         <span class='inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-800 rounded-full'>
                             " . strtoupper(substr($state, 0, 1)) . "
                         </span>
@@ -126,7 +126,7 @@ class MembershipPlanResource extends Resource
                     ->badge()
                     ->color('primary'),
                 Tables\Columns\TextColumn::make('price')
-                    ->money(fn($record) => $record->currency)
+                    ->money(fn ($record) => $record->currency)
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
@@ -149,7 +149,7 @@ class MembershipPlanResource extends Resource
                             if (auth()->user()->hasRole('super_admin')) {
                                 return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
                             }
-                        } else if (filament()->getId() === 'staff') {
+                        } elseif (filament()->getId() === 'staff') {
                             return $query;
                         }
                     }),

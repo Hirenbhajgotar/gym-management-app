@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use Filament\Actions\Exports\Downloaders\XlsxDownloader;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -33,33 +32,36 @@ class ExportServiceProvider extends ServiceProvider
     protected function validateExportFile(Export $export): bool
     {
         try {
-            if (!$export->file_name || !$export->file_disk) {
+            if (! $export->file_name || ! $export->file_disk) {
                 Log::error('Export file validation failed: missing file_name or file_disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
             $disk = Storage::disk($export->file_disk);
-            if (!$disk->exists($export->file_name)) {
+            if (! $disk->exists($export->file_name)) {
                 Log::error('Export file validation failed: file does not exist on disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
             // Check if the file is readable
             $stream = $disk->readStream($export->file_name);
-            if (!$stream) {
+            if (! $stream) {
                 Log::error('Export file validation failed: cannot read file stream', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
@@ -73,6 +75,7 @@ class ExportServiceProvider extends ServiceProvider
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return false;
         }
     }

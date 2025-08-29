@@ -39,22 +39,22 @@ class ViewPermissionSetting extends ViewRecord
 
                         TextEntry::make('default_permissions')
                             ->label('Default Permissions')
-                            ->getStateUsing(fn($record) => implode(', ', $record->default_permissions ?? [])),
+                            ->getStateUsing(fn ($record) => implode(', ', $record->default_permissions ?? [])),
 
                         Fieldset::make('Default Resources')
                             ->schema([
                                 TextEntry::make('resources')
                                     ->label('Resources')
-                                    ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['resources'] ?? []))),
+                                    ->getStateUsing(fn ($record) => implode(', ', array_map(fn ($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['resources'] ?? []))),
                                 TextEntry::make('widgets')
                                     ->label('Widgets')
-                                    ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['widgets'] ?? []))),
+                                    ->getStateUsing(fn ($record) => implode(', ', array_map(fn ($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['widgets'] ?? []))),
                                 TextEntry::make('reports')
                                     ->label('reports')
-                                    ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['reports'] ?? []))),
+                                    ->getStateUsing(fn ($record) => implode(', ', array_map(fn ($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['reports'] ?? []))),
                                 TextEntry::make('other')
                                     ->label('Other')
-                                    ->getStateUsing(fn($record) => implode(', ', array_map(fn($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['other'] ?? []))),
+                                    ->getStateUsing(fn ($record) => implode(', ', array_map(fn ($cat) => PermissionCategory::tryFrom($cat)->getLabel() ?? $cat, $record->default_resources['other'] ?? []))),
                             ]),
                         TextEntry::make('created_at')
                             ->label('Created At')

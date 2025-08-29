@@ -8,10 +8,6 @@ class FeedbackHelper
 {
     /**
      * Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
-     *
-     * @param int|null $userId
-     * @param int $days
-     * @return void
      */
     public static function storeFeedbackCache(?int $userId = null, int $days = 25): void
     {
@@ -22,9 +18,6 @@ class FeedbackHelper
 
     /**
      * Get the cache key for the given user ID to check if the feedback popup has been shown.
-     *
-     * @param int|null $userId
-     * @return string
      */
     public static function getFeedbackCacheKey(?int $userId = null): string
     {

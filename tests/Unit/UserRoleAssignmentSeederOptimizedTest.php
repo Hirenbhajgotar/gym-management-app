@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
 use App\Models\Gym;
-use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
@@ -21,13 +20,14 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     use RefreshDatabase;
 
     protected UserRoleAssignmentSeeder $seeder;
+
     protected $mockCommand;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder();
+        $this->seeder = new UserRoleAssignmentSeeder;
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
@@ -74,13 +74,13 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'name' => 'Super Admin',
-            'email' => 'admin@example.com'
+            'email' => 'admin@example.com',
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::SUPER_ADMIN->value,
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $user = User::where('email', 'admin@example.com')->first();
@@ -116,38 +116,38 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
 
         // Verify demo users were created with correct roles using DefaultRole enum
         $this->assertDatabaseHas('users', [
-            'email' => "owner.gym{$gym->id}@gym.com"
+            'email' => "owner.gym{$gym->id}@gym.com",
         ]);
         $this->assertDatabaseHas('users', [
-            'email' => "alex.manager.gym{$gym->id}@gym.com"
+            'email' => "alex.manager.gym{$gym->id}@gym.com",
         ]);
         $this->assertDatabaseHas('users', [
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
         $this->assertDatabaseHas('users', [
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
 
         // Verify roles were created using enum values
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
-            'gym_id' => null // Global role
+            'gym_id' => null, // Global role
         ]);
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::MANAGER->value,
             'guard_name' => 'web',
-            'gym_id' => $gym->id // Tenant role
+            'gym_id' => $gym->id, // Tenant role
         ]);
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::TRAINER->value,
             'guard_name' => 'web',
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::GYM_MEMBER->value,
             'guard_name' => 'web',
-            'gym_id' => $gym->id
+            'gym_id' => $gym->id,
         ]);
     }
 
@@ -163,8 +163,8 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
             ->andReturn('Create demo users for all gyms');
 
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for all gyms...');
-        $this->mockCommand->shouldReceive('info')->with("Creating demo users for gym: Gym 1");
-        $this->mockCommand->shouldReceive('info')->with("Creating demo users for gym: Gym 2");
+        $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 1');
+        $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 2');
         $this->mockCommand->shouldReceive('newLine')->times(2);
 
         // Mock user creation messages
@@ -182,10 +182,10 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         // Verify users were created for both gyms
         foreach ([$gym1, $gym2] as $gym) {
             $this->assertDatabaseHas('users', [
-                'email' => "owner.gym{$gym->id}@gym.com"
+                'email' => "owner.gym{$gym->id}@gym.com",
             ]);
             $this->assertDatabaseHas('users', [
-                'email' => "john.trainer.gym{$gym->id}@gym.com"
+                'email' => "john.trainer.gym{$gym->id}@gym.com",
             ]);
         }
     }
@@ -237,7 +237,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         User::create([
             'name' => 'Existing User',
             'email' => 'existing@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $this->mockCommand->shouldReceive('choice')
@@ -313,19 +313,19 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::SUPER_ADMIN->value,
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::ADMIN->value,
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
 
         $this->assertDatabaseHas('roles', [
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
-            'gym_id' => null
+            'gym_id' => null,
         ]);
     }
 
@@ -348,7 +348,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
             $this->assertDatabaseHas('roles', [
                 'name' => $role->value,
                 'guard_name' => 'web',
-                'gym_id' => $gym->id
+                'gym_id' => $gym->id,
             ]);
         }
     }
@@ -374,7 +374,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
                 $this->assertDatabaseHas('roles', [
                     'name' => $role->value,
                     'guard_name' => 'web',
-                    'gym_id' => $gym->id
+                    'gym_id' => $gym->id,
                 ]);
             }
         }
@@ -402,7 +402,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->assertDatabaseHas('trainers', [
             'gym_id' => $gym->id,
             'name' => 'John Trainer',
-            'email' => "john.trainer.gym{$gym->id}@gym.com"
+            'email' => "john.trainer.gym{$gym->id}@gym.com",
         ]);
     }
 
@@ -428,7 +428,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->assertDatabaseHas('gym_members', [
             'gym_id' => $gym->id,
             'name' => 'Emma Member',
-            'email' => "emma.member.gym{$gym->id}@gmail.com"
+            'email' => "emma.member.gym{$gym->id}@gmail.com",
         ]);
     }
 
@@ -457,7 +457,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
         ]);
 
         $this->mockCommand->shouldReceive('choice')

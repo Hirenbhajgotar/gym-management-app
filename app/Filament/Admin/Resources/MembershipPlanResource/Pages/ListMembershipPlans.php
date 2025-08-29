@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources\MembershipPlanResource\Pages;
 
+use App\Filament\Actions\Imports\ExcelImportAction;
 use App\Filament\Admin\Resources\MembershipPlanResource;
+use App\Imports\MembershipPlansImport;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
@@ -14,6 +16,7 @@ class ListMembershipPlans extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExcelImportAction::make()->importer(MembershipPlansImport::class),
         ];
     }
 }

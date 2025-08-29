@@ -8,9 +8,9 @@ use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 abstract class BaseEmployeeExporter extends Exporter
 {
@@ -24,15 +24,15 @@ abstract class BaseEmployeeExporter extends Exporter
             ExportColumn::make('phone'),
             ExportColumn::make('employeeDetails.hire_date')
                 ->label('Hire Date')
-                ->getStateUsing(fn($record) => Carbon::parse($record->employeeDetails?->hire_date)->format('Y-m-d')),
+                ->getStateUsing(fn ($record) => Carbon::parse($record->employeeDetails?->hire_date)->format('Y-m-d')),
             ExportColumn::make('employeeDetails.monthly_salary'),
             ExportColumn::make('employeeDetails.date_of_birth')
                 ->label('Date of Birth')
-                ->getStateUsing(fn($record) => Carbon::parse($record->employeeDetails?->date_of_birth)->format('Y-m-d')),
+                ->getStateUsing(fn ($record) => Carbon::parse($record->employeeDetails?->date_of_birth)->format('Y-m-d')),
             ExportColumn::make('employeeDetails.gender')
-                ->formatStateUsing(fn($state) => $state?->value ?? 'N/A'),
+                ->formatStateUsing(fn ($state) => $state?->value ?? 'N/A'),
             ExportColumn::make('employeeDetails.marital_status')
-                ->formatStateUsing(fn($state) => $state?->value ?? 'N/A'),
+                ->formatStateUsing(fn ($state) => $state?->value ?? 'N/A'),
             ExportColumn::make('employeeDetails.employment_type'),
             ExportColumn::make('employeeDetails.emergency_contact_name'),
             ExportColumn::make('employeeDetails.emergency_contact_relationship'),
@@ -56,22 +56,24 @@ abstract class BaseEmployeeExporter extends Exporter
     public static function validateExportFile(Export $export): bool
     {
         try {
-            if (!$export->file_name || !$export->file_disk) {
+            if (! $export->file_name || ! $export->file_disk) {
                 Log::error('Export file validation failed: missing file_name or file_disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
             $disk = Storage::disk($export->file_disk);
-            if (!$disk->exists($export->file_name)) {
+            if (! $disk->exists($export->file_name)) {
                 Log::error('Export file validation failed: file does not exist on disk', [
                     'export_id' => $export->id,
                     'file_name' => $export->file_name,
                     'file_disk' => $export->file_disk,
                 ]);
+
                 return false;
             }
 
@@ -82,6 +84,7 @@ abstract class BaseEmployeeExporter extends Exporter
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return false;
         }
     }
@@ -91,7 +94,7 @@ abstract class BaseEmployeeExporter extends Exporter
      */
     public static function handleDownloadError(Export $export): void
     {
-        if (!static::validateExportFile($export)) {
+        if (! static::validateExportFile($export)) {
             // Show error notification to user
             Notification::make()
                 ->title('Export Download Failed')

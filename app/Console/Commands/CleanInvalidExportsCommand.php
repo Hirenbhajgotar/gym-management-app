@@ -21,6 +21,7 @@ class CleanInvalidExportsCommand extends Command
 
         if ($invalidExports->isEmpty()) {
             $this->info('No invalid exports found.');
+
             return self::SUCCESS;
         }
 
@@ -32,11 +33,12 @@ class CleanInvalidExportsCommand extends Command
             $this->line("  Disk: {$export->file_disk}");
             $this->line("  Created: {$export->created_at}");
             $this->line("  Completed: {$export->completed_at}");
-            $this->line("");
+            $this->line('');
         }
 
         if ($this->option('dry-run')) {
             $this->info('Dry run mode - no exports were deleted.');
+
             return self::SUCCESS;
         }
 
@@ -80,15 +82,18 @@ class CleanInvalidExportsCommand extends Command
             if ($export->file_name && $export->file_disk) {
                 try {
                     $disk = Storage::disk($export->file_disk);
-                    return !$disk->exists($export->file_name);
+
+                    return ! $disk->exists($export->file_name);
                 } catch (\Exception $e) {
                     Log::error('Error checking export file existence', [
                         'export_id' => $export->id,
                         'exception' => $e->getMessage(),
                     ]);
+
                     return true; // Consider it invalid if we can't check
                 }
             }
+
             return true;
         });
     }

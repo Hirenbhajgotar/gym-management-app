@@ -6,24 +6,23 @@ use App\Helpers\FeedbackHelper;
 use App\Models\Feedback;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Livewire\Component;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 use Mokhosh\FilamentRating\Components\Rating;
 
 class FeedbackPopup extends Component implements HasForms
 {
-    use WithFileUploads, InteractsWithForms;
+    use InteractsWithForms, WithFileUploads;
 
     public bool $showModal = false;
+
     public ?array $data = [];
 
     public function mount()
@@ -42,14 +41,14 @@ class FeedbackPopup extends Component implements HasForms
 
     protected function checkAndShowPopup()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return;
         }
 
         $cacheKey = FeedbackHelper::getFeedbackCacheKey(Auth::id());
 
         // Check if popup was already shown this week
-        if (!Cache::has($cacheKey)) {
+        if (! Cache::has($cacheKey)) {
             $this->showModal = true;
         }
     }

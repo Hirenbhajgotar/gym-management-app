@@ -4,14 +4,11 @@ namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
-use Filament\Facades\Filament;
-use Filament\FilamentManager;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\EditTenantProfile;
-use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Str;
 
 class EditGymProfile extends EditTenantProfile
