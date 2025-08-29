@@ -14,7 +14,7 @@
                 "firecrawl-mcp"
             ],
             "env": {
-                "FIRECRAWL_API_KEY": "fc-0d29be1361e24ccba4167691da544574"
+                "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
             }
         },
         "laravel-boost": {
@@ -35,7 +35,7 @@
                 "@modelcontextprotocol/server-github"
             ],
             "env": {
-                "GITHUB_PERSONAL_ACCESS_TOKEN": "SHA256:n+WsAFFqPc2z8wsFQpeunmOu0LyavcbzAaHLFnfwX1g"
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
             }
         }
     }

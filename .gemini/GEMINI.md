@@ -1923,7 +1923,7 @@ class StorePaymentRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'amount' => (float) str_replace([', ','], '', $this->amount),
+            'amount' => (float) str_replace([', '], '', $this->amount),
         ]);
     }
 }
@@ -2092,7 +2092,7 @@ new class extends Component {
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Today's Sessions</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Todays Sessions</p>
                     <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $stats['today_sessions'] ?? 0 }}</p>
                 </div>
                 <flux:icon name="calendar" class="h-12 w-12 text-purple-500" />
@@ -2143,7 +2143,7 @@ new class extends Component {
         
         <!-- Today's Training Sessions -->
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
-            <flux:heading size="lg" class="mb-4">Today's Sessions</flux:heading>
+            <flux:heading size="lg" class="mb-4">Todays Sessions</flux:heading>
             
             <div class="space-y-3">
                 @forelse($todaySessions as $session)
@@ -2655,7 +2655,7 @@ public static function form(Form $form): Form
                         ),
                     TextInput::make('monthly_fee')
                         ->numeric()
-                        ->prefix(')
+                        ->prefix('$')
                         ->disabled()
                         ->dehydrated(false),
                 ]),
