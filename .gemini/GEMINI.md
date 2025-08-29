@@ -47,22 +47,40 @@ This is a **Laravel 12** multi-tenant gym management system with modern architec
 app/
 ├── Console/Commands/          # Auto-registered commands
 ├── Filament/
-|   |-- Admin/                # Admin panel
-|   |   |-- Resources/        # Admin resources
-|   |   └── Pages/          # Custom admin pages
-|   |-- SuperAdmin/         # SuperAdmin panel
-|   |   |-- Resources/      # SuperAdmin resources
-|   |   └── Pages/           # Custom super-admin pages
+│   │── Admin/                # Admin panel
+│   │   │── Resources/        # Admin resources
+│   │   └── Pages/          # Custom admin pages
+│   │── SuperAdmin/         # SuperAdmin panel
+│   │   │── Resources/      # SuperAdmin resources
+│   │   └── Pages/           # Custom super-admin pages
+│   ├── Exports/           # Filament Exports
+|   └── Imports/           # Filament Imports 
 ├── Http/
 │   ├── Controllers/         # Standard controllers
 │   └── Requests/           # Form validation classes
+├── Helpers/               # Laravel helpers
 ├── Livewire/               # Livewire components (v3 namespace)
 ├── Models/                 # Eloquent models with relationships
+├── Notifications/          # Laravel notifications
+├── Observers/              # Eloquent models observers
+├── Jobs/                   # Laravel queue jobs
+├── Listeners/               # Laravel event listeners
+├── Policies/               # Authorization policies
+├── Providers/              # Laravel providers 
+├── Rules/                  # Validation rules 
+├── Services/               # Services                    
+├── Exports/                # Laravel export (`maatwebsite/excel`)
+├── Imports/                # Laravel import (`maatwebsite/excel`)
 └── Policies/              # Authorization policies
 
 bootstrap/
 ├── app.php                # Middleware, exceptions, routing config
 └── providers.php          # Service providers
+
+database/
+├── factories/          # Database factories             
+├── migrations/         # Database migrations
+└── seeders/            # Database seeders
 
 resources/views/
 ├── components/            # Blade components
