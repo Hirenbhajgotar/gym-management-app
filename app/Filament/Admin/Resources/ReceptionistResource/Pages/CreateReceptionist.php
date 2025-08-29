@@ -6,7 +6,6 @@ use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
 use App\Notifications\ReceptionistCreate;
-use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -40,10 +39,6 @@ class CreateReceptionist extends CreateRecord
         $plainPassword = $data['password'];
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
-
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
-        }
 
         // Create the user first
         $receptionist = User::create($userData);

@@ -4,8 +4,8 @@ namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Filament\Admin\Resources\ReceptionistResource;
 use Filament\Actions;
-use Filament\Infolists\Infolist;
 use Filament\Infolists\Components;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewReceptionist extends ViewRecord
@@ -27,15 +27,15 @@ class ViewReceptionist extends ViewRecord
         return $infolist
             ->schema([
                 // Profile Section with Avatar and Key Details
-                Components\Section::make('Manager Profile')
-                    ->description('Key information about the manager')
+                Components\Section::make('Receptionist Profile')
+                    ->description('Key information about the receptionist')
                     ->icon('heroicon-o-user-circle')
                     ->schema([
                         Components\Split::make([
                             Components\ImageEntry::make('avatar')
                                 ->label('')
                                 ->circular()
-                                ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=6366F1')
+                                ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=6366F1')
                                 ->grow(false),
 
                             Components\Grid::make(2)
@@ -50,12 +50,12 @@ class ViewReceptionist extends ViewRecord
                                         Components\TextEntry::make('email')
                                             ->copyable()
                                             ->icon('heroicon-o-envelope')
-                                            ->url(fn($record) => "mailto:{$record->email}")
+                                            ->url(fn ($record) => "mailto:{$record->email}")
                                             ->openUrlInNewTab(),
 
                                         Components\TextEntry::make('phone')
                                             ->icon('heroicon-o-phone')
-                                            ->url(fn($record) => "tel:{$record->phone}")
+                                            ->url(fn ($record) => "tel:{$record->phone}")
                                             ->openUrlInNewTab(),
 
                                         Components\TextEntry::make('employeeDetails.gender')
@@ -133,12 +133,12 @@ class ViewReceptionist extends ViewRecord
                                 Components\TextEntry::make('employeeDetails.emergency_contact_phone')
                                     ->label('Phone')
                                     ->icon('heroicon-o-phone')
-                                    ->url(fn($record) => $record->employeeDetails?->emergency_contact_phone ? "tel:{$record->employeeDetails->emergency_contact_phone}" : null),
+                                    ->url(fn ($record) => $record->employeeDetails?->emergency_contact_phone ? "tel:{$record->employeeDetails->emergency_contact_phone}" : null),
 
                                 Components\TextEntry::make('employeeDetails.emergency_contact_email')
                                     ->label('Email')
                                     ->icon('heroicon-o-envelope')
-                                    ->url(fn($record) => $record->employeeDetails?->emergency_contact_email ? "mailto:{$record->employeeDetails->emergency_contact_email}" : null),
+                                    ->url(fn ($record) => $record->employeeDetails?->emergency_contact_email ? "mailto:{$record->employeeDetails->emergency_contact_email}" : null),
                             ]),
                     ])
                     ->collapsible(),
@@ -187,7 +187,7 @@ class ViewReceptionist extends ViewRecord
 
                                 Components\TextEntry::make('employeeDetails.employment_type')
                                     ->label('Employment Type')
-                                    ->formatStateUsing(fn($state) => match ($state) {
+                                    ->formatStateUsing(fn ($state) => match ($state) {
                                         'full_time' => 'Full Time',
                                         'part_time' => 'Part Time',
                                         'contract' => 'Contract',
@@ -212,12 +212,12 @@ class ViewReceptionist extends ViewRecord
 
                 // Skills Section
                 Components\Section::make('Skills & Competencies')
-                    ->description('Manager capabilities and expertise')
+                    ->description('Receptionist capabilities and expertise')
                     ->icon('heroicon-o-academic-cap')
                     ->schema([
                         Components\TextEntry::make('employeeDetails.skills')
                             ->label('Skills')
-                            ->formatStateUsing(fn($state) => collect($state ?? [])->map(function ($skill) {
+                            ->formatStateUsing(fn ($state) => collect($state ?? [])->map(function ($skill) {
                                 return match ($skill) {
                                     'customer_service' => 'Customer Service Excellence',
                                     'phone_handling' => 'Phone Handling & Communication',

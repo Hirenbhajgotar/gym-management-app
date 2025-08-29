@@ -3,9 +3,6 @@
 namespace App\Listeners;
 
 use Filament\Events\TenantSet as EventsTenantSet;
-use Filament\Facades\Filament;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Session;
 use Spatie\Permission\PermissionRegistrar;
 

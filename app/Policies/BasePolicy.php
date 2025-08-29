@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\MembershipPlan;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 abstract class BasePolicy

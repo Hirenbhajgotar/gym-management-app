@@ -2,29 +2,30 @@
 
 namespace App\Filament\Admin\Clusters\Permissions\Pages;
 
-use App\Filament\Admin\Clusters\Permissions;
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Widgets\RolePermissionsStatsWidget;
 use App\Filament\BasePages\BasePermissionsPage;
-use Filament\Pages\Page;
 
 class ManagerPermissionsPage extends BasePermissionsPage
 {
     protected ?string $heading = 'Manager Permissions';
+
     protected static ?string $title = 'Manager';
+
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+
     protected static ?string $slug = 'manager';
 
-    // protected static string $view = 'filament.admin.clusters.permissions.pages.manager-permissions-page';
     protected static string $view = 'filament.admin.clusters.permissions.pages.receptionist-permissions-page';
 
     protected function getRoleName(): string
     {
-        return 'manager';
+        return DefaultRole::MANAGER->value;
     }
 
     protected function getRoleDisplayName(): string
     {
-        return 'Manager';
+        return DefaultRole::MANAGER->getLabel();
     }
 
     protected function getQuickSetupPermissions(): array

@@ -2,29 +2,31 @@
 
 namespace App\Filament\Admin\Clusters\Permissions\Pages;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Widgets\RolePermissionsStatsWidget;
 use App\Filament\BasePages\BasePermissionsPage;
 
 class ReceptionistPermissionsPage extends BasePermissionsPage
 {
     protected ?string $heading = 'Receptionist Permissions';
+
     protected static ?string $title = 'Receptionist';
+
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+
     protected static ?string $slug = 'receptionist';
 
     protected static string $view = 'filament.admin.clusters.permissions.pages.receptionist-permissions-page';
 
     protected function getRoleName(): string
     {
-        return 'receptionist';
+        return DefaultRole::RECEPTIONIST->value;
     }
 
     protected function getRoleDisplayName(): string
     {
-        return 'Receptionist';
+        return DefaultRole::RECEPTIONIST->getLabel();
     }
-
-
 
     protected function getQuickSetupPermissions(): array
     {

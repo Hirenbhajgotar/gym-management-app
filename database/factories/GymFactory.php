@@ -16,8 +16,7 @@ class GymFactory extends Factory
     {
         return [
             'name' => $this->faker->company(),
-            'address' => $this->faker->address(),
-            'owner_id' => null, // Will be set in the seeder
+            'slug' => $this->faker->slug(),
         ];
     }
 }

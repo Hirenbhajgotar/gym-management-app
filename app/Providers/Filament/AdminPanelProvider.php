@@ -45,6 +45,11 @@ class AdminPanelProvider extends PanelProvider
                 'danger' => Color::Red,
             ])
             ->spa()
+            ->spaUrlExceptions(fn (): array => [
+                // Allow all files in the import/templates directory
+                // Allow the download of the sample file
+                url('import/templates/*'),
+            ])
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 // SyncShieldTenant::class,
@@ -88,7 +93,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                // TeamsPermission::class,
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
@@ -125,16 +130,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
             )
             // Add feedback button to sidebar bottom
             ->renderHook(
                 'panels::sidebar.nav.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
             )
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
             );
     }
 

@@ -14,10 +14,7 @@ class TrainerImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('gym')
-                ->requiredMapping()
-                ->relationship()
-                ->rules(['required']),
+
             ImportColumn::make('name')
                 ->rules(['max:255']),
             ImportColumn::make('email')
@@ -47,12 +44,23 @@ class TrainerImporter extends Importer
 
     public function resolveRecord(): ?Trainer
     {
-        // return Trainer::firstOrNew([
-        //     // Update existing records, matching them by `$this->data['column_name']`
-        //     'email' => $this->data['email'],
-        // ]);
+        $trainer = Trainer::firstOrNew(['email' => $this->data['email']]);
 
-        return new Trainer();
+        $trainer->fill([
+            'name' => $this->data['name'],
+            'phone' => $this->data['phone'],
+            'specialization' => $this->data['specialization'],
+            'experience_years' => $this->data['experience_years'],
+            'certifications' => $this->data['certifications'],
+            'is_available' => $this->data['is_available'],
+            'available_hours' => $this->data['available_hours'],
+            'basic_salary' => $this->data['basic_salary'],
+            'pt_salary_per_member' => $this->data['pt_salary_per_member'],
+            'currency' => $this->data['currency'],
+            'gym_id' => $this->options['gym_id'],
+        ]);
+
+        return $trainer;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

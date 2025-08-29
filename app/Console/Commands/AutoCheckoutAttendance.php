@@ -31,7 +31,7 @@ class AutoCheckoutAttendance extends Command
         $gymId = $this->option('gym-id');
         $hoursThreshold = (int) $this->option('hours');
 
-        $this->info("Starting auto check-out process...");
+        $this->info('Starting auto check-out process...');
         $this->info("Hours threshold: {$hoursThreshold}");
 
         try {
@@ -42,7 +42,7 @@ class AutoCheckoutAttendance extends Command
                 $this->info("Auto checked out {$count} attendances for gym {$gymId}");
             } else {
                 // Auto check-out for all gyms
-                $this->info("Processing all gyms...");
+                $this->info('Processing all gyms...');
                 $results = AttendanceService::autoCheckOutAllGyms($hoursThreshold);
 
                 $totalCount = 0;
@@ -54,15 +54,16 @@ class AutoCheckoutAttendance extends Command
                 }
 
                 if ($totalCount === 0) {
-                    $this->info("No attendances required auto check-out");
+                    $this->info('No attendances required auto check-out');
                 } else {
-                    $this->info("Total auto checked out: {$totalCount} attendances across " . count($results) . " gyms");
+                    $this->info("Total auto checked out: {$totalCount} attendances across " . count($results) . ' gyms');
                 }
             }
 
-            $this->info("Auto check-out process completed successfully!");
+            $this->info('Auto check-out process completed successfully!');
         } catch (\Exception $e) {
-            $this->error("Error during auto check-out: " . $e->getMessage());
+            $this->error('Error during auto check-out: ' . $e->getMessage());
+
             return 1;
         }
 

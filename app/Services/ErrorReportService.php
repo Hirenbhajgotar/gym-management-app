@@ -48,7 +48,7 @@ class ErrorReportService
         } catch (Exception $e) {
             Log::error('Failed to create ErrorReport', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -139,7 +139,7 @@ class ErrorReportService
             'file' => $file,
             'line' => $line,
             'exceptionClass' => $exception_class,
-            'errorHash' => $errorHash
+            'errorHash' => $errorHash,
         ];
     }
 
@@ -155,7 +155,6 @@ class ErrorReportService
 
         return $data;
     }
-
 
     public function determinePriority(Throwable $exception): string
     {
@@ -176,6 +175,7 @@ class ErrorReportService
                 if (in_array($errorCode, ['HY000', '42000', '42S02'])) {
                     return ErrorPriority::CRITICAL->value;
                 }
+
                 return ErrorPriority::HIGH->value;
             }
 
@@ -211,8 +211,9 @@ class ErrorReportService
             return ErrorPriority::MEDIUM->value;
         } catch (Exception $e) {
             Log::error('Error determining priority, falling back to medium', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return 'medium'; // Fallback to string value
         }
     }

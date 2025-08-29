@@ -4,29 +4,24 @@ namespace App\Filament\BaseResources;
 
 use App\Enums\AttendanceStatus;
 use App\Filament\Admin\Clusters\Attendances as ClustersAttendances;
-use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats as WidgetsMemberAttendanceStats;
-use App\Filament\Widgets\MemberAttendanceStats;
 use App\Models\Attendance;
 use App\Models\Attendances;
-use App\Models\GymMember;
 use App\Models\Trainer;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Tables\Table;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Actions\BulkAction;
-use Filament\Notifications\Notification;
-use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -62,6 +57,7 @@ abstract class BaseAttendanceResource extends Resource
             // ->preload()
             ->options(function () use ($currentGymId, $attendanceableModel) {
                 $modelClass = $attendanceableModel;
+
                 return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
             });
 
@@ -73,6 +69,7 @@ abstract class BaseAttendanceResource extends Resource
                     $data['gym_id'] = Filament::getTenant()->id;
                     $modelClass = static::getAttendanceableType();
                     $attendance = $modelClass::create($data);
+
                     return $attendance->id;
                 });
         }
@@ -165,6 +162,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->options(function () {
                         $currentGymId = Filament::getTenant()->id;
                         $modelClass = static::getAttendanceableType();
+
                         return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
                     })
                     ->searchable()
@@ -175,7 +173,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->label('Check-In')
                     ->color('success')
                     ->action(function (Model $record) {
-                        if (!$record->check_in_time) {
+                        if (! $record->check_in_time) {
                             $record->update([
                                 'check_in_time' => now(),
                                 'status' => AttendanceStatus::Present,
@@ -186,13 +184,13 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-In')
                     ->modalDescription('Are you sure you want to check in this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-In')
-                    ->visible(fn(Model $record) => !$record->check_in_time),
+                    ->visible(fn (Model $record) => ! $record->check_in_time),
 
                 Action::make('checkOut')
                     ->label('Check-Out')
                     ->color('success')
                     ->action(function (Model $record) {
-                        if ($record->check_in_time && !$record->check_out_time) {
+                        if ($record->check_in_time && ! $record->check_out_time) {
                             $record->update([
                                 'check_out_time' => now(),
                                 'status' => AttendanceStatus::Completed,
@@ -203,13 +201,13 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-Out')
                     ->modalDescription('Are you sure you want to check out this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-Out')
-                    ->visible(fn(Model $record) => $record->check_in_time && !$record->check_out_time),
+                    ->visible(fn (Model $record) => $record->check_in_time && ! $record->check_out_time),
 
                 Action::make('markAbsent')
                     ->label('Mark Absent')
                     ->color('danger')
                     ->action(function (Model $record) {
-                        if (!$record->check_in_time && !$record->check_out_time) {
+                        if (! $record->check_in_time && ! $record->check_out_time) {
                             $record->update([
                                 'status' => AttendanceStatus::Absent,
                             ]);
@@ -219,7 +217,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Mark as Absent')
                     ->modalDescription('Are you sure you want to mark this ' . static::getEntityType() . ' as absent?')
                     ->modalSubmitActionLabel('Yes, Mark Absent')
-                    ->visible(fn(Model $record) => !$record->check_in_time && !$record->check_out_time),
+                    ->visible(fn (Model $record) => ! $record->check_in_time && ! $record->check_out_time),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -232,7 +230,7 @@ abstract class BaseAttendanceResource extends Resource
                         ->color('danger')
                         ->action(function (Collection $records) {
                             $records->each(function (Model $record) {
-                                if (!$record->check_in_time && !$record->check_out_time) {
+                                if (! $record->check_in_time && ! $record->check_out_time) {
                                     $record->update(['status' => AttendanceStatus::Absent]);
                                 }
                             });
@@ -247,7 +245,6 @@ abstract class BaseAttendanceResource extends Resource
     }
 
     abstract protected static function getLabelForSelect(): string;
-
 
     abstract protected static function getEntityType(): string;
 }

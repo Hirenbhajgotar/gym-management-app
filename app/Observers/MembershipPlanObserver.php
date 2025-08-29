@@ -13,10 +13,10 @@ class MembershipPlanObserver
      */
     public function created(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan?->owner ?? auth()->user();
+        $recipient = $membershipPlan->gym?->owner ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
-        if (!$recipient) {
+        if (! $recipient) {
             return;
         }
 
@@ -24,8 +24,7 @@ class MembershipPlanObserver
             ->title('New Subscription Plan Added')
             ->body("Subscription Plan '{$membershipPlan->name}' has been added successfully.")
             ->success()
-            ->sendToDatabase($recipient)
-            ->send();
+            ->sendToDatabase($recipient);
 
         event(new DatabaseNotificationsSent($recipient));
     }
@@ -43,10 +42,10 @@ class MembershipPlanObserver
      */
     public function deleted(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan?->owner ?? auth()->user();
+        $recipient = $membershipPlan->gym?->owner ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
-        if (!$recipient) {
+        if (! $recipient) {
             return;
         }
 

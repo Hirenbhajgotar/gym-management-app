@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Models\GymMember;
 use App\Services\AvatarService;
-use Illuminate\Support\Facades\Log;
 
 class GymMemberObserver
 {
@@ -14,7 +13,7 @@ class GymMemberObserver
     public function created(GymMember $gymMember): void
     {
 
-        if (!$gymMember->profile_photo) {
+        if (! $gymMember->profile_photo) {
             $profile_photo = AvatarService::generate($gymMember->name, background: 'random');
             $gymMember->profile_photo = $profile_photo;
             $gymMember->save(); // Save the updated profile_photo

@@ -4,7 +4,6 @@ namespace App\Filament\SuperAdmin\Resources\CityResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\CityResource;
 use App\Models\City;
-use App\Models\State;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
@@ -40,11 +39,11 @@ class ListCities extends ListRecords
             'all' => Tab::make('All')->badge($counts->total)
                 ->icon('heroicon-o-globe-alt'),
             'active' => Tab::make('Active')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('cities.status', 1))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('cities.status', 1))
                 ->badge($counts->active_count)
                 ->icon('heroicon-o-check-circle'),
             'inactive' => Tab::make('Inactive')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('cities.status', 0))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('cities.status', 0))
                 ->badge($counts->inactive_count)
                 ->icon('heroicon-o-x-circle'),
         ];

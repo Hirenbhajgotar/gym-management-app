@@ -6,8 +6,7 @@ use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\ManagerResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
-use App\Notifications\ReceptionistCreate;
-use Filament\Actions;
+use App\Notifications\ManagerCreate;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -57,10 +56,6 @@ class CreateManager extends CreateRecord
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
-        }
-
         // Create the user first
         $manager = User::create($userData);
 
@@ -72,7 +67,7 @@ class CreateManager extends CreateRecord
             EmployeeDetail::create($employeeDetailsData);
         }
 
-        $managerRole = DefaultRole::MANAGER->value ?? 'manager';
+        $managerRole = DefaultRole::MANAGER->value;
 
         // Assign role
         $manager->assignRole($managerRole);
@@ -88,7 +83,7 @@ class CreateManager extends CreateRecord
         }
 
         // Send welcome email notification
-        $manager->notify(new ReceptionistCreate($manager, $plainPassword));
+        $manager->notify(new ManagerCreate($manager, $plainPassword));
 
         return $manager;
     }

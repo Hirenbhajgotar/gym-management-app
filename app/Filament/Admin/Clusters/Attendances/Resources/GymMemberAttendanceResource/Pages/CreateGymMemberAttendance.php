@@ -3,8 +3,6 @@
 namespace App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
 
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource;
-use App\Models\GymMember;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateGymMemberAttendance extends CreateRecord
@@ -14,6 +12,7 @@ class CreateGymMemberAttendance extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['attendanceable_type'] = static::$resource::getAttendanceableType();
+
         return $data;
     }
 

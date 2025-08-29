@@ -5,7 +5,6 @@ namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use Filament\Actions;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -66,14 +65,9 @@ class EditReceptionist extends EditRecord
 
         // Update password only if a new value is provided
         if (filled($data['password'])) {
-            $userData['password'] =  $data['password'];
+            $userData['password'] = $data['password'];
         }
 
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
-        }
-
-        // dd($userData);
         // Update the main user record
         $record->update($userData);
 
@@ -95,7 +89,7 @@ class EditReceptionist extends EditRecord
         return ReceptionistResource::getUrl('index'); // Redirect to index page after create
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function getSavedNotification(): ?Notification
     {
         return Notification::make()
             ->title('Receptionist Updated')

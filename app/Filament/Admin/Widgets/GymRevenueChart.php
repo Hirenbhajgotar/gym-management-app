@@ -45,7 +45,7 @@ class GymRevenueChart extends ChartWidget
         $tenantId = Filament::getTenant()?->id;
         // Base query for MemberPayment
         $query = MemberPayment::query()
-            ->whereHas('member.gym', fn($query) => $query->where('id', $tenantId));
+            ->whereHas('member.gym', fn ($query) => $query->where('id', $tenantId));
 
         // Apply gym filter if not "All Gyms"
         $selectedGym = $this->filter;

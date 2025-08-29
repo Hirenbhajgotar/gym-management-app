@@ -4,14 +4,11 @@ namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
-use Filament\Facades\Filament;
-use Filament\FilamentManager;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\EditTenantProfile;
-use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Str;
 
 class EditGymProfile extends EditTenantProfile
@@ -34,8 +31,6 @@ class EditGymProfile extends EditTenantProfile
                             ->autofocus()
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state, $context) {
-                                // if ($context === 'create') {
-                                // }
                                 $set('slug', Gym::generateUniqueSlug($state));
                             })
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
@@ -65,7 +60,6 @@ class EditGymProfile extends EditTenantProfile
         $redirectUrl = route($this->getRouteName(), ['tenant' => $this->tenant->slug]);
 
         $this->redirect($redirectUrl);
-        // $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
     }
 
     protected function getSavedNotification(): ?Notification

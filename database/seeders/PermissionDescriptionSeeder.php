@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\PermissionCategory;
 use App\Models\Permission;
 use Exception;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 
@@ -28,11 +27,13 @@ class PermissionDescriptionSeeder extends Seeder
                 'membership_plan' => 'Memberships',
                 'trainer' => 'Trainer',
                 'receptionist' => 'Receptionist',
-                // 'payment',
+                'payment' => 'Payment',
+                'permission' => 'Permission',
                 // 'equipment',
                 // 'workout',
                 // 'schedule',
                 'attendance' => 'Attendance',
+                'manager' => 'Manager',
                 // 'subscription',
                 // 'invoice',
                 // 'report',
@@ -67,11 +68,11 @@ class PermissionDescriptionSeeder extends Seeder
 
                     $permission = Permission::updateOrCreate([
                         'name' => $permissionName,
-                        'guard_name' => 'web'
+                        'guard_name' => 'web',
                     ], [
                         'display_name' => $displayName,
                         'description' => $description,
-                        'category' => $category
+                        'category' => $category,
                     ]);
                     // $allPermissions[] = $permission;
                 }
@@ -133,11 +134,11 @@ class PermissionDescriptionSeeder extends Seeder
                 $description = 'can_' . $permissionName;
                 Permission::updateOrCreate([
                     'name' => $permissionName,
-                    'guard_name' => 'web'
+                    'guard_name' => 'web',
                 ], [
                     'display_name' => ucwords(str_replace(['_', '-'], ' ', $permissionName)),
                     'description' => ucwords(str_replace(['_', '-'], ' ', $description)),
-                    'category' => PermissionCategory::tryFrom($category)->value ?? null
+                    'category' => PermissionCategory::tryFrom($category)->value ?? null,
                 ]);
             }
         } catch (Exception $e) {

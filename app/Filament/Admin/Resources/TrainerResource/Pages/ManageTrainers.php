@@ -2,16 +2,14 @@
 
 namespace App\Filament\Admin\Resources\TrainerResource\Pages;
 
-use App\Filament\Exports\TrainerExporter;
-use App\Filament\Imports\TrainerImporter;
+use App\Filament\Actions\Imports\ExcelImportAction;
 use App\Filament\Admin\Resources\TrainerResource;
+use App\Filament\Exports\TrainerExporter;
 use App\Imports\TrainerImport;
-use EightyNine\ExcelImport\ExcelImportAction;
+use App\Models\Trainer;
 use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
-use Filament\Actions\ImportAction;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,22 +29,12 @@ class ManageTrainers extends ManageRecords
 
             ExcelImportAction::make()
                 ->label('Import Trainers')
-                ->color('gray')
-                ->uploadField(
-                    fn($upload) => $upload
-                        ->label("Import Trainers")
-                )
-                ->use(TrainerImport::class)
-                ->mutateBeforeValidationUsing(function (array $data): array {
-                    // Clean phone number before validation
-                    if (isset($data['phone'])) {
-                        $data['phone'] = preg_replace('/[^0-9]/', '', $data['phone']);
-                    }
-                    return $data;
-                })
-                ->sampleFileExcel(
-                    url: url('import/templates/xls/trainers-sample.xlsx'),
-                    sampleButtonLabel: 'Download Sample Excel'
+                ->importer(TrainerImport::class)
+                ->use(Trainer::class)
+                ->modalHeading('Import Trainers')
+                ->sampleFile(
+                    urlOrData: url('import/templates/xls/trainers-sample.xlsx'),
+                    sampleButtonLabel: 'Download Sample File'
                 ),
 
             Actions\CreateAction::make(),

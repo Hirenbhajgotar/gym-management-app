@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+
 
 #[ObservedBy([MembershipPlanObserver::class])]
 class MembershipPlan extends Model
@@ -45,15 +45,5 @@ class MembershipPlan extends Model
         return $this->hasMany(MembershipPlan::class, 'gym_id');
     }
 
-    public function owner(): HasOneThrough
-    {
-        return $this->hasOneThrough(
-            User::class,
-            Gym::class,
-            'id', // Foreign key on Gym table (gym_id in MembershipPlan)
-            'id', // Foreign key on User table (owner_id in Gym)
-            'gym_id', // Local key on MembershipPlan table
-            'owner_id' // Local key on Gym table
-        );
-    }
+    
 }

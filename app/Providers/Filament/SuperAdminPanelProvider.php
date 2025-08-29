@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\SuperAdmin\Pages\Pulse;
 use App\Filament\SuperAdmin\Pages\PulseDashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;

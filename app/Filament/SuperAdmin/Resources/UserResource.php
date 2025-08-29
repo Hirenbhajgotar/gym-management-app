@@ -2,7 +2,6 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
-use App\Filament\SuperAdmin\Resources\UserResource\Pages;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;

@@ -112,14 +112,14 @@ class CityResource extends Resource
                             ->label('Country')
                             ->options(Country::all()->pluck('name', 'id'))
                             ->reactive()
-                            ->afterStateUpdated(fn(callable $set) => $set('state_id', null)),
+                            ->afterStateUpdated(fn (callable $set) => $set('state_id', null)),
 
                         Select::make('state_id')
                             ->label('State')
                             ->options(function (callable $get) {
                                 $countryId = $get('country_id');
 
-                                if (!$countryId) {
+                                if (! $countryId) {
                                     return [];
                                 }
 
@@ -130,13 +130,11 @@ class CityResource extends Resource
                         return $query
                             ->when(
                                 $data['country_id'] ?? null,
-                                fn($q, $countryId) =>
-                                $q->whereHas('state.country', fn($q) => $q->where('id', $countryId))
+                                fn ($q, $countryId) => $q->whereHas('state.country', fn ($q) => $q->where('id', $countryId))
                             )
                             ->when(
                                 $data['state_id'] ?? null,
-                                fn($q, $stateId) =>
-                                $q->where('state_id', $stateId)
+                                fn ($q, $stateId) => $q->where('state_id', $stateId)
                             );
                     }),
             ])

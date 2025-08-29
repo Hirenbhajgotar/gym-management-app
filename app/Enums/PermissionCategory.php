@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum PermissionCategory: string implements HasLabel, HasIcon
+enum PermissionCategory: string implements HasIcon, HasLabel
 {
     case USER = 'user';
     case CITY = 'city';
@@ -25,6 +25,8 @@ enum PermissionCategory: string implements HasLabel, HasIcon
     case SYSTEM = 'system';
     case COMMUNICATION = 'communication';
     case GENERAL = 'general';
+    case MANAGER = 'manager';
+    case PAYMENT = 'payment';
 
     public function getLabel(): string
     {
@@ -47,13 +49,15 @@ enum PermissionCategory: string implements HasLabel, HasIcon
             self::SYSTEM => 'Systems',
             self::COMMUNICATION => 'Communication',
             self::GENERAL => 'General',
+            self::MANAGER => 'Manager',
+            self::PAYMENT => 'Payment',
         };
     }
 
     public function getIcon(): ?string
     {
         return match ($this) {
-            self::USER => 'heroicon-o-users',
+            self::USER, self::MANAGER => 'heroicon-o-users',
             self::CITY => 'heroicon-o-map-pin',
             self::STATE => 'heroicon-o-building-office-2',
             self::COUNTRY => 'heroicon-o-globe-alt',
@@ -71,6 +75,7 @@ enum PermissionCategory: string implements HasLabel, HasIcon
             self::SYSTEM => 'heroicon-o-rocket-launch',
             self::COMMUNICATION => 'heroicon-o-chat-bubble-left-right',
             self::GENERAL => 'heroicon-o-light-bulb',
+            self::PAYMENT => 'heroicon-o-credit-card',
         };
     }
 }

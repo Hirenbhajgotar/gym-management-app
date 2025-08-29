@@ -33,9 +33,9 @@ class BirthdayNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Happy Birthday, '.$this->member->name.'!')
-            ->greeting('Hello '.$this->member->name.',')
-            ->line('We at '.$this->member->gym->name.' wish you a very Happy Birthday!')
+            ->subject('Happy Birthday, ' . $this->member->name . '!')
+            ->greeting('Hello ' . $this->member->name . ',')
+            ->line('We at ' . $this->member->gym->name . ' wish you a very Happy Birthday!')
             ->line('May you have a fantastic year ahead filled with health and fitness.')
             ->action('Visit Us', url('/'))
             ->line('Thank you for being a valued member!');
@@ -49,7 +49,7 @@ class BirthdayNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => 'Happy Birthday, '.$this->member?->name.'! From '.$this->member?->gym?->name,
+            'message' => 'Happy Birthday, ' . $this->member?->name . '! From ' . $this->member?->gym?->name,
         ];
     }
 }

@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceRes
 
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource;
 use App\Models\Trainer;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateTrainerAttendance extends CreateRecord
@@ -14,6 +13,7 @@ class CreateTrainerAttendance extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['attendanceable_type'] = Trainer::class;
+
         return $data;
     }
 

@@ -16,9 +16,9 @@ class RecentActivity extends BaseWidget
 
     protected static ?string $pollingInterval = '900s';
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
-    protected static ?int $sort = 7;
+    protected static ?int $sort = 1000;
 
     public static function canView(): bool
     {
@@ -46,7 +46,7 @@ class RecentActivity extends BaseWidget
             ->columns([
                 IconColumn::make('event')
                     ->label('')
-                    ->icon(fn(string $state, Activity $record): string => match ($state) {
+                    ->icon(fn (string $state, Activity $record): string => match ($state) {
                         'created' => match ($record->subject_type) {
                             GymMember::class => 'heroicon-m-user-plus',
                             MemberPayment::class => 'heroicon-m-currency-rupee',
@@ -56,7 +56,7 @@ class RecentActivity extends BaseWidget
                         'deleted' => 'heroicon-m-trash',
                         default => 'heroicon-m-information-circle',
                     })
-                    ->color(fn(string $state, Activity $record): string => match ($state) {
+                    ->color(fn (string $state, Activity $record): string => match ($state) {
                         'created' => match ($record->subject_type) {
                             GymMember::class => 'success',
                             MemberPayment::class => 'info',

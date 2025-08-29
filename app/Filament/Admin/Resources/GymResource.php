@@ -62,12 +62,12 @@ class GymResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('address.fullAddress')
                     ->limit(50)
-                    ->tooltip(fn($state) => $state)
+                    ->tooltip(fn ($state) => $state)
                     ->wrap(),
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
                     ->searchable()
-                    ->visible(fn() => auth()->user()->hasRole('super_admin'))
+                    ->visible(fn () => auth()->user()->hasRole('super_admin'))
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('members_count')
@@ -78,7 +78,7 @@ class GymResource extends Resource
                     ->alignCenter(),
             ])
             ->filters([
-                // 
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

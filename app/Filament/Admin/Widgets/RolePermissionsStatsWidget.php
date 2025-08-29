@@ -6,7 +6,6 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Spatie\Permission\Models\Role;
@@ -17,9 +16,13 @@ class RolePermissionsStatsWidget extends BaseWidget
 
     // Widget configuration properties
     public ?string $role = null;
+
     public ?string $roleDisplayName = null;
+
     public ?array $statsConfig = null;
+
     public ?string $primaryColor = 'primary';
+
     public $currentRole;
 
     // Default configuration for different roles
@@ -50,7 +53,6 @@ class RolePermissionsStatsWidget extends BaseWidget
         $this->dispatch('$refresh');
     }
 
-
     /**
      * Configure the widget for a specific role
      */
@@ -75,7 +77,6 @@ class RolePermissionsStatsWidget extends BaseWidget
     protected function getStats(): array
     {
         $this->configureForRole($this->role);
-
 
         $currentTenant = Filament::getTenant();
 
@@ -130,6 +131,7 @@ class RolePermissionsStatsWidget extends BaseWidget
         }
 
         $role = $roleQuery;
+
         return $role;
     }
 
@@ -211,7 +213,7 @@ class RolePermissionsStatsWidget extends BaseWidget
         // $role = $roleQuery->first();
         $role = $this->currentRole;
 
-        if (!$role) {
+        if (! $role) {
             return 0;
         }
 
@@ -242,7 +244,7 @@ class RolePermissionsStatsWidget extends BaseWidget
     {
         $role = $this->currentRole;
 
-        if (!$role) {
+        if (! $role) {
             return [];
         }
 
@@ -250,31 +252,25 @@ class RolePermissionsStatsWidget extends BaseWidget
 
         $breakdown = [
             'resource_permissions' => $permissions->filter(
-                fn($p) =>
-                str_contains($p, 'view_') || str_contains($p, 'create_') ||
+                fn ($p) => str_contains($p, 'view_') || str_contains($p, 'create_') ||
                     str_contains($p, 'edit_') || str_contains($p, 'delete_')
             )->count(),
             'widget_permissions' => $permissions->filter(
-                fn($p) =>
-                str_contains($p, 'widget_')
+                fn ($p) => str_contains($p, 'widget_')
             )->count(),
             'report_permissions' => $permissions->filter(
-                fn($p) =>
-                str_contains($p, 'report_') || str_contains($p, 'export_')
+                fn ($p) => str_contains($p, 'report_') || str_contains($p, 'export_')
             )->count(),
             'system_permissions' => $permissions->filter(
-                fn($p) =>
-                str_contains($p, 'manage_') || str_contains($p, 'system_')
+                fn ($p) => str_contains($p, 'manage_') || str_contains($p, 'system_')
             )->count(),
             'communication_permissions' => $permissions->filter(
-                fn($p) =>
-                str_contains($p, 'send_') || str_contains($p, 'notification')
+                fn ($p) => str_contains($p, 'send_') || str_contains($p, 'notification')
             )->count(),
         ];
 
         return $breakdown;
     }
-
 
     /**
      * Check if the current user can access this widget
@@ -322,7 +318,7 @@ class RolePermissionsStatsWidget extends BaseWidget
             'id' => "role-permissions-stats-{$this->role}",
             'pollingInterval' => null,
             'isLazy' => false,
-            'persistState' => true
+            'persistState' => true,
         ];
     }
 }

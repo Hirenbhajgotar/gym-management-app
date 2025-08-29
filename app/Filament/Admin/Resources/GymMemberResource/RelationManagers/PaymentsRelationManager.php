@@ -15,13 +15,9 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Container\Attributes\Log;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log as FacadesLog;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
-
-use function Illuminate\Log\log;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -36,7 +32,7 @@ class PaymentsRelationManager extends RelationManager
                     ->description('Record a payment for this member')
                     ->schema([
                         Forms\Components\Hidden::make('member_id')
-                            ->default(fn($livewire) => $livewire->ownerRecord->id),
+                            ->default(fn ($livewire) => $livewire->ownerRecord->id),
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->placeholder('Select a membership plan')
@@ -78,14 +74,14 @@ class PaymentsRelationManager extends RelationManager
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
-                                fn(Currency $method) => [$method->value => $method->getLabel()]
+                                fn (Currency $method) => [$method->value => $method->getLabel()]
                             ))
                             ->required()
                             ->default(Currency::INR->value)
                             ->reactive(),
                         Forms\Components\Select::make('payment_method')
                             ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                                fn(PaymentMethod $method) => [$method->value => $method->getLabel()]
+                                fn (PaymentMethod $method) => [$method->value => $method->getLabel()]
                             ))
                             ->required()
                             ->default(PaymentMethod::CASH->value),
@@ -141,12 +137,12 @@ class PaymentsRelationManager extends RelationManager
                     ->badge()
                     ->color('success'),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money(fn($record) => $record->currency)
+                    ->money(fn ($record) => $record->currency)
                     ->summarize(Tables\Columns\Summarizers\Sum::make()),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->badge()
                     ->color('info')
-                    ->formatStateUsing(fn($state) => ucfirst($state)),
+                    ->formatStateUsing(fn ($state) => ucfirst($state)),
                 Tables\Columns\TextColumn::make('status')
                     ->badge(),
                 // ->color(fn($state) => $state === 'completed' ? 'success' : 'warning'),
@@ -185,7 +181,7 @@ class PaymentsRelationManager extends RelationManager
                                     ])
                                     ->rules([
                                         'required',
-                                        fn($get) => function ($attribute, $value, $fail) {
+                                        fn ($get) => function ($attribute, $value, $fail) {
                                             if (! Hash::check($value, auth()->user()->password)) {
                                                 $fail('The password is incorrect.');
                                             }
@@ -241,7 +237,7 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->modalHeading(fn($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
+                    ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
                     ->visible(function ($record) {
                         return $record->status->value !== PaymentStatus::EXPIRED->value; // Hide Edit button for expired payments
                     })
@@ -274,7 +270,7 @@ class PaymentsRelationManager extends RelationManager
                                     ])
                                     ->rules([
                                         'required',
-                                        fn($get) => function ($attribute, $value, $fail) {
+                                        fn ($get) => function ($attribute, $value, $fail) {
                                             if (! Hash::check($value, auth()->user()->password)) {
                                                 $fail('The password is incorrect.');
                                             }
@@ -328,7 +324,7 @@ class PaymentsRelationManager extends RelationManager
                             ->required()
                             ->rules([
                                 'required',
-                                fn($get) => function ($attribute, $value, $fail) {
+                                fn ($get) => function ($attribute, $value, $fail) {
                                     if (! Hash::check($value, auth()->user()->password)) {
                                         $fail('The password is incorrect.');
                                     }

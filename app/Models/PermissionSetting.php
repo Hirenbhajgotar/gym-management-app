@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use App\Casts\DefaultResourcesCast;
+use App\Enums\DefaultRole;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PermissionSetting extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'role',
         'default_resources',
@@ -23,6 +27,7 @@ class PermissionSetting extends Model
         return [
             'default_resources' => DefaultResourcesCast::class,
             'default_permissions' => 'array',
+            'role' => DefaultRole::class,
         ];
     }
 }

@@ -1,0 +1,42 @@
+{
+    "mcpServers": {
+        "context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ]
+        },
+        "firecrawl-mcp": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "firecrawl-mcp"
+            ],
+            "env": {
+                "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
+            }
+        },
+        "laravel-boost": {
+            "command": "docker-compose",
+            "args": [
+                "exec",
+                "-T", // Optional: Disables TTY allocation if needed for background/server processes
+                "app", // Replace with your PHP service name, e.g., "php-fpm" or "laravel"
+                "php",
+                "artisan",
+                "boost:mcp"
+            ]
+        },
+        "github": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+            }
+        }
+    }
+}

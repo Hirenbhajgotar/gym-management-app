@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Contracts\GymUser;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -15,7 +14,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class StaffMember extends Authenticatable implements FilamentUser, HasTenants
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -94,6 +93,7 @@ class StaffMember extends Authenticatable implements FilamentUser, HasTenants
             ->withPivot('is_active')
             ->withTimestamps();
     }
+
     /**
      * Get the gyms that this staff member is currently active in.
      */

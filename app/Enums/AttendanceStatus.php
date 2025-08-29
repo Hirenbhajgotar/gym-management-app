@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum AttendanceStatus: string implements HasIcon, HasColor, HasLabel
+enum AttendanceStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Present = 'Present';
     case Completed = 'Completed';
@@ -21,7 +21,7 @@ enum AttendanceStatus: string implements HasIcon, HasColor, HasLabel
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Present => 'success',

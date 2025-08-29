@@ -11,6 +11,7 @@ class AssignedMembersColumn extends Column
     public function getState(): mixed
     {
         $record = $this->getRecord();
+
         return [
             'members' => $record->members->take(3),
             'members_count' => $record->members_count,

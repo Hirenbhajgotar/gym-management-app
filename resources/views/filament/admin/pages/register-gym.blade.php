@@ -1,4 +1,5 @@
-<x-filament-panels::page.simple heading="Register Gym" subheading="Fill in the details to set up your gym in the system.">
+<x-filament-panels::page.simple heading="Register Business"
+    subheading="Fill in the details to set up your business in the system.">
     @php
         // $currentGymCount = \App\Models\Gym::where('owner_id', auth()->id())->count();
         $currentGymCount = $this->authUserGyms;
@@ -15,30 +16,16 @@
                 </div>
                 <div class="ml-3">
                     <h3 class="text-sm font-medium text-danger-600 dark:text-danger-400">
-                        Gym Registration Limit Reached
+                        Business Registration Limit Reached
                     </h3>
                     <div class="mt-2 text-sm">
-                        <p>You have already registered {{ $currentGymCount }} gym(s), which is the maximum allowed.
-                            Please contact our support team if you need to register additional gyms.</p>
+                        <p>You have already registered {{ $currentGymCount }} business(es), which is the maximum
+                            allowed.
+                            Please contact our support team if you need to register additional businesses.</p>
                     </div>
                 </div>
             </div>
         </div>
-    @else
-        {{-- <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <x-filament::icon icon="heroicon-s-exclamation-circle"
-                        class="h-6 w-6 text-gray-500 dark:text-gray-400 " />
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm text-blue-700">
-                        <strong>{{ $remainingGyms }}</strong> gym registrations remaining ({{ $currentGymCount }}/3
-                        used)
-                    </p>
-                </div>
-            </div>
-        </div> --}}
     @endif
     <!-- Form Start -->
     <div class="w-full">

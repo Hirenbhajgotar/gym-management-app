@@ -2,8 +2,10 @@
 
 namespace App\Filament\Admin\Pages\Tenancy;
 
+use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
+use App\Services\RolesAndPermissionsService;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -15,7 +17,8 @@ class RegisterGym extends RegisterTenant
 {
     protected static string $view = 'filament.admin.pages.register-gym';
 
-    public $totalGyms = 10; // Maximum gyms allowed per owner
+    public int $totalGyms = 10; // Maximum gyms allowed per owner
+
     public $authUserGyms = 0;
 
     public function __construct()
@@ -26,6 +29,11 @@ class RegisterGym extends RegisterTenant
     public static function getLabel(): string
     {
         return 'Register Gym';
+    }
+
+    public static function canView(): bool
+    {
+        return true;
     }
 
     public function form(Form $form): Form
@@ -40,10 +48,11 @@ class RegisterGym extends RegisterTenant
                             ->placeholder('e.g., Fitness Hub')
                             ->autofocus()
                             ->reactive()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(function (callable $set, $state, $context) {
-                                // if ($context === 'create') {
-                                // }
-                                $set('slug', Gym::generateUniqueSlug($state));
+                                if ($state) {
+                                    $set('slug', Gym::generateUniqueSlug($state));
+                                }
                             })
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
@@ -68,13 +77,12 @@ class RegisterGym extends RegisterTenant
     protected function hasReachedGymLimit(): bool
     {
         $gymCount = $this->authUserGyms;
-        // $gymCount = Gym::where('owner_id', auth()->id())->count();
+
         return $gymCount >= $this->totalGyms;
     }
 
     protected function getGymLimitDescription(): string
     {
-        // $currentCount = Gym::where('owner_id', auth()->id())->count();
         $currentCount = $this->authUserGyms;
         $remaining = $this->totalGyms - $currentCount;
 
@@ -117,27 +125,18 @@ class RegisterGym extends RegisterTenant
             throw new \Exception('Gym limit exceeded. Cannot register more than 3 gyms.');
         }
 
+        $user = auth()->user();
+
         $gym = Gym::create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
-        $gym->users()->attach(auth()->user(), ['role' => 'gym_owner']);
+        $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
 
-        // Show success notification with remaining count
-        $remainingCount = 2 - $this->authUserGyms;
+        // Create default roles and permissions for the gym
+        app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
-        if ($remainingCount > 0) {
-            Notification::make()
-                ->title('Gym Registered Successfully!')
-                ->body("You can register {$remainingCount} more gym(s).")
-                ->success()
-                ->send();
-        } else {
-            Notification::make()
-                ->title('Gym Registered Successfully!')
-                ->body('You have reached the maximum limit of 3 gyms.')
-                ->success()
-                ->send();
-        }
+        // Assign the gym to the user
+        app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
         return $gym;
     }

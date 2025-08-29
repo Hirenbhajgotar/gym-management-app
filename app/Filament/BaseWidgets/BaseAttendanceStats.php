@@ -2,8 +2,6 @@
 
 namespace App\Filament\BaseWidgets;
 
-use App\Enums\AttendanceStatus;
-use App\Models\Attendances;
 use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
@@ -13,7 +11,9 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 abstract class BaseAttendanceStats extends BaseWidget
 {
     abstract protected function getAttendanceableType(): string;
+
     abstract protected function getEntityName(): string;
+
     abstract protected function getEntityModel(): string;
 
     protected function getStats(): array

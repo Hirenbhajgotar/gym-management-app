@@ -2,16 +2,9 @@
 
 namespace App\Helpers;
 
-use App\Filament\Actions\ReportErrorAction;
-use App\Services\ErrorReportService;
 use App\Services\ExceptionStorageService;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\HtmlString;
-use Livewire\Livewire;
 use Throwable;
 
 class NotificationHelper

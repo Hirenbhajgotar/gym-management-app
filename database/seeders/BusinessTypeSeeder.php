@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\BusinessType;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class BusinessTypeSeeder extends Seeder
@@ -89,7 +88,7 @@ class BusinessTypeSeeder extends Seeder
                 'name' => 'Other',
                 'slug' => 'other',
                 'is_active' => true,
-            ]
+            ],
         ];
 
         foreach ($businessTypes as $businessType) {

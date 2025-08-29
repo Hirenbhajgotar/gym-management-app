@@ -66,11 +66,7 @@ class EditManager extends EditRecord
 
         // Update password only if a new value is provided
         if (filled($data['password'])) {
-            $userData['password'] =  $data['password'];
-        }
-
-        if (isset($data['email_verified']) && $data['email_verified']) {
-            $userData['email_verified_at'] =  now();
+            $userData['password'] = $data['password'];
         }
 
         // dd($userData);
@@ -95,7 +91,7 @@ class EditManager extends EditRecord
         return ManagerResource::getUrl('index'); // Redirect to index page after create
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function getSavedNotification(): ?Notification
     {
         return Notification::make()
             ->title('Manager Updated')

@@ -7,7 +7,6 @@ use Livewire\Component;
 
 class HomeController extends Component
 {
-
     #[Layout('frontend.layouts.app')]
     public function render()
     {

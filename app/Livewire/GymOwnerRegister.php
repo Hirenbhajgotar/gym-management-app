@@ -2,24 +2,28 @@
 
 namespace App\Livewire;
 
-use App\Helpers\Parser;
+use App\Enums\DefaultRole;
+use App\Helpers\FeedbackHelper;
 use App\Models\BusinessType;
 use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
+use App\Services\RolesAndPermissionsService;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Livewire\Attributes\Layout;
-use Illuminate\Validation\Rules\Password;
-use Livewire\Component;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class GymOwnerRegister extends Component
 {
     public $currentStep = 1;
+
     public $totalSteps = 4;
 
     // Personal Information
@@ -64,12 +68,12 @@ class GymOwnerRegister extends Component
 
     public $isLoading = false;
 
-    public function getBusinessTypes()
+    public function getBusinessTypes(): array|BusinessType
     {
         return BusinessType::active()->orderBy('name')->get();
     }
 
-    public function getGymSizes()
+    public function getGymSizes(): array
     {
         return [
             'small' => 'Small (< 2,000 sq ft)',
@@ -79,7 +83,7 @@ class GymOwnerRegister extends Component
         ];
     }
 
-    public function nextStep()
+    public function nextStep(): void
     {
         $this->validateCurrentStep();
         if ($this->currentStep < $this->totalSteps) {
@@ -87,14 +91,14 @@ class GymOwnerRegister extends Component
         }
     }
 
-    public function previousStep()
+    public function previousStep(): void
     {
         if ($this->currentStep > 1) {
             $this->currentStep--;
         }
     }
 
-    public function goToStep($step)
+    public function goToStep($step): void
     {
         if ($step >= 1 && $step <= $this->totalSteps) {
             // Validate previous steps before jumping
@@ -105,12 +109,12 @@ class GymOwnerRegister extends Component
         }
     }
 
-    private function validateCurrentStep()
+    private function validateCurrentStep(): void
     {
         $this->validateStep($this->currentStep);
     }
 
-    private function validateStep($step)
+    private function validateStep($step): void
     {
         switch ($step) {
             case 1:
@@ -183,14 +187,17 @@ class GymOwnerRegister extends Component
                 'password' => $this->password,
             ]);
 
-            // Assign gym_owner role
-            $user->assignRole('gym_owner');
-
             // Create Gym with unique slug
             $gym = Gym::create([
                 'name' => $this->gym_name,
                 'slug' => Gym::generateUniqueSlug($this->gym_name),
             ]);
+
+            // Create default roles and permissions for the gym
+            app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+            // Assign the gym to the user
+            app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
             // Create Address for Gym
             $gym->address()->create([
@@ -217,12 +224,13 @@ class GymOwnerRegister extends Component
 
             // Attach User to Gym in pivot table
             $user->gyms()->attach($gym->id, ['role' => 'gym_owner']);
+
             DB::commit();
 
             // Store feedback cache
-            Parser::storeFeedbackCache($user?->id, 15);
+            FeedbackHelper::storeFeedbackCache($user?->id, 15);
 
-            // Show success message
+            // Show a success message
             session()->flash('success', 'Registration submitted successfully! We will review your application and contact you soon.');
 
             // Send notification to super-admins
@@ -251,7 +259,7 @@ class GymOwnerRegister extends Component
         }
     }
 
-    public function getStepTitle($step)
+    public function getStepTitle($step): string
     {
         return match ($step) {
             1 => 'Personal Information',
@@ -262,7 +270,7 @@ class GymOwnerRegister extends Component
         };
     }
 
-    public function getStepDescription($step)
+    public function getStepDescription($step): string
     {
         return match ($step) {
             1 => 'Tell us about yourself',
@@ -273,7 +281,7 @@ class GymOwnerRegister extends Component
         };
     }
 
-    public function getStepIcon($step)
+    public function getStepIcon($step): string
     {
         return match ($step) {
             1 => 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z',
@@ -284,16 +292,15 @@ class GymOwnerRegister extends Component
         };
     }
 
-    public function generatePassword()
+    public function generatePassword(): void
     {
         // Laravel's built-in password generator
         $this->password = Str::password(12);
         $this->password_confirmation = $this->password;
     }
 
-
     #[Layout('frontend.layouts.app')]
-    public function render()
+    public function render(): View
     {
         return view('livewire.gym-owner-register');
     }

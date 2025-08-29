@@ -4,8 +4,6 @@ namespace App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceRes
 
 use App\Filament\BaseWidgets\BaseAttendanceStats;
 use App\Models\Trainer;
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class TrainerAttendanceStats extends BaseAttendanceStats
 {

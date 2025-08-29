@@ -4,16 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use App\Contracts\GymUser;
-use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
-use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,10 +19,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasTenants, HasName
+class User extends Authenticatable implements FilamentUser, HasName, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -39,7 +35,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
         'password',
         'phone',
         'is_active',
-        'email_verified_at'
+        'email_verified_at',
     ];
 
     /**
@@ -78,7 +74,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 
@@ -89,6 +85,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
         }
 
         if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
+            // Then check for tenant-specific access
             return $this->hasActiveTenant();
         }
 
@@ -115,6 +112,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasName
 
     public function canAccessTenant(Model $tenant): bool
     {
+        // Check if user is associated with this gym through pivot table
         return $this->gyms->contains($tenant);
     }
 
