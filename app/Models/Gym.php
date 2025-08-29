@@ -78,4 +78,9 @@ class Gym extends Model
     {
         return $this->hasOne(BusinessDetail::class);
     }
+
+    public function getOwnerAttribute()
+    {
+        return $this->users()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->first();
+    }
 }

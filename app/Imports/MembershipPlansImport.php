@@ -16,8 +16,8 @@ class MembershipPlansImport extends BaseImporter
             'name' => $row['name'],
             'description' => $row['description'],
             'price' => $row['price'],
-            'duration' => $row['duration'],
-            'currency' => $row['currency'],
+            'duration' => $row['duration_in_months'],
+            'currency' => $row['currency'] ?? Currency::INR->value,
             'is_active' => $row['is_active'] ?? true,
         ]);
     }
@@ -28,8 +28,8 @@ class MembershipPlansImport extends BaseImporter
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'duration' => ['required', 'integer', 'min:1'],
-            'currency' => ['required', 'string', Rule::enum(Currency::class)],
+            'duration_in_months' => ['required', 'integer', 'min:1'],
+            'currency' => ['nullable', 'string', Rule::enum(Currency::class)],
             'is_active' => ['nullable', 'boolean'],
         ];
     }
