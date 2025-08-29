@@ -14,6 +14,8 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -39,6 +41,13 @@ class ExcelImportAction extends Action
      * The URL for the sample Excel file.
      */
     protected ?string $sampleUrl = null;
+
+    /**
+     * The data for the sample Excel file.
+     *
+     * @var array<array<string, string>>|null
+     */
+    protected ?array $sampleData = null;
 
     protected ?string $sampleFileName = 'sample.xlsx';
 
@@ -167,8 +176,8 @@ class ExcelImportAction extends Action
             }
         };
 
-        $fileName = 'failed_imports_' . now()->timestamp . '.xlsx';
-        $path = 'failed_imports/' . $fileName;
+        $fileName = 'failed_imports_'.now()->timestamp.'.xlsx';
+        $path = 'failed_imports/'.$fileName;
         Excel::store($export, $path, 'public');
 
         $downloadUrl = Storage::disk('public')->url($path);
@@ -204,8 +213,8 @@ class ExcelImportAction extends Action
             ->disk('local')
             ->directory('excel-imports');
 
-        // Add a hint action to download a sample file, if a URL is provided.
-        if (filled($this->sampleUrl)) {
+        // Add a hint action to download a sample file, if a URL or data is provided.
+        if (filled($this->sampleUrl) || filled($this->sampleData)) {
             $fileUpload->hintAction(
                 $this->getSampleExcelButton()
             );
@@ -233,29 +242,67 @@ class ExcelImportAction extends Action
     {
         $action = ActionsAction::make($this->sampleButtonLabel ?: __('Download Sample File'));
 
-        if (is_string($this->sampleUrl)) {
+        if (filled($this->sampleUrl)) {
             $action->url($this->sampleUrl, shouldOpenInNewTab: true);
 
             if ($this->sampleFileName) {
                 $action->extraAttributes(['download' => $this->sampleFileName]);
             }
         } else {
-            $action->action(fn () => $this->downloadSampleExcelFile());
+            $action->action(fn () => $this->downloadSampleExcel());
         }
 
         return $action;
     }
 
     /**
-     * Set the URL for the sample file.
+     * Download the sample Excel file generated from data.
+     */
+    protected function downloadSampleExcel()
+    {
+        $export = new class($this->sampleData) implements FromCollection, WithHeadings
+        {
+            protected array $data;
+
+            public function __construct(array $data)
+            {
+                $this->data = $data;
+            }
+
+            public function collection()
+            {
+                return collect($this->data);
+            }
+
+            public function headings(): array
+            {
+                if (empty($this->data)) {
+                    return [];
+                }
+
+                return array_map('ucwords', array_keys($this->data[0]));
+            }
+        };
+
+        return Excel::download($export, $this->sampleFileName ?? 'sample.xlsx');
+    }
+
+    /**
+     * Set the URL or data for the sample file.
      *
-     * @param  string  $url  The URL of the sample file.
+     * @param  string|array<array<string, string>>  $urlOrData
      * @param  string|null  $fileName  The name of the file to be downloaded.
      * @param  string|null  $sampleButtonLabel  The label for the download button.
      */
-    public function sampleFile(string $url, ?string $fileName = null, ?string $sampleButtonLabel = null): static
+    public function sampleFile(string|array $urlOrData, ?string $fileName = null, ?string $sampleButtonLabel = null): static
     {
-        $this->sampleUrl = $url;
+        if (is_string($urlOrData)) {
+            $this->sampleUrl = $urlOrData;
+            $this->sampleData = null;
+        } else {
+            $this->sampleUrl = null;
+            $this->sampleData = $urlOrData;
+        }
         $this->sampleFileName = $fileName;
         $this->sampleButtonLabel = $sampleButtonLabel;
 
