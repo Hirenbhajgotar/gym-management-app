@@ -36,6 +36,7 @@ class GymMember extends Model
         'gym_membership_plan_id',
         'trainer_id',
         'user_id',
+        'lead_id',
     ];
 
     protected $casts = [
@@ -191,5 +192,10 @@ class GymMember extends Model
     public function scopeHasTrainer($query)
     {
         return $query->whereNotNull('trainer_id');
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
     }
 }

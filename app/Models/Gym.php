@@ -83,4 +83,24 @@ class Gym extends Model
     {
         return $this->users()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->first();
     }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
+
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
+    public function interactions(): HasMany
+    {
+        return $this->hasMany(Interaction::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
 }

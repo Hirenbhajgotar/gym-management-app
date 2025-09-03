@@ -10,6 +10,7 @@ use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -131,6 +132,16 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
+    }
+
+    public function interactions(): HasMany
+    {
+        return $this->hasMany(Interaction::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to_user_id');
     }
 
     // public function subscription()

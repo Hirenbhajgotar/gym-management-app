@@ -40,11 +40,13 @@ This is a **Laravel 12** multi-tenant gym management system built with modern PH
 
 **Role Hierarchy:**
 
-- **SuperAdmin**: Global system management across all tenants
-- **GymOwner**: Full gym management within their tenant
-- **Manager**: Gym operations management and staff coordination
-- **Trainer**: Member training programs and session management
-- **Receptionist**: Front desk operations and member check-ins
+- **super_admin**: Global system management across all tenants
+- **gym_owner**: Full gym management within their tenant
+- **manager**: Gym operations management and staff coordination
+- **trainer**: Member training programs and session management
+- **receptionist**: Front desk operations and member check-ins
+
+use `DefaultRole.php` enum for role
 
 ### Filament Ecosystem
 
@@ -459,31 +461,6 @@ new class extends Component {
 
     {{ $this->members->links() }}
 </div>
-```
-
-## Database Schema & Multi-Tenancy
-
-### Tenant Database Structure
-
-Each gym gets its own database with the following core tables:
-
-```sql
--- Core tenant tables
-members
-memberships
-payments
-trainers
-training_sessions
-equipment
-equipment_maintenance
-staff_schedules
-attendance_logs
-
--- Shared/System tables (main database)
-tenants
-users (super admin)
-system_settings
-audit_logs
 ```
 
 ### Model Relationships Pattern
@@ -1681,13 +1658,13 @@ docker-compose exec app php artisan make:model TrainingSession --factory --seede
 
 ```bash
 # Generate complete Filament resource
-docker-compose exec app php artisan filament:resource MemberResource --generate --view
+docker-compose exec app php artisan make:filament-resource Customer --generate
 
 # Create custom Filament page
-docker-compose exec app php artisan filament:page GymDashboard
+docker-compose exec app php artisan filament:page Settings
 
 # Create Filament widget
-docker-compose exec app php artisan filament:widget RevenueChart --type=chart
+docker-compose exec app php artisan make:filament-widget StatsOverview --stats-overview
 
 # Optimize Filament (production)
 docker-compose exec app php artisan filament:optimize
@@ -2458,26 +2435,26 @@ class MembershipExpiringNotification extends Notification
 # Available custom commands for this project
 
 # Membership management
-php artisan gym:check-expirations        # Check and process expired memberships
-php artisan gym:send-renewal-reminders   # Send renewal reminders to expiring members
-php artisan gym:generate-invoices        # Generate monthly invoices
+docker-compose exec app php artisan gym:check-expirations        # Check and process expired memberships
+docker-compose exec app php artisan gym:send-renewal-reminders   # Send renewal reminders to expiring members
+docker-compose exec app php artisan gym:generate-invoices        # Generate monthly invoices
 
 # Equipment management  
-php artisan gym:check-equipment-maintenance  # Check equipment maintenance schedules
-php artisan gym:equipment-report             # Generate equipment usage reports
+docker-compose exec app php artisan gym:check-equipment-maintenance  # Check equipment maintenance schedules
+docker-compose exec app php artisan gym:equipment-report             # Generate equipment usage reports
 
 # Data management
-php artisan gym:backup-tenant-data {tenant_id}  # Backup specific tenant data
-php artisan gym:migrate-tenant {tenant_id}      # Run migrations for specific tenant
-php artisan gym:seed-demo-data                  # Seed demonstration data
+docker-compose exec app php artisan gym:backup-tenant-data {tenant_id}  # Backup specific tenant data
+docker-compose exec app php artisan gym:migrate-tenant {tenant_id}      # Run migrations for specific tenant
+docker-compose exec app php artisan gym:seed-demo-data                  # Seed demonstration data
 
 # Reports and analytics
-php artisan gym:generate-revenue-report {month} {year}  # Monthly revenue reports
-php artisan gym:member-activity-report                  # Member activity analysis
+docker-compose exec app php artisan gym:generate-revenue-report {month} {year}  # Monthly revenue reports
+docker-compose exec app php artisan gym:member-activity-report                  # Member activity analysis
 
 # System maintenance
-php artisan gym:cleanup-old-sessions    # Clean up old training sessions
-php artisan gym:optimize-images         # Optimize uploaded images
+docker-compose exec app php artisan gym:cleanup-old-sessions    # Clean up old training sessions
+docker-compose exec app php artisan gym:optimize-images         # Optimize uploaded images
 ```
 
 ### Command Implementation Example
@@ -3003,15 +2980,15 @@ Forms\Components\Select::make('user_id')
 - Tables use the `Tables\Columns` namespace for table columns.
 - A new `Filament\Forms\Components\RichEditor` component is available.
 - Form and table schemas now use fluent method chaining.
-- Added `php artisan filament:optimize` command for production optimization.
+- Added `docker-compose exec app php artisan filament:optimize` command for production optimization.
 - Requires implementing `FilamentUser` contract for production access control.
 
 === laravel/core rules ===
 
 ## Do Things the Laravel Way
 
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
-- If you're creating a generic PHP class, use `artisan make:class`.
+- Use `docker-compose exec app php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
+- If you're creating a generic PHP class, use `docker-compose exec app artisan make:class`.
 - Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
 
 ### Database
@@ -3025,7 +3002,7 @@ Forms\Components\Select::make('user_id')
 
 ### Model Creation
 
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
+- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `docker-compose exec app php artisan make:model`.
 
 ### APIs & Eloquent Resources
 
@@ -3058,7 +3035,7 @@ Forms\Components\Select::make('user_id')
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] <name>` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+- When creating tests, make use of `docker-compose exec app php artisan make:test [options] <name>` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ### Vite Error
 
@@ -3119,7 +3096,7 @@ avatar, badge, brand, breadcrumbs, button, callout, checkbox, dropdown, field, h
 
 - Use the `search-docs` tool to find exact version specific documentation for how to write Livewire & Livewire tests.
 
-- Use the `php artisan make:livewire [Posts\CreatePost]` artisan command to create new components
+- Use the `docker-compose exec app php artisan make:livewire [Posts\CreatePost]` artisan command to create new components
 - State should live on the server, with the UI reflecting it.
 - All Livewire requests hit the Laravel backend, they're like regular HTTP requests. Always validate form data, and run authorization checks in Livewire actions.
 
@@ -3198,7 +3175,7 @@ document.addEventListener('livewire:init', function () {
 ## Livewire Volt
 
 - This project uses Livewire Volt for interactivity within its pages. New pages requiring interactivity must also use Livewire Volt. There is documentation available for it.
-- Make new Volt components using `php artisan make:volt [name] [--test] [--pest]`
+- Make new Volt components using `docker-compose exec app php artisan make:volt [name] [--test] [--pest]`
 - Volt is a **class-based** and **functional** API for Livewire that supports single-file components, allowing a component's PHP logic and Blade templates to co-exist in the same file
 - Livewire Volt allows PHP logic and Blade templates in one file. Components use the `@livewire("volt-anonymous-fragment-eyJuYW1lIjoidm9sdC1hbm9ueW1vdXMtZnJhZ21lbnQtYmQ5YWJiNTE3YWMyMTgwOTA1ZmUxMzAxODk0MGJiZmIiLCJwYXRoIjoic3RvcmFnZVwvZnJhbWV3b3JrXC92aWV3c1wvMTUxYWRjZWRjMzBhMzllOWIxNzQ0ZDRiMWRjY2FjYWIuYmxhZGUucGhwIn0=", Livewire\Volt\Precompilers\ExtractFragments::componentArguments([...get_defined_vars(), ...array (
 )]))
@@ -3372,6 +3349,6 @@ $delete = fn(Product $product) => $product->delete();
 ## Test Enforcement
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `docker-compose exec app php artisan test` with a specific filename or filter.
 
 </laravel-boost-guidelines>
