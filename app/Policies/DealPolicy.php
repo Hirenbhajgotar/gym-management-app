@@ -13,7 +13,8 @@ class DealPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        return true;
     }
 
     /**
@@ -30,7 +31,8 @@ class DealPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        return true;
     }
 
     /**

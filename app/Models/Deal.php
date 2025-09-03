@@ -23,6 +23,8 @@ class Deal extends Model implements Sortable
         'gym_id',
         'lead_id',
         'membership_plan_id',
+        'title',
+        'description',
         'value',
         'stage',
         'expected_close_date',
