@@ -21,7 +21,8 @@ class DealPolicy
      */
     public function view(User $user, Deal $deal): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        return true;
     }
 
     /**
@@ -37,7 +38,8 @@ class DealPolicy
      */
     public function update(User $user, Deal $deal): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        return true;
     }
 
     /**
@@ -45,7 +47,8 @@ class DealPolicy
      */
     public function delete(User $user, Deal $deal): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        return true;
     }
 
     /**
@@ -53,7 +56,8 @@ class DealPolicy
      */
     public function restore(User $user, Deal $deal): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        return true;
     }
 
     /**
@@ -61,6 +65,7 @@ class DealPolicy
      */
     public function forceDelete(User $user, Deal $deal): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        // return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($deal->gym_id);
+        return true;
     }
 }

@@ -7,4 +7,5 @@ return [
     App\Providers\Filament\StaffPanelProvider::class,
     App\Providers\Filament\SuperAdminPanelProvider::class,
     App\Providers\VoltServiceProvider::class,
+    Spatie\EloquentSortable\EloquentSortableServiceProvider::class,
 ];

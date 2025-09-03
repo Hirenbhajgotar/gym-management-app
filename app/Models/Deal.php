@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Spatie\EloquentSortable\Sortable;
+use Spatie\EloquentSortable\SortableTrait;
 
-class Deal extends Model
+class Deal extends Model implements Sortable
 {
-    use HasFactory;
+    use HasFactory, SortableTrait;
+
+    public array $sortable = [
+        'order_column_name' => 'order_column',
+        'sort_when_creating' => true,
+    ];
 
     protected $fillable = [
         'gym_id',
@@ -19,6 +26,7 @@ class Deal extends Model
         'value',
         'stage',
         'expected_close_date',
+        'order_column',
     ];
 
     protected function casts(): array

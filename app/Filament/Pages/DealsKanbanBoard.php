@@ -14,9 +14,13 @@ class DealsKanbanBoard extends KanbanBoard
 
     protected static ?string $navigationIcon = 'heroicon-o-view-columns';
 
+    protected static ?string $navigationLabel = 'Deals Kanban';
+
+    protected static string $recordTitleAttribute = 'title';
+
     protected static ?string $navigationGroup = 'CRM';
 
-    protected static ?int $navigationSort = 2;
+    // protected static ?int $navigationSort = 2;
 
     public static function getNavigationLabel(): string
     {
