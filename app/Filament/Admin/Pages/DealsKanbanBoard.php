@@ -12,6 +12,7 @@ use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Log;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Filament\Forms;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class DealsKanbanBoard extends KanbanBoard
@@ -31,6 +32,11 @@ class DealsKanbanBoard extends KanbanBoard
     protected static ?string $navigationGroup = 'CRM';
 
     // protected static ?int $navigationSort = 2;
+
+    protected function records(): Collection
+    {
+        return Deal::with(['lead', 'membershipPlan'])->get();
+    }
 
     public function getHeaderActions(): array
     {
@@ -68,4 +74,12 @@ class DealsKanbanBoard extends KanbanBoard
                 ]),
         ];
     }
+
+    // protected function additionalRecordData(Model $model): Collection
+    // {
+    //     return collect([
+    //         'lead_name' => $model->lead->name,
+    //         'membership_plan' => $model->membershipPlan->name,
+    //     ]);
+    // }
 }
