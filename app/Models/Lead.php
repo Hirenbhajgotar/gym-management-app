@@ -22,6 +22,8 @@ class Lead extends Model
         'source',
         'status',
         'interest',
+        'tags',
+        'last_follow_up_date',
         'notes',
         'created_by',
     ];
@@ -32,6 +34,8 @@ class Lead extends Model
             'source' => LeadSource::class,
             'status' => LeadStatus::class,
             'interest' => 'array',
+            'tags' => 'array',
+            'last_follow_up_date' => 'datetime',
         ];
     }
 

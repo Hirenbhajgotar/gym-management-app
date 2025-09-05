@@ -2,11 +2,12 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Filament\Admin\Resources\LeadResource\Pages;
-use App\Models\Lead;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\LeadTag;
+use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Models\Lead;
 use App\Models\User;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
@@ -17,7 +18,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -26,6 +26,7 @@ class LeadResource extends Resource
     protected static ?string $model = Lead::class;
 
     protected static ?string $navigationIcon = 'phosphor-users-four';
+
     protected static ?string $navigationGroup = 'CRM';
 
     public static function form(Form $form): Form
@@ -50,6 +51,10 @@ class LeadResource extends Resource
                 ]),
                 TagsInput::make('interest')
                     ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
+                TagsInput::make('tags')
+                    ->placeholder('Add tags (e.g., High Priority, Referral)')
+                    ->splitKeys(['Tab', ','])
+                    ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
                 Textarea::make('notes')
                     ->columnSpanFull(),
             ]),
