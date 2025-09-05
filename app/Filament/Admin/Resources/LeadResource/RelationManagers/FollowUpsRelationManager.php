@@ -4,7 +4,9 @@ namespace App\Filament\Admin\Resources\LeadResource\RelationManagers;
 
 use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
+use App\Models\FollowUp;
 use App\Models\User;
+use App\Notifications\LeadFollowUpNotification;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -59,7 +61,10 @@ class FollowUpsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->after(function (FollowUp $followUp) {
+                        $followUp->user->notify(new LeadFollowUpNotification($followUp));
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

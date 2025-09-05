@@ -26,7 +26,7 @@ class LeadKanbanBoard extends KanbanBoard
 
     protected static string $recordStatusAttribute = 'status';
 
-    // public bool $disableEditModal = true;
+    public bool $disableEditModal = true;
 
     protected function records(): Collection
     {
@@ -74,7 +74,7 @@ class LeadKanbanBoard extends KanbanBoard
                     ]);
                 })
                 ->extraAttributes([
-                    // 'wire:click.stop' => '',
+                    'wire:click.stop' => '',
                 ]),
 
             Action::make('convert_to_member')
@@ -86,7 +86,7 @@ class LeadKanbanBoard extends KanbanBoard
                 })
                 ->requiresConfirmation()
                 ->extraAttributes([
-                    // 'wire:click.stop' => '',
+                    'wire:click.stop' => '',
                 ]),
 
             Action::make('archive')
