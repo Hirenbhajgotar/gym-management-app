@@ -4,9 +4,8 @@ namespace App\Filament\Admin\Resources\LeadResource\Pages;
 
 use App\Enums\LeadStatus;
 use App\Filament\Admin\Resources\LeadResource;
-use App\Models\GymMember;
 use App\Models\Lead;
-use App\Models\LeadConversion;
+use App\Services\LeadConversionService;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -20,6 +19,7 @@ class EditLead extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
+
             Actions\Action::make('convertToMember')
                 ->label('Convert to Member')
                 ->color('success')
@@ -35,28 +35,10 @@ class EditLead extends EditRecord
                         ->label('Conversion Notes'),
                 ])
                 ->action(function (array $data, Lead $record): void {
-                    // 1. Create the GymMember
-                    $gymMember = GymMember::create([
-                        'gym_id' => $record->gym_id,
-                        'name' => $record->name,
-                        'email' => $record->email,
-                        'phone' => $record->phone,
-                        'membership_plan_id' => $data['membership_plan_id'],
-                        'joined_at' => $data['conversion_date'],
-                    ]);
 
-                    // 2. Create the LeadConversion record
-                    LeadConversion::create([
-                        'lead_id' => $record->id,
-                        'gym_member_id' => $gymMember->id,
-                        'membership_plan_id' => $data['membership_plan_id'],
-                        'conversion_date' => $data['conversion_date'],
-                        'notes' => $data['notes'],
-                    ]);
+                    $member = app(LeadConversionService::class)->convert($record, $data);
 
-                    // 3. Update the lead's status
-                    $record->status = LeadStatus::CONVERTED;
-                    $record->save();
+                    $member->notify(new \App\Notifications\Member\WelcomeNotification($member));
 
                     Notification::make()
                         ->title('Lead converted successfully')
