@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('leads', function (Blueprint $table) {
+        Schema::create('follow_ups', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
             $table->foreignId('gym_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->string('email')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('source')->default('website');
-            $table->string('status')->default('new');
+            $table->foreignId('user_id')->comment('Staff who performed the follow-up')->constrained()->cascadeOnDelete();
+            $table->string('type');
+            $table->dateTime('scheduled_date');
+            $table->string('status')->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();
         });
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('leads');
+        Schema::dropIfExists('follow_ups');
     }
 };

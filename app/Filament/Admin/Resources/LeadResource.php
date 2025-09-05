@@ -3,97 +3,80 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\LeadResource\Pages;
-use App\Filament\Admin\Resources\LeadResource\RelationManagers;
 use App\Models\Lead;
-use App\Models\MembershipPlan;
-use App\Services\LeadConversionService;
-use Filament\Forms;
+use App\Enums\LeadSource;
+use App\Enums\LeadStatus;
+use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Models\User;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-phone-incoming';
-
+    protected static ?string $navigationIcon = 'phosphor-users-four';
     protected static ?string $navigationGroup = 'CRM';
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('phone')
-                    ->tel()
-                    ->maxLength(255),
-                Forms\Components\Select::make('source')
-                    ->options(\App\Enums\LeadSource::class)
-                    ->required(),
-                Forms\Components\Select::make('status')
-                    ->options(\App\Enums\LeadStatus::class)
-                    ->required(),
-                Forms\Components\Textarea::make('notes')
+        return $form->schema([
+            Section::make('Lead Details')->schema([
+                Grid::make(2)->schema([
+                    TextInput::make('name')->required(),
+                    TextInput::make('email')->email()->required(),
+                    TextInput::make('phone')->tel()->required(),
+                    Select::make('status')
+                        ->options(LeadStatus::class)
+                        ->required(),
+                    Select::make('source')
+                        ->options(LeadSource::class)
+                        ->required(),
+                    Select::make('created_by')
+                        ->label('Created By')
+                        ->options(User::query()->pluck('name', 'id'))
+                        ->searchable()
+                        ->default(auth()->id()),
+                ]),
+                TagsInput::make('interest')
+                    ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
+                Textarea::make('notes')
                     ->columnSpanFull(),
-            ]);
+            ]),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('phone')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('source'),
-                Tables\Columns\TextColumn::make('status'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('email')->searchable(),
+                TextColumn::make('phone')->searchable(),
+                TextColumn::make('status')->badge()->sortable(),
+                TextColumn::make('source')->sortable(),
+                TextColumn::make('creator.name')->label('Created By')->sortable(),
+                TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(LeadStatus::class),
+                Tables\Filters\SelectFilter::make('source')
+                    ->options(LeadSource::class),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Action::make('convert')
-                    ->label('Convert to Member')
-                    ->action(function (Lead $record, array $data) {
-                        $service = new LeadConversionService;
-                        $service->convert($record, $data['membership_plan_id']);
-
-                        Notification::make()
-                            ->title('Lead Converted')
-                            ->success()
-                            ->send();
-                    })
-                    ->form([
-                        Forms\Components\Select::make('membership_plan_id')
-                            ->label('Membership Plan')
-                            ->options(MembershipPlan::query()->pluck('name', 'id'))
-                            ->required(),
-                    ])
-                    ->requiresConfirmation()
-                    ->color('success')
-                    ->icon('heroicon-o-check-circle')
-                    ->visible(fn (Lead $record) => $record->status !== \App\Enums\LeadStatus::CONVERTED),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -105,7 +88,7 @@ class LeadResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\InteractionsRelationManager::class,
+            FollowUpsRelationManager::class,
         ];
     }
 

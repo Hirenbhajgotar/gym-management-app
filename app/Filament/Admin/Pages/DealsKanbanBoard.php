@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
 
 class DealsKanbanBoard extends KanbanBoard
 {
-    protected static string $model = Deal::class;
+    protected static string $model = Lead::class;
 
     protected static string $statusEnum = DealStage::class;
 

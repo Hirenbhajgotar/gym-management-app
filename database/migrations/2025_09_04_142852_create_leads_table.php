@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tasks', function (Blueprint $table) {
+        Schema::create('leads', function (Blueprint $table) {
             $table->id();
             $table->foreignId('gym_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('assigned_to_user_id')->constrained('users')->cascadeOnDelete();
-            $table->morphs('taskable');
-            $table->string('title');
-            $table->dateTime('due_date')->nullable();
-            $table->boolean('is_completed')->default(false);
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('phone');
+            $table->string('source');
+            $table->string('status')->default('new');
+            $table->json('interest')->nullable();
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }
@@ -28,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tasks');
+        Schema::dropIfExists('leads');
     }
 };

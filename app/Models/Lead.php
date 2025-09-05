@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lead extends Model
 {
@@ -21,7 +21,9 @@ class Lead extends Model
         'phone',
         'source',
         'status',
+        'interest',
         'notes',
+        'created_by',
     ];
 
     protected function casts(): array
@@ -29,6 +31,7 @@ class Lead extends Model
         return [
             'source' => LeadSource::class,
             'status' => LeadStatus::class,
+            'interest' => 'array',
         ];
     }
 
@@ -37,18 +40,18 @@ class Lead extends Model
         return $this->belongsTo(Gym::class);
     }
 
-    public function deals(): HasMany
+    public function creator(): BelongsTo
     {
-        return $this->hasMany(Deal::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function interactions(): MorphMany
+    public function followUps(): HasMany
     {
-        return $this->morphMany(Interaction::class, 'interactionable');
+        return $this->hasMany(FollowUp::class);
     }
 
-    public function tasks(): MorphMany
+    public function conversion(): HasOne
     {
-        return $this->morphMany(Task::class, 'taskable');
+        return $this->hasOne(LeadConversion::class);
     }
 }

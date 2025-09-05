@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\DealResource\Pages;
 use App\Filament\Admin\Resources\DealResource\RelationManagers;
 use App\Models\Deal;
+use App\Models\Lead;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,7 +14,7 @@ use Filament\Tables\Table;
 
 class DealResource extends Resource
 {
-    protected static ?string $model = Deal::class;
+    protected static ?string $model = Lead::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
 

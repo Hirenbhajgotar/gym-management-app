@@ -3,12 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Models\Attendances;
-use App\Models\Deal;
+use App\Models\FollowUp;
 use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
-use App\Models\Task;
 use App\Models\Trainer;
 use Closure;
 use Filament\Facades\Filament;
@@ -45,15 +44,11 @@ class ApplyTenantScopes
             fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
-        Deal::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
-        );
-
         Lead::addGlobalScope(
             fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
-        Task::addGlobalScope(
+        FollowUp::addGlobalScope(
             fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 

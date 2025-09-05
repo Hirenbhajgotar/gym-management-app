@@ -15,12 +15,12 @@ class CRMStatsWidget extends BaseWidget
             Stat::make('New Leads', Lead::where('status', 'new')->count())
                 ->description('Total new leads')
                 ->color('success'),
-            Stat::make('Deals in Pipeline', Deal::where('stage', '!= ', 'closed_won')->where('stage', '!= ', 'closed_lost')->count())
-                ->description('Active deals')
-                ->color('warning'),
-            Stat::make('Closed Won Deals', Deal::where('stage', 'closed_won')->count())
-                ->description('This month')
-                ->color('primary'),
+            // Stat::make('Deals in Pipeline', Deal::where('stage', '!= ', 'closed_won')->where('stage', '!= ', 'closed_lost')->count())
+            //     ->description('Active deals')
+            //     ->color('warning'),
+            // Stat::make('Closed Won Deals', Deal::where('stage', 'closed_won')->count())
+            //     ->description('This month')
+            //     ->color('primary'),
         ];
     }
 }

@@ -2,32 +2,38 @@
 
 namespace App\Models;
 
+use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class Interaction extends Model
+class FollowUp extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'lead_id',
         'gym_id',
         'user_id',
-        'interactionable_id',
-        'interactionable_type',
         'type',
+        'scheduled_date',
+        'status',
         'notes',
-        'interaction_date',
     ];
 
     protected function casts(): array
     {
         return [
             'type' => InteractionType::class,
-            'interaction_date' => 'datetime',
+            'scheduled_date' => 'datetime',
+            'status' => FollowUpStatus::class,
         ];
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
     }
 
     public function gym(): BelongsTo
@@ -38,10 +44,5 @@ class Interaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function interactionable(): MorphTo
-    {
-        return $this->morphTo();
     }
 }

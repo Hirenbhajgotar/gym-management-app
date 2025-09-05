@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('deals', function (Blueprint $table) {
+        Schema::create('lead_conversions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('gym_id')->constrained()->cascadeOnDelete();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('gym_member_id')->constrained()->cascadeOnDelete();
             $table->foreignId('membership_plan_id')->constrained()->cascadeOnDelete();
-            $table->decimal('value', 10, 2);
-            $table->string('stage')->default('prospecting');
-            $table->date('expected_close_date')->nullable();
+            $table->date('conversion_date');
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('deals');
+        Schema::dropIfExists('lead_conversions');
     }
 };
