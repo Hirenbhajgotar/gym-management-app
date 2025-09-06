@@ -10,15 +10,14 @@ use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelation
 use App\Models\Lead;
 use App\Models\MembershipPlan;
 use App\Models\User;
+use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -57,7 +56,7 @@ class LeadResource extends Resource
                 TagsInput::make('tags')
                     ->placeholder('Add tags (e.g., High Priority, Referral)')
                     ->splitKeys(['Tab', ','])
-                    ->suggestions(collect(LeadTag::cases())->map(fn(LeadTag $tag) => $tag->getLabel())->toArray()),
+                    ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
                 Textarea::make('notes')
                     ->columnSpanFull(),
             ]),
@@ -118,7 +117,7 @@ class LeadResource extends Resource
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
-                            ->options(fn() => MembershipPlan::pluck('name', 'id'))
+                            ->options(fn () => MembershipPlan::pluck('name', 'id'))
                             ->searchable()
                             ->required()
                             ->placeholder('Select a membership plan')

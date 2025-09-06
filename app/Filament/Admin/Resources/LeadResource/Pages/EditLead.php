@@ -7,7 +7,6 @@ use App\Filament\Admin\Resources\LeadResource;
 use App\Models\Lead;
 use App\Services\LeadConversionService;
 use Filament\Actions;
-use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -36,7 +35,7 @@ class EditLead extends EditRecord
                         ->success()
                         ->send();
                 })
-                ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
+                ->visible(fn (Lead $record) => $record->status !== LeadStatus::CONVERTED),
         ];
     }
 }

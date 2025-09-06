@@ -55,7 +55,7 @@ class FollowUpsRelationManager extends RelationManager
                     Forms\Components\Textarea::make('notes')
                         ->required()
                         ->columnSpanFull(),
-                ])
+                ]),
         ];
     }
 
