@@ -8,14 +8,17 @@ use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\Lead;
+use App\Models\MembershipPlan;
 use App\Models\User;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -54,7 +57,7 @@ class LeadResource extends Resource
                 TagsInput::make('tags')
                     ->placeholder('Add tags (e.g., High Priority, Referral)')
                     ->splitKeys(['Tab', ','])
-                    ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
+                    ->suggestions(collect(LeadTag::cases())->map(fn(LeadTag $tag) => $tag->getLabel())->toArray()),
                 Textarea::make('notes')
                     ->columnSpanFull(),
             ]),
@@ -103,6 +106,36 @@ class LeadResource extends Resource
             'index' => Pages\ListLeads::route('/'),
             'create' => Pages\CreateLead::route('/create'),
             'edit' => Pages\EditLead::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getConvertToMemberFormSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('Convert to Member')
+                ->description('Convert this lead into a new gym member and assign a membership plan.')
+                ->schema([
+                    Forms\Components\Grid::make(2)->schema([
+                        Forms\Components\Select::make('membership_plan_id')
+                            ->label('Membership Plan')
+                            ->options(fn() => MembershipPlan::pluck('name', 'id'))
+                            ->searchable()
+                            ->required()
+                            ->placeholder('Select a membership plan')
+                            ->prefixIcon('phosphor-crown'),
+
+                        Forms\Components\DatePicker::make('conversion_date')
+                            ->label('Conversion Date')
+                            ->default(now())
+                            ->required()
+                            ->prefixIcon('phosphor-calendar'),
+                    ]),
+
+                    Forms\Components\RichEditor::make('notes')
+                        ->label('Conversion Notes')
+                        ->placeholder('Add any relevant notes about the conversion...')
+                        ->columnSpanFull(),
+                ]),
         ];
     }
 }

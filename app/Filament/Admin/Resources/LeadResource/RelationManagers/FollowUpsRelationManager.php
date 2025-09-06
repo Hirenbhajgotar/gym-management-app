@@ -37,12 +37,15 @@ class FollowUpsRelationManager extends RelationManager
                         Forms\Components\Select::make('type')
                             ->options(InteractionType::class)
                             ->required(),
+
                         Forms\Components\Select::make('status')
                             ->options(FollowUpStatus::class)
                             ->required()
                             ->default(FollowUpStatus::PENDING->value),
+
                         Forms\Components\DateTimePicker::make('scheduled_date')
                             ->required(),
+
                         Forms\Components\Select::make('user_id')
                             ->label('Assigned To')
                             ->options(User::query()->pluck('name', 'id'))

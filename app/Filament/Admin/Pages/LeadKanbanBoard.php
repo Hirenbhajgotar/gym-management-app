@@ -4,11 +4,13 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\Pages\CreateLead;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
 use App\Models\GymMember;
 use App\Models\Lead;
+use App\Services\LeadConversionService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -77,14 +79,13 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     {
         return Action::make('add_follow_up')
             ->label('Add Follow-Up')
-            // ->icon('heroicon-m-plus-circle')
+            ->icon('heroicon-m-plus-circle')
             ->color('info')
             ->form(
                 app(FollowUpsRelationManager::class)->getFormSchema(),
             )
             ->action(function (array $data, array $arguments): void {
-
-                $record = Lead::find($arguments['record']);
+                $record = Lead::find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -101,8 +102,12 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     'type' => $data['type'],
                     'scheduled_date' => $data['scheduled_date'],
                     'notes' => $data['notes'] ?? null,
-                    'status' => 'pending',
-                    'created_by' => auth()->id(),
+                    'status' => $data['status'] ?? 'pending',
+                    'user_id' => $data['user_id'] ?? null,
+                ]);
+
+                $record->update([
+                    'last_follow_up_date' => now(),
                 ]);
 
                 Notification::make()
@@ -125,18 +130,15 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->label('Convert to Member')
             ->icon('heroicon-m-user-plus')
             ->color('success')
-            ->requiresConfirmation()
             ->modalHeading('Convert Lead to Member')
-            ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['record']);
-
-                return $record ? "Are you sure you want to convert '{$record->name}' to a member? This action cannot be undone." : 'Lead not found';
-            })
             ->modalSubmitActionLabel('Convert to Member')
-            ->action(function (array $arguments): void {
-                Log::info('Executing convert_to_member action', ['arguments' => $arguments]);
-
-                $record = Lead::find($arguments['record']);
+            ->modalWidth('2xl')
+            ->form(
+                LeadResource::getConvertToMemberFormSchema(),
+            )
+            ->modalSubmitActionLabel('Convert to Member')
+            ->action(function (array $data, array $arguments): void {
+                $record = Lead::find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -148,22 +150,9 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                // Create member from lead
-                $member = GymMember::create([
-                    'name' => $record->name,
-                    'email' => $record->email,
-                    'phone' => $record->phone,
-                    'source' => 'lead_conversion',
-                    'converted_from_lead_id' => $record->id,
-                    'joined_at' => now(),
-                ]);
+                $member = app(LeadConversionService::class)->convert($record, $data);
 
-                // Update lead status to converted
-                $record->update([
-                    'status' => 'converted',
-                    'converted_at' => now(),
-                    'converted_to_member_id' => $member->id,
-                ]);
+                $member->notify(new \App\Notifications\Member\WelcomeNotification($member));
 
                 Notification::make()
                     ->title('Lead converted successfully')
@@ -185,7 +174,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Archive Lead')
             ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['record']);
+                $record = Lead::find($arguments['id']);
 
                 return $record ? "Are you sure you want to archive '{$record->name}'? The lead will be moved to archived status." : 'Lead not found';
             })
@@ -193,7 +182,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->action(function (array $arguments): void {
                 Log::info('Executing archive action', ['arguments' => $arguments]);
 
-                $record = Lead::find($arguments['record']);
+                $record = Lead::find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -205,11 +194,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                $record->update([
-                    'status' => 'archived',
-                    'archived_at' => now(),
-                    'archived_by' => auth()->id(),
-                ]);
+                $record->update(['status' => LeadStatus::LOST]);
 
                 Notification::make()
                     ->title('Lead archived')

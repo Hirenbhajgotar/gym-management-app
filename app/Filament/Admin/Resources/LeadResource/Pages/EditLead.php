@@ -24,16 +24,7 @@ class EditLead extends EditRecord
                 ->label('Convert to Member')
                 ->color('success')
                 ->icon('phosphor-user-plus')
-                ->form([
-                    Forms\Components\Select::make('membership_plan_id')
-                        ->relationship('gymMember.membershipPlan', 'name') // Adjusted relationship path
-                        ->required(),
-                    Forms\Components\DatePicker::make('conversion_date')
-                        ->default(now())
-                        ->required(),
-                    Forms\Components\Textarea::make('notes')
-                        ->label('Conversion Notes'),
-                ])
+                ->form(LeadResource::getConvertToMemberFormSchema())
                 ->action(function (array $data, Lead $record): void {
 
                     $member = app(LeadConversionService::class)->convert($record, $data);
@@ -45,7 +36,7 @@ class EditLead extends EditRecord
                         ->success()
                         ->send();
                 })
-                ->visible(fn (Lead $record) => $record->status !== LeadStatus::CONVERTED),
+                ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
         ];
     }
 }
