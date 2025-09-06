@@ -83,14 +83,14 @@ class ReceptionistResource extends BaseEmployeeResource
                 ->color('info')
                 ->icon('heroicon-o-key')
                 ->outlined()
-                ->url(fn(): string => ReceptionistPermissionsPage::getUrl()),
+                ->url(fn (): string => ReceptionistPermissionsPage::getUrl()),
 
             // Export action
             Actions\ExportAction::make()
                 ->label('Export ' . static::getPluralLabel())
                 ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ReceptionistExporter::class)
-                ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole())),
 
             // Import action
             ExcelImportAction::make()

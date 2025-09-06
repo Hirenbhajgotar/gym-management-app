@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DealResource\Pages;
 use App\Filament\Admin\Resources\DealResource\RelationManagers;
-use App\Models\Deal;
 use App\Models\Lead;
 use Filament\Forms;
 use Filament\Forms\Form;

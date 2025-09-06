@@ -9,11 +9,10 @@ use App\Models\Lead;
 use App\Models\MembershipPlan;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Log;
-use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
 class DealsKanbanBoard extends KanbanBoard
 {

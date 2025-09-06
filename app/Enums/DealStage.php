@@ -26,7 +26,6 @@ enum DealStage: string implements HasLabel
         };
     }
 
-
     public function getTitle(): string
     {
         return __($this->getLabel());
