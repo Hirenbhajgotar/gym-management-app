@@ -89,18 +89,14 @@ class Gym extends Model
         return $this->hasMany(Lead::class);
     }
 
-    public function deals(): HasMany
+    public static function getCurrentTenantUsers()
     {
-        return $this->hasMany(Deal::class);
-    }
+        $currentTenant = \Filament\Facades\Filament::getTenant();
 
-    public function interactions(): HasMany
-    {
-        return $this->hasMany(Interaction::class);
-    }
+        if ($currentTenant) {
+            return $currentTenant->users();
+        }
 
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class);
+        return User::query()->whereRaw('1 = 0'); // Return an empty query
     }
 }

@@ -16,6 +16,7 @@ class Lead extends Model
 
     protected $fillable = [
         'gym_id',
+        'membership_plan_id',
         'name',
         'email',
         'phone',
@@ -26,6 +27,7 @@ class Lead extends Model
         'last_follow_up_date',
         'notes',
         'created_by',
+        'updated_by',
     ];
 
     protected function casts(): array
@@ -47,6 +49,16 @@ class Lead extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function membershipPlan(): BelongsTo
+    {
+        return $this->belongsTo(MembershipPlan::class, 'membership_plan_id');
     }
 
     public function followUps(): HasMany

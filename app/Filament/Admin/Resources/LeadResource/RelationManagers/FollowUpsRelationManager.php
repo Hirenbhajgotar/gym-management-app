@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\LeadResource\RelationManagers;
 use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use App\Models\FollowUp;
+use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
 use Filament\Facades\Filament;
@@ -31,7 +32,7 @@ class FollowUpsRelationManager extends RelationManager
         return [
             Forms\Components\Hidden::make('gym_id')
                 ->default(Filament::getTenant()->id),
-            Section::make('Follow-up Details')
+            Section::make()
                 ->schema([
                     Grid::make(2)->schema([
                         Forms\Components\Select::make('type')
@@ -48,12 +49,11 @@ class FollowUpsRelationManager extends RelationManager
 
                         Forms\Components\Select::make('user_id')
                             ->label('Assigned To')
-                            ->options(User::query()->pluck('name', 'id'))
+                            ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
                             ->default(auth()->id())
                             ->required(),
                     ]),
-                    Forms\Components\Textarea::make('notes')
-                        ->required()
+                    Forms\Components\RichEditor::make('notes')
                         ->columnSpanFull(),
                 ]),
         ];

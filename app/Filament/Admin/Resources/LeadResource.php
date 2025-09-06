@@ -7,6 +7,7 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\MembershipPlan;
 use App\Models\User;
@@ -35,29 +36,42 @@ class LeadResource extends Resource
     {
         return $form->schema([
             Section::make('Lead Details')->schema([
-                Grid::make(2)->schema([
+                Grid::make(3)->schema([
                     TextInput::make('name')->required(),
                     TextInput::make('email')->email()->required(),
                     TextInput::make('phone')->tel()->required(),
+                ]),
+
+                Grid::make(2)->schema([
                     Select::make('status')
+                        ->options(MembershipPlan::pluck('name', 'id'))
+                        ->required(),
+
+                    Forms\Components\Select::make('status')
                         ->options(LeadStatus::class)
                         ->required(),
-                    Select::make('source')
+
+                    Forms\Components\Select::make('source')
                         ->options(LeadSource::class)
                         ->required(),
-                    Select::make('created_by')
+
+                    Forms\Components\Select::make('created_by')
                         ->label('Created By')
-                        ->options(User::query()->pluck('name', 'id'))
+                        ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
                         ->searchable()
                         ->default(auth()->id()),
+
+                    Forms\Components\TagsInput::make('interest')
+                        ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
+
+                    Forms\Components\TagsInput::make('tags')
+                        ->placeholder('Add tags (e.g., High Priority, Referral)')
+                        ->splitKeys(['Tab', ','])
+                        ->suggestions(collect(LeadTag::cases())->map(fn(LeadTag $tag) => $tag->getLabel())->toArray()),
                 ]),
-                TagsInput::make('interest')
-                    ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
-                TagsInput::make('tags')
-                    ->placeholder('Add tags (e.g., High Priority, Referral)')
-                    ->splitKeys(['Tab', ','])
-                    ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
-                Textarea::make('notes')
+                Forms\Components\RichEditor::make('notes')
+                    ->label('Conversion Notes')
+                    ->placeholder('Add any relevant notes about the conversion...')
                     ->columnSpanFull(),
             ]),
         ]);
@@ -117,7 +131,7 @@ class LeadResource extends Resource
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
-                            ->options(fn () => MembershipPlan::pluck('name', 'id'))
+                            ->options(fn() => MembershipPlan::pluck('name', 'id'))
                             ->searchable()
                             ->required()
                             ->placeholder('Select a membership plan')

@@ -75,7 +75,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
         return Action::make('add_follow_up')
             ->label('Add Follow-Up')
             ->icon('heroicon-m-plus-circle')
-            ->color('info')
+            ->color('primary')
             ->form(
                 app(FollowUpsRelationManager::class)->getFormSchema(),
             )
@@ -124,7 +124,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
         return Action::make('convert_to_member')
             ->label('Convert to Member')
             ->icon('heroicon-m-user-plus')
-            ->color('success')
+            ->color('primary')
             ->modalHeading('Convert Lead to Member')
             ->modalSubmitActionLabel('Convert to Member')
             ->modalWidth('2xl')
@@ -175,8 +175,6 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             })
             ->modalSubmitActionLabel('Archive Lead')
             ->action(function (array $arguments): void {
-                Log::info('Executing archive action', ['arguments' => $arguments]);
-
                 $record = Lead::find($arguments['id']);
 
                 if (! $record) {
@@ -189,7 +187,10 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                $record->update(['status' => LeadStatus::LOST]);
+                $record->update([
+                    'status' => LeadStatus::LOST,
+                    'updated_by' => auth()->id(),
+                ]);
 
                 Notification::make()
                     ->title('Lead archived')
