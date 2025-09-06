@@ -7,6 +7,7 @@ use App\Enums\InteractionType;
 use App\Models\FollowUp;
 use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -21,6 +22,8 @@ class FollowUpsRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Forms\Components\Hidden::make('gym_id')
+                    ->default(Filament::getTenant()->id),
                 Forms\Components\Select::make('type')
                     ->options(InteractionType::class)
                     ->required(),
