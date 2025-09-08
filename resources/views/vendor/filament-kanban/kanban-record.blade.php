@@ -1,5 +1,6 @@
 @php
     $recordKey = $record->getKey();
+    $recordTitle = $record->{static::$recordTitleAttribute};
 @endphp
 <div id="{{ $recordKey }}" data-record-id="{{ $recordKey }}"
     class="record bg-white dark:bg-gray-700 rounded-lg p-4 font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 ease-in-out cursor-grab"
@@ -7,26 +8,29 @@
         x-init="
             $el.classList.add('animate-pulse-twice');
         " @endif>
+    {{-- @dump($record->status, \App\Enums\LeadStatus::CONVERTED, $record->status === \App\Enums\LeadStatus::CONVERTED) --}}
     <div class="flex flex-col gap-y-3">
         {{-- Lead Name --}}
         <div class="flex items-center justify-between ">
             <div class="gap-x-2 flex items-center">
                 <x-filament::avatar
-                    src="https://ui-avatars.com/api/?name={{ $record->{static::$recordTitleAttribute} }}&length={{ str()->wordCount($record->{static::$recordTitleAttribute}) }}&background=random&rounded=true"
-                    alt="{{ $record->{static::$recordTitleAttribute} }}" />
+                    src="https://ui-avatars.com/api/?name={{ $recordTitle }}&length={{ min(str()->wordCount($recordTitle), 2) }}&background=random&rounded=true"
+                    alt="{{ $recordTitle }}" />
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-                    {{ $record->{static::$recordTitleAttribute} }}
+                    {{ $recordTitle }}
                 </h3>
             </div>
 
-            @php
-                $days = now()->diffInDays($record->created_at);
-            @endphp
+            @if ($record->status === \App\Enums\LeadStatus::CONVERTED || $record->status === \App\Enums\LeadStatus::LOST)
+                @php
+                    $days = now()->diffInDays($record->last_follow_up_date ?? $record->created_at);
+                @endphp
 
-            @if ($days >= 5)
-                <x-filament::icon icon="heroicon-o-exclamation-triangle"
-                    class="text-danger-500 dark:text-danger-400 h-5 w-5"
-                    x-tooltip.raw="Lead is rotten for {{ $days }} days" />
+                @if ($days >= 5)
+                    <x-filament::icon icon="heroicon-o-exclamation-triangle"
+                        class="text-danger-500 dark:text-danger-400 h-5 w-5"
+                        x-tooltip.raw="Lead is rotten for {{ $days }} days" />
+                @endif
             @endif
         </div>
 
@@ -57,7 +61,7 @@
                 {{ $record?->creator?->name ?? 'N/A' }}
             </x-filament::badge>
             <x-filament::badge icon="heroicon-m-star" color="success" size="sm">
-                Gold Membership
+                {{ Str::title($record?->membershipPlan?->name ?? 'No Plan') }}
             </x-filament::badge>
         </div>
 
@@ -118,21 +122,24 @@
         @endif
 
         <!-- Action Buttons -->
-        <div class="flex flex-wrap gap-x-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
-            <x-filament::button icon="heroicon-m-plus-circle" color="success" size="xs" tooltip="Add Follow-Up"
-                wire:click="mountAction('addFollowUp', { id: {{ $recordKey }} })" outlined>
-                Follow-Up
-            </x-filament::button>
+        @if ($record->status !== \App\Enums\LeadStatus::CONVERTED && $record->status !== \App\Enums\LeadStatus::LOST)
+            <div class="flex flex-wrap gap-x-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
+                <x-filament::button icon="heroicon-m-plus-circle" color="success" size="xs" tooltip="Add Follow-Up"
+                    wire:click="mountAction('addFollowUp', { id: {{ $recordKey }} })" outlined>
+                    Follow-Up
+                </x-filament::button>
 
-            <x-filament::button icon="heroicon-m-user-plus" color="gray" size="xs" tooltip="Convert to Member"
-                wire:click="mountAction('convertToMember', { id: {{ $recordKey }} })" outlined>
-                Convert
-            </x-filament::button>
+                <x-filament::button icon="heroicon-m-user-plus" color="gray" size="xs"
+                    tooltip="Convert to Member"
+                    wire:click="mountAction('convertToMember', { id: {{ $recordKey }} })" outlined>
+                    Convert
+                </x-filament::button>
 
-            <x-filament::button icon="heroicon-m-archive-box" color="gray" size="xs"
-                wire:click="mountAction('archive', { id: {{ $recordKey }} })" outlined tooltip="Archive Lead">
-                Archive
-            </x-filament::button>
-        </div>
+                <x-filament::button icon="heroicon-m-archive-box" color="gray" size="xs"
+                    wire:click="mountAction('archive', { id: {{ $recordKey }} })" outlined tooltip="Archive Lead">
+                    Archive
+                </x-filament::button>
+            </div>
+        @endif
     </div>
 </div>
