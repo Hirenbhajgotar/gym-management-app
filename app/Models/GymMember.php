@@ -11,14 +11,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+
 #[ObservedBy([GymMemberObserver::class])]
 class GymMember extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, Notifiable;
 
     protected $fillable = [
         'gym_id',
@@ -113,7 +115,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 

@@ -132,6 +132,7 @@ class LeadResource extends Resource
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->options(fn() => MembershipPlan::pluck('name', 'id'))
+                            ->default(fn(?Lead $record) => $record?->membership_plan_id)
                             ->searchable()
                             ->required()
                             ->placeholder('Select a membership plan')

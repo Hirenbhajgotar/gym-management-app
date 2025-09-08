@@ -12,11 +12,13 @@ use App\Services\LeadConversionService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Facades\Filament;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification as FacadesNotification;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
 class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
@@ -40,7 +42,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function records(): Collection
     {
-        return Lead::with(['creator'])->withCount('followUps')->get();
+        return Lead::with(['creator', 'membershipPlan'])->get();
     }
 
     // public function getRecordStats(): array
@@ -93,6 +95,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 }
 
                 FollowUp::create([
+                    'gym_id' => Filament::getTenant()->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
                     'scheduled_date' => $data['scheduled_date'],
@@ -147,7 +150,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
                 $member = app(LeadConversionService::class)->convert($record, $data);
 
-                $member->notify(new \App\Notifications\Member\WelcomeNotification($member));
+                FacadesNotification::send($member, new \App\Notifications\Member\WelcomeNotification($member));
 
                 Notification::make()
                     ->title('Lead converted successfully')

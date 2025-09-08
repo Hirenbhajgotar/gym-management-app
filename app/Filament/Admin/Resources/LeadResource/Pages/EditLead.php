@@ -9,6 +9,7 @@ use App\Services\LeadConversionService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Notification as FacadesNotification;
 
 class EditLead extends EditRecord
 {
@@ -28,14 +29,14 @@ class EditLead extends EditRecord
 
                     $member = app(LeadConversionService::class)->convert($record, $data);
 
-                    $member->notify(new \App\Notifications\Member\WelcomeNotification($member));
+                    FacadesNotification::send($member, new \App\Notifications\Member\WelcomeNotification($member));
 
                     Notification::make()
                         ->title('Lead converted successfully')
                         ->success()
                         ->send();
                 })
-                ->visible(fn (Lead $record) => $record->status !== LeadStatus::CONVERTED),
+                ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
         ];
     }
 }
