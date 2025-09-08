@@ -8,7 +8,7 @@
         x-init="
             $el.classList.add('animate-pulse-twice');
         " @endif>
-    {{-- @dump($record->status, \App\Enums\LeadStatus::CONVERTED, $record->status === \App\Enums\LeadStatus::CONVERTED) --}}
+
     <div class="flex flex-col gap-y-3">
         {{-- Lead Name --}}
         <div class="flex items-center justify-between ">
