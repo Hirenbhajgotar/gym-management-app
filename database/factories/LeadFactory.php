@@ -28,9 +28,10 @@ class LeadFactory extends Factory
             'gym_id' => function () {
                 // Use an existing gym, or create one if none exist
                 $gym = Gym::inRandomOrder()->first();
-                if (!$gym) {
+                if (! $gym) {
                     $gym = Gym::factory()->create();
                 }
+
                 return $gym->id;
             },
             'name' => $this->faker->name(),
@@ -38,7 +39,7 @@ class LeadFactory extends Factory
             'phone' => $this->faker->phoneNumber(),
             'source' => $this->faker->randomElement(LeadSource::cases()),
             'status' => $this->faker->randomElement(LeadStatus::cases()),
-            'interest' => $this->faker->optional()->randomElement(['weight_loss', 'muscle_gain', 'general_fitness', 'cardio', 'strength_training', 'yoga', 'group_classes']),
+            'interest' => $this->faker->optional()->randomElements(['weight_loss', 'muscle_gain', 'general_fitness', 'cardio', 'strength_training', 'yoga', 'group_classes'], rand(1, 3)),
             'tags' => $this->faker->optional()->randomElements(['hot', 'warm', 'cold', 'vip', 'student', 'corporate', 'senior', 'new'], rand(1, 3)),
             'membership_plan_id' => function (array $attributes) {
                 // Use the gym_id from the attributes to create membership plan
