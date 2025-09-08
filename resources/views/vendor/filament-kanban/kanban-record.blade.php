@@ -93,21 +93,23 @@
 
         @if ($record->interest)
             {{-- Interest Badges --}}
-            <div class="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                Interest:
-            </div>
-            <div class="flex flex-wrap gap-1">
-                @foreach (array_slice($record->interest, 0, 3) as $interest)
-                    <x-filament::badge color="warning" size="sm">
-                        {{ $interest }}
-                    </x-filament::badge>
-                @endforeach
-                @if (count($record->interest) > 3)
-                    <x-filament::badge color="gray" size="sm">
-                        ...
-                    </x-filament::badge>
-                @endif
-            </div>
+            @if (is_array($record->interest))
+                <div class="flex flex-wrap gap-1">
+                    <span class="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                        Interest:
+                    </span>
+                    @foreach (array_slice($record->interest, 0, 3) as $interest)
+                        <x-filament::badge color="warning" size="sm">
+                            {{ $interest }}
+                        </x-filament::badge>
+                    @endforeach
+                    @if (count($record->interest) > 3)
+                        <x-filament::badge color="gray" size="sm">
+                            ...
+                        </x-filament::badge>
+                    @endif
+                </div>
+            @endif
         @endif
 
         {{-- Dates and Next Action --}}

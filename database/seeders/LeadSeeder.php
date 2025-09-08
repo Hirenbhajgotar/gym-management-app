@@ -16,7 +16,7 @@ class LeadSeeder extends Seeder
      */
     public function run(): void
     {
-        Lead::factory(50)->create()->each(function ($lead) {
+        Lead::factory(200)->create()->each(function ($lead) {
             FollowUp::factory(rand(0, 5))->create([
                 'lead_id' => $lead->id,
             ]);
