@@ -21,7 +21,7 @@
                 </h3>
             </div>
 
-            @if ($record->status === \App\Enums\LeadStatus::CONVERTED || $record->status === \App\Enums\LeadStatus::LOST)
+            @if ($record->status !== \App\Enums\LeadStatus::CONVERTED && $record->status !== \App\Enums\LeadStatus::LOST)
                 @php
                     $days = now()->diffInDays($record->last_follow_up_date ?? $record->created_at);
                 @endphp
