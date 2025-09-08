@@ -17,12 +17,11 @@ class GymMemberFactory extends Factory
         $membershipStart = $this->faker->dateTimeBetween('-1 year', 'now');
 
         return [
-            'gym_id' => null, // Will be set in the seeder
+            'gym_id' => \App\Models\Gym::factory(),
             'name' => $this->faker->name(),
             'profile_photo' => $this->faker->imageUrl(200, 200, 'people'),
             'email' => $this->faker->unique()->safeEmail(),
             'phone' => $this->faker->phoneNumber(),
-            'address' => $this->faker->address(),
             'weight' => $this->faker->randomFloat(2, 40, 120),
             'height' => $this->faker->randomFloat(2, 1.4, 2.0),
             'age' => rand(18, 60),
