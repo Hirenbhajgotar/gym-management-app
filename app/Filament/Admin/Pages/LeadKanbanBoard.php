@@ -56,6 +56,12 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     //     ];
     // }
 
+    // public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void
+    // {
+    //     dd("Record ID: $recordId, New Status: $status, New Order: " . implode(',', $orderedIds));
+    //     Lead::setNewOrder($orderedIds);
+    // }
+
     protected function getHeaderActions(): array
     {
         return [
