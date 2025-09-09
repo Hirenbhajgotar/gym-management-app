@@ -42,7 +42,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function records(): Collection
     {
-        return Lead::with(['creator', 'membershipPlan'])->get();
+        return Lead::with(['creator', 'membershipPlan'])->ordered()->get();
     }
 
     // public function getRecordStats(): array
@@ -56,11 +56,10 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     //     ];
     // }
 
-    // public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void
-    // {
-    //     dd("Record ID: $recordId, New Status: $status, New Order: " . implode(',', $orderedIds));
-    //     Lead::setNewOrder($orderedIds);
-    // }
+    public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void
+    {
+        Lead::setNewOrder($orderedIds);
+    }
 
     protected function getHeaderActions(): array
     {
