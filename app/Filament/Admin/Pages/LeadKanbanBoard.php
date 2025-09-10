@@ -118,9 +118,6 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     ->body("Follow-up scheduled for {$data['scheduled_date']}")
                     ->success()
                     ->send();
-
-                // Refresh the kanban board
-                // $this->dispatch('refresh');
             })
             ->modalHeading('Add Follow-Up')
             ->modalSubmitActionLabel('Schedule Follow-Up')

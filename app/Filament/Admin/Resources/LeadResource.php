@@ -51,7 +51,8 @@ class LeadResource extends Resource
                 ]),
 
                 Grid::make(2)->schema([
-                    Select::make('status')
+                    Select::make('membership_plan_id')
+                        ->label('Membership Plan')
                         ->options(MembershipPlan::pluck('name', 'id'))
                         ->required(),
 

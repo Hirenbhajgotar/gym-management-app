@@ -31,7 +31,7 @@ class EditLead extends EditRecord
                 ->color('success')
                 ->icon('phosphor-user-plus')
                 ->form(LeadResource::getConvertToMemberFormSchema())
-                ->action(function (array $data, Lead $record): void {
+                ->action(function (array $data, Lead $record): \Illuminate\Http\RedirectResponse {
 
                     $member = app(LeadConversionService::class)->convert($record, $data);
 
@@ -41,6 +41,8 @@ class EditLead extends EditRecord
                         ->title('Lead converted successfully')
                         ->success()
                         ->send();
+
+                    return redirect(static::getResource()::getUrl('index'));
                 })
                 ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
 
