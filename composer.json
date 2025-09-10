@@ -26,9 +26,11 @@
         "maatwebsite/excel": "^3.1",
         "malzariey/filament-daterangepicker-filter": "^3.3",
         "marcelweidum/filament-expiration-notice": "^1.0",
+        "mokhosh/filament-kanban": "^2.11",
         "mokhosh/filament-rating": "^1.4",
         "predis/predis": "^3.2",
         "rmsramos/activitylog": "^1.0",
+        "spatie/eloquent-sortable": "^4.5",
         "spatie/laravel-permission": "^6.20",
         "ysfkaya/filament-phone-input": "^3.1"
     },

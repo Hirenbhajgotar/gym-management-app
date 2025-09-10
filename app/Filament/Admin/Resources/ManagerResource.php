@@ -83,14 +83,14 @@ class ManagerResource extends BaseEmployeeResource
                 ->color('info')
                 ->icon('heroicon-o-key')
                 ->outlined()
-                ->url(fn(): string => ManagerPermissionsPage::getUrl()),
+                ->url(fn (): string => ManagerPermissionsPage::getUrl()),
 
             // Export action
             Actions\ExportAction::make()
                 ->label('Export ' . static::getPluralLabel())
                 ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ManagerExporter::class)
-                ->modifyQueryUsing(fn(Builder $query) => $query->role(static::getEmployeeRole())),
+                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole())),
 
             // Import action
             ExcelImportAction::make()

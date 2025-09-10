@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
 #[ObservedBy([MembershipPlanObserver::class])]
 class MembershipPlan extends Model
 {
@@ -44,6 +43,4 @@ class MembershipPlan extends Model
     {
         return $this->hasMany(MembershipPlan::class, 'gym_id');
     }
-
-    
 }

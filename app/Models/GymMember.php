@@ -11,14 +11,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+
 #[ObservedBy([GymMemberObserver::class])]
 class GymMember extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, Notifiable;
 
     protected $fillable = [
         'gym_id',
@@ -36,6 +38,7 @@ class GymMember extends Model
         'gym_membership_plan_id',
         'trainer_id',
         'user_id',
+        'lead_id',
     ];
 
     protected $casts = [
@@ -112,7 +115,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 
@@ -191,5 +194,10 @@ class GymMember extends Model
     public function scopeHasTrainer($query)
     {
         return $query->whereNotNull('trainer_id');
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
     }
 }

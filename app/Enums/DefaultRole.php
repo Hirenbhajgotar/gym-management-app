@@ -72,8 +72,6 @@ enum DefaultRole: string implements HasLabel
 
     /**
      * Get Owner Roles
-     *
-     * @return array
      */
     public static function getOwnersRoles(): array
     {

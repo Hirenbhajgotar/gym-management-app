@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -91,7 +92,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
 
-        // You can also add specific exception handling
+        // // You can also add specific exception handling
         // $exceptions->renderable(function (ValidationException $e, $request) {
         //     if ($request->expectsJson()) {
         //         return response()->json([

@@ -83,4 +83,20 @@ class Gym extends Model
     {
         return $this->users()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->first();
     }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
+
+    public static function getCurrentTenantUsers()
+    {
+        $currentTenant = \Filament\Facades\Filament::getTenant();
+
+        if ($currentTenant) {
+            return $currentTenant->users();
+        }
+
+        return User::query()->whereRaw('1 = 0'); // Return an empty query
+    }
 }
