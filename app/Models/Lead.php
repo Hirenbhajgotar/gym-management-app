@@ -23,6 +23,8 @@ class Lead extends Model implements Sortable
         'email',
         'phone',
         'source',
+        'source_id',
+        'raw_data',
         'status',
         'interest',
         'tags',
@@ -43,6 +45,7 @@ class Lead extends Model implements Sortable
         return [
             'source' => LeadSource::class,
             'status' => LeadStatus::class,
+            'raw_data' => 'array',
             'interest' => 'array',
             'tags' => 'array',
             'last_follow_up_date' => 'datetime',

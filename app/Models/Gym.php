@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
@@ -74,9 +75,19 @@ class Gym extends Model
         return $this->hasMany(Attendances::class);
     }
 
-    public function businessDetail()
+    public function businessDetail(): HasOne
     {
         return $this->hasOne(BusinessDetail::class);
+    }
+
+    public function socialConfigs(): HasMany
+    {
+        return $this->hasMany(TenantSocialConfig::class);
+    }
+
+    public function activeSocialConfigs()
+    {
+        return $this->socialConfigs()->active();
     }
 
     public function getOwnerAttribute()
