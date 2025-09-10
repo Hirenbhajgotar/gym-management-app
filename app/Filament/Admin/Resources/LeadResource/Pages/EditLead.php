@@ -15,10 +15,16 @@ class EditLead extends EditRecord
 {
     protected static string $resource = LeadResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        return LeadResource::getUrl('index');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\ViewAction::make()
+                ->icon('phosphor-eye'),
 
             Actions\Action::make('convertToMember')
                 ->label('Convert to Member')
@@ -37,6 +43,9 @@ class EditLead extends EditRecord
                         ->send();
                 })
                 ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
+
+            Actions\DeleteAction::make(),
+
         ];
     }
 }

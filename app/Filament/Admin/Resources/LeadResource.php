@@ -28,9 +28,17 @@ class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    protected static ?string $navigationIcon = 'phosphor-users-four';
+    protected static ?string $navigationIcon = 'phosphor-circles-three-plus';
 
     protected static ?string $navigationGroup = 'CRM';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $modelClass = static::$model;
+        $query = $modelClass::query()->where('status', LeadStatus::NEW);
+
+        return $query->count();
+    }
 
     public static function form(Form $form): Form
     {
@@ -96,6 +104,7 @@ class LeadResource extends Resource
                     ->options(LeadSource::class),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -118,6 +127,7 @@ class LeadResource extends Resource
         return [
             'index' => Pages\ListLeads::route('/'),
             'create' => Pages\CreateLead::route('/create'),
+            'view' => Pages\ViewLead::route('/{record}'),
             'edit' => Pages\EditLead::route('/{record}/edit'),
         ];
     }
