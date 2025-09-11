@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 use App\Models\TenantSocialConfig;
 use App\Models\Gym;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -22,6 +23,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Hidden;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -51,45 +53,35 @@ class TenantSocialConfigResource extends Resource
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                Select::make('gym_id')
-                                    ->label('Gym')
-                                    ->relationship('gym', 'name')
-                                    ->required()
-                                    ->searchable()
-                                    ->preload()
-                                    ->reactive()
-                                    ->afterStateUpdated(fn($state, callable $set) => $set('tenant_id', $state ? Gym::find($state)?->tenant_id : null)),
+                                Hidden::make('gym_id')
+                                    ->default(Filament::getTenant()->id),
 
-                                Select::make('tenant_id')
-                                    ->label('Tenant')
-                                    ->relationship('tenant', 'name')
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->visible(fn($get) => $get('gym_id') !== null),
+                                Select::make('platform')
+                                    ->label('Platform')
+                                    ->options([
+                                        'facebook' => 'Facebook',
+                                        'instagram' => 'Instagram',
+                                        'whatsapp' => 'WhatsApp Business',
+                                        'indiamart' => 'IndiaMart',
+                                        'justdial' => 'JustDial',
+                                    ])
+                                    ->required()
+                                    ->reactive(),
                             ]),
 
-                        Select::make('platform')
-                            ->label('Platform')
-                            ->options([
-                                'facebook' => 'Facebook',
-                                'instagram' => 'Instagram',
-                                'whatsapp' => 'WhatsApp Business',
-                                'indiamart' => 'IndiaMart',
-                                'justdial' => 'JustDial',
-                            ])
-                            ->required()
-                            ->reactive(),
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('account_name')
+                                    ->label('Account Name')
+                                    ->required()
+                                    ->maxLength(255),
 
-                        TextInput::make('account_name')
-                            ->label('Account Name')
-                            ->required()
-                            ->maxLength(255),
-
-                        TextInput::make('account_id')
-                            ->label('Account ID')
-                            ->required()
-                            ->maxLength(255)
-                            ->helperText('The unique identifier for your account on this platform'),
+                                TextInput::make('account_id')
+                                    ->label('Account ID')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->helperText('The unique identifier for your account on this platform'),
+                            ]),
 
                         Toggle::make('is_active')
                             ->label('Active')
