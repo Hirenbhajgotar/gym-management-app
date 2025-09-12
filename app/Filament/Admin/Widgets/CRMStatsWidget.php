@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\LeadStatus;
 use App\Models\Deal;
 use App\Models\Lead;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -15,12 +16,12 @@ class CRMStatsWidget extends BaseWidget
             Stat::make('New Leads', Lead::where('status', 'new')->count())
                 ->description('Total new leads')
                 ->color('success'),
-            // Stat::make('Deals in Pipeline', Deal::where('stage', '!= ', 'closed_won')->where('stage', '!= ', 'closed_lost')->count())
-            //     ->description('Active deals')
-            //     ->color('warning'),
-            // Stat::make('Closed Won Deals', Deal::where('stage', 'closed_won')->count())
-            //     ->description('This month')
-            //     ->color('primary'),
+            Stat::make('Leads in Pipeline', Lead::where('status', '!=', LeadStatus::CONVERTED)->where('status', '!=', LeadStatus::LOST)->count())
+                ->description('Active leads')
+                ->color('warning'),
+            Stat::make('Closed Won Leads', Lead::where('status', LeadStatus::CONVERTED)->count())
+                ->description('This month')
+                ->color('primary'),
         ];
     }
 }
