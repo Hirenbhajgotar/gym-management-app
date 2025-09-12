@@ -115,6 +115,7 @@ abstract class SocialMediaLeadProcessor
                 'notes' => $leadData['notes'] ?? '',
                 'last_contacted' => now(),
                 'raw_data' => $leadData['metadata'] ?? [],
+                'created_by' => 1, // Placeholder for system user, assuming ID 1
             ]);
 
             Log::info('Lead created from social media', [
@@ -194,12 +195,46 @@ abstract class SocialMediaLeadProcessor
      */
     protected function logWebhook(array $data, string $status, ?string $error = null): void
     {
-        Log::channel('social-media-leads')->info('Webhook processed', [
+        // Only log essential data to prevent "Over 9 levels deep" errors
+        $logData = [
             'platform' => $this->platform,
             'status' => $status,
-            'data' => $data,
+            'data_summary' => $this->getDataSummary($data),
             'error' => $error,
             'timestamp' => now()->toIso8601String(),
-        ]);
+        ];
+
+        Log::channel('social-media-leads')->info('Webhook processed', $logData);
+    }
+
+    /**
+     * Get a summary of the data to prevent logging huge nested arrays
+     */
+    protected function getDataSummary(array $data): array
+    {
+        $summary = [];
+
+        // Extract key fields that are safe to log
+        if (isset($data['entry'])) {
+            $summary['entry_count'] = count($data['entry']);
+        }
+
+        if (isset($data['object'])) {
+            $summary['object'] = $data['object'];
+        }
+
+        if (isset($data['field'])) {
+            $summary['field'] = $data['field'];
+        }
+
+        // Add any other safe-to-log fields
+        $safeFields = ['id', 'name', 'email', 'phone', 'form_id', 'page_id', 'leadgen_id'];
+        foreach ($safeFields as $field) {
+            if (isset($data[$field])) {
+                $summary[$field] = is_string($data[$field]) ? substr($data[$field], 0, 100) : $data[$field];
+            }
+        }
+
+        return $summary;
     }
 }

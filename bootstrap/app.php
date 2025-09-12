@@ -109,4 +109,10 @@ return Application::configure(basePath: dirname(__DIR__))
         CleanInvalidExportsCommand::class,
         CleanResolvedErrorReportsCommand::class,
     ])
+    ->withRouting(
+
+        api: __DIR__ . '/../routes/api.php',
+
+        apiPrefix: 'api',
+    )
     ->create();

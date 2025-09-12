@@ -64,18 +64,14 @@ Route::prefix('webhooks')->group(function () {
         ->name('api.webhooks.justdial.verify');
 
     // Webhook Testing Routes
-    Route::prefix('test')->middleware(['auth:sanctum', 'tenant'])->group(function () {
+    // Webhook Testing Routes (unauthenticated for ease of testing)
+    Route::post('/test/{platform}', [WebhookTestController::class, 'testWebhook'])
+        ->where('platform', 'facebook|instagram|whatsapp|indiamart|justdial')
+        ->name('api.webhooks.test');
 
-        // Test webhook processing
-        Route::post('/{platform}', [WebhookTestController::class, 'testWebhook'])
-            ->where('platform', 'facebook|instagram|whatsapp|indiamart|justdial')
-            ->name('api.webhooks.test');
-
-        // Get verification status
-        Route::get('/{platform}/status', [WebhookTestController::class, 'getVerificationStatus'])
-            ->where('platform', 'facebook|instagram|whatsapp|indiamart|justdial')
-            ->name('api.webhooks.test.status');
-    });
+    Route::get('/test/{platform}/status', [WebhookTestController::class, 'getVerificationStatus'])
+        ->where('platform', 'facebook|instagram|whatsapp|indiamart|justdial')
+        ->name('api.webhooks.test.status');
 });
 
 // Lead Management API Routes

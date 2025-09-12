@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Gym;
 use App\Models\TenantSocialConfig;
 use App\Services\FacebookLeadProcessor;
-use App\Services\InstagramLeadProcessor;
-use App\Services\WhatsAppLeadProcessor;
 use App\Services\IndiaMartLeadProcessor;
+use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
+use App\Services\WhatsAppLeadProcessor;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -100,6 +102,7 @@ class WebhookTestController extends Controller
                 'error' => 'Test webhook processing failed',
                 'platform' => $platform,
                 'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
@@ -156,115 +159,128 @@ class WebhookTestController extends Controller
      */
     private function generateTestData(string $platform, Request $request): array
     {
+        $timestamp = time();
+        $uniqueId = uniqid('test_', true);
+
         $baseData = [
             'name' => $request->input('name', 'Test Lead ' . ucfirst($platform)),
-            'email' => $request->input('email', 'test.' . $platform . '@example.com'),
-            'phone' => $request->input('phone', '+919999999999'),
-            'message' => $request->input('message', 'Test message from ' . ucfirst($platform)),
+            'email' => $request->input('email', "test.{$platform}.{$uniqueId}@example.com"),
+            'phone' => $request->input('phone', '+91' . str_pad(mt_rand(1000000000, 9999999999), 10, '0')),
+            'message' => $request->input('message', "Test inquiry from {$platform} - " . date('Y-m-d H:i:s')),
         ];
 
-        switch ($platform) {
-            case 'facebook':
-            case 'instagram':
-                return [
-                    'entry' => [
-                        [
-                            'id' => '123456789',
-                            'time' => time(),
-                            'changes' => [
-                                [
-                                    'value' => [
-                                        'leadgen_id' => 'test_lead_' . uniqid(),
-                                        'page_id' => '123456789',
-                                        'form_id' => '987654321',
-                                        'field_data' => [
-                                            ['name' => 'full_name', 'values' => [$baseData['name']]],
-                                            ['name' => 'email', 'values' => [$baseData['email']]],
-                                            ['name' => 'phone_number', 'values' => [$baseData['phone']]],
-                                        ],
-                                    ],
-                                    'field' => 'leadgen',
+        return match ($platform) {
+            'facebook', 'instagram' => [
+                'entry' => [
+                    [
+                        'id' => $request->input('page_id', '123456789'),
+                        'time' => $timestamp,
+                        'changes' => [
+                            [
+                                'value' => [
+                                    'leadgen_id' => 'lead_' . $uniqueId,
+                                    'page_id' => $request->input('page_id', '123456789'),
+                                    'form_id' => $request->input('form_id', '987654321'),
+                                    'adgroup_id' => $request->input('adgroup_id', '456789123'),
+                                    'ad_id' => $request->input('ad_id', '789123456'),
+                                    'created_time' => $timestamp,
+                                    'field_data' => $this->formatFieldData($baseData),
                                 ],
+                                'field' => 'leadgen',
                             ],
                         ],
                     ],
-                    'object' => 'page',
-                ];
+                ],
+                'object' => 'page',
+            ],
 
-            case 'whatsapp':
-                return [
-                    'object' => 'whatsapp_business_account',
-                    'entry' => [
-                        [
-                            'id' => '123456789',
-                            'changes' => [
-                                [
-                                    'value' => [
-                                        'messages' => [
-                                            [
-                                                'from' => '919999999999',
-                                                'id' => 'test_msg_' . uniqid(),
-                                                'timestamp' => time(),
-                                                'text' => ['body' => $baseData['message']],
-                                                'type' => 'text',
-                                            ],
-                                        ],
-                                        'contacts' => [
-                                            [
-                                                'profile' => ['name' => $baseData['name']],
-                                                'wa_id' => '919999999999',
-                                            ],
+            'whatsapp' => [
+                'object' => 'whatsapp_business_account',
+                'entry' => [
+                    [
+                        'id' => $request->input('business_account_id', '123456789'),
+                        'changes' => [
+                            [
+                                'value' => [
+                                    'messaging_product' => 'whatsapp',
+                                    'metadata' => [
+                                        'display_phone_number' => '919999999999',
+                                        'phone_number_id' => 'phone_' . $uniqueId,
+                                    ],
+                                    'messages' => [
+                                        [
+                                            'from' => str_replace('+', '', $baseData['phone']),
+                                            'id' => 'msg_' . $uniqueId,
+                                            'timestamp' => $timestamp,
+                                            'text' => ['body' => $baseData['message']],
+                                            'type' => 'text',
                                         ],
                                     ],
-                                    'field' => 'messages',
+                                    'contacts' => [
+                                        [
+                                            'profile' => ['name' => $baseData['name']],
+                                            'wa_id' => str_replace('+', '', $baseData['phone']),
+                                        ],
+                                    ],
                                 ],
+                                'field' => 'messages',
                             ],
                         ],
                     ],
-                ];
+                ],
+            ],
 
-            case 'indiamart':
-                return [
-                    'GLUSR_MOBILE' => $baseData['phone'],
-                    'GLUSR_USR_NAME' => $baseData['name'],
-                    'GLUSR_USR_ID' => 'test_user_' . uniqid(),
-                    'SENDEREMAIL' => $baseData['email'],
-                    'SENDERNAME' => $baseData['name'],
-                    'SUBJECT' => 'Product Inquiry',
-                    'QUERY_MESSAGE' => $baseData['message'],
-                    'GLUSR_USR_COMPANYNAME' => 'Test Company',
-                    'ENQ_MESSAGE' => $baseData['message'],
-                    'ENQ_ADDRESS' => 'Test Address',
-                    'ENQ_CITY' => 'Test City',
-                    'ENQ_STATE' => 'Test State',
-                    'QUERY_ID' => 'test_query_' . uniqid(),
-                    'ENQ_CALL_DURATION' => '',
-                    'Call_Date' => date('Y-m-d H:i:s'),
-                    'Receiver_mobile' => '',
-                ];
+            'indiamart' => [
+                'UNIQUE_QUERY_ID' => 'query_' . $uniqueId,
+                'QUERY_ID' => 'query_' . $uniqueId,
+                'RFQ_TYPE' => 'B',
+                'QUERY_TYPE' => 'W',
+                'GLUSR_USR_ID' => mt_rand(100000, 999999),
+                'GLUSR_USR_NAME' => $baseData['name'],
+                'GLUSR_USR_EMAIL' => $baseData['email'],
+                'GLUSR_MOBILE' => $baseData['phone'],
+                'GLUSR_USR_COMPANYNAME' => $request->input('company', 'Test Fitness Company'),
+                'SENDERNAME' => $baseData['name'],
+                'SENDEREMAIL' => $baseData['email'],
+                'SUBJECT' => $request->input('subject', 'Gym Membership Inquiry'),
+                'QUERY_MESSAGE' => $baseData['message'],
+                'ENQ_MESSAGE' => $baseData['message'],
+                'ENQ_ADDRESS' => $request->input('address', 'Test Address, Test City'),
+                'ENQ_CITY' => $request->input('city', 'Test City'),
+                'ENQ_STATE' => $request->input('state', 'Test State'),
+                'ENQ_PINCODE' => $request->input('pincode', '123456'),
+                'ENQ_CALL_DURATION' => '',
+                'QUERY_MODID' => '123',
+                'QUERY_MODREFID' => '456',
+                'MOB_DIAL_TIME' => date('Y-m-d H:i:s', $timestamp),
+                'Call_Date' => date('Y-m-d H:i:s', $timestamp),
+                'Receiver_mobile' => $request->input('receiver_mobile', ''),
+            ],
 
-            case 'justdial':
-                return [
-                    'mobile' => $baseData['phone'],
-                    'name' => $baseData['name'],
-                    'email' => $baseData['email'],
-                    'company' => 'Test Company',
-                    'city' => 'Test City',
-                    'query' => $baseData['message'],
-                    'docid' => 'test_doc_' . uniqid(),
-                    'contact_person' => $baseData['name'],
-                    'std_code' => '011',
-                    'landline' => '12345678',
-                    'data_city' => 'Test City',
-                    'paid_status' => '1',
-                    'instrument_type' => 'Cash',
-                    'budget' => '10000',
-                    'payment_mode' => 'Online',
-                ];
+            'justdial' => [
+                'docid' => 'doc_' . $uniqueId,
+                'mobile' => str_replace('+91', '', $baseData['phone']),
+                'name' => $baseData['name'],
+                'email' => $baseData['email'],
+                'company' => $request->input('company', 'Test Fitness Company'),
+                'city' => $request->input('city', 'Test City'),
+                'query' => $baseData['message'],
+                'contact_person' => $baseData['name'],
+                'std_code' => $request->input('std_code', '011'),
+                'landline' => $request->input('landline', '12345678'),
+                'data_city' => $request->input('city', 'Test City'),
+                'area' => $request->input('area', 'Test Area'),
+                'business_type' => $request->input('business_type', 'Fitness'),
+                'category' => $request->input('category', 'Gym'),
+                'paid_status' => '1',
+                'instrument_type' => 'Online',
+                'budget' => $request->input('budget', '10000'),
+                'payment_mode' => 'Online',
+                'enquiry_date' => date('Y-m-d H:i:s', $timestamp),
+            ],
 
-            default:
-                return $baseData;
-        }
+            default => $baseData,
+        };
     }
 
     /**
@@ -272,15 +288,23 @@ class WebhookTestController extends Controller
      */
     private function getConfig(Request $request, string $platform): ?TenantSocialConfig
     {
-        $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        // For testing, we'll use the first available gym's ID
+        $gym = Gym::first();
+        if (!$gym) {
+            Log::error('No gym found for testing webhook configuration.');
             return null;
         }
 
-        return TenantSocialConfig::where('tenant_id', $user->tenant_id)
+        $query = TenantSocialConfig::where('gym_id', $gym->id)
             ->where('platform', $platform)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
+
+        // If page_id is provided in the request, use it to narrow down the search
+        if ($request->has('page_id')) {
+            $query->where('page_id', $request->input('page_id'));
+        }
+
+        return $query->first();
     }
 
     /**
@@ -289,6 +313,22 @@ class WebhookTestController extends Controller
     private function getWebhookUrl(string $platform): string
     {
         return route('api.webhooks.' . $platform . '.leads');
+    }
+
+    /**
+     * Formats base data into Facebook/Instagram field_data structure.
+     */
+    private function formatFieldData(array $baseData): array
+    {
+        $fieldData = [];
+        foreach ($baseData as $key => $value) {
+            $fieldData[] = [
+                'name' => $key,
+                'values' => [$value],
+            ];
+        }
+
+        return $fieldData;
     }
 
     /**
