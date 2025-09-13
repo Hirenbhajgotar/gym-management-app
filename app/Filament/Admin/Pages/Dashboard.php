@@ -10,10 +10,16 @@ use Filament\Forms\Form;
 use Filament\Pages\Dashboard\Actions\FilterAction;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
+use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->hasRole('gym_owner');
+    }
 
     // public function filtersForm(Form $form): Form
     // {
