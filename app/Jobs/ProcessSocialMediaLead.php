@@ -154,11 +154,11 @@ class ProcessSocialMediaLead implements ShouldQueue
     private function getProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => new FacebookLeadProcessor(),
-            'instagram' => new InstagramLeadProcessor(),
-            'whatsapp' => new WhatsAppLeadProcessor(),
-            'indiamart' => new IndiaMartLeadProcessor(),
-            'justdial' => new JustDialLeadProcessor(),
+            'facebook' => app(FacebookLeadProcessor::class),
+            'instagram' => app(InstagramLeadProcessor::class),
+            'whatsapp' => app(WhatsAppLeadProcessor::class),
+            'indiamart' => app(IndiaMartLeadProcessor::class),
+            'justdial' => app(JustDialLeadProcessor::class),
             default => null,
         };
     }
@@ -244,16 +244,9 @@ class ProcessSocialMediaLead implements ShouldQueue
             // Update gym's lead source statistics
             $gym = $lead->gym;
             if ($gym) {
-                $stats = $gym->lead_source_stats ?? [];
+                $stats = $gym?->lead_source_stats ?? [];
                 $stats[$platform] = ($stats[$platform] ?? 0) + 1;
                 $gym->update(['lead_source_stats' => $stats]);
-            }
-
-            // Update tenant's lead source statistics if applicable
-            if ($gym->tenant) {
-                $tenantStats = $gym->tenant->lead_source_stats ?? [];
-                $tenantStats[$platform] = ($tenantStats[$platform] ?? 0) + 1;
-                $gym->tenant->update(['lead_source_stats' => $tenantStats]);
             }
         } catch (\Exception $e) {
             Log::error('Failed to update lead source tracking', [

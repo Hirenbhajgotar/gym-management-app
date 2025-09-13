@@ -150,7 +150,7 @@ class InstagramLeadController extends Controller
 
         if ($appId) {
             return TenantSocialConfig::where('platform', 'instagram')
-                ->whereJsonContains('config->app_id', $appId)
+                ->whereJsonContains('additional_config->app_id', $appId)
                 ->where('is_active', true)
                 ->first();
         }

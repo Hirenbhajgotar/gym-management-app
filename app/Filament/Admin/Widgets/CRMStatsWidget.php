@@ -19,7 +19,7 @@ class CRMStatsWidget extends BaseWidget
             Stat::make('Leads in Pipeline', Lead::where('status', '!=', LeadStatus::CONVERTED)->where('status', '!=', LeadStatus::LOST)->count())
                 ->description('Active leads')
                 ->color('warning'),
-            Stat::make('Closed Won Leads', Lead::where('status', LeadStatus::CONVERTED)->count())
+            Stat::make('Closed Won Leads', Lead::where('status', LeadStatus::CONVERTED)->whereMonth('updated_at', now()->month)->count())
                 ->description('This month')
                 ->color('primary'),
         ];

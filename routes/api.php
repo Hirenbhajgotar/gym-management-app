@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\WhatsAppLeadController;
 use App\Http\Controllers\Api\IndiaMartLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
 use App\Http\Controllers\Api\WebhookTestController;
+use Filament\Facades\Filament;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,11 +81,12 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
     // Get leads by source
     Route::get('/source/{source}', function (Request $request, $source) {
         $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        $tenant = Filament::getTenant();
+        if (!$user || !$tenant?->id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $gym = \App\Models\Gym::where('tenant_id', $user->tenant_id)->first();
+        $gym = \App\Models\Gym::where('id', $tenant->id)->first();
         if (!$gym) {
             return response()->json(['error' => 'No gym found for tenant'], 404);
         }
