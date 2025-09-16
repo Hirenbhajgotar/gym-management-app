@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\NotificationAccountStatusEnum;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
@@ -79,6 +80,8 @@ class TwilioAccountManager
                 'message' => 'Twilio account created successfully. Please verify your WhatsApp number.'
             ];
         } catch (RestException $e) {
+            Log::error($e);
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -86,6 +89,8 @@ class TwilioAccountManager
                 'message' => 'Failed to create Twilio account'
             ];
         } catch (\Exception $e) {
+            Log::error($e);
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),

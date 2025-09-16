@@ -8,11 +8,18 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
+use Illuminate\Support\HtmlString;
 
-class WhatsAppSetup extends Page
+class WhatsAppSetup extends Page implements HasActions, HasForms
 {
+    use InteractsWithActions, InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
     protected static ?string $navigationLabel = 'WhatsApp Setup';
     protected static ?string $navigationGroup = 'Settings';
@@ -34,6 +41,18 @@ class WhatsAppSetup extends Page
                 Forms\Components\Section::make('WhatsApp Business Setup')
                     ->description('We will create and manage your Twilio WhatsApp account automatically')
                     ->schema([
+                        Forms\Components\Hidden::make('action_value')
+                            ->default(function () {
+                                if (!$this->hasExistingAccount()) {
+                                    return 'create_account';
+                                } elseif ($this->needsVerification()) {
+                                    return 'verify';
+                                } elseif ($this->hasExistingAccount()) {
+                                    return 'test_message';
+                                } else {
+                                    return null;
+                                }
+                            }),
                         Forms\Components\Placeholder::make('info')
                             ->label('Automated Setup Process')
                             ->content('We will handle all technical setup for you. Just provide your WhatsApp Business number and we will do the rest!')
@@ -43,7 +62,7 @@ class WhatsAppSetup extends Page
                         Forms\Components\TextInput::make('gym_name')
                             ->label('Gym Name')
                             ->required()
-                            ->default(auth()->user()->name . "'s Gym"),
+                            ->default(Filament::getTenant()->name),
 
                         Forms\Components\TextInput::make('whatsapp_number')
                             ->label('WhatsApp Business Number')
@@ -58,7 +77,7 @@ class WhatsAppSetup extends Page
                             ->default(auth()->user()->email),
 
                         Forms\Components\Placeholder::make('setup_info')
-                            ->content('
+                            ->content(new HtmlString('
                                 <div class="text-sm text-gray-600">
                                     <h4 class="font-medium mb-2">What happens when you click "Create Account":</h4>
                                     <ol class="list-decimal list-inside space-y-1">
@@ -69,14 +88,14 @@ class WhatsAppSetup extends Page
                                         <li>All costs are handled through your subscription with us</li>
                                     </ol>
                                 </div>
-                            '),
+                            ')),
                     ])
                     ->visible(fn() => !$this->hasExistingAccount()),
 
                 Forms\Components\Section::make('Account Status')
                     ->schema([
                         Forms\Components\Placeholder::make('account_info')
-                            ->content(fn() => $this->getAccountStatusDisplay())
+                            ->content(fn() => new HtmlString($this->getAccountStatusDisplay()))
                     ])
                     ->visible(fn() => $this->hasExistingAccount()),
 
@@ -91,35 +110,53 @@ class WhatsAppSetup extends Page
             ->statePath('data');
     }
 
-    protected function getFormActions(): array
+    public function createAccountAction(): Action
     {
-        $actions = [];
+        return Action::make('create_account')
+            ->label('Create WhatsApp Account')
+            ->icon('heroicon-o-plus')
+            ->color('success')
+            ->action('createTwilioAccount');
+    }
 
-        if (!$this->hasExistingAccount()) {
-            $actions[] = Action::make('create_account')
-                ->label('Create WhatsApp Account')
-                ->icon('heroicon-o-plus')
-                ->color('success')
-                ->action('createTwilioAccount');
+    public function verifyNumberAction(): Action
+    {
+        return Action::make('verify_number')
+            ->label('Verify Number')
+            ->icon('heroicon-o-check')
+            ->color('primary')
+            ->action('verifyWhatsAppNumber');
+    }
+
+    public function testMessageAction(): Action
+    {
+        return Action::make('test_message')
+            ->label('Send Test Message')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('info')
+            ->action('sendTestMessage');
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        $action = match ($data['action_value'] ?? null) {
+            'create_account' => 'createTwilioAccount',
+            'verify' => 'verifyWhatsAppNumber',
+            'test_message' => 'sendTestMessage',
+            default => null,
+        };
+
+        if ($action) {
+            $this->$action();
+        } else {
+            Notification::make()
+                ->title('No action to perform')
+                ->body('Please select a valid action.')
+                ->warning()
+                ->send();
         }
-
-        if ($this->needsVerification()) {
-            $actions[] = Action::make('verify')
-                ->label('Verify Number')
-                ->icon('heroicon-o-check')
-                ->color('primary')
-                ->action('verifyWhatsAppNumber');
-        }
-
-        if ($this->hasExistingAccount()) {
-            $actions[] = Action::make('test_message')
-                ->label('Send Test Message')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('info')
-                ->action('sendTestMessage');
-        }
-
-        return $actions;
     }
 
     public function createTwilioAccount(): void

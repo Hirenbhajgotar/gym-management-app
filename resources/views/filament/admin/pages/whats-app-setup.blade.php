@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <div class="space-y-6">
         @if (!$this->hasExistingAccount())
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-200 rounded-lg p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
                         <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
@@ -24,7 +24,7 @@
         @endif
 
         @if ($this->hasExistingAccount() && $this->accountStatus['verification_status'] === 'verified')
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div class="bg-green-50 dark:bg-gray-800 border border-green-200 rounded-lg p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
                         <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -50,45 +50,41 @@
             {{ $this->form }}
 
             <div class="mt-6 flex justify-between">
-                <div></div>
                 <div class="space-x-3">
-                    {{ $this->getFormActions() }}
+                    @if (!$this->hasExistingAccount())
+                        <x-filament::button type="submit" icon="heroicon-m-plus-circle" color="success" size="xl"
+                            tooltip="Create WhatsApp Account" wire:target="save" wire:loading.attr="disabled" outlined>
+                            Create WhatsApp Account
+                        </x-filament::button>
+                    @endif
+
+                    @if ($this->needsVerification())
+                        <x-filament::button type="submit" icon="heroicon-o-check" color="primary" size="xl"
+                            tooltip="Verify WhatsApp Number" wire:target="save" wire:loading.attr="disabled" outlined>
+                            Verify Number
+                        </x-filament::button>
+                    @endif
+
+                    @if ($this->hasExistingAccount())
+                        <x-filament::button type="submit" icon="heroicon-o-paper-airplane" color="info"
+                            size="xl" tooltip="Send Test Message" wire:target="save" wire:loading.attr="disabled"
+                            outlined>
+                            Send Test Message
+                        </x-filament::button>
+                    @endif
                 </div>
             </div>
         </form>
 
         @if ($this->hasExistingAccount())
-            <div class="mt-8 bg-gray-50 rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+            <div class="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Account Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @if (isset($this->accountStatus['balance']))
-                        <div class="bg-white p-4 rounded border">
-                            <div class="text-2xl font-bold text-blue-600">
-                                ${{ number_format($this->accountStatus['balance'], 2) }}</div>
-                            <div class="text-sm text-gray-600">Account Balance</div>
-                        </div>
-                    @endif
-
-                    @if (isset($this->accountStatus['messages_sent']))
-                        <div class="bg-white p-4 rounded border">
-                            <div class="text-2xl font-bold text-green-600">{{ $this->accountStatus['messages_sent'] }}
-                            </div>
-                            <div class="text-sm text-gray-600">Messages This Month</div>
-                        </div>
-                    @endif
-
-                    @if (isset($this->accountStatus['monthly_cost']))
-                        <div class="bg-white p-4 rounded border">
-                            <div class="text-2xl font-bold text-orange-600">
-                                ${{ number_format($this->accountStatus['monthly_cost'], 2) }}</div>
-                            <div class="text-sm text-gray-600">Monthly Cost</div>
-                        </div>
-                    @endif
-
-                    <div class="bg-white p-4 rounded border">
+                    <div class="bg-white dark:bg-gray-700 p-4 rounded border dark:border-gray-600">
                         <div class="text-2xl font-bold text-purple-600">
-                            {{ ucfirst($this->accountStatus['verification_status'] ?? 'Unknown') }}</div>
-                        <div class="text-sm text-gray-600">Verification Status</div>
+                            {{ ucfirst($this->accountStatus['verification_status'] ?? 'Unknown') }}
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-200">Verification Status</div>
                     </div>
                 </div>
             </div>
