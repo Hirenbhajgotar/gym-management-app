@@ -10,6 +10,7 @@ enum NotificationTemplateTypeEnum: string implements HasLabel
     case BIRTHDAY = 'birthday';
     case PAYMENT_REMINDER = 'payment_reminder';
     case MEMBERSHIP_EXPIRY = 'membership_expiry';
+    case SYSTEM_ERROR = 'system_error';
 
     public function getLabel(): ?string
     {

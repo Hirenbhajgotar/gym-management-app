@@ -75,4 +75,10 @@ return [
         'webhook_secret' => env('JUSTDIAL_WEBHOOK_SECRET'),
     ],
 
+    'twilio' => [
+        'master_sid' => env('TWILIO_ACCOUNT_SID'),
+        'master_token' => env('TWILIO_AUTH_TOKEN'),
+        // 'api_key' => env('TWILIO_API_KEY'),
+    ]
+
 ];
