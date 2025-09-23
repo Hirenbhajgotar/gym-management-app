@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\NotificationAccountStatusEnum;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -33,25 +34,18 @@ class TwilioAccountManager
         string $email
     ): array {
         try {
+            DB::beginTransaction();
+
             // Create Twilio Subaccount
-            $subaccount = $this->masterClient->accounts->create([
+            $subaccount = $this->masterClient->api->v2010->accounts->create([
                 'friendlyName' => "Gym: {$gymName} - Owner: {$gymOwnerName}",
             ]);
-
-            // Create API Key for the subaccount
-            $apiKey = $this->masterClient->accounts($subaccount->sid)
-                ->keys
-                ->create([
-                    'friendlyName' => "API Key for {$gymName}"
-                ]);
 
             // Store account details in database
             $accountData = [
                 'gym_id' => $tenantId,
                 'twilio_account_sid' => $subaccount->sid,
                 'twilio_auth_token' => $subaccount->authToken,
-                'twilio_api_key' => $apiKey->sid,
-                'twilio_api_secret' => $apiKey->secret,
                 'whatsapp_business_number' => $whatsappNumber,
                 'account_status' => NotificationAccountStatusEnum::CREATED,
                 'verification_status' => NotificationVerificationStatusEnum::PENDING,
@@ -71,15 +65,18 @@ class TwilioAccountManager
                 $whatsappNumber
             );
 
+            DB::commit();
+
             return [
                 'success' => true,
                 'account_sid' => $subaccount->sid,
-                'api_key' => $apiKey->sid,
+                'auth_token' => $subaccount->authToken,
                 'verification_required' => true,
-                'verification_method' => $verificationResult['method'] ?? 'sms',
+                'verification_method' => 'sms',
                 'message' => 'Twilio account created successfully. Please verify your WhatsApp number.'
             ];
         } catch (RestException $e) {
+            DB::rollBack();
             Log::error($e);
 
             return [
@@ -89,6 +86,7 @@ class TwilioAccountManager
                 'message' => 'Failed to create Twilio account'
             ];
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error($e);
 
             return [
@@ -111,7 +109,7 @@ class TwilioAccountManager
             // This is a simplified version - actual implementation may vary
             $incomingPhoneNumber = $client->incomingPhoneNumbers->create([
                 'phoneNumber' => $whatsappNumber,
-                'friendlyName' => 'WhatsApp Business Number'
+                // 'friendlyName' => 'WhatsApp Business Number'
             ]);
 
             return [
