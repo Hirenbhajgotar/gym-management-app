@@ -26,7 +26,7 @@ class RolesAndPermissionsService
         // Get all tenant-specific roles
         $roles = DefaultRole::tenantRoles();
 
-        $roleData = array_map(fn ($role) => [
+        $roleData = array_map(fn($role) => [
             'name' => $role->value,
             'guard_name' => 'web',
             'gym_id' => $tenant->id,

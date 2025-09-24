@@ -13,11 +13,30 @@ use Twilio\Rest\Client;
 class TwilioAccountManager
 {
     private Client $masterClient;
+
     private string $masterAccountSid;
+
     private string $masterAuthToken;
 
-    public function __construct()
+    public function __construct(?Client $masterClient = null)
     {
+        // If a Client instance is explicitly provided, use it (useful for tests)
+        if ($masterClient !== null) {
+            $this->masterClient = $masterClient;
+            $this->masterAccountSid = config('services.twilio.master_sid', '');
+            $this->masterAuthToken = config('services.twilio.master_token', '');
+            return;
+        }
+
+        // If the container has a bound Client (test mocks), resolve it from the container
+        if (function_exists('app') && app()->bound(Client::class)) {
+            $this->masterClient = app(Client::class);
+            $this->masterAccountSid = config('services.twilio.master_sid', '');
+            $this->masterAuthToken = config('services.twilio.master_token', '');
+            return;
+        }
+
+        // Default: create a real Twilio client using configured master credentials
         $this->masterAccountSid = config('services.twilio.master_sid');
         $this->masterAuthToken = config('services.twilio.master_token');
         $this->masterClient = new Client($this->masterAccountSid, $this->masterAuthToken);
@@ -35,6 +54,12 @@ class TwilioAccountManager
     ): array {
         try {
             DB::beginTransaction();
+
+            // Verify that the master account is not a trial account
+            // $masterAccount = $this->masterClient->api->v2010->accounts($this->masterAccountSid)->fetch();
+            // if ($masterAccount->type === 'Trial') {
+            //     throw new \Exception('Twilio trial accounts cannot be used to create subaccounts. Please upgrade your Twilio account to a full account.');
+            // }
 
             // Create Twilio Subaccount
             $subaccount = $this->masterClient->api->v2010->accounts->create([
@@ -59,11 +84,11 @@ class TwilioAccountManager
             );
 
             // Initiate WhatsApp number verification process
-            $verificationResult = $this->initiateWhatsAppVerification(
-                $subaccount->sid,
-                $subaccount->authToken,
-                $whatsappNumber
-            );
+            // $verificationResult = $this->initiateWhatsAppVerification(
+            //     $subaccount->sid,
+            //     $subaccount->authToken,
+            //     $whatsappNumber
+            // );
 
             DB::commit();
 
@@ -73,17 +98,22 @@ class TwilioAccountManager
                 'auth_token' => $subaccount->authToken,
                 'verification_required' => true,
                 'verification_method' => 'sms',
-                'message' => 'Twilio account created successfully. Please verify your WhatsApp number.'
+                'message' => 'Twilio account created successfully. Please verify your WhatsApp number.',
             ];
         } catch (RestException $e) {
             DB::rollBack();
             Log::error($e);
 
+            $message = 'Failed to create Twilio account';
+            if ($e->getCode() === 21217) { // Reached maximum number of subaccounts
+                $message = 'You have reached the maximum number of subaccounts for your Twilio account. Please upgrade your Twilio plan or contact Twilio support.';
+            }
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
-                'message' => 'Failed to create Twilio account'
+                'message' => $message,
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -92,7 +122,7 @@ class TwilioAccountManager
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'message' => 'Unexpected error occurred'
+                'message' => 'Unexpected error occurred',
             ];
         }
     }
@@ -115,7 +145,7 @@ class TwilioAccountManager
             return [
                 'success' => true,
                 'method' => 'sms',
-                'number_sid' => $incomingPhoneNumber->sid
+                'number_sid' => $incomingPhoneNumber->sid,
             ];
         } catch (RestException $e) {
             // If direct purchase fails, we'll need verification
@@ -123,7 +153,7 @@ class TwilioAccountManager
                 'success' => false,
                 'method' => 'manual_verification',
                 'error' => $e->getMessage(),
-                'requires_verification' => true
+                'requires_verification' => true,
             ];
         }
     }
@@ -136,7 +166,7 @@ class TwilioAccountManager
         try {
             $settings = NotificationSetting::where('gym_id', $tenantId)->first();
 
-            if (!$settings || !$settings->twilio_account_sid) {
+            if (! $settings || ! $settings->twilio_account_sid) {
                 throw new \Exception('No Twilio account found for this gym');
             }
 
@@ -149,7 +179,7 @@ class TwilioAccountManager
             $settings->update([
                 'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
                 'account_status' => NotificationAccountStatusEnum::ACTIVE,
-                'verified_at' => now()
+                'verified_at' => now(),
             ]);
 
             // Test the WhatsApp integration
@@ -158,13 +188,13 @@ class TwilioAccountManager
             return [
                 'success' => true,
                 'message' => 'WhatsApp number verified successfully',
-                'test_message_sent' => $testResult['success'] ?? false
+                'test_message_sent' => $testResult['success'] ?? false,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'message' => 'Verification failed'
+                'message' => 'Verification failed',
             ];
         }
     }
@@ -179,21 +209,21 @@ class TwilioAccountManager
 
             // Send test message to gym owner
             $message = $client->messages->create(
-                "whatsapp:" . $settings->whatsapp_business_number,
+                'whatsapp:' . $settings->whatsapp_business_number,
                 [
-                    'from' => "whatsapp:" . $settings->whatsapp_business_number,
-                    'body' => 'Your WhatsApp Business integration is now active! You can start sending notifications to your gym members.'
+                    'from' => 'whatsapp:' . $settings->whatsapp_business_number,
+                    'body' => 'Your WhatsApp Business integration is now active! You can start sending notifications to your gym members.',
                 ]
             );
 
             return [
                 'success' => true,
-                'message_id' => $message->sid
+                'message_id' => $message->sid,
             ];
         } catch (RestException $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -205,10 +235,10 @@ class TwilioAccountManager
     {
         $settings = NotificationSetting::where('gym_id', $tenantId)->first();
 
-        if (!$settings || !$settings->twilio_account_sid) {
+        if (! $settings || ! $settings->twilio_account_sid) {
             return [
                 'status' => 'not_created',
-                'message' => 'No Twilio account found'
+                'message' => 'No Twilio account found',
             ];
         }
 
@@ -222,14 +252,14 @@ class TwilioAccountManager
             $usage = $client->usage->records->read([
                 'category' => 'messages',
                 'startDate' => now()->startOfMonth()->format('Y-m-d'),
-                'endDate' => now()->format('Y-m-d')
+                'endDate' => now()->format('Y-m-d'),
             ]);
 
             $messageCount = 0;
             $cost = 0;
             foreach ($usage as $record) {
                 $messageCount += $record->count;
-                $cost += (float)$record->price;
+                $cost += (float) $record->price;
             }
 
             return [
@@ -239,12 +269,12 @@ class TwilioAccountManager
                 'messages_sent' => $messageCount,
                 'monthly_cost' => $cost,
                 'account_created' => $settings->created_at,
-                'last_activity' => now()
+                'last_activity' => now(),
             ];
         } catch (RestException $e) {
             return [
                 'status' => 'error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }

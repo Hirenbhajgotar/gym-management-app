@@ -30,7 +30,21 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public function mount(): void
     {
-        $this->form->fill();
+        // Pre-fill the form with sensible defaults from the current tenant (gym) and user
+        $gym = Filament::getTenant();
+        $user = auth()->user();
+
+        $this->data = array_merge(
+            $this->data ?? [],
+            [
+                'gym_name' => $gym?->name ?? null,
+                'owner_email' => $user?->email ?? null,
+            ]
+        );
+
+        // Ensure the Filament form has the state populated
+        $this->form->fill($this->data);
+
         $this->loadAccountStatus();
     }
 
@@ -62,7 +76,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         Forms\Components\TextInput::make('gym_name')
                             ->label('Gym Name')
                             ->required()
-                            ->default(Filament::getTenant()->name),
+                            ->default(Filament::getTenant()?->name),
 
                         Forms\Components\TextInput::make('whatsapp_number')
                             ->label('WhatsApp Business Number')
@@ -166,8 +180,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $accountManager = app(TwilioAccountManager::class);
 
         $result = $accountManager->createAccountForGymOwner(
-            Filament::getTenant()->id,
-            auth()->user()->name,
+            Filament::getTenant()?->id,
+            auth()->user()?->name,
             $data['gym_name'],
             $data['whatsapp_number'],
             $data['owner_email']
@@ -197,7 +211,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $accountManager = app(TwilioAccountManager::class);
 
         $result = $accountManager->completeWhatsAppVerification(
-            Filament::getTenant()->id,
+            Filament::getTenant()?->id,
             $data['verification_code']
         );
 
@@ -221,7 +235,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function sendTestMessage(): void
     {
         $accountManager = app(TwilioAccountManager::class);
-        $settings = NotificationSetting::where('gym_id', Filament::getTenant()->id)->first();
+        $settings = NotificationSetting::where('gym_id', Filament::getTenant()?->id)->first();
 
         $result = $accountManager->sendTestWhatsAppMessage($settings);
 
@@ -243,7 +257,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function loadAccountStatus(): void
     {
         $accountManager = app(TwilioAccountManager::class);
-        $this->accountStatus = $accountManager->getAccountStatus(Filament::getTenant()->id);
+        $this->accountStatus = $accountManager->getAccountStatus(Filament::getTenant()?->id);
     }
 
     private function hasExistingAccount(): bool
