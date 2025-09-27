@@ -43,21 +43,10 @@ class WhatsAppSetupTest extends TestCase
             'email' => 'john@example.com'
         ])->assignRole(DefaultRole::GYM_OWNER->value);
 
-        // $this->gym = Gym::factory()->create([
-        //     'name' => 'Test Gym',
-        //     'slug' => 'test-gym'
-        // ]);
-        $this->gym = Gym::factory()
-            // ->hasAttached($this->user, ['role' => DefaultRole::GYM_OWNER->value], 'users')
-            // ->has(Address::factory()->for(Gym::factory()), 'address') // existing address
-            ->create();
+        $this->gym = Gym::factory()->create();
 
         $this->user->gyms()->attach($this->gym);
 
-        // Set up Filament tenant context
-        // Filament::setTenant($this->gym);
-
-        // Ensure the test is authenticated before setting the Filament tenant
         $this->actingAs($this->user);
 
         Filament::setCurrentPanel(Filament::getPanel('admin'));
@@ -72,7 +61,6 @@ class WhatsAppSetupTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clear Filament tenant to ensure no state is retained between tests
         try {
             Filament::setTenant(null);
         } catch (\Throwable $_) {
@@ -93,7 +81,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn(['status' => 'not_created']);
 
-        // Ensure Filament tenant is set for this request only
         Filament::setTenant($this->gym);
 
         $this->actingAs($this->user)
@@ -110,7 +97,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn(['status' => 'not_created']);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -137,7 +123,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn($accountStatus);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -164,7 +149,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn($accountStatus);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -198,7 +182,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn(['success' => true]);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -231,7 +214,6 @@ class WhatsAppSetupTest extends TestCase
                 'error' => 'Invalid WhatsApp number format'
             ]);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -255,7 +237,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn(['status' => 'not_created']);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -283,7 +264,6 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn(['status' => 'not_created']);
 
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         Livewire::actingAs($this->user)
@@ -298,12 +278,11 @@ class WhatsAppSetupTest extends TestCase
             ->assertHasFormErrors(['owner_email' => 'email']);
     }
 
-    // // ========== TWILIO ACCOUNT MANAGER TESTS ==========
+    // ========== TWILIO ACCOUNT MANAGER TESTS ==========
 
     /** @test */
     public function twilio_account_manager_can_create_account_successfully(): void
     {
-        // Ensure Filament tenant is set for Livewire component
         Filament::setTenant($this->gym);
 
         // Mock Twilio API responses for subaccount creation
@@ -313,7 +292,7 @@ class WhatsAppSetupTest extends TestCase
 
         $accountsMock = Mockery::mock();
         $accountsMock->shouldReceive('create')
-            ->with(['friendlyName' => 'Gym: Test Gym - Owner: John Doe'])
+            ->with(['friendlyName' => 'Gym: ' . $this->gym->name . ' - Owner: John Doe'])
             ->once()
             ->andReturn($subaccountMock);
 
@@ -337,7 +316,7 @@ class WhatsAppSetupTest extends TestCase
         $result = $accountManager->createAccountForGymOwner(
             $this->gym->id,
             'John Doe',
-            'Test Gym',
+            $this->gym->name,
             '+1234567890',
             'john@example.com'
         );
@@ -450,7 +429,6 @@ class WhatsAppSetupTest extends TestCase
     /** @test */
     public function twilio_account_manager_can_get_account_status(): void
     {
-        // Create notification setting
         NotificationSetting::create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
@@ -478,7 +456,6 @@ class WhatsAppSetupTest extends TestCase
                 'last_activity' => now(),
             ]);
 
-        // Execute the method
         $result = $accountManager->getAccountStatus($this->gym->id);
 
         // Assert results
@@ -503,88 +480,93 @@ class WhatsAppSetupTest extends TestCase
         $this->assertEquals('No Twilio account found for this gym', $result['error']);
     }
 
-    // /** @test */
-    // public function twilio_account_manager_returns_not_created_for_missing_account(): void
-    // {
-    //     $accountManager = new TwilioAccountManager();
+    /** @test */
+    public function twilio_account_manager_returns_not_created_for_missing_account(): void
+    {
+        $accountManager = new TwilioAccountManager();
 
-    //     $result = $accountManager->getAccountStatus($this->gym->id);
+        $result = $accountManager->getAccountStatus($this->gym->id);
 
-    //     $this->assertEquals('not_created', $result['status']);
-    //     $this->assertEquals('No Twilio account found', $result['message']);
-    // }
+        $this->assertEquals('not_created', $result['status']);
+        $this->assertEquals('No Twilio account found', $result['message']);
+    }
 
-    // // ========== TWILIO WHATSAPP SERVICE TESTS ==========
+    // ========== TWILIO WHATSAPP SERVICE TESTS ==========
 
-    // /** @test */
-    // public function twilio_whatsapp_service_can_send_message(): void
-    // {
-    //     // Create verified notification setting
-    //     NotificationSetting::create([
-    //         'gym_id' => $this->gym->id,
-    //         'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
-    //         'twilio_auth_token' => 'auth_token_123',
-    //         'whatsapp_business_number' => '+1234567890',
-    //         'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
-    //     ]);
+    /** @test */
+    public function twilio_whatsapp_service_can_send_message(): void
+    {
+        // Create verified notification setting
+        NotificationSetting::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
+            'twilio_auth_token' => 'auth_token_123',
+            'whatsapp_business_number' => '+1234567890',
+            'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
+        ]);
 
-    //     // Mock Twilio message response
-    //     $messageMock = Mockery::mock();
-    //     $messageMock->sid = 'SMxxxxxxxxxxxxxxxxxxxxxx';
-    //     $messageMock->status = 'sent';
-    //     $messageMock->shouldReceive('toArray')
-    //         ->once()
-    //         ->andReturn(['sid' => 'SMxxxxxxxxxxxxxxxxxxxxxx', 'status' => 'sent']);
+        // Mock Twilio message response
+        $messageMock = Mockery::mock();
+        $messageMock->sid = 'SMxxxxxxxxxxxxxxxxxxxxxx';
+        $messageMock->status = 'sent';
+        $messageMock->shouldReceive('toArray')
+            ->once()
+            ->andReturn(['sid' => 'SMxxxxxxxxxxxxxxxxxxxxxx', 'status' => 'sent']);
 
-    //     $messagesMock = Mockery::mock();
-    //     $messagesMock->shouldReceive('create')
-    //         ->with(
-    //             'whatsapp:+1987654321',
-    //             [
-    //                 'from' => 'whatsapp:+1234567890',
-    //                 'body' => 'Hello, this is a test message!'
-    //             ]
-    //         )
-    //         ->once()
-    //         ->andReturn($messageMock);
+        $messagesMock = Mockery::mock();
+        $messagesMock->shouldReceive('create')
+            ->with(
+                'whatsapp:+1987654321',
+                [
+                    'from' => 'whatsapp:+1234567890',
+                    'body' => 'Hello, this is a test message!'
+                ]
+            )
+            ->once()
+            ->andReturn($messageMock);
 
-    //     $twilioClientMock = Mockery::mock(Client::class);
-    //     $twilioClientMock->messages = $messagesMock;
+        $twilioClientMock = Mockery::mock(Client::class);
+        $twilioClientMock->messages = $messagesMock;
 
-    //     $this->app->bind(Client::class, function () use ($twilioClientMock) {
-    //         return $twilioClientMock;
-    //     });
+        // Inject the mocked client directly into the service
+        $whatsappService = new TwilioWhatsAppService($this->gym->id, $twilioClientMock);
 
-    //     $whatsappService = new TwilioWhatsAppService($this->gym->id);
+        // Call the method
+        $result = $whatsappService->sendMessage('+1987654321', 'Hello, this is a test message!');
 
-    //     $result = $whatsappService->sendMessage('+1987654321', 'Hello, this is a test message!');
+        // Debug output if test fails
+        if (!$result['success']) {
+            $this->fail('Service failed with error: ' . ($result['error'] ?? 'Unknown error') .
+                '. Full result: ' . json_encode($result));
+        }
 
-    //     $this->assertTrue($result['success']);
-    //     $this->assertEquals('SMxxxxxxxxxxxxxxxxxxxxxx', $result['message_id']);
-    //     $this->assertEquals('sent', $result['status']);
-    //     $this->assertEquals('+1234567890', $result['from']);
-    //     $this->assertIsArray($result['data']);
-    // }
+        // Assertions
+        $this->assertTrue($result['success']);
+        $this->assertEquals('SMxxxxxxxxxxxxxxxxxxxxxx', $result['message_id']);
+        $this->assertEquals('sent', $result['status']);
+        $this->assertEquals('+1234567890', $result['from']);
+        $this->assertIsArray($result['data']);
+    }
 
-    // /** @test */
-    // public function twilio_whatsapp_service_fails_with_unverified_account(): void
-    // {
-    //     // Create unverified notification setting
-    //     NotificationSetting::create([
-    //         'gym_id' => $this->gym->id,
-    //         'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
-    //         'twilio_auth_token' => 'auth_token_123',
-    //         'whatsapp_business_number' => '+1234567890',
-    //         'verification_status' => NotificationVerificationStatusEnum::PENDING,
-    //     ]);
+    /** @test */
+    public function twilio_whatsapp_service_fails_with_unverified_account(): void
+    {
+        // Create unverified notification setting
+        NotificationSetting::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
+            'twilio_auth_token' => 'auth_token_123',
+            'whatsapp_business_number' => '+1234567890',
+            'verification_status' => NotificationVerificationStatusEnum::PENDING,
+        ]);
 
-    //     $whatsappService = new TwilioWhatsAppService($this->gym->id);
+        $whatsappService = new TwilioWhatsAppService($this->gym->id);
 
-    //     $result = $whatsappService->sendMessage('+1987654321', 'Test message');
+        $result = $whatsappService->sendMessage('+1987654321', 'Test message');
 
-    //     $this->assertFalse($result['success']);
-    //     $this->assertEquals('Twilio account not verified for this gym', $result['error']);
-    // }
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('Twilio account not verified for this gym', $result['error']);
+    }
 
     // /** @test */
     // public function twilio_whatsapp_service_handles_rest_exception(): void

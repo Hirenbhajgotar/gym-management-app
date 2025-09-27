@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationSetting;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -9,10 +10,27 @@ use Twilio\Rest\Client;
 class TwilioWhatsAppService implements WhatsAppServiceInterface
 {
     private string $tenantId;
+    private ?Client $client;
 
-    public function __construct(string $tenantId)
+    public function __construct(string $tenantId, ?Client $client = null)
     {
         $this->tenantId = $tenantId;
+        $this->client = $client;
+    }
+
+    private function getClient(): Client
+    {
+        if ($this->client) {
+            return $this->client;
+        }
+
+        $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
+
+        if (!$settings) {
+            throw new \Exception('No Twilio settings found');
+        }
+
+        return new Client($settings->twilio_account_sid, $settings->twilio_auth_token);
     }
 
     public function sendMessage(string $to, string $message): array
@@ -20,12 +38,16 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-            if (!$settings || $settings->verification_status !== 'verified') {
-                throw new \Exception('Twilio account not verified for this gym');
+            if (!$settings) {
+                throw new \Exception('No Twilio settings found for this gym');
             }
 
-            // Use gym owner's individual Twilio account
-            $client = new Client($settings->twilio_account_sid, $settings->twilio_auth_token);
+            // Fix: Compare with enum value instead of string
+            if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
+                throw new \Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
+            }
+
+            $client = $this->getClient();
 
             $twilioMessage = $client->messages->create(
                 "whatsapp:$to",
