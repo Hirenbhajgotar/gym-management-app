@@ -4,16 +4,16 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\NotificationSetting;
 use App\Services\TwilioAccountManager;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
+use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
 
 class WhatsAppSetup extends Page implements HasActions, HasForms
@@ -21,11 +21,15 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     use InteractsWithActions, InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
+
     protected static ?string $navigationLabel = 'WhatsApp Setup';
+
     protected static ?string $navigationGroup = 'Settings';
+
     protected static string $view = 'filament.admin.pages.whats-app-setup';
 
     public ?array $data = [];
+
     public ?array $accountStatus = null;
 
     public function mount(): void
@@ -57,7 +61,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->schema([
                         Forms\Components\Hidden::make('action_value')
                             ->default(function () {
-                                if (!$this->hasExistingAccount()) {
+                                if (! $this->hasExistingAccount()) {
                                     return 'create_account';
                                 } elseif ($this->needsVerification()) {
                                     return 'verify';
@@ -71,7 +75,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->label('Automated Setup Process')
                             ->content('We will handle all technical setup for you. Just provide your WhatsApp Business number and we will do the rest!')
                             ->extraAttributes(['class' => 'text-info-600 bg-info-50 border border-info-200 rounded-lg p-4'])
-                            ->visible(fn() => !$this->hasExistingAccount()),
+                            ->visible(fn () => ! $this->hasExistingAccount()),
 
                         Forms\Components\TextInput::make('gym_name')
                             ->label('Gym Name')
@@ -104,14 +108,14 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </div>
                             ')),
                     ])
-                    ->visible(fn() => !$this->hasExistingAccount()),
+                    ->visible(fn () => ! $this->hasExistingAccount() || $this->needsVerification()),
 
                 Forms\Components\Section::make('Account Status')
                     ->schema([
                         Forms\Components\Placeholder::make('account_info')
-                            ->content(fn() => new HtmlString($this->getAccountStatusDisplay()))
+                            ->content(fn () => new HtmlString($this->getAccountStatusDisplay())),
                     ])
-                    ->visible(fn() => $this->hasExistingAccount()),
+                    ->visible(fn () => $this->hasExistingAccount() && ! $this->needsVerification()),
 
                 Forms\Components\Section::make('Verification')
                     ->schema([
@@ -119,7 +123,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->label('Verification Code')
                             ->helperText('Enter the code sent to your WhatsApp number'),
                     ])
-                    ->visible(fn() => $this->needsVerification()),
+                    ->visible(fn () => $this->needsVerification()),
             ])
             ->statePath('data');
     }
@@ -274,17 +278,19 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     private function getAccountStatusDisplay(): string
     {
-        if (!$this->accountStatus) return 'Loading...';
+        if (! $this->accountStatus) {
+            return 'Loading...';
+        }
 
         $status = $this->accountStatus;
 
         return "<div class='space-y-2'>
             <div><strong>Status:</strong> <span class='text-green-600'>" . ucfirst($status['status']) . "</span></div>
             <div><strong>Verification:</strong> <span class='" .
-            ($status['verification_status'] === 'verified' ? 'text-green-600' : 'text-orange-600') . "'>" .
-            ucfirst($status['verification_status']) . "</span></div>" .
-            (isset($status['balance']) ? "<div><strong>Account Balance:</strong> $" . $status['balance'] . "</div>" : "") .
-            (isset($status['messages_sent']) ? "<div><strong>Messages This Month:</strong> " . $status['messages_sent'] . "</div>" : "") .
-            "</div>";
+            (isset($status['verification_status']) && $status['verification_status'] === 'verified' ? 'text-green-600' : 'text-orange-600') . "'>" .
+            ucfirst($status['verification_status'] ?? 'unknown') . '</span></div>' .
+            (isset($status['balance']) ? '<div><strong>Account Balance:</strong> $' . $status['balance'] . '</div>' : '') .
+            (isset($status['messages_sent']) ? '<div><strong>Messages This Month:</strong> ' . $status['messages_sent'] . '</div>' : '') .
+            '</div>';
     }
 }
