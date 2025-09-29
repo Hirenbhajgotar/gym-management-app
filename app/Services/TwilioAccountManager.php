@@ -304,9 +304,16 @@ class TwilioAccountManager
     /**
      * Send test WhatsApp message to verify setup
      */
-    protected function sendTestWhatsAppMessage(NotificationSetting $settings): array
+    public function sendTestWhatsAppMessage(NotificationSetting $settings): array
     {
         try {
+            if (empty($settings->twilio_account_sid) || empty($settings->twilio_auth_token)) {
+                return [
+                    'success' => false,
+                    'error' => 'Twilio credentials are not configured.',
+                ];
+            }
+
             $client = $this->makeClient($settings->twilio_account_sid, $settings->twilio_auth_token);
 
             // Send test message to gym owner

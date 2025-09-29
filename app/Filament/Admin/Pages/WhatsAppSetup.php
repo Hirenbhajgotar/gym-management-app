@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -19,6 +20,9 @@ use Illuminate\Support\HtmlString;
 class WhatsAppSetup extends Page implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
+
+    /** @var \App\Models\User $user */
+    public $user;
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
 
@@ -32,17 +36,19 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public ?array $accountStatus = null;
 
+    public string $viewState = 'loading';
+
     public function mount(): void
     {
         // Pre-fill the form with sensible defaults from the current tenant (gym) and user
         $gym = Filament::getTenant();
-        $user = auth()->user();
+        $this->user = Auth::user();
 
         $this->data = array_merge(
             $this->data ?? [],
             [
                 'gym_name' => $gym?->name ?? null,
-                'owner_email' => $user?->email ?? null,
+                'owner_email' => $this->user?->email ?? null,
             ]
         );
 
@@ -75,7 +81,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->label('Automated Setup Process')
                             ->content('We will handle all technical setup for you. Just provide your WhatsApp Business number and we will do the rest!')
                             ->extraAttributes(['class' => 'text-info-600 bg-info-50 border border-info-200 rounded-lg p-4'])
-                            ->visible(fn () => ! $this->hasExistingAccount()),
+                            ->visible(fn() => ! $this->hasExistingAccount()),
 
                         Forms\Components\TextInput::make('gym_name')
                             ->label('Gym Name')
@@ -92,7 +98,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->label('Owner Email')
                             ->email()
                             ->required()
-                            ->default(auth()->user()->email),
+                            ->default(Auth::user()->email),
 
                         Forms\Components\Placeholder::make('setup_info')
                             ->content(new HtmlString('
@@ -108,14 +114,14 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </div>
                             ')),
                     ])
-                    ->visible(fn () => ! $this->hasExistingAccount() || $this->needsVerification()),
+                    ->visible(fn() => ! $this->hasExistingAccount() || $this->needsVerification()),
 
                 Forms\Components\Section::make('Account Status')
                     ->schema([
                         Forms\Components\Placeholder::make('account_info')
-                            ->content(fn () => new HtmlString($this->getAccountStatusDisplay())),
+                            ->content(fn() => new HtmlString($this->getAccountStatusDisplay())),
                     ])
-                    ->visible(fn () => $this->hasExistingAccount() && ! $this->needsVerification()),
+                    ->visible(fn() => $this->hasExistingAccount() && ! $this->needsVerification()),
 
                 Forms\Components\Section::make('Verification')
                     ->schema([
@@ -123,7 +129,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->label('Verification Code')
                             ->helperText('Enter the code sent to your WhatsApp number'),
                     ])
-                    ->visible(fn () => $this->needsVerification()),
+                    ->visible(fn() => $this->needsVerification()),
             ])
             ->statePath('data');
     }
@@ -185,7 +191,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
         $result = $accountManager->createAccountForGymOwner(
             Filament::getTenant()?->id,
-            auth()->user()?->name,
+            Auth::user()->name,
             $data['gym_name'],
             $data['whatsapp_number'],
             $data['owner_email']
@@ -198,7 +204,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->success()
                 ->send();
 
-            $this->loadAccountStatus();
+            $this->refreshComponent();
         } else {
             Notification::make()
                 ->title('Account Creation Failed')
@@ -226,7 +232,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->success()
                 ->send();
 
-            $this->loadAccountStatus();
+            $this->refreshComponent();
         } else {
             Notification::make()
                 ->title('Verification Failed')
@@ -258,18 +264,32 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         }
     }
 
+    public function refreshComponent(): void
+    {
+        $this->loadAccountStatus();
+        parent::refresh();
+    }
+
     private function loadAccountStatus(): void
     {
         $accountManager = app(TwilioAccountManager::class);
         $this->accountStatus = $accountManager->getAccountStatus(Filament::getTenant()?->id);
+
+        if (!$this->hasExistingAccount()) {
+            $this->viewState = 'create';
+        } elseif ($this->needsVerification()) {
+            $this->viewState = 'verify';
+        } else {
+            $this->viewState = 'status';
+        }
     }
 
-    private function hasExistingAccount(): bool
+    public function hasExistingAccount(): bool
     {
         return $this->accountStatus && $this->accountStatus['status'] !== 'not_created';
     }
 
-    private function needsVerification(): bool
+    public function needsVerification(): bool
     {
         return $this->accountStatus &&
             isset($this->accountStatus['verification_status']) &&

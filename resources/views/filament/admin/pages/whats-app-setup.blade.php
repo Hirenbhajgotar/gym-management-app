@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        @if (!$this->hasExistingAccount())
+        @if ($viewState === 'create')
             <div class="bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-200 rounded-lg p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -21,9 +21,8 @@
                     </div>
                 </div>
             </div>
-        @endif
-
-        @if ($this->hasExistingAccount() && $this->accountStatus['verification_status'] === 'verified')
+            {{-- @endif --}}
+        @elseif ($viewState === 'status')
             <div class="bg-green-50 dark:bg-gray-800 border border-green-200 rounded-lg p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -43,9 +42,8 @@
                     </div>
                 </div>
             </div>
-        @endif
-
-        @if ($this->hasExistingAccount() && $this->accountStatus['verification_status'] === 'pending')
+            {{-- @endif --}}
+        @elseif ($viewState === 'verify')
             <div class="bg-orange-50 dark:bg-gray-800 border border-orange-200 rounded-lg p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -72,21 +70,17 @@
 
             <div class="mt-6 flex justify-between">
                 <div class="space-x-3">
-                    @if (!$this->hasExistingAccount())
+                    @if ($viewState === 'create')
                         <x-filament::button type="submit" icon="heroicon-m-plus-circle" color="success" size="xl"
                             tooltip="Create WhatsApp Account" wire:target="save" wire:loading.attr="disabled" outlined>
                             Create WhatsApp Account
                         </x-filament::button>
-                    @endif
-
-                    @if ($this->needsVerification())
+                    @elseif ($viewState === 'verify')
                         <x-filament::button type="submit" icon="heroicon-o-check" color="primary" size="xl"
                             tooltip="Verify WhatsApp Number" wire:target="save" wire:loading.attr="disabled" outlined>
                             Verify Number
                         </x-filament::button>
-                    @endif
-
-                    @if ($this->hasExistingAccount() && $this->accountStatus['verification_status'] === 'verified')
+                    @elseif ($viewState === 'status')
                         <x-filament::button type="submit" icon="heroicon-o-paper-airplane" color="info"
                             size="xl" tooltip="Send Test Message" wire:target="save" wire:loading.attr="disabled"
                             outlined>
@@ -97,7 +91,7 @@
             </div>
         </form>
 
-        @if ($this->hasExistingAccount())
+        @if ($viewState !== 'create')
             <div class="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Account Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
