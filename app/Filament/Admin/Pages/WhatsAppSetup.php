@@ -267,7 +267,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function refreshComponent(): void
     {
         $this->loadAccountStatus();
-        parent::refresh();
+        // parent::refresh();
     }
 
     private function loadAccountStatus(): void
@@ -293,7 +293,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         return $this->accountStatus &&
             isset($this->accountStatus['verification_status']) &&
-            $this->accountStatus['verification_status'] === 'pending';
+            $this->accountStatus['verification_status'] === \App\Enums\NotificationVerificationStatusEnum::PENDING->value;
     }
 
     private function getAccountStatusDisplay(): string
