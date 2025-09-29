@@ -568,146 +568,139 @@ class WhatsAppSetupTest extends TestCase
         $this->assertStringContainsString('Twilio account not verified for this gym', $result['error']);
     }
 
-    // /** @test */
-    // public function twilio_whatsapp_service_handles_rest_exception(): void
-    // {
-    //     // Create verified notification setting
-    //     NotificationSetting::create([
-    //         'gym_id' => $this->gym->id,
-    //         'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
-    //         'twilio_auth_token' => 'auth_token_123',
-    //         'whatsapp_business_number' => '+1234567890',
-    //         'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
-    //     ]);
+    /** @test */
+    public function twilio_whatsapp_service_handles_rest_exception(): void
+    {
+        // Create verified notification setting
+        NotificationSetting::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
+            'twilio_auth_token' => 'auth_token_123',
+            'whatsapp_business_number' => '+1234567890',
+            'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
+        ]);
 
-    //     $messagesMock = Mockery::mock();
-    //     $messagesMock->shouldReceive('create')
-    //         ->andThrow(new RestException('Message failed', 21211, 400));
+        $messagesMock = Mockery::mock();
+        $messagesMock->shouldReceive('create')
+            ->andThrow(new RestException('Message failed', 21211, 400));
 
-    //     $twilioClientMock = Mockery::mock(Client::class);
-    //     $twilioClientMock->messages = $messagesMock;
+        $twilioClientMock = Mockery::mock(Client::class);
+        $twilioClientMock->messages = $messagesMock;
 
-    //     $this->app->bind(Client::class, function () use ($twilioClientMock) {
-    //         return $twilioClientMock;
-    //     });
+        // Inject the mocked client directly into the service
+        $whatsappService = new TwilioWhatsAppService($this->gym->id, $twilioClientMock);
 
-    //     $whatsappService = new TwilioWhatsAppService($this->gym->id);
+        $result = $whatsappService->sendMessage('+1987654321', 'Test message');
 
-    //     $result = $whatsappService->sendMessage('+1987654321', 'Test message');
+        $this->assertFalse($result['success']);
+        $this->assertEquals('Message failed', $result['error']);
+        $this->assertEquals(21211, $result['code']);
+    }
 
-    //     $this->assertFalse($result['success']);
-    //     $this->assertEquals('Message failed', $result['error']);
-    //     $this->assertEquals(21211, $result['code']);
-    // }
+    /** @test */
+    public function twilio_whatsapp_service_can_get_account_balance(): void
+    {
+        // Create notification setting
+        NotificationSetting::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
+            'twilio_auth_token' => 'auth_token_123',
+            'whatsapp_business_number' => '+1234567890',
+        ]);
 
-    // /** @test */
-    // public function twilio_whatsapp_service_can_get_account_balance(): void
-    // {
-    //     // Create notification setting
-    //     NotificationSetting::create([
-    //         'gym_id' => $this->gym->id,
-    //         'twilio_account_sid' => 'ACxxxxxxxxxxxxxxxxxxxxxx',
-    //         'twilio_auth_token' => 'auth_token_123',
-    //         'whatsapp_business_number' => '+1234567890',
-    //     ]);
+        // Mock account response
+        $accountMock = Mockery::mock();
+        $accountMock->balance = '25.75';
+        $accountMock->status = 'active';
 
-    //     // Mock account response
-    //     $accountMock = Mockery::mock();
-    //     $accountMock->balance = '25.75';
-    //     $accountMock->status = 'active';
+        $twilioClientMock = Mockery::mock(Client::class);
+        $accountsContextMock = Mockery::mock();
+        $accountsContextMock->shouldReceive('fetch')
+            ->once()
+            ->andReturn($accountMock);
 
-    //     $accountsMock = Mockery::mock();
-    //     $accountsMock->shouldReceive('fetch')
-    //         ->once()
-    //         ->andReturn($accountMock);
+        $twilioClientMock->shouldReceive('accounts')
+            ->with('ACxxxxxxxxxxxxxxxxxxxxxx')
+            ->once()
+            ->andReturn($accountsContextMock);
 
-    //     $twilioClientMock = Mockery::mock(Client::class);
-    //     $twilioClientMock->shouldReceive('accounts')
-    //         ->with('ACxxxxxxxxxxxxxxxxxxxxxx')
-    //         ->once()
-    //         ->andReturn($accountsMock);
+        $whatsappService = new TwilioWhatsAppService($this->gym->id, $twilioClientMock);
 
-    //     $this->app->bind(Client::class, function () use ($twilioClientMock) {
-    //         return $twilioClientMock;
-    //     });
+        $result = $whatsappService->getAccountBalance();
 
-    //     $whatsappService = new TwilioWhatsAppService($this->gym->id);
+        $this->assertTrue($result['success']);
+        $this->assertEquals('25.75', $result['balance']);
+        $this->assertEquals('active', $result['status']);
+    }
 
-    //     $result = $whatsappService->getAccountBalance();
+    /** @test */
+    public function twilio_whatsapp_service_handles_missing_account_for_balance(): void
+    {
+        $whatsappService = new TwilioWhatsAppService($this->gym->id);
 
-    //     $this->assertTrue($result['success']);
-    //     $this->assertEquals('25.75', $result['balance']);
-    //     $this->assertEquals('active', $result['status']);
-    // }
+        $result = $whatsappService->getAccountBalance();
 
-    // /** @test */
-    // public function twilio_whatsapp_service_handles_missing_account_for_balance(): void
-    // {
-    //     $whatsappService = new TwilioWhatsAppService($this->gym->id);
+        $this->assertFalse($result['success']);
+        $this->assertEquals('No Twilio account found', $result['error']);
+    }
 
-    //     $result = $whatsappService->getAccountBalance();
+    // ========== INTEGRATION TESTS ==========
 
-    //     $this->assertFalse($result['success']);
-    //     $this->assertEquals('No Twilio account found', $result['error']);
-    // }
+    /** @test */
+    public function complete_whatsapp_setup_workflow(): void
+    {
+        // Step 1: Initial page load shows setup form
+        $this->twilioAccountManagerMock
+            ->shouldReceive('getAccountStatus')
+            ->with($this->gym->id)
+            ->once()
+            ->andReturn(['status' => 'not_created']);
 
-    // // ========== INTEGRATION TESTS ==========
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->assertFormFieldIsVisible('gym_name')
+            ->assertFormFieldIsVisible('whatsapp_number')
+            ->assertFormFieldIsVisible('owner_email');
 
-    // /** @test */
-    // public function complete_whatsapp_setup_workflow(): void
-    // {
-    //     // Step 1: Initial page load shows setup form
-    //     $this->twilioAccountManagerMock
-    //         ->shouldReceive('getAccountStatus')
-    //         ->with($this->gym->id)
-    //         ->once()
-    //         ->andReturn(['status' => 'not_created']);
+        // Step 2: Create account
+        $this->twilioAccountManagerMock
+            ->shouldReceive('getAccountStatus')
+            ->with($this->gym->id)
+            ->once()
+            ->andReturn(['status' => 'created', 'verification_status' => 'pending']);
 
-    //     $component = Livewire::actingAs($this->user)
-    //         ->test(WhatsAppSetup::class)
-    //         ->assertFormFieldIsVisible('gym_name')
-    //         ->assertFormFieldIsVisible('whatsapp_number')
-    //         ->assertFormFieldIsVisible('owner_email');
+        $this->twilioAccountManagerMock
+            ->shouldReceive('createAccountForGymOwner')
+            ->once()
+            ->andReturn(['success' => true]);
 
-    //     // Step 2: Create account
-    //     $this->twilioAccountManagerMock
-    //         ->shouldReceive('getAccountStatus')
-    //         ->with($this->gym->id)
-    //         ->once()
-    //         ->andReturn(['status' => 'created', 'verification_status' => 'pending']);
+        $component->fillForm([
+            'gym_name' => 'Test Gym',
+            'whatsapp_number' => '+1234567890',
+            'owner_email' => 'owner@example.com',
+            'action_value' => 'create_account'
+        ])
+            ->call('save')
+            ->assertNotified('Account Created Successfully!');
 
-    //     $this->twilioAccountManagerMock
-    //         ->shouldReceive('createAccountForGymOwner')
-    //         ->once()
-    //         ->andReturn(['success' => true]);
+        // Step 3: Verify number
+        $this->twilioAccountManagerMock
+            ->shouldReceive('getAccountStatus')
+            ->with($this->gym->id)
+            ->once()
+            ->andReturn(['status' => 'active', 'verification_status' => 'verified']);
 
-    //     $component->fillForm([
-    //         'gym_name' => 'Test Gym',
-    //         'whatsapp_number' => '+1234567890',
-    //         'owner_email' => 'owner@example.com',
-    //         'action_value' => 'create_account'
-    //     ])
-    //         ->call('save')
-    //         ->assertNotified('Account Created Successfully!');
+        $this->twilioAccountManagerMock
+            ->shouldReceive('completeWhatsAppVerification')
+            ->with($this->gym->id, '123456')
+            ->once()
+            ->andReturn(['success' => true, 'test_message_sent' => true]);
 
-    //     // Step 3: Verify number
-    //     $this->twilioAccountManagerMock
-    //         ->shouldReceive('getAccountStatus')
-    //         ->with($this->gym->id)
-    //         ->once()
-    //         ->andReturn(['status' => 'active', 'verification_status' => 'verified']);
-
-    //     $this->twilioAccountManagerMock
-    //         ->shouldReceive('completeWhatsAppVerification')
-    //         ->with($this->gym->id, '123456')
-    //         ->once()
-    //         ->andReturn(['success' => true, 'test_message_sent' => true]);
-
-    //     $component->fillForm([
-    //         'verification_code' => '123456',
-    //         'action_value' => 'verify'
-    //     ])
-    //         ->call('save')
-    //         ->assertNotified('Verification Successful!');
-    // }
+        $component->fillForm([
+            'verification_code' => '123456',
+            'action_value' => 'verify'
+        ])
+            ->call('save')
+            ->assertNotified('Verification Successful!');
+    }
 }

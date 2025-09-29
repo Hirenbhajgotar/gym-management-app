@@ -89,7 +89,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 throw new \Exception('No Twilio account found');
             }
 
-            $client = new Client($settings->twilio_account_sid, $settings->twilio_auth_token);
+            $client = $this->getClient();
             $account = $client->accounts($settings->twilio_account_sid)->fetch();
 
             return [
