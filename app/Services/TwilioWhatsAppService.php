@@ -95,7 +95,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
     }
 
-    private function getProductionFromNumber(?NotificationSetting $settings): string|null
+    public function getProductionFromNumber(?NotificationSetting $settings): string|null
     {
         if (!$settings) {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();

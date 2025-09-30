@@ -20,8 +20,12 @@ class TwilioAccountManager
 
     private string $masterAuthToken;
 
+    private bool $useSandbox = true; // Set to true for testing
+
     public function __construct(?Client $masterClient = null)
     {
+        $this->useSandbox = config('services.twilio.use_sandbox', true);
+
         // If a Client instance is explicitly provided, use it (useful for tests)
         if ($masterClient !== null) {
             $this->masterClient = $masterClient;
@@ -386,11 +390,16 @@ class TwilioAccountManager
 
             $client = $this->makeClient($settings->twilio_account_sid, $settings->twilio_auth_token);
 
+            // Get from number based on sandbox or production
+            $fromNumber = $this->useSandbox
+                ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
+                : app(TwilioWhatsAppService::class)->getProductionFromNumber($settings);
+
             // Send test message to gym owner
             $message = $client->messages->create(
                 'whatsapp:' . $settings->whatsapp_business_number,
                 [
-                    'from' => 'whatsapp:' . $settings->whatsapp_business_number,
+                    'from' => 'whatsapp:' . $fromNumber,
                     'body' => 'Your WhatsApp Business integration is now active! You can start sending notifications to your gym members.',
                 ]
             );
@@ -430,6 +439,14 @@ class TwilioAccountManager
      */
     protected function makeClient(string $sid, string $token): Client
     {
+        // For testing, use master account credentials
+        if ($this->useSandbox) {
+            return new Client(
+                config('services.twilio.master_sid'),
+                config('services.twilio.master_token')
+            );
+        }
+
         return new Client($sid, $token);
     }
 }
