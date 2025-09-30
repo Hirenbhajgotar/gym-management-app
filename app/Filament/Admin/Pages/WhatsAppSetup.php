@@ -258,7 +258,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->icon('heroicon-o-check-circle')
             ->color('primary')
             ->size('xl')
-            ->action(fn() => $this->verifyNumber());
+            ->action(fn() => $this->verifyWhatsAppNumber());
     }
 
     public function resendCodeAction(): Action

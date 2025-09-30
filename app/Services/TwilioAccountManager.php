@@ -400,7 +400,7 @@ class TwilioAccountManager
                 'whatsapp:' . $settings->whatsapp_business_number,
                 [
                     'from' => 'whatsapp:' . $fromNumber,
-                    'body' => 'Your WhatsApp Business integration is now active! You can start sending notifications to your gym members.',
+                    'body' => 'Your WhatsApp Business integration is now active! You can start sending notifications to your members.',
                 ]
             );
 
