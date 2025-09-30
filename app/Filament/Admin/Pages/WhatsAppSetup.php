@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationSetting;
 use App\Services\TwilioAccountManager;
 use Filament\Actions\Action;
@@ -49,6 +50,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             [
                 'gym_name' => $gym?->name ?? null,
                 'owner_email' => $this->user?->email ?? null,
+                'action_value' => $this->getActionValue(),
             ]
         );
 
@@ -66,17 +68,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->description('We will create and manage your Twilio WhatsApp account automatically')
                     ->schema([
                         Forms\Components\Hidden::make('action_value')
-                            ->default(function () {
-                                if (! $this->hasExistingAccount()) {
-                                    return 'create_account';
-                                } elseif ($this->needsVerification()) {
-                                    return 'verify';
-                                } elseif ($this->hasExistingAccount()) {
-                                    return 'test_message';
-                                } else {
-                                    return null;
-                                }
-                            }),
+                            ->default($this->getActionValue()),
+
                         Forms\Components\Placeholder::make('info')
                             ->label('Automated Setup Process')
                             ->content('We will handle all technical setup for you. Just provide your WhatsApp Business number and we will do the rest!')
@@ -132,6 +125,19 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->visible(fn() => $this->needsVerification()),
             ])
             ->statePath('data');
+    }
+
+    private function getActionValue(): string|null
+    {
+        if (! $this->hasExistingAccount()) {
+            return 'create_account';
+        } elseif ($this->needsVerification()) {
+            return 'verify';
+        } elseif ($this->hasExistingAccount()) {
+            return 'test_message';
+        } else {
+            return null;
+        }
     }
 
     public function createAccountAction(): Action
@@ -293,7 +299,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         return $this->accountStatus &&
             isset($this->accountStatus['verification_status']) &&
-            $this->accountStatus['verification_status'] === \App\Enums\NotificationVerificationStatusEnum::PENDING->value;
+            $this->accountStatus['verification_status'] === NotificationVerificationStatusEnum::PENDING;
     }
 
     private function getAccountStatusDisplay(): string
@@ -307,8 +313,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         return "<div class='space-y-2'>
             <div><strong>Status:</strong> <span class='text-green-600'>" . ucfirst($status['status']) . "</span></div>
             <div><strong>Verification:</strong> <span class='" .
-            (isset($status['verification_status']) && $status['verification_status'] === 'verified' ? 'text-green-600' : 'text-orange-600') . "'>" .
-            ucfirst($status['verification_status'] ?? 'unknown') . '</span></div>' .
+            (isset($status['verification_status']) && $status['verification_status'] === NotificationVerificationStatusEnum::VERIFIED ? 'text-green-600' : 'text-orange-600') . "'>" .
+            ucfirst($status['verification_status']->value ?? 'unknown') . '</span></div>' .
             (isset($status['balance']) ? '<div><strong>Account Balance:</strong> $' . $status['balance'] . '</div>' : '') .
             (isset($status['messages_sent']) ? '<div><strong>Messages This Month:</strong> ' . $status['messages_sent'] . '</div>' : '') .
             '</div>';

@@ -97,7 +97,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white dark:bg-gray-700 p-4 rounded border dark:border-gray-600">
                         <div class="text-2xl font-bold text-purple-600">
-                            {{ ucfirst($this->accountStatus['verification_status'] ?? 'Unknown') }}
+                            {{ ucfirst($this->accountStatus['verification_status']->value ?? 'Unknown') }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-200">Verification Status</div>
                     </div>

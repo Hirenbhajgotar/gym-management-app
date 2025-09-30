@@ -86,11 +86,11 @@ class TwilioAccountManager
                 $whatsappNumber
             );
 
-            DB::commit();
-
             if (! $verificationResult['success']) {
                 throw new \Exception($verificationResult['error']);
             }
+
+            DB::commit();
 
             return [
                 'success' => true,
@@ -254,7 +254,7 @@ class TwilioAccountManager
 
             // Get usage for current month
             $usage = $client->usage->records->read([
-                'category' => 'messages',
+                'category' => 'totalprice',
                 'startDate' => now()->startOfMonth()->format('Y-m-d'),
                 'endDate' => now()->format('Y-m-d'),
             ]);
@@ -269,13 +269,14 @@ class TwilioAccountManager
             return [
                 'status' => $account->status,
                 'verification_status' => $settings->verification_status,
-                'balance' => $account->balance,
+                // 'balance' => $client->balance->fetch()->balance,
                 'messages_sent' => $messageCount,
                 'monthly_cost' => $cost,
                 'account_created' => $settings->created_at,
                 'last_activity' => now(),
             ];
         } catch (RestException $e) {
+            Log::error('Failed to fetch Twilio account status: ' . $e);
             return [
                 'status' => 'error',
                 'error' => $e->getMessage(),
@@ -289,10 +290,11 @@ class TwilioAccountManager
     protected function getOrCreateVerifyService(Client $client, string $accountSid): string
     {
         // Check if a Verify Service already exists for this subaccount
-        $services = $client->verify->v2->services->read(['friendlyName' => "GymApp Verify Service for {$accountSid}"]);
+        // $services = $client->verify->v2->services->read(['friendlyName' => "GymApp Verify Service for {$accountSid}"]);
+        $services = $client->verify->v2->services($accountSid)->fetch();
 
-        if (count($services) > 0) {
-            return $services[0]->sid;
+        if ($services) {
+            return $services->sid;
         }
 
         // If not, create a new one
