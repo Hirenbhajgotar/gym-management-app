@@ -2,7 +2,7 @@
     <div class="space-y-6">
         {{-- Status Banner --}}
         @if ($viewState === 'create')
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div class="bg-blue-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                 <div class="flex items-start gap-3">
                     <div class="flex-shrink-0">
                         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">

@@ -89,7 +89,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         Forms\Components\Placeholder::make('create_info')
                             ->label('')
                             ->content(new HtmlString('
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="bg-blue-50 border border-blue-200 dark:bg-gray-800 dark:border-gray-800 rounded-lg p-4">
                                     <p class="text-sm text-blue-700">We will handle all technical setup for you. Just provide your WhatsApp Business number and we will create your account automatically.</p>
                                 </div>
                             ')),
@@ -242,7 +242,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Create WhatsApp Account')
             ->modalDescription('This will create a new Twilio account and send a verification code to your WhatsApp number.')
-            ->action(fn() => $this->createAccount());
+            ->action(fn() => $this->createTwilioAccount());
     }
 
     public function verifyNumberAction(): Action
