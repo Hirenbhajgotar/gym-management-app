@@ -11,17 +11,27 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 {
     private string $tenantId;
     private ?Client $client;
+    private bool $useSandbox = true; // Set to true for testing
 
     public function __construct(string $tenantId, ?Client $client = null)
     {
         $this->tenantId = $tenantId;
         $this->client = $client;
+        $this->useSandbox = config('services.twilio.use_sandbox', true);
     }
 
     private function getClient(): Client
     {
         if ($this->client) {
             return $this->client;
+        }
+
+        // For testing, use master account credentials
+        if ($this->useSandbox) {
+            return new Client(
+                config('services.twilio.master_sid'),
+                config('services.twilio.master_token')
+            );
         }
 
         $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
@@ -49,10 +59,15 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             $client = $this->getClient();
 
+            // Get from number based on sandbox or production
+            $fromNumber = $this->useSandbox
+                ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
+                : $this->getProductionFromNumber($settings);
+
             $twilioMessage = $client->messages->create(
                 "whatsapp:$to",
                 [
-                    'from' => "whatsapp:" . $settings->whatsapp_business_number,
+                    'from' => "whatsapp:" . $fromNumber,
                     'body' => $message
                 ]
             );
@@ -61,7 +76,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'success' => true,
                 'message_id' => $twilioMessage->sid,
                 'status' => $twilioMessage->status,
-                'from' => $settings->whatsapp_business_number,
+                'from' => $fromNumber,
                 'data' => $twilioMessage->toArray()
             ];
         } catch (RestException $e) {
@@ -80,6 +95,23 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
     }
 
+    private function getProductionFromNumber(?NotificationSetting $settings): string|null
+    {
+        if (!$settings) {
+            $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
+        }
+
+        if (!$settings) {
+            throw new \Exception('No Twilio settings found');
+        }
+
+        if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
+            throw new \Exception('Twilio account not verified');
+        }
+
+        return $settings->whatsapp_business_number;
+    }
+
     public function getAccountBalance(): array
     {
         try {
@@ -90,11 +122,16 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             }
 
             $client = $this->getClient();
-            $account = $client->accounts($settings->twilio_account_sid)->fetch();
+
+            $accountSid = $this->useSandbox
+                ? config('services.twilio.master_sid')
+                : $settings->twilio_account_sid;
+
+            $account = $client->accounts($accountSid)->fetch();
 
             return [
                 'success' => true,
-                'balance' => $account->balance,
+                'balance' => $account->balance ?? 'Trial Account - No Balance Info',
                 'status' => $account->status
             ];
         } catch (\Exception $e) {

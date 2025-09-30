@@ -278,6 +278,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->label('Send Test Message')
             ->icon('heroicon-o-paper-airplane')
             ->color('info')
+            ->size('xl')
             ->outlined()
             ->requiresConfirmation()
             ->modalHeading('Send Test Message')

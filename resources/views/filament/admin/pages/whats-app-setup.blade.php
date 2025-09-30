@@ -90,7 +90,7 @@
                         </x-filament::button> --}}
                     </div>
                 @elseif ($viewState === 'active')
-                    {{ ($this->testMessageAction)() }}
+                    {{ ($this->testMessageAction)(['size' => 'xl']) }}
 
                     {{-- <x-filament::button type="submit" icon="heroicon-o-paper-airplane" color="info" size="xl"
                         tooltip="Send Test Message" wire:target="save" wire:loading.attr="disabled" outlined>
@@ -106,7 +106,7 @@
                 <div
                     class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                        <div>
+                        <div class="p-3">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Account Status</p>
                             <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
                                 {{ ucfirst($settings->account_status->value ?? 'N/A') }}
@@ -125,7 +125,7 @@
                 <div
                     class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                        <div>
+                        <div class="p-3">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Verification</p>
                             <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
                                 {{ ucfirst($settings->verification_status->value ?? 'N/A') }}
@@ -144,7 +144,7 @@
                 <div
                     class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                        <div>
+                        <div class="p-3">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">WhatsApp Number</p>
                             <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                                 {{ $settings->whatsapp_business_number ?? 'N/A' }}
