@@ -22,21 +22,25 @@ class ParserHelper
      * @return string
      * @throws InvalidArgumentException
      */
-    public static function formatPhoneNumberWithCountryCode(string|Stringable $phone): string
+    public static function formatPhoneNumberWithCountryCode(string|Stringable $phone, $defaultCountryCode = null): string
     {
-        // Make sure we are working with a plain string
         $phone = (string) $phone;
 
-        // 1. Remove every non-digit except an optional leading “+”
+        // 1. Strip everything that is not a digit or a leading "+"
         $clean = preg_replace('/(?!^\+)\D/', '', $phone);
 
-        // 2. Must start with “+” followed by at least one digit
-        if (!preg_match('/^\+\d+$/', $clean)) {
-            throw new InvalidArgumentException(
-                'Phone number must include country code (e.g. +911234567897).'
-            );
+        // 2. If the number already starts with "+" we are done
+        if (str_starts_with($clean, '+')) {
+            return $clean;
         }
 
-        return $clean;
+        // 3. Otherwise prepend the default country code
+        $countryCode = $defaultCountryCode
+            ?? config('app.default_country_code', '+91');   // fallback to +91
+
+        // Ensure we have a single "+" and no spaces
+        $countryCode = '+' . ltrim($countryCode, '+');
+
+        return $countryCode . $clean;
     }
 }

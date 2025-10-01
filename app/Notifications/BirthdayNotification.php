@@ -2,9 +2,12 @@
 
 namespace App\Notifications;
 
+use App\Helpers\ParserHelper;
+use App\Services\NotificationChannelResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class BirthdayNotification extends Notification
 {
@@ -24,7 +27,11 @@ class BirthdayNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        // return ['mail'];
+        return NotificationChannelResolver::getChannelsForGym(
+            $this->member->gym,
+            'welcome'
+        );
     }
 
     /**
@@ -37,8 +44,35 @@ class BirthdayNotification extends Notification
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('We at ' . $this->member->gym->name . ' wish you a very Happy Birthday!')
             ->line('May you have a fantastic year ahead filled with health and fitness.')
-            ->action('Visit Us', url('/'))
             ->line('Thank you for being a valued member!');
+    }
+
+    /**
+     * Get the WhatsApp representation of the notification.
+     */
+    public function toWhatsApp(object $notifiable): ?array
+    {
+        // Ensure member has a phone number
+        $phoneNumber = $this->member->phone ?? null;
+
+        if (!$phoneNumber) {
+            Log::warning('Member has no phone number for WhatsApp', [
+                'member_id' => $this->member->id
+            ]);
+            return null;
+        }
+
+        // Format phone number (ensure it has country code)
+        $phoneNumber = ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
+
+        return [
+            // 'to' => $phoneNumber,
+            'to' => '+919265098227', // Test number
+            'body' => "Happy Birthday {$this->member->name},\n\n"
+                . "We at {$this->member->gym->name} wish you a very Happy Birthday! 🎉\n\n"
+                . "May you have a fantastic year ahead filled with health and fitness.\n\n"
+                . "Thank you for being a valued member!"
+        ];
     }
 
     /**
