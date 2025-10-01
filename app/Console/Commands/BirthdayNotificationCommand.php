@@ -34,5 +34,9 @@ class BirthdayNotificationCommand extends Command
                     $member->notify(new \App\Notifications\BirthdayNotification($member));
                 }
             });
+
+        $this->info('Birthday notifications queued.');
+
+        return self::SUCCESS;
     }
 }

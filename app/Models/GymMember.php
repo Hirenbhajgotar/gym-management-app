@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -131,6 +132,15 @@ class GymMember extends Model
         $color = 'FFFFFF';
 
         return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
+    }
+
+    public function notifyExpiry(int $daysLeft): void
+    {
+        $this->notify(new MembershipExpiryNotification(
+            member: $this,
+            expiresAt: $this->membership_end,
+            daysLeft: $daysLeft
+        ));
     }
 
     public function gym(): BelongsTo

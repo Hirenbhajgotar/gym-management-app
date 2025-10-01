@@ -5,11 +5,12 @@ namespace App\Notifications;
 use App\Helpers\ParserHelper;
 use App\Services\NotificationChannelResolver;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class BirthdayNotification extends Notification
+class BirthdayNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -30,7 +31,7 @@ class BirthdayNotification extends Notification
         // return ['mail'];
         return NotificationChannelResolver::getChannelsForGym(
             $this->member->gym,
-            'welcome'
+            'birthday'
         );
     }
 

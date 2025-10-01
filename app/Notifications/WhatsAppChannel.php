@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Services\TwilioWhatsAppService;
+use Exception;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 

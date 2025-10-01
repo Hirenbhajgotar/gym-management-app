@@ -38,8 +38,8 @@ class NotificationChannelResolver
         //         $channels[] = 'mail';
         //         break;
         // }
-        // $channels[] = WhatsAppChannel::class;
-        $channels[] = 'mail';
+        $channels[] = WhatsAppChannel::class;
+        // $channels[] = 'mail';
 
         return $channels;
     }
