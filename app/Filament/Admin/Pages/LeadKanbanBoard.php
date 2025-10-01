@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
 use App\Models\Lead;
+use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -152,7 +153,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
                 $member = app(LeadConversionService::class)->convert($record, $data);
 
-                FacadesNotification::send($member, new \App\Notifications\Member\WelcomeNotification($member));
+                FacadesNotification::send($member, new WelcomeNotification($member));
 
                 Notification::make()
                     ->title('Lead converted successfully')
