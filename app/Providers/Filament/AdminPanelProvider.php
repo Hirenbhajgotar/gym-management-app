@@ -65,6 +65,9 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-o-wrench-screwdriver'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
