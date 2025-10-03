@@ -19,7 +19,7 @@ class BirthdayNotificationCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Sends birthday notifications to members on their birthday.';
 
     /**
      * Execute the console command.

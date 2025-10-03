@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -80,5 +82,17 @@ class Lead extends Model implements Sortable
     public function conversion(): HasOne
     {
         return $this->hasOne(LeadConversion::class);
+    }
+
+    #[Scope]
+    protected function converted(Builder $query): void
+    {
+        $query->where('status', LeadStatus::CONVERTED);
+    }
+
+    #[Scope]
+    protected function lost(Builder $query): void
+    {
+        $query->where('status', LeadStatus::LOST);
     }
 }

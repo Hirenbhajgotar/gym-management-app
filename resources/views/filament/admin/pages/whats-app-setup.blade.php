@@ -74,28 +74,13 @@
             <div class="mt-6 flex flex-wrap items-center gap-3">
                 @if ($viewState === 'create')
                     {{ ($this->createAccountAction)(['size' => 'xl']) }}
-
-                    {{-- <x-filament::button type="submit" icon="heroicon-m-plus-circle" color="success" size="xl"
-                        tooltip="Create WhatsApp Account" wire:target="save" wire:loading.attr="disabled" outlined>
-                        Create WhatsApp Account
-                    </x-filament::button> --}}
                 @elseif ($viewState === 'verify')
                     <div class="flex flex-wrap items-center gap-3">
                         {{ ($this->verifyNumberAction)(['size' => 'xl']) }}
                         {{ ($this->resendCodeAction)(['size' => 'xl']) }}
-
-                        {{-- <x-filament::button type="submit" icon="heroicon-o-check" color="primary" size="xl"
-                            tooltip="Verify WhatsApp Number" wire:target="save" wire:loading.attr="disabled" outlined>
-                            Verify Number
-                        </x-filament::button> --}}
                     </div>
                 @elseif ($viewState === 'active')
                     {{ ($this->testMessageAction)(['size' => 'xl']) }}
-
-                    {{-- <x-filament::button type="submit" icon="heroicon-o-paper-airplane" color="info" size="xl"
-                        tooltip="Send Test Message" wire:target="save" wire:loading.attr="disabled" outlined>
-                        Send Test Message
-                    </x-filament::button> --}}
                 @endif
             </div>
         </form>

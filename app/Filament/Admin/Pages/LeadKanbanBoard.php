@@ -39,23 +39,10 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected static string $recordStatusAttribute = 'status';
 
-    // public bool $disableEditModal = true;
-
     protected function records(): Collection
     {
         return Lead::with(['creator', 'membershipPlan'])->ordered()->get();
     }
-
-    // public function getRecordStats(): array
-    // {
-    //     return [
-    //         'total_leads' => Lead::where('status', '!=', 'archived')->count(),
-    //         'pending_followups' => FollowUp::where('status', 'pending')->count(),
-    //         'converted_this_month' => Lead::where('status', 'converted')
-    //             ->whereMonth('converted_at', now()->month)
-    //             ->count(),
-    //     ];
-    // }
 
     public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void
     {
@@ -207,5 +194,50 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 // Refresh the kanban board
                 $this->dispatch('refresh');
             });
+    }
+
+    public function onStatusChanged(int|string $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
+    {
+        $currentLead = Lead::find($recordId);
+
+        if (! $currentLead) {
+            Notification::make()
+                ->title('Error')
+                ->body('Lead not found')
+                ->danger()
+                ->send();
+
+            // Refresh the kanban board to revert the change
+            $this->dispatch('refresh');
+            return;
+        }
+
+        if (in_array($currentLead->status, [LeadStatus::CONVERTED, LeadStatus::LOST]) && $currentLead->status->value !== $status) {
+            // Prevent direct drag-and-drop to 'Converted' column
+            Notification::make()
+                ->title('Action Not Allowed')
+                ->body("You can't update a Lead from '{$currentLead->status->getLabel()}' status.")
+                ->warning()
+                ->send();
+
+            // Refresh the kanban board to revert the change
+            $this->dispatch('refresh');
+            return;
+        }
+
+        if ($status === LeadStatus::CONVERTED->value) {
+            Notification::make()
+                ->title('Action Not Allowed')
+                ->body("You can't move a Lead directly to " . LeadStatus::CONVERTED->getLabel() . " status. Please use the 'Convert to Member' action.")
+                ->warning()
+                ->send();
+
+            // Refresh the kanban board to revert the change
+            $this->dispatch('refresh');
+            return;
+        }
+
+        $currentLead->update(['status' => $status]);
+        Lead::setNewOrder($toOrderedIds);
     }
 }

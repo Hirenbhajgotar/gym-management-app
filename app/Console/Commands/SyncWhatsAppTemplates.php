@@ -19,7 +19,7 @@ class SyncWhatsAppTemplates extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Syncs WhatsApp message templates from Twilio to the local database for all gyms.';
 
     /**
      * Execute the console command.
