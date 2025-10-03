@@ -81,6 +81,7 @@ return [
         // 'api_key' => env('TWILIO_API_KEY'),
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+14155238886'),
+        'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID'),
     ]
 
 ];

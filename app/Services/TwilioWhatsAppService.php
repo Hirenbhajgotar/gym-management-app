@@ -43,7 +43,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         return new Client($settings->twilio_account_sid, $settings->twilio_auth_token);
     }
 
-    public function sendMessage(string $to, string $message): array
+    public function sendMessage(string $to, string $message, ?array $templateData = null): array
     {
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
@@ -64,11 +64,73 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
                 : $this->getProductionFromNumber($settings);
 
+            $messageParams = [
+                'from' => "whatsapp:" . $fromNumber,
+            ];
+
+            if ($templateData && isset($templateData['template_sid'])) {
+                $messageParams['contentSid'] = $templateData['template_sid'];
+                $messageParams['contentVariables'] = json_encode($templateData['template_variables'] ?? []);
+            } else {
+                $messageParams['body'] = $message;
+            }
+
+            $twilioMessage = $client->messages->create(
+                "whatsapp:$to",
+                $messageParams
+            );
+
+            return [
+                'success' => true,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+                'from' => $fromNumber,
+                'data' => $twilioMessage->toArray()
+            ];
+        } catch (RestException $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'data' => null
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'data' => null
+            ];
+        }
+    }
+
+    /**
+     * Send a WhatsApp message using an approved template
+     */
+    public function sendTemplateMessage(string $to, string $templateSid, array $variables = []): array
+    {
+        try {
+            $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
+
+            if (!$settings) {
+                throw new \Exception('No Twilio settings found for this gym');
+            }
+
+            if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
+                throw new \Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
+            }
+
+            $client = $this->getClient();
+
+            // Get from number (production only, templates don't work in sandbox)
+            $fromNumber = $this->getProductionFromNumber($settings);
+
+            // Send message with template
             $twilioMessage = $client->messages->create(
                 "whatsapp:$to",
                 [
                     'from' => "whatsapp:" . $fromNumber,
-                    'body' => $message
+                    'contentSid' => $templateSid,
+                    'contentVariables' => json_encode($variables)
                 ]
             );
 
@@ -77,6 +139,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'message_id' => $twilioMessage->sid,
                 'status' => $twilioMessage->status,
                 'from' => $fromNumber,
+                'template_sid' => $templateSid,
                 'data' => $twilioMessage->toArray()
             ];
         } catch (RestException $e) {

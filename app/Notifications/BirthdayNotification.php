@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
 use App\Services\NotificationChannelResolver;
+use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -66,14 +67,49 @@ class BirthdayNotification extends Notification implements ShouldQueue
         // Format phone number (ensure it has country code)
         $phoneNumber = ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
 
-        return [
-            // 'to' => $phoneNumber,
-            'to' => '+919265098227', // Test number
-            'body' => "Happy Birthday {$this->member->name},\n\n"
-                . "We at {$this->member->gym->name} wish you a very Happy Birthday! 🎉\n\n"
-                . "May you have a fantastic year ahead filled with health and fitness.\n\n"
-                . "Thank you for being a valued member!"
-        ];
+        // Check if we're using sandbox or production
+        $useSandbox = config('services.twilio.use_sandbox');
+
+        if ($useSandbox) {
+            return [
+                // 'to' => $phoneNumber,
+                'to' => '+919265098227', // Test number
+                'body' => "Happy Birthday {$this->member->name},\n\n"
+                    . "We at {$this->member->gym->name} wish you a very Happy Birthday! 🎉\n\n"
+                    . "May you have a fantastic year ahead filled with health and fitness.\n\n"
+                    . "Thank you for being a valued member!"
+            ];
+        }
+
+        // PRODUCTION MODE: Use approved templates
+        try {
+            $templateManager = new WhatsAppTemplateManager($this->member->gym_id);
+            $template = $templateManager->getTemplate('birthday_greeting');
+
+            if (!$template) {
+                Log::error('Birthday template not found', [
+                    'gym_id' => $this->member->gym_id,
+                    'member_id' => $this->member->id
+                ]);
+                return null;
+            }
+
+            return [
+                'to' => $phoneNumber,
+                // 'template_sid' => config('services.twilio.birthday_greeting_template_sid'),
+                'template_sid' => $template->template_sid,
+                'template_variables' => [
+                    '1' => $this->member->name,
+                    '2' => $this->member->gym->name
+                ]
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to prepare WhatsApp message', [
+                'error' => $e->getMessage(),
+                'member_id' => $this->member->id
+            ]);
+            return null;
+        }
     }
 
     /**
