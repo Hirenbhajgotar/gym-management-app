@@ -12,6 +12,7 @@ use App\Services\RolesAndPermissionsService;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -68,7 +69,7 @@ class GymOwnerRegister extends Component
 
     public $isLoading = false;
 
-    public function getBusinessTypes(): array|BusinessType
+    public function getBusinessTypes(): Collection
     {
         return BusinessType::active()->orderBy('name')->get();
     }

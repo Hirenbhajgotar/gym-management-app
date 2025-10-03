@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\GymMemberResource;
 use App\Mail\WelcomeMemberMail;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
+use App\Notifications\Member\WelcomeNotification;
 use App\Notifications\MemberActionNotification;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -22,6 +23,7 @@ use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class CreateGymMember extends CreateRecord
 {
@@ -107,12 +109,12 @@ class CreateGymMember extends CreateRecord
     protected function afterCreate(): void
     {
 
-        if ($this->record->user) {
-            $this->record->user->notify(new MemberActionNotification('created', $this->record));
-        } else {
-            // Fallback: Notify current authenticated user
-            auth()->user()->notify(new MemberActionNotification('created', $this->record));
-        }
+        // if ($this->record->user) {
+        //     $this->record->user->notify(new MemberActionNotification('created', $this->record));
+        // } else {
+        //     // Fallback: Notify current authenticated user
+        //     auth()->user()->notify(new MemberActionNotification('created', $this->record));
+        // }
 
         // Send email to the gym member
         try {
@@ -140,7 +142,9 @@ class CreateGymMember extends CreateRecord
                 return;
             }
 
-            Mail::to($this->record->email)->send(new WelcomeMemberMail($this->record));
+            // Mail::to($this->record->email)->send(new WelcomeMemberMail($this->record));
+
+            Notification::send($this->record, new WelcomeNotification($this->record));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email to member', [
                 'member_id' => $this->record->id,
@@ -204,7 +208,7 @@ class CreateGymMember extends CreateRecord
     {
         return [
             Hidden::make('user_id')
-                ->default(fn () => auth()->id()),
+                ->default(fn() => auth()->id()),
 
             Forms\Components\Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
@@ -223,7 +227,7 @@ class CreateGymMember extends CreateRecord
                         ->live()
                         ->rules([
                             'required_if:visible,true',
-                            fn ($get) => function ($attribute, $value, $fail) {
+                            fn($get) => function ($attribute, $value, $fail) {
                                 if (auth()->user()->hasRole('gym_owner') && ! $value) {
                                     $fail('You must create a gym before adding members.');
                                 }
@@ -321,7 +325,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
+                            fn($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(Currency::INR->value)
@@ -329,7 +333,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('payment_method')
                         ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
+                            fn($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(PaymentMethod::CASH->value),

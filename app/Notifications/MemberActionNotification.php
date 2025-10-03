@@ -77,7 +77,7 @@ class MemberActionNotification extends Notification implements ShouldQueue
         $message->line("Member: {$memberName} ({$memberEmail})");
 
         $message->line("Action: {$this->action}")
-            ->when($this->details, fn ($mail) => $mail->line("Details: {$this->details}"));
+            ->when($this->details, fn($mail) => $mail->line("Details: {$this->details}"));
 
         $message->action(
             'View Members',

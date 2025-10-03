@@ -45,7 +45,7 @@ class AdminPanelProvider extends PanelProvider
                 'danger' => Color::Red,
             ])
             ->spa()
-            ->spaUrlExceptions(fn (): array => [
+            ->spaUrlExceptions(fn(): array => [
                 // Allow all files in the import/templates directory
                 // Allow the download of the sample file
                 url('import/templates/*'),
@@ -65,6 +65,9 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-o-wrench-screwdriver'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
@@ -74,7 +77,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->pages([
-                // Pages\Dashboard::class,
+                \App\Filament\Admin\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
@@ -130,16 +133,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
             )
             // Add feedback button to sidebar bottom
             ->renderHook(
                 'panels::sidebar.nav.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
             )
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
             );
     }
 

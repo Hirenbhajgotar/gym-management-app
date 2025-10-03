@@ -11,14 +11,40 @@
                 <a href="#contact" class="hover:text-purple-400 transition-colors duration-300">Contact</a>
             </div>
             <div class="flex space-x-4">
-                <button
-                    class="px-4 py-2 text-purple-400 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-300">
-                    Login
-                </button>
-                <button
-                    class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
-                    Start Free Trial
-                </button>
+                @auth
+                    @php
+                        $userGyms = auth()->user()->gyms()->wherePivot('active', true)->get();
+                        $defaultGym = $userGyms->first();
+                    @endphp
+
+                    @if (auth()->user()->hasRole('gym_owner') && $defaultGym)
+                        <a href="{{ route('filament.admin.pages.dashboard', ['tenant' => $defaultGym->slug]) }}"
+                            class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
+                            Admin Dashboard
+                        </a>
+                    @elseif(auth()->user()->hasRole(['manager', 'receptionist']) && $defaultGym)
+                        <a href="{{ route('filament.staff.pages.dashboard', ['tenant' => $defaultGym->slug]) }}"
+                            class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
+                            Staff Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('dashboard') }}"
+                            class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
+                            Dashboard
+                        </a>
+                    @endif
+                @endauth
+                @guest
+                    <a href="{{ route('filament.admin.auth.login') }}"
+                        class="px-4 py-2 text-purple-400 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-300">
+                        Login
+                    </a>
+                    <a href="{{ route('gym.register') }}"
+                        class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
+                        Start Free Trial
+                    </a>
+                @endguest
+
             </div>
         </div>
     </div>

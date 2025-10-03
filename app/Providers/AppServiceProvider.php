@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
+use App\Notifications\WhatsAppChannel;
 use Filament\Events\TenantSet;
 use Illuminate\Support\Facades\Event as FacadesEvent;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,5 +28,9 @@ class AppServiceProvider extends ServiceProvider
             TenantSet::class,
             UpdateSpatiePermissionCacheOnTenantSwitch::class
         );
+
+        Notification::extend('whatsapp', function ($app) {
+            return new WhatsAppChannel();
+        });
     }
 }
