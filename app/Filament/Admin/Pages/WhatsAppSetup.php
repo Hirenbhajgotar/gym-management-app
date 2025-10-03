@@ -213,27 +213,21 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->statePath('data');
     }
 
-    private function getActionValue(): string|null
-    {
-        if (! $this->hasExistingAccount()) {
-            return 'create_account';
-        } elseif ($this->needsVerification()) {
-            return 'verify';
-        } elseif ($this->hasExistingAccount()) {
-            return 'test_message';
-        } else {
-            return null;
-        }
-    }
+    // private function getActionValue(): string|null
+    // {
+    //     if (! $this->hasExistingAccount()) {
+    //         return 'create_account';
+    //     } elseif ($this->needsVerification()) {
+    //         return 'verify';
+    //     } elseif ($this->hasExistingAccount()) {
+    //         return 'test_message';
+    //     } else {
+    //         return null;
+    //     }
+    // }
 
     public function createAccountAction(): Action
     {
-        // return Action::make('create_account')
-        //     ->label('Create WhatsApp Account')
-        //     ->icon('heroicon-o-plus')
-        //     ->color('success')
-        //     ->action('createTwilioAccount');
-
         return Action::make('createAccount')
             ->label('Create WhatsApp Account')
             ->icon('heroicon-o-plus-circle')
@@ -247,12 +241,6 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public function verifyNumberAction(): Action
     {
-        // return Action::make('verify_number')
-        //     ->label('Verify Number')
-        //     ->icon('heroicon-o-check')
-        //     ->color('primary')
-        //     ->action('verifyWhatsAppNumber');
-
         return Action::make('verifyNumber')
             ->label('Verify Number')
             ->icon('heroicon-o-check-circle')
@@ -449,11 +437,11 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $this->initializeFormData();
     }
 
-    public function refreshComponent(): void
-    {
-        $this->loadAccountStatus();
-        // parent::refresh();
-    }
+    // public function refreshComponent(): void
+    // {
+    //     $this->loadAccountStatus();
+    //     // parent::refresh();
+    // }
 
     private function loadAccountStatus(): void
     {
@@ -481,21 +469,21 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             $this->accountStatus['verification_status'] === NotificationVerificationStatusEnum::PENDING;
     }
 
-    private function getAccountStatusDisplay(): string
-    {
-        if (! $this->accountStatus) {
-            return 'Loading...';
-        }
+    // private function getAccountStatusDisplay(): string
+    // {
+    //     if (! $this->accountStatus) {
+    //         return 'Loading...';
+    //     }
 
-        $status = $this->accountStatus;
+    //     $status = $this->accountStatus;
 
-        return "<div class='space-y-2'>
-            <div><strong>Status:</strong> <span class='text-green-600'>" . ucfirst($status['status']) . "</span></div>
-            <div><strong>Verification:</strong> <span class='" .
-            (isset($status['verification_status']) && $status['verification_status'] === NotificationVerificationStatusEnum::VERIFIED ? 'text-green-600' : 'text-orange-600') . "'>" .
-            ucfirst($status['verification_status']->value ?? 'unknown') . '</span></div>' .
-            (isset($status['balance']) ? '<div><strong>Account Balance:</strong> $' . $status['balance'] . '</div>' : '') .
-            (isset($status['messages_sent']) ? '<div><strong>Messages This Month:</strong> ' . $status['messages_sent'] . '</div>' : '') .
-            '</div>';
-    }
+    //     return "<div class='space-y-2'>
+    //         <div><strong>Status:</strong> <span class='text-green-600'>" . ucfirst($status['status']) . "</span></div>
+    //         <div><strong>Verification:</strong> <span class='" .
+    //         (isset($status['verification_status']) && $status['verification_status'] === NotificationVerificationStatusEnum::VERIFIED ? 'text-green-600' : 'text-orange-600') . "'>" .
+    //         ucfirst($status['verification_status']->value ?? 'unknown') . '</span></div>' .
+    //         (isset($status['balance']) ? '<div><strong>Account Balance:</strong> $' . $status['balance'] . '</div>' : '') .
+    //         (isset($status['messages_sent']) ? '<div><strong>Messages This Month:</strong> ' . $status['messages_sent'] . '</div>' : '') .
+    //         '</div>';
+    // }
 }
