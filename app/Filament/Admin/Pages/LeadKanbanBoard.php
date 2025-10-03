@@ -200,7 +200,19 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     {
         $currentLead = Lead::find($recordId);
 
-        if (($currentLead->status === LeadStatus::CONVERTED) || $currentLead->status === LeadStatus::LOST) {
+        if (! $currentLead) {
+            Notification::make()
+                ->title('Error')
+                ->body('Lead not found')
+                ->danger()
+                ->send();
+
+            // Refresh the kanban board to revert the change
+            $this->dispatch('refresh');
+            return;
+        }
+
+        if (in_array($currentLead->status, [LeadStatus::CONVERTED, LeadStatus::LOST]) && $currentLead->status->value !== $status) {
             // Prevent direct drag-and-drop to 'Converted' column
             Notification::make()
                 ->title('Action Not Allowed')
@@ -211,9 +223,21 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
             return;
-        } else {
-            $currentLead->update(['status' => $status]);
-            Lead::setNewOrder($toOrderedIds);
         }
+
+        if ($status === LeadStatus::CONVERTED->value) {
+            Notification::make()
+                ->title('Action Not Allowed')
+                ->body("You can't move a Lead directly to " . LeadStatus::CONVERTED->getLabel() . " status. Please use the 'Convert to Member' action.")
+                ->warning()
+                ->send();
+
+            // Refresh the kanban board to revert the change
+            $this->dispatch('refresh');
+            return;
+        }
+
+        $currentLead->update(['status' => $status]);
+        Lead::setNewOrder($toOrderedIds);
     }
 }
