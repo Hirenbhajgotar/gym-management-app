@@ -110,4 +110,14 @@ class Gym extends Model
 
         return User::query()->whereRaw('1 = 0'); // Return an empty query
     }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(GymSetting::class);
+    }
+
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->settings, $key, $default);
+    }
 }

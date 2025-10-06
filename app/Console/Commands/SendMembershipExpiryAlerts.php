@@ -37,10 +37,10 @@ class SendMembershipExpiryAlerts extends Command
             ->chunk(200, fn($members) => $members->each->notifyExpiry(7));
 
         // 1 day before
-        GymMember::query()
-            ->with(['gym'])
-            ->whereDate('membership_end', $now->clone()->addDays(1))
-            ->chunk(200, fn($members) => $members->each->notifyExpiry(1));
+        // GymMember::query()
+        //     ->with(['gym'])
+        //     ->whereDate('membership_end', $now->clone()->addDays(1))
+        //     ->chunk(200, fn($members) => $members->each->notifyExpiry(1));
 
         // on the day
         $members = GymMember::query()
