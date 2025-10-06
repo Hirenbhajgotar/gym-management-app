@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Gym;
+use App\Services\GymSettingService;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 
@@ -13,8 +14,7 @@ class GymObserver
      */
     public function created(Gym $gym): void
     {
-
-        $gym->settings()->create([]);
+        app(GymSettingService::class)->createDefaultSettings($gym);
 
         $recipient = $gym?->owner ?? auth()->user();
 
