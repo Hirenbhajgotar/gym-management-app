@@ -23,6 +23,12 @@
             "env": {
                 "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
             }
+        },
+        "chrome-devtools": {
+            "command": "npx",
+            "args": [
+                "chrome-devtools-mcp@latest"
+            ]
         }
     }
 }

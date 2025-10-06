@@ -13,6 +13,9 @@ class GymObserver
      */
     public function created(Gym $gym): void
     {
+
+        $gym->settings()->create([]);
+
         $recipient = $gym?->owner ?? auth()->user();
 
         if ($recipient) {
