@@ -65,7 +65,7 @@ class CountryStateSeeder extends Seeder
             // Create 5 cities for each state
             foreach ($stateIds as $stateData) {
                 // Get the predefined cities for this state from the CityFactory
-                $cityFactory = new CityFactory();
+                $cityFactory = new CityFactory;
                 $cities = $cityFactory->citiesByState[$stateData['name']] ?? [];
                 $cityCount = count($cities);
 

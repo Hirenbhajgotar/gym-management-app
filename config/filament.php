@@ -100,7 +100,7 @@ return [
 
     'widgets' => [
         'dashboard' => [
-            \App\Filament\Widgets\GymStatsOverview::class,
+            // \App\Filament\Widgets\GymStatsOverview::class,
         ],
     ],
 

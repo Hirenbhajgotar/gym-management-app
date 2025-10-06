@@ -8,10 +8,9 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
-use Faker\Factory as Faker;
 
 class GymOwnerSeeder extends Seeder
 {

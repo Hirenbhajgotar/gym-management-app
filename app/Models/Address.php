@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Address extends Model
 {
-    use SoftDeletes, HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'street',
@@ -48,14 +48,8 @@ class Address extends Model
         return Attribute::make(
             get: function ($value) {
                 $address = $this->street . ', ' . $this->postal_code . ' ' . $this->city?->name;
+
                 return $address;
-                // return implode(', ', array_filter([
-                //     $this->street,
-                //     $this->city?->name,
-                //     $this->state?->name,
-                //     $this->country?->name,
-                //     $this->postal_code,
-                // ]));
             },
         );
     }

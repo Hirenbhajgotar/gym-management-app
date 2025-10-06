@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Trainer extends Model
 {
@@ -52,6 +53,25 @@ class Trainer extends Model
     public function getTotalEarningsAttribute(): float
     {
         $assignedMembersCount = $this->members()->count();
+
         return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
+    }
+
+    public function attendances(): MorphMany
+    {
+        return $this->morphMany(Attendances::class, 'attendanceable');
+    }
+
+    public function currentAttendance()
+    {
+        return $this->attendances()
+            ->where('status', 'checked_in')
+            ->whereDate('check_in_time', today())
+            ->first();
+    }
+
+    public function isCurrentlyCheckedIn(): bool
+    {
+        return $this->currentAttendance() !== null;
     }
 }

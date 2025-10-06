@@ -6,16 +6,16 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class MemberPayment extends Model
 {
-    use LogsActivity, HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
+        'gym_id',
         'member_id',
         'membership_plan_id',
         'amount',
@@ -62,9 +62,9 @@ class MemberPayment extends Model
         return $this->belongsTo(GymMember::class);
     }
 
-    public function gym(): HasOneThrough
+    public function gym(): BelongsTo
     {
-        return $this->hasOneThrough(Gym::class, GymMember::class, 'id', 'id', 'gym_member_id', 'gym_id');
+        return $this->belongsTo(Gym::class, 'gym_id');
     }
 
     public function membershipPlan(): BelongsTo

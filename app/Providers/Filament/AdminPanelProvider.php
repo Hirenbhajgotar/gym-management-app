@@ -2,25 +2,30 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\GymStatsOverview;
+use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
+use App\Filament\Admin\Pages\Tenancy\RegisterGym;
+use App\Filament\Components\FeedbackPopup;
+use App\Filament\Components\FeedbackTrigger;
+use App\Http\Middleware\ApplyTenantScopes;
+use App\Http\Middleware\TeamsPermission;
+use App\Livewire\Filament\ErrorReportModal;
+use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Joaopaulolndev\FilamentGeneralSettings\FilamentGeneralSettingsPlugin;
-use Rmsramos\Activitylog\ActivitylogPlugin;
+use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -37,23 +42,44 @@ class AdminPanelProvider extends PanelProvider
             ->profile(isSimple: false)
             ->colors([
                 'primary' => Color::Amber,
+                'danger' => Color::Red,
             ])
             ->spa()
+            ->spaUrlExceptions(fn(): array => [
+                // Allow all files in the import/templates directory
+                // Allow the download of the sample file
+                url('import/templates/*'),
+            ])
+            ->tenant(Gym::class, slugAttribute: 'slug')
+            ->tenantMiddleware([
+                // SyncShieldTenant::class,
+                ApplyTenantScopes::class,
+                TeamsPermission::class,
+            ], isPersistent: true)
+            ->tenantRegistration(RegisterGym::class)
+            ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
-                'Users',
-                'Gym Management',
+                NavigationGroup::make()
+                    ->label('Users')
+                    ->icon('heroicon-o-users'),
+                NavigationGroup::make()
+                    ->label('Gym Management')
+                    ->icon('heroicon-o-building-storefront'),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-o-wrench-screwdriver'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
             // ->unsavedChangesAlerts()
             ->sidebarCollapsibleOnDesktop()
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\\Filament\\Clusters')
+            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
+            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
+            ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->pages([
-                // Pages\Dashboard::class,
+                \App\Filament\Admin\Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
@@ -69,12 +95,31 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
             ])
             ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                // \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                // FilamentShieldPlugin::make()
+                //     ->gridColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 3
+                //     ])
+                //     ->sectionColumnSpan(1)
+                //     ->checkboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //         'lg' => 4,
+                //     ])
+                //     ->resourceCheckboxListColumns([
+                //         'default' => 1,
+                //         'sm' => 2,
+                //     ]),
+
                 // FilamentGeneralSettingsPlugin::make()
                 //     ->canAccess(fn() => auth()->user()->hasRole('super_admin'))
                 //     ->setSort(3)
@@ -85,6 +130,27 @@ class AdminPanelProvider extends PanelProvider
                 PhosphorIcons::make(),
 
                 // ActivitylogPlugin::make(),
-            ]);
+            ])
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+            )
+            // Add feedback button to sidebar bottom
+            ->renderHook(
+                'panels::sidebar.nav.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
+            )
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+            );
+    }
+
+    public function boot(): void
+    {
+        // Register the Livewire component
+        Livewire::component('feedback-popup', FeedbackPopup::class);
+        Livewire::component('feedback-trigger', FeedbackTrigger::class);
+        Livewire::component('error-report-modal', ErrorReportModal::class);
     }
 }

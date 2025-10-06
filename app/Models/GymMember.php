@@ -3,21 +3,25 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+
 #[ObservedBy([GymMemberObserver::class])]
 class GymMember extends Model
 {
-    use LogsActivity, HasFactory;
+    use HasFactory, LogsActivity, Notifiable;
 
     protected $fillable = [
         'gym_id',
@@ -25,7 +29,6 @@ class GymMember extends Model
         'profile_photo',
         'email',
         'phone',
-        'address',
         'weight',
         'height',
         'age',
@@ -36,6 +39,7 @@ class GymMember extends Model
         'gym_membership_plan_id',
         'trainer_id',
         'user_id',
+        'lead_id',
     ];
 
     protected $casts = [
@@ -130,12 +134,21 @@ class GymMember extends Model
         return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
     }
 
-    public function gym()
+    public function notifyExpiry(int $daysLeft): void
+    {
+        $this->notify(new MembershipExpiryNotification(
+            member: $this,
+            expiresAt: $this->membership_end,
+            daysLeft: $daysLeft
+        ));
+    }
+
+    public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
-    public function membershipPlan()
+    public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class, 'gym_membership_plan_id');
     }
@@ -158,5 +171,43 @@ class GymMember extends Model
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
+    }
+
+    public function attendances(): MorphMany
+    {
+        return $this->morphMany(Attendances::class, 'attendanceable');
+    }
+
+    public function currentAttendance()
+    {
+        return $this->attendances()
+            ->where('status', 'checked_in')
+            ->whereDate('check_in_time', today())
+            ->first();
+    }
+
+    public function isCurrentlyCheckedIn(): bool
+    {
+        return $this->currentAttendance() !== null;
+    }
+
+    public function scopeMembershipActive($query)
+    {
+        return $query->where('membership_end', '>=', today());
+    }
+
+    public function scopeMembershipExpired($query)
+    {
+        return $query->where('membership_end', '<', today());
+    }
+
+    public function scopeHasTrainer($query)
+    {
+        return $query->whereNotNull('trainer_id');
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
     }
 }

@@ -35,4 +35,53 @@ return [
         ],
     ],
 
+    // Social Media Platform Configurations
+    'facebook' => [
+        'app_id' => env('FACEBOOK_APP_ID'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+        'access_token' => env('FACEBOOK_ACCESS_TOKEN'),
+        'webhook_verify_token' => env('FACEBOOK_WEBHOOK_VERIFY_TOKEN'),
+        'api_version' => env('FACEBOOK_API_VERSION', 'v18.0'),
+    ],
+
+    'instagram' => [
+        'app_id' => env('INSTAGRAM_APP_ID'),
+        'app_secret' => env('INSTAGRAM_APP_SECRET'),
+        'access_token' => env('INSTAGRAM_ACCESS_TOKEN'),
+        'webhook_verify_token' => env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN'),
+        'business_account_id' => env('INSTAGRAM_BUSINESS_ACCOUNT_ID'),
+    ],
+
+    'whatsapp' => [
+        'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v18.0'),
+    ],
+
+    'indiamart' => [
+        'client_id' => env('INDIAMART_CLIENT_ID'),
+        'client_secret' => env('INDIAMART_CLIENT_SECRET'),
+        'username' => env('INDIAMART_USERNAME'),
+        'password' => env('INDIAMART_PASSWORD'),
+        'webhook_secret' => env('INDIAMART_WEBHOOK_SECRET'),
+    ],
+
+    'justdial' => [
+        'api_key' => env('JUSTDIAL_API_KEY'),
+        'client_id' => env('JUSTDIAL_CLIENT_ID'),
+        'client_secret' => env('JUSTDIAL_CLIENT_SECRET'),
+        'webhook_secret' => env('JUSTDIAL_WEBHOOK_SECRET'),
+    ],
+
+    'twilio' => [
+        'master_sid' => env('TWILIO_ACCOUNT_SID'),
+        'master_token' => env('TWILIO_AUTH_TOKEN'),
+        // 'api_key' => env('TWILIO_API_KEY'),
+        'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
+        'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+14155238886'),
+        'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID'),
+    ]
+
 ];
