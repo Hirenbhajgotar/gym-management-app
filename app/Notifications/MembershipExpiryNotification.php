@@ -32,7 +32,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
     {
         return NotificationChannelResolver::getChannelsForGym(
             $this->member->gym,
-            'membership_expiry'
+            'membership_expiry_notifications'
         );
     }
 

@@ -15,11 +15,13 @@ class NotificationChannelResolver
     public static function getChannelsForGym(Gym $gym, string $notificationType = 'general'): array
     {
         // $plan = $gym->subscription?->plan ?? 'free';
-        $gymId = $gym->id;
-        $emailEnabled = self::getSetting($gymId, 'email_notifications', true);
-        $whatsappEnabled = self::getSetting($gymId, 'whatsapp_notifications', false);
-        $smsEnabled = self::getSetting($gymId, 'sms_notifications', false);
-        $notificationTypeEnabled = self::getSetting($gymId, $notificationType . '_notifications', true);
+
+        $settings = self::getSetting($gym->id);
+
+        $emailEnabled = $settings->get('email_notifications')->value ?? true;
+        $whatsappEnabled = $settings->get('whatsapp_notifications')->value ? true : false;
+        $smsEnabled = $settings->get('sms_notifications')->value ? true : false;
+        $notificationTypeEnabled = $settings->get($notificationType . '_notifications')->value ? true : false;
 
         // If the specific notification type is disabled, return empty array
         if (!$notificationTypeEnabled) {
@@ -70,13 +72,10 @@ class NotificationChannelResolver
         return $channels;
     }
 
-    private static function getSetting(int $gymId, string $key, $default = null)
+    private static function getSetting(int $gymId)
     {
-        $setting = GymSetting::where('gym_id', $gymId)
-            ->where('key', $key)
-            ->first();
-
-        return $setting ? $setting->value : $default;
+        return GymSetting::where('gym_id', $gymId)
+            ->get()->keyBy('key');
     }
 
     /**

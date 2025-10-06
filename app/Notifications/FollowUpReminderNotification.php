@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\FollowUp;
+use App\Services\NotificationChannelResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -27,7 +28,11 @@ class FollowUpReminderNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        // return ['mail', 'database'];
+        return NotificationChannelResolver::getChannelsForGym(
+            $this->followUp->gym,
+            'followup_reminders'
+        );
     }
 
     /**
