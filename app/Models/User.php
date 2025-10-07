@@ -144,8 +144,49 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->hasMany(Task::class, 'assigned_to_user_id');
     }
 
-    // public function subscription()
-    // {
-    //     return $this->hasOne(Subscription::class);
-    // }
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
+    // Subscription-based access control methods
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscription && $this->subscription->isActive();
+    }
+
+    public function canAccessFeatures(): bool
+    {
+        return $this->subscription && $this->subscription->canAccessFeatures();
+    }
+
+    public function getSubscriptionPlan()
+    {
+        return $this->subscription?->plan;
+    }
+
+    public function getFeatureLimit(string $featureName): int|string|null
+    {
+        return $this->subscription?->getFeatureLimit($featureName);
+    }
+
+    public function canUseFeature(string $featureName, int $currentUsage = 0): bool
+    {
+        return $this->subscription && $this->subscription->canUseFeature($featureName, $currentUsage);
+    }
+
+    public function getMaxGyms(): int
+    {
+        $limit = $this->getFeatureLimit('max_gyms');
+        return $limit === null || $limit === 'unlimited' ? PHP_INT_MAX : (int) $limit;
+    }
+
+    public function canCreateMoreGyms(): bool
+    {
+        if (!$this->canAccessFeatures()) {
+            return false;
+        }
+
+        return $this->gyms()->count() < $this->getMaxGyms();
+    }
 }
