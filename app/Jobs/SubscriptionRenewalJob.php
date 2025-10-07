@@ -4,6 +4,10 @@ namespace App\Jobs;
 
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
+use App\Notifications\PaymentFailedNotification;
+use App\Notifications\RenewalErrorNotification;
+use App\Notifications\RenewalSuccessNotification;
+use App\Notifications\TrialEndingNotification;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -124,7 +128,7 @@ class SubscriptionRenewalJob implements ShouldQueue
      */
     private function notifyTrialEnding(Subscription $subscription): void
     {
-        // TODO: Send notification to user about trial ending
+        $subscription->user->notify(new TrialEndingNotification($subscription));
         Log::info("Trial ending notification sent to user {$subscription->user_id}");
     }
 
@@ -133,7 +137,7 @@ class SubscriptionRenewalJob implements ShouldQueue
      */
     private function notifyRenewalSuccess(Subscription $subscription): void
     {
-        // TODO: Send notification to user about successful renewal
+        $subscription->user->notify(new RenewalSuccessNotification($subscription));
         Log::info("Renewal success notification sent to user {$subscription->user_id}");
     }
 
@@ -142,7 +146,7 @@ class SubscriptionRenewalJob implements ShouldQueue
      */
     private function notifyPaymentFailed(Subscription $subscription): void
     {
-        // TODO: Send notification to user about payment failure
+        $subscription->user->notify(new PaymentFailedNotification($subscription));
         Log::warning("Payment failure notification sent to user {$subscription->user_id}");
     }
 
@@ -151,7 +155,7 @@ class SubscriptionRenewalJob implements ShouldQueue
      */
     private function notifyRenewalError(Subscription $subscription, \Exception $e): void
     {
-        // TODO: Send notification to user about renewal error
+        $subscription->user->notify(new RenewalErrorNotification($subscription, $e));
         Log::error("Renewal error notification sent to user {$subscription->user_id}: {$e->getMessage()}");
     }
 }
