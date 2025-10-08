@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\NotificationVerificationStatusEnum;
+use App\Models\GymWhatsAppBalance;
 use App\Models\NotificationSetting;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -57,6 +58,12 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 throw new \Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
             }
 
+            // Check WhatsApp message balance
+            $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
+            if (!$balance || !$balance->canSendMessage()) {
+                throw new \Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
+            }
+
             $client = $this->getClient();
 
             // Get from number based on sandbox or production
@@ -79,6 +86,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 "whatsapp:$to",
                 $messageParams
             );
+
+            // Increment messages used counter after successful sending
+            $balance->increment('messages_used');
 
             return [
                 'success' => true,
@@ -119,6 +129,12 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 throw new \Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
             }
 
+            // Check WhatsApp message balance
+            $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
+            if (!$balance || !$balance->canSendMessage()) {
+                throw new \Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
+            }
+
             $client = $this->getClient();
 
             // Get from number (production only, templates don't work in sandbox)
@@ -133,6 +149,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                     'contentVariables' => json_encode($variables)
                 ]
             );
+
+            // Increment messages used counter after successful sending
+            $balance->increment('messages_used');
 
             return [
                 'success' => true,

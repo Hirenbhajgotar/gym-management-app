@@ -3,17 +3,22 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Models\GymSetting;
+use App\Models\GymWhatsAppBalance;
+use App\Models\WhatsAppMessagePackage;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
-class GymSettings extends Page implements HasForms
+class GymSettings extends Page implements HasActions, HasForms
 {
-    use InteractsWithForms;
+    use InteractsWithActions, InteractsWithForms;
 
     protected static string $view = 'filament.admin.pages.gym-settings';
 
@@ -54,6 +59,7 @@ class GymSettings extends Page implements HasForms
                 Forms\Components\Tabs::make('Settings')
                     ->tabs([
                         $this->getNotificationTab(),
+                        $this->getWhatsAppTab(),
                         // $this->getMembershipTab(),
                         // $this->getAttendanceTab(),
                     ])
@@ -220,6 +226,73 @@ class GymSettings extends Page implements HasForms
             ]);
     }
 
+    private function getWhatsAppTab(): Forms\Components\Tabs\Tab
+    {
+        $gymId = Filament::getTenant()?->id;
+        $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
+
+        return Forms\Components\Tabs\Tab::make('whatsapp')
+            ->label('WhatsApp Messages')
+            ->icon('heroicon-o-chat-bubble-left-right')
+            ->schema([
+                Forms\Components\Section::make('Message Balance')
+                    ->description('Current WhatsApp message balance and usage statistics.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('remaining_messages')
+                            ->label('Remaining Messages')
+                            ->content($balance?->balance_messages ?? 0),
+
+                        Forms\Components\Placeholder::make('total_purchased')
+                            ->label('Total Purchased')
+                            ->content($balance?->total_messages_purchased ?? 0),
+
+                        Forms\Components\Placeholder::make('messages_used')
+                            ->label('Messages Used')
+                            ->content($balance?->messages_used ?? 0),
+                    ])
+                    ->columns(3),
+
+                Forms\Components\Section::make('Purchase Message Packages')
+                    ->description('Buy additional WhatsApp message packages.')
+                    ->schema([
+                        Forms\Components\Select::make('message_package')
+                            ->label('Select Package')
+                            ->options(
+                                WhatsAppMessagePackage::where('is_active', true)
+                                    ->orderBy('sort_order')
+                                    ->pluck('name', 'id')
+                                    ->map(function ($name, $id) {
+                                        $package = WhatsAppMessagePackage::find($id);
+
+                                        return $name . ' (' . $package->message_count . ' messages - ₹' . $package->price . ')';
+                                    })
+                            )
+                            ->placeholder('Choose a package')
+                            ->helperText('Select a message package to purchase'),
+                    ])
+                    ->columns(1)
+                    ->headerActions([
+                        $this->getPurchaseAction(),
+                    ]),
+
+                Forms\Components\Section::make('Low Balance Alerts')
+                    ->description('Configure alerts when message balance is low.')
+                    ->schema([
+                        Forms\Components\TextInput::make('low_balance_threshold')
+                            ->label('Low Balance Threshold')
+                            ->numeric()
+                            ->default(100)
+                            ->helperText('Send alert when remaining messages drop below this number'),
+
+                        Forms\Components\Toggle::make('enable_low_balance_alerts')
+                            ->label('Enable Low Balance Alerts')
+                            ->default(true)
+                            ->helperText('Receive notifications when message balance is low'),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();
@@ -241,5 +314,78 @@ class GymSettings extends Page implements HasForms
             ['gym_id' => $gymId, 'key' => $key],
             ['value' => $value, 'type' => gettype($value)]
         );
+    }
+
+    public function getPurchaseAction(): Action
+    {
+        return Action::make('purchasePackage')
+            ->label('Purchase Package')
+            ->icon('heroicon-o-shopping-cart')
+            ->color('success')
+            ->requiresConfirmation()
+            ->modalHeading('Confirm Purchase')
+            ->modalDescription(function () {
+                $packageId = $this->form->getState()['message_package'] ?? null;
+                if (!$packageId) {
+                    return 'Please select a package first.';
+                }
+
+                $package = WhatsAppMessagePackage::find($packageId);
+                if (!$package) {
+                    return 'Invalid package selected.';
+                }
+
+                return "Are you sure you want to purchase the {$package->name} package for ₹{$package->price}? This will add {$package->message_count} messages to your balance.";
+            })
+            ->modalSubmitActionLabel('Purchase')
+            ->action(function () {
+                $packageId = $this->form->getState()['message_package'] ?? null;
+
+                if (!$packageId) {
+                    Notification::make()
+                        ->title('No package selected')
+                        ->body('Please select a message package to purchase.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                $package = WhatsAppMessagePackage::find($packageId);
+                if (!$package) {
+                    Notification::make()
+                        ->title('Invalid package')
+                        ->body('The selected package is not available.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                $gymId = Filament::getTenant()?->id;
+                $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
+
+                if (!$balance) {
+                    $balance = GymWhatsAppBalance::create([
+                        'gym_id' => $gymId,
+                        'balance_messages' => 0,
+                        'total_messages_purchased' => 0,
+                        'messages_used' => 0,
+                    ]);
+                }
+
+                // TODO: Implement actual payment processing here
+                // For now, this is a placeholder that simulates a successful purchase
+
+                $balance->increment('balance_messages', $package->message_count);
+                $balance->increment('total_messages_purchased', $package->message_count);
+
+                Notification::make()
+                    ->title('Purchase successful!')
+                    ->body("Successfully purchased {$package->name} package. {$package->message_count} messages have been added to your balance.")
+                    ->success()
+                    ->send();
+
+                // Reset the form field
+                $this->form->fill(['message_package' => null]);
+            });
     }
 }
