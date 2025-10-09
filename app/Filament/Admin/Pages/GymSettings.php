@@ -323,7 +323,7 @@ class GymSettings extends Page implements HasActions, HasForms
     public function getPurchaseAction(): Action
     {
         return Action::make('purchasePackage')
-            ->label('Purchase Package')
+            ->label('Purchase Messages')
             ->icon('heroicon-o-shopping-cart')
             ->color('success')
             ->requiresConfirmation()
