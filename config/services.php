@@ -82,6 +82,12 @@ return [
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+14155238886'),
         'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID'),
-    ]
+    ],
+
+    'razorpay' => [
+        'key_id' => env('RAZORPAY_KEY_ID'),
+        'key_secret' => env('RAZORPAY_KEY_SECRET'),
+        'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+    ],
 
 ];

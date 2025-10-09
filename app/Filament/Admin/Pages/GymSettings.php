@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Pages;
 use App\Models\GymSetting;
 use App\Models\GymWhatsAppBalance;
 use App\Models\WhatsAppMessagePackage;
+use App\Services\RazorpayService;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
@@ -15,6 +16,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Http;
 
 class GymSettings extends Page implements HasActions, HasForms
 {
@@ -63,7 +65,9 @@ class GymSettings extends Page implements HasActions, HasForms
                         // $this->getMembershipTab(),
                         // $this->getAttendanceTab(),
                     ])
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->persistTab()
+                    ->id('tenant-settings-tabs'),
             ]);
     }
 
@@ -361,31 +365,46 @@ class GymSettings extends Page implements HasActions, HasForms
                 }
 
                 $gymId = Filament::getTenant()?->id;
-                $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
 
-                if (!$balance) {
-                    $balance = GymWhatsAppBalance::create([
+                // Create Razorpay order
+                try {
+                    $razorpayService = app(RazorpayService::class);
+
+                    $orderData = $razorpayService->createOrder([
+                        'amount' => $package->price,
+                        'currency' => 'INR',
+                        'receipt' => 'WAP-' . $package->id . '-' . $gymId . '-' . time(),
                         'gym_id' => $gymId,
-                        'balance_messages' => 0,
-                        'total_messages_purchased' => 0,
-                        'messages_used' => 0,
+                        'package_id' => $package->id,
+                        'payment_type' => 'whatsapp_package',
+                        'description' => "Purchase of {$package->name} - {$package->message_count} messages",
+                        'notes' => [
+                            'package_name' => $package->name,
+                            'message_count' => $package->message_count,
+                        ],
                     ]);
+
+                    // Reset the form field
+                    $this->form->fill(['message_package' => null]);
+
+                    // Redirect to payment page with order data
+                    return redirect()->route('payments.checkout', [
+                        'order_id' => $orderData['order_id'],
+                        'amount' => $orderData['amount'],
+                        'key' => $orderData['key'],
+                        'package_name' => $package->name,
+                        'message_count' => $package->message_count,
+                        'tenantId' => $gymId,
+                    ]);
+                } catch (\Exception $e) {
+                    Notification::make()
+                        ->title('Payment Error')
+                        ->body('Failed to initiate payment. Please try again.')
+                        ->danger()
+                        ->send();
+
+                    return;
                 }
-
-                // TODO: Implement actual payment processing here
-                // For now, this is a placeholder that simulates a successful purchase
-
-                $balance->increment('balance_messages', $package->message_count);
-                $balance->increment('total_messages_purchased', $package->message_count);
-
-                Notification::make()
-                    ->title('Purchase successful!')
-                    ->body("Successfully purchased {$package->name} package. {$package->message_count} messages have been added to your balance.")
-                    ->success()
-                    ->send();
-
-                // Reset the form field
-                $this->form->fill(['message_package' => null]);
             });
     }
 }
