@@ -151,14 +151,15 @@
                 </button>
 
                 <!-- Powered by Razorpay -->
-                <div class="flex items-center justify-center space-x-2 mt-4 text-xs text-gray-500">
-                    <span>Powered by</span>
-                    <svg class="h-4" viewBox="0 0 200 50" fill="currentColor">
-                        <path
-                            d="M35.5 25.5c0-5.52-4.48-10-10-10s-10 4.48-10 10 4.48 10 10 10 10-4.48 10-10zm-18 0c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8-8-3.58-8-8z" />
-                        <path
-                            d="M70 20v15h-3V20h-5v-3h13v3h-5zm18 15h-3l-7-15h3l5 11 5-11h3l-6 15zm28-15v15h-3V20h-5v-3h13v3h-5z" />
-                    </svg>
+                <div class="flex items-center justify-center space-x-2 mt-4">
+                    <span class="text-xs text-gray-500">Secured by</span>
+                    <div
+                        class="flex items-center space-x-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-3 py-1 rounded text-xs">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                        </svg>
+                        <span>Razorpay</span>
+                    </div>
                 </div>
 
                 <!-- Back Link -->
