@@ -22,6 +22,35 @@
 </head>
 
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex items-center justify-center p-4">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay"
+        class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div class="text-center">
+                <!-- Animated Success Icon -->
+                <div
+                    class="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <!-- Success Message -->
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+                <p class="text-gray-600 mb-6">Your WhatsApp message credits have been added</p>
+
+                <!-- Loading Spinner -->
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+                </div>
+
+                <p class="text-sm text-gray-500 font-medium">Redirecting to settings...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Background decorations -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
@@ -138,7 +167,7 @@
 
                 <!-- Payment Button -->
                 <button id="rzp-button"
-                    class="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden">
+                    class="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                     <span
                         class="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
                     <span class="relative flex items-center justify-center space-x-2">
@@ -146,7 +175,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Proceed to Pay ₹{{ number_format($amount / 100, 2) }}</span>
+                        <span id="button-text">Proceed to Pay ₹{{ number_format($amount / 100, 2) }}</span>
                     </span>
                 </button>
 
@@ -207,6 +236,11 @@
     </div>
 
     <script>
+        const payButton = document.getElementById('rzp-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        let isProcessing = false;
+
         const options = {
             key: '{{ $key }}',
             amount: '{{ $amount }}',
@@ -215,6 +249,14 @@
             name: '{{ config('app.name') }}',
             description: 'Purchase {{ $packageName }}',
             handler: function(response) {
+                if (isProcessing) return;
+                isProcessing = true;
+
+                // Disable button and show processing state
+                payButton.disabled = true;
+                buttonText.innerHTML =
+                    '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
                 // Handle successful payment
                 fetch('{{ route('payments.verify') }}', {
                         method: 'POST',
@@ -233,8 +275,14 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            window.location.href = data.redirect_url ||
-                                '{{ route('payments.success', ['tenant' => $tenantId]) }}';
+                            // Show success overlay
+                            loadingOverlay.classList.remove('hidden');
+
+                            // Redirect after showing success message
+                            setTimeout(() => {
+                                window.location.href = data.redirect_url ||
+                                    '{{ route('payments.success', ['tenant' => $tenantId]) }}';
+                            }, 2000);
                         } else {
                             window.location.href =
                                 '{{ route('payments.failure', ['tenant' => $tenantId, 'order_id' => $orderId]) }}';
@@ -248,9 +296,11 @@
             },
             modal: {
                 ondismiss: function() {
-                    // Handle payment modal dismissal
-                    window.location.href =
-                        '{{ route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']) }}';
+                    // Re-enable button if payment modal is dismissed
+                    if (!isProcessing) {
+                        payButton.disabled = false;
+                        buttonText.textContent = 'Proceed to Pay ₹{{ number_format($amount / 100, 2) }}';
+                    }
                 }
             },
             prefill: {
@@ -264,9 +314,11 @@
 
         const rzp = new Razorpay(options);
 
-        document.getElementById('rzp-button').onclick = function(e) {
-            rzp.open();
+        payButton.onclick = function(e) {
             e.preventDefault();
+            if (!isProcessing) {
+                rzp.open();
+            }
         };
     </script>
 </body>
