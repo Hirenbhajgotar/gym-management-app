@@ -58,7 +58,7 @@
             style="animation-delay: 1s;"></div>
     </div>
 
-    <div class="relative max-w-lg w-full">
+    <div class="relative max-w-2xl w-full">
         <!-- Main Card -->
         <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
             <!-- Header Section with Branding -->
