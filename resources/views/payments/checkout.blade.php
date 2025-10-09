@@ -281,7 +281,8 @@
                             // Redirect after showing success message
                             setTimeout(() => {
                                 window.location.href = data.redirect_url ||
-                                    '{{ route('payments.success', ['tenant' => $tenantId]) }}';
+                                    '{{ route('payments.success', ['tenant' => $tenantId]) }}&payment_id=' +
+                                    data.payment_id;
                             }, 2000);
                         } else {
                             window.location.href =

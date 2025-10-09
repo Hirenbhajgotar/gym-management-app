@@ -51,6 +51,8 @@ class RazorpayService
                 'metadata' => [
                     'package_id' => $data['package_id'] ?? null,
                     'description' => $data['description'] ?? null,
+                    'package_name' => $data['notes']['package_name'] ?? null,
+                    'message_count' => $data['notes']['message_count'] ?? null,
                 ],
             ]);
 

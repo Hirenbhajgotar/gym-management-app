@@ -123,7 +123,8 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Payment verified and package purchased successfully.',
-                'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
+                'payment_id' => $payment->razorpay_payment_id,
+                // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
         } catch (\Exception $e) {
             Log::error('Payment verification failed', [
