@@ -10,6 +10,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
 use App\Services\RolesAndPermissionsService;
+use App\Services\SubscriptionService;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
@@ -206,13 +207,12 @@ class GymOwnerRegister extends Component
                 'slug' => Gym::generateUniqueSlug($this->gym_name),
             ]);
 
-            // Assign plan and start trial if selected
+            // Create subscription if plan is selected
             if ($this->selectedPlan) {
-                if ($this->selectedPlan->hasTrial()) {
-                    $gym->startTrial($this->selectedPlan);
-                } else {
-                    $gym->subscribe($this->selectedPlan);
-                }
+                $subscriptionService = app(SubscriptionService::class);
+                $subscriptionService->createSubscription($user, $this->selectedPlan, [
+                    'billing_cycle' => 'yearly', // Default to yearly
+                ]);
             }
 
             // Create default roles and permissions for the gym

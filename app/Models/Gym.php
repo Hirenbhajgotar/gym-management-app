@@ -21,18 +21,6 @@ class Gym extends Model
     protected $fillable = [
         'name',
         'slug',
-        'plan_id',
-        'trial_ends_at',
-        'subscription_ends_at',
-        'is_on_trial',
-        'is_subscribed',
-    ];
-
-    protected $casts = [
-        'trial_ends_at' => 'datetime',
-        'subscription_ends_at' => 'datetime',
-        'is_on_trial' => 'boolean',
-        'is_subscribed' => 'boolean',
     ];
 
     public function users(): BelongsToMany
@@ -136,9 +124,12 @@ class Gym extends Model
         return $setting ? $setting->value : $default;
     }
 
-    public function plan(): BelongsTo
+    /**
+     * Get the gym's subscription through its owner
+     */
+    public function subscription()
     {
-        return $this->belongsTo(Plan::class);
+        return $this->user?->subscription();
     }
 
     /**
@@ -146,7 +137,7 @@ class Gym extends Model
      */
     public function onTrial(): bool
     {
-        return $this->is_on_trial && $this->trial_ends_at && $this->trial_ends_at->isFuture();
+        return $this->subscription() && $this->subscription->onTrial();
     }
 
     /**
@@ -154,7 +145,7 @@ class Gym extends Model
      */
     public function subscribed(): bool
     {
-        return $this->is_subscribed && $this->subscription_ends_at && $this->subscription_ends_at->isFuture();
+        return $this->subscription() && $this->subscription->isActive();
     }
 
     /**
@@ -162,33 +153,7 @@ class Gym extends Model
      */
     public function hasAccess(): bool
     {
-        return $this->onTrial() || $this->subscribed();
-    }
-
-    /**
-     * Start a trial for the gym
-     */
-    public function startTrial(Plan $plan): void
-    {
-        $this->update([
-            'plan_id' => $plan->id,
-            'is_on_trial' => true,
-            'trial_ends_at' => now()->addDays($plan->trial_days),
-        ]);
-    }
-
-    /**
-     * Subscribe the gym to a plan
-     */
-    public function subscribe(Plan $plan): void
-    {
-        $this->update([
-            'plan_id' => $plan->id,
-            'is_subscribed' => true,
-            'is_on_trial' => false,
-            'trial_ends_at' => null,
-            'subscription_ends_at' => now()->addMonth(), // Assuming monthly billing
-        ]);
+        return $this->subscription() && $this->subscription->canAccessFeatures();
     }
 
     /**
@@ -196,22 +161,14 @@ class Gym extends Model
      */
     public function canUseFeature(string $featureName): bool
     {
-        if (!$this->plan) {
-            return false;
-        }
-
-        return $this->plan->hasFeature($featureName);
+        return $this->subscription() && $this->subscription->hasFeature($featureName);
     }
 
     /**
      * Get the maximum value for a feature
      */
-    public function getFeatureLimit(string $featureName): int
+    public function getFeatureLimit(string $featureName): int|string|null
     {
-        if (!$this->plan) {
-            return 0;
-        }
-
-        return $this->plan->getMaxValue($featureName);
+        return $this->subscription() ? $this->subscription->getFeatureLimit($featureName) : null;
     }
 }
