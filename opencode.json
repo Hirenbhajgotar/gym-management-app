@@ -1,0 +1,38 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+        "laravel-boost": {
+            "type": "local",
+            "command": [
+                "docker-compose",
+                "exec",
+                "-T", // Optional: Disables TTY allocation if needed for background/server processes
+                "app", // Replace with your PHP service name, e.g., "php-fpm" or "laravel"
+                "php",
+                "artisan",
+                "boost:mcp"
+            ],
+            "enabled": true
+        },
+        "chrome-devtools": {
+            "type": "local",
+            "command": [
+                "npx",
+                "chrome-devtools-mcp@latest"
+            ],
+            "enabled": true
+        },
+        "github": {
+            "type": "local",
+            "command": [
+                "npx",
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "environment": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+            },
+            "enabled": true
+        },
+    }
+}
