@@ -54,6 +54,6 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
 
     public function canAccessFeatures(): bool
     {
-        return in_array($this, [self::TRIAL, self::ACTIVE]);
+        return $this->isActive();
     }
 }

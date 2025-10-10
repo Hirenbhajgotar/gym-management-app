@@ -92,6 +92,8 @@ class PaymentController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
+
             $isVerified = $this->razorpayService->verifyPayment(
                 $request->razorpay_order_id,
                 $request->razorpay_payment_id,
@@ -115,10 +117,12 @@ class PaymentController extends Controller
                 ], 404);
             }
 
-            $tenant = Gym::where('id', $request->tenant_id)->first();
+            // $tenant = Gym::where('id', $request->tenant_id)->first();
 
             // Process the purchase (add messages to balance)
             $this->processWhatsAppPackagePurchase($payment);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -127,6 +131,8 @@ class PaymentController extends Controller
                 // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
@@ -152,7 +158,8 @@ class PaymentController extends Controller
             // Verify webhook signature
             $secret = config('services.razorpay.webhook_secret');
             if ($secret) {
-                $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+                // $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+                $generatedSignature = hash_hmac('sha256', $request->getContent(), $secret);
 
                 if (!hash_equals($generatedSignature, $expectedSignature)) {
                     Log::warning('Invalid webhook signature', ['payload' => $payload]);
@@ -254,39 +261,40 @@ class PaymentController extends Controller
      */
     private function processWhatsAppPackagePurchase(Payment $payment): void
     {
-        DB::transaction(function () use ($payment) {
-            $packageId = $payment->metadata['package_id'] ?? null;
+        // DB::transaction(function () use ($payment) {
+        // });
 
-            if (!$packageId) {
-                Log::error('Package ID not found in payment metadata', ['payment_id' => $payment->id]);
-                return;
-            }
+        $packageId = $payment->metadata['package_id'] ?? null;
 
-            $package = WhatsAppMessagePackage::find($packageId);
-            if (!$package) {
-                Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
-                return;
-            }
+        if (!$packageId) {
+            Log::error('Package ID not found in payment metadata', ['payment_id' => $payment->id]);
+            return;
+        }
 
-            // Update or create WhatsApp balance
-            $balance = GymWhatsAppBalance::firstOrCreate(
-                ['gym_id' => $payment->gym_id],
-                [
-                    'balance_messages' => 0,
-                    'total_messages_purchased' => 0,
-                    'messages_used' => 0,
-                ]
-            );
+        $package = WhatsAppMessagePackage::find($packageId);
+        if (!$package) {
+            Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
+            return;
+        }
 
-            $balance->increment('balance_messages', $package->message_count);
-            $balance->increment('total_messages_purchased', $package->message_count);
+        // Update or create WhatsApp balance
+        $balance = GymWhatsAppBalance::firstOrCreate(
+            ['gym_id' => $payment->gym_id],
+            [
+                'balance_messages' => 0,
+                'total_messages_purchased' => 0,
+                'messages_used' => 0,
+            ]
+        );
 
-            Log::info('WhatsApp package purchase processed', [
-                'payment_id' => $payment->id,
-                'package_id' => $packageId,
-                'messages_added' => $package->message_count,
-                'gym_id' => $payment->gym_id,
-            ]);
-        });
+        $balance->increment('balance_messages', $package->message_count);
+        $balance->increment('total_messages_purchased', $package->message_count);
+
+        Log::info('WhatsApp package purchase processed', [
+            'payment_id' => $payment->id,
+            'package_id' => $packageId,
+            'messages_added' => $package->message_count,
+            'gym_id' => $payment->gym_id,
+        ]);
     }
 }

@@ -40,14 +40,11 @@ class GymWhatsAppBalance extends Model
         );
     }
 
-    public function getRemainingMessagesAttribute(): int
-    {
-        return $this->balance_messages - $this->messages_used;
-    }
-
     public function hasLowBalance(): bool
     {
-        return $this->remaining_messages <= 5;
+        $threshold = (int) $this->gym->getSetting('low_balance_threshold', 15);
+
+        return $this->remaining_messages <= $threshold;
     }
 
     public function canSendMessage(): bool
@@ -57,11 +54,11 @@ class GymWhatsAppBalance extends Model
 
     public function decrementMessages(int $count = 1): bool
     {
-        if ($this->canSendMessage()) {
-            $this->increment('messages_used', $count);
-            return true;
-        }
-        return false;
+        $updated = self::where('id', $this->id)
+            ->whereRaw('balance_messages - messages_used >= ?', [$count])
+            ->increment('messages_used', $count);
+
+        return $updated > 0;
     }
 
     public function addMessages(int $count): void

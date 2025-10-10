@@ -262,13 +262,12 @@ class GymSettings extends Page implements HasActions, HasForms
                         Forms\Components\Select::make('message_package')
                             ->label('Select Package')
                             ->options(
-                                WhatsAppMessagePackage::where('is_active', true)
+                                WhatsAppMessagePackage::active()
                                     ->orderBy('sort_order')
-                                    ->pluck('name', 'id')
-                                    ->map(function ($name, $id) {
-                                        $package = WhatsAppMessagePackage::find($id);
-
-                                        return $name . ' (' . $package->message_count . ' messages - ₹' . $package->price . ')';
+                                    ->get()
+                                    ->mapWithKeys(function ($package) {
+                                        $label = $package->name . ' (' . $package->message_count . ' messages - ₹' . $package->price . ')';
+                                        return [$package->id => $label];
                                     })
                             )
                             ->placeholder('Choose a package')
@@ -373,7 +372,7 @@ class GymSettings extends Page implements HasActions, HasForms
                     $orderData = $razorpayService->createOrder([
                         'amount' => $package->price,
                         'currency' => 'INR',
-                        'receipt' => 'WAP-' . $package->id . '-' . $gymId . '-' . time(),
+                        'receipt' => 'WAP-' . $package->id . '-' . $gymId . '-' . uniqid(),
                         'gym_id' => $gymId,
                         'package_id' => $package->id,
                         'payment_type' => 'whatsapp_package',

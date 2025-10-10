@@ -302,6 +302,9 @@
                         payButton.disabled = false;
                         buttonText.textContent = 'Proceed to Pay ₹{{ number_format($amount / 100, 2) }}';
                     }
+
+                    // window.location.href =
+                    //     '{{ route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']) }}';
                 }
             },
             prefill: {
