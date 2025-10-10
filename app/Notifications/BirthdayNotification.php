@@ -32,7 +32,7 @@ class BirthdayNotification extends Notification implements ShouldQueue
         // return ['mail'];
         return NotificationChannelResolver::getChannelsForGym(
             $this->member->gym,
-            'birthday'
+            'birthday_notifications'
         );
     }
 
