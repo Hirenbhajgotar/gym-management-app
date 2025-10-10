@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SubscriptionStatus;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\SubscriptionFeature;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,9 @@ class SubscriptionService
                 'current_period_start' => Carbon::now(),
                 'current_period_end' => $this->calculatePeriodEnd(Carbon::now(), $billingCycle),
             ]);
+
+            // Create feature snapshots
+            $this->createFeatureSnapshots($subscription, $plan);
 
             return $subscription;
         });
@@ -120,6 +124,10 @@ class SubscriptionService
             }
 
             $subscription->update($updateData);
+
+            // Delete existing feature snapshots and create new ones
+            $subscription->features()->delete();
+            $this->createFeatureSnapshots($subscription, $newPlan);
         });
 
         return $subscription->fresh();
@@ -229,5 +237,24 @@ class SubscriptionService
                 ->where('current_period_end', '<=', Carbon::now()->addDays(7))
                 ->count(),
         ];
+    }
+
+    /**
+     * Create feature snapshots for a subscription
+     */
+    private function createFeatureSnapshots(Subscription $subscription, Plan $plan): void
+    {
+        $planFeatures = $plan->features;
+
+        foreach ($planFeatures as $planFeature) {
+            SubscriptionFeature::create([
+                'subscription_id' => $subscription->id,
+                'plan_feature_id' => $planFeature->id,
+                'feature_name' => $planFeature->feature_name,
+                'value' => $planFeature->value,
+                'brief_description' => $planFeature->brief_description,
+                'order_column' => $planFeature->order_column,
+            ]);
+        }
     }
 }

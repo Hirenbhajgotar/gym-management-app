@@ -6,6 +6,7 @@ use App\Enums\SubscriptionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,11 @@ class Subscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function features(): HasMany
+    {
+        return $this->hasMany(SubscriptionFeature::class);
     }
 
     // Scopes
@@ -140,20 +146,20 @@ class Subscription extends Model
             : $this->plan->price_monthly ?? 0;
     }
 
-    public function getPlanFeature(string $featureName): ?PlanFeature
+    public function getSubscriptionFeature(string $featureName): ?SubscriptionFeature
     {
-        return $this->plan->features()->where('feature_name', $featureName)->first();
+        return $this->features()->where('feature_name', $featureName)->first();
     }
 
     public function getFeatureLimit(string $featureName): int|string|null
     {
-        $feature = $this->getPlanFeature($featureName);
+        $feature = $this->getSubscriptionFeature($featureName);
         return $feature?->value;
     }
 
     public function hasFeature(string $featureName): bool
     {
-        return $this->getPlanFeature($featureName) !== null;
+        return $this->getSubscriptionFeature($featureName) !== null;
     }
 
     public function canUseFeature(string $featureName, int $currentUsage = 0): bool
