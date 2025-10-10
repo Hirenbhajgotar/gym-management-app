@@ -6,6 +6,7 @@ use App\Enums\DefaultRole;
 use App\Helpers\FeedbackHelper;
 use App\Models\BusinessType;
 use App\Models\Gym;
+use App\Models\Plan;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
 use App\Services\RolesAndPermissionsService;
@@ -26,6 +27,8 @@ class GymOwnerRegister extends Component
     public $currentStep = 1;
 
     public $totalSteps = 4;
+
+    public $selectedPlan;
 
     // Personal Information
     public $name = '';
@@ -68,6 +71,15 @@ class GymOwnerRegister extends Component
     public $special_requirements = '';
 
     public $isLoading = false;
+
+    public function mount()
+    {
+        // Get selected plan from session
+        $planId = session('selected_plan_id');
+        if ($planId) {
+            $this->selectedPlan = Plan::find($planId);
+        }
+    }
 
     public function getBusinessTypes(): Collection
     {
@@ -194,6 +206,15 @@ class GymOwnerRegister extends Component
                 'slug' => Gym::generateUniqueSlug($this->gym_name),
             ]);
 
+            // Assign plan and start trial if selected
+            if ($this->selectedPlan) {
+                if ($this->selectedPlan->hasTrial()) {
+                    $gym->startTrial($this->selectedPlan);
+                } else {
+                    $gym->subscribe($this->selectedPlan);
+                }
+            }
+
             // Create default roles and permissions for the gym
             app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
@@ -207,8 +228,8 @@ class GymOwnerRegister extends Component
                 'state_id' => $this->address['state_id'],
                 'country_id' => $this->address['country_id'],
                 'postal_code' => $this->address['postal_code'],
-                'latitude' => $this->address['latitude'] ?? null,
-                'longitude' => $this->address['longitude'] ?? null,
+                'latitude' => $this->address['latitude'] && ! empty($this->address['latitude']) ?  $this->address['latitude'] : null,
+                'longitude' => $this->address['longitude'] && ! empty($this->address['longitude']) ?  $this->address['longitude'] : null,
             ]);
 
             // Create Business Detail for Gym

@@ -10,7 +10,7 @@ class PlanFeature extends Model
         'plan_id',
         'feature_name',
         'value',
-        'description',
+        'brief_description',
         'order_column',
     ];
 }

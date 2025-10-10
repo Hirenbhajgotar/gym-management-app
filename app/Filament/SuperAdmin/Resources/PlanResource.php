@@ -65,6 +65,9 @@ class PlanResource extends Resource
                                             $set('slug', Str::slug($record->name));
                                         }
                                     }),
+                                Forms\Components\TextInput::make('badge')
+                                    ->maxLength(255)
+                                    ->helperText('Optional badge text like "Popular" or "Best Value"'),
                                 Forms\Components\RichEditor::make('description')
                                     ->maxLength(5000)
                                     ->columnSpanFull()
@@ -128,6 +131,8 @@ class PlanResource extends Resource
                                             ->maxLength(255)
                                             ->label('Feature Value')
                                             ->placeholder('e.g., "Yes" or "10 GB"'),
+                                        Forms\Components\RichEditor::make('brief_description')
+                                            ->label('Feature Description'),
                                     ])
                                     ->itemLabel(fn(array $state): ?string => $state['feature_name'] ?? null)
                                     ->collapsible()
@@ -162,11 +167,12 @@ class PlanResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('slug')->searchable(),
-                Tables\Columns\TextColumn::make('price_monthly')->money(fn($record) => $record->currency)->sortable(),
-                Tables\Columns\TextColumn::make('price_yearly')->money(fn($record) => $record->currency)->sortable(),
-                Tables\Columns\TextColumn::make('currency')->searchable(),
-                Tables\Columns\IconColumn::make('is_active')->boolean(),
+                Tables\Columns\TextColumn::make('price_monthly')->money(fn($record) => $record->currency->value)->sortable(),
+                Tables\Columns\TextColumn::make('price_yearly')->money(fn($record) => $record->currency->value)->sortable(),
+                Tables\Columns\TextColumn::make('currency'),
+                Tables\Columns\ToggleColumn::make('is_active'),
                 Tables\Columns\TextColumn::make('trial_days')->numeric()->sortable(),
+                Tables\Columns\TextInputColumn::make('badge'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])

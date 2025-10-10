@@ -16,7 +16,7 @@
                         capture leads from social media, and boost your fitness business growth.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <button
+                        <button wire:click="startFreeTrial"
                             class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                             Start 14-Day Free Trial
                         </button>
@@ -226,92 +226,101 @@
                 <p class="text-xl text-gray-300">Choose the perfect plan for your gym business</p>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                <!-- Starter Plan -->
-                <div class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500">
-                    <h3 class="text-2xl font-bold mb-4">Starter</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold">$49</span>
-                        <span class="text-gray-400">/month</span>
-                    </div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up
-                            to 500 members</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>1
-                            gym location</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Basic CRM features</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Attendance tracking</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Email support</li>
-                    </ul>
-                    <button
-                        class="w-full py-3 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-300">
-                        Start Free Trial
-                    </button>
-                </div>
+            <div class="grid md:grid-cols-3 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                @foreach ($plans as $index => $plan)
+                    <div
+                        class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 {{ !empty($plan->badge) ? 'relative border-purple-400' : '' }}">
+                        @if (!empty($plan->badge))
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                <span
+                                    class="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-1 rounded-full text-sm font-semibold">
+                                    {{ $plan->badge }}
+                                </span>
+                            </div>
+                        @endif
 
-                <!-- Professional Plan -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 relative border-purple-400">
-                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span
-                            class="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-1 rounded-full text-sm font-semibold">
-                            Most Popular
-                        </span>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-4">Professional</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold">$99</span>
-                        <span class="text-gray-400">/month</span>
-                    </div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up
-                            to 2000 members</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up
-                            to 3 gym locations</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Advanced CRM & automation</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Social media integration</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Advanced analytics</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Priority support</li>
-                    </ul>
-                    <button
-                        class="w-full py-3 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300">
-                        Start Free Trial
-                    </button>
-                </div>
+                        <h3 class="text-2xl font-bold mb-4">{{ $plan->name }}</h3>
 
-                <!-- Enterprise Plan -->
-                <div class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500">
-                    <h3 class="text-2xl font-bold mb-4">Enterprise</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold">$199</span>
-                        <span class="text-gray-400">/month</span>
+                        @if ($plan->isFree())
+                            <div class="mb-6">
+                                <span class="text-4xl font-bold">Free</span>
+                            </div>
+                        @else
+                            <div class="mb-6">
+                                <span class="text-4xl font-bold">
+                                    {{ $plan->currency->getSymbol() }}{{ number_format($plan->price_yearly) }}
+                                </span>
+                                <span class="text-gray-400">/Year</span>
+                            </div>
+                        @endif
+
+                        @if ($plan->hasTrial())
+                            <div class="mb-4 text-sm text-green-400 font-semibold">
+                                {{ $plan->trial_days }} days free trial
+                            </div>
+                        @endif
+
+                        <div class="mb-8">
+                            <p class="text-gray-300 mb-4">{{ $plan->brief_description }}</p>
+                            <ul class="space-y-2 text-sm">
+                                @foreach ($plan->features as $feature)
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>{!! $feature->brief_description !!}
+                                    </li>
+                                @endforeach
+                                {{-- @if ($plan->getMaxValue('max_gyms') == -1)
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited gyms</li>
+                                @else
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up to
+                                        {{ $plan->getMaxValue('max_gyms') }}
+                                        gym{{ $plan->getMaxValue('max_gyms') > 1 ? 's' : '' }}</li>
+                                @endif
+
+                                @if ($plan->getMaxValue('max_users') == -1)
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited members
+                                    </li>
+                                @else
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up to
+                                        {{ number_format($plan->getMaxValue('max_users')) }} members</li>
+                                @endif
+
+                                @if ($plan->hasFeature('whatsapp_enabled'))
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>{{ $plan->getMaxValue('whatsapp_credit') }}
+                                        WhatsApp credits/month</li>
+                                @endif
+
+                                @if ($plan->hasFeature('advanced_crm'))
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Advanced CRM</li>
+                                @elseif($plan->hasFeature('basic_crm'))
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Basic CRM</li>
+                                @endif
+
+                                @if ($plan->hasFeature('website_integration'))
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Website Integration
+                                    </li>
+                                @endif
+
+                                @if ($plan->hasFeature('mobile_app'))
+                                    <li class="flex items-center"><span
+                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Mobile App</li>
+                                @endif --}}
+                            </ul>
+                        </div>
+
+                        <button wire:click="selectPlan({{ $plan->id }})"
+                            class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600' : 'border border-purple-400 hover:bg-purple-400 hover:text-white' }} rounded-lg transition-all duration-300">
+                            {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
+                        </button>
                     </div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited members</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited locations</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Full
-                            CRM suite</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Custom integrations</li>
-                        <li class="flex items-center"><span
-                                class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>White-label options</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>24/7
-                            dedicated support</li>
-                    </ul>
-                    <button
-                        class="w-full py-3 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-300">
-                        Contact Sales
-                    </button>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>
@@ -330,7 +339,7 @@
                     Join thousands of gym owners who have streamlined their operations and boosted growth with GymFlow
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button
+                    <button wire:click="startFreeTrial"
                         class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                         Start Your 14-Day Free Trial
                     </button>
