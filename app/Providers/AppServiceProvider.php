@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
 use App\Models\Gym;
+use App\Models\Subscription;
 use App\Observers\GymObserver;
+use App\Observers\SubscriptionObserver;
 use App\Notifications\WhatsAppChannel;
 use Filament\Events\TenantSet;
 use Illuminate\Support\Facades\Event as FacadesEvent;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gym::observe(GymObserver::class);
+        Subscription::observe(SubscriptionObserver::class);
 
         FacadesEvent::listen(
             TenantSet::class,

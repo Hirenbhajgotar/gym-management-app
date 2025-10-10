@@ -11,8 +11,10 @@ class GymSettingService
     {
         $settings = [
             'whatsapp_notifications' => true,
-            'membership_expiry_notifications' => true,
+            'birthday_notifications' => true,
             'payment_reminders' => true,
+            'membership_expiry_notifications' => true,
+            'followup_reminders' => true,
         ];
 
         foreach ($settings as $key => $value) {

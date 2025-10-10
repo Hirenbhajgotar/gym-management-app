@@ -118,6 +118,8 @@ class Gym extends Model
 
     public function getSetting(string $key, mixed $default = null): mixed
     {
-        return data_get($this->settings, $key, $default);
+        $setting = $this->settings()->where('key', $key)->first();
+
+        return $setting ? $setting->value : $default;
     }
 }

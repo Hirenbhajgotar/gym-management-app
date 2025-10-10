@@ -23,7 +23,7 @@ class GymSetting extends Model
         return Attribute::make(
             get: function ($value) {
                 return match ($this->type) {
-                    'boolean' => (bool) $value,
+                    'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
                     'integer' => (int) $value,
                     'float' => (float) $value,
                     default => (string) $value,

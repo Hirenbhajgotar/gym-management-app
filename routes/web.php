@@ -81,6 +81,18 @@ Route::get('/download-sample/{file}', function ($file, \Illuminate\Http\Request 
     return Storage::disk('public')->download($path, $fileName);
 })->name('download.sample');
 
+// Payment Routes
+Route::middleware(['auth'])->group(function () {
+    Route::post('/payments/create-order', [\App\Http\Controllers\PaymentController::class, 'createOrder'])->name('payments.create-order');
+    Route::post('/payments/verify', [\App\Http\Controllers\PaymentController::class, 'verifyPayment'])->name('payments.verify');
+    Route::get('/payments/checkout', [\App\Http\Controllers\PaymentController::class, 'checkout'])->name('payments.checkout');
+    Route::get('/payments/success', [\App\Http\Controllers\PaymentController::class, 'success'])->name('payments.success');
+    Route::get('/payments/failure', [\App\Http\Controllers\PaymentController::class, 'failure'])->name('payments.failure');
+});
+
+// Razorpay Webhook (no auth required)
+Route::post('/payments/webhook', [\App\Http\Controllers\PaymentController::class, 'handleWebhook'])->name('payments.webhook');
+
 require __DIR__ . '/auth.php';
 
 Route::get('/download-sample-excel/{type}', [\App\Http\Controllers\ImportController::class, 'downloadSample'])->name('download.sample.excel');
