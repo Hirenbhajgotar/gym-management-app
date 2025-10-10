@@ -2,6 +2,7 @@
 
 use App\Console\Commands\CleanInvalidExportsCommand;
 use App\Console\Commands\CleanResolvedErrorReportsCommand;
+use App\Console\Commands\SendSubscriptionExpiryAlerts;
 use App\Http\Middleware\ErrorContextMiddleware;
 use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
@@ -111,5 +112,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         CleanInvalidExportsCommand::class,
         CleanResolvedErrorReportsCommand::class,
+        SendSubscriptionExpiryAlerts::class,
     ])
     ->create();
