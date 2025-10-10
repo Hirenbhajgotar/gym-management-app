@@ -31,13 +31,13 @@ class WhatsAppMessagePackage extends Model
     }
 
     #[Scope]
-    public function active(Builder $query)
+    protected function active(Builder $query)
     {
         return $query->where('is_active', true);
     }
 
     #[Scope]
-    public function ordered(Builder $query)
+    protected function ordered(Builder $query)
     {
         return $query->orderBy('sort_order')->orderBy('price');
     }

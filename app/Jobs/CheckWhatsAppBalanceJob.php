@@ -29,18 +29,26 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
     {
         // Get all gyms with WhatsApp balances
         $balances = GymWhatsAppBalance::with('gym')->get();
+        if ($balances->isEmpty()) {
+            return;
+        }
+
+        // Get all relevant settings for all gyms at once
+        $settings = GymSetting::whereIn('gym_id', $balances->pluck('gym_id'))
+            ->whereIn('key', ['enable_low_balance_alerts', 'low_balance_threshold'])
+            ->get()
+            ->groupBy('gym_id');
 
         foreach ($balances as $balance) {
+            $gymSettings = $settings->get($balance->gym_id);
+
+            $alertEnabled = $gymSettings?->firstWhere('key', 'enable_low_balance_alerts')?->value ?? true;
+            $threshold = (int) ($gymSettings?->firstWhere('key', 'low_balance_threshold')?->value ?? 15);
+
             $remainingMessages = $balance->remaining_messages;
 
-            // Check if balance is low (5 or fewer messages)
-            if ($remainingMessages <= 5) {
-                // Check if alerts are enabled for this gym
-                $alertEnabled = GymSetting::where('gym_id', $balance->gym_id)
-                    ->where('key', 'enable_low_balance_alerts')
-                    ->where('value', 'true')
-                    ->exists();
-
+            // Check if balance is low
+            if ($remainingMessages <= $threshold) {
                 if ($alertEnabled) {
                     // Check if we haven't already sent an alert for this low balance
                     if (!$balance->low_balance_alert_sent) {
