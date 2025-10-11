@@ -18,9 +18,10 @@
                     @endphp
 
                     @if (auth()->user()->hasRole('gym_owner') && $defaultGym)
-                        <a href="{{ route('filament.admin.pages.dashboard', ['tenant' => $defaultGym->slug]) }}"
+                        {{-- <a href="{{ route('filament.admin.pages.dashboard', ['tenant' => $defaultGym->slug]) }}" --}}
+                        <a href="{{ route('dashboard') }}"
                             class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105">
-                            Admin Dashboard
+                            Dashboard
                         </a>
                     @elseif(auth()->user()->hasRole(['manager', 'receptionist']) && $defaultGym)
                         <a href="{{ route('filament.staff.pages.dashboard', ['tenant' => $defaultGym->slug]) }}"
