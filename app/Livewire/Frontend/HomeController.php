@@ -13,7 +13,7 @@ class HomeController extends Component
     #[Layout('frontend.layouts.app_new')]
     public function render()
     {
-        $plans = Plan::active()->orderBy('price_monthly')->get();
+        $plans = Plan::with(['features'])->active()->orderBy('price_monthly')->get();
 
         return view('livewire.frontend.home-controller', [
             'plans' => $plans,
@@ -34,7 +34,7 @@ class HomeController extends Component
     public function startFreeTrial()
     {
         // Get the free plan (price_monthly = 0)
-        $freePlan = Plan::where('price_monthly', 0)->first();
+        $freePlan = Plan::with(['features'])->where('price_monthly', 0)->first();
 
         if ($freePlan) {
             session(['selected_plan_id' => $freePlan->id]);

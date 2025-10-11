@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Subscription;
+use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -23,7 +24,7 @@ class TrialEndingNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'filament'];
     }
 
     /**
@@ -41,6 +42,27 @@ class TrialEndingNotification extends Notification implements ShouldQueue
             // ->line('Your subscription will automatically renew at the end of your trial period.')
             ->action('Update Payment Method', url('/billing'))
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');
+    }
+
+    /**
+     * Get the Filament notification representation.
+     */
+    public function toFilament(object $notifiable): array
+    {
+        return [
+            'title' => 'Trial Ending Soon',
+            'body' => "Your {$this->subscription->plan->name} trial ends on {$this->subscription->trial_ends_at->format('M j, Y')}",
+            'icon' => 'heroicon-o-exclamation-triangle',
+            'color' => 'warning',
+            'actions' => [
+                [
+                    'name' => 'update_payment',
+                    'label' => 'Update Payment',
+                    'url' => '/billing',
+                    'button' => true,
+                ],
+            ],
+        ];
     }
 
     /**

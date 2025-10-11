@@ -7,6 +7,7 @@ use App\Models\Gym;
 use App\Models\Subscription;
 use App\Observers\GymObserver;
 use App\Observers\SubscriptionObserver;
+use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
 use Filament\Events\TenantSet;
 use Illuminate\Support\Facades\Event as FacadesEvent;
@@ -38,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
 
         Notification::extend('whatsapp', function ($app) {
             return new WhatsAppChannel();
+        });
+
+        Notification::extend('filament', function ($app) {
+            return new FilamentChannel();
         });
     }
 }
