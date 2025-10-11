@@ -75,7 +75,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 
@@ -132,16 +132,6 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
-    }
-
-    public function interactions(): HasMany
-    {
-        return $this->hasMany(Interaction::class);
-    }
-
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class, 'assigned_to_user_id');
     }
 
     public function subscription()

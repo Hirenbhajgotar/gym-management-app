@@ -88,8 +88,12 @@ class SendSubscriptionExpiryAlerts extends Command
 
         foreach ($expiredSubscriptions as $subscription) {
             $subscription->user->notify(new SubscriptionExpired($subscription));
-            // Update status to expired
-            $subscription->update(['status' => SubscriptionStatus::EXPIRED]);
+            // Update status to expired and set grace period
+            $gracePeriodDays = $subscription->user->gym?->settings()->where('key', 'grace_period_days')->first()?->value ?? config('subscription.grace_period_days', 7);
+            $subscription->update([
+                'status' => SubscriptionStatus::EXPIRED,
+                'grace_period_ends_at' => now()->addDays((int) $gracePeriodDays),
+            ]);
         }
 
         $this->info("Sent expired notifications to {$expiredSubscriptions->count()} users");

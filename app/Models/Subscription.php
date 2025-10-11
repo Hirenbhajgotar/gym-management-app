@@ -27,6 +27,7 @@ class Subscription extends Model
         'current_period_end',
         'ends_at',
         'cancelled_at',
+        'grace_period_ends_at',
         'metadata',
     ];
 
@@ -39,6 +40,7 @@ class Subscription extends Model
             'current_period_end' => 'datetime',
             'ends_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'grace_period_ends_at' => 'datetime',
             'metadata' => 'array',
             'status' => SubscriptionStatus::class,
         ];
@@ -93,7 +95,17 @@ class Subscription extends Model
 
     public function canAccessFeatures(): bool
     {
-        return $this->status->canAccessFeatures();
+        // Allow access if status is active or trial
+        if ($this->status->isActive()) {
+            return true;
+        }
+
+        // Allow access during grace period even if expired
+        if ($this->status === SubscriptionStatus::EXPIRED && $this->isInGracePeriod()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isOnTrial(): bool
@@ -175,5 +187,31 @@ class Subscription extends Model
         }
 
         return $currentUsage < (int) $limit;
+    }
+
+    // Grace period methods
+    public function isInGracePeriod(): bool
+    {
+        return $this->grace_period_ends_at && $this->grace_period_ends_at->isFuture();
+    }
+
+    public function gracePeriodEndsAt(): ?Carbon
+    {
+        return $this->grace_period_ends_at;
+    }
+
+    public function daysInGracePeriod(): int
+    {
+        if (!$this->isInGracePeriod()) {
+            return 0;
+        }
+
+        return Carbon::now()->diffInDays($this->grace_period_ends_at, false);
+    }
+
+    public function setGracePeriod(int $days): void
+    {
+        $this->grace_period_ends_at = Carbon::now()->addDays($days);
+        $this->save();
     }
 }

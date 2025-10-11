@@ -165,8 +165,8 @@ class GymSettings extends Page implements HasActions, HasForms
                         Forms\Components\TextInput::make('grace_period_days')
                             ->label('Grace Period (Days)')
                             ->numeric()
-                            ->default(3)
-                            ->helperText('Number of days after expiry when member still has access'),
+                            ->default(config('subscription.grace_period_days', 7))
+                            ->helperText('Number of days after subscription expiry when gym owner still has access'),
 
                         Forms\Components\Toggle::make('auto_renew_memberships')
                             ->label('Auto Renew Memberships')

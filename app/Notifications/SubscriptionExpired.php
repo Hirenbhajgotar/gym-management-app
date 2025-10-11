@@ -38,7 +38,7 @@ class SubscriptionExpired extends Notification implements ShouldQueue
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Billing Cycle:** {$this->subscription->billing_cycle}")
             ->line('You can renew your subscription at any time to regain full access to all features.')
-            ->line('During the grace period, you may still have limited access to view your data.')
+            ->line('During the grace period, you may still have access to your data until ' . $this->subscription->gracePeriodEndsAt()?->format('M j, Y') . '.')
             ->action('Renew Subscription', url('/subscription/renew'))
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');
     }
@@ -50,7 +50,7 @@ class SubscriptionExpired extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Subscription Expired',
-            'body' => "Your {$this->subscription->plan->name} subscription expired on {$this->subscription->current_period_end->format('M j, Y')}",
+            'body' => "Your {$this->subscription->plan->name} subscription expired on {$this->subscription->current_period_end->format('M j, Y')}. You have access until {$this->subscription->gracePeriodEndsAt()?->format('M j, Y')}.",
             'icon' => 'heroicon-o-exclamation-triangle',
             'color' => 'warning',
             'actions' => [
