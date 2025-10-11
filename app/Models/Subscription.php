@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Attributes\Scope;
-use Illuminate\Database\Eloquent\Builder;
 
 class Subscription extends Model
 {
@@ -97,11 +97,16 @@ class Subscription extends Model
     {
         // Allow access if status is active or trial
         if ($this->status->isActive()) {
+            // Additional check: if this is a trial, ensure it hasn't expired
+            if ($this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && $this->trial_ends_at->isPast()) {
+                return false;
+            }
+
             return true;
         }
 
-        // Allow access during grace period even if expired
-        if ($this->status === SubscriptionStatus::EXPIRED && $this->isInGracePeriod()) {
+        // Allow access during grace period only for paid subscriptions (not trials)
+        if ($this->status === SubscriptionStatus::EXPIRED && $this->isInGracePeriod() && ! $this->wasTrial()) {
             return true;
         }
 
@@ -135,7 +140,7 @@ class Subscription extends Model
 
     public function trialDaysLeft(): int
     {
-        if (!$this->onTrial()) {
+        if (! $this->onTrial()) {
             return 0;
         }
 
@@ -144,7 +149,7 @@ class Subscription extends Model
 
     public function daysUntilExpiry(): int
     {
-        if (!$this->current_period_end) {
+        if (! $this->current_period_end) {
             return 0;
         }
 
@@ -166,6 +171,7 @@ class Subscription extends Model
     public function getFeatureLimit(string $featureName): int|string|null
     {
         $feature = $this->getSubscriptionFeature($featureName);
+
         return $feature?->value;
     }
 
@@ -176,7 +182,7 @@ class Subscription extends Model
 
     public function canUseFeature(string $featureName, int $currentUsage = 0): bool
     {
-        if (!$this->canAccessFeatures()) {
+        if (! $this->canAccessFeatures()) {
             return false;
         }
 
@@ -202,7 +208,7 @@ class Subscription extends Model
 
     public function daysInGracePeriod(): int
     {
-        if (!$this->isInGracePeriod()) {
+        if (! $this->isInGracePeriod()) {
             return 0;
         }
 
@@ -213,5 +219,11 @@ class Subscription extends Model
     {
         $this->grace_period_ends_at = Carbon::now()->addDays($days);
         $this->save();
+    }
+
+    // Helper method to check if subscription was originally a trial
+    public function wasTrial(): bool
+    {
+        return $this->trial_ends_at !== null;
     }
 }

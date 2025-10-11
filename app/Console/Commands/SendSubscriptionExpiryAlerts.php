@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
 use App\Notifications\PlanExpiryNotification;
 use App\Notifications\SubscriptionExpired;
 use App\Notifications\TrialEndingNotification;
-use App\Enums\SubscriptionStatus;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class SendSubscriptionExpiryAlerts extends Command
 {
@@ -36,6 +36,7 @@ class SendSubscriptionExpiryAlerts extends Command
         $this->processExpiringTrials();
         $this->processExpiringSubscriptions();
         $this->processExpiredSubscriptions();
+        $this->processExpiredTrials();
 
         $this->info('Subscription expiry alerts sent successfully.');
     }
@@ -97,5 +98,14 @@ class SendSubscriptionExpiryAlerts extends Command
         }
 
         $this->info("Sent expired notifications to {$expiredSubscriptions->count()} users");
+    }
+
+    /**
+     * Process expired trials
+     */
+    private function processExpiredTrials(): void
+    {
+        $expiredCount = app(\App\Services\SubscriptionService::class)->checkExpiredTrials();
+        $this->info("Expired {$expiredCount} trial subscriptions");
     }
 }

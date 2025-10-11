@@ -53,7 +53,7 @@ class SubscriptionService
      */
     public function cancelSubscription(Subscription $subscription, bool $immediately = false): bool
     {
-        if (!$subscription->isActive()) {
+        if (! $subscription->isActive()) {
             throw new \Exception('Subscription is not active');
         }
 
@@ -77,7 +77,7 @@ class SubscriptionService
      */
     public function renewSubscription(Subscription $subscription): bool
     {
-        if (!$subscription->isActive()) {
+        if (! $subscription->isActive()) {
             return false;
         }
 
@@ -96,7 +96,7 @@ class SubscriptionService
      */
     public function changePlan(Subscription $subscription, Plan $newPlan, array $options = []): Subscription
     {
-        if (!$subscription->isActive()) {
+        if (! $subscription->isActive()) {
             throw new \Exception('Subscription is not active');
         }
 
@@ -138,7 +138,7 @@ class SubscriptionService
      */
     public function suspendSubscription(Subscription $subscription): bool
     {
-        if (!$subscription->isActive()) {
+        if (! $subscription->isActive()) {
             return false;
         }
 
@@ -190,11 +190,33 @@ class SubscriptionService
     }
 
     /**
+     * Check and expire expired trials
+     */
+    public function checkExpiredTrials(): int
+    {
+        $expiredTrials = Subscription::where('status', SubscriptionStatus::TRIAL)
+            ->where('trial_ends_at', '<', Carbon::now())
+            ->get();
+
+        $count = 0;
+        foreach ($expiredTrials as $subscription) {
+            // Expire trial immediately without grace period
+            $subscription->update([
+                'status' => SubscriptionStatus::EXPIRED,
+                'trial_ends_at' => null,
+            ]);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * End trial period
      */
     public function endTrial(Subscription $subscription): bool
     {
-        if (!$subscription->isOnTrial()) {
+        if (! $subscription->isOnTrial()) {
             return false;
         }
 

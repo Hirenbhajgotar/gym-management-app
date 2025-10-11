@@ -4,11 +4,11 @@ namespace App\Observers;
 
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
-use App\Notifications\SubscriptionCreated;
 use App\Notifications\SubscriptionCancelled;
+use App\Notifications\SubscriptionCreated;
 use App\Notifications\SubscriptionExpired;
-use App\Notifications\SubscriptionSuspended;
 use App\Notifications\SubscriptionReactivated;
+use App\Notifications\SubscriptionSuspended;
 use Illuminate\Support\Facades\Log;
 
 class SubscriptionObserver
@@ -60,7 +60,7 @@ class SubscriptionObserver
         $oldStatus = $subscription->getOriginal('status');
         $newStatus = $subscription->status;
 
-        Log::info("Subscription {$subscription->id} status changed from {$oldStatus} to {$newStatus}");
+        Log::info("Subscription {$subscription->id} status changed from {$oldStatus->value} to {$newStatus->value}");
 
         try {
             match ($newStatus) {

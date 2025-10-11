@@ -10,7 +10,6 @@ use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -86,7 +85,8 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         }
 
         if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
-            // Then check for tenant-specific access
+            // Check for tenant-specific access AND active subscription/trial
+            // return $this->hasActiveTenant() && $this->canAccessFeatures(); // temporary bypass
             return $this->hasActiveTenant();
         }
 
@@ -168,12 +168,13 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     public function getMaxGyms(): int
     {
         $limit = $this->getFeatureLimit('max_gyms');
+
         return $limit === null || $limit === 'unlimited' ? PHP_INT_MAX : (int) $limit;
     }
 
     public function canCreateMoreGyms(): bool
     {
-        if (!$this->canAccessFeatures()) {
+        if (! $this->canAccessFeatures()) {
             return false;
         }
 

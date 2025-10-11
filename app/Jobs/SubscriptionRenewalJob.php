@@ -19,6 +19,7 @@ class SubscriptionRenewalJob implements ShouldQueue
     use Queueable;
 
     public $tries = 3;
+
     public $backoff = [60, 300, 900]; // Retry after 1min, 5min, 15min
 
     /**
@@ -39,6 +40,7 @@ class SubscriptionRenewalJob implements ShouldQueue
         $this->processExpiringTrials($subscriptionService);
         $this->processExpiringSubscriptions($subscriptionService);
         $this->processExpiredSubscriptions($subscriptionService);
+        $this->processExpiredTrials($subscriptionService);
 
         Log::info('Subscription renewal job completed');
     }
@@ -84,6 +86,15 @@ class SubscriptionRenewalJob implements ShouldQueue
     {
         $expiredCount = $subscriptionService->checkExpiredSubscriptions();
         Log::info("Expired {$expiredCount} subscriptions");
+    }
+
+    /**
+     * Process expired trials
+     */
+    private function processExpiredTrials(SubscriptionService $subscriptionService): void
+    {
+        $expiredCount = $subscriptionService->checkExpiredTrials();
+        Log::info("Expired {$expiredCount} trial subscriptions");
     }
 
     /**
