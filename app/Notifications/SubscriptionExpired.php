@@ -23,7 +23,7 @@ class SubscriptionExpired extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'filament'];
     }
 
     /**
@@ -41,6 +41,27 @@ class SubscriptionExpired extends Notification implements ShouldQueue
             ->line('During the grace period, you may still have limited access to view your data.')
             ->action('Renew Subscription', url('/subscription/renew'))
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');
+    }
+
+    /**
+     * Get the Filament notification representation.
+     */
+    public function toFilament(object $notifiable): array
+    {
+        return [
+            'title' => 'Subscription Expired',
+            'body' => "Your {$this->subscription->plan->name} subscription expired on {$this->subscription->current_period_end->format('M j, Y')}",
+            'icon' => 'heroicon-o-exclamation-triangle',
+            'color' => 'warning',
+            'actions' => [
+                [
+                    'name' => 'renew_subscription',
+                    'label' => 'Renew Now',
+                    'url' => url('/subscription/renew'),
+                    'button' => true,
+                ],
+            ],
+        ];
     }
 
     /**

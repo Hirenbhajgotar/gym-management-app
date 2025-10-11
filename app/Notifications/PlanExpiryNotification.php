@@ -23,7 +23,7 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'filament'];
     }
 
     /**
@@ -41,6 +41,27 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
             ->line('To continue using all the features, please renew your subscription.')
             ->action('Renew Subscription', url('/subscription/renew'))
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');
+    }
+
+    /**
+     * Get the Filament notification representation.
+     */
+    public function toFilament(object $notifiable): array
+    {
+        return [
+            'title' => 'Subscription Ending Soon',
+            'body' => "Your {$this->subscription->plan->name} subscription ends on {$this->subscription->current_period_end->format('M j, Y')}",
+            'icon' => 'heroicon-o-exclamation-triangle',
+            'color' => 'warning',
+            'actions' => [
+                [
+                    'name' => 'renew_subscription',
+                    'label' => 'Renew Now',
+                    'url' => url('/subscription/renew'),
+                    'button' => true,
+                ],
+            ],
+        ];
     }
 
     /**
