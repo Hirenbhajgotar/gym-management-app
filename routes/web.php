@@ -14,6 +14,8 @@ use Livewire\Volt\Volt;
 
 Route::get('/', HomeController::class)->name('home');
 
+Route::get('/profile', App\Livewire\Frontend\ProfileController::class)->name('profile')->middleware('auth');
+
 Route::get('/thank-you', function () {
     if (! session()->has('success')) {
         return redirect()->route('home');
@@ -22,9 +24,9 @@ Route::get('/thank-you', function () {
     return view('thank-you');
 })->name('thank-you');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Route::view('dashboard', 'dashboard')
+//     ->middleware(['auth', 'verified'])
+//     ->name('dashboard');
 
 Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
 
@@ -64,11 +66,11 @@ Route::middleware(['auth'])->group(function () {
         return response()->download($fullPath, basename($fullPath));
     })->name('filament.failed-import.download');
 
-    Route::redirect('settings', 'settings/profile');
+    // Route::redirect('settings', 'settings/profile');
 
-    Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
-    Volt::route('settings/password', 'settings.password')->name('settings.password');
-    Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+    // Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
+    // Volt::route('settings/password', 'settings.password')->name('settings.password');
+    // Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
 Route::get('/download-sample/{file}', function ($file, \Illuminate\Http\Request $request) {

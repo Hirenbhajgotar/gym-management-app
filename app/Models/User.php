@@ -165,6 +165,11 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->subscription && $this->subscription->canUseFeature($featureName, $currentUsage);
     }
 
+    public function hasUsedTrial(): bool
+    {
+        return $this->subscription()->whereNotNull('trial_ends_at')->exists();
+    }
+
     public function getMaxGyms(): int
     {
         $limit = $this->getFeatureLimit('max_gyms');

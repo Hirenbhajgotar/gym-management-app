@@ -203,7 +203,7 @@ class SubscriptionService
             // Expire trial immediately without grace period
             $subscription->update([
                 'status' => SubscriptionStatus::EXPIRED,
-                'trial_ends_at' => null,
+                // 'trial_ends_at' => null,
             ]);
             $count++;
         }
