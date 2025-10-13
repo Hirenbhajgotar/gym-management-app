@@ -61,8 +61,63 @@
                                 </div>
                             </div>
 
+                            <!-- Dashboard Button -->
+                            @php
+                                $userGyms = $user->gyms->filter(function ($gym) {
+                                    return $gym->pivot->active;
+                                });
+                                $defaultGym = $userGyms->first();
+                                $dashboardUrl = '#';
+                                $dashboardText = 'Dashboard';
+
+                                // Check roles first, fallback to pivot role logic
+                                if ($user->hasRole('gym_owner') && $defaultGym) {
+                                    $dashboardUrl = route('filament.admin.pages.dashboard', [
+                                        'tenant' => $defaultGym->slug,
+                                    ]);
+                                    $dashboardText = 'Admin Dashboard';
+                                } elseif ($user->hasAnyRole(['manager', 'receptionist']) && $defaultGym) {
+                                    $dashboardUrl = route('filament.staff.pages.dashboard', [
+                                        'tenant' => $defaultGym->slug,
+                                    ]);
+                                    $dashboardText = 'Staff Dashboard';
+                                } elseif ($defaultGym) {
+                                    // Fallback: check pivot role
+                                    $pivotRole = $defaultGym->pivot->role ?? null;
+
+                                    if ($pivotRole === 'gym_owner') {
+                                        $dashboardUrl = route('filament.admin.pages.dashboard', [
+                                            'tenant' => $defaultGym->slug,
+                                        ]);
+                                        $dashboardText = 'Admin Dashboard';
+                                    } elseif (in_array($pivotRole, ['manager', 'receptionist'])) {
+                                        $dashboardUrl = route('filament.staff.pages.dashboard', [
+                                            'tenant' => $defaultGym->slug,
+                                        ]);
+                                        $dashboardText = 'Staff Dashboard';
+                                    } else {
+                                        $dashboardUrl = '#';
+                                        $dashboardText = 'Dashboard';
+                                    }
+                                }
+                            @endphp
+
+                            @if ($dashboardUrl !== '#')
+                                <div class="pt-4 border-t border-white/10">
+                                    <a href="{{ $dashboardUrl }}"
+                                        class="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium group mb-3">
+                                        <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-300"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        {{ $dashboardText }}
+                                    </a>
+                                </div>
+                            @endif
+
                             <!-- Logout Button -->
-                            <div class="pt-4 border-t border-white/10">
+                            <div class="pt-4 {{ $dashboardUrl !== '#' ? '' : 'border-t border-white/10' }}">
                                 <button wire:click="logout"
                                     class="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 hover:border-red-500/50 transition-all duration-300 text-sm font-medium group">
                                     <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"

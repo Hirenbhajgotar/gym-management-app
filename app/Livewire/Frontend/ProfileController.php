@@ -14,7 +14,7 @@ class ProfileController extends Component
     #[Layout('frontend.layouts.profile')]
     public function render()
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['roles', 'gyms', 'subscription.plan']);
         $subscription = $user->subscription;
         $currentPlan = $subscription?->plan;
         $allPlans = Plan::with(['features'])->active()->orderBy('price_monthly')->get();
