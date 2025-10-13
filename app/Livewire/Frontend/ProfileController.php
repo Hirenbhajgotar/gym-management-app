@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Livewire\Actions\Logout;
 use App\Models\Plan;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -43,8 +44,9 @@ class ProfileController extends Component
         $currentSubscription = $user->subscription;
 
         // Check if user can upgrade (has active subscription)
-        if (!$currentSubscription || !$currentSubscription->isActive()) {
+        if (! $currentSubscription || ! $currentSubscription->isActive()) {
             session()->flash('error', 'You need an active subscription to upgrade.');
+
             return;
         }
 
@@ -53,13 +55,14 @@ class ProfileController extends Component
         // Check if the new plan is actually an upgrade (higher price)
         if ($newPlan->price_yearly <= $currentSubscription->plan->price_yearly) {
             session()->flash('error', 'Please select a higher-tier plan to upgrade.');
+
             return;
         }
 
         // Store upgrade information in session
         session([
             'upgrade_plan_id' => $planId,
-            'current_subscription_id' => $currentSubscription->id
+            'current_subscription_id' => $currentSubscription->id,
         ]);
 
         // Redirect to checkout for upgrade
@@ -71,18 +74,26 @@ class ProfileController extends Component
         $user = auth()->user();
         $subscription = $user->subscription;
 
-        if (!$subscription) {
+        if (! $subscription) {
             session()->flash('error', 'No subscription found to renew.');
+
             return;
         }
 
         // Store renewal information in session
         session([
             'renew_plan_id' => $subscription->plan_id,
-            'renew_subscription_id' => $subscription->id
+            'renew_subscription_id' => $subscription->id,
         ]);
 
         // Redirect to checkout for renewal
         return redirect()->route('payments.checkout');
+    }
+
+    public function logout(Logout $logout): void
+    {
+        $logout();
+
+        $this->redirect('/', navigate: true);
     }
 }

@@ -91,7 +91,9 @@
             <div class="flex">
                 <div
                     class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                    GymFlow
+                    <a href="{{ route('home') }}">
+                        GymFlow
+                    </a>
                 </div>
             </div>
         </div>
