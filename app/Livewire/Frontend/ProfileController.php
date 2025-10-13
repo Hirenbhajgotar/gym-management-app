@@ -90,10 +90,12 @@ class ProfileController extends Component
         return redirect()->route('payments.checkout');
     }
 
-    public function logout(Logout $logout): void
+    public function logout()
     {
-        $logout();
+        auth()->logout();
+        session()->invalidate();
+        session()->regenerateToken();
 
-        $this->redirect('/', navigate: true);
+        return redirect()->route('home');
     }
 }

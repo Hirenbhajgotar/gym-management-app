@@ -38,7 +38,7 @@
                     <div class="lg:col-span-1">
                         <div class="feature-card rounded-2xl p-6 mb-6">
                             <h3 class="text-2xl font-bold mb-6">Profile Information</h3>
-                            <div class="space-y-4">
+                            <div class="space-y-4 pb-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-400 mb-1">Name</label>
                                     <p class="text-white">{{ $user->name }}</p>
@@ -65,8 +65,10 @@
                             <div class="pt-4 border-t border-white/10">
                                 <button wire:click="logout"
                                     class="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 hover:border-red-500/50 transition-all duration-300 text-sm font-medium group">
-                                    <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                     </svg>
                                     Logout
                                 </button>
