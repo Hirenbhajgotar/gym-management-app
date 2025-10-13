@@ -130,12 +130,20 @@ new #[Layout('components.layouts.auth')] class extends Component {
                         </div>
                         <input wire:model="email" type="email" required autofocus autocomplete="email"
                             placeholder="email@example.com"
-                            class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400" />
+                            class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 @error('email') border-red-500 focus:ring-red-500 @enderror" />
                     </div>
+                    @error('email')
+                        <p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {{ $message }}
+                        </p>
+                    @enderror
                 </div>
 
                 <!-- Password -->
-                <div class="space-y-3">
+                <div class="space-y-3" x-data="{ showPassword: false }">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                         {{ __('Password') }}
                     </label>
@@ -148,20 +156,40 @@ new #[Layout('components.layouts.auth')] class extends Component {
                                 </path>
                             </svg>
                         </div>
-                        <input wire:model="password" type="password" required autocomplete="current-password"
+                        <input wire:model="password" x-bind:type="showPassword ? 'text' : 'password'" required autocomplete="current-password"
                             placeholder="{{ __('Password') }}"
-                            class="w-full pl-10 pr-16 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400" />
+                            class="w-full pl-10 pr-24 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 @error('password') border-red-500 focus:ring-red-500 @enderror" />
+
+                        <!-- Password Visibility Toggle -->
+                        <button type="button" x-on:click="showPassword = !showPassword"
+                            class="absolute right-16 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded">
+                            <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            <svg x-show="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                            </svg>
+                        </button>
 
                         @if (Route::has('password.request'))
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <div class="absolute right-2 top-1/2 transform -translate-y-1/2">
                                 <flux:link
-                                    class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+                                    class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors whitespace-nowrap"
                                     :href="route('password.request')" wire:navigate>
                                     {{ __('Forgot?') }}
                                 </flux:link>
                             </div>
                         @endif
                     </div>
+                    @error('password')
+                        <p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {{ $message }}
+                        </p>
+                    @enderror
                 </div>
 
                 <!-- Remember Me -->
@@ -171,17 +199,42 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 </div>
 
                 <!-- Login Button -->
-                <button type="submit"
-                    class="group w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800">
+                <button type="submit" wire:loading.attr="disabled"
+                    class="group w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 disabled:from-slate-500 disabled:via-slate-500 disabled:to-slate-500 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 hover:shadow-lg shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 disabled:opacity-75">
                     <span class="flex items-center justify-center gap-2">
-                        {{ __('Log in') }}
-                        <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Loading Text -->
+                        <span wire:loading wire:target="login" class="hidden">{{ __('Logging in...') }}</span>
+                        <span wire:loading.remove wire:target="login">{{ __('Log in') }}</span>
+
+                        <!-- Loading Spinner -->
+                        <svg wire:loading wire:target="login" class="hidden w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+
+                        <!-- Arrow Icon (hidden during loading) -->
+                        <svg wire:loading.remove wire:target="login" class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                         </svg>
                     </span>
                 </button>
+
+                <!-- General Error Messages -->
+                @if($errors->any() && !$errors->has(['email', 'password']))
+                    <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="text-sm text-red-700 dark:text-red-300 font-medium">Authentication Error</p>
+                        </div>
+                        <ul class="mt-2 text-sm text-red-600 dark:text-red-400 space-y-1">
+                            @foreach($errors->all() as $error)
+                                <li>• {{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </form>
 
             @if (Route::has('register'))
