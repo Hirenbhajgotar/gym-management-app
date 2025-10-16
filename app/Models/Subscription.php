@@ -98,7 +98,7 @@ class Subscription extends Model
         // Allow access if status is active or trial
         if ($this->status->isActive()) {
             // Additional check: if this is a trial, ensure it hasn't expired
-            if ($this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && $this->trial_ends_at->isPast()) {
+            if ($this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && $this->trial_ends_at?->isPast() ?? false) {
                 return false;
             }
 
@@ -115,7 +115,7 @@ class Subscription extends Model
 
     public function isOnTrial(): bool
     {
-        return $this->status === SubscriptionStatus::TRIAL;
+        return $this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && ($this->trial_ends_at?->isFuture() ?? false);
     }
 
     public function isCancelled(): bool
@@ -135,12 +135,12 @@ class Subscription extends Model
 
     public function onTrial(): bool
     {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+        return $this->trial_ends_at && $this->trial_ends_at?->isFuture() ?? false;
     }
 
     public function trialDaysLeft(): int
     {
-        if (! $this->onTrial()) {
+        if (! $this->isOnTrial()) {
             return 0;
         }
 
@@ -198,7 +198,7 @@ class Subscription extends Model
     // Grace period methods
     public function isInGracePeriod(): bool
     {
-        return $this->grace_period_ends_at && $this->grace_period_ends_at->isFuture();
+        return $this->grace_period_ends_at && $this->grace_period_ends_at?->isFuture() ?? false;
     }
 
     public function gracePeriodEndsAt(): ?Carbon
@@ -224,6 +224,6 @@ class Subscription extends Model
     // Helper method to check if subscription was originally a trial
     public function wasTrial(): bool
     {
-        return $this->trial_ends_at !== null;
+        return $this->status !== SubscriptionStatus::TRIAL && $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
     }
 }

@@ -41,20 +41,35 @@ class RazorpayService
             $razorpayOrder = $this->api->order->create($orderData);
 
             // Create payment record
-            $payment = Payment::create([
-                'gym_id' => $data['gym_id'],
+            $paymentData = [
                 'razorpay_order_id' => $razorpayOrder->id,
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'INR',
                 'status' => 'pending',
                 'payment_type' => $data['payment_type'] ?? 'whatsapp_package',
-                'metadata' => [
+                'metadata' => $data['notes'] ?? [],
+            ];
+
+            // Handle different payment types
+            if ($data['payment_type'] === 'subscription_renewal' || $data['payment_type'] === 'subscription_upgrade' || $data['payment_type'] === 'subscription_new') {
+                $paymentData['user_id'] = $data['user_id'];
+                $paymentData['metadata'] = array_merge($paymentData['metadata'], [
+                    'subscription_id' => $data['subscription_id'] ?? null,
+                    'plan_id' => $data['plan_id'] ?? null,
+                    'description' => $data['description'] ?? null,
+                ]);
+            } else {
+                // WhatsApp package payments
+                $paymentData['gym_id'] = $data['gym_id'];
+                $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'package_id' => $data['package_id'] ?? null,
                     'description' => $data['description'] ?? null,
                     'package_name' => $data['notes']['package_name'] ?? null,
                     'message_count' => $data['notes']['message_count'] ?? null,
-                ],
-            ]);
+                ]);
+            }
+
+            $payment = Payment::create($paymentData);
 
             Log::info('Razorpay order created', [
                 'order_id' => $razorpayOrder->id,

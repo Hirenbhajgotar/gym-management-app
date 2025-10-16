@@ -10,6 +10,10 @@ use Livewire\Component;
 class ProfileController extends Component
 {
     public $selectedPlan = null;
+    public $renewingPlan = false;
+    public $selectingPlan = false;
+    public $upgradingPlan = false;
+    public $loggingOut = false;
 
     #[Layout('frontend.layouts.profile')]
     public function render()
@@ -29,6 +33,8 @@ class ProfileController extends Component
 
     public function selectPlan($planId)
     {
+        $this->selectingPlan = true;
+
         $plan = Plan::with(['features'])->findOrFail($planId);
 
         // Store selected plan in session
@@ -40,13 +46,15 @@ class ProfileController extends Component
 
     public function upgradePlan($planId)
     {
+        $this->upgradingPlan = true;
+
         $user = auth()->user();
         $currentSubscription = $user->subscription;
 
         // Check if user can upgrade (has active subscription)
         if (! $currentSubscription || ! $currentSubscription->isActive()) {
             session()->flash('error', 'You need an active subscription to upgrade.');
-
+            $this->upgradingPlan = false;
             return;
         }
 
@@ -55,7 +63,7 @@ class ProfileController extends Component
         // Check if the new plan is actually an upgrade (higher price)
         if ($newPlan->price_yearly <= $currentSubscription->plan->price_yearly) {
             session()->flash('error', 'Please select a higher-tier plan to upgrade.');
-
+            $this->upgradingPlan = false;
             return;
         }
 
@@ -66,17 +74,19 @@ class ProfileController extends Component
         ]);
 
         // Redirect to checkout for upgrade
-        return redirect()->route('payments.checkout');
+        return redirect()->route('subscriptions.checkout');
     }
 
     public function renewPlan()
     {
+        $this->renewingPlan = true;
+
         $user = auth()->user();
         $subscription = $user->subscription;
 
         if (! $subscription) {
             session()->flash('error', 'No subscription found to renew.');
-
+            $this->renewingPlan = false;
             return;
         }
 
@@ -86,12 +96,14 @@ class ProfileController extends Component
             'renew_subscription_id' => $subscription->id,
         ]);
 
-        // Redirect to checkout for renewal
-        return redirect()->route('payments.checkout');
+        // Redirect to subscription checkout for renewal
+        return redirect()->route('subscriptions.checkout');
     }
 
     public function logout()
     {
+        $this->loggingOut = true;
+
         auth()->logout();
         session()->invalidate();
         session()->regenerateToken();

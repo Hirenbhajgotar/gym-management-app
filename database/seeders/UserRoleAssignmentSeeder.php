@@ -35,7 +35,7 @@ class UserRoleAssignmentSeeder extends Seeder
         try {
             match ($selectedChoice) {
                 'Create only super-admin user' => $this->createSuperAdminUser(),
-                'Create demo users for selected gym' => $this->createDemoUsersForSelectedGym(),
+                'Create demo users for selected gym' => $this->createDemoUsersForGym(),
                 'Create demo users for all gyms' => $this->createDemoUsersForAllGyms(),
                 'Assign roles to existing users' => $this->assignRolesToExistingUsers(),
                 'Update existing user roles' => $this->updateExistingUserRoles(),

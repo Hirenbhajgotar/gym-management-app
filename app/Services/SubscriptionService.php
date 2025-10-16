@@ -77,9 +77,9 @@ class SubscriptionService
      */
     public function renewSubscription(Subscription $subscription): bool
     {
-        if (! $subscription->isActive()) {
-            return false;
-        }
+        // if (! $subscription->isActive()) {
+        //     return false;
+        // }
 
         $newPeriodStart = $subscription->current_period_end ?? Carbon::now();
         $newPeriodEnd = $this->calculatePeriodEnd($newPeriodStart, $subscription->billing_cycle);
@@ -275,7 +275,7 @@ class SubscriptionService
                 'feature_name' => $planFeature->feature_name,
                 'value' => $planFeature->value,
                 'brief_description' => $planFeature->brief_description,
-                'order_column' => $planFeature->order_column,
+                'order_column' => $planFeature?->order_column ?? 1,
             ]);
         }
     }

@@ -18,6 +18,7 @@ class Payment extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
+        'user_id',
         'gym_id',
         'razorpay_order_id',
         'razorpay_payment_id',
@@ -67,6 +68,11 @@ class Payment extends Model
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
