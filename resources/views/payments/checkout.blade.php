@@ -21,7 +21,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-xl font-bold text-white">{{ config('app.name') }}</h1>
+                            <h1 class="text-xl font-bold text-white"><a
+                                    href="{{ route('home') }}">{{ config('app.name') }}</a></h1>
                             <p class="text-blue-100 text-xs">Gym Management Platform</p>
                         </div>
                     </div>
