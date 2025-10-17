@@ -11,3 +11,6 @@ Artisan::command('inspire', function () {
 Schedule::command('errors:clean-resolved')->dailyAt('01:00');
 
 Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt('09:00');
+
+// Run subscription renewal job daily at 2 AM
+Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');

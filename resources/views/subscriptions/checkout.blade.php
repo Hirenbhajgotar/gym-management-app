@@ -1,10 +1,10 @@
 @extends('layouts.checkout')
 
-@section('title', ($checkoutType === 'renewal' ? 'Renew Subscription' : ($checkoutType === 'upgrade' ? 'Upgrade Plan' :
-    'New Subscription')) . ' - ' . config('app.name'))
+@section('title', (isset($isPendingRenewal) && $isPendingRenewal ? 'Complete Renewal' : ($checkoutType === 'renewal' ? 'Renew Subscription' : ($checkoutType === 'upgrade' ? 'Upgrade Plan' :
+    'New Subscription'))) . ' - ' . config('app.name'))
 
-@section('success-message', 'Your subscription has been ' . ($checkoutType === 'renewal' ? 'renewed' : ($checkoutType
-    === 'upgrade' ? 'upgraded' : 'activated')) . ' successfully')
+@section('success-message', isset($isPendingRenewal) && $isPendingRenewal ? 'Your subscription renewal has been completed successfully' : ('Your subscription has been ' . ($checkoutType === 'renewal' ? 'renewed' : ($checkoutType
+    === 'upgrade' ? 'upgraded' : 'activated')) . ' successfully'))
 
 @section('redirect-message', 'Redirecting to dashboard...')
 
@@ -179,24 +179,26 @@
                                 </div>
                             </div>
 
-                            @if (isset($trialDays) && $trialDays > 0)
-                                <div class="flex items-center justify-between pb-3 border-b border-blue-200">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 font-medium">Free Trial</p>
-                                            <p class="text-base font-semibold text-gray-900">{{ $trialDays }} days free
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
+                                 @if (isset($trialDays) && $trialDays > 0)
+                                     <div class="flex items-center text-sm text-green-400 bg-green-500/10 rounded-lg p-3">
+                                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                             <path fill-rule="evenodd"
+                                                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                 clip-rule="evenodd" />
+                                         </svg>
+                                         <span>{{ $trialDays }} days free trial included - no payment required
+                                             today!</span>
+                                     </div>
+                                 @elseif($checkoutType === 'new' && isset($hasUsedTrial) && $hasUsedTrial)
+                                     <div class="flex items-center text-sm text-blue-400 bg-blue-500/10 rounded-lg p-3">
+                                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                             <path fill-rule="evenodd"
+                                                 d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                 clip-rule="evenodd" />
+                                         </svg>
+                                         <span>You've already used your free trial. Proceeding with paid subscription.</span>
+                                     </div>
+                                 @endif
                         @endif
 
                         <div class="flex items-center justify-between pt-2">
@@ -246,6 +248,8 @@
                         <span id="button-text">
                             @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
                                 Start Free Trial
+                            @elseif(isset($isPendingRenewal) && $isPendingRenewal)
+                                Complete Renewal Payment
                             @else
                                 Pay ₹{{ number_format($amount / 100, 2) }}
                             @endif

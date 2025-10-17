@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\RazorpayService;
@@ -14,6 +15,7 @@ use Illuminate\View\View;
 class SubscriptionController extends Controller
 {
     protected RazorpayService $razorpayService;
+
     protected SubscriptionService $subscriptionService;
 
     public function __construct(RazorpayService $razorpayService, SubscriptionService $subscriptionService)
@@ -98,11 +100,11 @@ class SubscriptionController extends Controller
         $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
         $newPlan = Plan::findOrFail($planId);
 
-        // Calculate prorated amount if needed
-        $proratedAmount = $this->calculateProratedAmount($subscription, $newPlan);
+        // For upgrades, charge the full amount of the new plan
+        $upgradeAmount = $newPlan->price_yearly;
 
         $orderData = $this->razorpayService->createOrder([
-            'amount' => $proratedAmount,
+            'amount' => $upgradeAmount,
             'currency' => $subscription->currency,
             'receipt' => 'SUB-UPG-' . $subscription->id . '-' . time(),
             'user_id' => $subscription->user_id,
@@ -134,9 +136,10 @@ class SubscriptionController extends Controller
         $plan = Plan::findOrFail($planId);
         $user = auth()->user();
 
-        $trialDays = $plan->trial_days ?? 0;
+        // Check if user has already used a trial
+        $hasUsedTrial = $user->hasUsedTrial();
+        $trialDays = (!$hasUsedTrial && $plan->trial_days) ? $plan->trial_days : 0;
         $amount = $trialDays > 0 ? 0 : $plan->price_yearly;
-
         $orderData = $this->razorpayService->createOrder([
             'amount' => $amount,
             'currency' => $plan->currency,
@@ -149,6 +152,7 @@ class SubscriptionController extends Controller
                 'user_id' => $user->id,
                 'plan_name' => $plan->name,
                 'trial_days' => $trialDays,
+                'has_used_trial_before' => $hasUsedTrial,
             ],
         ]);
 
@@ -159,6 +163,7 @@ class SubscriptionController extends Controller
             'plan' => $plan,
             'checkoutType' => 'new',
             'trialDays' => $trialDays,
+            'hasUsedTrial' => $hasUsedTrial,
             'title' => 'New Subscription',
         ]);
     }
@@ -184,7 +189,7 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature
             );
 
-            if (!$isVerified) {
+            if (! $isVerified) {
                 throw new \Exception('Payment verification failed');
             }
 
@@ -238,10 +243,15 @@ class SubscriptionController extends Controller
 
         $subscription = Subscription::findOrFail($subscriptionId);
         $newPlan = Plan::findOrFail($planId);
+        $user = $subscription->user;
 
-        $this->subscriptionService->changePlan($subscription, $newPlan, [
+        // Cancel the current subscription immediately
+        $this->subscriptionService->cancelSubscription($subscription, true);
+
+        // Create new subscription with the upgraded plan (no trial since user already used trial)
+        $this->subscriptionService->createSubscription($user, $newPlan, [
             'billing_cycle' => $subscription->billing_cycle,
-            'prorate' => true,
+            'trial_days' => 0, // Explicitly prevent trial usage for upgrades
         ]);
     }
 
@@ -256,23 +266,40 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    private function calculateProratedAmount(Subscription $subscription, Plan $newPlan): float
+    /**
+     * Complete a pending renewal payment
+     */
+    public function completePendingPayment(string $orderId): View|\Illuminate\Http\RedirectResponse
     {
-        // Simple prorated calculation - you might want to make this more sophisticated
-        $daysLeft = $subscription->daysUntilExpiry();
-        $totalDays = $subscription->billing_cycle === 'yearly' ? 365 : 30;
+        // Find the payment record
+        $payment = Payment::where('razorpay_order_id', $orderId)->first();
 
-        if ($daysLeft <= 0) {
-            return $newPlan->price_yearly;
+        if (!$payment || $payment->user_id !== auth()->id()) {
+            abort(404, 'Payment not found');
         }
 
-        $currentPlanDailyRate = $subscription->price / $totalDays;
-        $newPlanDailyRate = $newPlan->price_yearly / 365; // Assuming yearly billing
+        // Find the subscription
+        $subscription = Subscription::find($payment->metadata['subscription_id'] ?? null);
 
-        $credit = $currentPlanDailyRate * $daysLeft;
-        $newAmount = $newPlanDailyRate * $totalDays;
+        if (!$subscription || $subscription->user_id !== auth()->id()) {
+            abort(404, 'Subscription not found');
+        }
 
-        return max(0, $newAmount - $credit);
+        // Check if payment is still pending
+        if ($payment->status !== 'pending') {
+            return redirect()->route('profile')->with('info', 'This payment has already been processed.');
+        }
+
+        return view('subscriptions.checkout', [
+            'orderId' => $orderId,
+            'amount' => $payment->amount,
+            'key' => config('services.razorpay.key_id'),
+            'subscription' => $subscription,
+            'plan' => $subscription->plan,
+            'checkoutType' => 'renewal',
+            'title' => 'Complete Subscription Renewal',
+            'isPendingRenewal' => true,
+        ]);
     }
 
     private function clearSessionData(): void

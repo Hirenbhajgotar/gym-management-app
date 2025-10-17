@@ -174,8 +174,12 @@ class PaymentController extends Controller
                 $paymentEntity = $payload['payment']['entity'] ?? null;
                 if ($paymentEntity) {
                     $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
-                    if ($payment && $payment->payment_type === 'whatsapp_package') {
-                        $this->processWhatsAppPackagePurchase($payment);
+                    if ($payment) {
+                        if ($payment->payment_type === 'whatsapp_package') {
+                            $this->processWhatsAppPackagePurchase($payment);
+                        } elseif (str_starts_with($payment->payment_type, 'subscription_')) {
+                            $this->processSubscriptionPayment($payment);
+                        }
                     }
                 }
             }
@@ -254,6 +258,60 @@ class PaymentController extends Controller
         }
 
         return view('payments.failure', compact('payment', 'tenant'));
+    }
+
+    /**
+     * Process subscription payment
+     */
+    private function processSubscriptionPayment(Payment $payment): void
+    {
+        $subscriptionId = $payment->metadata['subscription_id'] ?? null;
+
+        if (!$subscriptionId) {
+            Log::error('Subscription ID not found in payment metadata', ['payment_id' => $payment->id]);
+            return;
+        }
+
+        $subscription = \App\Models\Subscription::find($subscriptionId);
+        if (!$subscription) {
+            Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
+            return;
+        }
+
+        $subscriptionService = app(\App\Services\SubscriptionService::class);
+
+        try {
+            DB::beginTransaction();
+
+            // Renew the subscription
+            $subscriptionService->renewSubscription($subscription);
+
+            // Clear pending renewal metadata
+            $metadata = $subscription->metadata ?? [];
+            unset($metadata['pending_renewal_order_id'], $metadata['pending_renewal_payment_id'], $metadata['pending_renewal_created_at']);
+            $subscription->update(['metadata' => $metadata]);
+
+            // Send success notification
+            $subscription->user->notify(new \App\Notifications\RenewalSuccessNotification($subscription));
+
+            DB::commit();
+
+            Log::info('Subscription payment processed successfully', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'user_id' => $subscription->user_id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to process subscription payment', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Send failure notification
+            $subscription->user->notify(new \App\Notifications\PaymentFailedNotification($subscription));
+        }
     }
 
     /**

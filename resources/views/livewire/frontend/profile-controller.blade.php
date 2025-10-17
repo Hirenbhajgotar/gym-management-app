@@ -1,18 +1,6 @@
 <div>
-    <!-- Flash Messages -->
-    @if (session()->has('error'))
-        <div
-            class="fixed top-24 right-6 z-50 bg-red-500/20 border border-red-500/30 text-red-400 px-6 py-4 rounded-lg backdrop-blur-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    @if (session()->has('success'))
-        <div
-            class="fixed top-24 right-6 z-50 bg-green-500/20 border border-green-500/30 text-green-400 px-6 py-4 rounded-lg backdrop-blur-sm">
-            {{ session('success') }}
-        </div>
-    @endif
+    <!-- Toast Messages -->
+    @livewire('toast')
 
     <!-- Hero Section -->
     <section class="min-h-screen flex items-center pt-24">
@@ -245,8 +233,7 @@
                                 <div
                                     class="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-lg p-6 mb-6">
                                     <div class="flex items-center mb-4">
-                                        <svg class="w-6 h-6 text-red-400 mr-3" fill="currentColor"
-                                            viewBox="0 0 20 20">
+                                        <svg class="w-6 h-6 text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd"
                                                 d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                                                 clip-rule="evenodd" />
@@ -348,11 +335,12 @@
                                                 disabled>
                                                 Current Plan
                                             </button>
-                                        @elseif($subscription && $subscription->isActive() && $plan->price_yearly > $currentPlan->price_yearly)
+                                        @elseif($subscription && $subscription->isActive())
                                             <button wire:click="upgradePlan({{ $plan->id }})"
                                                 wire:loading.attr="disabled"
                                                 class="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                                <span wire:loading wire:target="upgradePlan" class="hidden">
+                                                <span wire:loading wire:target="upgradePlan({{ $plan->id }})"
+                                                    class="hidden">
                                                     <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -362,7 +350,8 @@
                                                     </svg>
                                                     Upgrading...
                                                 </span>
-                                                <span wire:loading.remove wire:target="upgradePlan">
+                                                <span wire:loading.remove
+                                                    wire:target="upgradePlan({{ $plan->id }})">
                                                     Upgrade Plan
                                                 </span>
                                             </button>
@@ -378,7 +367,8 @@
                                             <button wire:click="selectPlan({{ $plan->id }})"
                                                 wire:loading.attr="disabled"
                                                 class="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                                <span wire:loading wire:target="selectPlan" class="hidden">
+                                                <span wire:loading wire:target="selectPlan({{ $plan->id }})"
+                                                    class="hidden">
                                                     <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -388,7 +378,8 @@
                                                     </svg>
                                                     Processing...
                                                 </span>
-                                                <span wire:loading.remove wire:target="selectPlan">
+                                                <span wire:loading.remove
+                                                    wire:target="selectPlan({{ $plan->id }})">
                                                     {{ $buttonText }}
                                                 </span>
                                             </button>

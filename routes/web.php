@@ -96,6 +96,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/subscriptions/checkout', [\App\Http\Controllers\SubscriptionController::class, 'checkout'])->name('subscriptions.checkout');
     Route::post('/subscriptions/verify-payment', [\App\Http\Controllers\SubscriptionController::class, 'verifyPayment'])->name('subscriptions.verify-payment');
+    Route::get('/subscriptions/payment/{orderId}', [\App\Http\Controllers\SubscriptionController::class, 'completePendingPayment'])->name('subscription.payment.complete');
 });
 
 // Razorpay Webhook (no auth required)
