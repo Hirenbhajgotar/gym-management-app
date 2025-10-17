@@ -116,26 +116,31 @@
                                 </div>
                             @endif
 
-                             <!-- Logout Button -->
-                             <div class="pt-4 {{ $dashboardUrl !== '#' ? '' : 'border-t border-white/10' }}">
-                                 <button wire:click="logout" wire:loading.attr="disabled"
-                                     class="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 hover:border-red-500/50 transition-all duration-300 text-sm font-medium group disabled:opacity-50 disabled:cursor-not-allowed">
-                                     <span wire:loading wire:target="logout" class="hidden">
-                                         <svg class="w-4 h-4 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                         </svg>
-                                         Logging out...
-                                     </span>
-                                     <span wire:loading.remove wire:target="logout">
-                                         <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"
-                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                         </svg>
-                                         Logout
-                                     </span>
-                                 </button>
-                             </div>
+                            <!-- Logout Button -->
+                            <div class="pt-4 {{ $dashboardUrl !== '#' ? '' : 'border-t border-white/10' }}">
+                                <button wire:click="logout" wire:loading.attr="disabled"
+                                    class="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 hover:border-red-500/50 transition-all duration-300 text-sm font-medium group disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span wire:loading.flex wire:target="logout"
+                                        class="hidden-- w-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 animate-spin mr-2" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                            </path>
+                                        </svg>
+                                        Logging out...
+                                    </span>
+                                    <span wire:loading.remove wire:target="logout"
+                                        class="w-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        Logout
+                                    </span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Gym Information -->
@@ -213,19 +218,23 @@
                                         </div>
                                     @endif
 
-                                     <div class="flex gap-3">
-                                         <button wire:click="renewPlan" wire:loading.attr="disabled"
-                                             class="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                             <span wire:loading wire:target="renewPlan" class="hidden">
-                                                 <svg class="w-4 h-4 animate-spin inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                 </svg>
-                                                 Renewing...
-                                             </span>
-                                             <span wire:loading.remove wire:target="renewPlan">
-                                                 Renew Plan
-                                             </span>
-                                         </button>
+                                    <div class="flex gap-3">
+                                        <button wire:click="renewPlan" wire:loading.attr="disabled"
+                                            class="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span wire:loading wire:target="renewPlan" class="hidden">
+                                                <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                    </path>
+                                                </svg>
+                                                Renewing...
+                                            </span>
+                                            <span wire:loading.remove wire:target="renewPlan">
+                                                Renew Plan
+                                            </span>
+                                        </button>
                                         {{-- <a href="{{ route('payments.checkout') }}"
                                             class="px-4 py-2 border border-purple-400 text-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-300 text-sm font-medium">
                                             Update Payment Method
@@ -236,7 +245,8 @@
                                 <div
                                     class="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-lg p-6 mb-6">
                                     <div class="flex items-center mb-4">
-                                        <svg class="w-6 h-6 text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg class="w-6 h-6 text-red-400 mr-3" fill="currentColor"
+                                            viewBox="0 0 20 20">
                                             <path fill-rule="evenodd"
                                                 d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                                                 clip-rule="evenodd" />
@@ -245,18 +255,21 @@
                                     </div>
                                     <p class="text-gray-300 mb-4">Your subscription has expired. Renew now to continue
                                         using GymFlow.</p>
-                                     <button wire:click="renewPlan" wire:loading.attr="disabled"
-                                         class="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                         <span wire:loading wire:target="renewPlan" class="hidden">
-                                             <svg class="w-4 h-4 animate-spin inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                             </svg>
-                                             Renewing...
-                                         </span>
-                                         <span wire:loading.remove wire:target="renewPlan">
-                                             Renew Subscription
-                                         </span>
-                                     </button>
+                                    <button wire:click="renewPlan" wire:loading.attr="disabled"
+                                        class="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span wire:loading wire:target="renewPlan" class="hidden">
+                                            <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                </path>
+                                            </svg>
+                                            Renewing...
+                                        </span>
+                                        <span wire:loading.remove wire:target="renewPlan">
+                                            Renew Subscription
+                                        </span>
+                                    </button>
                                 </div>
                             @else
                                 <div
@@ -336,18 +349,23 @@
                                                 Current Plan
                                             </button>
                                         @elseif($subscription && $subscription->isActive() && $plan->price_yearly > $currentPlan->price_yearly)
-                                             <button wire:click="upgradePlan({{ $plan->id }})" wire:loading.attr="disabled"
-                                                 class="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                                 <span wire:loading wire:target="upgradePlan" class="hidden">
-                                                     <svg class="w-4 h-4 animate-spin inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                     </svg>
-                                                     Upgrading...
-                                                 </span>
-                                                 <span wire:loading.remove wire:target="upgradePlan">
-                                                     Upgrade Plan
-                                                 </span>
-                                             </button>
+                                            <button wire:click="upgradePlan({{ $plan->id }})"
+                                                wire:loading.attr="disabled"
+                                                class="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <span wire:loading wire:target="upgradePlan" class="hidden">
+                                                    <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                        </path>
+                                                    </svg>
+                                                    Upgrading...
+                                                </span>
+                                                <span wire:loading.remove wire:target="upgradePlan">
+                                                    Upgrade Plan
+                                                </span>
+                                            </button>
                                         @else
                                             @php
                                                 $buttonText = 'Choose Plan';
@@ -357,18 +375,23 @@
                                                     $buttonText = 'Start Free Trial';
                                                 }
                                             @endphp
-                                             <button wire:click="selectPlan({{ $plan->id }})" wire:loading.attr="disabled"
-                                                 class="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                                                 <span wire:loading wire:target="selectPlan" class="hidden">
-                                                     <svg class="w-4 h-4 animate-spin inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                     </svg>
-                                                     Processing...
-                                                 </span>
-                                                 <span wire:loading.remove wire:target="selectPlan">
-                                                     {{ $buttonText }}
-                                                 </span>
-                                             </button>
+                                            <button wire:click="selectPlan({{ $plan->id }})"
+                                                wire:loading.attr="disabled"
+                                                class="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <span wire:loading wire:target="selectPlan" class="hidden">
+                                                    <svg class="w-4 h-4 animate-spin inline mr-2" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                        </path>
+                                                    </svg>
+                                                    Processing...
+                                                </span>
+                                                <span wire:loading.remove wire:target="selectPlan">
+                                                    {{ $buttonText }}
+                                                </span>
+                                            </button>
                                         @endif
                                     </div>
                                 @endforeach

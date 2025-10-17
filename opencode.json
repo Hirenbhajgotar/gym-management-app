@@ -7,7 +7,13 @@
             "ls": "allow",
             "git status": "allow",
             "git diff": "allow",
-        }
+            "git log": "allow",
+            "cat": "allow",
+            "grep": "allow",
+            "find": "allow",
+            "tree": "allow"
+        },
+        "edit": "allow",
     },
     "mcp": {
         "laravel-boost": {

@@ -1,406 +1,319 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@extends('layouts.checkout')
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+@section('title', ($checkoutType === 'renewal' ? 'Renew Subscription' : ($checkoutType === 'upgrade' ? 'Upgrade Plan' :
+    'New Subscription')) . ' - ' . config('app.name'))
 
-    <title>
-        {{ $checkoutType === 'renewal' ? 'Renew Subscription' : ($checkoutType === 'upgrade' ? 'Upgrade Plan' : 'New Subscription') }}
-        - {{ config('app.name') }}</title>
+@section('success-message', 'Your subscription has been ' . ($checkoutType === 'renewal' ? 'renewed' : ($checkoutType
+    === 'upgrade' ? 'upgraded' : 'activated')) . ' successfully')
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+@section('redirect-message', 'Redirecting to dashboard...')
 
-    <!-- Scripts -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+@section('content')
+    <div class="relative max-w-2xl w-full">
+        <!-- Main Card -->
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            <!-- Header Section with Branding -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-white">{{ config('app.name') }}</h1>
+                            <p class="text-blue-100 text-xs">Gym Management Platform</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-white text-xs font-medium">Secure</span>
+                    </div>
+                </div>
+                <p class="text-blue-50 text-sm">
+                    @if ($checkoutType === 'renewal')
+                        Renew your subscription to continue enjoying premium features
+                    @elseif($checkoutType === 'upgrade')
+                        Upgrade to unlock more features and grow your gym business
+                    @else
+                        Start your subscription and transform your gym management
+                    @endif
+                </p>
+            </div>
 
-    <style>
-        :root {
-            --font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-        }
-
-        body {
-            font-family: var(--font-family);
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a3e 75%, #0f0f23 100%);
-        }
-
-        .feature-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .checkout-card {
-            animation: slideInUp 0.6s ease-out;
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .plan-comparison {
-            position: relative;
-        }
-
-        .plan-comparison::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(45deg, #7c3aed, #ec4899);
-            border-radius: 50%;
-            z-index: 1;
-        }
-
-        .upgrade-arrow {
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-
-            0%,
-            20%,
-            50%,
-            80%,
-            100% {
-                transform: translateX(0);
-            }
-
-            40% {
-                transform: translateX(5px);
-            }
-
-            60% {
-                transform: translateX(-5px);
-            }
-        }
-
-        .security-badge {
-            transition: all 0.3s ease;
-        }
-
-        .security-badge:hover {
-            transform: scale(1.05);
-        }
-
-        .price-highlight {
-            background: linear-gradient(45deg, #10b981, #059669);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: glow 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            from {
-                filter: brightness(1);
-            }
-
-            to {
-                filter: brightness(1.2);
-            }
-        }
-    </style>
-</head>
-
-<body class="text-white min-h-screen">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4">
-        <div class="container mx-auto max-w-4xl">
-            <div class="grid lg:grid-cols-3 gap-8">
-
-                <!-- Order Summary Sidebar -->
-                <div class="lg:col-span-1 order-2 lg:order-1">
-                    <div class="feature-card rounded-2xl p-6 sticky top-6 checkout-card">
-                        <h3 class="text-xl font-bold mb-6 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+            <div class="p-8">
+                <!-- Subscription Information -->
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 mb-6 border border-slate-200">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            Order Summary
-                        </h3>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                                @if ($checkoutType === 'renewal')
+                                    Renewing
+                                @elseif($checkoutType === 'upgrade')
+                                    Upgrading to
+                                @else
+                                    Subscribing to
+                                @endif
+                            </p>
+                            <p class="text-base font-bold text-slate-900 truncate">{{ $plan->name }}</p>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Plan Details Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-100">
+                    <div class="flex items-start justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900">
+                            @if ($checkoutType === 'renewal')
+                                Renewal Details
+                            @elseif($checkoutType === 'upgrade')
+                                Upgrade Details
+                            @else
+                                Subscription Details
+                            @endif
+                        </h2>
+                        <span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                            @if ($checkoutType === 'renewal')
+                                Renewal
+                            @elseif($checkoutType === 'upgrade')
+                                Upgrade
+                            @else
+                                New
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
                         @if ($checkoutType === 'renewal' && isset($subscription))
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-300">{{ $plan->name }}</span>
-                                    <span class="font-semibold">{{ $subscription->currency }}
-                                        {{ number_format($subscription->price, 2) }}</span>
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium">Plan Renewal</p>
+                                        <p class="text-base font-semibold text-gray-900">{{ $plan->name }}</p>
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between text-sm text-gray-400">
-                                    <span>{{ ucfirst($subscription->billing_cycle) }} renewal</span>
-                                    <span>{{ $subscription->billing_cycle === 'yearly' ? 'per year' : 'per month' }}</span>
-                                </div>
-                                <div class="border-t border-white/10 pt-4">
-                                    <div class="flex items-center justify-between text-lg font-bold">
-                                        <span>Total</span>
-                                        <span class="price-highlight">{{ $subscription->currency }}
-                                            {{ number_format($subscription->price, 2) }}</span>
+                            </div>
+
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium">Billing Cycle</p>
+                                        <p class="text-base font-semibold text-gray-900">
+                                            {{ ucfirst($subscription->billing_cycle) }}</p>
                                     </div>
                                 </div>
                             </div>
                         @elseif($checkoutType === 'upgrade' && isset($subscription))
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-300 line-through">{{ $subscription->plan->name }}</span>
-                                    <span class="text-gray-500 line-through">{{ $subscription->currency }}
-                                        {{ number_format($subscription->plan->price_yearly, 2) }}</span>
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium">Current Plan</p>
+                                        <p class="text-base font-semibold text-gray-900 line-through">
+                                            {{ $subscription->plan->name }}</p>
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-green-400">{{ $plan->name }}</span>
-                                    <span class="font-semibold text-green-400">{{ $subscription->currency }}
-                                        {{ number_format($amount / 100, 2) }}</span>
-                                </div>
-                                <div class="border-t border-white/10 pt-4">
-                                    <div class="flex items-center justify-between text-lg font-bold">
-                                        <span>Total</span>
-                                        <span class="price-highlight">{{ $subscription->currency }}
-                                            {{ number_format($amount / 100, 2) }}</span>
+                                <span class="text-sm text-gray-500 line-through">{{ $subscription->currency }}
+                                    {{ number_format($subscription->plan->price_yearly, 2) }}/year</span>
+                            </div>
+
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium">New Plan</p>
+                                        <p class="text-base font-semibold text-gray-900">{{ $plan->name }}</p>
                                     </div>
                                 </div>
                             </div>
-                        @elseif($checkoutType === 'new')
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-300">{{ $plan->name }}</span>
-                                    @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
-                                        <span class="font-semibold text-green-400">Free</span>
-                                    @else
-                                        <span class="font-semibold">{{ $plan->currency }}
-                                            {{ number_format($amount / 100, 2) }}</span>
-                                    @endif
-                                </div>
-                                @if (isset($trialDays) && $trialDays > 0)
-                                    <div class="flex items-center justify-between text-sm text-green-400">
-                                        <span>{{ $trialDays }} days free trial</span>
-                                        <span class="text-xs">then {{ $plan->currency }}
-                                            {{ number_format($plan->price_yearly, 2) }}/year</span>
+                        @else
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
                                     </div>
-                                @endif
-                                <div class="border-t border-white/10 pt-4">
-                                    <div class="flex items-center justify-between text-lg font-bold">
-                                        <span>Total</span>
-                                        @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
-                                            <span class="price-highlight">Free</span>
-                                        @else
-                                            <span class="price-highlight">{{ $plan->currency }}
-                                                {{ number_format($amount / 100, 2) }}</span>
-                                        @endif
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium">Plan</p>
+                                        <p class="text-base font-semibold text-gray-900">{{ $plan->name }}</p>
                                     </div>
                                 </div>
                             </div>
+
+                            @if (isset($trialDays) && $trialDays > 0)
+                                <div class="flex items-center justify-between pb-3 border-b border-blue-200">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500 font-medium">Free Trial</p>
+                                            <p class="text-base font-semibold text-gray-900">{{ $trialDays }} days free
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         @endif
 
-                        <!-- Security Badges -->
-                        <div class="mt-6 pt-6 border-t border-white/10">
-                            <div class="flex items-center justify-center space-x-6 text-xs text-gray-400">
-                                <div class="flex items-center security-badge">
-                                    <svg class="w-4 h-4 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    SSL Secured
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-sm text-gray-600 font-medium">Total Amount</span>
+                            <div class="text-right">
+                                <div
+                                    class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
+                                    @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
+                                        Free
+                                    @else
+                                        ₹{{ number_format($amount / 100, 2) }}
+                                    @endif
                                 </div>
-                                <div class="flex items-center security-badge">
-                                    <svg class="w-4 h-4 mr-1 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
-                                    </svg>
-                                    PCI Compliant
-                                </div>
-                                <div class="flex items-center security-badge">
-                                    <svg class="w-4 h-4 mr-1 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    256-bit Encryption
-                                </div>
+                                @if (isset($trialDays) && $trialDays > 0 && $amount > 0)
+                                    <p class="text-xs text-gray-500 mt-1">Then
+                                        ₹{{ number_format($plan->price_yearly, 2) }}/year</p>
+                                @elseif($checkoutType === 'renewal' && isset($subscription))
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ $subscription->billing_cycle === 'yearly' ? 'per year' : 'per month' }}</p>
+                                @else
+                                    <p class="text-xs text-gray-500 mt-1">per year</p>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Main Checkout Content -->
-                <div class="lg:col-span-2 order-1 lg:order-2">
-                    <div class="feature-card rounded-2xl p-8 checkout-card">
+                <!-- Security Badge -->
+                <div class="flex items-center justify-center space-x-2 mb-6 text-sm text-gray-600">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span class="font-medium">256-bit SSL encrypted payment</span>
+                </div>
 
-                        <!-- Header Section -->
-                        <div class="text-center mb-8">
-                            @if ($checkoutType === 'renewal')
-                                <div
-                                    class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                </div>
-                                <h1 class="text-3xl font-bold mb-2">Renew Your Subscription</h1>
-                                <p class="text-gray-300">Keep your gym management tools running smoothly</p>
-                            @elseif($checkoutType === 'upgrade')
-                                <div
-                                    class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                    </svg>
-                                </div>
-                                <h1 class="text-3xl font-bold mb-2">Upgrade Your Plan</h1>
-                                <p class="text-gray-300">Unlock more features and grow your gym business</p>
-                            @elseif($checkoutType === 'new')
-                                <div
-                                    class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                </div>
-                                <h1 class="text-3xl font-bold mb-2">Start Your Journey</h1>
-                                <p class="text-gray-300">Get started with GymFlow and transform your gym management</p>
+                <!-- Payment Button -->
+                <button id="rzp-button"
+                    class="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    <span
+                        class="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                    <span class="relative flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span id="button-text">
+                            @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
+                                Start Free Trial
+                            @else
+                                Pay ₹{{ number_format($amount / 100, 2) }}
                             @endif
-                        </div>
+                        </span>
+                    </span>
+                </button>
 
-                        <!-- Plan Details Card -->
-                        <div
-                            class="bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-6 mb-8 border border-white/10">
-                            @if ($checkoutType === 'renewal')
-                                <div class="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h3 class="text-xl font-semibold text-white">{{ $plan->name }}</h3>
-                                        <p class="text-gray-300 text-sm">{{ $subscription->billing_cycle }}
-                                            subscription
-                                            renewal</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-2xl font-bold text-green-400">{{ $subscription->currency }}
-                                            {{ number_format($subscription->price, 2) }}</div>
-                                        <div class="text-xs text-gray-400">
-                                            {{ $subscription->billing_cycle === 'yearly' ? 'per year' : 'per month' }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-300">
-                                    <svg class="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    Next billing date: {{ $subscription->current_period_end?->format('M d, Y') }}
-                                </div>
-                            @elseif($checkoutType === 'upgrade')
-                                <div class="mb-4">
-                                    <div class="plan-comparison flex items-center justify-between mb-4 relative">
-                                        <div class="text-center flex-1">
-                                            <div class="text-sm text-gray-400 mb-1">Current Plan</div>
-                                            <div class="font-semibold">{{ $subscription->plan->name }}</div>
-                                            <div class="text-sm text-gray-500">{{ $subscription->currency }}
-                                                {{ number_format($subscription->plan->price_yearly, 2) }}/year</div>
-                                        </div>
-                                        <div class="flex items-center px-4 upgrade-arrow">
-                                            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-center flex-1">
-                                            <div class="text-sm text-green-400 mb-1">New Plan</div>
-                                            <div class="font-semibold text-green-400">{{ $plan->name }}</div>
-                                            <div class="text-sm text-green-300 price-highlight">
-                                                {{ $subscription->currency }} {{ number_format($amount / 100, 2) }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @elseif($checkoutType === 'new')
-                                <div class="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h3 class="text-xl font-semibold text-white">{{ $plan->name }}</h3>
-                                        <p class="text-gray-300 text-sm">New subscription</p>
-                                    </div>
-                                    <div class="text-right">
-                                        @if (isset($trialDays) && $trialDays > 0 && $amount == 0)
-                                            <div class="text-2xl font-bold text-green-400">Free Trial</div>
-                                            <div class="text-xs text-gray-400">{{ $trialDays }} days free, then
-                                                {{ $plan->currency }} {{ number_format($plan->price_yearly, 2) }}/year
-                                            </div>
-                                        @else
-                                            <div class="text-2xl font-bold text-green-400">{{ $plan->currency }}
-                                                {{ number_format($amount / 100, 2) }}</div>
-                                            <div class="text-xs text-gray-400">per year</div>
-                                        @endif
-                                    </div>
-                                </div>
-                                @if (isset($trialDays) && $trialDays > 0)
-                                    <div
-                                        class="flex items-center text-sm text-green-400 bg-green-500/10 rounded-lg p-3">
-                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        <span>{{ $trialDays }} days free trial included - no payment required
-                                            today!</span>
-                                    </div>
-                                @endif
-                            @endif
-                        </div>
-
-                        <!-- Payment Section -->
-                        <div class="text-center">
-                            <h3 class="text-lg font-semibold mb-4">Complete Your Payment</h3>
-                            <p class="text-gray-300 text-sm mb-6">Secure payment powered by Razorpay</p>
-
-                            <!-- Razorpay Checkout Button -->
-                            <form action="{{ route('subscriptions.verify-payment') }}" method="POST"
-                                id="subscription-form">
-                                @csrf
-                                <script src="https://checkout.razorpay.com/v1/checkout.js" data-key="{{ $key }}"
-                                    data-amount="{{ $amount }}" data-currency="INR" data-order_id="{{ $orderId }}" data-name="GymFlow"
-                                    data-description="{{ $checkoutType === 'renewal' ? 'Subscription Renewal' : ($checkoutType === 'upgrade' ? 'Subscription Upgrade' : 'New Subscription') }}"
-                                    data-prefill.name="{{ auth()->user()->name }}" data-prefill.email="{{ auth()->user()->email }}"
-                                    data-theme.color="#7c3aed"></script>
-                            </form>
-                        </div>
-
-                        <!-- Back Link -->
-                        <div class="mt-8 text-center">
-                            <a href="{{ route('profile') }}"
-                                class="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                Back to Profile
-                            </a>
-                        </div>
+                <!-- Powered by Razorpay -->
+                <div class="flex items-center justify-center space-x-2 mt-4">
+                    <span class="text-xs text-gray-500">Secured by</span>
+                    <div
+                        class="flex items-center space-x-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-3 py-1 rounded text-xs">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                        </svg>
+                        <span>Razorpay</span>
                     </div>
+                </div>
+
+                <!-- Back Link -->
+                <div class="mt-6 text-center">
+                    <a href="{{ route('profile') }}"
+                        class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors group">
+                        <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Back to Profile</span>
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
 
+        <!-- Trust Indicators -->
+        <div class="mt-6 grid grid-cols-3 gap-4 text-center">
+            <div class="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
+                <svg class="w-6 h-6 text-blue-600 mx-auto mb-1" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p class="text-xs font-semibold text-gray-700">Secure Payment</p>
+            </div>
+            <div class="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
+                <svg class="w-6 h-6 text-green-600 mx-auto mb-1" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-xs font-semibold text-gray-700">Instant Activation</p>
+            </div>
+            <div class="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
+                <svg class="w-6 h-6 text-purple-600 mx-auto mb-1" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <p class="text-xs font-semibold text-gray-700">24/7 Support</p>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@push('scripts')
     <script>
         // Auto-submit form when Razorpay payment is successful
+        const payButton = document.getElementById('rzp-button');
+        let isProcessing = false;
         document.addEventListener('DOMContentLoaded', function() {
             // Check if Razorpay is loaded
             if (typeof Razorpay !== 'undefined') {
@@ -409,26 +322,39 @@
                     amount: "{{ $amount }}",
                     currency: "INR",
                     order_id: "{{ $orderId }}",
-                    name: "GymFlow",
+                    name: "{{ config('app.name') }}",
                     description: "{{ $checkoutType === 'renewal' ? 'Subscription Renewal' : ($checkoutType === 'upgrade' ? 'Subscription Upgrade' : 'New Subscription') }}",
                     prefill: {
                         name: "{{ auth()->user()->name }}",
                         email: "{{ auth()->user()->email }}",
                     },
                     theme: {
-                        color: "#7c3aed"
+                        color: "#2563eb"
                     },
                     handler: function(response) {
+                        if (isProcessing) return;
+                        isProcessing = true;
                         // Show loading state
-                        const submitBtn = document.querySelector('.razorpay-payment-button');
-                        if (submitBtn) {
-                            submitBtn.disabled = true;
-                            submitBtn.innerHTML =
+
+                        if (payButton) {
+                            payButton.disabled = true;
+                            payButton.innerHTML =
                                 '<span class="flex items-center"><svg class="w-4 h-4 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Processing...</span>';
                         }
 
                         // Create hidden form and submit
-                        const form = document.getElementById('subscription-form');
+                        const form = document.createElement('form');
+                        form.action = "{{ route('subscriptions.verify-payment') }}";
+                        form.method = "POST";
+
+                        // Add CSRF token
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content');
+                        form.appendChild(csrfInput);
+
                         const paymentIdInput = document.createElement('input');
                         paymentIdInput.type = 'hidden';
                         paymentIdInput.name = 'razorpay_payment_id';
@@ -448,6 +374,7 @@
                         form.appendChild(orderIdInput);
                         form.appendChild(signatureInput);
 
+                        document.body.appendChild(form);
                         form.submit();
                     },
                     modal: {
@@ -459,6 +386,12 @@
                 };
 
                 const rzp = new Razorpay(options);
+                payButton.onclick = function(e) {
+                    e.preventDefault();
+                    if (!isProcessing) {
+                        rzp.open();
+                    }
+                };
 
                 // Auto-open the payment modal when page loads
                 setTimeout(function() {
@@ -469,6 +402,4 @@
             }
         });
     </script>
-</body>
-
-</html>
+@endpush
