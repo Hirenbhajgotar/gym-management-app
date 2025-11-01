@@ -13,7 +13,7 @@ class WhatsappTemplate extends Model
         'language',
         'variables',
         'status',
-        'synced_at'
+        'synced_at',
     ];
 
     protected $casts = [

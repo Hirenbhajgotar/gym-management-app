@@ -35,7 +35,7 @@ class TrialEndingNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your Trial is Ending Soon - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
-            ->line("Your trial period for your gym subscription is ending soon.")
+            ->line('Your trial period for your gym subscription is ending soon.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Trial Ends:** {$this->subscription->trial_ends_at->format('M j, Y')}")
             ->line('To continue using all the features, please ensure your payment method is up to date.')

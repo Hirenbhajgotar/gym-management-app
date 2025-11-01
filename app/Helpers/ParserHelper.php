@@ -18,8 +18,6 @@ class ParserHelper
     /**
      * Normalize an international phone number.
      *
-     * @param  string|Stringable  $phone
-     * @return string
      * @throws InvalidArgumentException
      */
     public static function formatPhoneNumberWithCountryCode(string|Stringable $phone, $defaultCountryCode = null): string

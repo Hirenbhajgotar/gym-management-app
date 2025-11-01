@@ -6,7 +6,6 @@ use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use App\Models\FollowUp;
 use App\Models\Gym;
-use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -49,7 +48,7 @@ class FollowUpsRelationManager extends RelationManager
 
                         Forms\Components\Select::make('user_id')
                             ->label('Assigned To')
-                            ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
+                            ->options(fn () => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
                             ->default(auth()->id())
                             ->required(),
                     ]),

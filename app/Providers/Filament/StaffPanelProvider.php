@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Filament\Admin\Resources\TrainerResource;
@@ -14,7 +13,6 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;

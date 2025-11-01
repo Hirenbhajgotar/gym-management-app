@@ -6,7 +6,6 @@ use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Services\NotificationChannelResolver;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -57,10 +56,11 @@ class WelcomeNotification extends Notification
         // Ensure member has a phone number
         $phoneNumber = $this->member->phone ?? null;
 
-        if (!$phoneNumber) {
+        if (! $phoneNumber) {
             Log::warning('Member has no phone number for WhatsApp', [
-                'member_id' => $this->member->id
+                'member_id' => $this->member->id,
             ]);
+
             return null;
         }
 
@@ -73,7 +73,7 @@ class WelcomeNotification extends Notification
             'body' => "Hello {$this->member->name},\n\n"
                 . "Welcome to {$this->member->gym->name}! 🎉\n\n"
                 . "We are excited to have you on board.\n\n"
-                . "Thank you for joining us!"
+                . 'Thank you for joining us!',
         ];
     }
 

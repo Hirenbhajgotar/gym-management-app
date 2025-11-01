@@ -3,9 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\GymMember;
-use App\Notifications\MembershipExpiryNotification;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Notification;
 
 class SendMembershipExpiryAlerts extends Command
 {
@@ -34,19 +32,19 @@ class SendMembershipExpiryAlerts extends Command
         GymMember::query()
             ->with(['gym'])
             ->whereDate('membership_end', $now->clone()->addDays(7))
-            ->chunk(200, fn($members) => $members->each->notifyExpiry(7));
+            ->chunk(200, fn ($members) => $members->each->notifyExpiry(7));
 
         // on the day
         $members = GymMember::query()
             ->with(['gym'])
             ->whereDate('membership_end', $now)
-            ->chunk(200, fn($members) => $members->each->notifyExpiry(0));
+            ->chunk(200, fn ($members) => $members->each->notifyExpiry(0));
 
         // 3 days after (grace)
         GymMember::query()
             ->with(['gym'])
             ->whereDate('membership_end', $now->clone()->subDays(3))
-            ->chunk(200, fn($members) => $members->each->notifyExpiry(-3));
+            ->chunk(200, fn ($members) => $members->each->notifyExpiry(-3));
 
         $this->info('Expiry alerts queued.');
 

@@ -20,7 +20,7 @@ class NotificationLog extends Model
         'message',
         'response_data',
         'external_id',
-        'sent_at'
+        'sent_at',
     ];
 
     protected $casts = [

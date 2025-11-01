@@ -2,14 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class FacebookLeadProcessor extends SocialMediaLeadProcessor
 {
@@ -31,19 +28,22 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
 
             if (empty($leadData)) {
                 Log::warning('No lead data extracted from Facebook webhook', ['data' => $data]);
+
                 return null;
             }
 
             // Get tenant configuration from extracted data
             $pageId = $leadData['metadata']['facebook_page_id'] ?? null;
-            if (!$pageId) {
+            if (! $pageId) {
                 Log::warning('No page ID found in extracted lead data', ['data' => $data]);
+
                 return null;
             }
 
             $config = $this->getTenantConfig($pageId);
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for Facebook page', ['page_id' => $pageId]);
+
                 return null;
             }
 
@@ -66,6 +66,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 'data' => $data,
             ]);
             $this->logWebhook($data, 'error', $e->getMessage());
+
             return null;
         }
     }
@@ -84,6 +85,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             $appSecret = config('services.facebook.app_secret');
             if (empty($appSecret)) {
                 Log::warning('Facebook app secret not configured');
+
                 return false;
             }
 
@@ -106,6 +108,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'headers' => $headers,
             ]);
+
             return false;
         }
     }
@@ -127,27 +130,31 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             // Parse Facebook webhook structure
             // Facebook webhook format: {"entry": [{"changes": [{"value": {...}}]}]}
             $entry = $data['entry'][0] ?? null;
-            if (!$entry) {
+            if (! $entry) {
                 Log::warning('No entry found in Facebook webhook data', ['data' => $data]);
+
                 return [];
             }
 
             $changes = $entry['changes'][0] ?? null;
-            if (!$changes) {
+            if (! $changes) {
                 Log::warning('No changes found in Facebook webhook data', ['data' => $data]);
+
                 return [];
             }
 
             $leadInfo = $changes['value'] ?? null;
-            if (!$leadInfo) {
+            if (! $leadInfo) {
                 Log::warning('No lead info found in Facebook webhook data', ['data' => $data]);
+
                 return [];
             }
 
             // Get lead ID from webhook data
             $leadId = $leadInfo['leadgen_id'] ?? $leadInfo['lead_id'] ?? null;
-            if (!$leadId) {
+            if (! $leadId) {
                 Log::warning('No lead ID found in Facebook webhook data', ['data' => $data]);
+
                 return [];
             }
 
@@ -155,15 +162,17 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             $formId = $leadInfo['form_id'] ?? null;
             $pageId = $leadInfo['page_id'] ?? null;
 
-            if (!$formId || !$pageId) {
+            if (! $formId || ! $pageId) {
                 Log::warning('No form ID or page ID found in Facebook webhook data', ['data' => $data]);
+
                 return [];
             }
 
             // Get tenant configuration using page ID (more reliable than form ID)
             $config = $this->getTenantConfig($pageId);
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for Facebook page', ['page_id' => $pageId]);
+
                 return [];
             }
 
@@ -181,8 +190,9 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 $leadDetails = $this->fetchLeadDetails($leadId, $config);
             }
 
-            if (!$leadDetails) {
+            if (! $leadDetails) {
                 Log::warning('No lead details available after extraction or API fetch.', ['leadId' => $leadId, 'leadInfo' => $leadInfo]);
+
                 return [];
             }
 
@@ -239,6 +249,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             return [];
         }
     }
@@ -250,8 +261,9 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
     {
         try {
             $accessToken = $config->access_token ?? config('services.facebook.access_token');
-            if (!$accessToken) {
+            if (! $accessToken) {
                 Log::warning('No access token available for Facebook API');
+
                 return null;
             }
 
@@ -263,12 +275,13 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 'fields' => 'id,created_time,field_data,ad_id,ad_name,form_id,page_id',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Facebook API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'lead_id' => $leadId,
                 ]);
+
                 return null;
             }
 
@@ -278,6 +291,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'lead_id' => $leadId,
             ]);
+
             return null;
         }
     }

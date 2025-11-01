@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Currency;
 use App\Enums\SubscriptionStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -43,6 +44,7 @@ class Subscription extends Model
             'grace_period_ends_at' => 'datetime',
             'metadata' => 'array',
             'status' => SubscriptionStatus::class,
+            'currency' => Currency::class,
         ];
     }
 

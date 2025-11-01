@@ -26,35 +26,35 @@ class ApplyTenantScopes
     public function handle(Request $request, Closure $next): Response
     {
         Trainer::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         GymMember::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         MembershipPlan::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         Attendances::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         MemberPayment::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         Lead::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         FollowUp::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         NotificationSetting::addGlobalScope(
-            fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 
         return $next($request);

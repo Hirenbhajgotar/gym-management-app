@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\Gym;
-use App\Models\GymWhatsAppBalance;
 use App\Models\GymSetting;
+use App\Models\GymWhatsAppBalance;
 use App\Notifications\LowWhatsAppBalanceNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -51,7 +51,7 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
             if ($remainingMessages <= $threshold) {
                 if ($alertEnabled) {
                     // Check if we haven't already sent an alert for this low balance
-                    if (!$balance->low_balance_alert_sent) {
+                    if (! $balance->low_balance_alert_sent) {
                         $this->sendLowBalanceAlert($balance->gym, $remainingMessages);
 
                         // Mark alert as sent

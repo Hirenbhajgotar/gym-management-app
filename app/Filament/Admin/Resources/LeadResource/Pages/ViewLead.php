@@ -4,25 +4,20 @@ namespace App\Filament\Admin\Resources\LeadResource\Pages;
 
 use App\Filament\Admin\Resources\LeadResource;
 use App\Models\Lead;
+use App\Notifications\Member\WelcomeNotification;
+use App\Services\LeadConversionService;
 use Filament\Actions;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Split;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\IconEntry;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Tabs;
 use Filament\Infolists\Components\Tabs\Tab;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Resources\Pages\ViewRecord;
 use Filament\Notifications\Notification;
-use App\Services\LeadConversionService;
-use App\Notifications\Member\WelcomeNotification;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Grid as FormGrid;
+use Filament\Resources\Pages\ViewRecord;
 
 class ViewLead extends ViewRecord
 {
@@ -122,7 +117,7 @@ class ViewLead extends ViewRecord
                                                         TextEntry::make('status')
                                                             ->label('Status')
                                                             ->badge()
-                                                            ->color(fn(string $state): string => match ($state) {
+                                                            ->color(fn (string $state): string => match ($state) {
                                                                 'pending' => 'warning',
                                                                 'completed' => 'success',
                                                                 'cancelled' => 'danger',
@@ -148,7 +143,7 @@ class ViewLead extends ViewRecord
 
                         Tab::make('Conversion')
                             ->icon('phosphor-check-circle')
-                            ->visible(fn(Lead $record): bool => $record->status === \App\Enums\LeadStatus::CONVERTED)
+                            ->visible(fn (Lead $record): bool => $record->status === \App\Enums\LeadStatus::CONVERTED)
                             ->schema([
                                 Section::make('Conversion Details')
                                     ->description('Information about the lead conversion to member')
@@ -192,7 +187,7 @@ class ViewLead extends ViewRecord
                 ->label('Convert to Member')
                 ->icon('phosphor-check-circle')
                 ->color('success')
-                ->visible(fn(Lead $record): bool => $record->status !== \App\Enums\LeadStatus::CONVERTED)
+                ->visible(fn (Lead $record): bool => $record->status !== \App\Enums\LeadStatus::CONVERTED)
                 ->form(LeadResource::getConvertToMemberFormSchema())
                 ->action(function (Lead $record, array $data) {
                     try {

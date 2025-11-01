@@ -78,6 +78,7 @@ class TwilioAccountManager
 
                     if ($verificationResult['success']) {
                         DB::commit();
+
                         return [
                             'success' => true,
                             'message' => 'Account already exists. Verification code resent to WhatsApp.',
@@ -87,6 +88,7 @@ class TwilioAccountManager
                 }
 
                 DB::commit();
+
                 return [
                     'success' => false,
                     'error' => 'Account already exists for this gym',
@@ -339,6 +341,7 @@ class TwilioAccountManager
             ];
         } catch (RestException $e) {
             Log::error('Failed to fetch Twilio account status: ' . $e);
+
             return [
                 'status' => 'error',
                 'error' => $e->getMessage(),

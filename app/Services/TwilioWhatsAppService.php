@@ -11,7 +11,9 @@ use Twilio\Rest\Client;
 class TwilioWhatsAppService implements WhatsAppServiceInterface
 {
     private string $tenantId;
+
     private ?Client $client;
+
     private bool $useSandbox = true; // Set to true for testing
 
     public function __construct(string $tenantId, ?Client $client = null)
@@ -37,7 +39,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
         $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-        if (!$settings) {
+        if (! $settings) {
             throw new \Exception('No Twilio settings found');
         }
 
@@ -49,7 +51,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-            if (!$settings) {
+            if (! $settings) {
                 throw new \Exception('No Twilio settings found for this gym');
             }
 
@@ -60,7 +62,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             // Check WhatsApp message balance
             $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
-            if (!$balance || !$balance->canSendMessage()) {
+            if (! $balance || ! $balance->canSendMessage()) {
                 throw new \Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
             }
 
@@ -72,7 +74,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 : $this->getProductionFromNumber($settings);
 
             $messageParams = [
-                'from' => "whatsapp:" . $fromNumber,
+                'from' => 'whatsapp:' . $fromNumber,
             ];
 
             if ($templateData && isset($templateData['template_sid'])) {
@@ -95,20 +97,20 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'message_id' => $twilioMessage->sid,
                 'status' => $twilioMessage->status,
                 'from' => $fromNumber,
-                'data' => $twilioMessage->toArray()
+                'data' => $twilioMessage->toArray(),
             ];
         } catch (RestException $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
-                'data' => null
+                'data' => null,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'data' => null
+                'data' => null,
             ];
         }
     }
@@ -121,7 +123,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-            if (!$settings) {
+            if (! $settings) {
                 throw new \Exception('No Twilio settings found for this gym');
             }
 
@@ -131,7 +133,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             // Check WhatsApp message balance
             $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
-            if (!$balance || !$balance->canSendMessage()) {
+            if (! $balance || ! $balance->canSendMessage()) {
                 throw new \Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
             }
 
@@ -144,9 +146,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             $twilioMessage = $client->messages->create(
                 "whatsapp:$to",
                 [
-                    'from' => "whatsapp:" . $fromNumber,
+                    'from' => 'whatsapp:' . $fromNumber,
                     'contentSid' => $templateSid,
-                    'contentVariables' => json_encode($variables)
+                    'contentVariables' => json_encode($variables),
                 ]
             );
 
@@ -159,31 +161,31 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'status' => $twilioMessage->status,
                 'from' => $fromNumber,
                 'template_sid' => $templateSid,
-                'data' => $twilioMessage->toArray()
+                'data' => $twilioMessage->toArray(),
             ];
         } catch (RestException $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
-                'data' => null
+                'data' => null,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'data' => null
+                'data' => null,
             ];
         }
     }
 
-    public function getProductionFromNumber(?NotificationSetting $settings): string|null
+    public function getProductionFromNumber(?NotificationSetting $settings): ?string
     {
-        if (!$settings) {
+        if (! $settings) {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
         }
 
-        if (!$settings) {
+        if (! $settings) {
             throw new \Exception('No Twilio settings found');
         }
 
@@ -199,7 +201,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-            if (!$settings) {
+            if (! $settings) {
                 throw new \Exception('No Twilio account found');
             }
 
@@ -214,12 +216,12 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             return [
                 'success' => true,
                 'balance' => $account->balance ?? 'Trial Account - No Balance Info',
-                'status' => $account->status
+                'status' => $account->status,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }

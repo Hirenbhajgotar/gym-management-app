@@ -2,19 +2,20 @@
 
 namespace App\Services;
 
-use App\Models\Lead;
-use App\Models\TenantSocialConfig;
-use App\Models\Gym;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Models\Gym;
+use App\Models\Lead;
+use App\Models\TenantSocialConfig;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 abstract class SocialMediaLeadProcessor
 {
     protected string $platform;
+
     protected array $config;
+
     protected Gym $gym;
 
     public function __construct(string $platform)
@@ -72,16 +73,17 @@ abstract class SocialMediaLeadProcessor
                     'errors' => $validator->errors()->toArray(),
                     'data' => $leadData,
                 ]);
+
                 return null;
             }
 
             // Check for duplicate leads (same email or phone within 30 days)
             $existingLead = Lead::where('gym_id', $leadData['gym_id'])
                 ->where(function ($query) use ($leadData) {
-                    if (!empty($leadData['email'])) {
+                    if (! empty($leadData['email'])) {
                         $query->where('email', $leadData['email']);
                     }
-                    if (!empty($leadData['phone'])) {
+                    if (! empty($leadData['phone'])) {
                         $query->orWhere('phone', $leadData['phone']);
                     }
                 })
@@ -134,6 +136,7 @@ abstract class SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'data' => $leadData,
             ]);
+
             return null;
         }
     }

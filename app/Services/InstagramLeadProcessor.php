@@ -2,14 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class InstagramLeadProcessor extends SocialMediaLeadProcessor
 {
@@ -31,19 +28,22 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
 
             if (empty($leadData)) {
                 Log::warning('No lead data extracted from Instagram webhook', ['data' => $data]);
+
                 return null;
             }
 
             // Get tenant configuration from extracted data
             $pageId = $leadData['metadata']['instagram_page_id'] ?? null;
-            if (!$pageId) {
+            if (! $pageId) {
                 Log::warning('No page ID found in extracted lead data for Instagram', ['data' => $leadData]);
+
                 return null;
             }
 
             $config = $this->getTenantConfig($pageId);
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for Instagram page', ['page_id' => $pageId]);
+
                 return null;
             }
 
@@ -66,6 +66,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
                 'data' => $data,
             ]);
             $this->logWebhook($data, 'error', $e->getMessage());
+
             return null;
         }
     }
@@ -84,6 +85,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             $appSecret = config('services.instagram.app_secret');
             if (empty($appSecret)) {
                 Log::warning('Instagram app secret not configured');
+
                 return false;
             }
 
@@ -106,6 +108,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'headers' => $headers,
             ]);
+
             return false;
         }
     }
@@ -137,12 +140,14 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             }
 
             Log::warning('Unknown Instagram webhook format', ['data' => $data]);
+
             return [];
         } catch (\Exception $e) {
             Log::error('Failed to extract lead data from Instagram', [
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             return [];
         }
     }
@@ -165,15 +170,17 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
         $formId = $data['value']['form_id'] ?? null;
         $pageId = $data['value']['page_id'] ?? null;
 
-        if (!$leadId || !$formId) {
+        if (! $leadId || ! $formId) {
             Log::warning('Missing lead ID or form ID in Instagram Lead Ads data', ['data' => $data]);
+
             return [];
         }
 
         // Get tenant configuration
         $config = $this->getTenantConfig($pageId);
-        if (!$config) {
+        if (! $config) {
             Log::warning('No tenant configuration found for Instagram page', ['page_id' => $pageId]);
+
             return [];
         }
 
@@ -191,8 +198,9 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             $leadDetails = $this->fetchLeadDetails($leadId, $config);
         }
 
-        if (!$leadDetails) {
+        if (! $leadDetails) {
             Log::warning('No lead details available after extraction or API fetch.', ['leadId' => $leadId, 'data' => $data]);
+
             return [];
         }
 
@@ -316,8 +324,9 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
     {
         try {
             $accessToken = $config->access_token ?? config('services.instagram.access_token');
-            if (!$accessToken) {
+            if (! $accessToken) {
                 Log::warning('No access token available for Instagram API');
+
                 return null;
             }
 
@@ -329,12 +338,13 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
                 'fields' => 'id,created_time,field_data,ad_id,ad_name,form_id,page_id',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Instagram API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'lead_id' => $leadId,
                 ]);
+
                 return null;
             }
 
@@ -344,6 +354,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'lead_id' => $leadId,
             ]);
+
             return null;
         }
     }

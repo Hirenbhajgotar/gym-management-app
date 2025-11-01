@@ -208,7 +208,7 @@ class CreateGymMember extends CreateRecord
     {
         return [
             Hidden::make('user_id')
-                ->default(fn() => auth()->id()),
+                ->default(fn () => auth()->id()),
 
             Forms\Components\Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
@@ -227,7 +227,7 @@ class CreateGymMember extends CreateRecord
                         ->live()
                         ->rules([
                             'required_if:visible,true',
-                            fn($get) => function ($attribute, $value, $fail) {
+                            fn ($get) => function ($attribute, $value, $fail) {
                                 if (auth()->user()->hasRole('gym_owner') && ! $value) {
                                     $fail('You must create a gym before adding members.');
                                 }
@@ -325,7 +325,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(Currency::INR->value)
@@ -333,7 +333,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('payment_method')
                         ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(PaymentMethod::CASH->value),

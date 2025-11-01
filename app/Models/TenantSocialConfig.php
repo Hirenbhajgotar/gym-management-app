@@ -45,16 +45,16 @@ class TenantSocialConfig extends Model
     protected function accessToken(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? Crypt::decryptString($value) : null,
-            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+            get: fn ($value) => $value ? Crypt::decryptString($value) : null,
+            set: fn ($value) => $value ? Crypt::encryptString($value) : null,
         );
     }
 
     protected function appSecret(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? Crypt::decryptString($value) : null,
-            set: fn($value) => $value ? Crypt::encryptString($value) : null,
+            get: fn ($value) => $value ? Crypt::decryptString($value) : null,
+            set: fn ($value) => $value ? Crypt::encryptString($value) : null,
         );
     }
 
@@ -88,12 +88,15 @@ class TenantSocialConfig extends Model
 
     public function getMaskedTokenAttribute()
     {
-        if (!$this->access_token) return null;
+        if (! $this->access_token) {
+            return null;
+        }
 
         $token = $this->access_token;
         if (strlen($token) > 10) {
             return substr($token, 0, 6) . '...' . substr($token, -4);
         }
+
         return '***';
     }
 }

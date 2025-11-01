@@ -6,17 +6,15 @@ use App\Enums\DefaultRole;
 use App\Enums\NotificationAccountStatusEnum;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Filament\Admin\Pages\WhatsAppSetup;
-use App\Models\Address;
-use App\Models\NotificationSetting;
-use App\Models\User;
 use App\Models\Gym;
+use App\Models\NotificationSetting;
 use App\Models\Role;
+use App\Models\User;
 use App\Services\TwilioAccountManager;
 use App\Services\TwilioWhatsAppService;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Mockery;
 use Tests\TestCase;
@@ -28,8 +26,11 @@ class WhatsAppSetupTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Gym $gym;
+
     protected $twilioAccountManagerMock;
+
     protected $twilioClientMock;
 
     protected function setUp(): void
@@ -41,7 +42,7 @@ class WhatsAppSetupTest extends TestCase
         // Create test user and gym
         $this->user = User::factory()->create([
             'name' => 'John Doe',
-            'email' => 'john@example.com'
+            'email' => 'john@example.com',
         ])->assignRole(DefaultRole::GYM_OWNER->value);
 
         $this->gym = Gym::factory()->create();
@@ -108,7 +109,7 @@ class WhatsAppSetupTest extends TestCase
             ->test(WhatsAppSetup::class)
             ->assertFormSet([
                 'gym_name' => $this->gym->name,
-                'owner_email' => $this->user->email
+                'owner_email' => $this->user->email,
             ]);
     }
 
@@ -119,7 +120,7 @@ class WhatsAppSetupTest extends TestCase
             'status' => 'active',
             'verification_status' => 'verified',
             'balance' => '15.50',
-            'messages_sent' => 25
+            'messages_sent' => 25,
         ];
 
         $this->twilioAccountManagerMock
@@ -145,7 +146,7 @@ class WhatsAppSetupTest extends TestCase
     {
         $accountStatus = [
             'status' => 'created',
-            'verification_status' => 'pending'
+            'verification_status' => 'pending',
         ];
 
         $this->twilioAccountManagerMock
@@ -195,7 +196,7 @@ class WhatsAppSetupTest extends TestCase
                 'gym_name' => 'Test Gym Updated',
                 'whatsapp_number' => '+1234567890',
                 'owner_email' => 'owner@example.com',
-                'action_value' => 'create_account'
+                'action_value' => 'create_account',
             ])
             ->call('save')
             ->assertHasNoFormErrors()
@@ -216,7 +217,7 @@ class WhatsAppSetupTest extends TestCase
             ->once()
             ->andReturn([
                 'success' => false,
-                'error' => 'Invalid WhatsApp number format'
+                'error' => 'Invalid WhatsApp number format',
             ]);
 
         Filament::setTenant($this->gym);
@@ -227,7 +228,7 @@ class WhatsAppSetupTest extends TestCase
                 'gym_name' => 'Test Gym',
                 'whatsapp_number' => 'invalid-number',
                 'owner_email' => 'owner@example.com',
-                'action_value' => 'create_account'
+                'action_value' => 'create_account',
             ])
             ->call('save')
             ->assertNotified('Account Creation Failed');
@@ -250,13 +251,13 @@ class WhatsAppSetupTest extends TestCase
                 'gym_name' => '',
                 'whatsapp_number' => '',
                 'owner_email' => '',
-                'action_value' => 'create_account'
+                'action_value' => 'create_account',
             ])
             ->call('save')
             ->assertHasFormErrors([
                 'gym_name' => 'required',
                 'whatsapp_number' => 'required',
-                'owner_email' => 'required'
+                'owner_email' => 'required',
             ]);
     }
 
@@ -313,7 +314,7 @@ class WhatsAppSetupTest extends TestCase
                 'gym_name' => 'Test Gym',
                 'whatsapp_number' => '+1234567890',
                 'owner_email' => 'invalid-email',
-                'action_value' => 'create_account'
+                'action_value' => 'create_account',
             ])
             ->call('save')
             ->assertHasFormErrors(['owner_email' => 'email']);
@@ -418,7 +419,7 @@ class WhatsAppSetupTest extends TestCase
         ]);
 
         // 2. Mock the Twilio Client that will be created for verification check
-        $verificationCheckMock = (object)['status' => 'approved'];
+        $verificationCheckMock = (object) ['status' => 'approved'];
         $verificationChecksMock = Mockery::mock();
         $verificationChecksMock->shouldReceive('create')
             ->with(['to' => '+1234567890', 'code' => '123456'])
@@ -429,7 +430,7 @@ class WhatsAppSetupTest extends TestCase
         $verifyV2ServicesMock = Mockery::mock();
         $verifyV2ServicesMock->shouldReceive('services')->with('VAyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')->andReturn($serviceContextMock);
         $subaccountClientMock = Mockery::mock(Client::class);
-        $subaccountClientMock->verify = (object)['v2' => $verifyV2ServicesMock];
+        $subaccountClientMock->verify = (object) ['v2' => $verifyV2ServicesMock];
 
         // 3. Create a partial mock of the manager
         $accountManager = Mockery::mock(TwilioAccountManager::class)->makePartial();
@@ -524,7 +525,7 @@ class WhatsAppSetupTest extends TestCase
     /** @test */
     public function twilio_account_manager_returns_not_created_for_missing_account(): void
     {
-        $accountManager = new TwilioAccountManager();
+        $accountManager = new TwilioAccountManager;
 
         $result = $accountManager->getAccountStatus($this->gym->id);
 
@@ -560,7 +561,7 @@ class WhatsAppSetupTest extends TestCase
                 'whatsapp:+1987654321',
                 [
                     'from' => 'whatsapp:+1234567890',
-                    'body' => 'Hello, this is a test message!'
+                    'body' => 'Hello, this is a test message!',
                 ]
             )
             ->once()
@@ -576,7 +577,7 @@ class WhatsAppSetupTest extends TestCase
         $result = $whatsappService->sendMessage('+1987654321', 'Hello, this is a test message!');
 
         // Debug output if test fails
-        if (!$result['success']) {
+        if (! $result['success']) {
             $this->fail('Service failed with error: ' . ($result['error'] ?? 'Unknown error') .
                 '. Full result: ' . json_encode($result));
         }

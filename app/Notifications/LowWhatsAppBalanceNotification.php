@@ -13,6 +13,7 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public Gym $gym;
+
     public int $remainingMessages;
 
     /**
@@ -55,7 +56,7 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
     public function toWhatsApp(object $notifiable): array
     {
         return [
-            'body' => "Low WhatsApp Balance Alert\n\nYour gym {$this->gym->name} has only {$this->remainingMessages} message(s) remaining.\n\nPlease purchase more messages to continue sending notifications."
+            'body' => "Low WhatsApp Balance Alert\n\nYour gym {$this->gym->name} has only {$this->remainingMessages} message(s) remaining.\n\nPlease purchase more messages to continue sending notifications.",
         ];
     }
 

@@ -40,10 +40,35 @@ class ProfileController extends Component
         $this->selectingPlan = true;
 
         $plan = Plan::with(['features'])->findOrFail($planId);
+        $user = auth()->user();
 
         $this->clearSessionData();
 
-        // Store selected plan in session
+        // Check if user can get a free trial
+        $hasUsedTrial = $user->hasUsedTrial();
+        $trialDays = (! $hasUsedTrial && $plan->trial_days) ? $plan->trial_days : 0;
+
+        // If it's a free trial, create subscription directly without payment
+        if ($trialDays > 0) {
+            try {
+                $subscriptionService = app(\App\Services\SubscriptionService::class);
+                $subscriptionService->createSubscription($user, $plan, [
+                    'billing_cycle' => 'yearly',
+                    'trial_days' => $trialDays,
+                ]);
+
+                session()->flash('success', "Your {$trialDays}-day free trial has started! You can start using {$plan->name} plan immediately.");
+
+                return redirect()->route('profile');
+            } catch (\Exception $e) {
+                session()->flash('error', 'Failed to start trial. Please try again.');
+                $this->selectingPlan = false;
+
+                return;
+            }
+        }
+
+        // For paid plans, proceed to checkout
         session(['selected_plan_id' => $plan->id]);
 
         // Redirect to checkout

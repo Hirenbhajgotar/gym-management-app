@@ -35,7 +35,7 @@ class RenewalErrorNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Subscription Renewal Error - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
-            ->line("There was an error processing your gym subscription renewal.")
+            ->line('There was an error processing your gym subscription renewal.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Error:** {$this->exception->getMessage()}")
             ->line('Our team has been notified and will resolve this issue shortly.')

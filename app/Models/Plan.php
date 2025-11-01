@@ -43,7 +43,7 @@ class Plan extends Model
      */
     public function hasTrial(): bool
     {
-        return !is_null($this->trial_days) && $this->trial_days > 0;
+        return ! is_null($this->trial_days) && $this->trial_days > 0;
     }
 
     /**
@@ -68,6 +68,7 @@ class Plan extends Model
     public function getFeatureValue(string $featureName): ?string
     {
         $feature = $this->features()->where('feature_name', $featureName)->first();
+
         return $feature ? $feature->value : null;
     }
 
@@ -77,6 +78,7 @@ class Plan extends Model
     public function hasFeature(string $featureName): bool
     {
         $value = $this->getFeatureValue($featureName);
+
         return $value === 'true' || (is_numeric($value) && $value > 0) || ($value === '-1');
     }
 
@@ -86,6 +88,7 @@ class Plan extends Model
     public function getMaxValue(string $featureName): int
     {
         $value = $this->getFeatureValue($featureName);
+
         return $value === '-1' ? -1 : (int) $value;
     }
 

@@ -38,9 +38,9 @@ class PendingRenewalNotification extends Notification implements ShouldQueue
             ->greeting("Hi {$notifiable->name},")
             ->line("Your {$plan->name} subscription is expiring soon and we've prepared a renewal payment for you.")
             ->line("**Amount:** ₹{$amount}")
-            ->line("**Billing Cycle:** " . ucfirst($this->subscription->billing_cycle))
+            ->line('**Billing Cycle:** ' . ucfirst($this->subscription->billing_cycle))
             ->action('Complete Payment', route('subscription.payment.complete', [
-                'order_id' => $this->orderData['order_id']
+                'order_id' => $this->orderData['order_id'],
             ]))
             ->line('If you do not complete this payment, your subscription will be suspended and you may lose access to premium features.')
             ->line('Thank you for being a valued member!')

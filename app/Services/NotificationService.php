@@ -23,12 +23,12 @@ class NotificationService
             ->where('gym_owner_id', $gymOwner->id)
             ->first();
 
-        if (!$settings) {
+        if (! $settings) {
             return;
         }
 
         foreach ($channels as $channel) {
-            if (!$settings->isNotificationEnabled($type, $channel)) {
+            if (! $settings->isNotificationEnabled($type, $channel)) {
                 continue;
             }
 
@@ -38,7 +38,7 @@ class NotificationService
                 ->where('is_active', true)
                 ->first();
 
-            if (!$template) {
+            if (! $template) {
                 continue;
             }
 
@@ -58,7 +58,7 @@ class NotificationService
         string $type,
         string $message
     ): void {
-        if (!$recipient->whatsapp_number) {
+        if (! $recipient->whatsapp_number) {
             return;
         }
 

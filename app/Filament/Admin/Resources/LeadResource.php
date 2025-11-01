@@ -10,13 +10,10 @@ use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelation
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\MembershipPlan;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -66,7 +63,7 @@ class LeadResource extends Resource
 
                     Forms\Components\Select::make('created_by')
                         ->label('Created By')
-                        ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
+                        ->options(fn () => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
                         ->searchable()
                         ->default(auth()->id()),
 
@@ -76,7 +73,7 @@ class LeadResource extends Resource
                     Forms\Components\TagsInput::make('tags')
                         ->placeholder('Add tags (e.g., High Priority, Referral)')
                         ->splitKeys(['Tab', ','])
-                        ->suggestions(collect(LeadTag::cases())->map(fn(LeadTag $tag) => $tag->getLabel())->toArray()),
+                        ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
                 ]),
                 Forms\Components\RichEditor::make('notes')
                     ->label('Conversion Notes')
@@ -142,8 +139,8 @@ class LeadResource extends Resource
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
-                            ->options(fn() => MembershipPlan::pluck('name', 'id'))
-                            ->default(fn(?Lead $record) => $record?->membership_plan_id)
+                            ->options(fn () => MembershipPlan::pluck('name', 'id'))
+                            ->default(fn (?Lead $record) => $record?->membership_plan_id)
                             ->searchable()
                             ->required()
                             ->placeholder('Select a membership plan')

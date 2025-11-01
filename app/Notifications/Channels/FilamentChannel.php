@@ -8,7 +8,7 @@ class FilamentChannel
 {
     public function send($notifiable, $notification)
     {
-        if (!method_exists($notification, 'toFilament')) {
+        if (! method_exists($notification, 'toFilament')) {
             return;
         }
 

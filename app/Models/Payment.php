@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Currency;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,6 +42,7 @@ class Payment extends Model
             'refund_amount' => 'decimal:2',
             'metadata' => 'array',
             'status' => PaymentStatus::class,
+            'currency' => Currency::class,
         ];
     }
 
@@ -55,7 +57,7 @@ class Payment extends Model
 
     public function getDescriptionForEvent(string $eventName): string
     {
-        $amount = Number::currency($this->amount, in: $this->currency);
+        $amount = Number::currency($this->amount, in: $this->currency->value);
 
         return match ($eventName) {
             'created' => "Payment of {$amount} created for {$this->gym?->name} ({$this->payment_type})",
@@ -145,7 +147,7 @@ class Payment extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => Number::currency($attributes['amount'], in: $attributes['currency']),
+            get: fn (mixed $value, array $attributes) => Number::currency($attributes['amount'], in: $attributes['currency']->value),
         );
     }
 

@@ -64,7 +64,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
             };
         }
 
-        return "Your membership expired today - but your locker is still waiting for you. Renew your membership.";
+        return 'Your membership expired today - but your locker is still waiting for you. Renew your membership.';
     }
 
     /**
@@ -75,10 +75,11 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
         // Ensure member has a phone number
         $phoneNumber = $this->member->phone ?? null;
 
-        if (!$phoneNumber) {
+        if (! $phoneNumber) {
             Log::warning('Member has no phone number for WhatsApp', [
-                'member_id' => $this->member->id
+                'member_id' => $this->member->id,
             ]);
+
             return null;
         }
 
@@ -88,7 +89,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
         return [
             // 'to' => $phoneNumber,
             'to' => '+919265098227', // Test number
-            'body' => $this->emailBody()
+            'body' => $this->emailBody(),
         ];
     }
 

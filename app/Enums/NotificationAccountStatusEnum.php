@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum NotificationAccountStatusEnum: string implements HasLabel, HasColor
+enum NotificationAccountStatusEnum: string implements HasColor, HasLabel
 {
     case PENDING = 'pending';
     case CREATED = 'created';

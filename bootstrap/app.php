@@ -56,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Skip certain types of exceptions
                 if ($errorReportService->shouldSkipAutoReporting($e)) {
                     Log::info('Skipping auto reporting for this exception');
+
                     return;
                 }
 
@@ -67,7 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     $errorReport = $errorReportService->reportException($e, null, 'auto_reported');
                     Log::info('Error report created via withExceptions', [
                         'error_report_id' => $errorReport->id ?? 'null',
-                        'error_hash' => $errorReport->error_hash ?? 'null'
+                        'error_hash' => $errorReport->error_hash ?? 'null',
                     ]);
                 }
             } catch (Exception $exception) {

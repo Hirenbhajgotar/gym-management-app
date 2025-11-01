@@ -36,7 +36,7 @@ class GymWhatsAppBalance extends Model
     protected function remainingMessages(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => $attributes['balance_messages'] - $attributes['messages_used'],
+            get: fn (mixed $value, array $attributes) => $attributes['balance_messages'] - $attributes['messages_used'],
         );
     }
 

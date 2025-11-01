@@ -24,7 +24,7 @@ class NotificationChannelResolver
         $notificationTypeEnabled = $settings->get($notificationType . '_notifications')->value ? true : false;
 
         // If the specific notification type is disabled, return empty array
-        if (!$notificationTypeEnabled) {
+        if (! $notificationTypeEnabled) {
             return [];
         }
 
@@ -85,12 +85,12 @@ class NotificationChannelResolver
     {
         $settings = $gym->notificationSettings()->first();
 
-        if (!$settings) {
+        if (! $settings) {
             return false;
         }
 
         return $settings->verification_status === NotificationVerificationStatusEnum::VERIFIED
-            && !empty($settings->twilio_account_sid)
-            && !empty($settings->twilio_auth_token);
+            && ! empty($settings->twilio_account_sid)
+            && ! empty($settings->twilio_auth_token);
     }
 }

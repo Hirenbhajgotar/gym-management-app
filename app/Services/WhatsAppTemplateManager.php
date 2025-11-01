@@ -11,6 +11,7 @@ use Twilio\Rest\Client;
 class WhatsAppTemplateManager
 {
     private string $tenantId;
+
     private bool $useSandbox;
 
     public function __construct(string $tenantId)
@@ -27,7 +28,7 @@ class WhatsAppTemplateManager
         try {
             $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
-            if (!$settings) {
+            if (! $settings) {
                 throw new \Exception('No Twilio settings found');
             }
 
@@ -57,18 +58,18 @@ class WhatsAppTemplateManager
             return [
                 'success' => true,
                 'templates' => $templates,
-                'count' => count($templates)
+                'count' => count($templates),
             ];
         } catch (\Exception $e) {
             Log::error('Failed to fetch WhatsApp templates', [
                 'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
+                'tenant_id' => $this->tenantId,
             ]);
 
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'templates' => []
+                'templates' => [],
             ];
         }
     }
@@ -83,7 +84,7 @@ class WhatsAppTemplateManager
         return Cache::remember($cacheKey, now()->addHours(24), function () use ($templateName) {
             $result = $this->fetchTemplates();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return null;
             }
 
@@ -105,7 +106,7 @@ class WhatsAppTemplateManager
         try {
             $result = $this->fetchTemplates();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return $result;
             }
 
@@ -114,14 +115,14 @@ class WhatsAppTemplateManager
                 WhatsAppTemplate::updateOrCreate(
                     [
                         'gym_id' => $this->tenantId,
-                        'template_name' => $template['friendly_name']
+                        'template_name' => $template['friendly_name'],
                     ],
                     [
                         'template_sid' => $template['sid'],
                         'language' => $template['language'],
                         'variables' => $template['variables'],
                         'status' => 'approved',
-                        'synced_at' => now()
+                        'synced_at' => now(),
                     ]
                 );
                 $synced++;
@@ -130,17 +131,17 @@ class WhatsAppTemplateManager
             return [
                 'success' => true,
                 'synced' => $synced,
-                'message' => "Successfully synced {$synced} templates"
+                'message' => "Successfully synced {$synced} templates",
             ];
         } catch (\Exception $e) {
             Log::error('Failed to sync templates to database', [
                 'error' => $e->getMessage(),
-                'tenant_id' => $this->tenantId
+                'tenant_id' => $this->tenantId,
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }

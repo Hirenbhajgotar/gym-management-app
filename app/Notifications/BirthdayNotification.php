@@ -57,10 +57,11 @@ class BirthdayNotification extends Notification implements ShouldQueue
         // Ensure member has a phone number
         $phoneNumber = $this->member->phone ?? null;
 
-        if (!$phoneNumber) {
+        if (! $phoneNumber) {
             Log::warning('Member has no phone number for WhatsApp', [
-                'member_id' => $this->member->id
+                'member_id' => $this->member->id,
             ]);
+
             return null;
         }
 
@@ -77,7 +78,7 @@ class BirthdayNotification extends Notification implements ShouldQueue
                 'body' => "Happy Birthday {$this->member->name},\n\n"
                     . "We at {$this->member->gym->name} wish you a very Happy Birthday! 🎉\n\n"
                     . "May you have a fantastic year ahead filled with health and fitness.\n\n"
-                    . "Thank you for being a valued member!"
+                    . 'Thank you for being a valued member!',
             ];
         }
 
@@ -86,11 +87,12 @@ class BirthdayNotification extends Notification implements ShouldQueue
             $templateManager = new WhatsAppTemplateManager($this->member->gym_id);
             $template = $templateManager->getTemplate('birthday_greeting');
 
-            if (!$template) {
+            if (! $template) {
                 Log::error('Birthday template not found', [
                     'gym_id' => $this->member->gym_id,
-                    'member_id' => $this->member->id
+                    'member_id' => $this->member->id,
                 ]);
+
                 return null;
             }
 
@@ -100,14 +102,15 @@ class BirthdayNotification extends Notification implements ShouldQueue
                 'template_sid' => $template->template_sid,
                 'template_variables' => [
                     '1' => $this->member->name,
-                    '2' => $this->member->gym->name
-                ]
+                    '2' => $this->member->gym->name,
+                ],
             ];
         } catch (\Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
                 'error' => $e->getMessage(),
-                'member_id' => $this->member->id
+                'member_id' => $this->member->id,
             ]);
+
             return null;
         }
     }

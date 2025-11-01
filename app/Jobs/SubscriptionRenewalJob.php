@@ -13,7 +13,6 @@ use App\Notifications\TrialEndingNotification;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;

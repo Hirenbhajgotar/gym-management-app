@@ -39,11 +39,12 @@ class FacebookLeadController extends Controller
             $headers = $request->headers->all();
 
             // Verify webhook signature
-            if (!$this->processor->verifyWebhook($data, $headers)) {
+            if (! $this->processor->verifyWebhook($data, $headers)) {
                 Log::warning('Facebook webhook verification failed', [
                     'data' => $data,
                     'headers' => $headers,
                 ]);
+
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
@@ -61,6 +62,7 @@ class FacebookLeadController extends Controller
             }
 
             Log::info('Facebook webhook processed successfully');
+
             return response()->json(['status' => 'success'], 200);
         } catch (\Exception $e) {
             Log::error('Facebook webhook processing failed', [
@@ -85,6 +87,7 @@ class FacebookLeadController extends Controller
 
         if ($hubMode === 'subscribe' && $hubVerifyToken === $verifyToken) {
             Log::info('Facebook webhook verified successfully');
+
             return response($hubChallenge, 200);
         }
 

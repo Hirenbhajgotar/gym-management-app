@@ -9,13 +9,13 @@ use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Auth;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 
 class WhatsAppSetup extends Page implements HasActions, HasForms
@@ -30,11 +30,15 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     protected static string $view = 'filament.admin.pages.whats-app-setup';
 
-    /** @var \App\Models\User $user */
+    /** @var \App\Models\User */
     public $user;
+
     public ?array $data = [];
+
     public ?NotificationSetting $settings = null;
+
     public ?array $accountStatus = null;
+
     public string $viewState = 'loading';
 
     public function mount(): void
@@ -52,7 +56,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     private function determineViewState(): void
     {
-        if (!$this->settings || !$this->settings->twilio_account_sid) {
+        if (! $this->settings || ! $this->settings->twilio_account_sid) {
             $this->viewState = 'create';
         } elseif ($this->settings->verification_status === NotificationVerificationStatusEnum::PENDING) {
             $this->viewState = 'verify';
@@ -136,7 +140,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </div>
                             ')),
                     ])
-                    ->visible(fn() => $this->viewState === 'create'),
+                    ->visible(fn () => $this->viewState === 'create'),
 
                 // Verification Section
                 Forms\Components\Section::make('Verify Your Number')
@@ -166,7 +170,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </div>
                             ')),
                     ])
-                    ->visible(fn() => $this->viewState === 'verify'),
+                    ->visible(fn () => $this->viewState === 'verify'),
 
                 // Active Status Section
                 Forms\Components\Section::make('Account Status')
@@ -189,7 +193,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->schema([
                                 Forms\Components\Placeholder::make('status_display')
                                     ->label('Status')
-                                    ->content(fn() => new HtmlString('
+                                    ->content(fn () => new HtmlString('
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                             ✓ Verified
                                         </span>
@@ -197,18 +201,18 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
                                 Forms\Components\Placeholder::make('number_display')
                                     ->label('WhatsApp Number')
-                                    ->content(fn() => $this->settings?->whatsapp_business_number ?? 'N/A'),
+                                    ->content(fn () => $this->settings?->whatsapp_business_number ?? 'N/A'),
 
                                 Forms\Components\Placeholder::make('account_created')
                                     ->label('Account Created')
-                                    ->content(fn() => $this->settings?->created_at?->format('M d, Y g:i A') ?? 'N/A'),
+                                    ->content(fn () => $this->settings?->created_at?->format('M d, Y g:i A') ?? 'N/A'),
 
                                 Forms\Components\Placeholder::make('verified_at')
                                     ->label('Verified At')
-                                    ->content(fn() => $this->settings?->verified_at?->format('M d, Y g:i A') ?? 'N/A'),
+                                    ->content(fn () => $this->settings?->verified_at?->format('M d, Y g:i A') ?? 'N/A'),
                             ]),
                     ])
-                    ->visible(fn() => $this->viewState === 'active'),
+                    ->visible(fn () => $this->viewState === 'active'),
             ])
             ->statePath('data');
     }
@@ -236,7 +240,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Create WhatsApp Account')
             ->modalDescription('This will create a new Twilio account and send a verification code to your WhatsApp number.')
-            ->action(fn() => $this->createTwilioAccount());
+            ->action(fn () => $this->createTwilioAccount());
     }
 
     public function verifyNumberAction(): Action
@@ -246,7 +250,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->icon('heroicon-o-check-circle')
             ->color('primary')
             ->size('xl')
-            ->action(fn() => $this->verifyWhatsAppNumber());
+            ->action(fn () => $this->verifyWhatsAppNumber());
     }
 
     public function resendCodeAction(): Action
@@ -257,7 +261,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->color('gray')
             ->size('xl')
             ->outlined()
-            ->action(fn() => $this->resendVerificationCode());
+            ->action(fn () => $this->resendVerificationCode());
     }
 
     public function testMessageAction(): Action
@@ -271,7 +275,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Send Test Message')
             ->modalDescription('This will send a test WhatsApp message to verify your integration is working.')
-            ->action(fn() => $this->sendTestMessage());
+            ->action(fn () => $this->sendTestMessage());
     }
 
     public function save(): void
@@ -338,6 +342,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->body('Please enter the verification code.')
                 ->warning()
                 ->send();
+
             return;
         }
 
@@ -369,12 +374,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public function resendVerificationCode(): void
     {
-        if (!$this->settings) {
+        if (! $this->settings) {
             Notification::make()
                 ->title('Error')
                 ->body('No account settings found')
                 ->danger()
                 ->send();
+
             return;
         }
 
@@ -403,12 +409,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public function sendTestMessage(): void
     {
-        if (!$this->settings) {
+        if (! $this->settings) {
             Notification::make()
                 ->title('Error')
                 ->body('No account settings found')
                 ->danger()
                 ->send();
+
             return;
         }
 
@@ -448,7 +455,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $accountManager = app(TwilioAccountManager::class);
         $this->accountStatus = $accountManager->getAccountStatus(Filament::getTenant()?->id);
 
-        if (!$this->hasExistingAccount()) {
+        if (! $this->hasExistingAccount()) {
             $this->viewState = 'create';
         } elseif ($this->needsVerification()) {
             $this->viewState = 'verify';

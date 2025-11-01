@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\GymSettings;
 use App\Models\Gym;
-use App\Models\User;
 use App\Models\GymSetting;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
-use Filament\Facades\Filament;
 
 class GymSettingsTest extends TestCase
 {

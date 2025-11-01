@@ -149,8 +149,9 @@ class RazorpayService
         $event = $payload['event'] ?? null;
         $paymentEntity = $payload['payment']['entity'] ?? null;
 
-        if (!$event || !$paymentEntity) {
+        if (! $event || ! $paymentEntity) {
             Log::warning('Invalid webhook payload', ['payload' => $payload]);
+
             return;
         }
 
@@ -167,11 +168,12 @@ class RazorpayService
 
         $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
 
-        if (!$payment) {
+        if (! $payment) {
             Log::warning('Payment not found for webhook', [
                 'order_id' => $razorpayOrderId,
                 'payment_id' => $razorpayPaymentId,
             ]);
+
             return;
         }
 

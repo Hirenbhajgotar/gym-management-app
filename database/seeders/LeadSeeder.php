@@ -6,7 +6,6 @@ use App\Enums\LeadStatus;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadConversion;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class LeadSeeder extends Seeder

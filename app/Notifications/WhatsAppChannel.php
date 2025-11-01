@@ -14,14 +14,14 @@ class WhatsAppChannel
         // Get the WhatsApp message from the notification
         $message = $notification->toWhatsApp($notifiable);
 
-        if (!$message) {
+        if (! $message) {
             return;
         }
 
         // Get the gym/tenant ID
         $gymId = $notifiable->gym_id ?? $notifiable->gym->id ?? null;
 
-        if (!$gymId) {
+        if (! $gymId) {
             throw new \Exception('Unable to determine gym ID for WhatsApp notification');
         }
 
@@ -46,10 +46,10 @@ class WhatsAppChannel
             );
         }
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             Log::error('WhatsApp notification failed', [
                 'error' => $result['error'] ?? 'Unknown error',
-                'notifiable_id' => $notifiable->id
+                'notifiable_id' => $notifiable->id,
             ]);
 
             // Optionally throw exception to retry via queue

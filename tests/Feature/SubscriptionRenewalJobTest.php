@@ -37,7 +37,7 @@ class SubscriptionRenewalJobTest extends TestCase
         ]);
 
         // Dispatch and run the job synchronously
-        $job = new SubscriptionRenewalJob();
+        $job = new SubscriptionRenewalJob;
         $job->handle(app(\App\Services\SubscriptionService::class), app(\App\Services\RazorpayService::class));
 
         // The job should have processed the expiring subscription

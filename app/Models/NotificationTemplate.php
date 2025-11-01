@@ -19,7 +19,7 @@ class NotificationTemplate extends Model
         'subject',
         'email_template',
         'whatsapp_template',
-        'is_active'
+        'is_active',
     ];
 
     protected $casts = [

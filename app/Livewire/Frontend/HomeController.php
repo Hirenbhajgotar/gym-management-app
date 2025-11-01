@@ -38,6 +38,7 @@ class HomeController extends Component
 
         if ($freePlan) {
             session(['selected_plan_id' => $freePlan->id]);
+
             return redirect()->route('gym.register');
         }
 

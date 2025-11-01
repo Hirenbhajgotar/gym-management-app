@@ -5,28 +5,21 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Hidden;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class TenantSocialConfigResource extends Resource
 {
@@ -101,21 +94,21 @@ class TenantSocialConfigResource extends Resource
                                             ->password()
                                             ->revealable()
                                             ->maxLength(500)
-                                            ->visible(fn($get) => in_array($get('platform'), ['indiamart', 'justdial'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), ['indiamart', 'justdial'])),
 
                                         TextInput::make('api_secret')
                                             ->label('API Secret')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(500)
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
 
                                         TextInput::make('access_token')
                                             ->label('Access Token')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(1000)
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
 
                                         TextInput::make('webhook_secret')
                                             ->label('Webhook Secret')
@@ -123,14 +116,14 @@ class TenantSocialConfigResource extends Resource
                                             ->revealable()
                                             ->maxLength(500)
                                             ->helperText('Used to verify webhook requests from the platform')
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
 
                                         TextInput::make('webhook_url')
                                             ->label('Webhook URL')
                                             ->url()
                                             ->maxLength(500)
                                             ->helperText('The URL where this platform will send webhook notifications')
-                                            ->default(fn() => url('/api/webhooks/social-media'))
+                                            ->default(fn () => url('/api/webhooks/social-media'))
                                             ->disabled()
                                             ->dehydrated(false),
 
@@ -138,13 +131,13 @@ class TenantSocialConfigResource extends Resource
                                             ->label('Page ID')
                                             ->maxLength(255)
                                             ->helperText('Facebook/Instagram Page ID')
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), ['facebook', 'instagram'])),
 
                                         TextInput::make('phone_number_id')
                                             ->label('Phone Number ID')
                                             ->maxLength(255)
                                             ->helperText('WhatsApp Business Phone Number ID')
-                                            ->visible(fn($get) => $get('platform') === 'whatsapp'),
+                                            ->visible(fn ($get) => $get('platform') === 'whatsapp'),
                                     ]),
                             ]),
 
@@ -172,14 +165,14 @@ class TenantSocialConfigResource extends Resource
                                                 'specific_user' => 'Specific User',
                                             ])
                                             ->default('round_robin')
-                                            ->visible(fn($get) => $get('auto_assign')),
+                                            ->visible(fn ($get) => $get('auto_assign')),
 
                                         Select::make('assigned_user_id')
                                             ->label('Assigned User')
                                             ->relationship('assignedUser', 'name')
                                             ->searchable()
                                             ->preload()
-                                            ->visible(fn($get) => $get('assignment_rule') === 'specific_user'),
+                                            ->visible(fn ($get) => $get('assignment_rule') === 'specific_user'),
 
                                         Select::make('default_status')
                                             ->label('Default Lead Status')
@@ -250,26 +243,26 @@ class TenantSocialConfigResource extends Resource
                                         Toggle::make('sms_acknowledgment_enabled')
                                             ->label('Send SMS Acknowledgment')
                                             ->default(true)
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
 
                                         Toggle::make('email_acknowledgment_enabled')
                                             ->label('Send Email Acknowledgment')
                                             ->default(true)
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
 
                                         Textarea::make('sms_template')
                                             ->label('SMS Template')
                                             ->helperText('Available variables: {name}, {gym_name}, {phone}')
                                             ->rows(3)
                                             ->default('Thank you {name} for your inquiry. We will contact you soon regarding your fitness requirements.')
-                                            ->visible(fn($get) => $get('sms_acknowledgment_enabled')),
+                                            ->visible(fn ($get) => $get('sms_acknowledgment_enabled')),
 
                                         Textarea::make('email_template')
                                             ->label('Email Template')
                                             ->helperText('Available variables: {name}, {gym_name}, {email}')
                                             ->rows(5)
                                             ->default('Dear {name},\n\nThank you for your inquiry regarding fitness services. We have received your request and will contact you soon to discuss your requirements.\n\nBest regards,\n{gym_name} Team')
-                                            ->visible(fn($get) => $get('email_acknowledgment_enabled')),
+                                            ->visible(fn ($get) => $get('email_acknowledgment_enabled')),
 
                                         TextInput::make('reply_delay_minutes')
                                             ->label('Reply Delay (Minutes)')
@@ -278,7 +271,7 @@ class TenantSocialConfigResource extends Resource
                                             ->minValue(0)
                                             ->maxValue(1440)
                                             ->helperText('Delay before sending auto-reply (0 for immediate)')
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
                                     ]),
                             ]),
 
@@ -304,15 +297,15 @@ class TenantSocialConfigResource extends Resource
                                             ->label('Custom Fields Mapping')
                                             ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
                                             ->rows(5)
-                                            ->formatStateUsing(fn($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : $state),
+                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
 
                                         Textarea::make('webhook_filters')
                                             ->label('Webhook Filters')
                                             ->helperText('JSON configuration for filtering incoming webhooks')
                                             ->rows(5)
-                                            ->formatStateUsing(fn($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : $state),
+                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
                                     ]),
                             ]),
                     ]),
@@ -336,7 +329,7 @@ class TenantSocialConfigResource extends Resource
                 TextColumn::make('platform')
                     ->label('Platform')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'facebook' => 'blue',
                         'instagram' => 'pink',
                         'whatsapp' => 'green',
@@ -409,7 +402,7 @@ class TenantSocialConfigResource extends Resource
                     ->label('Test Webhook')
                     ->icon('heroicon-o-bolt')
                     ->color('warning')
-                    ->action(fn(TenantSocialConfig $record) => self::testWebhook($record))
+                    ->action(fn (TenantSocialConfig $record) => self::testWebhook($record))
                     ->requiresConfirmation()
                     ->modalHeading('Test Webhook')
                     ->modalDescription('This will send a test webhook to verify the configuration.')
@@ -421,7 +414,7 @@ class TenantSocialConfigResource extends Resource
                     Tables\Actions\BulkAction::make('toggle_active')
                         ->label('Toggle Active')
                         ->icon('phosphor-toggle-left')
-                        ->action(fn($records) => $records->each->update(['is_active' => ! $records->first()->is_active])),
+                        ->action(fn ($records) => $records->each->update(['is_active' => ! $records->first()->is_active])),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

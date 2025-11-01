@@ -34,7 +34,7 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your Subscription is Ending Soon - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
-            ->line("Your gym subscription is ending soon.")
+            ->line('Your gym subscription is ending soon.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Billing Cycle:** {$this->subscription->billing_cycle}")
             ->line("**Expires:** {$this->subscription->current_period_end->format('M j, Y')}")

@@ -18,7 +18,6 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification as FacadesNotification;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
@@ -209,6 +208,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 
@@ -222,6 +222,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 
@@ -234,6 +235,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 

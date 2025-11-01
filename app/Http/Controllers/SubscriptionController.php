@@ -138,7 +138,7 @@ class SubscriptionController extends Controller
 
         // Check if user has already used a trial
         $hasUsedTrial = $user->hasUsedTrial();
-        $trialDays = (!$hasUsedTrial && $plan->trial_days) ? $plan->trial_days : 0;
+        $trialDays = (! $hasUsedTrial && $plan->trial_days) ? $plan->trial_days : 0;
         $amount = $trialDays > 0 ? 0 : $plan->price_yearly;
         $orderData = $this->razorpayService->createOrder([
             'amount' => $amount,
@@ -274,14 +274,14 @@ class SubscriptionController extends Controller
         // Find the payment record
         $payment = Payment::where('razorpay_order_id', $orderId)->first();
 
-        if (!$payment || $payment->user_id !== auth()->id()) {
+        if (! $payment || $payment->user_id !== auth()->id()) {
             abort(404, 'Payment not found');
         }
 
         // Find the subscription
         $subscription = Subscription::find($payment->metadata['subscription_id'] ?? null);
 
-        if (!$subscription || $subscription->user_id !== auth()->id()) {
+        if (! $subscription || $subscription->user_id !== auth()->id()) {
             abort(404, 'Subscription not found');
         }
 

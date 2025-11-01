@@ -134,7 +134,7 @@ class PlanResource extends Resource
                                         Forms\Components\RichEditor::make('brief_description')
                                             ->label('Feature Description'),
                                     ])
-                                    ->itemLabel(fn(array $state): ?string => $state['feature_name'] ?? null)
+                                    ->itemLabel(fn (array $state): ?string => $state['feature_name'] ?? null)
                                     ->collapsible()
                                     ->defaultItems(0)
                                     ->addActionLabel('Add Feature')
@@ -167,8 +167,8 @@ class PlanResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('slug')->searchable(),
-                Tables\Columns\TextColumn::make('price_monthly')->money(fn($record) => $record->currency->value)->sortable(),
-                Tables\Columns\TextColumn::make('price_yearly')->money(fn($record) => $record->currency->value)->sortable(),
+                Tables\Columns\TextColumn::make('price_monthly')->money(fn ($record) => $record->currency->value)->sortable(),
+                Tables\Columns\TextColumn::make('price_yearly')->money(fn ($record) => $record->currency->value)->sortable(),
                 Tables\Columns\TextColumn::make('currency'),
                 Tables\Columns\ToggleColumn::make('is_active'),
                 Tables\Columns\TextColumn::make('trial_days')->numeric()->sortable(),

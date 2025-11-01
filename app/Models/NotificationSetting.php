@@ -51,6 +51,7 @@ class NotificationSetting extends Model
     public function isNotificationEnabled(string $type, string $channel = 'whatsapp'): bool
     {
         $types = $this->notification_types ?? [];
+
         return isset($types[$type]) && in_array($channel, $types[$type] ?? []);
     }
 }

@@ -132,27 +132,30 @@ class GymOwnerRegister extends Component
     {
         switch ($step) {
             case 1:
-                $this->validate([
-                    'name' => 'required|string|max:50',
-                    'email' => 'required|email|max:255|unique:users,email',
-                    'phone' => 'required|phone:IN',
-                    'password' => [
-                        'required',
-                        'string',
-                        'confirmed',
-                        Password::min(8)
-                            ->letters()
-                            ->mixedCase()
-                            ->numbers()
-                            ->symbols()
-                            ->uncompromised(),
+                $this->validate(
+                    [
+                        'name' => 'required|string|max:50',
+                        'email' => 'required|email|max:255|unique:users,email',
+                        'phone' => 'required|phone:IN',
+                        'password' => [
+                            'required',
+                            'string',
+                            'confirmed',
+                            Password::min(8)
+                                ->letters()
+                                ->mixedCase()
+                                ->numbers()
+                                ->symbols()
+                                ->uncompromised(),
+                        ],
+                        'password_confirmation' => 'required|string|min:8',
                     ],
-                    'password_confirmation' => 'required|string|min:8',
-                ], [
-                    'phone.required' => 'The phone number is required.',
-                    'phone.phone' => 'Please enter a valid phone number.',
-                    'email.unique' => 'The email has already been taken. Please use a different email address.',
-                ]);
+                    [
+                        'phone.required' => 'The phone number is required.',
+                        'phone.phone' => 'Please enter a valid phone number.',
+                        'email.unique' => 'The email has already been taken. Please use a different email address.',
+                    ],
+                );
                 break;
             case 2:
                 $this->validate([
@@ -210,16 +213,26 @@ class GymOwnerRegister extends Component
             // Create subscription if plan is selected
             if ($this->selectedPlan) {
                 $subscriptionService = app(SubscriptionService::class);
-                $subscriptionService->createSubscription($user, $this->selectedPlan, [
-                    'billing_cycle' => 'yearly', // Default to yearly
-                ]);
+                $subscriptionService->createSubscription(
+                    $user,
+                    $this->selectedPlan,
+                    [
+                        'billing_cycle' => 'yearly', // Default to yearly
+                    ],
+                );
             }
 
             // Create default roles and permissions for the gym
-            app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+            app(
+                RolesAndPermissionsService::class,
+            )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
             // Assign the gym to the user
-            app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
+            app(RolesAndPermissionsService::class)->assignRoleToTenant(
+                $gym,
+                $user,
+                DefaultRole::GYM_OWNER,
+            );
 
             // Create Address for Gym
             $gym->address()->create([
@@ -228,8 +241,14 @@ class GymOwnerRegister extends Component
                 'state_id' => $this->address['state_id'],
                 'country_id' => $this->address['country_id'],
                 'postal_code' => $this->address['postal_code'],
-                'latitude' => $this->address['latitude'] && ! empty($this->address['latitude']) ?  $this->address['latitude'] : null,
-                'longitude' => $this->address['longitude'] && ! empty($this->address['longitude']) ?  $this->address['longitude'] : null,
+                'latitude' => $this->address['latitude'] &&
+                    ! empty($this->address['latitude'])
+                        ? $this->address['latitude']
+                        : null,
+                'longitude' => $this->address['longitude'] &&
+                    ! empty($this->address['longitude'])
+                        ? $this->address['longitude']
+                        : null,
             ]);
 
             // Create Business Detail for Gym
@@ -253,16 +272,27 @@ class GymOwnerRegister extends Component
             FeedbackHelper::storeFeedbackCache($user?->id, 15);
 
             // Show a success message
-            session()->flash('success', 'Registration submitted successfully! We will review your application and contact you soon.');
+            session()->flash(
+                'success',
+                'Registration submitted successfully! We will review your application and contact you soon.',
+            );
 
             // Send notification to super-admins
             $superAdmins = User::role('super_admin')->get();
             foreach ($superAdmins as $superAdmin) {
-                $superAdmin->notify(new UserActionNotification('created', $user, "Gym: {$gym->name}"));
+                $superAdmin->notify(
+                    new UserActionNotification(
+                        'created',
+                        $user,
+                        "Gym: {$gym->name}",
+                    ),
+                );
 
                 Notification::make()
                     ->title('New Business Added - ' . $gym->name)
-                    ->body("A new business '{$gym->name}' has been registered by '{$user->name}'. Please review their application.")
+                    ->body(
+                        "A new business '{$gym->name}' has been registered by '{$user->name}'. Please review their application.",
+                    )
                     ->success()
                     ->sendToDatabase($superAdmin)
                     ->send();
@@ -275,7 +305,10 @@ class GymOwnerRegister extends Component
         } catch (Exception $e) {
             DB::rollBack();
             Log::error($e);
-            session()->flash('error', 'An error occurred while processing your registration. Please try again.');
+            session()->flash(
+                'error',
+                'An error occurred while processing your registration. Please try again.',
+            );
         } finally {
             $this->isLoading = false;
         }
@@ -288,7 +321,7 @@ class GymOwnerRegister extends Component
             2 => 'Business Information',
             3 => 'Location Details',
             4 => 'Additional Information',
-            default => 'Step ' . $step
+            default => 'Step ' . $step,
         };
     }
 
@@ -299,7 +332,7 @@ class GymOwnerRegister extends Component
             2 => 'Details about your business',
             3 => 'Where is your business located?',
             4 => 'Optional information to help us serve you better',
-            default => ''
+            default => '',
         };
     }
 
@@ -310,7 +343,7 @@ class GymOwnerRegister extends Component
             2 => 'M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-1.72L21.378 6.032a.75.75 0 00-.378-1.335l-1.318-.39a1.5 1.5 0 00-1.127.205l-1.19.658a3.004 3.004 0 01-3.073.084L12 4.25l-2.292 1.004a3.004 3.004 0 01-3.073-.084l-1.19-.658a1.5 1.5 0 00-1.127-.205l-1.318.39a.75.75 0 00-.378 1.335L21.378 6.032a.75.75 0 00-.378 1.335l-1.318.39a1.5 1.5 0 01-1.127-.205l-1.19-.658a3.004 3.004 0 00-3.073-.084L12 8.25l-2.292-1.004a3.004 3.004 0 00-3.073.084l-1.19.658a1.5 1.5 0 01-1.127.205l-1.318-.39a.75.75 0 01-.378-1.335z',
             3 => 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
             4 => 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0-1.125-.504-1.125-1.125V11.25a9 9 0 00-9-9z',
-            default => 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z'
+            default => 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
         };
     }
 
