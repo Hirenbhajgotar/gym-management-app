@@ -14,15 +14,17 @@ class WhatsAppChannel
         // Get the WhatsApp message from the notification
         $message = $notification->toWhatsApp($notifiable);
 
-        if (! $message) {
+        if (!$message) {
             return;
         }
 
         // Get the gym/tenant ID
-        $gymId = $notifiable->gym_id ?? $notifiable->gym->id ?? null;
+        $gymId = $notifiable->gym_id ?? ($notifiable->gym->id ?? null);
 
-        if (! $gymId) {
-            throw new \Exception('Unable to determine gym ID for WhatsApp notification');
+        if (!$gymId) {
+            throw new Exception(
+                "Unable to determine gym ID for WhatsApp notification",
+            );
         }
 
         // Initialize Twilio service

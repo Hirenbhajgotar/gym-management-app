@@ -13,40 +13,45 @@ class NotificationService
     public function sendNotification(
         User $recipient,
         string $type,
-        array $channels = ['whatsapp'],
-        array $variables = []
+        array $channels = ["whatsapp"],
+        array $variables = [],
     ): void {
         $tenantId = $recipient->tenant_id ?? Filament::getTenant()->id;
         $gymOwner = $this->getGymOwner($tenantId);
 
-        $settings = NotificationSetting::where('gym_id', $tenantId)
-            ->where('gym_owner_id', $gymOwner->id)
+        $settings = NotificationSetting::where("gym_id", $tenantId)
+            ->where("gym_owner_id", $gymOwner->id)
             ->first();
 
-        if (! $settings) {
+        if (!$settings) {
             return;
         }
 
         foreach ($channels as $channel) {
-            if (! $settings->isNotificationEnabled($type, $channel)) {
+            if (!$settings->isNotificationEnabled($type, $channel)) {
                 continue;
             }
 
-            $template = NotificationTemplate::where('gym_id', $tenantId)
-                ->where('type', $type)
-                ->where('channel', $channel)
-                ->where('is_active', true)
+            $template = NotificationTemplate::where("gym_id", $tenantId)
+                ->where("type", $type)
+                ->where("channel", $channel)
+                ->where("is_active", true)
                 ->first();
 
-            if (! $template) {
+            if (!$template) {
                 continue;
             }
 
             $message = $template->parseTemplate($variables);
 
-            if ($channel === 'whatsapp') {
-                $this->sendWhatsAppNotification($recipient, $settings, $type, $message);
-            } elseif ($channel === 'email') {
+            if ($channel === "whatsapp") {
+                $this->sendWhatsAppNotification(
+                    $recipient,
+                    $settings,
+                    $type,
+                    $message,
+                );
+            } elseif ($channel === "email") {
                 $this->sendEmailNotification($recipient, $template, $variables);
             }
         }
@@ -56,53 +61,58 @@ class NotificationService
         User $recipient,
         NotificationSetting $settings,
         string $type,
-        string $message
+        string $message,
     ): void {
-        if (! $recipient->whatsapp_number) {
+        if (!$recipient->whatsapp_number) {
             return;
         }
 
         $whatsappService = $this->getWhatsAppService($settings);
-        $result = $whatsappService->sendMessage($recipient->whatsapp_number, $message);
+        $result = $whatsappService->sendMessage(
+            $recipient->whatsapp_number,
+            $message,
+        );
 
         NotificationLog::create([
-            'gym_id' => $settings->gym_id,
-            'user_id' => $recipient->id,
-            'type' => $type,
-            'channel' => 'whatsapp',
-            'status' => $result['success'] ? 'sent' : 'failed',
-            'message' => $message,
-            'response_data' => $result['data'],
-            'external_id' => $result['message_id'] ?? null,
-            'sent_at' => $result['success'] ? now() : null,
+            "gym_id" => $settings->gym_id,
+            "user_id" => $recipient->id,
+            "type" => $type,
+            "channel" => "whatsapp",
+            "status" => $result["success"] ? "sent" : "failed",
+            "message" => $message,
+            "response_data" => $result["data"],
+            "external_id" => $result["message_id"] ?? null,
+            "sent_at" => $result["success"] ? now() : null,
         ]);
     }
 
-    private function getWhatsAppService(NotificationSetting $settings): WhatsAppServiceInterface
-    {
+    private function getWhatsAppService(
+        NotificationSetting $settings,
+    ): WhatsAppServiceInterface {
         switch ($settings->whatsapp_provider) {
-            case 'twilio':
-                return new TwilioWhatsAppService(
-                    config('services.twilio.sid'),
-                    config('services.twilio.token'),
-                    $settings->whatsapp_business_number
-                );
+            case "twilio":
+                return new TwilioWhatsAppService($settings->gym_id);
             default:
-                throw new \InvalidArgumentException("Unsupported WhatsApp provider: {$settings->whatsapp_provider}");
+                throw new \InvalidArgumentException(
+                    "Unsupported WhatsApp provider: {$settings->whatsapp_provider}",
+                );
         }
     }
 
-    public function sendEmailNotification(User $recipient, NotificationTemplate $template, array $variables): void
-    {
+    public function sendEmailNotification(
+        User $recipient,
+        NotificationTemplate $template,
+        array $variables,
+    ): void {
         // Implement email notification logic here
         // You can use Laravel's Mail facade
     }
 
     public function getGymOwner(string $tenantId): User
     {
-        return User::where('tenant_id', $tenantId)
-            ->whereHas('roles', function ($query) {
-                $query->where('name', 'gym_owner');
+        return User::where("tenant_id", $tenantId)
+            ->whereHas("roles", function ($query) {
+                $query->where("name", "gym_owner");
             })
             ->first();
     }
