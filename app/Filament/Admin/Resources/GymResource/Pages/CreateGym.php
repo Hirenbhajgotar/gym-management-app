@@ -19,10 +19,7 @@ class CreateGym extends CreateRecord
     protected function beforeCreate(): void
     {
         $user = auth()->user();
-        $maxGyms = $user?->subscription?->plan?->features()
-            ->where('feature_name', 'max_gyms')
-            ->first()
-            ->value ?? 0;
+        $maxGyms = $user?->getMaxGyms() ?? 0;
 
         // dd($user->gyms()->count());
 
@@ -35,6 +32,6 @@ class CreateGym extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return GymResource::getUrl('index'); // Redirect to index page after create
+        return GymResource::getUrl("index"); // Redirect to index page after create
     }
 }

@@ -17,34 +17,34 @@ class Subscription extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'plan_id',
-        'status',
-        'billing_cycle',
-        'price',
-        'currency',
-        'trial_ends_at',
-        'current_period_start',
-        'current_period_end',
-        'ends_at',
-        'cancelled_at',
-        'grace_period_ends_at',
-        'metadata',
+        "user_id",
+        "plan_id",
+        "status",
+        "billing_cycle",
+        "price",
+        "currency",
+        "trial_ends_at",
+        "current_period_start",
+        "current_period_end",
+        "ends_at",
+        "cancelled_at",
+        "grace_period_ends_at",
+        "metadata",
     ];
 
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:2',
-            'trial_ends_at' => 'datetime',
-            'current_period_start' => 'datetime',
-            'current_period_end' => 'datetime',
-            'ends_at' => 'datetime',
-            'cancelled_at' => 'datetime',
-            'grace_period_ends_at' => 'datetime',
-            'metadata' => 'array',
-            'status' => SubscriptionStatus::class,
-            'currency' => Currency::class,
+            "price" => "decimal:2",
+            "trial_ends_at" => "datetime",
+            "current_period_start" => "datetime",
+            "current_period_end" => "datetime",
+            "ends_at" => "datetime",
+            "cancelled_at" => "datetime",
+            "grace_period_ends_at" => "datetime",
+            "metadata" => "array",
+            "status" => SubscriptionStatus::class,
+            "currency" => Currency::class,
         ];
     }
 
@@ -68,25 +68,28 @@ class Subscription extends Model
     #[Scope]
     protected function active(Builder $query)
     {
-        return $query->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE]);
+        return $query->whereIn("status", [
+            SubscriptionStatus::TRIAL,
+            SubscriptionStatus::ACTIVE,
+        ]);
     }
 
     #[Scope]
     protected function expired(Builder $query)
     {
-        return $query->where('status', SubscriptionStatus::EXPIRED);
+        return $query->where("status", SubscriptionStatus::EXPIRED);
     }
 
     #[Scope]
     protected function cancelled(Builder $query)
     {
-        return $query->where('status', SubscriptionStatus::CANCELLED);
+        return $query->where("status", SubscriptionStatus::CANCELLED);
     }
 
     #[Scope]
     protected function suspended(Builder $query)
     {
-        return $query->where('status', SubscriptionStatus::SUSPENDED);
+        return $query->where("status", SubscriptionStatus::SUSPENDED);
     }
 
     // Helper methods
@@ -98,9 +101,13 @@ class Subscription extends Model
     public function canAccessFeatures(): bool
     {
         // Allow access if status is active or trial
-        if ($this->status->isActive()) {
+        if ($this->isActive()) {
             // Additional check: if this is a trial, ensure it hasn't expired
-            if ($this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && $this->trial_ends_at?->isPast() ?? false) {
+            if (
+                $this->status === SubscriptionStatus::TRIAL &&
+                    $this->trial_ends_at &&
+                    $this->trial_ends_at?->isPast() ?? false
+            ) {
                 return false;
             }
 
@@ -108,7 +115,11 @@ class Subscription extends Model
         }
 
         // Allow access during grace period only for paid subscriptions (not trials)
-        if ($this->status === SubscriptionStatus::EXPIRED && $this->isInGracePeriod() && ! $this->wasTrial()) {
+        if (
+            $this->status === SubscriptionStatus::EXPIRED &&
+            $this->isInGracePeriod() &&
+            !$this->wasTrial()
+        ) {
             return true;
         }
 
@@ -117,12 +128,16 @@ class Subscription extends Model
 
     public function isOnTrial(): bool
     {
-        return $this->status === SubscriptionStatus::TRIAL && $this->trial_ends_at && ($this->trial_ends_at?->isFuture() ?? false);
+        return $this->status === SubscriptionStatus::TRIAL &&
+            $this->trial_ends_at &&
+            ($this->trial_ends_at?->isFuture() ?? false);
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === SubscriptionStatus::CANCELLED;
+        return $this->status === SubscriptionStatus::CANCELLED &&
+            $this->cancelled_at &&
+            $this->cancelled_at->isPast();
     }
 
     public function isExpired(): bool
@@ -135,14 +150,9 @@ class Subscription extends Model
         return $this->status === SubscriptionStatus::SUSPENDED;
     }
 
-    public function onTrial(): bool
-    {
-        return $this->trial_ends_at && $this->trial_ends_at?->isFuture() ?? false;
-    }
-
     public function trialDaysLeft(): int
     {
-        if (! $this->isOnTrial()) {
+        if (!$this->isOnTrial()) {
             return 0;
         }
 
@@ -151,7 +161,7 @@ class Subscription extends Model
 
     public function daysUntilExpiry(): int
     {
-        if (! $this->current_period_end) {
+        if (!$this->current_period_end) {
             return 0;
         }
 
@@ -160,17 +170,18 @@ class Subscription extends Model
 
     public function getCurrentPrice(): float
     {
-        return $this->billing_cycle === 'yearly'
+        return $this->billing_cycle === "yearly"
             ? $this->plan->price_yearly ?? 0
             : $this->plan->price_monthly ?? 0;
     }
 
-    public function getSubscriptionFeature(string $featureName): ?SubscriptionFeature
-    {
-        return $this->features()->where('feature_name', $featureName)->first();
+    public function getSubscriptionFeature(
+        string $featureName,
+    ): ?SubscriptionFeature {
+        return $this->features()->where("feature_name", $featureName)->first();
     }
 
-    public function getFeatureLimit(string $featureName): int|string|null
+    public function getFeatureLimit(string $featureName): mixed
     {
         $feature = $this->getSubscriptionFeature($featureName);
 
@@ -182,15 +193,17 @@ class Subscription extends Model
         return $this->getSubscriptionFeature($featureName) !== null;
     }
 
-    public function canUseFeature(string $featureName, int $currentUsage = 0): bool
-    {
-        if (! $this->canAccessFeatures()) {
+    public function canUseFeature(
+        string $featureName,
+        int $currentUsage = 0,
+    ): bool {
+        if (!$this->canAccessFeatures()) {
             return false;
         }
 
         $limit = $this->getFeatureLimit($featureName);
 
-        if ($limit === null || $limit === 'unlimited') {
+        if ($limit === null || $limit === "unlimited") {
             return true;
         }
 
@@ -200,7 +213,8 @@ class Subscription extends Model
     // Grace period methods
     public function isInGracePeriod(): bool
     {
-        return $this->grace_period_ends_at && $this->grace_period_ends_at?->isFuture() ?? false;
+        return $this->grace_period_ends_at &&
+            $this->grace_period_ends_at?->isFuture() ?? false;
     }
 
     public function gracePeriodEndsAt(): ?Carbon
@@ -208,13 +222,14 @@ class Subscription extends Model
         return $this->grace_period_ends_at;
     }
 
-    public function daysInGracePeriod(): int
+    // Accessor for days_in_grace_period
+    protected function daysInGracePeriod(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
-        if (! $this->isInGracePeriod()) {
-            return 0;
-        }
-
-        return Carbon::now()->diffInDays($this->grace_period_ends_at, false);
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn() => $this->isInGracePeriod()
+                ? Carbon::now()->diffInDays($this->grace_period_ends_at, false)
+                : 0,
+        );
     }
 
     public function setGracePeriod(int $days): void
@@ -226,6 +241,8 @@ class Subscription extends Model
     // Helper method to check if subscription was originally a trial
     public function wasTrial(): bool
     {
-        return $this->status !== SubscriptionStatus::TRIAL && $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
+        return $this->status !== SubscriptionStatus::TRIAL &&
+            $this->trial_ends_at !== null &&
+            $this->trial_ends_at->isPast();
     }
 }

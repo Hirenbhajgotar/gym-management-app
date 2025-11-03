@@ -17,15 +17,12 @@ class Gym extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'slug',
-    ];
+    protected $fillable = ["name", "slug"];
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'gym_user')
-            ->withPivot(['role', 'active'])
+        return $this->belongsToMany(User::class, "gym_user")
+            ->withPivot(["role", "active"])
             ->withTimestamps();
     }
 
@@ -41,7 +38,7 @@ class Gym extends Model
 
     public function address(): MorphOne
     {
-        return $this->morphOne(Address::class, 'addressable');
+        return $this->morphOne(Address::class, "addressable");
     }
 
     public static function generateUniqueSlug(string $name): string
@@ -50,7 +47,7 @@ class Gym extends Model
         $slug = $baseSlug;
         $counter = 1;
 
-        while (self::where('slug', $slug)->exists()) {
+        while (self::where("slug", $slug)->exists()) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }
@@ -90,9 +87,14 @@ class Gym extends Model
         return $this->socialConfigs()->active();
     }
 
-    public function getOwnerAttribute()
+    /**
+     * Get the gym owner user
+     */
+    public function owner()
     {
-        return $this->users()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->first();
+        return $this->users()
+            ->wherePivot("role", \App\Enums\DefaultRole::GYM_OWNER->value)
+            ->first();
     }
 
     public function leads(): HasMany
@@ -108,7 +110,7 @@ class Gym extends Model
             return $currentTenant->users();
         }
 
-        return User::query()->whereRaw('1 = 0'); // Return an empty query
+        return User::query()->whereRaw("1 = 0"); // Return an empty query
     }
 
     public function settings(): HasMany
@@ -118,7 +120,7 @@ class Gym extends Model
 
     public function getSetting(string $key, mixed $default = null): mixed
     {
-        $setting = $this->settings()->where('key', $key)->first();
+        $setting = $this->settings()->where("key", $key)->first();
 
         return $setting ? $setting->value : $default;
     }
@@ -128,7 +130,7 @@ class Gym extends Model
      */
     public function subscription()
     {
-        return $this->user?->subscription();
+        return $this->owner()?->subscription();
     }
 
     /**
@@ -136,7 +138,7 @@ class Gym extends Model
      */
     public function onTrial(): bool
     {
-        return $this->subscription() && $this->subscription->onTrial();
+        return $this->subscription()?->onTrial();
     }
 
     /**
@@ -144,7 +146,7 @@ class Gym extends Model
      */
     public function subscribed(): bool
     {
-        return $this->subscription() && $this->subscription->isActive();
+        return $this->subscription()?->isActive();
     }
 
     /**
@@ -152,7 +154,7 @@ class Gym extends Model
      */
     public function hasAccess(): bool
     {
-        return $this->subscription() && $this->subscription->canAccessFeatures();
+        return $this->subscription()?->canAccessFeatures();
     }
 
     /**
@@ -160,7 +162,7 @@ class Gym extends Model
      */
     public function canUseFeature(string $featureName): bool
     {
-        return $this->subscription() && $this->subscription->hasFeature($featureName);
+        return $this->subscription()?->hasFeature($featureName);
     }
 
     /**
@@ -168,6 +170,6 @@ class Gym extends Model
      */
     public function getFeatureLimit(string $featureName): int|string|null
     {
-        return $this->subscription() ? $this->subscription->getFeatureLimit($featureName) : null;
+        return $this->subscription()?->getFeatureLimit($featureName) ?? null;
     }
 }

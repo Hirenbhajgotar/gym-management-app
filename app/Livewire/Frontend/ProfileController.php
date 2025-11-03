@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Models\Gym;
 use App\Models\Plan;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -18,20 +19,29 @@ class ProfileController extends Component
 
     public $loggingOut = false;
 
-    #[Layout('frontend.layouts.profile')]
+    #[Layout("frontend.layouts.profile")]
     public function render()
     {
-        $user = auth()->user()->load(['roles', 'gyms']);
-        // Get only active subscription
-        $subscription = $user->subscription()->active()->with('plan')->first();
-        $currentPlan = $subscription?->plan;
-        $allPlans = Plan::with(['features'])->active()->orderBy('price_monthly')->get();
+        $user = auth()
+            ->user()
+            ->load(["roles", "gyms"]);
 
-        return view('livewire.frontend.profile-controller', [
-            'user' => $user,
-            'subscription' => $subscription,
-            'currentPlan' => $currentPlan,
-            'allPlans' => $allPlans,
+        // Get only active subscription
+        $subscription = $user->subscription();
+        $currentPlan = $subscription?->plan;
+
+        // dd($subscription->wasTrial(), $user->hasUsedTrial());
+
+        $allPlans = Plan::with(["features"])
+            ->active()
+            ->orderBy("price_monthly")
+            ->get();
+
+        return view("livewire.frontend.profile-controller", [
+            "user" => $user,
+            "subscription" => $subscription,
+            "currentPlan" => $currentPlan,
+            "allPlans" => $allPlans,
         ]);
     }
 
@@ -39,29 +49,38 @@ class ProfileController extends Component
     {
         $this->selectingPlan = true;
 
-        $plan = Plan::with(['features'])->findOrFail($planId);
+        $plan = Plan::with(["features"])->findOrFail($planId);
         $user = auth()->user();
 
         $this->clearSessionData();
 
         // Check if user can get a free trial
         $hasUsedTrial = $user->hasUsedTrial();
-        $trialDays = (! $hasUsedTrial && $plan->trial_days) ? $plan->trial_days : 0;
+        $trialDays =
+            !$hasUsedTrial && $plan->trial_days ? $plan->trial_days : 0;
 
         // If it's a free trial, create subscription directly without payment
         if ($trialDays > 0) {
             try {
-                $subscriptionService = app(\App\Services\SubscriptionService::class);
+                $subscriptionService = app(
+                    \App\Services\SubscriptionService::class,
+                );
                 $subscriptionService->createSubscription($user, $plan, [
-                    'billing_cycle' => 'yearly',
-                    'trial_days' => $trialDays,
+                    "billing_cycle" => "yearly",
+                    "trial_days" => $trialDays,
                 ]);
 
-                session()->flash('success', "Your {$trialDays}-day free trial has started! You can start using {$plan->name} plan immediately.");
+                session()->flash(
+                    "success",
+                    "Your {$trialDays}-day free trial has started! You can start using {$plan->name} plan immediately.",
+                );
 
-                return redirect()->route('profile');
+                return redirect()->route("profile");
             } catch (\Exception $e) {
-                session()->flash('error', 'Failed to start trial. Please try again.');
+                session()->flash(
+                    "error",
+                    "Failed to start trial. Please try again.",
+                );
                 $this->selectingPlan = false;
 
                 return;
@@ -69,10 +88,10 @@ class ProfileController extends Component
         }
 
         // For paid plans, proceed to checkout
-        session(['selected_plan_id' => $plan->id]);
+        session(["selected_plan_id" => $plan->id]);
 
         // Redirect to checkout
-        return redirect()->route('subscriptions.checkout');
+        return redirect()->route("subscriptions.checkout");
     }
 
     public function upgradePlan($planId)
@@ -80,11 +99,14 @@ class ProfileController extends Component
         $this->upgradingPlan = true;
 
         $user = auth()->user();
-        $currentSubscription = $user->subscription()->active()->first();
+        $currentSubscription = $user->subscription();
 
         // Check if user can upgrade (has active subscription)
-        if (! $currentSubscription) {
-            session()->flash('error', 'You need an active subscription to upgrade.');
+        if (!$currentSubscription) {
+            session()->flash(
+                "error",
+                "You need an active subscription to upgrade.",
+            );
             $this->upgradingPlan = false;
 
             return;
@@ -103,12 +125,12 @@ class ProfileController extends Component
 
         // Store upgrade information in session
         session([
-            'upgrade_plan_id' => $planId,
-            'current_subscription_id' => $currentSubscription->id,
+            "upgrade_plan_id" => $planId,
+            "current_subscription_id" => $currentSubscription->id,
         ]);
 
         // Redirect to checkout for upgrade
-        return redirect()->route('subscriptions.checkout');
+        return redirect()->route("subscriptions.checkout");
     }
 
     public function renewPlan()
@@ -117,15 +139,19 @@ class ProfileController extends Component
 
         $user = auth()->user();
         // Get active subscription or expired trial subscription that can be renewed
-        $subscription = $user->subscription()->where(function ($query) {
-            $query->active()->orWhere(function ($q) {
-                $q->where('status', 'expired')
-                    ->whereNotNull('trial_ends_at'); // Expired trials can be renewed
-            });
-        })->first();
+        $subscription = $user
+            ->subscriptions()
+            ->where(function ($query) {
+                $query->active()->orWhere(function ($q) {
+                    $q->where("status", "expired")->whereNotNull(
+                        "trial_ends_at",
+                    ); // Expired trials can be renewed
+                });
+            })
+            ->first();
 
-        if (! $subscription) {
-            session()->flash('error', 'No subscription found to renew.');
+        if (!$subscription) {
+            session()->flash("error", "No subscription found to renew.");
             $this->renewingPlan = false;
 
             return;
@@ -135,22 +161,22 @@ class ProfileController extends Component
 
         // Store renewal information in session
         session([
-            'renew_plan_id' => $subscription->plan_id,
-            'renew_subscription_id' => $subscription->id,
+            "renew_plan_id" => $subscription->plan_id,
+            "renew_subscription_id" => $subscription->id,
         ]);
 
         // Redirect to subscription checkout for renewal
-        return redirect()->route('subscriptions.checkout');
+        return redirect()->route("subscriptions.checkout");
     }
 
     private function clearSessionData(): void
     {
         session()->forget([
-            'renew_plan_id',
-            'renew_subscription_id',
-            'upgrade_plan_id',
-            'current_subscription_id',
-            'selected_plan_id',
+            "renew_plan_id",
+            "renew_subscription_id",
+            "upgrade_plan_id",
+            "current_subscription_id",
+            "selected_plan_id",
         ]);
     }
 
@@ -162,6 +188,6 @@ class ProfileController extends Component
         session()->invalidate();
         session()->regenerateToken();
 
-        return redirect()->route('home');
+        return redirect()->route("home");
     }
 }

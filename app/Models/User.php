@@ -4,12 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\SubscriptionStatus;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -30,12 +32,12 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'phone',
-        'is_active',
-        'email_verified_at',
+        "name",
+        "email",
+        "password",
+        "phone",
+        "is_active",
+        "email_verified_at",
     ];
 
     /**
@@ -43,10 +45,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
      *
      * @var list<string>
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ["password", "remember_token"];
 
     /**
      * Get the attributes that should be cast.
@@ -56,9 +55,9 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
+            "email_verified_at" => "datetime",
+            "password" => "hashed",
+            "is_active" => "boolean",
         ];
     }
 
@@ -73,18 +72,18 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     public function initials(): string
     {
         return Str::of($this->name)
-            ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
-            ->implode('');
+            ->explode(" ")
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
+            ->implode("");
     }
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        if ($panel->getId() === 'super-admin') {
-            return $this->hasRole('super_admin');
+        if ($panel->getId() === "super-admin") {
+            return $this->hasRole("super_admin");
         }
 
-        if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
+        if ($panel->getId() === "admin" || $panel->getId() === "staff") {
             // Check for tenant-specific access AND active subscription/trial
             // return $this->hasActiveTenant() && $this->canAccessFeatures(); // temporary bypass
             return $this->hasActiveTenant();
@@ -119,67 +118,88 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
 
     public function gyms()
     {
-        return $this->belongsToMany(Gym::class, 'gym_user')
-            ->withPivot(['role', 'active'])
+        return $this->belongsToMany(Gym::class, "gym_user")
+            ->withPivot(["role", "active"])
             ->withTimestamps();
     }
 
     public function employeeDetails(): HasOne
     {
-        return $this->hasOne(EmployeeDetail::class, 'user_id');
+        return $this->hasOne(EmployeeDetail::class, "user_id");
     }
 
     public function address(): MorphOne
     {
-        return $this->morphOne(Address::class, 'addressable');
+        return $this->morphOne(Address::class, "addressable");
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
     }
 
     public function subscription()
     {
-        return $this->hasOne(Subscription::class);
+        return Subscription::active()
+            ->whereDate("current_period_end", ">=", now())
+            ->first();
     }
 
     // Subscription-based access control methods
     public function hasActiveSubscription(): bool
     {
-        return $this->subscription && $this->subscription->isActive();
+        return $this->subscriptions()
+            ->active()
+            ->whereDate("current_period_end", ">=", now())
+            ->exists();
     }
 
     public function canAccessFeatures(): bool
     {
-        return $this->subscription && $this->subscription->canAccessFeatures();
+        return $this->subscription()?->canAccessFeatures() ?? false;
     }
 
     public function getSubscriptionPlan()
     {
-        return $this->subscription?->plan;
+        return $this->subscription()?->plan;
     }
 
     public function getFeatureLimit(string $featureName): int|string|null
     {
-        return $this->subscription?->getFeatureLimit($featureName);
+        return $this->subscription()?->getFeatureLimit($featureName) ?? null;
     }
 
-    public function canUseFeature(string $featureName, int $currentUsage = 0): bool
-    {
-        return $this->subscription && $this->subscription->canUseFeature($featureName, $currentUsage);
+    public function canUseFeature(
+        string $featureName,
+        int $currentUsage = 0,
+    ): bool {
+        return $this->subscription()?->canUseFeature(
+            $featureName,
+            $currentUsage,
+        );
     }
 
     public function hasUsedTrial(): bool
     {
-        return $this->subscription()->whereNotNull('trial_ends_at')->exists();
+        return Subscription::where("user_id", $this->id)
+            ->where("status", "!=", SubscriptionStatus::TRIAL)
+            ->whereNotNull("trial_ends_at")
+            ->where("trial_ends_at", "<=", now())
+            ->exists();
     }
 
     public function getMaxGyms(): int
     {
-        $limit = $this->getFeatureLimit('max_gyms');
+        $limit = $this->getFeatureLimit("max_gyms");
 
-        return $limit === null || $limit === 'unlimited' ? PHP_INT_MAX : (int) $limit;
+        return $limit === null || $limit === "unlimited"
+            ? PHP_INT_MAX
+            : (int) $limit;
     }
 
     public function canCreateMoreGyms(): bool
     {
-        if (! $this->canAccessFeatures()) {
+        if (!$this->canAccessFeatures()) {
             return false;
         }
 
