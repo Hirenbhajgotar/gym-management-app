@@ -10,6 +10,47 @@ use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * @property int $id
+ * @property int|null $gym_id
+ * @property int|null $member_id
+ * @property int|null $membership_plan_id
+ * @property numeric|null $amount
+ * @property string|null $currency
+ * @property string|null $payment_method
+ * @property PaymentStatus|null $status
+ * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $payment_date
+ * @property \Illuminate\Support\Carbon|null $membership_start
+ * @property \Illuminate\Support\Carbon|null $membership_end
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property-read int|null $activities_count
+ * @property-read \App\Models\Gym|null $gym
+ * @property-read \App\Models\GymMember|null $member
+ * @property-read \App\Models\MembershipPlan|null $membershipPlan
+ * @method static \Database\Factories\MemberPaymentFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereCurrency($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMemberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipEnd($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipPlanId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipStart($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment wherePaymentDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment wherePaymentMethod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereUpdatedAt($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperMemberPayment
+ */
 class MemberPayment extends Model
 {
     use HasFactory, LogsActivity;

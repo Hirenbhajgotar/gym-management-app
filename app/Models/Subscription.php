@@ -12,6 +12,54 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $plan_id
+ * @property SubscriptionStatus $status
+ * @property string $billing_cycle
+ * @property numeric $price
+ * @property Currency $currency
+ * @property \Illuminate\Support\Carbon|null $trial_ends_at
+ * @property \Illuminate\Support\Carbon|null $current_period_start
+ * @property \Illuminate\Support\Carbon|null $current_period_end
+ * @property \Illuminate\Support\Carbon|null $ends_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property \Illuminate\Support\Carbon|null $grace_period_ends_at
+ * @property array<array-key, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read mixed $days_in_grace_period
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SubscriptionFeature> $features
+ * @property-read int|null $features_count
+ * @property-read \App\Models\Plan $plan
+ * @property-read \App\Models\User $user
+ * @method static Builder<static>|Subscription active()
+ * @method static Builder<static>|Subscription cancelled()
+ * @method static Builder<static>|Subscription expired()
+ * @method static Builder<static>|Subscription newModelQuery()
+ * @method static Builder<static>|Subscription newQuery()
+ * @method static Builder<static>|Subscription query()
+ * @method static Builder<static>|Subscription suspended()
+ * @method static Builder<static>|Subscription whereBillingCycle($value)
+ * @method static Builder<static>|Subscription whereCancelledAt($value)
+ * @method static Builder<static>|Subscription whereCreatedAt($value)
+ * @method static Builder<static>|Subscription whereCurrency($value)
+ * @method static Builder<static>|Subscription whereCurrentPeriodEnd($value)
+ * @method static Builder<static>|Subscription whereCurrentPeriodStart($value)
+ * @method static Builder<static>|Subscription whereEndsAt($value)
+ * @method static Builder<static>|Subscription whereGracePeriodEndsAt($value)
+ * @method static Builder<static>|Subscription whereId($value)
+ * @method static Builder<static>|Subscription whereMetadata($value)
+ * @method static Builder<static>|Subscription wherePlanId($value)
+ * @method static Builder<static>|Subscription wherePrice($value)
+ * @method static Builder<static>|Subscription whereStatus($value)
+ * @method static Builder<static>|Subscription whereTrialEndsAt($value)
+ * @method static Builder<static>|Subscription whereUpdatedAt($value)
+ * @method static Builder<static>|Subscription whereUserId($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperSubscription
+ */
 class Subscription extends Model
 {
     use HasFactory;

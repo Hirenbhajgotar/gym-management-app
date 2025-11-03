@@ -13,6 +13,44 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
 #[ObservedBy([GymObserver::class])]
+/**
+ * @property int $id
+ * @property string $name
+ * @property string|null $slug
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Address|null $address
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
+ * @property-read int|null $attendances_count
+ * @property-read \App\Models\BusinessDetail|null $businessDetail
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $gymMembers
+ * @property-read int|null $gym_members_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
+ * @property-read int|null $leads_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
+ * @property-read int|null $members_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MembershipPlan> $membershipPlans
+ * @property-read int|null $membership_plans_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymSetting> $settings
+ * @property-read int|null $settings_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TenantSocialConfig> $socialConfigs
+ * @property-read int|null $social_configs_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Trainer> $trainers
+ * @property-read int|null $trainers_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read int|null $users_count
+ * @method static \Database\Factories\GymFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereSlug($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereUpdatedAt($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperGym
+ */
 class Gym extends Model
 {
     use HasFactory;

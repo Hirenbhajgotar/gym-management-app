@@ -8,6 +8,51 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property int|null $gym_owner_id
+ * @property string|null $whatsapp_business_number
+ * @property string|null $whatsapp_api_key
+ * @property string|null $whatsapp_instance_id
+ * @property string|null $whatsapp_provider
+ * @property array<array-key, mixed>|null $notification_types
+ * @property string|null $twilio_account_sid
+ * @property string|null $twilio_auth_token
+ * @property string|null $twilio_api_key
+ * @property string|null $twilio_api_secret
+ * @property NotificationAccountStatusEnum|null $account_status
+ * @property NotificationVerificationStatusEnum|null $verification_status
+ * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property array<array-key, mixed>|null $twilio_metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\User|null $gymOwner
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereAccountStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereGymOwnerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereNotificationTypes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereTwilioAccountSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereTwilioApiKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereTwilioApiSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereTwilioAuthToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereTwilioMetadata($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereVerificationStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereVerifiedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappApiKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappBusinessNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappInstanceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappProvider($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperNotificationSetting
+ */
 class NotificationSetting extends Model
 {
     use HasFactory;

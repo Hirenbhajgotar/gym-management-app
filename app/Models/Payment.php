@@ -14,6 +14,52 @@ use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property int|null $gym_id
+ * @property string $razorpay_order_id
+ * @property string|null $razorpay_payment_id
+ * @property numeric|null $amount
+ * @property Currency|null $currency
+ * @property PaymentStatus|null $status
+ * @property string|null $payment_type
+ * @property array<array-key, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property \Illuminate\Support\Carbon|null $refunded_at
+ * @property numeric|null $refund_amount
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property-read int|null $activities_count
+ * @property-read mixed $formatted_amount
+ * @property-read \App\Models\Gym|null $gym
+ * @property-read \App\Models\User|null $user
+ * @method static Builder<static>|Payment byType(string $type)
+ * @method static Builder<static>|Payment completed()
+ * @method static Builder<static>|Payment failed()
+ * @method static Builder<static>|Payment newModelQuery()
+ * @method static Builder<static>|Payment newQuery()
+ * @method static Builder<static>|Payment pending()
+ * @method static Builder<static>|Payment query()
+ * @method static Builder<static>|Payment whereAmount($value)
+ * @method static Builder<static>|Payment whereCreatedAt($value)
+ * @method static Builder<static>|Payment whereCurrency($value)
+ * @method static Builder<static>|Payment whereGymId($value)
+ * @method static Builder<static>|Payment whereId($value)
+ * @method static Builder<static>|Payment whereMetadata($value)
+ * @method static Builder<static>|Payment wherePaidAt($value)
+ * @method static Builder<static>|Payment wherePaymentType($value)
+ * @method static Builder<static>|Payment whereRazorpayOrderId($value)
+ * @method static Builder<static>|Payment whereRazorpayPaymentId($value)
+ * @method static Builder<static>|Payment whereRefundAmount($value)
+ * @method static Builder<static>|Payment whereRefundedAt($value)
+ * @method static Builder<static>|Payment whereStatus($value)
+ * @method static Builder<static>|Payment whereUpdatedAt($value)
+ * @method static Builder<static>|Payment whereUserId($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperPayment
+ */
 class Payment extends Model
 {
     use HasFactory, LogsActivity;

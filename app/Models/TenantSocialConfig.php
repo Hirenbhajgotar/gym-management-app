@@ -8,6 +8,55 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Crypt;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property string|null $platform
+ * @property string|null $page_id
+ * @property string|null $page_name
+ * @property string|null $form_id
+ * @property string|null $form_name
+ * @property string|null $phone_number_id
+ * @property string|null $phone_number
+ * @property string|null $access_token
+ * @property string|null $app_id
+ * @property string|null $app_secret
+ * @property string|null $webhook_verify_token
+ * @property array<array-key, mixed>|null $additional_config
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $token_expires_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read mixed $masked_token
+ * @property-read \App\Models\Gym $gym
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialMediaWebhookLog> $webhookLogs
+ * @property-read int|null $webhook_logs_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig byPlatform($platform)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAccessToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAdditionalConfig($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAppId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAppSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereFormId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereFormName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePageId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePageName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePhoneNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePhoneNumberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePlatform($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereTokenExpiresAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereWebhookVerifyToken($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperTenantSocialConfig
+ */
 class TenantSocialConfig extends Model
 {
     use HasFactory;

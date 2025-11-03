@@ -4,6 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property-read \App\Models\Gym|null $gym
+ * @property-read \App\Models\StaffMember|null $staffMember
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymStaffMember active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymStaffMember inactive()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymStaffMember newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymStaffMember newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymStaffMember query()
+ * @mixin \Eloquent
+ * @mixin IdeHelperGymStaffMember
+ */
 class GymStaffMember extends Model
 {
     protected $table = 'gym_staff_members';
