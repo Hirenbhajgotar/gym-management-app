@@ -58,159 +58,302 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-24">
-        <div class="container mx-auto px-6">
-            <div class="text-center mb-16 animate-fade-in">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+    <section id="features" class="py-16 relative overflow-hidden bg-gradient-to-b from-gray-950 via-gray-900 to-black">
+        <!-- Animated Background Elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <!-- Rotating circles -->
+            <div class="absolute top-20 right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-40 left-10 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+            <div class="absolute top-1/2 left-1/4 w-32 h-32 bg-purple-600/15 rounded-full blur-2xl animate-float"></div>
+            <div class="absolute top-1/3 right-1/4 w-44 h-44 bg-cyan-600/15 rounded-full blur-2xl animate-float" style="animation-delay: 2s;"></div>
+
+            <!-- Grid pattern overlay -->
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.08) 1px, transparent 0); background-size: 40px 40px;"></div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <!-- Section Header -->
+            <div class="text-center mb-12 animate-fade-in">
+                <h2 class="text-3xl lg:text-5xl font-bold mb-4">
                     Powerful Features for
                     <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         Modern Gyms
                     </span>
                 </h2>
-                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
-                    Everything you need to manage your gym business efficiently, from lead generation to member
-                    management
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+                    Everything you need to manage your gym business efficiently, from lead generation to member management
                 </p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- CRM Feature -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+            <!-- Feature 1: Smart CRM Integration -->
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up">
+                <div class="order-2 lg:order-1">
+                    <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
+                        <div class="flex items-center gap-4 mb-7">
+                            <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl lg:text-3xl font-bold">Smart CRM Integration</h3>
+                        </div>
+                        <p class="text-gray-300 mb-9 leading-relaxed">
+                            Automatically capture and manage leads from Facebook, Instagram, and other social media platforms. Convert prospects into members seamlessly.
+                        </p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Social media lead capture with automated integration</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Automated follow-up sequences and nurturing campaigns</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Lead scoring and tracking with intelligent analytics</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Conversion analytics and performance reporting</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Smart CRM Integration</h3>
-                    <p class="text-gray-300 mb-4">
-                        Automatically capture and manage leads from Facebook, Instagram, and other social media
-                        platforms.
-                        Convert prospects into members seamlessly.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Social media lead capture</li>
-                        <li>• Automated follow-up sequences</li>
-                        <li>• Lead scoring and tracking</li>
-                        <li>• Conversion analytics</li>
-                    </ul>
                 </div>
+                <div class="order-1 lg:order-2">
+                    <div class="relative group h-full">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-6 -right-6 w-32 h-32 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
+                        <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
 
-                <!-- User Management -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                        </svg>
+                        <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
+                            <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                                 alt="CRM Dashboard"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Advanced User Management</h3>
-                    <p class="text-gray-300 mb-4">
-                        Comprehensive user management system with role-based access control for managers,
-                        receptionists, trainers, and gym members.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Role-based permissions</li>
-                        <li>• Staff management</li>
-                        <li>• Member profiles</li>
-                        <li>• Access control</li>
-                    </ul>
                 </div>
+            </div>
 
-                <!-- Attendance Management -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
+            <!-- Feature 2: Advanced User Management -->
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="order-1">
+                    <div class="relative group h-full">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-6 -left-6 w-32 h-32 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
+                        <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
+
+                        <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
+                            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                                 alt="User Management"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Smart Attendance Tracking</h3>
-                    <p class="text-gray-300 mb-4">
-                        Monitor member attendance patterns, track peak hours, and generate detailed
-                        reports for better business insights.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Real-time check-ins</li>
-                        <li>• Attendance analytics</li>
-                        <li>• Peak hour tracking</li>
-                        <li>• Member engagement metrics</li>
-                    </ul>
                 </div>
-
-                <!-- Multi-Gym Management -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+                <div class="order-2">
+                    <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500 h-full flex flex-col justify-center">
+                        <div class="flex items-center gap-4 mb-7">
+                            <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/30">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl lg:text-3xl font-bold">Advanced User Management</h3>
+                        </div>
+                        <p class="text-gray-300 mb-9 leading-relaxed">
+                            Comprehensive user management system with role-based access control for managers, receptionists, trainers, and gym members.
+                        </p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Role-based permissions for different staff levels</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Staff management with performance tracking</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Detailed member profiles with complete history</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Granular access control for security and compliance</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Multi-Location Support</h3>
-                    <p class="text-gray-300 mb-4">
-                        Manage multiple gym locations from a single dashboard. Perfect for gym chains
-                        and fitness franchises looking to scale.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Centralized dashboard</li>
-                        <li>• Location-specific analytics</li>
-                        <li>• Cross-location reporting</li>
-                        <li>• Scalable architecture</li>
-                    </ul>
                 </div>
+            </div>
 
-                <!-- Roles & Permissions -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
+            <!-- Feature 3: Smart Attendance Tracking -->
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="order-2 lg:order-1">
+                    <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
+                        <div class="flex items-center gap-4 mb-7">
+                            <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl lg:text-3xl font-bold">Smart Attendance Tracking</h3>
+                        </div>
+                        <p class="text-gray-300 mb-9 leading-relaxed">
+                            Monitor member attendance patterns, track peak hours, and generate detailed reports for better business insights.
+                        </p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Real-time check-ins with automated notifications</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Attendance analytics with visual insights</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Peak hour tracking for optimal resource allocation</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Member engagement metrics and retention analysis</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Flexible Permissions</h3>
-                    <p class="text-gray-300 mb-4">
-                        Granular permission system ensuring the right people have access to the right
-                        features while maintaining security and privacy.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Granular access control</li>
-                        <li>• Custom role creation</li>
-                        <li>• Security compliance</li>
-                        <li>• Audit trails</li>
-                    </ul>
                 </div>
+                <div class="order-1 lg:order-2">
+                    <div class="relative group h-full">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-6 -right-6 w-32 h-32 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
+                        <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-500/40 rounded-full blur-3xl group-hover:bg-pink-500/60 transition-all duration-500"></div>
 
-                <!-- Analytics & Reporting -->
-                <div
-                    class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 group">
-                    <div
-                        class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
+                        <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
+                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                                 alt="Attendance Analytics"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Advanced Analytics</h3>
-                    <p class="text-gray-300 mb-4">
-                        Get deep insights into your gym's performance with comprehensive analytics
-                        and customizable reports for data-driven decisions.
-                    </p>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>• Revenue analytics</li>
-                        <li>• Member retention metrics</li>
-                        <li>• Performance dashboards</li>
-                        <li>• Custom reports</li>
-                    </ul>
+                </div>
+            </div>
+
+            <!-- Feature 4: Multi-Location Support & Analytics -->
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch animate-slide-up" style="animation-delay: 0.3s;">
+                <div class="order-1">
+                    <div class="relative group h-full">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-6 -left-6 w-32 h-32 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
+                        <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-blue-500/40 rounded-full blur-3xl group-hover:bg-blue-500/60 transition-all duration-500"></div>
+
+                        <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
+                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                                 alt="Analytics Dashboard"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-2">
+                    <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500 h-full flex flex-col justify-center">
+                        <div class="flex items-center gap-4 mb-7">
+                            <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/30">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl lg:text-3xl font-bold">Multi-Location & Analytics</h3>
+                        </div>
+                        <p class="text-gray-300 mb-9 leading-relaxed">
+                            Manage multiple gym locations from a single dashboard with comprehensive analytics and customizable reports for data-driven decisions.
+                        </p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Centralized dashboard for all locations</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Revenue analytics and member retention metrics</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Cross-location reporting and performance dashboards</span>
+                            </li>
+                            <li class="flex items-start group">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-gray-300 text-sm">Custom reports and scalable architecture for growth</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
