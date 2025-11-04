@@ -574,9 +574,15 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="py-24">
-        <div class="container mx-auto px-6">
-            <div class="text-center mb-16">
+    <section id="pricing" class="py-24 relative overflow-hidden">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-20 left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 right-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center mb-16 animate-fade-in">
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">
                     Simple,
                     <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
@@ -589,43 +595,48 @@
             <div class="grid md:grid-cols-3 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                 @foreach ($plans as $index => $plan)
                     <div
-                        class="feature-card rounded-2xl p-8 hover:transform hover:scale-105 transition-all duration-500 {{ !empty($plan->badge) ? 'relative border-purple-400' : '' }}">
+                        class="group bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border {{ !empty($plan->badge) ? 'border-purple-500/50' : 'border-gray-700/50' }} rounded-2xl p-8 hover:border-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-400 hover:shadow-2xl hover:shadow-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-500/20 hover:transform hover:scale-105 transition-all duration-500 relative">
                         @if (!empty($plan->badge))
-                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                                 <span
-                                    class="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-1 rounded-full text-sm font-semibold">
+                                    class="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-1 rounded-full text-sm font-semibold shadow-lg shadow-purple-500/50 group-hover:shadow-xl group-hover:shadow-purple-500/60 transition-all duration-300">
                                     {{ $plan->badge }}
                                 </span>
                             </div>
                         @endif
 
-                        <h3 class="text-2xl font-bold mb-4">{{ $plan->name }}</h3>
+                        <h3 class="text-2xl font-bold mb-4 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-cyan-400 group-hover:bg-clip-text transition-all duration-300">{{ $plan->name }}</h3>
 
                         @if ($plan->isFree())
                             <div class="mb-6">
-                                <span class="text-4xl font-bold">Free</span>
+                                <span class="text-4xl font-bold group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-cyan-400 group-hover:bg-clip-text transition-all duration-300">Free</span>
                             </div>
                         @else
                             <div class="mb-6">
-                                <span class="text-4xl font-bold">
+                                <span class="text-4xl font-bold group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-cyan-400 group-hover:bg-clip-text transition-all duration-300">
                                     {{ $plan->currency->getSymbol() }}{{ number_format($plan->price_yearly) }}
                                 </span>
-                                <span class="text-gray-400">/Year</span>
+                                <span class="text-gray-400 group-hover:text-gray-300 transition-colors">/Year</span>
                             </div>
                         @endif
 
                         @if ($plan->hasTrial())
-                            <div class="mb-4 text-sm text-green-400 font-semibold">
+                            <div class="mb-4 text-sm text-green-400 font-semibold group-hover:text-green-300 transition-colors">
                                 {{ $plan->trial_days }} days free trial
                             </div>
                         @endif
 
                         <div class="mb-8">
-                            <p class="text-gray-300 mb-4">{{ $plan->brief_description }}</p>
-                            <ul class="space-y-2 text-sm">
+                            <p class="text-gray-300 mb-4 group-hover:text-gray-200 transition-colors">{{ $plan->brief_description }}</p>
+                            <ul class="space-y-3 text-sm">
                                 @foreach ($plan->features as $feature)
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>{!! $feature->brief_description !!}
+                                    <li class="flex items-start group/item">
+                                        <span class="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover/item:bg-green-500/30 transition-colors">
+                                            <svg class="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </span>
+                                        <span class="text-gray-300 group-hover:text-gray-200 transition-colors">{!! $feature->brief_description !!}</span>
                                     </li>
                                 @endforeach
                                 {{-- @if ($plan->getMaxValue('max_gyms') == -1)
@@ -676,7 +687,7 @@
                         </div>
 
                         <button wire:click="selectPlan({{ $plan->id }})"
-                            class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600' : 'border border-purple-400 hover:bg-purple-400 hover:text-white' }} rounded-lg transition-all duration-300">
+                            class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50' : 'border-2 border-gray-600 hover:border-cyan-400 hover:bg-cyan-400/10 text-white' }} rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
                             {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
                         </button>
                     </div>
