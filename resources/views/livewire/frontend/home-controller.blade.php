@@ -216,6 +216,220 @@
         </div>
     </section>
 
+    <!-- Software Solutions Section -->
+    <section id="solutions" class="py-24 bg-gradient-to-b from-gray-900 to-black">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Why Choose Our
+                    <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                        Software Solution
+                    </span>
+                </h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Transform your gym business with our comprehensive management platform designed to streamline
+                    operations, increase revenue, and deliver exceptional member experiences
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Solution 1: Simplify Everything -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.1s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">Simplify
+                        Everything</h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Replace scattered spreadsheets and manual processes with one intuitive platform. Automate
+                        routine tasks and focus on what matters most - growing your business and serving your members.
+                    </p>
+                </div>
+
+                <!-- Solution 2: Boost Revenue -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.2s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-cyan-400 transition-colors">Boost Revenue</h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Maximize income with smart lead conversion tools, automated billing, membership upsells, and
+                        data-driven insights that help you identify and capitalize on growth opportunities.
+                    </p>
+                </div>
+
+                <!-- Solution 3: Empower Your Team -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.3s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">Empower Your Team
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Give your staff the tools they need to excel. From receptionists to trainers, everyone gets
+                        role-based access to features that make their jobs easier and more productive.
+                    </p>
+                </div>
+
+                <!-- Solution 4: Engage Your Members -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.4s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-cyan-400 transition-colors">Engage Your Members
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Build stronger relationships with personalized communication, member portals, attendance
+                        tracking, and engagement analytics that help you understand and serve your community better.
+                    </p>
+                </div>
+
+                <!-- Solution 5: Scalability for Growth -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.5s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">Scalability for
+                        Growth</h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Start with one location and expand confidently. Our multi-gym support and enterprise-grade
+                        infrastructure grow with you, whether you're managing 1 or 100 locations.
+                    </p>
+                </div>
+
+                <!-- Solution 6: Customer Support -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.6s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-cyan-600 to-teal-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-cyan-400 transition-colors">24/7 Customer
+                        Support</h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Never feel alone on your journey. Our dedicated support team is available around the clock to
+                        help you succeed, with comprehensive documentation and training resources.
+                    </p>
+                </div>
+
+                <!-- Solution 7: Real-Time Insights -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.7s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">Real-Time Insights
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Make informed decisions with live dashboards and comprehensive analytics. Track KPIs, monitor
+                        performance, and identify trends to stay ahead of the competition.
+                    </p>
+                </div>
+
+                <!-- Solution 8: Secure & Compliant -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.8s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-cyan-400 transition-colors">Secure & Compliant
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Protect your business and member data with enterprise-grade security, automatic backups, and
+                        compliance with industry standards. Peace of mind is built-in.
+                    </p>
+                </div>
+
+                <!-- Solution 9: Easy Integration -->
+                <div
+                    class="solution-card bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 group animate-slide-up"
+                    style="animation-delay: 0.9s;">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">Easy Integration
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        Seamlessly connect with your favorite tools and platforms. From payment gateways to marketing
+                        tools, our robust API ecosystem ensures smooth data flow across your business.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CTA Banner -->
+            <div class="mt-16 text-center animate-fade-in" style="animation-delay: 1s;">
+                <div
+                    class="max-w-4xl mx-auto bg-gradient-to-r from-purple-900/50 to-cyan-900/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-8 md:p-12">
+                    <h3 class="text-3xl font-bold mb-4">
+                        Ready to Transform Your Gym Business?
+                    </h3>
+                    <p class="text-gray-300 mb-8 text-lg">
+                        Join hundreds of successful gym owners who have streamlined their operations and accelerated
+                        their growth with our platform.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="#pricing"
+                            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
+                                Start Free Trial
+                        </a>
+                        <a href="#contact"
+                            class="px-8 py-4 bg-gray-800 border border-gray-700 rounded-full font-semibold hover:border-purple-500 transition-all duration-300 hover:scale-105">
+                            Schedule a Demo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Pricing Section -->
     <section id="pricing" class="py-24">
         <div class="container mx-auto px-6">
