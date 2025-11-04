@@ -12,8 +12,11 @@ class EditPlan extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\DeleteAction::make(),
-        ];
+        return [Actions\DeleteAction::make()];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return PlanResource::getUrl("index");
     }
 }

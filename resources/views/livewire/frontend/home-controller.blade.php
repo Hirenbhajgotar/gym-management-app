@@ -12,8 +12,7 @@
                         System
                     </h1>
                     <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                        Streamline your gym operations with our all-in-one SaaS solution. Manage multiple locations,
-                        capture leads from social media, and boost your fitness business growth.
+                        An all-in-one Gym Management Software solution designed specifically for gyms and fitness centres, offering comprehensive tools for efficient membership management, scheduling, billing, and performance tracking — all within a single integrated platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
                         <button wire:click="startFreeTrial"
@@ -32,7 +31,11 @@
                         </div>
                         <div class="flex items-center">
                             <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                            Multi-Gym Support
+                            Cancel Anytime
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                            Affordable Pricing
                         </div>
                     </div>
                 </div>

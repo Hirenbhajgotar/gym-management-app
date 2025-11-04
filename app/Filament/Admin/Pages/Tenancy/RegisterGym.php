@@ -15,20 +15,21 @@ use Illuminate\Support\Str;
 
 class RegisterGym extends RegisterTenant
 {
-    protected static string $view = 'filament.admin.pages.register-gym';
+    protected static string $view = "filament.admin.pages.register-gym";
 
-    public int $totalGyms = 10; // Maximum gyms allowed per owner
+    public int $totalGyms = 1; // Maximum gyms allowed per owner
 
     public $authUserGyms = 0;
 
     public function __construct()
     {
         $this->authUserGyms = auth()->user()?->gyms()->count();
+        $this->totalGyms = auth()->user()?->getMaxGyms();
     }
 
     public static function getLabel(): string
     {
-        return 'Register Gym';
+        return "Register Gym";
     }
 
     public static function canView(): bool
@@ -42,34 +43,48 @@ class RegisterGym extends RegisterTenant
             ->schema([
                 Section::make()
                     ->schema([
-                        TextInput::make('name')
+                        TextInput::make("name")
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('e.g., Fitness Hub')
+                            ->placeholder("e.g., Fitness Hub")
                             ->autofocus()
                             ->reactive()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(function (callable $set, $state, $context) {
+                            ->afterStateUpdated(function (
+                                callable $set,
+                                $state,
+                                $context,
+                            ) {
                                 if ($state) {
-                                    $set('slug', Gym::generateUniqueSlug($state));
+                                    $set(
+                                        "slug",
+                                        Gym::generateUniqueSlug($state),
+                                    );
                                 }
                             })
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+                            ->extraInputAttributes([
+                                "class" =>
+                                    "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
+                            ]),
 
-                        TextInput::make('slug')
+                        TextInput::make("slug")
                             ->required()
-                            ->unique(Gym::class, 'slug', ignoreRecord: true)
-                            ->helperText('This will be used in the URL (e.g., /admin/your-slug)')
+                            ->unique(Gym::class, "slug", ignoreRecord: true)
+                            ->helperText(
+                                "This will be used in the URL (e.g., /admin/your-slug)",
+                            )
                             ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                $set('slug', Str::slug($state));
+                            ->afterStateUpdated(function (
+                                $state,
+                                callable $set,
+                            ) {
+                                $set("slug", Str::slug($state));
                             }),
 
-                        AddressForm::make('address')
-                            ->columnSpan('full'),
+                        AddressForm::make("address")->columnSpan("full"),
                     ])
                     ->columns(2) // This creates a 2-column layout within the section
-                    ->columnSpan('full'), // This makes the section span full width
+                    ->columnSpan("full"), // This makes the section span full width
             ])
             ->columns(1); // This sets the main form to single column (full width)
     }
@@ -87,7 +102,9 @@ class RegisterGym extends RegisterTenant
         $remaining = $this->totalGyms - $currentCount;
 
         if ($remaining <= 0) {
-            return '⚠️ You have reached the maximum limit of ' . $this->totalGyms . ' gyms. Contact support to register more gyms.';
+            return "⚠️ You have reached the maximum limit of " .
+                $this->totalGyms .
+                " gyms. Contact support to register more gyms.";
         }
 
         return "📍 You can register {$remaining} more gym(s). Current: {$currentCount}/{$this->totalGyms}";
@@ -107,8 +124,8 @@ class RegisterGym extends RegisterTenant
         // Double-check the limit before processing
         if ($this->hasReachedGymLimit()) {
             Notification::make()
-                ->title('Registration Failed')
-                ->body('You have reached the maximum limit of 3 gyms.')
+                ->title("Registration Failed")
+                ->body("You have reached the maximum limit of 3 gyms.")
                 ->danger()
                 ->send();
 
@@ -122,7 +139,9 @@ class RegisterGym extends RegisterTenant
     {
         // Final check before creating the gym
         if ($this->hasReachedGymLimit()) {
-            throw new \Exception('Gym limit exceeded. Cannot register more than 3 gyms.');
+            throw new \Exception(
+                "Gym limit exceeded. Cannot register more than 3 gyms.",
+            );
         }
 
         $user = auth()->user();
@@ -130,13 +149,19 @@ class RegisterGym extends RegisterTenant
         $gym = Gym::create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
-        $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
+        $gym->users()->attach($user, ["role" => DefaultRole::GYM_OWNER->value]);
 
         // Create default roles and permissions for the gym
-        app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+        app(
+            RolesAndPermissionsService::class,
+        )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
         // Assign the gym to the user
-        app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
+        app(RolesAndPermissionsService::class)->assignRoleToTenant(
+            $gym,
+            $user,
+            DefaultRole::GYM_OWNER,
+        );
 
         return $gym;
     }
