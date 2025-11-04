@@ -551,9 +551,12 @@
             <div class="mt-16 text-center animate-fade-in" style="animation-delay: 1s;">
                 <div
                     class="max-w-4xl mx-auto bg-gradient-to-r from-purple-900/50 to-cyan-900/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-8 md:p-12">
-                    <h3 class="text-3xl font-bold mb-4">
-                        Ready to Transform Your Gym Business?
-                    </h3>
+                    <h2 class="text-3xl font-bold mb-4">
+                        Ready to Transform Your
+                        <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                            Gym Business?
+                        </span>
+                    </h2>
                     <p class="text-gray-300 mb-8 text-lg">
                         Join hundreds of successful gym owners who have streamlined their operations and accelerated
                         their growth with our platform.
@@ -696,28 +699,142 @@
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-24">
-        <div class="container mx-auto px-6 text-center">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Ready to Transform Your
-                    <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                        Gym Business?
-                    </span>
-                </h2>
-                <p class="text-xl text-gray-300 mb-8">
-                    Join thousands of gym owners who have streamlined their operations and boosted growth with {{config('app.name')}}
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button wire:click="startFreeTrial"
-                        class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
-                        Start Your 14-Day Free Trial
-                    </button>
-                    <button
-                        class="px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold">
-                        Schedule a Demo
-                    </button>
+    <!-- Contact Section -->
+    <section id="contact" class="py-24 relative overflow-hidden">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-20 left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 right-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.05) 1px, transparent 0); background-size: 40px 40px;"></div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
+                <!-- Left Side: Why Choose Us -->
+                <div class="animate-slide-up">
+                    <h2 class="text-3xl lg:text-5xl font-bold mb-6">
+                        Why Choose
+                        <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                            {{ config('app.name') }}?
+                        </span>
+                    </h2>
+                    <p class="text-lg text-gray-300 mb-8 leading-relaxed">
+                        Choose the leading gym management software to <span class="text-purple-400 font-semibold">MANAGE</span>,
+                        <span class="text-cyan-400 font-semibold">STREAMLINE</span> &
+                        <span class="text-purple-400 font-semibold">SUCCEED</span>.
+                    </p>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-start group">
+                            <div class="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center mr-4 mt-1 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold mb-1 group-hover:text-purple-400 transition-colors">Quick Data Migration & Easy to Use</h3>
+                                <p class="text-gray-400 text-sm">Seamlessly transition from your current system with our expert migration support</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start group">
+                            <div class="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center mr-4 mt-1 flex-shrink-0 group-hover:bg-cyan-500/30 transition-colors">
+                                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold mb-1 group-hover:text-cyan-400 transition-colors">Data Security with Zero Downtime</h3>
+                                <p class="text-gray-400 text-sm">Enterprise-grade security with 99.9% uptime guarantee for your peace of mind</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start group">
+                            <div class="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center mr-4 mt-1 flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold mb-1 group-hover:text-purple-400 transition-colors">Reliable 24/7 Customer Support</h3>
+                                <p class="text-gray-400 text-sm">Our dedicated team is always here to help you succeed with training and ongoing assistance</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-300 text-sm italic">
+                        "Take the first step towards maximizing your operations!"
+                    </p>
+                </div>
+
+                <!-- Right Side: Demo & Contact -->
+                <div class="animate-slide-up" style="animation-delay: 0.2s;">
+                    <div class="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 lg:p-10 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500">
+                        <h3 class="text-2xl lg:text-3xl font-bold mb-4 text-center">
+                            Book Your <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Personalized Demo</span> Today!
+                        </h3>
+                        <p class="text-gray-300 text-center mb-8">
+                            Curious about how our software can transform your studio?
+                        </p>
+
+                        <!-- Action Buttons -->
+                        <div class="mb-8 grid lg:grid-cols-2 gap-5 items-center mx-auto">
+                            <button wire:click="startFreeTrial"
+                                class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
+                                Try Us Out for Free!
+                            </button>
+                            <button wire:click="requestDemo"
+                                class="w-full px-8 py-4 border-2 border-cyan-400 hover:bg-cyan-400/10 rounded-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
+                                Request Your Demo
+                            </button>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="border-t border-gray-700 pt-6 space-y-4">
+                            <div class="flex items-center group">
+                                <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mr-3 group-hover:bg-purple-500/30 transition-colors">
+                                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-xs text-gray-400">Call us</p>
+                                    <a href="tel:{{config('app.contact_phone')}}" class="text-lg font-semibold text-white hover:text-purple-400 transition-colors">
+                                        {{config('app.contact_phone')}}
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center group">
+                                <div class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 group-hover:bg-cyan-500/30 transition-colors">
+                                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-xs text-gray-400">Email us</p>
+                                    <a href="mailto:{{config('app.contact_email')}}" class="text-lg font-semibold text-white hover:text-cyan-400 transition-colors">
+                                        {{config('app.contact_email')}}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Info -->
+                        <div class="mt-6 text-center">
+                            <p class="text-sm text-gray-400">
+                                <svg class="w-4 h-4 inline mr-1 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                                No Credit Card Required
+                                <span class="mx-2">•</span>
+                                <svg class="w-4 h-4 inline mr-1 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Cancel Anytime
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

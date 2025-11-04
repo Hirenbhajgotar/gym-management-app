@@ -120,7 +120,10 @@ return [
         "store" => env("APP_MAINTENANCE_STORE", "database"),
     ],
 
+    "editor" => "vscode",
+
     "default_country_code" => "+91",
 
-    "editor" => "vscode",
+    "contact_email" => env("CONTACT_EMAIL", "contact@fitnessflow.com"),
+    "contact_phone" => env("CONTACT_PHONE", "+919265098227"),
 ];
