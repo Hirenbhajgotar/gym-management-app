@@ -336,7 +336,7 @@
                     </span>
                 </h2>
                 <p class="text-xl text-gray-300 mb-8">
-                    Join thousands of gym owners who have streamlined their operations and boosted growth with GymFlow
+                    Join thousands of gym owners who have streamlined their operations and boosted growth with {{config('app.name')}}
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <button wire:click="startFreeTrial"

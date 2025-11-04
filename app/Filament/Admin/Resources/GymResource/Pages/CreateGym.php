@@ -19,6 +19,7 @@ class CreateGym extends CreateRecord
     protected function beforeCreate(): void
     {
         $user = auth()->user();
+
         $maxGyms = $user?->getMaxGyms() ?? 0;
 
         // dd($user->gyms()->count());

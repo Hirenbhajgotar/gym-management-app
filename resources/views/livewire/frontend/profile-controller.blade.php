@@ -241,7 +241,7 @@
                                         <h4 class="text-xl font-semibold text-red-400">Subscription Expired</h4>
                                     </div>
                                     <p class="text-gray-300 mb-4">Your subscription has expired. Renew now to continue
-                                        using GymFlow.</p>
+                                        using {{config('app.name')}}.</p>
                                     <button wire:click="renewPlan" wire:loading.attr="disabled"
                                         class="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span wire:loading wire:target="renewPlan" class="hidden">

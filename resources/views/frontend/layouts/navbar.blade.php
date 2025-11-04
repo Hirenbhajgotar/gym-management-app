@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center">
             <div class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                 <a href="{{ route('home') }}">
-                    GymFlow
+                    {{config('app.name')}}
                 </a>
             </div>
             <div class="hidden md:flex space-x-8">

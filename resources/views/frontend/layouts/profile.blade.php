@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow - Profile</title>
+    <title>{{config('app.name')}} - Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -105,7 +105,7 @@
     <footer class="border-t border-white/10 py-8 mt-16">
         <div class="container mx-auto px-6">
             <div class="text-center">
-                <p class="text-gray-400">&copy; 2025 GymFlow. All rights reserved. Built with ❤️ for fitness
+                <p class="text-gray-400">&copy; 2025 {{config('app.name')}}. All rights reserved. Built with ❤️ for fitness
                     entrepreneurs.</p>
             </div>
         </div>
