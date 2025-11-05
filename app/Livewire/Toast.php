@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Toast extends Component
@@ -16,6 +17,7 @@ class Toast extends Component
 
     public function mount()
     {
+        // Check for session flash messages on mount
         $this->error = session('error');
         $this->success = session('success');
 
@@ -26,6 +28,32 @@ class Toast extends Component
         if ($this->success) {
             $this->showSuccess = true;
         }
+    }
+
+    #[On('show-toast')]
+    public function showToast($type, $message)
+    {
+        if ($type === 'success') {
+            $this->success = $message;
+            $this->showSuccess = true;
+        } elseif ($type === 'error') {
+            $this->error = $message;
+            $this->showError = true;
+        }
+    }
+
+    #[On('show-success')]
+    public function showSuccess($message)
+    {
+        $this->success = $message;
+        $this->showSuccess = true;
+    }
+
+    #[On('show-error')]
+    public function showError($message)
+    {
+        $this->error = $message;
+        $this->showError = true;
     }
 
     public function render()

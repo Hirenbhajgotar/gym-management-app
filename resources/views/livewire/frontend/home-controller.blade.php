@@ -562,11 +562,11 @@
                         their growth with our platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="#pricing"
+                        <button wire:click="startFreeTrial"
                             class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
                                 Start Free Trial
-                        </a>
-                        <a href="#contact"
+                        </button>
+                        <a href="{{route('request-demo')}}"
                             class="px-8 py-4 bg-gray-800 border border-gray-700 rounded-full font-semibold hover:border-purple-500 transition-all duration-300 hover:scale-105">
                             Schedule a Demo
                         </a>
@@ -783,10 +783,10 @@
                                 class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                                 Try Us Out for Free!
                             </button>
-                            <button wire:click="requestDemo"
+                            <a href="{{ route('request-demo')}}"
                                 class="w-full px-8 py-4 border-2 border-cyan-400 hover:bg-cyan-400/10 rounded-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                                 Request Your Demo
-                            </button>
+                            </a>
                         </div>
 
                         <!-- Contact Information -->
