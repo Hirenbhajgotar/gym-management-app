@@ -7,10 +7,10 @@
                 </a>
             </div>
             <div class="hidden md:flex space-x-8">
-                <a href="#home" class="hover:text-purple-400 transition-colors duration-300">Home</a>
-                <a href="#features" class="hover:text-purple-400 transition-colors duration-300">Features</a>
-                <a href="#pricing" class="hover:text-purple-400 transition-colors duration-300">Pricing</a>
-                <a href="#contact" class="hover:text-purple-400 transition-colors duration-300">Contact</a>
+                <a href="{{ route('home') }}" class="hover:text-purple-400 transition-colors duration-300">Home</a>
+                <a href="{{ route('home') }}#features" class="hover:text-purple-400 transition-colors duration-300">Features</a>
+                <a href="{{ route('home') }}#pricing" class="hover:text-purple-400 transition-colors duration-300">Pricing</a>
+                <a href="{{ route('home') }}#contact" class="hover:text-purple-400 transition-colors duration-300">Contact</a>
             </div>
             <div class="flex space-x-4">
                 @auth

@@ -15,9 +15,10 @@
                         An all-in-one Gym Management Software solution designed specifically for gyms and fitness centres, offering comprehensive tools for efficient membership management, scheduling, billing, and performance tracking — all within a single integrated platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <button wire:click="startFreeTrial"
+                        <button wire:click="startFreeTrial" wire:loading.attr="disabled"
                             class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
-                            Start 14-Day Free Trial
+                            <span wire:loading.remove wire:target="startFreeTrial">Start 14-Day Free Trial</span>
+                            <span wire:loading wire:target="startFreeTrial">Starting...</span>
                         </button>
                         <button
                             class="px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold">
@@ -562,9 +563,10 @@
                         their growth with our platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button wire:click="startFreeTrial"
+                        <button wire:click="startFreeTrial" wire:loading.attr="disabled"
                             class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
-                                Start Free Trial
+                                <span wire:loading.remove wire:target="startFreeTrial">Start Free Trial</span>
+                                <span wire:loading wire:target="startFreeTrial">Starting...</span>
                         </button>
                         <a href="{{route('request-demo')}}"
                             class="px-8 py-4 bg-gray-800 border border-gray-700 rounded-full font-semibold hover:border-purple-500 transition-all duration-300 hover:scale-105">
@@ -779,9 +781,10 @@
 
                         <!-- Action Buttons -->
                         <div class="mb-8 grid lg:grid-cols-2 gap-5 items-center mx-auto">
-                            <button wire:click="startFreeTrial"
+                            <button wire:click="startFreeTrial" wire:loading.attr="disabled"
                                 class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
-                                Try Us Out for Free!
+                                <span wire:loading.remove wire:target="startFreeTrial">Try Us Out for Free!</span>
+                                <span wire:loading wire:target="startFreeTrial">Starting...</span>
                             </button>
                             <a href="{{ route('request-demo')}}"
                                 class="w-full px-8 py-4 border-2 border-cyan-400 hover:bg-cyan-400/10 rounded-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
