@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
 
 class RequestContact extends Model
 {
@@ -31,6 +32,7 @@ class RequestContact extends Model
             "contacted_at" => "datetime",
             "created_at" => "datetime",
             "updated_at" => "datetime",
+            "phone" => RawPhoneNumberCast::class,
         ];
     }
 
