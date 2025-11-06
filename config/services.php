@@ -82,10 +82,15 @@ return [
         "sandbox_number" => env("TWILIO_SANDBOX_NUMBER", "+14155238886"),
         "whatsapp_integration_active_template_sid" => env(
             "TWILIO_WHATSAPP_INTEGRATION_ACTIVE_TEMPLATE_SID",
+            "HX5f991f2aceffa348f1d3b37df86c5c09",
         ),
-        "demo_request_template_sid" => env("TWILIO_DEMO_REQUEST_TEMPLATE_SID"),
+        "demo_request_template_sid" => env(
+            "TWILIO_DEMO_REQUEST_TEMPLATE_SID",
+            "HX04cf5684f5255f182f047ef173ef8e05",
+        ),
         "birthday_greeting_template_sid" => env(
             "TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID",
+            "HXcda1c2b35387313592234ddd828ec017",
         ),
     ],
 
