@@ -23,14 +23,23 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         $this->useSandbox = config("services.twilio.use_sandbox", true);
     }
 
+    /**
+     * Check if this is a system tenant (super-admin, no tenant association)
+     */
+    private function isSystemTenant(): bool
+    {
+        return $this->tenantId === config("app.system_tenant_id", "system") ||
+            $this->tenantId === "system";
+    }
+
     private function getClient(): Client
     {
         if ($this->client) {
             return $this->client;
         }
 
-        // For testing, use master account credentials
-        if ($this->useSandbox) {
+        // For system tenant or testing, use master account credentials
+        if ($this->useSandbox || $this->isSystemTenant()) {
             return new Client(
                 config("services.twilio.master_sid"),
                 config("services.twilio.master_token"),
@@ -58,6 +67,11 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         ?array $templateData = null,
     ): array {
         try {
+            // For system tenant (super-admin), bypass tenant-specific checks
+            if ($this->isSystemTenant()) {
+                return $this->sendSystemMessage($to, $message, $templateData);
+            }
+
             $settings = NotificationSetting::where(
                 "gym_id",
                 $this->tenantId,
@@ -150,6 +164,63 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
+     * Send message for system tenant (super-admin) without tenant checks
+     * This is used for users who don't belong to any tenant (e.g., super-admin)
+     */
+    private function sendSystemMessage(
+        string $to,
+        string $message,
+        ?array $templateData = null,
+    ): array {
+        try {
+            $client = $this->getClient();
+
+            // System messages always use sandbox number or master account
+            $fromNumber = config("services.twilio.sandbox_number");
+
+            $messageParams = [
+                "from" => "whatsapp:" . $fromNumber,
+            ];
+
+            if ($templateData && isset($templateData["template_sid"])) {
+                $messageParams["contentSid"] = $templateData["template_sid"];
+                $messageParams["contentVariables"] = json_encode(
+                    $templateData["template_variables"] ?? [],
+                );
+            } else {
+                $messageParams["body"] = $message;
+            }
+
+            $twilioMessage = $client->messages->create(
+                "whatsapp:$to",
+                $messageParams,
+            );
+
+            return [
+                "success" => true,
+                "message_id" => $twilioMessage->sid,
+                "status" => $twilioMessage->status,
+                "from" => $fromNumber,
+                "system_message" => true,
+                "data" => $twilioMessage->toArray(),
+            ];
+        } catch (RestException $e) {
+            return [
+                "success" => false,
+                "error" => $e->getMessage(),
+                "code" => $e->getCode(),
+                "data" => null,
+            ];
+        } catch (\Exception $e) {
+            return [
+                "success" => false,
+                "error" => $e->getMessage(),
+                "data" => null,
+            ];
+        }
+    }
+
+    /**
      * Send a WhatsApp message using an approved template
      */
     public function sendTemplateMessage(
@@ -158,6 +229,13 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         array $variables = [],
     ): array {
         try {
+            // System tenant cannot use templates (requires verified business account)
+            if ($this->isSystemTenant()) {
+                throw new \Exception(
+                    "Template messages are not available for system tenant. Use regular messages instead.",
+                );
+            }
+
             $settings = NotificationSetting::where(
                 "gym_id",
                 $this->tenantId,
@@ -254,6 +332,22 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
     public function getAccountBalance(): array
     {
         try {
+            // System tenant uses master account
+            if ($this->isSystemTenant()) {
+                $client = $this->getClient();
+                $accountSid = config("services.twilio.master_sid");
+
+                $account = $client->accounts($accountSid)->fetch();
+
+                return [
+                    "success" => true,
+                    "balance" =>
+                        $account->balance ?? "Trial Account - No Balance Info",
+                    "status" => $account->status,
+                    "system_account" => true,
+                ];
+            }
+
             $settings = NotificationSetting::where(
                 "gym_id",
                 $this->tenantId,

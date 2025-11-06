@@ -31,27 +31,27 @@ class WhatsAppChannel
         $twilioService = new TwilioWhatsAppService($gymId);
 
         // Check if this is a template message or plain text
-        $isTemplate = isset($message['template_sid']);
+        $isTemplate = isset($message["template_sid"]);
 
         if ($isTemplate) {
             // Send template message
             $result = $twilioService->sendTemplateMessage(
-                $message['to'],
-                $message['template_sid'],
-                $message['template_variables'] ?? []
+                $message["to"],
+                $message["template_sid"],
+                $message["template_variables"] ?? [],
             );
         } else {
             // Send plain text message (sandbox mode)
             $result = $twilioService->sendMessage(
-                $message['to'],
-                $message['body']
+                $message["to"],
+                $message["body"],
             );
         }
 
-        if (! $result['success']) {
-            Log::error('WhatsApp notification failed', [
-                'error' => $result['error'] ?? 'Unknown error',
-                'notifiable_id' => $notifiable->id,
+        if (!$result["success"]) {
+            Log::error("WhatsApp notification failed", [
+                "error" => $result["error"] ?? "Unknown error",
+                "notifiable_id" => $notifiable->id,
             ]);
 
             // Optionally throw exception to retry via queue

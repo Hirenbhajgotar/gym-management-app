@@ -126,4 +126,5 @@ return [
 
     "contact_email" => env("CONTACT_EMAIL", "contact@fitnessflow.com"),
     "contact_phone" => env("CONTACT_PHONE", "+919265098227"),
+    "system_tenant_id" => env("SYSTEM_TENANT_ID", "system"),
 ];
