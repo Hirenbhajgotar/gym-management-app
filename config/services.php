@@ -83,6 +83,7 @@ return [
         "whatsapp_integration_active_template_sid" => env(
             "TWILIO_WHATSAPP_INTEGRATION_ACTIVE_TEMPLATE_SID",
         ),
+        "demo_request_template_sid" => env("TWILIO_DEMO_REQUEST_TEMPLATE_SID"),
         "birthday_greeting_template_sid" => env(
             "TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID",
         ),

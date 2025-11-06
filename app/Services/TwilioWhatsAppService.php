@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\GymWhatsAppBalance;
 use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
@@ -166,6 +167,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
     /**
      * Send message for system tenant (super-admin) without tenant checks
      * This is used for users who don't belong to any tenant (e.g., super-admin)
+     *
+     * In sandbox mode: Uses free-form message body
+     * In production mode: Uses approved WhatsApp template
      */
     private function sendSystemMessage(
         string $to,
@@ -175,20 +179,68 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             $client = $this->getClient();
 
-            // System messages always use sandbox number or master account
-            $fromNumber = config("services.twilio.sandbox_number");
+            // Get from number based on sandbox or production
+            $fromNumber = $this->useSandbox
+                ? config("services.twilio.sandbox_number")
+                : config("services.twilio.sandbox_number"); // System tenant typically uses sandbox
 
             $messageParams = [
                 "from" => "whatsapp:" . $fromNumber,
             ];
 
-            if ($templateData && isset($templateData["template_sid"])) {
-                $messageParams["contentSid"] = $templateData["template_sid"];
-                $messageParams["contentVariables"] = json_encode(
-                    $templateData["template_variables"] ?? [],
-                );
+            // In sandbox mode, we can send free-form messages
+            // In production mode, we MUST use approved templates
+            if ($this->useSandbox) {
+                // Sandbox: Use free-form message body
+                if ($templateData && isset($templateData["template_sid"])) {
+                    $messageParams["contentSid"] =
+                        $templateData["template_sid"];
+                    $messageParams["contentVariables"] = json_encode(
+                        $templateData["template_variables"] ?? [],
+                    );
+                } else {
+                    $messageParams["body"] = $message;
+                }
             } else {
-                $messageParams["body"] = $message;
+                // Production: Use approved template (required for business-initiated messages)
+                // Check if template data provided or get from config
+                if ($templateData && isset($templateData["template_sid"])) {
+                    $messageParams["contentSid"] =
+                        $templateData["template_sid"];
+                    $messageParams["contentVariables"] = json_encode(
+                        $templateData["template_variables"] ?? [],
+                    );
+                } else {
+                    // Try to get demo request template from config
+                    $templateSid = config(
+                        "services.twilio.demo_request_template_sid",
+                    );
+
+                    if (!$templateSid) {
+                        // No template available - return helpful error
+                        return [
+                            "success" => false,
+                            "error" =>
+                                "No approved WhatsApp template found for demo requests. Please:\n" .
+                                "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
+                                "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
+                                "3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.",
+                            "requires_template" => true,
+                            "mode" => "production",
+                        ];
+                    }
+
+                    // Use template with variables
+                    $messageParams["contentSid"] = $templateSid;
+                    $messageParams["contentVariables"] = json_encode([
+                        "1" => $message, // Pass the entire formatted message as variable
+                    ]);
+
+                    Log::info("Using WhatsApp template for system message", [
+                        "template_sid" => $templateSid,
+                        "to" => $to,
+                    ]);
+                }
             }
 
             $twilioMessage = $client->messages->create(
@@ -196,25 +248,59 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 $messageParams,
             );
 
+            Log::info("System WhatsApp message sent successfully", [
+                "message_id" => $twilioMessage->sid,
+                "to" => $to,
+                "status" => $twilioMessage->status,
+                "mode" => $this->useSandbox ? "sandbox" : "production",
+                "uses_template" => !$this->useSandbox,
+            ]);
+
             return [
                 "success" => true,
                 "message_id" => $twilioMessage->sid,
                 "status" => $twilioMessage->status,
                 "from" => $fromNumber,
                 "system_message" => true,
+                "mode" => $this->useSandbox ? "sandbox" : "production",
                 "data" => $twilioMessage->toArray(),
             ];
         } catch (RestException $e) {
-            return [
-                "success" => false,
+            Log::error("System WhatsApp message error", [
+                "to" => $to,
                 "error" => $e->getMessage(),
                 "code" => $e->getCode(),
+                "mode" => $this->useSandbox ? "sandbox" : "production",
+            ]);
+
+            // Provide helpful error message for common production mode issues
+            $errorMessage = $e->getMessage();
+            if (
+                !$this->useSandbox &&
+                strpos($errorMessage, "template") !== false
+            ) {
+                $errorMessage .=
+                    " - Business-initiated messages require approved templates. Please create a 'demo_request' template or use sandbox mode.";
+            }
+
+            return [
+                "success" => false,
+                "error" => $errorMessage,
+                "code" => $e->getCode(),
+                "mode" => $this->useSandbox ? "sandbox" : "production",
                 "data" => null,
             ];
         } catch (\Exception $e) {
+            Log::error("Unexpected system WhatsApp message error", [
+                "to" => $to,
+                "error" => $e->getMessage(),
+                "mode" => $this->useSandbox ? "sandbox" : "production",
+            ]);
+
             return [
                 "success" => false,
                 "error" => $e->getMessage(),
+                "mode" => $this->useSandbox ? "sandbox" : "production",
                 "data" => null,
             ];
         }

@@ -277,6 +277,28 @@ Enjoy your special day! 🎈
 
 ---
 
+### 5. Demo Request Template (For System Notifications)
+
+```
+🔔 *New Demo Request*
+
+{{1}}
+
+⏰ Please respond to this request as soon as possible.
+```
+
+**Variables:**
+- {{1}} = Complete formatted demo request details
+
+**Note:** This template is used for system-level notifications when demo requests are submitted through the website.
+
+**Configuration:**
+```env
+TWILIO_DEMO_REQUEST_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
 ## Configuration Reference
 
 ### Environment Variables
@@ -294,6 +316,7 @@ TWILIO_SANDBOX_NUMBER=+14155238886
 
 # Template SIDs (Production Mode)
 TWILIO_WELCOME_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
+TWILIO_DEMO_REQUEST_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
 TWILIO_BOOKING_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
 TWILIO_PAYMENT_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
 TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
@@ -310,6 +333,7 @@ TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID=HXxxxxxxxxxxxxxxxxxxxxx
     
     // Template SIDs
     'welcome_template_sid' => env('TWILIO_WELCOME_TEMPLATE_SID'),
+    'demo_request_template_sid' => env('TWILIO_DEMO_REQUEST_TEMPLATE_SID'),
     'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID'),
     'booking_confirmation_template_sid' => env('TWILIO_BOOKING_TEMPLATE_SID'),
     'payment_reminder_template_sid' => env('TWILIO_PAYMENT_TEMPLATE_SID'),
@@ -518,7 +542,8 @@ php artisan cache:clear
 ### Related Files
 - `app/Services/TwilioAccountManager.php` - Test message implementation
 - `app/Services/WhatsAppTemplateManager.php` - Template management
-- `app/Services/TwilioWhatsAppService.php` - Message sending service
+- `app/Services/TwilioWhatsAppService.php` - Message sending service (includes system tenant support)
+- `app/Livewire/Frontend/RequestDemo.php` - Demo request notifications (uses system tenant)
 
 ---
 

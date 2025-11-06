@@ -37,7 +37,7 @@ class RequestDemo extends Component
         return [
             "name" => ["required", "string", "min:2", "max:255"],
             "email" => ["required", "email", "max:255"],
-            "phone" => ["required", "numeric", "min:10", "max:20"],
+            "phone" => ["required", "phone:US,IN,PK"],
             "company_name" => ["nullable", "string", "max:255"],
             "gym_size" => ["nullable", "integer", "min:1", "max:100000"],
             "message" => ["nullable", "string", "max:1000"],
