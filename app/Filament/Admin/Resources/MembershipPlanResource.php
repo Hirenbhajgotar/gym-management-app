@@ -6,6 +6,7 @@ use App\Enums\Currency;
 use App\Enums\DurationMonth;
 use App\Filament\Admin\Resources\MembershipPlanResource\Pages;
 use App\Models\MembershipPlan;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,17 +17,17 @@ class MembershipPlanResource extends Resource
 {
     protected static ?string $model = MembershipPlan::class;
 
-    protected static ?string $navigationLabel = 'Membership Plans';
+    protected static ?string $navigationLabel = "Membership Plans";
 
-    protected static ?string $navigationGroup = 'Gym Management';
+    protected static ?string $navigationGroup = "Gym Management";
 
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
-        if (filament()->getId() === 'admin') {
-            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } elseif (filament()->getId() === 'staff') {
-            return $user->hasRole('receptionist');
+        if (filament()->getId() === "admin") {
+            return $user->hasRole("super_admin") || $user->hasRole("gym_owner");
+        } elseif (filament()->getId() === "staff") {
+            return $user->hasRole("receptionist");
         }
 
         return false;
@@ -36,71 +37,10 @@ class MembershipPlanResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Plan Details')
-                    ->icon('heroicon-o-ticket')
-                    ->description('Create a membership plan for your gym')
-                    ->schema([
-                        Forms\Components\Select::make('gym_id')
-                            ->relationship('gym', 'name', function ($query) {
-                                if (filament()->getId() === 'admin') {
-                                    if (auth()->user()->hasRole('gym_owner')) {
-                                        return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                                    }
-                                } elseif (filament()->getId() === 'staff') {
-                                    // Staff can see all gyms
-                                    return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                                }
-
-                                return $query;
-                            })
-                            ->required()
-                            ->placeholder('Select a gym'),
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('e.g., Gold Membership')
-                            ->autofocus()
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                        Forms\Components\TextInput::make('price')
-                            ->numeric()
-                            ->required()
-                            ->prefix(function ($get) {
-                                $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
-
-                                return $currency?->getSymbol() ?? Currency::INR->getSymbol();
-                            })
-                            ->minValue(0)
-                            ->step(0.01)
-                            ->placeholder('0.00')
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-                        Forms\Components\Select::make('currency')
-                            ->options(collect(Currency::cases())->mapWithKeys(
-                                fn (Currency $currency) => [$currency->value => $currency->getLabel()]
-                            ))
-                            ->required()
-                            ->reactive()
-                            ->default(Currency::INR->value),
-                        Forms\Components\Select::make('duration')
-                            ->label('Duration (Months)')
-                            ->options(collect(DurationMonth::cases())->mapWithKeys(
-                                fn (DurationMonth $duration) => [$duration->value => $duration->getLabel()]
-                            ))
-                            ->required()
-                            ->default(DurationMonth::THREE_MONTHS->value),
-                        Forms\Components\Textarea::make('description')
-                            ->maxLength(65535)
-                            ->placeholder('e.g., Includes unlimited classes and personal training')
-                            ->rows(4)
-                            ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'])
-                            ->columnSpanFull(),
-
-                        Forms\Components\Toggle::make('is_active')
-                            ->default(true)
-                            ->label('Active')
-                            ->onColor('success')
-                            ->offColor('danger'),
-                    ])
+                Forms\Components\Section::make("Plan Details")
+                    ->icon("heroicon-o-ticket")
+                    ->description("Create a membership plan for your gym")
+                    ->schema(self::planFormSchema())
                     ->collapsible()
                     ->columns(2),
             ])
@@ -111,56 +51,69 @@ class MembershipPlanResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make("name")
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => "<div class='flex items-center gap-2'>
+                    ->formatStateUsing(
+                        fn($state) => "<div class='flex items-center gap-2'>
                         <span class='inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-800 rounded-full'>
-                            " . strtoupper(substr($state, 0, 1)) . "
+                            " .
+                            strtoupper(substr($state, 0, 1)) .
+                            "
                         </span>
                         <span class='font-semibold'>$state</span>
-                    </div>")
+                    </div>",
+                    )
                     ->html(),
-                Tables\Columns\TextColumn::make('gym.name')
-                    ->label('Gym')
+                Tables\Columns\TextColumn::make("gym.name")
+                    ->label("Gym")
                     ->badge()
-                    ->color('primary'),
-                Tables\Columns\TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency)
+                    ->color("primary"),
+                Tables\Columns\TextColumn::make("price")
+                    ->money(fn($record) => $record->currency)
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_active')
+                Tables\Columns\IconColumn::make("is_active")
                     ->boolean()
-                    ->label('Active')
+                    ->label("Active")
                     ->alignCenter(),
-                Tables\Columns\TextColumn::make('members_count')
-                    ->counts('members')
-                    ->label('Members')
+                Tables\Columns\TextColumn::make("members_count")
+                    ->counts("members")
+                    ->label("Members")
                     ->badge()
-                    ->color('success')
+                    ->color("success")
                     ->alignCenter(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name', function ($query) {
-                        if (filament()->getId() === 'admin') {
-                            if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
+                Tables\Filters\SelectFilter::make("gym_id")->relationship(
+                    "gym",
+                    "name",
+                    function ($query) {
+                        if (filament()->getId() === "admin") {
+                            if (auth()->user()->hasRole("gym_owner")) {
+                                return $query->whereIn(
+                                    "id",
+                                    auth()->user()?->gyms()->get()->pluck("id"),
+                                );
                             }
-                            if (auth()->user()->hasRole('super_admin')) {
-                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
+                            if (auth()->user()->hasRole("super_admin")) {
+                                return $query->whereIn(
+                                    "id",
+                                    auth()->user()?->gyms()->get()->pluck("id"),
+                                );
                             }
-                        } elseif (filament()->getId() === 'staff') {
+                        } elseif (filament()->getId() === "staff") {
                             return $query;
                         }
-                    }),
+                    },
+                ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary'),
+                    ->icon("heroicon-o-pencil")
+                    ->color("primary"),
                 Tables\Actions\DeleteAction::make()
-                    ->icon('heroicon-o-trash')
-                    ->color('danger')
+                    ->icon("heroicon-o-trash")
+                    ->color("danger")
                     ->successNotification(null),
             ])
             ->bulkActions([
@@ -176,23 +129,100 @@ class MembershipPlanResource extends Resource
 
             //     return $query;
             // })
-            ->defaultSort('name')
+            ->defaultSort("name")
             ->striped();
     }
 
     public static function getRelations(): array
     {
         return [
-            //
-        ];
+                //
+            ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMembershipPlans::route('/'),
-            'create' => Pages\CreateMembershipPlan::route('/create'),
-            'edit' => Pages\EditMembershipPlan::route('/{record}/edit'),
+            "index" => Pages\ListMembershipPlans::route("/"),
+            "create" => Pages\CreateMembershipPlan::route("/create"),
+            "edit" => Pages\EditMembershipPlan::route("/{record}/edit"),
+        ];
+    }
+
+    public static function planFormSchema(): array
+    {
+        return [
+            Forms\Components\Hidden::make("gym_id")->default(
+                Filament::getTenant()->id,
+            ),
+
+            Forms\Components\TextInput::make("name")
+                ->required()
+                ->maxLength(255)
+                ->placeholder("e.g., Gold Membership")
+                ->autofocus()
+                ->extraInputAttributes([
+                    "class" =>
+                        "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
+                ]),
+
+            Forms\Components\TextInput::make("price")
+                ->numeric()
+                ->required()
+                ->prefix(function ($get) {
+                    $currency = Currency::tryFrom(
+                        $get("currency") ?? Currency::INR->value,
+                    );
+
+                    return $currency?->getSymbol() ??
+                        Currency::INR->getSymbol();
+                })
+                ->minValue(0)
+                ->step(0.01)
+                ->placeholder("0.00")
+                ->extraInputAttributes([
+                    "class" =>
+                        "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
+                ]),
+            Forms\Components\Select::make("currency")
+                ->options(
+                    collect(Currency::cases())->mapWithKeys(
+                        fn(Currency $currency) => [
+                            $currency->value => $currency->getLabel(),
+                        ],
+                    ),
+                )
+                ->required()
+                ->reactive()
+                ->default(Currency::INR->value),
+            Forms\Components\Select::make("duration")
+                ->label("Duration (Months)")
+                ->options(
+                    collect(DurationMonth::cases())->mapWithKeys(
+                        fn(DurationMonth $duration) => [
+                            $duration->value => $duration->getLabel(),
+                        ],
+                    ),
+                )
+                ->required()
+                ->default(DurationMonth::THREE_MONTHS->value),
+            Forms\Components\Textarea::make("description")
+                ->maxLength(65535)
+                ->placeholder(
+                    "e.g., Includes unlimited classes and personal training",
+                )
+                ->rows(4)
+                ->extraAttributes([
+                    "class" =>
+                        "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
+                ])
+                ->columnSpanFull(),
+
+            Forms\Components\Toggle::make("is_active")
+                ->default(true)
+                ->label("Active")
+                ->onColor("success")
+                ->offColor("danger"),
         ];
     }
 }

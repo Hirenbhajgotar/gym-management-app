@@ -75,38 +75,38 @@ class Lead extends Model implements Sortable
     use HasFactory, SortableTrait;
 
     protected $fillable = [
-        'gym_id',
-        'membership_plan_id',
-        'name',
-        'email',
-        'phone',
-        'source',
-        'source_id',
-        'raw_data',
-        'status',
-        'interest',
-        'tags',
-        'last_follow_up_date',
-        'order_column',
-        'notes',
-        'created_by',
-        'updated_by',
+        "gym_id",
+        "membership_plan_id",
+        "name",
+        "email",
+        "phone",
+        "source",
+        "source_id",
+        "raw_data",
+        "status",
+        "interest",
+        "tags",
+        "last_follow_up_date",
+        "order_column",
+        "notes",
+        "created_by",
+        "updated_by",
     ];
 
     public array $sortable = [
-        'order_column_name' => 'order_column',
-        'sort_when_creating' => true,
+        "order_column_name" => "order_column",
+        "sort_when_creating" => true,
     ];
 
     protected function casts(): array
     {
         return [
-            'source' => LeadSource::class,
-            'status' => LeadStatus::class,
-            'raw_data' => 'array',
-            'interest' => 'array',
-            'tags' => 'array',
-            'last_follow_up_date' => 'datetime',
+            "source" => LeadSource::class,
+            "status" => LeadStatus::class,
+            "raw_data" => "array",
+            "interest" => "array",
+            "tags" => "array",
+            "last_follow_up_date" => "datetime",
         ];
     }
 
@@ -117,17 +117,17 @@ class Lead extends Model implements Sortable
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, "created_by");
     }
 
     public function updatedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, "updated_by");
     }
 
     public function membershipPlan(): BelongsTo
     {
-        return $this->belongsTo(MembershipPlan::class, 'membership_plan_id');
+        return $this->belongsTo(MembershipPlan::class, "membership_plan_id");
     }
 
     public function followUps(): HasMany
@@ -143,12 +143,12 @@ class Lead extends Model implements Sortable
     #[Scope]
     protected function converted(Builder $query): void
     {
-        $query->where('status', LeadStatus::CONVERTED);
+        $query->where("status", LeadStatus::CONVERTED);
     }
 
     #[Scope]
     protected function lost(Builder $query): void
     {
-        $query->where('status', LeadStatus::LOST);
+        $query->where("status", LeadStatus::LOST);
     }
 }

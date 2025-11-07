@@ -25,59 +25,93 @@ class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    protected static ?string $navigationIcon = 'phosphor-circles-three-plus';
+    protected static ?string $navigationIcon = "phosphor-circles-three-plus";
 
-    protected static ?string $navigationGroup = 'CRM';
+    protected static ?string $navigationGroup = "CRM";
 
     public static function getNavigationBadge(): ?string
     {
         $modelClass = static::$model;
-        $query = $modelClass::query()->where('status', LeadStatus::NEW);
+        $query = $modelClass::query()->where("status", LeadStatus::NEW);
 
         return $query->count();
     }
 
     public static function form(Form $form): Form
     {
+        $selectMembershipPlan = Select::make("membership_plan_id")
+            ->label("Membership Plan")
+            ->options(MembershipPlan::pluck("name", "id"))
+            ->required();
+
+        if (method_exists(MembershipPlanResource::class, "planFormSchema")) {
+            $selectMembershipPlan
+                ->createOptionForm([
+                    Forms\Components\Section::make("Plan Details")
+                        ->icon("heroicon-o-ticket")
+                        ->description("Create a membership plan for your gym")
+                        ->schema(MembershipPlanResource::planFormSchema())
+                        ->collapsible()
+                        ->columns(2),
+                ])
+                ->createOptionUsing(function (array $data) {
+                    // Create the new state and return its ID
+                    $state = MembershipPlan::create($data);
+
+                    return $state->id;
+                });
+        }
+
         return $form->schema([
-            Section::make('Lead Details')->schema([
+            Section::make("Lead Details")->schema([
                 Grid::make(3)->schema([
-                    TextInput::make('name')->required(),
-                    TextInput::make('email')->email()->required(),
-                    TextInput::make('phone')->tel()->required(),
+                    TextInput::make("name")->required(),
+                    TextInput::make("email")->email()->required(),
+                    TextInput::make("phone")->tel()->required(),
                 ]),
 
                 Grid::make(2)->schema([
-                    Select::make('membership_plan_id')
-                        ->label('Membership Plan')
-                        ->options(MembershipPlan::pluck('name', 'id'))
-                        ->required(),
+                    $selectMembershipPlan,
 
-                    Forms\Components\Select::make('status')
+                    Forms\Components\Select::make("status")
                         ->options(LeadStatus::class)
                         ->required(),
 
-                    Forms\Components\Select::make('source')
+                    Forms\Components\Select::make("source")
                         ->options(LeadSource::class)
                         ->required(),
 
-                    Forms\Components\Select::make('created_by')
-                        ->label('Created By')
-                        ->options(fn () => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
+                    Forms\Components\Select::make("created_by")
+                        ->label("Created By")
+                        ->options(
+                            fn() => Gym::getCurrentTenantUsers()->pluck(
+                                "users.name",
+                                "users.id",
+                            ),
+                        )
                         ->searchable()
                         ->default(auth()->id()),
 
-                    Forms\Components\TagsInput::make('interest')
-                        ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
+                    Forms\Components\TagsInput::make("interest")->placeholder(
+                        "Add interests (e.g., Yoga, Weight Loss)",
+                    ),
 
-                    Forms\Components\TagsInput::make('tags')
-                        ->placeholder('Add tags (e.g., High Priority, Referral)')
-                        ->splitKeys(['Tab', ','])
-                        ->suggestions(collect(LeadTag::cases())->map(fn (LeadTag $tag) => $tag->getLabel())->toArray()),
+                    Forms\Components\TagsInput::make("tags")
+                        ->placeholder(
+                            "Add tags (e.g., High Priority, Referral)",
+                        )
+                        ->splitKeys(["Tab", ","])
+                        ->suggestions(
+                            collect(LeadTag::cases())
+                                ->map(fn(LeadTag $tag) => $tag->getLabel())
+                                ->toArray(),
+                        ),
                 ]),
-                Forms\Components\RichEditor::make('notes')
-                    ->label('Conversion Notes')
-                    ->placeholder('Add any relevant notes about the conversion...')
+                Forms\Components\RichEditor::make("notes")
+                    ->label("Conversion Notes")
+                    ->placeholder(
+                        "Add any relevant notes about the conversion...",
+                    )
                     ->columnSpanFull(),
             ]),
         ]);
@@ -87,19 +121,26 @@ class LeadResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('email')->searchable(),
-                TextColumn::make('phone')->searchable(),
-                TextColumn::make('status')->badge()->sortable(),
-                TextColumn::make('source')->sortable(),
-                TextColumn::make('creator.name')->label('Created By')->sortable(),
-                TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make("name")->searchable()->sortable(),
+                TextColumn::make("email")->searchable(),
+                TextColumn::make("phone")->searchable(),
+                TextColumn::make("status")->badge()->sortable(),
+                TextColumn::make("source")->sortable(),
+                TextColumn::make("creator.name")
+                    ->label("Created By")
+                    ->sortable(),
+                TextColumn::make("created_at")
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(LeadStatus::class),
-                Tables\Filters\SelectFilter::make('source')
-                    ->options(LeadSource::class),
+                Tables\Filters\SelectFilter::make("status")->options(
+                    LeadStatus::class,
+                ),
+                Tables\Filters\SelectFilter::make("source")->options(
+                    LeadSource::class,
+                ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -115,47 +156,55 @@ class LeadResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            FollowUpsRelationManager::class,
-        ];
+        return [FollowUpsRelationManager::class];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListLeads::route('/'),
-            'create' => Pages\CreateLead::route('/create'),
-            'view' => Pages\ViewLead::route('/{record}'),
-            'edit' => Pages\EditLead::route('/{record}/edit'),
+            "index" => Pages\ListLeads::route("/"),
+            "create" => Pages\CreateLead::route("/create"),
+            "view" => Pages\ViewLead::route("/{record}"),
+            "edit" => Pages\EditLead::route("/{record}/edit"),
         ];
     }
 
     public static function getConvertToMemberFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Convert to Member')
-                ->description('Convert this lead into a new gym member and assign a membership plan.')
+            Forms\Components\Section::make("Convert to Member")
+                ->description(
+                    "Convert this lead into a new gym member and assign a membership plan.",
+                )
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
-                        Forms\Components\Select::make('membership_plan_id')
-                            ->label('Membership Plan')
-                            ->options(fn () => MembershipPlan::pluck('name', 'id'))
-                            ->default(fn (?Lead $record) => $record?->membership_plan_id)
+                        Forms\Components\Select::make("membership_plan_id")
+                            ->label("Membership Plan")
+                            ->options(
+                                fn() => MembershipPlan::pluck("name", "id"),
+                            )
+                            ->default(
+                                fn(
+                                    ?Lead $record,
+                                ) => $record?->membership_plan_id,
+                            )
                             ->searchable()
                             ->required()
-                            ->placeholder('Select a membership plan')
-                            ->prefixIcon('phosphor-crown'),
+                            ->placeholder("Select a membership plan")
+                            ->prefixIcon("phosphor-crown"),
 
-                        Forms\Components\DatePicker::make('conversion_date')
-                            ->label('Conversion Date')
+                        Forms\Components\DatePicker::make("conversion_date")
+                            ->label("Conversion Date")
                             ->default(now())
                             ->required()
-                            ->prefixIcon('phosphor-calendar'),
+                            ->prefixIcon("phosphor-calendar"),
                     ]),
 
-                    Forms\Components\RichEditor::make('notes')
-                        ->label('Conversion Notes')
-                        ->placeholder('Add any relevant notes about the conversion...')
+                    Forms\Components\RichEditor::make("notes")
+                        ->label("Conversion Notes")
+                        ->placeholder(
+                            "Add any relevant notes about the conversion...",
+                        )
                         ->columnSpanFull(),
                 ]),
         ];

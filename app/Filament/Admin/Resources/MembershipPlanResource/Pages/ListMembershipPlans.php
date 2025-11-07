@@ -19,29 +19,36 @@ class ListMembershipPlans extends ListRecords
     {
         return [
             ExportAction::make()
-                ->icon('heroicon-o-arrow-up-tray')
-                ->label('Export Plans')
+                ->icon("heroicon-o-arrow-up-tray")
+                ->label("Export Plans")
                 ->exporter(MembershipPlanExporter::class)
-                ->formats([
-                    \Filament\Actions\Exports\Enums\ExportFormat::Xlsx,
-                ]),
+                ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
 
             ExcelImportAction::make()
-                ->label('Import Plans')
-                ->modalHeading('Import Plans')
+                ->label("Import Plans")
+                ->modalHeading("Import Plans")
                 ->importer(MembershipPlansImport::class)
                 ->use(MembershipPlan::class)
                 ->sampleFile(
                     urlOrData: [
-                        ['name' => 'Gold', 'price' => '100', 'duration_in_months' => '12', 'description' => 'Full access'],
-                        ['name' => 'Silver', 'price' => '50', 'duration_in_months' => '6', 'description' => 'Limited access'],
+                        [
+                            "name" => "Gold",
+                            "price" => "100",
+                            "duration_in_months" => "12",
+                            "description" => "Full access",
+                        ],
+                        [
+                            "name" => "Silver",
+                            "price" => "50",
+                            "duration_in_months" => "6",
+                            "description" => "Limited access",
+                        ],
                     ],
-                    fileName: 'plans-sample.xlsx',
-                    sampleButtonLabel: 'Download Sample File'
+                    fileName: "plans-sample.xlsx",
+                    sampleButtonLabel: "Download Sample File",
                 ),
 
             Actions\CreateAction::make(),
-
         ];
     }
 }

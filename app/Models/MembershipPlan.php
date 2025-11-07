@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[ObservedBy([MembershipPlanObserver::class])]
 /**
  * @property int $id
  * @property int $gym_id
@@ -43,37 +42,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @mixin \Eloquent
  * @mixin IdeHelperMembershipPlan
  */
+#[ObservedBy([MembershipPlanObserver::class])]
 class MembershipPlan extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'gym_id',
-        'name',
-        'description',
-        'price',
-        'duration',
-        'currency',
-        'is_active',
+        "gym_id",
+        "name",
+        "description",
+        "price",
+        "duration",
+        "currency",
+        "is_active",
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'is_active' => 'boolean',
+        "price" => "decimal:2",
+        "is_active" => "boolean",
     ];
 
     public function gym(): BelongsTo
     {
-        return $this->belongsTo(Gym::class, 'gym_id');
+        return $this->belongsTo(Gym::class, "gym_id");
     }
 
     public function members(): HasMany
     {
-        return $this->hasMany(GymMember::class, 'gym_membership_plan_id');
+        return $this->hasMany(GymMember::class, "gym_membership_plan_id");
     }
 
     public function membershipPlans(): HasMany
     {
-        return $this->hasMany(MembershipPlan::class, 'gym_id');
+        return $this->hasMany(MembershipPlan::class, "gym_id");
     }
 }
