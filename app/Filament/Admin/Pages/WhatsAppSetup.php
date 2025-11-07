@@ -16,6 +16,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\HtmlString;
 
 class WhatsAppSetup extends Page implements HasActions, HasForms
@@ -481,11 +482,47 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             return;
         }
 
+        $userId = Auth::id();
+        $rateLimitKey = "whatsapp-test-message:{$userId}:{$this->settings->gym_id}";
+        $dailyLimit = 3;
+
+        // Check if user has reached the daily limit
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $dailyLimit)) {
+            $availableIn = RateLimiter::availableIn($rateLimitKey);
+            $hours = floor($availableIn / 3600);
+            $minutes = floor(($availableIn % 3600) / 60);
+
+            Notification::make()
+                ->title("⚠️ Daily Limit Reached")
+                ->body(
+                    "You have reached the daily limit of {$dailyLimit} test messages. Please try again in {$hours}h {$minutes}m.",
+                )
+                ->warning()
+                ->duration(7000)
+                ->send();
+
+            \Illuminate\Support\Facades\Log::warning(
+                "Test message blocked due to rate limit",
+                [
+                    "gym_id" => $this->settings->gym_id,
+                    "user_id" => $userId,
+                    "daily_limit" => $dailyLimit,
+                    "available_in_seconds" => $availableIn,
+                ],
+            );
+
+            return;
+        }
+
         $accountManager = app(TwilioAccountManager::class);
         $result = $accountManager->sendTestWhatsAppMessage($this->settings);
 
         if ($result["success"]) {
+            // Only increment rate limiter on successful sends
+            RateLimiter::hit($rateLimitKey, 86400); // 24 hours = 86400 seconds
+
             $messageId = $result["message_id"] ?? "N/A";
+            $remaining = $dailyLimit - RateLimiter::attempts($rateLimitKey);
 
             Notification::make()
                 ->title("✅ Test Message Sent!")
@@ -500,8 +537,10 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 "Manual test message sent from WhatsApp Setup page",
                 [
                     "gym_id" => $this->settings->gym_id,
+                    "user_id" => $userId,
                     "message_id" => $messageId,
                     "to" => $this->settings->whatsapp_business_number,
+                    "remaining_today" => $remaining,
                 ],
             );
         } else {
@@ -519,6 +558,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 "Manual test message failed from WhatsApp Setup page",
                 [
                     "gym_id" => $this->settings->gym_id,
+                    "user_id" => Auth::id(),
                     "error" => $result["error"] ?? "Unknown error",
                 ],
             );
