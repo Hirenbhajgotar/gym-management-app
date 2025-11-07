@@ -96,6 +96,10 @@ return [
             "TWILIO_MEMBERSHIP_EXPIRY_TEMPLATE_SID",
             "HXd00036c65cc7bd610832b215d3ea7b4a",
         ),
+        "lead_followup_reminder_template_sid" => env(
+            "TWILIO_LEAD_FOLLOWUP_REMINDER_TEMPLATE_SID",
+            "HX838a55fee59de39be51107c3db2fea9a",
+        ),
     ],
 
     "razorpay" => [
