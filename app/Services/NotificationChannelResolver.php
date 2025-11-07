@@ -12,19 +12,32 @@ class NotificationChannelResolver
     /**
      * Determine which notification channels to use for a gym
      */
-    public static function getChannelsForGym(Gym $gym, string $notificationType = 'general'): array
-    {
+    public static function getChannelsForGym(
+        Gym $gym,
+        string $notificationType = "general",
+    ): array {
         // $plan = $gym->subscription?->plan ?? 'free';
 
         $settings = self::getSetting($gym->id);
 
-        $emailEnabled = $settings->get('email_notifications')->value ?? true;
-        $whatsappEnabled = $settings->get('whatsapp_notifications')->value ? true : false;
-        $smsEnabled = $settings->get('sms_notifications')->value ? true : false;
-        $notificationTypeEnabled = $settings->get($notificationType . '_notifications')->value ? true : false;
+        $emailEnabled = $settings->get("email_notifications")?->value ?? true;
+
+        $whatsappEnabled = $settings->get("whatsapp_notifications")?->value
+            ? true
+            : false;
+
+        $smsEnabled = $settings->get("sms_notifications")?->value
+            ? true
+            : false;
+
+        $notificationTypeEnabled = $settings->get(
+            "{$notificationType}_notifications",
+        )->value
+            ? true
+            : false;
 
         // If the specific notification type is disabled, return empty array
-        if (! $notificationTypeEnabled) {
+        if (!$notificationTypeEnabled) {
             return [];
         }
 
@@ -61,12 +74,12 @@ class NotificationChannelResolver
         }
 
         if ($smsEnabled) {
-            $channels[] = 'sms';
+            $channels[] = "sms";
         }
 
         // Always include email as fallback if no other channels are enabled
         if (empty($channels) || $emailEnabled) {
-            $channels[] = 'mail';
+            $channels[] = "mail";
         }
 
         return $channels;
@@ -74,23 +87,6 @@ class NotificationChannelResolver
 
     private static function getSetting(int $gymId)
     {
-        return GymSetting::where('gym_id', $gymId)
-            ->get()->keyBy('key');
-    }
-
-    /**
-     * Check if gym can send WhatsApp messages
-     */
-    private static function canSendWhatsApp(Gym $gym): bool
-    {
-        $settings = $gym->notificationSettings()->first();
-
-        if (! $settings) {
-            return false;
-        }
-
-        return $settings->verification_status === NotificationVerificationStatusEnum::VERIFIED
-            && ! empty($settings->twilio_account_sid)
-            && ! empty($settings->twilio_auth_token);
+        return GymSetting::where("gym_id", $gymId)->get()->keyBy("key");
     }
 }

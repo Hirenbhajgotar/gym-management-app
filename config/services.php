@@ -86,11 +86,15 @@ return [
         ),
         "demo_request_template_sid" => env(
             "TWILIO_DEMO_REQUEST_TEMPLATE_SID",
-            "HX04cf5684f5255f182f047ef173ef8e05",
+            "HX3ae293398edf997d889fa8edc06a7ebb",
         ),
         "birthday_greeting_template_sid" => env(
             "TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID",
             "HXcda1c2b35387313592234ddd828ec017",
+        ),
+        "membership_expiry_template_sid" => env(
+            "TWILIO_MEMBERSHIP_EXPIRY_TEMPLATE_SID",
+            "HXd00036c65cc7bd610832b215d3ea7b4a",
         ),
     ],
 

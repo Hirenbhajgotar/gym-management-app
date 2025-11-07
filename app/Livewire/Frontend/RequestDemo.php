@@ -224,7 +224,19 @@ class RequestDemo extends Component
 
             $whatsappService = new TwilioWhatsAppService($tenantId);
 
-            $result = $whatsappService->sendMessage($adminPhone, $message);
+            $result = $whatsappService->sendMessage($adminPhone, $message, [
+                "template_sid" => config(
+                    "services.twilio.demo_request_template_sid",
+                ),
+                "template_variables" => [
+                    "1" => $requestContact->name,
+                    "2" => $requestContact->email,
+                    "3" => $requestContact->phone,
+                    "4" => $requestContact->gym_size,
+                    "5" => $requestContact->message,
+                    "6" => $requestContact->created_at->format("M d, Y H:i A"),
+                ],
+            ]);
 
             if ($result["success"]) {
                 Log::info("Demo request WhatsApp sent successfully", [

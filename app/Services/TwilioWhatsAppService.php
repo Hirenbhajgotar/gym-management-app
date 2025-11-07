@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\GymWhatsAppBalance;
 use App\Models\NotificationSetting;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -53,7 +54,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         )->first();
 
         if (!$settings) {
-            throw new \Exception("No Twilio settings found");
+            throw new Exception("No Twilio settings found");
         }
 
         return new Client(
@@ -79,7 +80,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             )->first();
 
             if (!$settings) {
-                throw new \Exception("No Twilio settings found for this gym");
+                throw new Exception("No Twilio settings found for this gym");
             }
 
             // Fix: Compare with enum value instead of string
@@ -87,7 +88,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 $settings->verification_status !==
                 NotificationVerificationStatusEnum::VERIFIED
             ) {
-                throw new \Exception(
+                throw new Exception(
                     "Twilio account not verified for this gym. Status: " .
                         $settings->verification_status->value,
                 );
@@ -95,7 +96,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             // Check if Twilio account is active
             // if ($settings->status !== NotificationVerificationStatusEnum::ACTIVE) {
-            //     throw new \Exception(
+            //     throw new Exception(
             //         "Twilio account not active for this gym. Status: " .
             //             $settings->status->value,
             //     );
@@ -108,7 +109,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 $this->tenantId,
             )->first();
             if (!$balance || !$balance->canSendMessage()) {
-                throw new \Exception(
+                throw new Exception(
                     "Insufficient WhatsApp message balance. Please purchase more messages.",
                 );
             }
@@ -121,16 +122,31 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 : $this->getProductionFromNumber($settings);
 
             $messageParams = [
-                "from" => "whatsapp:" . $fromNumber,
+                "from" => "whatsapp:$fromNumber",
             ];
 
-            if ($templateData && isset($templateData["template_sid"])) {
-                $messageParams["contentSid"] = $templateData["template_sid"];
-                $messageParams["contentVariables"] = json_encode(
-                    $templateData["template_variables"] ?? [],
-                );
+            if ($this->useSandbox) {
+                $messageParams["body"] = $message ?? "Test Message!";
             } else {
-                $messageParams["body"] = $message;
+                if ($templateData && isset($templateData["template_sid"])) {
+                    $messageParams["contentSid"] =
+                        $templateData["template_sid"];
+                    $messageParams["contentVariables"] = json_encode(
+                        $templateData["template_variables"] ?? [],
+                    );
+                } else {
+                    // No template available - return helpful error
+                    return [
+                        "success" => false,
+                        "error" =>
+                            "No approved WhatsApp template found for demo requests. Please:\n" .
+                            "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
+                            "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
+                            "3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.",
+                        "requires_template" => true,
+                        "mode" => "production",
+                    ];
+                }
             }
 
             $twilioMessage = $client->messages->create(
@@ -155,7 +171,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 "code" => $e->getCode(),
                 "data" => null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 "success" => false,
                 "error" => $e->getMessage(),
@@ -192,15 +208,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             // In production mode, we MUST use approved templates
             if ($this->useSandbox) {
                 // Sandbox: Use free-form message body
-                if ($templateData && isset($templateData["template_sid"])) {
-                    $messageParams["contentSid"] =
-                        $templateData["template_sid"];
-                    $messageParams["contentVariables"] = json_encode(
-                        $templateData["template_variables"] ?? [],
-                    );
-                } else {
-                    $messageParams["body"] = $message;
-                }
+                $messageParams["body"] = $message ?? "Test Message!";
             } else {
                 // Production: Use approved template (required for business-initiated messages)
                 // Check if template data provided or get from config
@@ -211,35 +219,17 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                         $templateData["template_variables"] ?? [],
                     );
                 } else {
-                    // Try to get demo request template from config
-                    $templateSid = config(
-                        "services.twilio.demo_request_template_sid",
-                    );
-
-                    if (!$templateSid) {
-                        // No template available - return helpful error
-                        return [
-                            "success" => false,
-                            "error" =>
-                                "No approved WhatsApp template found for demo requests. Please:\n" .
-                                "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
-                                "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
-                                "3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.",
-                            "requires_template" => true,
-                            "mode" => "production",
-                        ];
-                    }
-
-                    // Use template with variables
-                    $messageParams["contentSid"] = $templateSid;
-                    $messageParams["contentVariables"] = json_encode([
-                        "1" => $message, // Pass the entire formatted message as variable
-                    ]);
-
-                    Log::info("Using WhatsApp template for system message", [
-                        "template_sid" => $templateSid,
-                        "to" => $to,
-                    ]);
+                    // No template available - return helpful error
+                    return [
+                        "success" => false,
+                        "error" =>
+                            "No approved WhatsApp template found for demo requests. Please:\n" .
+                            "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
+                            "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
+                            "3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.",
+                        "requires_template" => true,
+                        "mode" => "production",
+                    ];
                 }
             }
 
@@ -290,7 +280,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 "mode" => $this->useSandbox ? "sandbox" : "production",
                 "data" => null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Unexpected system WhatsApp message error", [
                 "to" => $to,
                 "error" => $e->getMessage(),
@@ -317,7 +307,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         try {
             // System tenant cannot use templates (requires verified business account)
             if ($this->isSystemTenant()) {
-                throw new \Exception(
+                throw new Exception(
                     "Template messages are not available for system tenant. Use regular messages instead.",
                 );
             }
@@ -328,14 +318,14 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             )->first();
 
             if (!$settings) {
-                throw new \Exception("No Twilio settings found for this gym");
+                throw new Exception("No Twilio settings found for this gym");
             }
 
             if (
                 $settings->verification_status !==
                 NotificationVerificationStatusEnum::VERIFIED
             ) {
-                throw new \Exception(
+                throw new Exception(
                     "Twilio account not verified for this gym. Status: " .
                         $settings->verification_status->value,
                 );
@@ -347,7 +337,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 $this->tenantId,
             )->first();
             if (!$balance || !$balance->canSendMessage()) {
-                throw new \Exception(
+                throw new Exception(
                     "Insufficient WhatsApp message balance. Please purchase more messages.",
                 );
             }
@@ -359,7 +349,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             // Send message with template
             $twilioMessage = $client->messages->create("whatsapp:$to", [
-                "from" => "whatsapp:" . $fromNumber,
+                "from" => "whatsapp:$fromNumber",
                 "contentSid" => $templateSid,
                 "contentVariables" => json_encode($variables),
             ]);
@@ -382,7 +372,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 "code" => $e->getCode(),
                 "data" => null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 "success" => false,
                 "error" => $e->getMessage(),
@@ -402,14 +392,14 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
 
         if (!$settings) {
-            throw new \Exception("No Twilio settings found");
+            throw new Exception("No Twilio settings found");
         }
 
         if (
             $settings->verification_status !==
             NotificationVerificationStatusEnum::VERIFIED
         ) {
-            throw new \Exception("Twilio account not verified");
+            throw new Exception("Twilio account not verified");
         }
 
         return $settings->whatsapp_business_number;
@@ -440,7 +430,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             )->first();
 
             if (!$settings) {
-                throw new \Exception("No Twilio account found");
+                throw new Exception("No Twilio account found");
             }
 
             $client = $this->getClient();
@@ -457,7 +447,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                     $account->balance ?? "Trial Account - No Balance Info",
                 "status" => $account->status,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 "success" => false,
                 "error" => $e->getMessage(),

@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
-#[ObservedBy([GymObserver::class])]
 /**
  * @property int $id
  * @property string $name
@@ -51,6 +50,7 @@ use Illuminate\Support\Str;
  * @mixin \Eloquent
  * @mixin IdeHelperGym
  */
+#[ObservedBy([GymObserver::class])]
 class Gym extends Model
 {
     use HasFactory;

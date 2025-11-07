@@ -44,21 +44,21 @@ class FollowUp extends Model
     use HasFactory;
 
     protected $fillable = [
-        'lead_id',
-        'gym_id',
-        'user_id',
-        'type',
-        'scheduled_date',
-        'status',
-        'notes',
+        "lead_id",
+        "gym_id",
+        "user_id",
+        "type",
+        "scheduled_date",
+        "status",
+        "notes",
     ];
 
     protected function casts(): array
     {
         return [
-            'type' => InteractionType::class,
-            'scheduled_date' => 'datetime',
-            'status' => FollowUpStatus::class,
+            "type" => InteractionType::class,
+            "scheduled_date" => "datetime",
+            "status" => FollowUpStatus::class,
         ];
     }
 

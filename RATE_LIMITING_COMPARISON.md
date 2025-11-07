@@ -1,6 +1,7 @@
 # WhatsApp Test Message Rate Limiting - Implementation Comparison
 
 ## Overview
+
 This document compares two approaches for implementing the "3 test messages per day" rate limit for WhatsApp test messages.
 
 ---
@@ -8,6 +9,7 @@ This document compares two approaches for implementing the "3 test messages per 
 ## ✅ Current Implementation: Laravel's RateLimiter (Recommended)
 
 ### Advantages
+
 1. **Native Laravel Feature** - Built-in, well-tested, and idiomatic
 2. **Simpler Code** - Less code to maintain (removed ~100 lines)
 3. **Better Performance** - Cache-based (Redis/Memcached) instead of database queries
@@ -17,6 +19,7 @@ This document compares two approaches for implementing the "3 test messages per 
 7. **Atomic Operations** - Cache operations are atomic by design
 
 ### How It Works
+
 ```php
 $rateLimitKey = "whatsapp-test-message:{$userId}";
 $dailyLimit = 3;
@@ -36,6 +39,7 @@ if ($result["success"]) {
 ```
 
 ### What You Lose
+
 - No permanent audit trail of test messages
 - Can't query "who sent how many test messages last month?"
 - Can't see individual message IDs or error messages
@@ -50,6 +54,7 @@ if ($result["success"]) {
 ## 📊 Alternative: Database Model Approach
 
 ### Advantages
+
 1. **Complete Audit Trail** - Every attempt logged permanently
 2. **Detailed Tracking** - Captures message_id, error_message, timestamps
 3. **Business Analytics** - Can query historical data
@@ -59,6 +64,7 @@ if ($result["success"]) {
 7. **Complex Queries** - Can answer questions like "Which gyms use this most?"
 
 ### How It Works
+
 ```php
 // Check rate limit from database
 if (WhatsAppTestMessageLog::hasReachedDailyLimit($userId, 3)) {
@@ -80,12 +86,14 @@ WhatsAppTestMessageLog::create([
 ```
 
 ### What You Lose
+
 - More complex code (migration, model, factory, seeder)
 - Database writes on every attempt (slower)
 - Need to manage old records (data growth)
 - More code to maintain
 
 ### Files Involved
+
 - `database/migrations/2025_11_07_080327_create_whatsapp_test_message_logs_table.php`
 - `app/Models/WhatsAppTestMessageLog.php`
 - `app/Filament/Admin/Pages/WhatsAppSetup.php`
@@ -96,6 +104,7 @@ WhatsAppTestMessageLog::create([
 ## 🤔 When to Use Which?
 
 ### Use RateLimiter When:
+
 - ✅ You only need rate limiting (current use case)
 - ✅ Performance matters
 - ✅ You want simple, maintainable code
@@ -103,6 +112,7 @@ WhatsAppTestMessageLog::create([
 - ✅ The limit is temporary/short-term
 
 ### Use Database Model When:
+
 - ✅ You need audit trails for compliance
 - ✅ You need to bill customers based on usage
 - ✅ You need detailed error tracking

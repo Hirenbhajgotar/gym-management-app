@@ -109,10 +109,9 @@ class BirthdayNotification extends Notification implements ShouldQueue
 
             return [
                 "to" => $phoneNumber,
-                // "template_sid" => config(
-                //     "services.twilio.birthday_greeting_template_sid",
-                // ),
-                "template_sid" => $template->template_sid,
+                "template_sid" =>
+                    $template?->template_sid ??
+                    config("services.twilio.birthday_greeting_template_sid"),
                 "template_variables" => [
                     "1" => $this->member->name,
                     "2" => $this->member->gym->name,
