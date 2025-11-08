@@ -52,7 +52,7 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
                 if ($alertEnabled) {
                     // Check if we haven't already sent an alert for this low balance
                     if (! $balance->low_balance_alert_sent) {
-                        $this->sendLowBalanceAlert($balance->gym, $remainingMessages);
+                        $this->sendLowBalanceAlert($balance->gym, $balance, $remainingMessages);
 
                         // Mark alert as sent
                         $balance->low_balance_alert_sent = true;
@@ -74,11 +74,11 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
     /**
      * Send low balance alert to gym owner
      */
-    private function sendLowBalanceAlert(Gym $gym, int $remainingMessages): void
+    private function sendLowBalanceAlert(Gym $gym, GymWhatsAppBalance $balance, int $remainingMessages): void
     {
         // Get gym owner (assuming gym has an owner relationship)
         if ($gym->owner) {
-            $gym->owner->notify(new LowWhatsAppBalanceNotification($gym, $remainingMessages));
+            $gym->owner->notify(new LowWhatsAppBalanceNotification($gym, $balance, $remainingMessages));
         }
 
         // Also notify all gym staff members with appropriate permissions

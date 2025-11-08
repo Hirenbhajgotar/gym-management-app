@@ -104,6 +104,7 @@ return [
             "TWILIO_PENDING_LEAD_REMINDER_TEMPLATE_SID",
             "HX12b0177e0929c76f4f691e58f7fb97d2",
         ),
+        "low_whatsapp_message_balance_template_sid" => env("LOW_WHATSAPP_MESSAGE_BALANCE_TEMPLATE_SID", "HXd7f4c8d666c309c57ee24d2353afd1b3")
     ],
 
     "razorpay" => [
