@@ -4,25 +4,24 @@ namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
 use App\Models\Lead;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class PendingLeadNotification extends Notification
+class PendingLeadNotification extends Notification implements HasGymContext, ShouldQueue
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public Lead $lead)
-    {
-        $this->onQueue("notifications");
-    }
+    public function __construct(public Lead $lead) {}
 
     /**
      * Get the notification's delivery channels.
@@ -42,7 +41,7 @@ class PendingLeadNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return new MailMessage()
+        return (new MailMessage())
             ->subject("Pending Lead Reminder: {$this->lead->name}")
             ->greeting("Hello {$notifiable->name},")
             ->line(
@@ -65,7 +64,7 @@ class PendingLeadNotification extends Notification
      */
     public function toWhatsapp(object $notifiable): ?array
     {
-        $use_sandbox = config("services.twilio.use_sandbox", true);
+        $useSandbox = config("services.twilio.use_sandbox", true);
         $phoneNumber = $this->lead?->gym?->owner()?->phone;
 
         if (!$phoneNumber) {
@@ -97,7 +96,7 @@ class PendingLeadNotification extends Notification
             "Created: " .
             $this->lead->created_at->format("M d, Y");
 
-        if ($use_sandbox) {
+        if ($useSandbox) {
             // Use sandbox message for testing
             return [
                 "to" => "+919265098227",
@@ -128,7 +127,7 @@ class PendingLeadNotification extends Notification
             return [
                 "to" => $phoneNumber,
                 "template_sid" =>
-                    $template?->template_sid ??
+                $template?->template_sid ??
                     config(
                         "services.twilio.pending_lead_reminder_template_sid",
                     ),
@@ -165,5 +164,10 @@ class PendingLeadNotification extends Notification
             "created_at" => $this->lead->created_at->toDateTimeString(),
             "message" => "Pending lead reminder for " . $this->lead->name,
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->lead->gym_id;
     }
 }

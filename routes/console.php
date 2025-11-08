@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\CheckWhatsAppBalanceJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -24,3 +25,6 @@ Schedule::command("followups:send-reminders")->daily();
 
 // Send pending lead reminders daily
 Schedule::command("leads:send-pending-reminders")->daily();
+
+// Check WhatsApp balance daily
+Schedule::job(new CheckWhatsAppBalanceJob())->daily();

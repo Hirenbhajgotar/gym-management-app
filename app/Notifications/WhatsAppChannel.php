@@ -2,8 +2,11 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\TwilioWhatsAppService;
 use Exception;
+use Filament\Facades\Filament;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
@@ -19,11 +22,40 @@ class WhatsAppChannel
         }
 
         // Get the gym/tenant ID
-        $gymId = $notifiable->gym_id ?? ($notifiable->gym->id ?? null);
+        $gymId = null;
+
+        // 1. Check for a getGymId method on the notification
+        if ($notification instanceof HasGymContext) {
+            $gymId = $notification->getGymId($notifiable);
+        }
+
+        // 2. Check the notifiable itself
+        if (!$gymId) {
+            if (isset($notifiable->gym_id)) {
+                $gymId = $notifiable->gym_id;
+            } elseif (method_exists($notifiable, 'gym') && $notifiable->gym) {
+                $gymId = $notifiable->gym->id;
+            }
+        }
+
+        // 3. Handle User model with tenants as a fallback
+        if (!$gymId && $notifiable instanceof User) {
+            if (class_exists(Filament::class) && Filament::isServing() && ($tenant = Filament::getTenant())) {
+                $gymId = $tenant->id;
+            } elseif ($notifiable->gyms()->count() === 1) {
+                $gymId = $notifiable->gyms()->first()->id;
+            }
+        }
 
         if (!$gymId) {
+            Log::error("Unable to determine gym ID for WhatsApp notification", [
+                'notifiable_id' => $notifiable->id,
+                'notifiable_type' => get_class($notifiable),
+                'notification_type' => get_class($notification),
+            ]);
+
             throw new Exception(
-                "Unable to determine gym ID for WhatsApp notification",
+                "Unable to determine gym ID for WhatsApp notification. Notifiable: " . get_class($notifiable) . ", Notification: " . get_class($notification)
             );
         }
 

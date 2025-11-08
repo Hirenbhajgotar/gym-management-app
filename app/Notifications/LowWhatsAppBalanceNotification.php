@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\Gym;
+use App\Notifications\Contracts\HasGymContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
+class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue, HasGymContext
 {
     use Queueable;
 
@@ -32,7 +33,7 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', WhatsAppChannel::class];
     }
 
     /**
@@ -42,11 +43,11 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Low WhatsApp Message Balance Alert - ' . $this->gym->name)
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting("Hello {$notifiable->name} ,")
             ->line('Your WhatsApp message balance for **' . $this->gym->name . '** is running low.')
-            ->line('**Remaining Messages:** ' . $this->remainingMessages)
-            ->line('You have ' . $this->remainingMessages . ' WhatsApp message(s) remaining. Please purchase more messages to continue sending notifications to your members.')
-            ->action('Purchase Messages', url('/admin/settings'))
+            ->line("**Remaining Messages:** {$this->remainingMessages}")
+            ->line("You have {$this->remainingMessages} WhatsApp message(s) remaining. Please purchase more messages to continue sending notifications to your members.")
+            ->action('Purchase Messages', route('filament.admin.pages.settings', ['tenant' => $this->gym->slug, 'tab' => 'whatsapp']))
             ->line('Thank you for using our service!');
     }
 
@@ -75,5 +76,10 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
             'action_url' => '/admin/settings',
             'action_text' => 'Purchase Messages',
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->gym->id;
     }
 }

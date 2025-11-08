@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
 use App\Models\FollowUp;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Exception;
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class FollowUpReminderNotification extends Notification implements ShouldQueue
+class FollowUpReminderNotification extends Notification implements ShouldQueue, HasGymContext
 {
     use Queueable;
 
@@ -127,7 +128,7 @@ class FollowUpReminderNotification extends Notification implements ShouldQueue
             return [
                 "to" => $phoneNumber,
                 "template_sid" =>
-                    $template?->template_sid ??
+                $template?->template_sid ??
                     config(
                         "services.twilio.lead_followup_reminder_template_sid",
                     ),
@@ -164,7 +165,12 @@ class FollowUpReminderNotification extends Notification implements ShouldQueue
             "type" => $this->followUp->type->value,
             "notes" => $this->followUp->notes,
             "message" =>
-                "Follow-up reminder for " . $this->followUp->lead->name,
+            "Follow-up reminder for " . $this->followUp->lead->name,
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->followUp->gym_id;
     }
 }

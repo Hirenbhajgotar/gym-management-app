@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class BirthdayNotification extends Notification implements ShouldQueue
+class BirthdayNotification extends Notification implements ShouldQueue, HasGymContext
 {
     use Queueable;
 
@@ -41,7 +42,7 @@ class BirthdayNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return new MailMessage()
+        return (new MailMessage())
             ->subject("Happy Birthday, " . $this->member->name . "!")
             ->greeting("Hello " . $this->member->name . ",")
             ->line(
@@ -84,7 +85,7 @@ class BirthdayNotification extends Notification implements ShouldQueue
                 // 'to' => $phoneNumber,
                 "to" => "+919265098227", // Test number
                 "body" =>
-                    "Happy Birthday {$this->member->name},\n\n" .
+                "Happy Birthday {$this->member->name},\n\n" .
                     "We at {$this->member->gym->name} wish you a very Happy Birthday! 🎉\n\n" .
                     "May you have a fantastic year ahead filled with health and fitness.\n\n" .
                     "Thank you for being a valued member!",
@@ -110,7 +111,7 @@ class BirthdayNotification extends Notification implements ShouldQueue
             return [
                 "to" => $phoneNumber,
                 "template_sid" =>
-                    $template?->template_sid ??
+                $template?->template_sid ??
                     config("services.twilio.birthday_greeting_template_sid"),
                 "template_variables" => [
                     "1" => $this->member->name,
@@ -136,10 +137,15 @@ class BirthdayNotification extends Notification implements ShouldQueue
     {
         return [
             "message" =>
-                "Happy Birthday, " .
+            "Happy Birthday, " .
                 $this->member?->name .
                 "! From " .
                 $this->member?->gym?->name,
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->member->gym_id;
     }
 }

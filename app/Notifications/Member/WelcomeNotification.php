@@ -4,13 +4,14 @@ namespace App\Notifications\Member;
 
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class WelcomeNotification extends Notification
+class WelcomeNotification extends Notification implements HasGymContext
 {
     use Queueable;
 
@@ -87,5 +88,10 @@ class WelcomeNotification extends Notification
         return [
             //
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->member->gym_id;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Carbon\Carbon;
@@ -15,7 +16,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 
-class MembershipExpiryNotification extends Notification implements ShouldQueue
+class MembershipExpiryNotification extends Notification implements ShouldQueue, HasGymContext
 {
     use Queueable;
 
@@ -47,8 +48,8 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
     {
         $subject =
             $this->daysLeft > 0
-                ? 'Your Gym membership expires soon - let\'s keep the momentum!'
-                : 'Your Gym membership has expired - but the grind doesn\'t have to stop';
+            ? 'Your Gym membership expires soon - let\'s keep the momentum!'
+            : 'Your Gym membership has expired - but the grind doesn\'t have to stop';
 
         return new MailMessage()
             ->subject($subject)
@@ -66,11 +67,11 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
         if ($this->daysLeft > 0) {
             return match (true) {
                 $this->daysLeft === 1
-                    => "Tomorrow your access badge turns into a pumpkin. Renew now so you can keep crushing PRs without missing a beat.",
+                => "Tomorrow your access badge turns into a pumpkin. Renew now so you can keep crushing PRs without missing a beat.",
                 $this->daysLeft <= 7
-                    => "Only {$this->daysLeft} days left on your current membership expiration date. That's just enough time to fit in one more leg-day masterpiece.",
+                => "Only {$this->daysLeft} days left on your current membership expiration date. That's just enough time to fit in one more leg-day masterpiece.",
                 default
-                    => "Your membership expires on {$this->expiresAt->format(
+                => "Your membership expires on {$this->expiresAt->format(
                     "D, M j",
                 )} - lock in your next chapter today and we'll freeze your current price forever.",
             };
@@ -92,7 +93,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
                 // 'to' => $phoneNumber,
                 "to" => "+919265098227", // Test number
                 "body" =>
-                    "Hey {$this->member->name},\n\n" .
+                "Hey {$this->member->name},\n\n" .
                     "Your membership expires on {$this->expiresAt->format(
                         "D, M j",
                     )}, but your locker is still waiting for you. Renew your membership.",
@@ -135,7 +136,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
             return [
                 "to" => $phoneNumber,
                 "template_sid" =>
-                    $template?->template_sid ??
+                $template?->template_sid ??
                     config("services.twilio.membership_expiry_template_sid"),
                 "template_variables" => [
                     "1" => $this->member->name,
@@ -164,9 +165,14 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue
             "days_left" => $this->daysLeft,
             "expires_at" => $this->expiresAt->toDateString(),
             "message" =>
-                $this->daysLeft > 0
-                    ? "Your membership expires soon - renew to stay active."
-                    : "Your membership has expired - renew now to re-activate.",
+            $this->daysLeft > 0
+                ? "Your membership expires soon - renew to stay active."
+                : "Your membership has expired - renew now to re-activate.",
         ];
+    }
+
+    public function getGymId(mixed $notifiable): ?int
+    {
+        return $this->member->gym_id;
     }
 }
