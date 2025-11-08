@@ -30,9 +30,7 @@ class NotificationChannelResolver
             ? true
             : false;
 
-        $notificationTypeEnabled = $settings->get(
-            "{$notificationType}_notifications",
-        )->value
+        $notificationTypeEnabled = $settings->get("{$notificationType}")->value
             ? true
             : false;
 

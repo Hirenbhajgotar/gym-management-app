@@ -100,6 +100,10 @@ return [
             "TWILIO_LEAD_FOLLOWUP_REMINDER_TEMPLATE_SID",
             "HX838a55fee59de39be51107c3db2fea9a",
         ),
+        "pending_lead_reminder_template_sid" => env(
+            "TWILIO_PENDING_LEAD_REMINDER_TEMPLATE_SID",
+            "HX12b0177e0929c76f4f691e58f7fb97d2",
+        ),
     ],
 
     "razorpay" => [

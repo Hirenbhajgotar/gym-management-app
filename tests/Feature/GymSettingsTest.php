@@ -29,6 +29,7 @@ class GymSettingsTest extends TestCase
         GymSetting::create(['gym_id' => $gym->id, 'key' => 'attendance_reminders', 'value' => 'true', 'type' => 'boolean']);
         GymSetting::create(['gym_id' => $gym->id, 'key' => 'payment_reminders', 'value' => 'false', 'type' => 'boolean']);
         GymSetting::create(['gym_id' => $gym->id, 'key' => 'followup_reminders', 'value' => 'true', 'type' => 'boolean']);
+        GymSetting::create(['gym_id' => $gym->id, 'key' => 'lead_reminders_notifications', 'value' => 'true', 'type' => 'boolean']);
 
         Livewire::test(GymSettings::class)
             ->fillForm([
@@ -40,6 +41,7 @@ class GymSettingsTest extends TestCase
                 'attendance_reminders' => true,
                 'payment_reminders' => false,
                 'followup_reminders' => true,
+                'lead_reminders_notifications' => true,
             ]);
     }
 
@@ -62,6 +64,7 @@ class GymSettingsTest extends TestCase
                 'attendance_reminders' => false,
                 'payment_reminders' => false,
                 'followup_reminders' => false,
+                'lead_reminders_notifications' => false,
             ]);
     }
 }

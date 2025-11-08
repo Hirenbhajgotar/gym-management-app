@@ -1,8 +1,5 @@
 <?php
 
-use App\Console\Commands\CleanInvalidExportsCommand;
-use App\Console\Commands\CleanResolvedErrorReportsCommand;
-use App\Console\Commands\SendSubscriptionExpiryAlerts;
 use App\Http\Middleware\ErrorContextMiddleware;
 use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
@@ -39,7 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
             SubstituteBindings::class,
 
             TeamsPermission::class,
-
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -62,10 +58,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 // Determine if this should be auto-reported based on severity
                 $shouldAutoReport = $errorReportService->shouldAutoReport($e);
-                Log::info('Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'));
+                Log::info(
+                    'Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'),
+                );
 
                 if ($shouldAutoReport) {
-                    $errorReport = $errorReportService->reportException($e, null, 'auto_reported');
+                    $errorReport = $errorReportService->reportException(
+                        $e,
+                        null,
+                        'auto_reported',
+                    );
                     Log::info('Error report created via withExceptions', [
                         'error_report_id' => $errorReport->id ?? 'null',
                         'error_hash' => $errorReport->error_hash ?? 'null',
@@ -89,7 +91,11 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // For Filament requests, use custom error pages
-            if ($request->is('admin/*') || $request->is('staff/*') || $request->is('filament/*')) {
+            if (
+                $request->is('admin/*') ||
+                $request->is('staff/*') ||
+                $request->is('filament/*')
+            ) {
                 return $errorReportService->renderFilamentError($request, $e);
             }
 
@@ -110,9 +116,4 @@ return Application::configure(basePath: dirname(__DIR__))
         //     }
         // });
     })
-    ->withCommands([
-        CleanInvalidExportsCommand::class,
-        CleanResolvedErrorReportsCommand::class,
-        SendSubscriptionExpiryAlerts::class,
-    ])
     ->create();

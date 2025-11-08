@@ -15,6 +15,7 @@ class GymSettingService
             'payment_reminders' => true,
             'membership_expiry_notifications' => true,
             'followup_reminders' => true,
+            'lead_reminders_notifications' => true,
         ];
 
         foreach ($settings as $key => $value) {

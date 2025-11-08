@@ -10,7 +10,14 @@ Artisan::command('inspire', function () {
 
 Schedule::command('errors:clean-resolved')->dailyAt('01:00');
 
-Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt('09:00');
+Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt(
+    '09:00',
+);
 
 // Run subscription renewal job daily at 2 AM
 Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');
+
+Schedule::command('exports:clean-invalid')->weekly();
+
+// Send followup reminders daily
+Schedule::command('followups:send-reminders')->daily();
