@@ -4,20 +4,23 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
+Artisan::command("inspire", function () {
     $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+})->purpose("Display an inspiring quote");
 
-Schedule::command('errors:clean-resolved')->dailyAt('01:00');
+Schedule::command("errors:clean-resolved")->dailyAt("01:00");
 
-Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt(
-    '09:00',
+Schedule::command("notification:send-subscription-expiry-alerts")->dailyAt(
+    "09:00",
 );
 
 // Run subscription renewal job daily at 2 AM
-Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');
+Schedule::job(new \App\Jobs\SubscriptionRenewalJob())->dailyAt("02:00");
 
-Schedule::command('exports:clean-invalid')->weekly();
+Schedule::command("exports:clean-invalid")->weekly();
 
 // Send followup reminders daily
-Schedule::command('followups:send-reminders')->daily();
+Schedule::command("followups:send-reminders")->daily();
+
+// Send pending lead reminders daily
+Schedule::command("leads:send-pending-reminders")->daily();
