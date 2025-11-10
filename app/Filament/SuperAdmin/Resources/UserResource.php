@@ -6,8 +6,8 @@ use App\Enums\SubscriptionStatus;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
+use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers;
 use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\User;
 use App\Services\SubscriptionService;
 use Exception;
@@ -16,8 +16,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
@@ -25,7 +23,7 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = "heroicon-o-users";
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
     protected static ?int $navigationSort = 1;
 
@@ -39,40 +37,40 @@ class UserResource extends Resource
 
     public static function getMiddleware(): array
     {
-        return [PermissionMiddleware::using("manage users")];
+        return [PermissionMiddleware::using('manage users')];
     }
 
     public static function getNavigationBadge(): ?string
     {
         return cache()->remember(
-            "users_navigation_badge_count_" . auth()->id(),
+            'users_navigation_badge_count_' . auth()->id(),
             now()->addMinutes(15),
-            fn() => static::getModel()::count(),
+            fn () => static::getModel()::count(),
         );
     }
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make("User Information")->schema([
-                Forms\Components\TextInput::make("name")
+            Forms\Components\Section::make('User Information')->schema([
+                Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make("email")
+                Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
                     ->maxLength(255),
-                Forms\Components\DateTimePicker::make("email_verified_at"),
-                Forms\Components\TextInput::make("password")
+                Forms\Components\DateTimePicker::make('email_verified_at'),
+                Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
                     ->maxLength(255)
-                    ->visible(fn(string $context): bool => $context === 'create'),
-                Forms\Components\Toggle::make("is_active")
-                    ->label("Active")
+                    ->visible(fn (string $context): bool => $context === 'create'),
+                Forms\Components\Toggle::make('is_active')
+                    ->label('Active')
                     ->default(true),
             ]),
-            Forms\Components\Section::make("Plan Assignment")->schema([
+            Forms\Components\Section::make('Plan Assignment')->schema([
                 Forms\Components\Grid::make(2)->schema([
                     Forms\Components\Select::make('activeSubscription.plan_id')
                         ->label('Assign Plan')
@@ -88,26 +86,26 @@ class UserResource extends Resource
                             'yearly' => 'Yearly',
                         ])
                         ->default('monthly')
-                        ->required(fn(callable $get): bool => !empty($get('activeSubscription.plan_id')))
-                        ->visible(fn(callable $get): bool => !empty($get('activeSubscription.plan_id'))),
+                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
+                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
                 ]),
                 Forms\Components\Grid::make(2)->schema([
                     Forms\Components\DateTimePicker::make('activeSubscription.trial_ends_at')
                         ->label('Trial End Date')
                         ->placeholder('Optional trial end date')
-                        ->visible(fn(callable $get): bool => !empty($get('activeSubscription.plan_id'))),
+                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
                     Forms\Components\Select::make('activeSubscription.status')
                         ->label('Subscription Status')
                         ->options(SubscriptionStatus::class)
                         ->default(SubscriptionStatus::ACTIVE)
-                        ->required(fn(callable $get): bool => !empty($get('activeSubscription.plan_id')))
-                        ->visible(fn(callable $get): bool => !empty($get('activeSubscription.plan_id'))),
+                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
+                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
                 ]),
                 Forms\Components\RichEditor::make('activeSubscription.notes')
                     ->label('Assignment Notes')
                     ->placeholder('Notes about this plan assignment (e.g., offline purchase, manual assignment, etc.)')
-                    ->visible(fn(callable $get): bool => !empty($get('activeSubscription.plan_id'))),
-            ])->visible(fn(string $context): bool => $context === 'edit'),
+                    ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+            ])->visible(fn (string $context): bool => $context === 'edit'),
         ]);
     }
 
@@ -119,59 +117,59 @@ class UserResource extends Resource
                     ->whereExists(function ($query) {
                         $query
                             ->select(DB::raw(1))
-                            ->from("model_has_roles")
+                            ->from('model_has_roles')
                             ->join(
-                                "roles",
-                                "roles.id",
-                                "=",
-                                "model_has_roles.role_id",
+                                'roles',
+                                'roles.id',
+                                '=',
+                                'model_has_roles.role_id',
                             )
                             ->whereColumn(
-                                "users.id",
-                                "=",
-                                "model_has_roles.model_id",
+                                'users.id',
+                                '=',
+                                'model_has_roles.model_id',
                             )
                             ->where(
-                                "model_has_roles.model_type",
-                                "=",
-                                "App\\Models\\User",
+                                'model_has_roles.model_type',
+                                '=',
+                                'App\\Models\\User',
                             )
-                            ->where("roles.name", "=", "gym_owner");
+                            ->where('roles.name', '=', 'gym_owner');
                     })
-                    ->with(["gyms", "activeSubscription.plan"])
+                    ->with(['gyms', 'activeSubscription.plan'])
                     ->latest(),
             )
             ->columns([
-                Tables\Columns\TextColumn::make("name")->searchable(),
-                Tables\Columns\TextColumn::make("email")->searchable(),
-                Tables\Columns\TextColumn::make("gyms.name")
-                    ->label("Gyms")
+                Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('email')->searchable(),
+                Tables\Columns\TextColumn::make('gyms.name')
+                    ->label('Gyms')
                     ->badge()
-                    ->separator(","),
-                Tables\Columns\TextColumn::make("activeSubscription.plan.name")
-                    ->label("Current Plan")
+                    ->separator(','),
+                Tables\Columns\TextColumn::make('activeSubscription.plan.name')
+                    ->label('Current Plan')
                     ->badge()
-                    ->color(fn($record): string => $record->activeSubscription ? 'primary' : 'gray')
+                    ->color(fn ($record): string => $record->activeSubscription ? 'primary' : 'gray')
                     ->placeholder('No plan assigned'),
-                Tables\Columns\TextColumn::make("activeSubscription.status")
-                    ->label("Status")
+                Tables\Columns\TextColumn::make('activeSubscription.status')
+                    ->label('Status')
                     ->badge()
-                    ->color(fn($record): string => $record->activeSubscription?->status->getColor() ?? 'gray'),
-                Tables\Columns\TextColumn::make("activeSubscription.current_period_end")
-                    ->label("Expires")
+                    ->color(fn ($record): string => $record->activeSubscription?->status->getColor() ?? 'gray'),
+                Tables\Columns\TextColumn::make('activeSubscription.current_period_end')
+                    ->label('Expires')
                     ->dateTime()
-                    ->formatStateUsing(fn($state): ?string => $state?->format('M j, Y') ?? null)
+                    ->formatStateUsing(fn ($state): ?string => $state?->format('M j, Y') ?? null)
                     ->placeholder('N/A'),
-                Tables\Columns\ToggleColumn::make("is_active")->label("Active"),
-                Tables\Columns\TextColumn::make("email_verified_at")
+                Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
+                Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make("created_at")
+                Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make("updated_at")
+                Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -197,7 +195,7 @@ class UserResource extends Resource
                                 Forms\Components\Select::make('plan_id')
                                     ->label('Plan')
                                     ->options(Plan::active()->pluck('name', 'id'))
-                                    ->default(fn($record) => $record?->activeSubscription?->plan_id)
+                                    ->default(fn ($record) => $record?->activeSubscription?->plan_id)
                                     ->searchable()
                                     ->preload()
                                     ->required(),
@@ -208,13 +206,13 @@ class UserResource extends Resource
                                         'monthly' => 'Monthly',
                                         'yearly' => 'Yearly',
                                     ])
-                                    ->default(fn($record) => $record?->activeSubscription?->billing_cycle ?? 'monthly')
+                                    ->default(fn ($record) => $record?->activeSubscription?->billing_cycle ?? 'monthly')
                                     ->required(),
 
                                 Forms\Components\Select::make('status')
                                     ->label('Status')
                                     ->options(SubscriptionStatus::class)
-                                    ->default(fn($record) => $record?->activeSubscription?->status ?? SubscriptionStatus::ACTIVE)
+                                    ->default(fn ($record) => $record?->activeSubscription?->status ?? SubscriptionStatus::ACTIVE)
                                     ->required(),
 
                                 Forms\Components\DateTimePicker::make('trial_ends_at')
@@ -225,8 +223,7 @@ class UserResource extends Resource
                                     ->label('Notes')
                                     ->placeholder('Add notes about this assignment...')
                                     ->columnSpanFull(),
-                            ])->columns(2)
-
+                            ])->columns(2),
 
                     ])
                     ->action(function (User $record, array $data): void {
@@ -307,16 +304,16 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\SubscriptionRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            "index" => ListUsers::route("/"),
-            "create" => CreateUser::route("/create"),
-            "edit" => EditUser::route("/{record}/edit"),
+            'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
+            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }
