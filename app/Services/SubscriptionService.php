@@ -37,28 +37,37 @@ class SubscriptionService
             $trialDays = $plan->trial_days;
         }
 
+        if (isset($options["force_status"]) && $options["force_status"] !== SubscriptionStatus::TRIAL) {
+            $trialDays = 0;
+        }
+
         $subscription = DB::transaction(function () use (
             $user,
             $plan,
             $billingCycle,
             $trialDays,
+            $options,
         ) {
+            // Determine status - allow override for admin assignments
+            $status = $options["force_status"] ?? (
+                $trialDays > 0
+                ? SubscriptionStatus::TRIAL
+                : SubscriptionStatus::ACTIVE
+            );
+
             // Create subscription
             $subscription = Subscription::create([
                 "user_id" => $user->id,
                 "plan_id" => $plan->id,
-                "status" =>
-                    $trialDays > 0
-                        ? SubscriptionStatus::TRIAL
-                        : SubscriptionStatus::ACTIVE,
+                "status" => $status,
                 "billing_cycle" => $billingCycle,
                 "price" =>
-                    $billingCycle === "yearly"
-                        ? $plan->price_yearly
-                        : $plan->price_monthly,
+                $billingCycle === "yearly"
+                    ? $plan->price_yearly
+                    : $plan->price_monthly,
                 "currency" => $plan->currency,
                 "trial_ends_at" =>
-                    $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
+                $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
                 "current_period_start" => Carbon::now(),
                 "current_period_end" => $this->calculatePeriodEnd(
                     Carbon::now(),
@@ -161,9 +170,9 @@ class SubscriptionService
                 "plan_id" => $newPlan->id,
                 "billing_cycle" => $billingCycle,
                 "price" =>
-                    $billingCycle === "yearly"
-                        ? $newPlan->price_yearly
-                        : $newPlan->price_monthly,
+                $billingCycle === "yearly"
+                    ? $newPlan->price_yearly
+                    : $newPlan->price_monthly,
             ];
 
             // If proration is enabled, adjust the current period
@@ -345,5 +354,50 @@ class SubscriptionService
                 "order_column" => $planFeature?->order_column ?? 1,
             ]);
         }
+    }
+
+    /**
+     * Assign a plan to a user (admin manual assignment)
+     * Cancels existing active subscriptions and creates a new one with specified status
+     */
+    public function assignPlanToUser(User $user, Plan $plan, array $options = []): Subscription
+    {
+        return DB::transaction(function () use ($user, $plan, $options) {
+            // Cancel any existing active subscriptions
+            Subscription::where('user_id', $user->id)
+                ->whereIn('status', [SubscriptionStatus::ACTIVE, SubscriptionStatus::TRIAL])
+                ->update([
+                    'status' => SubscriptionStatus::CANCELLED,
+                    'cancelled_at' => Carbon::now(),
+                    'ends_at' => Carbon::now(),
+                ]);
+
+            // Prepare options for subscription creation
+            $subscriptionOptions = [
+                'billing_cycle' => $options['billing_cycle'] ?? 'monthly',
+                'force_status' => $options['status'] ?? SubscriptionStatus::ACTIVE, // Force the admin-selected status
+            ];
+
+            // Handle trial if specified
+            if (isset($options['trial_ends_at']) && $options['trial_ends_at']) {
+                $trialDays = Carbon::parse($options['trial_ends_at'])->diffInDays(Carbon::now());
+                $subscriptionOptions['trial_days'] = $trialDays;
+            }
+
+            // Create new subscription
+            $subscription = $this->createSubscription($user, $plan, $subscriptionOptions);
+
+            // Add metadata for manual assignment
+            $subscription->update([
+                'metadata' => array_merge($subscription->metadata ?? [], [
+                    'assigned_by' => $options['assigned_by'] ?? auth()->id(),
+                    'assigned_at' => Carbon::now()->toISOString(),
+                    'assignment_type' => 'manual',
+                    'notes' => $options['notes'] ?? null,
+                ])
+            ]);
+
+            return $subscription;
+        });
     }
 }

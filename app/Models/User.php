@@ -187,9 +187,15 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->hasMany(Subscription::class);
     }
 
+    public function activeSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->active()->whereDate("current_period_end", ">=", now());
+    }
+
     public function subscription()
     {
         return Subscription::active()
+            ->where("user_id", $this->id)
             ->whereDate("current_period_end", ">=", now())
             ->first();
     }
@@ -253,5 +259,16 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         }
 
         return $this->gyms()->count() < $this->getMaxGyms();
+    }
+
+    /**
+     * Get all subscription history for this user
+     */
+    public function subscriptionHistory()
+    {
+        return $this->subscriptions()
+            ->with(['plan', 'features'])
+            ->latest()
+            ->get();
     }
 }
