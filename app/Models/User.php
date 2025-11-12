@@ -126,7 +126,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
             ->implode("");
     }
 
-    public function canAccessPanel(\Filament\Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === "super-admin") {
             return $this->hasRole("super_admin");

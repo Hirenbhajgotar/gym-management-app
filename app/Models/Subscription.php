@@ -153,8 +153,7 @@ class Subscription extends Model
             // Additional check: if this is a trial, ensure it hasn't expired
             if (
                 $this->status === SubscriptionStatus::TRIAL &&
-                    $this->trial_ends_at &&
-                    $this->trial_ends_at?->isPast() ?? false
+                ($this->trial_ends_at?->isPast() ?? false)
             ) {
                 return false;
             }
@@ -184,8 +183,7 @@ class Subscription extends Model
     public function isCancelled(): bool
     {
         return $this->status === SubscriptionStatus::CANCELLED &&
-            $this->cancelled_at &&
-            $this->cancelled_at->isPast();
+            $this->cancelled_at?->isPast();
     }
 
     public function isExpired(): bool
@@ -261,8 +259,7 @@ class Subscription extends Model
     // Grace period methods
     public function isInGracePeriod(): bool
     {
-        return $this->grace_period_ends_at &&
-            $this->grace_period_ends_at?->isFuture() ?? false;
+        return $this->grace_period_ends_at?->isFuture() ?? false;
     }
 
     public function gracePeriodEndsAt(): ?Carbon
