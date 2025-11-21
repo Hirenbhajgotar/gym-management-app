@@ -107,8 +107,9 @@ class LeadResource extends Resource
                                 ->toArray(),
                         ),
                 ]),
-                Forms\Components\RichEditor::make("notes")
+                Forms\Components\Textarea::make("notes")
                     ->label("Conversion Notes")
+                    ->rows(6)
                     ->placeholder(
                         "Add any relevant notes about the conversion...",
                     )
