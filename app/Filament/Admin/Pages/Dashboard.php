@@ -16,10 +16,7 @@ class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
 
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::user()->hasRole('gym_owner');
-    }
+
 
     // public function filtersForm(Form $form): Form
     // {
@@ -56,14 +53,14 @@ class Dashboard extends BaseDashboard
     /**
      * Get the header actions for the component.
      */
-    protected function getHeaderActions(): array
-    {
-        return [
-            FilterAction::make()
-                ->form([
-                    DatePicker::make('startDate'),
-                    DatePicker::make('endDate'),
-                ]),
-        ];
-    }
+    // protected function getHeaderActions(): array
+    // {
+    //     return [
+    //         FilterAction::make()
+    //             ->form([
+    //                 DatePicker::make('startDate'),
+    //                 DatePicker::make('endDate'),
+    //             ]),
+    //     ];
+    // }
 }
