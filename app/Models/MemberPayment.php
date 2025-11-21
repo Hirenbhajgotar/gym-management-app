@@ -91,10 +91,10 @@ class MemberPayment extends Model
         $payment = Number::currency($this->amount, in: $this->currency);
 
         return match ($eventName) {
-            'created' => "Payment of {$payment} received from {$this->member?->name} at {$this->member?->gym?->name}",
-            'updated' => "Payment of {$payment} updated for {$this->member?->name} at {$this->member?->gym?->name}",
-            'deleted' => "Payment of {$payment} deleted for {$this->member?->name} at {$this->member?->gym?->name}",
-            default => "Payment {$eventName} for {$this->member?->name} at {$this->member?->gym?->name}",
+            'created' => "Payment of {$payment} received from {$this->member?->name}",
+            'updated' => "Payment of {$payment} updated for {$this->member?->name}",
+            'deleted' => "Payment of {$payment} deleted for {$this->member?->name}",
+            default => "Payment {$eventName} for {$this->member?->name}",
         };
     }
 

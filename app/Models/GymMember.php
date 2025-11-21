@@ -154,19 +154,19 @@ class GymMember extends Model
             unset($changes['updated_at']);
 
             if (empty($changes)) {
-                return "{$this->name}'s membership was renewed at {$this->gym?->name}";
+                return "{$this->name}'s membership was renewed";
             }
 
             $changedFields = collect($changes)->keys()->map(function ($field) {
                 return str_replace('_', ' ', ucfirst($field));
             })->implode(', ');
 
-            return "{$this->name}'s information was updated at {$this->gym?->name} (Changed: {$changedFields})";
+            return "{$this->name}'s information was updated (Changed: {$changedFields})";
         }
 
         return match ($eventName) {
-            'created' => "{$this->name} joined {$this->gym?->name}",
-            'deleted' => "{$this->name} was removed from {$this->gym?->name}",
+            'created' => "{$this->name} joined",
+            'deleted' => "{$this->name} was removed",
             default => parent::getDescriptionForEvent($eventName),
         };
     }
@@ -178,7 +178,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 

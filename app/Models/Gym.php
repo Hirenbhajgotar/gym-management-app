@@ -176,7 +176,7 @@ class Gym extends Model
      */
     public function onTrial(): bool
     {
-        return $this->subscription()?->onTrial();
+        return $this->subscription()?->onTrial() ?? false;
     }
 
     /**
@@ -184,7 +184,7 @@ class Gym extends Model
      */
     public function subscribed(): bool
     {
-        return $this->subscription()?->isActive();
+        return $this->subscription()?->isActive() ?? false;
     }
 
     /**
@@ -192,7 +192,7 @@ class Gym extends Model
      */
     public function hasAccess(): bool
     {
-        return $this->subscription()?->canAccessFeatures();
+        return $this->subscription()?->canAccessFeatures() ?? false;
     }
 
     /**
@@ -200,7 +200,7 @@ class Gym extends Model
      */
     public function canUseFeature(string $featureName): bool
     {
-        return $this->subscription()?->hasFeature($featureName);
+        return $this->subscription()?->hasFeature($featureName) ?? false;
     }
 
     /**
