@@ -48,7 +48,7 @@ class FollowUpsRelationManager extends RelationManager
 
                         Forms\Components\Select::make('user_id')
                             ->label('Assigned To')
-                            ->options(fn () => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
+                            ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
                             ->default(auth()->id())
                             ->required(),
                     ]),

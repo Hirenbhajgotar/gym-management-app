@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
@@ -54,12 +55,34 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             \Filament\Actions\CreateAction::make()
                 ->model(Lead::class)
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('name')->required(),
-                    \Filament\Forms\Components\TextInput::make('email')->email(),
-                    \Filament\Forms\Components\TextInput::make('phone'),
-                    \Filament\Forms\Components\Select::make('source')->options(LeadSource::class),
-                    \Filament\Forms\Components\Textarea::make('interest')->columnSpanFull(),
-                    \Filament\Forms\Components\Textarea::make('notes')->columnSpanFull(),
+                    \Filament\Forms\Components\Section::make()
+                        ->schema([
+                            \Filament\Forms\Components\Hidden::make('gym_id')
+                                ->default(Filament::getTenant()->id),
+                            \Filament\Forms\Components\Hidden::make('created_by')
+                                ->default(auth()->user()->id),
+                            \Filament\Forms\Components\TextInput::make('name')
+                                ->required(),
+                            \Filament\Forms\Components\TextInput::make('email')
+                                ->email(),
+                            \Filament\Forms\Components\TextInput::make('phone'),
+                            \Filament\Forms\Components\Select::make('source')
+                                ->options(LeadSource::class),
+                            \Filament\Forms\Components\TagsInput::make('interest')
+                                ->splitKeys(['Tab', ','])
+                                ->placeholder(
+                                    'Add tags (e.g., High Priority, Referral)',
+                                )
+                                ->suggestions(
+                                    collect(LeadTag::cases())
+                                        ->map(fn (LeadTag $tag) => $tag->getLabel())
+                                        ->toArray(),
+                                )
+                                ->columnSpanFull(),
+                            \Filament\Forms\Components\Textarea::make('notes')
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2),
                 ]),
         ];
     }

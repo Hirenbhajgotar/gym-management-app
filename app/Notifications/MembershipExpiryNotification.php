@@ -51,7 +51,7 @@ class MembershipExpiryNotification extends Notification implements ShouldQueue, 
             ? 'Your Gym membership expires soon - let\'s keep the momentum!'
             : 'Your Gym membership has expired - but the grind doesn\'t have to stop';
 
-        return new MailMessage()
+        return (new MailMessage())
             ->subject($subject)
             ->greeting("Hey {$this->member->name},")
             ->line(new HtmlString($this->emailBody()))

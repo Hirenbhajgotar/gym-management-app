@@ -45,7 +45,7 @@ class FollowUpReminderNotification extends Notification implements ShouldQueue, 
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return new MailMessage()
+        return (new MailMessage())
             ->subject("Follow-up Reminder: " . $this->followUp->lead->name)
             ->greeting("Hello {$notifiable->name},")
             ->line("This is a reminder for your upcoming follow-up.")

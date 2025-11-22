@@ -33,7 +33,7 @@ class PendingRenewalNotification extends Notification implements ShouldQueue
         $plan = $this->subscription->plan;
         $amount = number_format($this->orderData["amount"] / 100, 2);
 
-        return new MailMessage()
+        return (new MailMessage())
             ->subject(
                 "Action Required: Complete Your {$plan->name} Subscription Renewal",
             )
