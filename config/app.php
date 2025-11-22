@@ -12,7 +12,7 @@ return [
     |
     */
 
-    "name" => env("APP_NAME", "FitnessFlow"),
+    'name' => env('APP_NAME', 'FitnessFlow'),
 
     /*
     |--------------------------------------------------------------------------
@@ -25,7 +25,7 @@ return [
     |
     */
 
-    "env" => env("APP_ENV", "production"),
+    'env' => env('APP_ENV', 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -38,7 +38,7 @@ return [
     |
     */
 
-    "debug" => (bool) env("APP_DEBUG", false),
+    'debug' => (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -51,7 +51,7 @@ return [
     |
     */
 
-    "url" => env("APP_URL", "http://localhost"),
+    'url' => env('APP_URL', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
@@ -64,7 +64,7 @@ return [
     |
     */
 
-    "timezone" => "UTC",
+    'timezone' => 'UTC',
 
     /*
     |--------------------------------------------------------------------------
@@ -77,11 +77,11 @@ return [
     |
     */
 
-    "locale" => env("APP_LOCALE", "en"),
+    'locale' => env('APP_LOCALE', 'en'),
 
-    "fallback_locale" => env("APP_FALLBACK_LOCALE", "en"),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
-    "faker_locale" => env("APP_FAKER_LOCALE", "en_US"),
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     /*
     |--------------------------------------------------------------------------
@@ -94,12 +94,12 @@ return [
     |
     */
 
-    "cipher" => "AES-256-CBC",
+    'cipher' => 'AES-256-CBC',
 
-    "key" => env("APP_KEY"),
+    'key' => env('APP_KEY'),
 
-    "previous_keys" => [
-        ...array_filter(explode(",", env("APP_PREVIOUS_KEYS", ""))),
+    'previous_keys' => [
+        ...array_filter(explode(',', env('APP_PREVIOUS_KEYS', ''))),
     ],
 
     /*
@@ -115,16 +115,16 @@ return [
     |
     */
 
-    "maintenance" => [
-        "driver" => env("APP_MAINTENANCE_DRIVER", "file"),
-        "store" => env("APP_MAINTENANCE_STORE", "database"),
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    "editor" => "vscode",
+    'editor' => 'antigravity',
 
-    "default_country_code" => "+91",
+    'default_country_code' => '+91',
 
-    "contact_email" => env("CONTACT_EMAIL", "contact@fitnessflow.com"),
-    "contact_phone" => env("CONTACT_PHONE", "+919265098227"),
-    "system_tenant_id" => env("SYSTEM_TENANT_ID", "system"),
+    'contact_email' => env('CONTACT_EMAIL', 'contact@fitnessflow.com'),
+    'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
+    'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
 ];

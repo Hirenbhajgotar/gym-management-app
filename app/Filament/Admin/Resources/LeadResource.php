@@ -20,6 +20,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use libphonenumber\PhoneNumberType;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class LeadResource extends Resource
 {
@@ -67,7 +69,12 @@ class LeadResource extends Resource
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
                     TextInput::make('email')->email()->required(),
-                    TextInput::make('phone')->tel()->required(),
+                    PhoneInput::make('phone')
+                        ->required()
+                        ->defaultCountry('IN')
+                        ->validateFor(
+                            type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
+                        ),
                 ]),
 
                 Grid::make(2)->schema([

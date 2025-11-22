@@ -116,13 +116,7 @@ class ViewLead extends ViewRecord
                                                             ->icon('phosphor-calendar'),
                                                         TextEntry::make('status')
                                                             ->label('Status')
-                                                            ->badge()
-                                                            ->color(fn (string $state): string => match ($state) {
-                                                                'pending' => 'warning',
-                                                                'completed' => 'success',
-                                                                'cancelled' => 'danger',
-                                                                default => 'gray',
-                                                            }),
+                                                            ->badge(),
                                                         TextEntry::make('type')
                                                             ->label('Interaction Type')
                                                             ->icon('phosphor-chat-circle'),
