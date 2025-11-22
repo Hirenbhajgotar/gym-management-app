@@ -199,6 +199,12 @@ class LeadResource extends Resource
                                     ->collapsible()
                                     ->columns(2),
                             ])
+                            ->createOptionUsing(function (array $data) {
+                                // Create the new state and return its ID
+                                $plan = MembershipPlan::create($data);
+
+                                return $plan->id;
+                            })
                             ->placeholder('Select a plan')
                             ->prefixIcon('phosphor-crown'),
 
