@@ -20,7 +20,9 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification as FacadesNotification;
+use libphonenumber\PhoneNumberType;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 {
@@ -59,15 +61,27 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                         ->schema([
                             \Filament\Forms\Components\Hidden::make('gym_id')
                                 ->default(Filament::getTenant()->id),
+
                             \Filament\Forms\Components\Hidden::make('created_by')
                                 ->default(auth()->user()->id),
+
                             \Filament\Forms\Components\TextInput::make('name')
                                 ->required(),
+
                             \Filament\Forms\Components\TextInput::make('email')
+                                ->required()
                                 ->email(),
-                            \Filament\Forms\Components\TextInput::make('phone'),
+
+                            PhoneInput::make('phone')
+                                ->required()
+                                ->defaultCountry('IN')
+                                ->validateFor(
+                                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
+                                ),
+
                             \Filament\Forms\Components\Select::make('source')
                                 ->options(LeadSource::class),
+
                             \Filament\Forms\Components\TagsInput::make('interest')
                                 ->splitKeys(['Tab', ','])
                                 ->placeholder(
@@ -79,6 +93,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                                         ->toArray(),
                                 )
                                 ->columnSpanFull(),
+
                             \Filament\Forms\Components\Textarea::make('notes')
                                 ->columnSpanFull(),
                         ])
