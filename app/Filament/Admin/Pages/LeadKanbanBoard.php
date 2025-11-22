@@ -89,7 +89,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     public function addFollowUpAction(): Action
     {
-        return Action::make('add_follow_up')
+        return Action::make('addFollowUp')
             ->label('Add Follow-Up')
             ->icon('heroicon-m-plus-circle')
             ->color('primary')
@@ -136,7 +136,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function convertToMemberAction(): Action
     {
-        return Action::make('convert_to_member')
+        return Action::make('convertToMember')
             ->label('Convert to Member')
             ->icon('heroicon-m-user-plus')
             ->color('primary')
