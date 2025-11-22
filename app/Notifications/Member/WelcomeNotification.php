@@ -46,7 +46,8 @@ class WelcomeNotification extends Notification implements HasGymContext
             ->subject('Welcome to ' . $this->member->gym->name)
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('Welcome to our gym! We are excited to have you on board.')
-            ->line('Thank you for joining us!');
+            ->line('Thank you for joining us!')
+            ->salutation('Regards, ' . $this->member->gym->name);
     }
 
     /**
