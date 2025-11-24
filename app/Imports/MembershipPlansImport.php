@@ -9,10 +9,15 @@ use Illuminate\Validation\Rule;
 
 class MembershipPlansImport extends BaseImporter
 {
+    public function __construct(public string $tenantId)
+    {
+        parent::__construct();
+    }
+
     public function processRow($row): void
     {
         MembershipPlan::create([
-            'gym_id' => Filament::getTenant()->id,
+            'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'description' => $row['description'],
             'price' => $row['price'],

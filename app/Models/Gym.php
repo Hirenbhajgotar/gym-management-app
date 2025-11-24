@@ -38,6 +38,7 @@ use Illuminate\Support\Str;
  * @property-read int|null $trainers_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
  * @property-read int|null $users_count
+ *
  * @method static \Database\Factories\GymFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newQuery()
@@ -47,6 +48,7 @@ use Illuminate\Support\Str;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperGym
  */
@@ -55,12 +57,12 @@ class Gym extends Model
 {
     use HasFactory;
 
-    protected $fillable = ["name", "slug"];
+    protected $fillable = ['name', 'slug'];
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, "gym_user")
-            ->withPivot(["role", "active"])
+        return $this->belongsToMany(User::class, 'gym_user')
+            ->withPivot(['role', 'active'])
             ->withTimestamps();
     }
 
@@ -76,7 +78,7 @@ class Gym extends Model
 
     public function address(): MorphOne
     {
-        return $this->morphOne(Address::class, "addressable");
+        return $this->morphOne(Address::class, 'addressable');
     }
 
     public static function generateUniqueSlug(string $name): string
@@ -85,7 +87,7 @@ class Gym extends Model
         $slug = $baseSlug;
         $counter = 1;
 
-        while (self::where("slug", $slug)->exists()) {
+        while (self::where('slug', $slug)->exists()) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }
@@ -131,7 +133,7 @@ class Gym extends Model
     public function owner()
     {
         return $this->users()
-            ->wherePivot("role", \App\Enums\DefaultRole::GYM_OWNER->value)
+            ->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)
             ->first();
     }
 
@@ -148,7 +150,7 @@ class Gym extends Model
             return $currentTenant->users();
         }
 
-        return User::query()->whereRaw("1 = 0"); // Return an empty query
+        return User::query()->whereRaw('1 = 0'); // Return an empty query
     }
 
     public function settings(): HasMany
@@ -158,7 +160,7 @@ class Gym extends Model
 
     public function getSetting(string $key, mixed $default = null): mixed
     {
-        $setting = $this->settings()->where("key", $key)->first();
+        $setting = $this->settings()->where('key', $key)->first();
 
         return $setting ? $setting->value : $default;
     }

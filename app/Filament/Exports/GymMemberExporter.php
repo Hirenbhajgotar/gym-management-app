@@ -14,9 +14,7 @@ class GymMemberExporter extends Exporter
     public static function getColumns(): array
     {
         return [
-            ExportColumn::make('gym.name'),
             ExportColumn::make('name'),
-            ExportColumn::make('profile_photo'),
             ExportColumn::make('email'),
             ExportColumn::make('phone'),
             ExportColumn::make('weight'),

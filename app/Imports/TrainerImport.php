@@ -4,16 +4,19 @@ namespace App\Imports;
 
 use App\Enums\Currency;
 use App\Models\Trainer;
-use Filament\Facades\Filament;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-class TrainerImport extends BaseImporter
+class TrainerImport extends BaseImporter implements ShouldQueue
 {
+    public function __construct(public string $tenantId)
+    {
+        parent::__construct();
+    }
+
     protected function processRow(array $row)
     {
-        $tenant = Filament::getTenant();
-
         $formattedRow = [];
         foreach ($row as $key => $value) {
             $formattedRow[Str::slug($key, '_')] = $value;
@@ -26,7 +29,7 @@ class TrainerImport extends BaseImporter
 
         // Map Excel row data to Trainer model
         $data = [
-            'gym_id' => $tenant->id ?? null,
+            'gym_id' => $this->tenantId,
             'name' => $formattedRow['name'] ?? null,
             'email' => $formattedRow['email'] ?? null,
             'phone' => $formattedRow['phone'] ?? null,

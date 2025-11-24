@@ -103,7 +103,8 @@ class ExcelImportAction extends Action
             }
 
             // Instantiate the importer and queue the import.
-            $importer = new $importerClass($modelClass);
+            $tenantId = \Filament\Facades\Filament::getTenant()->id;
+            $importer = new $importerClass($tenantId);
             Excel::import($importer, $filePath);
         });
     }
