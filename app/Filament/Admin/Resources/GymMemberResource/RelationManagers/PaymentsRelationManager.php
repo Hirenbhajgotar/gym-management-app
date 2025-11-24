@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\MembershipPlan;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
@@ -33,6 +34,10 @@ class PaymentsRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Hidden::make('member_id')
                             ->default(fn ($livewire) => $livewire->ownerRecord->id),
+
+                        Forms\Components\Hidden::make('gym_id')
+                            ->default(fn ($livewire) => Filament::getTenant()->id),
+
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->placeholder('Select a membership plan')
@@ -61,6 +66,7 @@ class PaymentsRelationManager extends RelationManager
                                     ->toArray();
                             })
                             ->dehydrated(true),
+
                         Forms\Components\TextInput::make('amount')
                             ->numeric()
                             ->required()
@@ -72,6 +78,7 @@ class PaymentsRelationManager extends RelationManager
                             ->minValue(0)
                             ->step(0.01)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
                         Forms\Components\Select::make('currency')
                             ->options(collect(Currency::cases())->mapWithKeys(
                                 fn (Currency $method) => [$method->value => $method->getLabel()]
@@ -79,12 +86,14 @@ class PaymentsRelationManager extends RelationManager
                             ->required()
                             ->default(Currency::INR->value)
                             ->reactive(),
+
                         Forms\Components\Select::make('payment_method')
                             ->options(collect(PaymentMethod::cases())->mapWithKeys(
                                 fn (PaymentMethod $method) => [$method->value => $method->getLabel()]
                             ))
                             ->required()
                             ->default(PaymentMethod::CASH->value),
+
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
                             ->live()
@@ -100,24 +109,21 @@ class PaymentsRelationManager extends RelationManager
                                     }
                                 }
                             }),
+
                         Forms\Components\DatePicker::make('membership_end')
                             ->placeholder('Auto-calculated based on plan')
                             ->required(),
-                        // Forms\Components\Select::make('status')
-                        //     ->options([
-                        //         'completed' => 'Completed',
-                        //         'pending' => 'Pending',
-                        //     ])
-                        //     ->required()
-                        //     ->default('completed'),
+
                         Forms\Components\ToggleButtons::make('status')
                             ->inline()
                             ->options(PaymentStatus::class)
                             ->required(),
+
                         Forms\Components\Textarea::make('notes')
                             ->maxLength(65535)
                             ->placeholder('e.g., Paid via UPI ID: user@upi')
                             ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
                         Forms\Components\DatePicker::make('payment_date')
                             ->required()
                             ->default(now()),
@@ -136,16 +142,19 @@ class PaymentsRelationManager extends RelationManager
                     ->label('Plan')
                     ->badge()
                     ->color('success'),
+
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)
                     ->summarize(Tables\Columns\Summarizers\Sum::make()),
+
                 Tables\Columns\TextColumn::make('payment_method')
                     ->badge()
                     ->color('info')
                     ->formatStateUsing(fn ($state) => ucfirst($state)),
+
                 Tables\Columns\TextColumn::make('status')
                     ->badge(),
-                // ->color(fn($state) => $state === 'completed' ? 'success' : 'warning'),
+
                 Tables\Columns\TextColumn::make('payment_date')
                     ->date()
                     ->badge()
@@ -154,13 +163,15 @@ class PaymentsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('payment_method')
                     ->options([
-                        'cash' => 'Cash',
-                        'upi' => 'UPI',
+                        PaymentMethod::CASH->value => PaymentMethod::CASH->getLabel(),
+                        PaymentMethod::UPI->value => PaymentMethod::UPI->getLabel(),
+                        PaymentMethod::CREDIT_DEBIT_CARD->value => PaymentMethod::CREDIT_DEBIT_CARD->getLabel(),
                     ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'completed' => 'Completed',
-                        'pending' => 'Pending',
+                        PaymentStatus::COMPLETED->value => PaymentStatus::COMPLETED->getLabel(),
+                        PaymentStatus::PENDING->value => PaymentStatus::PENDING->getLabel(),
+                        PaymentStatus::EXPIRED->value => PaymentStatus::EXPIRED->getLabel(),
                     ]),
             ])
             ->headerActions([
@@ -211,6 +222,9 @@ class PaymentsRelationManager extends RelationManager
                         // Update the member's payment_status based on the new payment's status
                         $member->update([
                             'payment_status' => $paymentData['status'] ?? null,
+                            'membership_start' => $paymentData['membership_start'] ?? $member->membership_start,
+                            'membership_end' => $paymentData['membership_end'] ?? $member->membership_end,
+                            'gym_membership_plan_id' => $paymentData['membership_plan_id'] ?? $member->gym_membership_plan_id,
                         ]);
 
                         // If there was a previous payment, mark it as expired
@@ -291,6 +305,9 @@ class PaymentsRelationManager extends RelationManager
                         $member = $this->ownerRecord;
                         $member->update([
                             'payment_status' => $paymentData['status'] ?? null,
+                            'membership_start' => $paymentData['membership_start'] ?? $member->membership_start,
+                            'membership_end' => $paymentData['membership_end'] ?? $member->membership_end,
+                            'gym_membership_plan_id' => $paymentData['membership_plan_id'] ?? $member->gym_membership_plan_id,
                         ]);
 
                         $recipient = auth()->user();

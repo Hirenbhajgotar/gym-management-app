@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
@@ -52,6 +53,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read int|null $payments_count
  * @property-read \App\Models\Trainer|null $trainer
  * @property-read \App\Models\User|null $user
+ *
  * @method static \Database\Factories\GymMemberFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember hasTrainer()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember membershipActive()
@@ -78,6 +80,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereWeight($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperGymMember
  */
@@ -178,7 +181,7 @@ class GymMember extends Model
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 
@@ -220,12 +223,12 @@ class GymMember extends Model
         return $this->belongsTo(Trainer::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function payments()
+    public function payments(): HasMany
     {
         return $this->hasMany(MemberPayment::class, 'member_id', 'id');
     }

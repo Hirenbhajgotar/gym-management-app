@@ -112,13 +112,9 @@ class GymSettings extends Page implements HasActions, HasForms
                                     $set(
                                         "membership_expiry_notifications",
                                         isset(
-                                            $settings[
-                                                "membership_expiry_notifications"
-                                            ],
+                                            $settings["membership_expiry_notifications"],
                                         ) &&
-                                        $settings[
-                                            "membership_expiry_notifications"
-                                        ] === "true"
+                                            $settings["membership_expiry_notifications"] === "true"
                                             ? true
                                             : false,
                                     );
@@ -127,7 +123,7 @@ class GymSettings extends Page implements HasActions, HasForms
                                         isset(
                                             $settings["birthday_notifications"],
                                         ) &&
-                                        $settings["birthday_notifications"] ===
+                                            $settings["birthday_notifications"] ===
                                             "true"
                                             ? true
                                             : false,
@@ -137,7 +133,7 @@ class GymSettings extends Page implements HasActions, HasForms
                                         isset(
                                             $settings["attendance_reminders"],
                                         ) &&
-                                        $settings["attendance_reminders"] ===
+                                            $settings["attendance_reminders"] ===
                                             "true"
                                             ? true
                                             : false,
@@ -145,41 +141,41 @@ class GymSettings extends Page implements HasActions, HasForms
                                     $set(
                                         "payment_reminders",
                                         isset($settings["payment_reminders"]) &&
-                                        $settings["payment_reminders"] ===
+                                            $settings["payment_reminders"] ===
                                             "true"
                                             ? true
                                             : false,
                                     );
-                                     $set(
-                                         "followup_reminders",
-                                         isset(
-                                             $settings["followup_reminders"],
-                                         ) &&
-                                         $settings["followup_reminders"] ===
-                                             "true"
-                                             ? true
-                                             : false,
-                                     );
-                                     $set(
-                                         "lead_reminders_notifications",
-                                         isset(
-                                             $settings["lead_reminders_notifications"],
-                                         ) &&
-                                         $settings["lead_reminders_notifications"] ===
-                                             "true"
-                                             ? true
-                                             : false,
-                                     );
+                                    $set(
+                                        "followup_reminders",
+                                        isset(
+                                            $settings["followup_reminders"],
+                                        ) &&
+                                            $settings["followup_reminders"] ===
+                                            "true"
+                                            ? true
+                                            : false,
+                                    );
+                                    $set(
+                                        "lead_reminders_notifications",
+                                        isset(
+                                            $settings["lead_reminders_notifications"],
+                                        ) &&
+                                            $settings["lead_reminders_notifications"] ===
+                                            "true"
+                                            ? true
+                                            : false,
+                                    );
                                 } else {
                                     $set(
                                         "membership_expiry_notifications",
                                         false,
                                     );
-                                     $set("birthday_notifications", false);
-                                     $set("attendance_reminders", false);
-                                     $set("payment_reminders", false);
-                                     $set("followup_reminders", false);
-                                     $set("lead_reminders_notifications", false);
+                                    $set("birthday_notifications", false);
+                                    $set("attendance_reminders", false);
+                                    $set("payment_reminders", false);
+                                    $set("followup_reminders", false);
+                                    $set("lead_reminders_notifications", false);
                                 }
                             })
                             ->helperText(
@@ -215,17 +211,17 @@ class GymSettings extends Page implements HasActions, HasForms
                                 "Send payment reminders for pending dues",
                             ),
 
-                         Forms\Components\Toggle::make("followup_reminders")
-                             ->label("Follow-up Reminders")
-                             ->helperText(
-                                 "Send follow-up reminders for new leads",
-                             ),
+                        Forms\Components\Toggle::make("followup_reminders")
+                            ->label("Follow-up Reminders")
+                            ->helperText(
+                                "Send follow-up reminders for new leads",
+                            ),
 
-                         Forms\Components\Toggle::make("lead_reminders_notifications")
-                             ->label("Lead Reminders")
-                             ->helperText(
-                                 "Send reminders for pending leads that need attention",
-                             ),
+                        Forms\Components\Toggle::make("lead_reminders_notifications")
+                            ->label("Lead Reminders")
+                            ->helperText(
+                                "Send reminders for pending leads that need attention",
+                            ),
                     ])
                     ->columns(2),
             ]);
@@ -492,7 +488,7 @@ class GymSettings extends Page implements HasActions, HasForms
                         "amount" => $package->price,
                         "currency" => "INR",
                         "receipt" =>
-                            "WAP-" .
+                        "WAP-" .
                             $package->id .
                             "-" .
                             $gymId .

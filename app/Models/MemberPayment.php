@@ -30,6 +30,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read \App\Models\Gym|null $gym
  * @property-read \App\Models\GymMember|null $member
  * @property-read \App\Models\MembershipPlan|null $membershipPlan
+ *
  * @method static \Database\Factories\MemberPaymentFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newQuery()
@@ -48,6 +49,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment wherePaymentMethod($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperMemberPayment
  */
