@@ -345,6 +345,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             event(new DatabaseNotificationsSent($recipient));
         }
 
+        // Dispatch the ImportCompleted event to refresh the list page.
         event(new \App\Events\ImportCompleted($recipient->id));
     }
 

@@ -40,8 +40,8 @@ class AddressForm extends Field
             'state_id' => $state['state_id'] ?? null,
             'country_id' => $state['country_id'] ?? null,
             'postal_code' => $state['postal_code'] ?? null,
-            'latitude' => $state['latitude'] ?? null,
-            'longitude' => $state['longitude'] ?? null,
+            'latitude' => isset($state['latitude']) && ! empty($state['latitude']) ? $state['latitude'] : null,
+            'longitude' => isset($state['longitude']) && ! empty($state['longitude']) ? $state['longitude'] : null,
         ];
 
         if ($address = $relationship->first()) {

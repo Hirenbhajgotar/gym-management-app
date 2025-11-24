@@ -73,6 +73,11 @@ abstract class BaseEmployeeResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('profile_photo')
+                    ->circular()
+                    ->extraImgAttributes(['loading' => 'lazy'])
+                    ->label(''),
+
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('email')
@@ -155,6 +160,15 @@ abstract class BaseEmployeeResource extends Resource
                 ->description('Enter the ' . strtolower(static::getLabel()) . ' personal information')
                 ->icon('heroicon-o-identification')
                 ->schema([
+                    Forms\Components\FileUpload::make('profile_photo')
+                        ->image()
+                        ->avatar()
+                        ->imageEditor()
+                        ->circleCropper()
+                        ->directory('employee-photos')
+                        ->maxSize(2048)
+                        ->columnSpanFull(),
+
                     Grid::make(2)
                         ->schema([
                             Forms\Components\TextInput::make('name')
@@ -193,7 +207,6 @@ abstract class BaseEmployeeResource extends Resource
                         ->schema([
                             Forms\Components\DatePicker::make('employeeDetails.date_of_birth')
                                 ->label('Date of Birth')
-                                ->required()
                                 ->maxDate(now()->subYears(16))
                                 ->displayFormat('M d, Y')
                                 ->prefixIcon('heroicon-o-calendar-days')
@@ -220,14 +233,12 @@ abstract class BaseEmployeeResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('employeeDetails.emergency_contact_name')
                                 ->label('Emergency Contact Name')
-                                ->required()
                                 ->maxLength(100)
                                 ->placeholder('John Doe')
                                 ->prefixIcon('heroicon-o-user'),
 
                             Forms\Components\Select::make('employeeDetails.emergency_contact_relationship')
                                 ->label('Relationship')
-                                ->required()
                                 ->options([
                                     'spouse' => 'Spouse',
                                     'parent' => 'Parent',
@@ -244,7 +255,6 @@ abstract class BaseEmployeeResource extends Resource
                         ->schema([
                             PhoneInput::make('employeeDetails.emergency_contact_phone')
                                 ->defaultCountry('IN')
-                                ->required()
                                 ->validateFor(
                                     country: ['IN', 'PK', 'BD', 'US'],
                                     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],

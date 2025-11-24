@@ -32,10 +32,9 @@ class ViewManager extends ViewRecord
                     ->icon('heroicon-o-user-circle')
                     ->schema([
                         Components\Split::make([
-                            Components\ImageEntry::make('avatar')
+                            Components\ImageEntry::make('profile_photo')
                                 ->label('')
                                 ->circular()
-                                ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=6366F1')
                                 ->grow(false),
 
                             Components\Grid::make(2)
@@ -178,7 +177,7 @@ class ViewManager extends ViewRecord
                     ->description('Job-related information')
                     ->icon('heroicon-o-briefcase')
                     ->schema([
-                        Components\Grid::make(2)
+                        Components\Grid::make(3)
                             ->schema([
                                 Components\TextEntry::make('employeeDetails.hire_date')
                                     ->label('Hire Date')
@@ -202,10 +201,6 @@ class ViewManager extends ViewRecord
                                     ->label('Monthly Salary')
                                     ->money('INR')
                                     ->icon('heroicon-o-banknotes'),
-
-                                // Components\TextEntry::make('employeeDetails.employee_id')
-                                //     ->label('Employee ID')
-                                //     ->icon('heroicon-o-identification'),
                             ]),
                     ])
                     ->collapsible(),
