@@ -250,6 +250,7 @@ class ViewManager extends ViewRecord
                                 Components\IconEntry::make('email_verified_at')
                                     ->label('Email Verified')
                                     ->boolean()
+                                    ->state(fn ($record) => ! is_null($record->email_verified_at))
                                     ->trueIcon('heroicon-o-check-badge')
                                     ->falseIcon('heroicon-o-exclamation-triangle')
                                     ->trueColor('success')

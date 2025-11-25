@@ -32,10 +32,9 @@ class ViewReceptionist extends ViewRecord
                     ->icon('heroicon-o-user-circle')
                     ->schema([
                         Components\Split::make([
-                            Components\ImageEntry::make('avatar')
+                            Components\ImageEntry::make('profile_photo')
                                 ->label('')
                                 ->circular()
-                                ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&color=FFFFFF&background=6366F1')
                                 ->grow(false),
 
                             Components\Grid::make(2)
@@ -178,7 +177,7 @@ class ViewReceptionist extends ViewRecord
                     ->description('Job-related information')
                     ->icon('heroicon-o-briefcase')
                     ->schema([
-                        Components\Grid::make(2)
+                        Components\Grid::make(3)
                             ->schema([
                                 Components\TextEntry::make('employeeDetails.hire_date')
                                     ->label('Hire Date')
@@ -255,6 +254,7 @@ class ViewReceptionist extends ViewRecord
                                 Components\IconEntry::make('email_verified_at')
                                     ->label('Email Verified')
                                     ->boolean()
+                                    ->state(fn ($record) => ! is_null($record->email_verified_at))
                                     ->trueIcon('heroicon-o-check-badge')
                                     ->falseIcon('heroicon-o-exclamation-triangle')
                                     ->trueColor('success')

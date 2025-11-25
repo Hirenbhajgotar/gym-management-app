@@ -38,7 +38,7 @@ class ListGymMembers extends ListRecords
                 ),
 
             // Create action
-            Actions\CreateAction::make()->label('Add Member')
+            Actions\CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
