@@ -49,11 +49,11 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      */
     public function __construct()
     {
-        // Notification::make()
-        //     ->info()
-        //     ->title('Import Started')
-        //     ->body('Your import is being processed in the background. You will be notified once it is complete.')
-        //     ->send();
+        Notification::make()
+            ->info()
+            ->title('Import Started')
+            ->body('Your import is being processed in the background. You will be notified once it is complete.')
+            ->send();
 
         $this->importRecord = Import::create([
             'completed_at' => null,
