@@ -104,4 +104,8 @@ return [
         ],
     ],
 
+    'exports' => [
+        'disk' => env('FILAMENT_EXPORT_DISK', 'local'),
+    ],
+
 ];
