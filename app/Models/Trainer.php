@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read \App\Models\Gym $gym
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
  * @property-read int|null $members_count
+ *
  * @method static Builder<static>|Trainer available()
  * @method static \Database\Factories\TrainerFactory factory($count = null, $state = [])
  * @method static Builder<static>|Trainer newModelQuery()
@@ -51,6 +52,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static Builder<static>|Trainer wherePtSalaryPerMember($value)
  * @method static Builder<static>|Trainer whereSpecialization($value)
  * @method static Builder<static>|Trainer whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperTrainer
  */
@@ -72,6 +74,7 @@ class Trainer extends Model
         'basic_salary',
         'pt_salary_per_member',
         'currency',
+        'profile_photo',
     ];
 
     protected $casts = [
