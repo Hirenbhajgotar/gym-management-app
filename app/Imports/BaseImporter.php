@@ -18,7 +18,6 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Class BaseImporter
@@ -34,8 +33,6 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
     protected int $successfulRows = 0;
 
     protected int $failedRows = 0;
-
-    protected array $failedData = [];
 
     protected $importRecord;
 
@@ -102,7 +99,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      */
     public function chunkSize(): int
     {
-        return 3000;
+        return 1000;
     }
 
     /**
@@ -151,7 +148,6 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 $this->failedRows++;
                 $failedRow = $data;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
-                $this->failedData[] = $failedRow;
 
                 FailedImportRow::create([
                     'import_id' => $this->importRecord->id,
@@ -172,7 +168,6 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     $this->failedRows++;
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
-                    $this->failedData[] = $failedRow;
                     FailedImportRow::create([
                         'import_id' => $this->importRecord->id,
                         'data' => json_encode($failedRow),
@@ -181,12 +176,23 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 }
             }
 
-            // Update the import record with the current progress.
-            $this->importRecord->update([
-                'processed_rows' => $this->successfulRows + $this->failedRows,
-                'successful_rows' => $this->successfulRows,
-            ]);
+            // Update the import record with the current progress every 100 rows to reduce database calls.
+            if (($this->successfulRows + $this->failedRows) % 100 === 0) {
+                $this->importRecord->update([
+                    'processed_rows' => $this->successfulRows + $this->failedRows,
+                    'successful_rows' => $this->successfulRows,
+                ]);
+            }
+
+            // Free memory by unsetting variables
+            unset($rowData, $data, $validator, $failedRow);
         }
+
+        // Final update of the import record
+        $this->importRecord->update([
+            'processed_rows' => $this->successfulRows + $this->failedRows,
+            'successful_rows' => $this->successfulRows,
+        ]);
 
         // Perform actions after the collection has been processed.
         $this->afterCollection($filteredCollection);
@@ -221,8 +227,8 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      */
     protected function afterCollection(Collection $collection): void
     {
-        // If there are any failed rows, generate an Excel file with the details.
-        if ($this->failedRows > 0) {
+        // If there are failed rows but not too many, generate an Excel file with the details.
+        if ($this->failedRows > 0 && $this->failedRows <= 1000) {
             $this->generateFailedRowsExcel();
         }
 
@@ -237,48 +243,72 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
     }
 
     /**
-     * Generate an Excel file containing the rows that failed to import.
+     * Generate a CSV file containing the rows that failed to import.
      *
-     * This method creates an Excel file with the data of the failed rows and their corresponding error messages.
+     * This method creates a CSV file with the data of the failed rows and their corresponding error messages.
      * The file is stored in the 'public' disk and the path is saved for later use.
      */
     protected function generateFailedRowsExcel(): void
     {
-        // Generate a unique file name and path for the failed rows report.
-        $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
-        $filePath = 'failed_imports/' . $fileName;
+        try {
+            // Generate a unique file name and path for the failed rows report.
+            $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.csv';
+            $filePath = 'failed_imports/' . $fileName;
 
-        // Create an anonymous class to handle the export of failed data to Excel.
-        $excel = (new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
-        {
-            protected $data;
+            Log::info('Generating failed rows CSV', [
+                'import_id' => $this->importRecord->id,
+                'file_path' => $filePath,
+                'failed_rows_count' => $this->failedRows,
+            ]);
 
-            public function __construct(array $data)
-            {
-                $this->data = $data;
+            // Generate CSV content manually to avoid memory issues
+            $failedRows = FailedImportRow::where('import_id', $this->importRecord->id)->get();
+
+            if ($failedRows->isEmpty()) {
+                Log::info('No failed rows to export');
+
+                return;
             }
 
-            public function array(): array
-            {
-                return $this->data;
+            $csvContent = '';
+
+            // Add headers
+            $firstRow = json_decode($failedRows->first()->data, true);
+            $csvContent .= implode(',', array_keys($firstRow)) . "\n";
+
+            // Add data rows
+            foreach ($failedRows as $failedRow) {
+                $data = json_decode($failedRow->data, true);
+                $csvContent .= implode(',', array_map(function ($value) {
+                    // Escape commas and quotes in CSV
+                    if (strpos($value, ',') !== false || strpos($value, '"') !== false) {
+                        return '"' . str_replace('"', '""', $value) . '"';
+                    }
+
+                    return $value;
+                }, $data)) . "\n";
             }
 
-            public function headings(): array
-            {
-                // If there is no data, return an empty array for headings.
-                if (empty($this->data)) {
-                    return [];
-                }
-                // Use the keys of the first row as headings for the Excel file.
-                $keys = array_keys($this->data[0]);
-
-                return $keys;
+            // Write to file
+            $fullPath = storage_path('app/public/' . $filePath);
+            $directory = dirname($fullPath);
+            if (! is_dir($directory)) {
+                mkdir($directory, 0755, true);
             }
-        });
 
-        // Store the Excel file in the 'public' disk.
-        Excel::store($excel, $filePath, 'public');
-        $this->failedFilePath = $filePath;
+            file_put_contents($fullPath, $csvContent);
+            $this->failedFilePath = $filePath;
+
+            Log::info('Failed rows CSV generated successfully', [
+                'import_id' => $this->importRecord->id,
+                'file_path' => $this->failedFilePath,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to generate failed rows CSV', [
+                'import_id' => $this->importRecord->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -307,32 +337,44 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             return;
         }
 
-        // If there are failed rows, add details to the message and provide a download link.
+        // If there are failed rows, add details to the message and provide a download link if not too many.
         if ($this->failedRows > 0) {
             $failedRows = number_format($this->failedRows) . ' ' . Str::plural('row', $this->failedRows);
             $message .= " {$failedRows} failed to import.";
 
-            // Generate the URL to download the failed rows report.
-            $downloadUrl = route('filament.failed-import.download', [
-                'importId' => $this->importRecord?->id,
-            ]);
+            if ($this->failedRows <= 1000) {
+                // Generate the URL to download the failed rows report.
+                $downloadUrl = route('filament.failed-import.download', [
+                    'importId' => $this->importRecord?->id,
+                ]);
 
-            // Send a danger notification with a download action.
-            Notification::make()
-                ->danger()
-                ->title('Import Completed')
-                ->body($message)
-                ->actions([
-                    Action::make('download_failed_rows')
-                        ->label('Download Failed Rows')
-                        ->icon('heroicon-o-arrow-down-tray')
-                        ->url($downloadUrl)
-                        ->openUrlInNewTab()
-                        ->markAsRead()
-                        ->color('danger'),
-                ])
-                ->sendToDatabase($recipient)
-                ->send();
+                // Send a danger notification with a download action.
+                Notification::make()
+                    ->danger()
+                    ->title('Import Completed')
+                    ->body($message)
+                    ->actions([
+                        Action::make('download_failed_rows')
+                            ->label('Download Failed Rows')
+                            ->icon('heroicon-o-arrow-down-tray')
+                            ->url($downloadUrl)
+                            ->openUrlInNewTab()
+                            ->markAsRead()
+                            ->color('danger'),
+                    ])
+                    ->sendToDatabase($recipient)
+                    ->send();
+            } else {
+                // Too many failed rows to generate Excel file
+                $message .= ' The failed rows report is too large to generate (more than 1000 failed rows). Please check your data and try importing smaller batches or fix the validation issues first.';
+
+                Notification::make()
+                    ->danger()
+                    ->title('Import Completed')
+                    ->body($message)
+                    ->sendToDatabase($recipient)
+                    ->send();
+            }
             event(new DatabaseNotificationsSent($recipient));
         } else {
             // If all rows were imported successfully, send a success notification.
