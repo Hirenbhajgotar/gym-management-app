@@ -146,7 +146,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             if ($validator->fails()) {
                 // If validation fails, record the failed row and error message.
                 $this->failedRows++;
-                $failedRow = $data;
+                $failedRow = $rowData;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
 
                 FailedImportRow::create([
