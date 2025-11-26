@@ -61,13 +61,13 @@ class TenantSocialConfigResource extends Resource
 
                         Grid::make(2)
                             ->schema([
-                                TextInput::make('account_name')
-                                    ->label('Account Name')
-                                    ->required()
-                                    ->maxLength(255),
+                                TextInput::make('page_name')
+                                    ->label('Account/Page Name')
+                                    ->maxLength(255)
+                                    ->helperText('The name of your Facebook Page, Instagram Account, or WhatsApp Business'),
 
-                                TextInput::make('account_id')
-                                    ->label('Account ID')
+                                TextInput::make('page_id')
+                                    ->label('Page/Account ID')
                                     ->required()
                                     ->maxLength(255)
                                     ->helperText('The unique identifier for your account on this platform'),
@@ -86,18 +86,17 @@ class TenantSocialConfigResource extends Resource
                                 Section::make('API Credentials')
                                     ->description('Configure API access for the social media platform')
                                     ->schema([
-                                        TextInput::make('api_key')
-                                            ->label('API Key')
-                                            ->password()
-                                            ->revealable()
-                                            ->maxLength(500)
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::IndiaMart->value, SocialPlatform::JustDial->value])),
+                                        TextInput::make('app_id')
+                                            ->label('App ID')
+                                            ->maxLength(255)
+                                            ->helperText('Facebook App ID or Business Account ID')
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
-                                        TextInput::make('api_secret')
-                                            ->label('API Secret')
+                                        TextInput::make('app_secret')
+                                            ->label('App Secret')
                                             ->password()
                                             ->revealable()
-                                            ->maxLength(500)
+                                            ->helperText('Facebook App Secret')
                                             ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
                                         TextInput::make('access_token')
@@ -107,12 +106,12 @@ class TenantSocialConfigResource extends Resource
                                             ->maxLength(1000)
                                             ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
-                                        TextInput::make('webhook_secret')
-                                            ->label('Webhook Secret')
+                                        TextInput::make('webhook_verify_token')
+                                            ->label('Webhook Verify Token')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(500)
-                                            ->helperText('Used to verify webhook requests from the platform')
+                                            ->helperText('Used to verify webhook subscription requests from the platform')
                                             ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
                                         TextInput::make('webhook_url')
@@ -328,12 +327,12 @@ class TenantSocialConfigResource extends Resource
                     ->badge()
                     ->sortable(),
 
-                TextColumn::make('account_name')
+                TextColumn::make('page_name')
                     ->label('Account Name')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('account_id')
+                TextColumn::make('page_id')
                     ->label('Account ID')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -381,6 +380,17 @@ class TenantSocialConfigResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
+                Tables\Actions\Action::make('verify_credentials')
+                    ->label('Verify Credentials')
+                    ->icon('heroicon-o-shield-check')
+                    ->color('success')
+                    ->action(fn (TenantSocialConfig $record) => self::verifyCredentials($record))
+                    ->requiresConfirmation()
+                    ->modalHeading('Verify Credentials')
+                    ->modalDescription('This will verify your credentials against the social media platform API.')
+                    ->modalSubmitActionLabel('Verify'),
+
                 Tables\Actions\Action::make('test_webhook')
                     ->label('Test Webhook')
                     ->icon('heroicon-o-bolt')
@@ -420,30 +430,55 @@ class TenantSocialConfigResource extends Resource
     }
 
     /**
+     * Verify social media credentials
+     */
+    private static function verifyCredentials(TenantSocialConfig $config): void
+    {
+        try {
+            $verifier = new \App\Services\SocialMediaCredentialVerifier;
+            $result = $verifier->verify($config);
+
+            if ($result['success']) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Credentials verified successfully')
+                    ->body($result['message'])
+                    ->success()
+                    ->send();
+            } else {
+                \Filament\Notifications\Notification::make()
+                    ->title('Credential verification failed')
+                    ->body($result['message'])
+                    ->danger()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            \Filament\Notifications\Notification::make()
+                ->title('Credential verification failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
      * Test webhook configuration
      */
     private static function testWebhook(TenantSocialConfig $config): void
     {
         try {
-            // Create test lead data
-            $testData = [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'phone' => '+919999999999',
-                'notes' => 'Test webhook from Filament admin',
-                'platform' => $config->platform->value,
-                'account_id' => $config->account_id,
-            ];
+            // Generate realistic webhook payload based on platform
+            $webhookData = self::generateTestWebhookPayload($config);
 
-            // Dispatch test job
+            // Dispatch test job with realistic data
             \App\Jobs\ProcessSocialMediaLead::dispatch(
-                $testData,
+                $webhookData,
                 $config->platform->value,
                 'test_' . uniqid()
             );
 
             \Filament\Notifications\Notification::make()
-                ->title('Test webhook sent successfully')
+                ->title('Test webhook dispatched')
+                ->body("A test lead for {$config->platform->getLabel()} has been queued for processing. Check the Leads page and Webhook Logs tab.")
                 ->success()
                 ->send();
         } catch (\Exception $e) {
@@ -453,5 +488,103 @@ class TenantSocialConfigResource extends Resource
                 ->danger()
                 ->send();
         }
+    }
+
+    /**
+     * Generate realistic webhook payload for testing
+     */
+    private static function generateTestWebhookPayload(TenantSocialConfig $config): array
+    {
+        $timestamp = time();
+        $uniqueId = uniqid('test_', true);
+
+        return match ($config->platform) {
+            \App\Enums\SocialPlatform::Facebook,
+            \App\Enums\SocialPlatform::Instagram => [
+                'object' => 'page',
+                'entry' => [
+                    [
+                        'id' => $config->page_id ?? '123456789',
+                        'time' => $timestamp,
+                        'changes' => [
+                            [
+                                'field' => 'leadgen',
+                                'value' => [
+                                    'leadgen_id' => 'lead_' . $uniqueId,
+                                    'page_id' => $config->page_id ?? '123456789',
+                                    'form_id' => $config->form_id ?? '987654321',
+                                    'adgroup_id' => '456789123',
+                                    'ad_id' => '789123456',
+                                    'created_time' => $timestamp,
+                                    'field_data' => [
+                                        ['name' => 'full_name', 'values' => ['Test User ' . date('His')]],
+                                        ['name' => 'email', 'values' => ["test.{$uniqueId}@example.com"]],
+                                        ['name' => 'phone_number', 'values' => ['+91' . rand(7000000000, 9999999999)]],
+                                        ['name' => 'city', 'values' => ['Mumbai']],
+                                        ['name' => 'fitness_goals', 'values' => ['Weight Loss']],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            \App\Enums\SocialPlatform::WhatsApp => [
+                'object' => 'whatsapp_business_account',
+                'entry' => [
+                    [
+                        'id' => $config->app_id ?? '123456789',
+                        'changes' => [
+                            [
+                                'field' => 'messages',
+                                'value' => [
+                                    'messaging_product' => 'whatsapp',
+                                    'metadata' => [
+                                        'display_phone_number' => $config->phone_number ?? '919999999999',
+                                        'phone_number_id' => $config->phone_number_id ?? 'phone_' . $uniqueId,
+                                    ],
+                                    'contacts' => [
+                                        [
+                                            'profile' => ['name' => 'Test User ' . date('His')],
+                                            'wa_id' => '91' . rand(7000000000, 9999999999),
+                                        ],
+                                    ],
+                                    'messages' => [
+                                        [
+                                            'from' => '91' . rand(7000000000, 9999999999),
+                                            'id' => 'msg_' . $uniqueId,
+                                            'timestamp' => $timestamp,
+                                            'type' => 'text',
+                                            'text' => [
+                                                'body' => 'Hi, I want to know about gym membership plans and pricing.',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            \App\Enums\SocialPlatform::YouTube => [
+                // YouTube doesn't have lead ads, but we can create a test payload
+                'name' => 'Test User ' . date('His'),
+                'email' => "test.{$uniqueId}@example.com",
+                'phone' => '+91' . rand(7000000000, 9999999999),
+                'notes' => 'Test YouTube inquiry - interested in fitness programs',
+                'platform' => 'youtube',
+            ],
+
+            default => [
+                'name' => 'Test User ' . date('His'),
+                'email' => "test.{$uniqueId}@example.com",
+                'phone' => '+91' . rand(7000000000, 9999999999),
+                'notes' => 'Test webhook from Filament admin',
+                'platform' => $config->platform->value,
+                'page_id' => $config->page_id,
+            ],
+        };
     }
 }
