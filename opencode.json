@@ -49,5 +49,13 @@
             },
             "enabled": true
         },
+        "context7": {
+            "type": "remote",
+            "url": "https://mcp.context7.com/mcp",
+            "headers": {
+                "CONTEXT7_API_KEY": "ctx7sk-44c99d93-c0a5-4335-80c7-6d347e132057"
+            },
+            "enabled": true
+        }
     }
 }
