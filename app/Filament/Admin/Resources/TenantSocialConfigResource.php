@@ -18,8 +18,8 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class TenantSocialConfigResource extends Resource
@@ -312,16 +312,6 @@ class TenantSocialConfigResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('gym.name')
-                    ->label('Gym')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('tenant.name')
-                    ->label('Tenant')
-                    ->searchable()
-                    ->sortable(),
-
                 TextColumn::make('platform')
                     ->label('Platform')
                     ->badge()
@@ -337,10 +327,8 @@ class TenantSocialConfigResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean()
-                    ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('Active'),
 
                 TextColumn::make('webhook_logs_count')
                     ->label('Webhooks')
@@ -372,11 +360,6 @@ class TenantSocialConfigResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active')
                     ->boolean(),
-
-                Tables\Filters\SelectFilter::make('gym')
-                    ->relationship('gym', 'name')
-                    ->searchable()
-                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -400,14 +383,22 @@ class TenantSocialConfigResource extends Resource
                     ->modalHeading('Test Webhook')
                     ->modalDescription('This will send a test webhook to verify the configuration.')
                     ->modalSubmitActionLabel('Send Test'),
+
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+
                     Tables\Actions\BulkAction::make('toggle_active')
                         ->label('Toggle Active')
+                        ->icon('phosphor-toggle-right')
+                        ->action(fn ($records) => $records->each->update(['is_active' => true])),
+
+                    Tables\Actions\BulkAction::make('toggle_inactive')
+                        ->label('Toggle Inactive')
                         ->icon('phosphor-toggle-left')
-                        ->action(fn ($records) => $records->each->update(['is_active' => ! $records->first()->is_active])),
+                        ->action(fn ($records) => $records->each->update(['is_active' => false])),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
