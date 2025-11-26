@@ -9,8 +9,14 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Backup Schedule using spatie/laravel-backup
+Schedule::command('backup:clean')->dailyAt('01:00');
+Schedule::command('backup:run')->dailyAt('01:00');
+
+// Error Schedule
 Schedule::command('errors:clean-resolved')->dailyAt('01:00');
 
+// Notification Schedule
 Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt(
     '09:00',
 );
@@ -18,6 +24,7 @@ Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt(
 // Run subscription renewal job daily at 2 AM
 Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');
 
+// Clean invalid exports weekly
 Schedule::command('exports:clean-invalid')->weekly();
 
 // Send followup reminders daily
