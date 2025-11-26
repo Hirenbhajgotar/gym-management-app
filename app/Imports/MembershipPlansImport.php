@@ -4,10 +4,10 @@ namespace App\Imports;
 
 use App\Enums\Currency;
 use App\Models\MembershipPlan;
-use Filament\Facades\Filament;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Validation\Rule;
 
-class MembershipPlansImport extends BaseImporter
+class MembershipPlansImport extends BaseImporter implements ShouldQueue
 {
     public function __construct(public string $tenantId)
     {
