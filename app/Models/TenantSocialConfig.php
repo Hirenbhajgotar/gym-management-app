@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Enums\SocialPlatform;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Crypt;
 
 /**
  * @property int $id
  * @property int $gym_id
- * @property string|null $platform
+ * @property \App\Enums\SocialPlatform|null $platform
  * @property string|null $page_id
  * @property string|null $page_name
  * @property string|null $form_id
@@ -29,8 +31,10 @@ use Illuminate\Support\Facades\Crypt;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read mixed $masked_token
  * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\User|null $assignedUser
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialMediaWebhookLog> $webhookLogs
  * @property-read int|null $webhook_logs_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig byPlatform($platform)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newModelQuery()
@@ -54,6 +58,7 @@ use Illuminate\Support\Facades\Crypt;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereTokenExpiresAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereWebhookVerifyToken($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperTenantSocialConfig
  */
@@ -77,12 +82,14 @@ class TenantSocialConfig extends Model
         'additional_config',
         'is_active',
         'token_expires_at',
+        'assigned_user_id',
     ];
 
     protected $casts = [
         'additional_config' => 'array',
         'is_active' => 'boolean',
         'token_expires_at' => 'datetime',
+        'platform' => SocialPlatform::class,
     ];
 
     protected $hidden = [
@@ -110,6 +117,11 @@ class TenantSocialConfig extends Model
     public function gym()
     {
         return $this->belongsTo(Gym::class);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     /**
