@@ -92,11 +92,6 @@ class TenantSocialConfig extends Model
         'platform' => SocialPlatform::class,
     ];
 
-    protected $hidden = [
-        'access_token',
-        'app_secret',
-    ];
-
     // Encrypt sensitive data
     protected function accessToken(): Attribute
     {
