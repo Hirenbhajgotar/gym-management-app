@@ -16,7 +16,9 @@ class ListTrainerAttendances extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->icon('heroicon-o-plus-circle')
+                ->color('primary'),
         ];
     }
 

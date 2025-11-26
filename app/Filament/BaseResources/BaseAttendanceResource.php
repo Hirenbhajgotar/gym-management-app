@@ -13,6 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -81,6 +82,12 @@ abstract class BaseAttendanceResource extends Resource
                         ToggleButtons::make('status')
                             ->inline()
                             ->options(AttendanceStatus::class)
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                if ($get('status') === AttendanceStatus::Absent->value) {
+                                    $set('check_in_time', null);
+                                    $set('check_out_time', null);
+                                }
+                            })
                             ->reactive()
                             ->required(),
 
