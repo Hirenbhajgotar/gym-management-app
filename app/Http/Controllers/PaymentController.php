@@ -9,8 +9,8 @@ use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -100,7 +100,7 @@ class PaymentController extends Controller
                 $request->razorpay_signature
             );
 
-            if (!$isVerified) {
+            if (! $isVerified) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment verification failed.',
@@ -110,7 +110,7 @@ class PaymentController extends Controller
             // Get payment record
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment record not found.',
@@ -161,8 +161,9 @@ class PaymentController extends Controller
                 // $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
                 $generatedSignature = hash_hmac('sha256', $request->getContent(), $secret);
 
-                if (!hash_equals($generatedSignature, $expectedSignature)) {
+                if (! hash_equals($generatedSignature, $expectedSignature)) {
                     Log::warning('Invalid webhook signature', ['payload' => $payload]);
+
                     return response()->json(['status' => 'error'], 400);
                 }
             }
@@ -174,8 +175,12 @@ class PaymentController extends Controller
                 $paymentEntity = $payload['payment']['entity'] ?? null;
                 if ($paymentEntity) {
                     $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
-                    if ($payment && $payment->payment_type === 'whatsapp_package') {
-                        $this->processWhatsAppPackagePurchase($payment);
+                    if ($payment) {
+                        if ($payment->payment_type === 'whatsapp_package') {
+                            $this->processWhatsAppPackagePurchase($payment);
+                        } elseif (str_starts_with($payment->payment_type, 'subscription_')) {
+                            $this->processSubscriptionPayment($payment);
+                        }
                     }
                 }
             }
@@ -223,7 +228,7 @@ class PaymentController extends Controller
 
         $tenant = Gym::where('id', $tenantId)->firstOrFail();
 
-        if (!$orderId || !$amount || !$key) {
+        if (! $orderId || ! $amount || ! $key) {
             abort(400, 'Invalid payment parameters');
         }
 
@@ -257,6 +262,62 @@ class PaymentController extends Controller
     }
 
     /**
+     * Process subscription payment
+     */
+    private function processSubscriptionPayment(Payment $payment): void
+    {
+        $subscriptionId = $payment->metadata['subscription_id'] ?? null;
+
+        if (! $subscriptionId) {
+            Log::error('Subscription ID not found in payment metadata', ['payment_id' => $payment->id]);
+
+            return;
+        }
+
+        $subscription = \App\Models\Subscription::find($subscriptionId);
+        if (! $subscription) {
+            Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
+
+            return;
+        }
+
+        $subscriptionService = app(\App\Services\SubscriptionService::class);
+
+        try {
+            DB::beginTransaction();
+
+            // Renew the subscription
+            $subscriptionService->renewSubscription($subscription);
+
+            // Clear pending renewal metadata
+            $metadata = $subscription->metadata ?? [];
+            unset($metadata['pending_renewal_order_id'], $metadata['pending_renewal_payment_id'], $metadata['pending_renewal_created_at']);
+            $subscription->update(['metadata' => $metadata]);
+
+            // Send success notification
+            $subscription->user->notify(new \App\Notifications\RenewalSuccessNotification($subscription));
+
+            DB::commit();
+
+            Log::info('Subscription payment processed successfully', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'user_id' => $subscription->user_id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to process subscription payment', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Send failure notification
+            $subscription->user->notify(new \App\Notifications\PaymentFailedNotification($subscription));
+        }
+    }
+
+    /**
      * Process WhatsApp package purchase
      */
     private function processWhatsAppPackagePurchase(Payment $payment): void
@@ -266,14 +327,16 @@ class PaymentController extends Controller
 
         $packageId = $payment->metadata['package_id'] ?? null;
 
-        if (!$packageId) {
+        if (! $packageId) {
             Log::error('Package ID not found in payment metadata', ['payment_id' => $payment->id]);
+
             return;
         }
 
         $package = WhatsAppMessagePackage::find($packageId);
-        if (!$package) {
+        if (! $package) {
             Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
+
             return;
         }
 

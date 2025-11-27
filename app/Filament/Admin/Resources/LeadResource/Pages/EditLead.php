@@ -44,7 +44,7 @@ class EditLead extends EditRecord
 
                     return redirect(static::getResource()::getUrl('index'));
                 })
-                ->visible(fn(Lead $record) => $record->status !== LeadStatus::CONVERTED),
+                ->visible(fn (Lead $record) => $record->status !== LeadStatus::CONVERTED),
 
             Actions\DeleteAction::make(),
 

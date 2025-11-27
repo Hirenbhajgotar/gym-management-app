@@ -4,7 +4,7 @@
             <div>
                 <div
                     class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-4">
-                    GymFlow
+                    {{config('app.name')}}
                 </div>
                 <p class="text-gray-400 mb-4">
                     The complete gym management solution for modern fitness businesses.
@@ -87,7 +87,7 @@
             </div>
         </div>
         <div class="border-t border-white/10 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 GymFlow. All rights reserved. Built with ❤️ for fitness entrepreneurs.</p>
+            <p>&copy; 2025 {{config('app.name')}}. All rights reserved. Built with ❤️ for fitness entrepreneurs.</p>
         </div>
     </div>
 </footer>

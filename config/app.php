@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -13,7 +12,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'FitnessFlow'),
 
     /*
     |--------------------------------------------------------------------------
@@ -100,9 +99,7 @@ return [
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
-        ...array_filter(
-            explode(',', env('APP_PREVIOUS_KEYS', ''))
-        ),
+        ...array_filter(explode(',', env('APP_PREVIOUS_KEYS', ''))),
     ],
 
     /*
@@ -123,5 +120,11 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'editor' => 'antigravity',
+
     'default_country_code' => '+91',
+
+    'contact_email' => env('CONTACT_EMAIL', 'contact@fitnessflow.com'),
+    'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
+    'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
 ];

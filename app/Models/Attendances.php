@@ -6,6 +6,43 @@ use App\Enums\AttendanceStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $attendanceable_type
+ * @property int $attendanceable_id
+ * @property int $gym_id
+ * @property \Illuminate\Support\Carbon|null $check_in_time
+ * @property \Illuminate\Support\Carbon|null $check_out_time
+ * @property AttendanceStatus|null $status
+ * @property string|null $note
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Model|\Eloquent $attendanceable
+ * @property-read mixed $duration
+ * @property-read mixed $duration_in_minutes
+ * @property-read \App\Models\Gym $gym
+ * @property-read mixed $is_active
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances absent()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byDate($date)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byGym($gymId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances completed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInTime($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckOutTime($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereUpdatedAt($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperAttendances
+ */
 class Attendances extends Model
 {
     protected $fillable = [

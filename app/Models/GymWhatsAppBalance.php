@@ -6,6 +6,31 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property int $balance_messages
+ * @property int $total_messages_purchased
+ * @property int $messages_used
+ * @property bool $low_balance_alert_sent
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Gym $gym
+ * @property-read mixed $remaining_messages
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereBalanceMessages($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereLowBalanceAlertSent($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereMessagesUsed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereTotalMessagesPurchased($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereUpdatedAt($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperGymWhatsAppBalance
+ */
 class GymWhatsAppBalance extends Model
 {
     protected $table = 'gym_whatsapp_balances';
@@ -36,7 +61,7 @@ class GymWhatsAppBalance extends Model
     protected function remainingMessages(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => $attributes['balance_messages'] - $attributes['messages_used'],
+            get: fn (mixed $value, array $attributes) => $attributes['balance_messages'] - $attributes['messages_used'],
         );
     }
 

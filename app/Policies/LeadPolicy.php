@@ -13,7 +13,11 @@ class LeadPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        // return true;
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]);
         // return true;
     }
 
@@ -22,7 +26,11 @@ class LeadPolicy
      */
     public function view(User $user, Lead $lead): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($lead->gym_id);
+        // return true;
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) && $user->gyms->contains($lead->gym_id);
     }
 
     /**
@@ -30,7 +38,10 @@ class LeadPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]);
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]);
     }
 
     /**
@@ -38,7 +49,10 @@ class LeadPolicy
      */
     public function update(User $user, Lead $lead): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($lead->gym_id);
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) && $user->gyms->contains($lead->gym_id);
         // return true;
     }
 
@@ -47,7 +61,10 @@ class LeadPolicy
      */
     public function delete(User $user, Lead $lead): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($lead->gym_id);
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) && $user->gyms->contains($lead->gym_id);
         // return true;
     }
 
@@ -56,7 +73,10 @@ class LeadPolicy
      */
     public function restore(User $user, Lead $lead): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($lead->gym_id);
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) && $user->gyms->contains($lead->gym_id);
     }
 
     /**
@@ -64,6 +84,9 @@ class LeadPolicy
      */
     public function forceDelete(User $user, Lead $lead): bool
     {
-        return $user->hasAnyRole([DefaultRole::GYM_OWNER->value, DefaultRole::MANAGER->value]) && $user->gyms->contains($lead->gym_id);
+        return $user->hasAnyRole([
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) && $user->gyms->contains($lead->gym_id);
     }
 }

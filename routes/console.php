@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\CheckWhatsAppBalanceJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -8,4 +9,38 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Backup Schedule using spatie/laravel-backup
+Schedule::command('backup:clean')->dailyAt('01:00');
+Schedule::command('backup:run')->dailyAt('01:00');
+
+// Error Schedule
 Schedule::command('errors:clean-resolved')->dailyAt('01:00');
+
+// Notification Schedule
+Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt(
+    '09:00',
+);
+
+// Run subscription renewal job daily at 2 AM
+Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');
+
+// Clean invalid exports weekly
+Schedule::command('exports:clean-invalid')->weekly();
+
+// Send followup reminders daily
+Schedule::command('followups:send-reminders')->daily();
+
+// Send pending lead reminders daily
+Schedule::command('leads:send-pending-reminders')->daily();
+
+// Check WhatsApp balance daily
+Schedule::job(new CheckWhatsAppBalanceJob)->daily();
+
+// Sync WhatsApp templates to database daily at 3 AM
+Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
+
+// Auto checkout gym members and trainers attendance daily at 11 PM and 1 AM
+Schedule::command('attendance:auto-checkout')->twiceDailyAt('23:00', '01:00');
+
+// Check for expired memberships daily
+Schedule::command('gym:check-membership-expiry')->daily();

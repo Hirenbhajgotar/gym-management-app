@@ -6,19 +6,25 @@ use App\Enums\DefaultRole;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
 use App\Models\EmployeeDetail;
+use App\Models\Gym;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
-use Filament\Facades\Filament;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ManagersImport extends BaseImporter implements WithColumnFormatting
+class ManagersImport extends BaseImporter implements ShouldQueue, WithColumnFormatting
 {
     protected array $dateColumns = [
         'date_of_birth',
         'hire_date',
     ];
+
+    public function __construct(public string $tenantId)
+    {
+        parent::__construct();
+    }
 
     public function columnFormats(): array
     {
@@ -32,9 +38,6 @@ class ManagersImport extends BaseImporter implements WithColumnFormatting
     {
         $managerRole = DefaultRole::MANAGER;
 
-        // Get the current tenant (gym) from Filament.
-        $tenant = Filament::getTenant();
-
         // Create a new user with basic information from the imported row.
         $user = User::create([
             'name' => $row['name'],
@@ -46,10 +49,10 @@ class ManagersImport extends BaseImporter implements WithColumnFormatting
         ]);
 
         // Attach the user to the current gym with the specified role.
-        $user->gyms()->attach($tenant->id, ['role' => $managerRole->value]);
+        $user->gyms()->attach($this->tenantId, ['role' => $managerRole->value]);
 
         // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
-        app(RolesAndPermissionsService::class)->assignRoleToTenant($tenant, $user, $managerRole);
+        app(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $managerRole);
 
         // Create the employee's detailed profile.
         EmployeeDetail::create([
@@ -75,7 +78,7 @@ class ManagersImport extends BaseImporter implements WithColumnFormatting
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'max:20'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'min:8'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', Rule::enum(GenderEnum::class)],
             'marital_status' => ['nullable', 'string', Rule::enum(MaritalStatusEnum::class)],

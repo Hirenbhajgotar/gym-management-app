@@ -23,13 +23,14 @@ class EnhancedNotificationService extends NotificationService
             ->where('gym_owner_id', $gymOwner->id)
             ->first();
 
-        if (!$settings) {
+        if (! $settings) {
             $this->logError($recipient, 'No notification settings found');
+
             return;
         }
 
         foreach ($channels as $channel) {
-            if (!$settings->isNotificationEnabled($type, $channel)) {
+            if (! $settings->isNotificationEnabled($type, $channel)) {
                 continue;
             }
 
@@ -41,6 +42,7 @@ class EnhancedNotificationService extends NotificationService
                     $channel = $fallbackChannel;
                 } else {
                     $this->logError($recipient, 'WhatsApp not verified, no fallback available');
+
                     continue;
                 }
             }
@@ -51,7 +53,7 @@ class EnhancedNotificationService extends NotificationService
                 ->where('is_active', true)
                 ->first();
 
-            if (!$template) {
+            if (! $template) {
                 continue;
             }
 
@@ -71,7 +73,7 @@ class EnhancedNotificationService extends NotificationService
         string $type,
         string $message
     ): void {
-        if (!$recipient->whatsapp_number) {
+        if (! $recipient->whatsapp_number) {
             return;
         }
 
@@ -89,7 +91,7 @@ class EnhancedNotificationService extends NotificationService
             'message' => $message,
             'response_data' => array_merge($result['data'] ?? [], [
                 'from_number' => $settings->whatsapp_business_number,
-                'to_number' => $recipient->whatsapp_number
+                'to_number' => $recipient->whatsapp_number,
             ]),
             'external_id' => $result['message_id'] ?? null,
             'sent_at' => $result['success'] ? now() : null,

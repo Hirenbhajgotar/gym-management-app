@@ -2,14 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
 {
@@ -31,13 +28,15 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
 
             if (empty($leadData)) {
                 Log::warning('No lead data extracted from WhatsApp webhook', ['data' => $data]);
+
                 return null;
             }
 
             // Get tenant configuration
             $config = $this->getTenantConfig($data['business_phone_number_id'] ?? $data['phone_number_id'] ?? '');
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for WhatsApp Business number', ['data' => $data]);
+
                 return null;
             }
 
@@ -63,6 +62,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
                 'data' => $data,
             ]);
             $this->logWebhook($data, 'error', $e->getMessage());
+
             return null;
         }
     }
@@ -78,6 +78,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             $verifyToken = config('services.whatsapp.webhook_verify_token');
             if (empty($verifyToken)) {
                 Log::warning('WhatsApp webhook verify token not configured');
+
                 return false;
             }
 
@@ -95,6 +96,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             $appSecret = config('services.whatsapp.app_secret');
             if (empty($appSecret)) {
                 Log::warning('WhatsApp app secret not configured');
+
                 return false;
             }
 
@@ -117,6 +119,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
                 'error' => $e->getMessage(),
                 'headers' => $headers,
             ]);
+
             return false;
         }
     }
@@ -144,12 +147,14 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             }
 
             Log::warning('Unknown WhatsApp webhook format', ['data' => $data]);
+
             return [];
         } catch (\Exception $e) {
             Log::error('Failed to extract lead data from WhatsApp', [
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             return [];
         }
     }
@@ -167,17 +172,17 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             'metadata' => [],
         ];
 
-        if (!isset($data['entry']) || !is_array($data['entry'])) {
+        if (! isset($data['entry']) || ! is_array($data['entry'])) {
             return [];
         }
 
         foreach ($data['entry'] as $entry) {
-            if (!isset($entry['changes']) || !is_array($entry['changes'])) {
+            if (! isset($entry['changes']) || ! is_array($entry['changes'])) {
                 continue;
             }
 
             foreach ($entry['changes'] as $change) {
-                if (!isset($change['value']) || !isset($change['value']['messages'])) {
+                if (! isset($change['value']) || ! isset($change['value']['messages'])) {
                     continue;
                 }
 
@@ -292,21 +297,23 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
     private function sendAcknowledgmentMessage(Lead $lead, TenantSocialConfig $config): void
     {
         try {
-            if (!$config->auto_reply_enabled) {
+            if (! $config->auto_reply_enabled) {
                 return;
             }
 
             $templateName = $config->auto_reply_template ?? 'welcome_message';
             $businessPhoneId = $config->business_phone_number_id;
 
-            if (!$businessPhoneId) {
+            if (! $businessPhoneId) {
                 Log::warning('No business phone number ID configured for WhatsApp auto-reply');
+
                 return;
             }
 
             $accessToken = $config->access_token ?? config('services.whatsapp.access_token');
-            if (!$accessToken) {
+            if (! $accessToken) {
                 Log::warning('No access token available for WhatsApp API');
+
                 return;
             }
 
@@ -341,12 +348,13 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
                 'Content-Type' => 'application/json',
             ])->post($url, $message);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('WhatsApp acknowledgment message failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'lead_id' => $lead->id,
                 ]);
+
                 return;
             }
 

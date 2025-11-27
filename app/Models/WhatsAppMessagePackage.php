@@ -6,6 +6,35 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property int $message_count
+ * @property numeric $price
+ * @property string $currency
+ * @property string|null $description
+ * @property bool $is_active
+ * @property int $sort_order
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static Builder<static>|WhatsAppMessagePackage active()
+ * @method static Builder<static>|WhatsAppMessagePackage newModelQuery()
+ * @method static Builder<static>|WhatsAppMessagePackage newQuery()
+ * @method static Builder<static>|WhatsAppMessagePackage ordered()
+ * @method static Builder<static>|WhatsAppMessagePackage query()
+ * @method static Builder<static>|WhatsAppMessagePackage whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereCurrency($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereDescription($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereId($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereIsActive($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereMessageCount($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereName($value)
+ * @method static Builder<static>|WhatsAppMessagePackage wherePrice($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereSortOrder($value)
+ * @method static Builder<static>|WhatsAppMessagePackage whereUpdatedAt($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperWhatsAppMessagePackage
+ */
 class WhatsAppMessagePackage extends Model
 {
     protected $table = 'whatsapp_message_packages';

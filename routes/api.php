@@ -1,14 +1,14 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\FacebookLeadController;
-use App\Http\Controllers\Api\InstagramLeadController;
-use App\Http\Controllers\Api\WhatsAppLeadController;
 use App\Http\Controllers\Api\IndiaMartLeadController;
+use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
 use App\Http\Controllers\Api\WebhookTestController;
+use App\Http\Controllers\Api\WhatsAppLeadController;
 use Filament\Facades\Filament;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,12 +82,12 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
     Route::get('/source/{source}', function (Request $request, $source) {
         $user = $request->user();
         $tenant = Filament::getTenant();
-        if (!$user || !$tenant?->id) {
+        if (! $user || ! $tenant?->id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $gym = \App\Models\Gym::where('id', $tenant->id)->first();
-        if (!$gym) {
+        if (! $gym) {
             return response()->json(['error' => 'No gym found for tenant'], 404);
         }
 
@@ -100,12 +100,12 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
     // Get lead analytics
     Route::get('/analytics', function (Request $request) {
         $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        if (! $user || ! $user->tenant_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $gym = \App\Models\Gym::where('tenant_id', $user->tenant_id)->first();
-        if (!$gym) {
+        if (! $gym) {
             return response()->json(['error' => 'No gym found for tenant'], 404);
         }
 
@@ -139,7 +139,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
     // Get all configurations for current tenant
     Route::get('/', function (Request $request) {
         $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        if (! $user || ! $user->tenant_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -150,7 +150,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
     // Get specific configuration
     Route::get('/{id}', function (Request $request, $id) {
         $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        if (! $user || ! $user->tenant_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -162,7 +162,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
     // Toggle configuration status
     Route::patch('/{id}/toggle', function (Request $request, $id) {
         $user = $request->user();
-        if (!$user || !$user->tenant_id) {
+        if (! $user || ! $user->tenant_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -170,7 +170,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
             ->where('id', $id)
             ->firstOrFail();
 
-        $config->update(['is_active' => !$config->is_active]);
+        $config->update(['is_active' => ! $config->is_active]);
 
         return response()->json([
             'success' => true,

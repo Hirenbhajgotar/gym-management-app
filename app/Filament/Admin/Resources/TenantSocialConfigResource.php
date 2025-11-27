@@ -2,35 +2,31 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\SocialPlatform;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Hidden;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Table;
 
 class TenantSocialConfigResource extends Resource
 {
     protected static ?string $model = TenantSocialConfig::class;
+
+    protected static ?string $tenantRelationshipName = 'socialConfigs';
 
     protected static ?string $navigationIcon = 'heroicon-o-share';
 
@@ -58,26 +54,20 @@ class TenantSocialConfigResource extends Resource
 
                                 Select::make('platform')
                                     ->label('Platform')
-                                    ->options([
-                                        'facebook' => 'Facebook',
-                                        'instagram' => 'Instagram',
-                                        'whatsapp' => 'WhatsApp Business',
-                                        'indiamart' => 'IndiaMart',
-                                        'justdial' => 'JustDial',
-                                    ])
+                                    ->options(SocialPlatform::class)
                                     ->required()
                                     ->reactive(),
                             ]),
 
                         Grid::make(2)
                             ->schema([
-                                TextInput::make('account_name')
-                                    ->label('Account Name')
-                                    ->required()
-                                    ->maxLength(255),
+                                TextInput::make('page_name')
+                                    ->label('Account/Page Name')
+                                    ->maxLength(255)
+                                    ->helperText('The name of your Facebook Page, Instagram Account, or WhatsApp Business'),
 
-                                TextInput::make('account_id')
-                                    ->label('Account ID')
+                                TextInput::make('page_id')
+                                    ->label('Page/Account ID')
                                     ->required()
                                     ->maxLength(255)
                                     ->helperText('The unique identifier for your account on this platform'),
@@ -96,41 +86,40 @@ class TenantSocialConfigResource extends Resource
                                 Section::make('API Credentials')
                                     ->description('Configure API access for the social media platform')
                                     ->schema([
-                                        TextInput::make('api_key')
-                                            ->label('API Key')
-                                            ->password()
-                                            ->revealable()
-                                            ->maxLength(500)
-                                            ->visible(fn($get) => in_array($get('platform'), ['indiamart', 'justdial'])),
+                                        TextInput::make('app_id')
+                                            ->label('App ID')
+                                            ->maxLength(255)
+                                            ->helperText('Facebook App ID or Business Account ID')
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
-                                        TextInput::make('api_secret')
-                                            ->label('API Secret')
+                                        TextInput::make('app_secret')
+                                            ->label('App Secret')
                                             ->password()
                                             ->revealable()
-                                            ->maxLength(500)
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->helperText('Facebook App Secret')
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
                                         TextInput::make('access_token')
                                             ->label('Access Token')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(1000)
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
-                                        TextInput::make('webhook_secret')
-                                            ->label('Webhook Secret')
+                                        TextInput::make('webhook_verify_token')
+                                            ->label('Webhook Verify Token')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(500)
-                                            ->helperText('Used to verify webhook requests from the platform')
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram', 'whatsapp'])),
+                                            ->helperText('Used to verify webhook subscription requests from the platform')
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
 
                                         TextInput::make('webhook_url')
                                             ->label('Webhook URL')
                                             ->url()
                                             ->maxLength(500)
                                             ->helperText('The URL where this platform will send webhook notifications')
-                                            ->default(fn() => url('/api/webhooks/social-media'))
+                                            ->default(fn () => url('/api/webhooks/social-media'))
                                             ->disabled()
                                             ->dehydrated(false),
 
@@ -138,13 +127,13 @@ class TenantSocialConfigResource extends Resource
                                             ->label('Page ID')
                                             ->maxLength(255)
                                             ->helperText('Facebook/Instagram Page ID')
-                                            ->visible(fn($get) => in_array($get('platform'), ['facebook', 'instagram'])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value])),
 
                                         TextInput::make('phone_number_id')
                                             ->label('Phone Number ID')
                                             ->maxLength(255)
                                             ->helperText('WhatsApp Business Phone Number ID')
-                                            ->visible(fn($get) => $get('platform') === 'whatsapp'),
+                                            ->visible(fn ($get) => $get('platform') === SocialPlatform::WhatsApp->value),
                                     ]),
                             ]),
 
@@ -172,14 +161,14 @@ class TenantSocialConfigResource extends Resource
                                                 'specific_user' => 'Specific User',
                                             ])
                                             ->default('round_robin')
-                                            ->visible(fn($get) => $get('auto_assign')),
+                                            ->visible(fn ($get) => $get('auto_assign')),
 
                                         Select::make('assigned_user_id')
                                             ->label('Assigned User')
                                             ->relationship('assignedUser', 'name')
                                             ->searchable()
                                             ->preload()
-                                            ->visible(fn($get) => $get('assignment_rule') === 'specific_user'),
+                                            ->visible(fn ($get) => $get('assignment_rule') === 'specific_user'),
 
                                         Select::make('default_status')
                                             ->label('Default Lead Status')
@@ -250,26 +239,26 @@ class TenantSocialConfigResource extends Resource
                                         Toggle::make('sms_acknowledgment_enabled')
                                             ->label('Send SMS Acknowledgment')
                                             ->default(true)
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
 
                                         Toggle::make('email_acknowledgment_enabled')
                                             ->label('Send Email Acknowledgment')
                                             ->default(true)
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
 
                                         Textarea::make('sms_template')
                                             ->label('SMS Template')
                                             ->helperText('Available variables: {name}, {gym_name}, {phone}')
                                             ->rows(3)
                                             ->default('Thank you {name} for your inquiry. We will contact you soon regarding your fitness requirements.')
-                                            ->visible(fn($get) => $get('sms_acknowledgment_enabled')),
+                                            ->visible(fn ($get) => $get('sms_acknowledgment_enabled')),
 
                                         Textarea::make('email_template')
                                             ->label('Email Template')
                                             ->helperText('Available variables: {name}, {gym_name}, {email}')
                                             ->rows(5)
                                             ->default('Dear {name},\n\nThank you for your inquiry regarding fitness services. We have received your request and will contact you soon to discuss your requirements.\n\nBest regards,\n{gym_name} Team')
-                                            ->visible(fn($get) => $get('email_acknowledgment_enabled')),
+                                            ->visible(fn ($get) => $get('email_acknowledgment_enabled')),
 
                                         TextInput::make('reply_delay_minutes')
                                             ->label('Reply Delay (Minutes)')
@@ -278,7 +267,7 @@ class TenantSocialConfigResource extends Resource
                                             ->minValue(0)
                                             ->maxValue(1440)
                                             ->helperText('Delay before sending auto-reply (0 for immediate)')
-                                            ->visible(fn($get) => $get('auto_reply_enabled')),
+                                            ->visible(fn ($get) => $get('auto_reply_enabled')),
                                     ]),
                             ]),
 
@@ -304,15 +293,15 @@ class TenantSocialConfigResource extends Resource
                                             ->label('Custom Fields Mapping')
                                             ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
                                             ->rows(5)
-                                            ->formatStateUsing(fn($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : $state),
+                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
 
                                         Textarea::make('webhook_filters')
                                             ->label('Webhook Filters')
                                             ->helperText('JSON configuration for filtering incoming webhooks')
                                             ->rows(5)
-                                            ->formatStateUsing(fn($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : $state),
+                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
                                     ]),
                             ]),
                     ]),
@@ -323,43 +312,23 @@ class TenantSocialConfigResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('gym.name')
-                    ->label('Gym')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('tenant.name')
-                    ->label('Tenant')
-                    ->searchable()
-                    ->sortable(),
-
                 TextColumn::make('platform')
                     ->label('Platform')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'facebook' => 'blue',
-                        'instagram' => 'pink',
-                        'whatsapp' => 'green',
-                        'indiamart' => 'orange',
-                        'justdial' => 'purple',
-                        default => 'gray',
-                    })
                     ->sortable(),
 
-                TextColumn::make('account_name')
+                TextColumn::make('page_name')
                     ->label('Account Name')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('account_id')
+                TextColumn::make('page_id')
                     ->label('Account ID')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean()
-                    ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('Active'),
 
                 TextColumn::make('webhook_logs_count')
                     ->label('Webhooks')
@@ -386,42 +355,50 @@ class TenantSocialConfigResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('platform')
-                    ->options([
-                        'facebook' => 'Facebook',
-                        'instagram' => 'Instagram',
-                        'whatsapp' => 'WhatsApp Business',
-                        'indiamart' => 'IndiaMart',
-                        'justdial' => 'JustDial',
-                    ]),
+                    ->options(SocialPlatform::class),
 
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active')
                     ->boolean(),
-
-                Tables\Filters\SelectFilter::make('gym')
-                    ->relationship('gym', 'name')
-                    ->searchable()
-                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
+                Tables\Actions\Action::make('verify_credentials')
+                    ->label('Verify Credentials')
+                    ->icon('heroicon-o-shield-check')
+                    ->color('success')
+                    ->action(fn (TenantSocialConfig $record) => self::verifyCredentials($record))
+                    ->requiresConfirmation()
+                    ->modalHeading('Verify Credentials')
+                    ->modalDescription('This will verify your credentials against the social media platform API.')
+                    ->modalSubmitActionLabel('Verify'),
+
                 Tables\Actions\Action::make('test_webhook')
                     ->label('Test Webhook')
                     ->icon('heroicon-o-bolt')
                     ->color('warning')
-                    ->action(fn(TenantSocialConfig $record) => self::testWebhook($record))
+                    ->action(fn (TenantSocialConfig $record) => self::testWebhook($record))
                     ->requiresConfirmation()
                     ->modalHeading('Test Webhook')
                     ->modalDescription('This will send a test webhook to verify the configuration.')
                     ->modalSubmitActionLabel('Send Test'),
+
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+
                     Tables\Actions\BulkAction::make('toggle_active')
                         ->label('Toggle Active')
+                        ->icon('phosphor-toggle-right')
+                        ->action(fn ($records) => $records->each->update(['is_active' => true])),
+
+                    Tables\Actions\BulkAction::make('toggle_inactive')
+                        ->label('Toggle Inactive')
                         ->icon('phosphor-toggle-left')
-                        ->action(fn($records) => $records->each->update(['is_active' => ! $records->first()->is_active])),
+                        ->action(fn ($records) => $records->each->update(['is_active' => false])),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -444,30 +421,55 @@ class TenantSocialConfigResource extends Resource
     }
 
     /**
+     * Verify social media credentials
+     */
+    private static function verifyCredentials(TenantSocialConfig $config): void
+    {
+        try {
+            $verifier = new \App\Services\SocialMediaCredentialVerifier;
+            $result = $verifier->verify($config);
+
+            if ($result['success']) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Credentials verified successfully')
+                    ->body($result['message'])
+                    ->success()
+                    ->send();
+            } else {
+                \Filament\Notifications\Notification::make()
+                    ->title('Credential verification failed')
+                    ->body($result['message'])
+                    ->danger()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            \Filament\Notifications\Notification::make()
+                ->title('Credential verification failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
      * Test webhook configuration
      */
     private static function testWebhook(TenantSocialConfig $config): void
     {
         try {
-            // Create test lead data
-            $testData = [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'phone' => '+919999999999',
-                'notes' => 'Test webhook from Filament admin',
-                'platform' => $config->platform,
-                'account_id' => $config->account_id,
-            ];
+            // Generate realistic webhook payload based on platform
+            $webhookData = self::generateTestWebhookPayload($config);
 
-            // Dispatch test job
+            // Dispatch test job with realistic data
             \App\Jobs\ProcessSocialMediaLead::dispatch(
-                $testData,
-                $config->platform,
+                $webhookData,
+                $config->platform->value,
                 'test_' . uniqid()
             );
 
             \Filament\Notifications\Notification::make()
-                ->title('Test webhook sent successfully')
+                ->title('Test webhook dispatched')
+                ->body("A test lead for {$config->platform->getLabel()} has been queued for processing. Check the Leads page and Webhook Logs tab.")
                 ->success()
                 ->send();
         } catch (\Exception $e) {
@@ -477,5 +479,103 @@ class TenantSocialConfigResource extends Resource
                 ->danger()
                 ->send();
         }
+    }
+
+    /**
+     * Generate realistic webhook payload for testing
+     */
+    private static function generateTestWebhookPayload(TenantSocialConfig $config): array
+    {
+        $timestamp = time();
+        $uniqueId = uniqid('test_', true);
+
+        return match ($config->platform) {
+            \App\Enums\SocialPlatform::Facebook,
+            \App\Enums\SocialPlatform::Instagram => [
+                'object' => 'page',
+                'entry' => [
+                    [
+                        'id' => $config->page_id ?? '123456789',
+                        'time' => $timestamp,
+                        'changes' => [
+                            [
+                                'field' => 'leadgen',
+                                'value' => [
+                                    'leadgen_id' => 'lead_' . $uniqueId,
+                                    'page_id' => $config->page_id ?? '123456789',
+                                    'form_id' => $config->form_id ?? '987654321',
+                                    'adgroup_id' => '456789123',
+                                    'ad_id' => '789123456',
+                                    'created_time' => $timestamp,
+                                    'field_data' => [
+                                        ['name' => 'full_name', 'values' => ['Test User ' . date('His')]],
+                                        ['name' => 'email', 'values' => ["test.{$uniqueId}@example.com"]],
+                                        ['name' => 'phone_number', 'values' => ['+91' . rand(7000000000, 9999999999)]],
+                                        ['name' => 'city', 'values' => ['Mumbai']],
+                                        ['name' => 'fitness_goals', 'values' => ['Weight Loss']],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            \App\Enums\SocialPlatform::WhatsApp => [
+                'object' => 'whatsapp_business_account',
+                'entry' => [
+                    [
+                        'id' => $config->app_id ?? '123456789',
+                        'changes' => [
+                            [
+                                'field' => 'messages',
+                                'value' => [
+                                    'messaging_product' => 'whatsapp',
+                                    'metadata' => [
+                                        'display_phone_number' => $config->phone_number ?? '919999999999',
+                                        'phone_number_id' => $config->phone_number_id ?? 'phone_' . $uniqueId,
+                                    ],
+                                    'contacts' => [
+                                        [
+                                            'profile' => ['name' => 'Test User ' . date('His')],
+                                            'wa_id' => '91' . rand(7000000000, 9999999999),
+                                        ],
+                                    ],
+                                    'messages' => [
+                                        [
+                                            'from' => '91' . rand(7000000000, 9999999999),
+                                            'id' => 'msg_' . $uniqueId,
+                                            'timestamp' => $timestamp,
+                                            'type' => 'text',
+                                            'text' => [
+                                                'body' => 'Hi, I want to know about gym membership plans and pricing.',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            \App\Enums\SocialPlatform::YouTube => [
+                // YouTube doesn't have lead ads, but we can create a test payload
+                'name' => 'Test User ' . date('His'),
+                'email' => "test.{$uniqueId}@example.com",
+                'phone' => '+91' . rand(7000000000, 9999999999),
+                'notes' => 'Test YouTube inquiry - interested in fitness programs',
+                'platform' => 'youtube',
+            ],
+
+            default => [
+                'name' => 'Test User ' . date('His'),
+                'email' => "test.{$uniqueId}@example.com",
+                'phone' => '+91' . rand(7000000000, 9999999999),
+                'notes' => 'Test webhook from Filament admin',
+                'platform' => $config->platform->value,
+                'page_id' => $config->page_id,
+            ],
+        };
     }
 }

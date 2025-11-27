@@ -43,7 +43,7 @@ class SubscriptionCancelled extends Notification implements ShouldQueue
             ->line("**Billing Cycle:** {$this->subscription->billing_cycle}")
             ->when($this->subscription->ends_at, function ($mail) {
                 return $mail->line("**Access Until:** {$this->subscription->ends_at->format('M j, Y')}")
-                           ->line('You will continue to have access to all features until the end of your current billing period.');
+                    ->line('You will continue to have access to all features until the end of your current billing period.');
             }, function ($mail) {
                 return $mail->line('Your access has been terminated immediately.');
             })

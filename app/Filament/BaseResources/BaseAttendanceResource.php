@@ -4,9 +4,7 @@ namespace App\Filament\BaseResources;
 
 use App\Enums\AttendanceStatus;
 use App\Filament\Admin\Clusters\Attendances as ClustersAttendances;
-use App\Models\Attendance;
 use App\Models\Attendances;
-use App\Models\Trainer;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
@@ -14,6 +12,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -54,11 +54,10 @@ abstract class BaseAttendanceResource extends Resource
             ->label(static::getLabelForSelect())
             ->required()
             ->searchable()
-            // ->preload()
             ->options(function () use ($currentGymId, $attendanceableModel) {
                 $modelClass = $attendanceableModel;
 
-                return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
+                return $modelClass::where('gym_id', $currentGymId)->orderBy('name', 'asc')->pluck('name', 'id');
             });
 
         // Conditionally add createOptionForm if getOptionFormSchema() exists in the child class
@@ -78,33 +77,23 @@ abstract class BaseAttendanceResource extends Resource
             ->schema([
                 Section::make('Attendance Details')
                     ->schema([
-                        // Select::make('attendanceable_id')
-                        //     ->label(static::getLabelForSelect())
-                        //     ->required()
-                        //     ->searchable()
-                        //     ->options(function () use ($currentGymId, $attendanceableModel) {
-                        //         $modelClass = $attendanceableModel;
-                        //         return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
-                        //     })
-                        //     ->createOptionForm(static::getOptionFormSchema())
-                        //     ->createOptionUsing(function (array $data) {
-                        //         // Create the new attendance record and return its ID
-                        //         $data['gym_id'] = Filament::getTenant()->id;
-                        //         $attendance = Trainer::create($data);
-
-                        //         return $attendance->id;
-                        //     }),
-
                         $select,
 
                         ToggleButtons::make('status')
                             ->inline()
                             ->options(AttendanceStatus::class)
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                if ($get('status') === AttendanceStatus::Absent->value) {
+                                    $set('check_in_time', null);
+                                    $set('check_out_time', null);
+                                }
+                            })
+                            ->reactive()
                             ->required(),
 
                         DateTimePicker::make('check_in_time')
                             ->label('Check-In Time')
-                            ->required()
+                            ->required(fn (Get $get) => $get('status') !== AttendanceStatus::Absent->value)
                             ->default(now()),
 
                         DateTimePicker::make('check_out_time')
@@ -145,8 +134,7 @@ abstract class BaseAttendanceResource extends Resource
                 TextColumn::make('duration')
                     ->label('Duration')
                     ->badge()
-                    ->color('warning')
-                    ->placeholder('In progress'),
+                    ->color('warning'),
 
                 TextColumn::make('created_at')
                     ->label('Date')
@@ -184,7 +172,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-In')
                     ->modalDescription('Are you sure you want to check in this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-In')
-                    ->visible(fn (Model $record) => ! $record->check_in_time),
+                    ->visible(fn (Model $record) => (! $record->check_in_time && $record->status !== AttendanceStatus::Absent)),
 
                 Action::make('checkOut')
                     ->label('Check-Out')
@@ -201,7 +189,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-Out')
                     ->modalDescription('Are you sure you want to check out this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-Out')
-                    ->visible(fn (Model $record) => $record->check_in_time && ! $record->check_out_time),
+                    ->visible(fn (Model $record) => ($record->check_in_time && ! $record->check_out_time) && $record->status !== AttendanceStatus::Absent),
 
                 Action::make('markAbsent')
                     ->label('Mark Absent')

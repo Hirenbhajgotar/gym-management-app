@@ -13,4 +13,19 @@ class ListReceptionists extends ListRecords
     {
         return ReceptionistResource::getCommonHeaderActions();
     }
+
+    public function getListeners(): array
+    {
+        return [
+            "echo-private:App.Models.User.{$this->getUser()->id},.ImportCompleted" => '$refresh',
+        ];
+    }
+
+    public function getUser(): \App\Models\User
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        return $user;
+    }
 }

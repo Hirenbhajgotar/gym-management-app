@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use App\Enums\Currency;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Helpers\DateHelper;
 use App\Helpers\Number;
@@ -9,19 +11,25 @@ use App\Models\City;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Services\AvatarService;
-use Filament\Facades\Filament;
+use Carbon\Carbon;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class GymMemberImport extends BaseImporter implements WithColumnFormatting
+class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFormatting
 {
     protected array $dateColumns = [
         'dob',
         'membership_start',
     ];
+
+    public function __construct(public string $tenantId)
+    {
+        parent::__construct();
+    }
 
     public function columnFormats(): array
     {
@@ -33,8 +41,6 @@ class GymMemberImport extends BaseImporter implements WithColumnFormatting
 
     public function processRow($row): void
     {
-        $tenant = Filament::getTenant();
-
         $membershipPlan = null;
         if (isset($row['membership_plan'])) {
             $membershipPlan = MembershipPlan::where('name', $row['membership_plan'])->first();
@@ -63,7 +69,7 @@ class GymMemberImport extends BaseImporter implements WithColumnFormatting
         }
 
         $gymMember = GymMember::create([
-            'gym_id' => $tenant->id,
+            'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'profile_photo' => $profileImagePath,
             'email' => $row['email'],
@@ -76,7 +82,26 @@ class GymMemberImport extends BaseImporter implements WithColumnFormatting
             'payment_status' => $row['payment_status'] ?? PaymentStatus::PENDING,
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
+            'user_id' => \App\Models\Gym::find($this->tenantId)?->owner()->id ?? null,
         ]);
+
+        if ($membershipPlan) {
+            $membershipStart = $row['membership_start'] ? Carbon::parse($row['membership_start']) : now();
+            $membershipEnd = $membershipStart->copy()->addMonths($membershipPlan->duration);
+
+            $gymMember->payments()->create([
+                'gym_id' => $this->tenantId,
+                'membership_plan_id' => $membershipPlan->id,
+                'amount' => $membershipPlan->price,
+                'currency' => $membershipPlan->currency ?? Currency::INR,
+                'payment_method' => PaymentMethod::CASH,
+                'status' => $row['payment_status'] ?? PaymentStatus::PENDING,
+                'notes' => 'Imported via Excel',
+                'payment_date' => now(),
+                'membership_start' => $membershipStart,
+                'membership_end' => $membershipEnd,
+            ]);
+        }
 
         if (isset($row['address'])) {
             $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
@@ -97,7 +122,7 @@ class GymMemberImport extends BaseImporter implements WithColumnFormatting
             'age' => ['nullable', 'integer'],
             'dob' => ['nullable', 'date'],
             'city' => ['nullable', 'string', 'exists:cities,slug'],
-            'zip_code' => ['nullable', 'string', 'max:20'],
+            'zip_code' => ['nullable', 'max:20'],
             'membership_start' => ['nullable', 'date'],
             'payment_status' => ['nullable', 'string', Rule::enum(PaymentStatus::class)],
             'membership_plan' => ['nullable', 'string'],

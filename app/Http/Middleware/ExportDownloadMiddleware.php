@@ -14,25 +14,52 @@ class ExportDownloadMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // Check if this is an export download request
-        if ($this->isExportDownloadRequest($request)) {
+        $isExportRequest = $this->isExportDownloadRequest($request);
+
+        if ($isExportRequest) {
             $exportId = $this->extractExportId($request);
+            Log::info('ExportDownloadMiddleware: Detected export request', [
+                'url' => $request->url(),
+                'export_id' => $exportId,
+            ]);
 
             if ($exportId) {
                 $export = Export::find($exportId);
 
-                if ($export && ! $this->validateExportFile($export)) {
-                    Log::error('Export file validation failed in middleware', [
-                        'export_id' => $export->id,
-                        'file_name' => $export->file_name,
-                        'file_disk' => $export->file_disk,
-                        'url' => $request->url(),
-                    ]);
+                if ($export) {
+                    // Check authorization
+                    if ($export->user_id !== auth()->id()) {
+                        Log::warning('ExportDownloadMiddleware: Unauthorized access attempt', ['user_id' => auth()->id(), 'export_user_id' => $export->user_id]);
+                        abort(403);
+                    }
 
-                    // Return a proper error response instead of letting it fail
-                    return response()->json([
-                        'error' => 'Export file is not available. Please try regenerating the export.',
-                        'export_id' => $export->id,
-                    ], 404);
+                    $isValid = $this->validateExportFile($export);
+                    Log::info('ExportDownloadMiddleware: Validation result', ['is_valid' => $isValid, 'file_name' => $export->file_name]);
+
+                    if ($isValid) {
+                        // If the file is an XLSX file, serve it directly to bypass XlsxDownloader issues
+                        // XlsxDownloader expects a CSV source to convert, but if we already have an XLSX,
+                        // we should just download it.
+                        if (str_ends_with($export->file_name, '.xlsx')) {
+                            Log::info('ExportDownloadMiddleware: Serving XLSX directly', ['file_name' => $export->file_name]);
+
+                            return Storage::disk($export->file_disk)->download($export->file_name);
+                        }
+                    } else {
+                        Log::error('Export file validation failed in middleware', [
+                            'export_id' => $export->id,
+                            'file_name' => $export->file_name,
+                            'file_disk' => $export->file_disk,
+                            'url' => $request->url(),
+                        ]);
+
+                        return response()->json([
+                            'error' => 'Export file is not available. Please try regenerating the export.',
+                            'export_id' => $export->id,
+                        ], 404);
+                    }
+                } else {
+                    Log::warning('ExportDownloadMiddleware: Export not found', ['export_id' => $exportId]);
                 }
             }
         }
@@ -52,9 +79,11 @@ class ExportDownloadMiddleware
     protected function extractExportId(Request $request): ?int
     {
         $path = $request->path();
+        Log::info('ExportDownloadMiddleware: Extracting ID from path', ['path' => $path]);
 
         // Try to extract export ID from URL path
-        if (preg_match('/export\/(\d+)\/download/', $path, $matches)) {
+        // Matches .../exports/{id}/download
+        if (preg_match('/exports?\/(\d+)\/download/', $path, $matches)) {
             return (int) $matches[1];
         }
 
@@ -71,47 +100,71 @@ class ExportDownloadMiddleware
     {
         try {
             if (! $export->file_name || ! $export->file_disk) {
-                Log::error('Export file validation failed: missing file_name or file_disk', [
-                    'export_id' => $export->id,
-                    'file_name' => $export->file_name,
-                    'file_disk' => $export->file_disk,
-                ]);
-
                 return false;
             }
 
             $disk = Storage::disk($export->file_disk);
-            if (! $disk->exists($export->file_name)) {
-                Log::error('Export file validation failed: file does not exist on disk', [
-                    'export_id' => $export->id,
-                    'file_name' => $export->file_name,
-                    'file_disk' => $export->file_disk,
-                ]);
+            $fileName = $export->file_name;
 
-                return false;
+            // Log environment details
+            Log::info('ExportDownloadMiddleware: Validating file', [
+                'export_id' => $export->id,
+                'file_name' => $fileName,
+                'disk' => $export->file_disk,
+                'php_user' => get_current_user(),
+                'exec_whoami' => exec('whoami'),
+            ]);
+
+            // Check if file exists exactly as stored
+            if (! $disk->exists($fileName)) {
+                Log::info('ExportDownloadMiddleware: Exact match failed, checking alternatives');
+
+                // Try with extensions and directory structure
+                $found = false;
+                $pathsToCheck = [
+                    $fileName,
+                    $fileName . '.xlsx',
+                    $fileName . '.csv',
+                    'filament_exports/' . $export->id . '/' . $fileName,
+                    'filament_exports/' . $export->id . '/' . $fileName . '.xlsx',
+                    'filament_exports/' . $export->id . '/' . $fileName . '.csv',
+                ];
+
+                foreach ($pathsToCheck as $path) {
+                    $exists = $disk->exists($path);
+                    Log::info('ExportDownloadMiddleware: Checking path', ['path' => $path, 'exists' => $exists]);
+
+                    if ($exists) {
+                        $export->file_name = $path;
+                        $found = true;
+                        break;
+                    }
+                }
+
+                if ($found) {
+                    // Save the corrected filename to the database
+                    $export->save();
+
+                    return true;
+                }
+
+                if (! $found) {
+                    Log::error('ExportDownloadMiddleware: File not found in any path', [
+                        'checked_paths' => $pathsToCheck,
+                        'disk_root' => $disk->path(''),
+                    ]);
+
+                    return false;
+                }
+            } else {
+                Log::info('ExportDownloadMiddleware: Exact match found');
             }
-
-            // Check if the file is readable
-            $stream = $disk->readStream($export->file_name);
-            if (! $stream) {
-                Log::error('Export file validation failed: cannot read file stream', [
-                    'export_id' => $export->id,
-                    'file_name' => $export->file_name,
-                    'file_disk' => $export->file_disk,
-                ]);
-
-                return false;
-            }
-
-            // Close the stream since we're just testing
-            fclose($stream);
 
             return true;
         } catch (\Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return false;

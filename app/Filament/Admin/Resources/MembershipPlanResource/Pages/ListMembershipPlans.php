@@ -22,9 +22,7 @@ class ListMembershipPlans extends ListRecords
                 ->icon('heroicon-o-arrow-up-tray')
                 ->label('Export Plans')
                 ->exporter(MembershipPlanExporter::class)
-                ->formats([
-                    \Filament\Actions\Exports\Enums\ExportFormat::Xlsx,
-                ]),
+                ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
 
             ExcelImportAction::make()
                 ->label('Import Plans')
@@ -33,15 +31,41 @@ class ListMembershipPlans extends ListRecords
                 ->use(MembershipPlan::class)
                 ->sampleFile(
                     urlOrData: [
-                        ['name' => 'Gold', 'price' => '100', 'duration_in_months' => '12', 'description' => 'Full access'],
-                        ['name' => 'Silver', 'price' => '50', 'duration_in_months' => '6', 'description' => 'Limited access'],
+                        [
+                            'name' => 'Gold',
+                            'price' => '100',
+                            'duration_in_months' => '12',
+                            'description' => 'Full access',
+                        ],
+                        [
+                            'name' => 'Silver',
+                            'price' => '50',
+                            'duration_in_months' => '6',
+                            'description' => 'Limited access',
+                        ],
                     ],
                     fileName: 'plans-sample.xlsx',
-                    sampleButtonLabel: 'Download Sample File'
+                    sampleButtonLabel: 'Download Sample File',
                 ),
 
-            Actions\CreateAction::make(),
-
+            Actions\CreateAction::make()
+                ->icon('heroicon-o-plus-circle')
+                ->color('primary'),
         ];
+    }
+
+    public function getListeners(): array
+    {
+        return [
+            "echo-private:App.Models.User.{$this->getUser()->id},.ImportCompleted" => '$refresh',
+        ];
+    }
+
+    public function getUser(): \App\Models\User
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        return $user;
     }
 }

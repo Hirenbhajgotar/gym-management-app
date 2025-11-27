@@ -22,7 +22,7 @@ class GymMemberAttendanceResource extends BaseAttendanceResource
         return 'Member Attendances';
     }
 
-    protected static function getAttendanceableType(): string
+    public static function getAttendanceableType(): string
     {
         return GymMember::class;
     }

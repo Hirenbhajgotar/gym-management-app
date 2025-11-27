@@ -2,14 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\FacebookLeadProcessor;
+use App\Services\IndiaMartLeadProcessor;
+use App\Services\InstagramLeadProcessor;
+use App\Services\JustDialLeadProcessor;
+use App\Services\SocialMediaLeadProcessor;
+use App\Services\WhatsAppLeadProcessor;
 use Closure;
 use Illuminate\Http\Request;
-use App\Services\SocialMediaLeadProcessor;
-use App\Services\FacebookLeadProcessor;
-use App\Services\InstagramLeadProcessor;
-use App\Services\WhatsAppLeadProcessor;
-use App\Services\IndiaMartLeadProcessor;
-use App\Services\JustDialLeadProcessor;
 use Illuminate\Support\Facades\Log;
 
 class VerifySocialMediaWebhook
@@ -17,8 +17,6 @@ class VerifySocialMediaWebhook
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
@@ -26,19 +24,21 @@ class VerifySocialMediaWebhook
         try {
             $platform = $this->getPlatformFromRequest($request);
 
-            if (!$platform) {
+            if (! $platform) {
                 Log::warning('Unknown social media platform in webhook request', [
                     'path' => $request->path(),
                     'headers' => $request->headers->all(),
                 ]);
+
                 return response()->json(['error' => 'Unknown platform'], 400);
             }
 
             // Get the appropriate processor for verification
             $processor = $this->getProcessor($platform);
 
-            if (!$processor) {
+            if (! $processor) {
                 Log::warning('No processor available for platform', ['platform' => $platform]);
+
                 return response()->json(['error' => 'Platform not supported'], 400);
             }
 
@@ -47,12 +47,13 @@ class VerifySocialMediaWebhook
             $headers = $request->headers->all();
 
             // Verify the webhook signature
-            if (!$processor->verifyWebhook($data, $headers)) {
+            if (! $processor->verifyWebhook($data, $headers)) {
                 Log::warning('Webhook verification failed', [
                     'platform' => $platform,
                     'path' => $request->path(),
                     'headers' => $headers,
                 ]);
+
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
@@ -66,6 +67,7 @@ class VerifySocialMediaWebhook
                 'path' => $request->path(),
                 'headers' => $request->headers->all(),
             ]);
+
             return response()->json(['error' => 'Verification failed'], 500);
         }
     }
@@ -140,11 +142,11 @@ class VerifySocialMediaWebhook
     private function getProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => new FacebookLeadProcessor(),
-            'instagram' => new InstagramLeadProcessor(),
-            'whatsapp' => new WhatsAppLeadProcessor(),
-            'indiamart' => new IndiaMartLeadProcessor(),
-            'justdial' => new JustDialLeadProcessor(),
+            'facebook' => new FacebookLeadProcessor,
+            'instagram' => new InstagramLeadProcessor,
+            'whatsapp' => new WhatsAppLeadProcessor,
+            'indiamart' => new IndiaMartLeadProcessor,
+            'justdial' => new JustDialLeadProcessor,
             default => null,
         };
     }

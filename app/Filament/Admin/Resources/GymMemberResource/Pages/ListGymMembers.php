@@ -38,9 +38,24 @@ class ListGymMembers extends ListRecords
                 ),
 
             // Create action
-            Actions\CreateAction::make()->label('Add Member')
+            Actions\CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
+    }
+
+    public function getListeners(): array
+    {
+        return [
+            "echo-private:App.Models.User.{$this->getUser()->id},.ImportCompleted" => '$refresh',
+        ];
+    }
+
+    public function getUser(): \App\Models\User
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        return $user;
     }
 }

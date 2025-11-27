@@ -105,7 +105,9 @@ class ReceptionistResource extends BaseEmployeeResource
                 ),
 
             // Create action
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->icon('heroicon-o-plus-circle')
+                ->color('primary'),
         ];
     }
 }

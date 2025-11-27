@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\ManagerResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
 use App\Notifications\ManagerCreate;
+use App\Services\AvatarService;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -53,6 +54,12 @@ class CreateManager extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $plainPassword = $data['password'];
+
+        $data['email_verified_at'] = $data['email_verified_at'] ? now() : null;
+
+        if (is_null($data['profile_photo']) || empty($data['profile_photo'])) {
+            $data['profile_photo'] = app(AvatarService::class)->generate($data['name']);
+        }
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 

@@ -32,7 +32,7 @@ enum LeadStatus: string implements HasColor, HasLabel
         return match ($this) {
             self::NEW => 'primary',
             self::CONTACTED => 'warning',
-            self::FOLLOW_UP_PENDING => 'info',
+            self::FOLLOW_UP_PENDING => 'danger',
             self::CONVERTED => 'success',
             self::LOST => 'danger',
         };

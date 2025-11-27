@@ -6,7 +6,6 @@ use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use App\Models\FollowUp;
 use App\Models\Gym;
-use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
 use Filament\Facades\Filament;
 use Filament\Forms;

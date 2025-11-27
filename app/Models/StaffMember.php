@@ -12,6 +12,25 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Gym> $gyms
+ * @property-read int|null $gyms_count
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Permission> $permissions
+ * @property-read int|null $permissions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read int|null $roles_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember permission($permissions, $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember role($roles, $guard = null, $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember withoutPermission($permissions)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StaffMember withoutRole($roles, $guard = null)
+ * @mixin \Eloquent
+ * @mixin IdeHelperStaffMember
+ */
 class StaffMember extends Authenticatable implements FilamentUser, HasTenants
 {
     use HasFactory, HasRoles, Notifiable;

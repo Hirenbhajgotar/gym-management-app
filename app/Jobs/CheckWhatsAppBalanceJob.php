@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\Gym;
-use App\Models\GymWhatsAppBalance;
 use App\Models\GymSetting;
+use App\Models\GymWhatsAppBalance;
 use App\Notifications\LowWhatsAppBalanceNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -51,8 +51,8 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
             if ($remainingMessages <= $threshold) {
                 if ($alertEnabled) {
                     // Check if we haven't already sent an alert for this low balance
-                    if (!$balance->low_balance_alert_sent) {
-                        $this->sendLowBalanceAlert($balance->gym, $remainingMessages);
+                    if (! $balance->low_balance_alert_sent) {
+                        $this->sendLowBalanceAlert($balance->gym, $balance, $remainingMessages);
 
                         // Mark alert as sent
                         $balance->low_balance_alert_sent = true;
@@ -74,11 +74,11 @@ class CheckWhatsAppBalanceJob implements ShouldQueue
     /**
      * Send low balance alert to gym owner
      */
-    private function sendLowBalanceAlert(Gym $gym, int $remainingMessages): void
+    private function sendLowBalanceAlert(Gym $gym, GymWhatsAppBalance $balance, int $remainingMessages): void
     {
         // Get gym owner (assuming gym has an owner relationship)
         if ($gym->owner) {
-            $gym->owner->notify(new LowWhatsAppBalanceNotification($gym, $remainingMessages));
+            $gym->owner->notify(new LowWhatsAppBalanceNotification($gym, $balance, $remainingMessages));
         }
 
         // Also notify all gym staff members with appropriate permissions

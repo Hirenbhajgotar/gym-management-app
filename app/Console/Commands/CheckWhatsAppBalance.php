@@ -32,7 +32,7 @@ class CheckWhatsAppBalance extends Command
             CheckWhatsAppBalanceJob::dispatch();
             $this->info('Job dispatched to queue.');
         } else {
-            (new CheckWhatsAppBalanceJob())->handle();
+            (new CheckWhatsAppBalanceJob)->handle();
             $this->info('Balance check completed.');
         }
 
