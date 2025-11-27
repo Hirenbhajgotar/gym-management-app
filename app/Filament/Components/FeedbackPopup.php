@@ -17,6 +17,9 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Mokhosh\FilamentRating\Components\Rating;
 
+/**
+ * @property Form $form
+ */
 class FeedbackPopup extends Component implements HasForms
 {
     use InteractsWithForms, WithFileUploads;

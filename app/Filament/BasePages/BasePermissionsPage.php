@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use ValueError;
 
+/**
+ * @property Form $form
+ */
 abstract class BasePermissionsPage extends Page implements HasForms
 {
     use DefaultPermissionResourceTrait, InteractsWithForms;

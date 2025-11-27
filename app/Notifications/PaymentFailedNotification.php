@@ -36,7 +36,7 @@ class PaymentFailedNotification extends Notification implements ShouldQueue
             ->greeting("Hi {$notifiable->name}!")
             ->line('We were unable to process the payment for your gym subscription renewal.')
             ->line("**Plan:** {$this->subscription->plan->name}")
-            ->line("**Amount Due:** {$this->subscription->price} {$this->subscription->currency}")
+            ->line("**Amount Due:** {$this->subscription->price} {$this->subscription->currency->value}")
             ->line('Your subscription has been temporarily suspended. Please update your payment method to restore access.')
             ->line('If payment is not received within 7 days, your subscription may be cancelled.')
             ->action('Update Payment Method', url('/billing'))
