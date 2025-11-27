@@ -87,6 +87,7 @@ class AddressForm extends Field
 
                             return State::where('country_id', $countryId)
                                 ->active()
+                                ->orderBy('name', 'asc')
                                 ->pluck('name', 'id');
                         })
                         ->required()
@@ -104,8 +105,10 @@ class AddressForm extends Field
 
                             return City::where('state_id', $stateId)
                                 ->active()
+                                ->orderBy('name', 'asc')
                                 ->pluck('name', 'id');
                         })
+                        ->searchable()
                         ->required()
                         ->live()
                         ->disabled(fn (callable $get) => ! $get('state_id')),
