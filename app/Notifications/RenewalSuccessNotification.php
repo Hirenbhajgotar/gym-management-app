@@ -36,7 +36,7 @@ class RenewalSuccessNotification extends Notification implements ShouldQueue
             ->greeting("Great news {$notifiable->name}!")
             ->line('Your gym subscription has been renewed successfully.')
             ->line("**Plan:** {$this->subscription->plan->name}")
-            ->line("**Amount Charged:** {$this->subscription->price} {$this->subscription->currency}")
+            ->line("**Amount Charged:** {$this->subscription->price} {$this->subscription->currency->value}")
             ->line("**Next Billing Date:** {$this->subscription->current_period_end->format('M j, Y')}")
             ->line('You can continue using all the features included in your plan.')
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');

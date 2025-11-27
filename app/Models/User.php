@@ -31,9 +31,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
+ * @property string|null $whatsapp_number
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Address|null $address
+ * @property-read \App\Models\Gym|null $gym
  * @property-read \App\Models\EmployeeDetail|null $employeeDetails
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Gym> $gyms
  * @property-read int|null $gyms_count

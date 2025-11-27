@@ -8,6 +8,7 @@ use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
@@ -41,6 +42,11 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected static string $recordStatusAttribute = 'status';
 
+    private function getGym(): Gym
+    {
+        return Filament::getTenant();
+    }
+
     protected function records(): Collection
     {
         return Lead::with(['creator', 'membershipPlan'])->ordered()->get();
@@ -60,7 +66,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     \Filament\Forms\Components\Section::make()
                         ->schema([
                             \Filament\Forms\Components\Hidden::make('gym_id')
-                                ->default(Filament::getTenant()->id),
+                                ->default($this->getGym()->id),
 
                             \Filament\Forms\Components\Hidden::make('created_by')
                                 ->default(auth()->user()->id),
@@ -125,7 +131,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 }
 
                 FollowUp::create([
-                    'gym_id' => Filament::getTenant()->id,
+                    'gym_id' => $this->getGym()->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
                     'scheduled_date' => $data['scheduled_date'],

@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\HtmlString;
 
+/**
+ * @property Form $form
+ */
 class WhatsAppSetup extends Page implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
@@ -42,6 +45,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public string $viewState = "loading";
 
+    private function getGym(): \App\Models\Gym
+    {
+        /** @var \App\Models\Gym $gym */
+        $gym = Filament::getTenant();
+        return $gym;
+    }
+
     public function mount(): void
     {
         // Pre-fill the form with sensible defaults from the current tenant (gym) and user
@@ -54,7 +64,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $this->settings = NotificationSetting::where(
             "gym_id",
-            Filament::getTenant()?->id,
+            $this->getGym()->id,
         )->first();
     }
 
@@ -79,7 +89,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     private function initializeFormData(): void
     {
-        $gym = Filament::getTenant();
+        $gym = $this->getGym();
         $user = Auth::user();
 
         $this->data = [
@@ -353,7 +363,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $accountManager = app(TwilioAccountManager::class);
 
         $result = $accountManager->createAccountForGymOwner(
-            Filament::getTenant()?->id,
+            $this->getGym()->id,
             Auth::user()->name,
             $data["gym_name"],
             $data["whatsapp_number"],
@@ -399,7 +409,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $accountManager = app(TwilioAccountManager::class);
 
         $result = $accountManager->completeWhatsAppVerification(
-            Filament::getTenant()?->id,
+            $this->getGym()->id,
             $data["verification_code"],
         );
 
@@ -582,7 +592,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $accountManager = app(TwilioAccountManager::class);
         $this->accountStatus = $accountManager->getAccountStatus(
-            Filament::getTenant()?->id,
+            $this->getGym()->id,
         );
 
         if (!$this->hasExistingAccount()) {

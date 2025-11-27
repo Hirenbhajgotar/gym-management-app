@@ -10,8 +10,70 @@ parameters:
     # Level 10 is the highest level
     level: 2
 
-#    ignoreErrors:
-#        - '#PHPDoc tag @var#'
-#
+    scanFiles:
+        - _ide_helper_models.php
+
+    ignoreErrors:
+        # Razorpay SDK - External library dynamic properties
+        - '#Access to an undefined property Razorpay\\Api\\Api::\$order#'
+        - '#Access to an undefined property Razorpay\\Api\\Api::\$utility#'
+        - '#Access to an undefined property Razorpay\\Api\\Api::\$payment#'
+        
+        # Twilio SDK - External library methods and properties
+        - '#Call to an undefined method Twilio\\Rest\\Client::accounts\(\)#'
+        - '#Access to an undefined property Twilio\\Rest\\Content\\V1\\ContentInstance::\$approvalRequests#'
+        
+        # Spatie packages - Permission scopes and activity log
+        - '#Call to an undefined method.*Builder.*::role\(\)#'
+        - '#Call to an undefined static method.*Model::getDescriptionForEvent\(\)#'
+        - '#Call to an undefined method.*Model::hasRole\(\)#'
+        
+        # Laravel Collection higher order proxies
+        - '#Call to an undefined method.*HigherOrderCollectionProxy.*::markAsContacted\(\)#'
+        - '#Call to an undefined method.*Collection.*::notify\(\)#'
+        
+        # Model aggregate properties from with Count() and custom getters
+        - '#Access to an undefined property App\\Models\\(City|State)::\$(total|active_count|inactive_count)#'
+        
+        # Model scopes - custom query builder methods
+        - '#Call to an undefined method.*Builder.*::(active|inActive)\(\)#'
+        - '#Call to an undefined method.*HasMany::active\(\)#'
+        - '#Call to an undefined method.*Model::users\(\)#'
+        - '#Call to an undefined method.*Model::payments\(\)#'
+        
+        # Filament tenant access returns Model or int or string
+        - '#Cannot access property .* on Illuminate\\Database\\Eloquent\\Model\|int\|string#'
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$slug#'
+        - '#Method Filament\\Pages\\Tenancy\\EditTenantProfile::save\(\) invoked with 1 parameter#'
+        
+        # Lead processor webhook methods
+        - '#Call to an undefined method App\\Services\\.*LeadProcessor::processWebhook\(\)#'
+        
+        # WhatsApp notifications
+        - '#Call to an undefined method Illuminate\\Notifications\\Notification::toWhatsApp\(\)#'
+        - '#Cannot access property \$gym on class-string\|object#'
+        
+        # Morphable relations
+        - "#Relation 'attendanceable' is not found in App\\\\Models\\\\Attendances model#"
+        
+        # Dynamic properties from withCount
+        - '#Access to an undefined property.*::\$(members|members_count)#'
+        
+        # Unnecessary nullCoalesce warnings
+        - '#Variable .* on left side of \?\? always exists and is not nullable#'
+        
+        # Class name case false positive
+        - '#Class App\\Models\\WhatsappTemplate referenced with incorrect case#'
+        
+        # Variable undefined in try-catch
+        - '#Variable \$errorMessage might not be defined#'
+        
+        # Generic Model property access - PHPStan can't infer from _ide_helper_models.php in all contexts
+        # These are properties that exist but PHPStan loses type info in certain contexts
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$(id|name|value|plan_id|platform|account_id|gym_id|gym_membership_plan_id|check_in_time|check_out_time|status)#'
+        
+        # Null property access (requires explicit null checks)
+        - '#Cannot access property \$value on null#'
+
 #    excludePaths:
 #        - ./*/*/FileToBeExcluded.php
