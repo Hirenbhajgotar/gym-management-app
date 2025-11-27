@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Crypt;
 /**
  * @property int $id
  * @property int $gym_id
+ * @property int|null $tenant_id
  * @property \App\Enums\SocialPlatform|null $platform
+ * @property string|null $account_id
  * @property string|null $page_id
  * @property string|null $page_name
  * @property string|null $form_id
@@ -26,6 +28,12 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $webhook_verify_token
  * @property array<array-key, mixed>|null $additional_config
  * @property bool $is_active
+ * @property bool|null $auto_reply_enabled
+ * @property bool|null $sms_acknowledgment_enabled
+ * @property bool|null $email_acknowledgment_enabled
+ * @property string|null $business_phone_number_id
+ * @property int|null $user_id
+ * @property int|null $assigned_user_id
  * @property \Illuminate\Support\Carbon|null $token_expires_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

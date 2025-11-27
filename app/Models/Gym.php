@@ -22,6 +22,8 @@ use Illuminate\Support\Str;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
  * @property-read int|null $attendances_count
  * @property-read \App\Models\BusinessDetail|null $businessDetail
+ * @property-read \App\Models\NotificationSetting|null $notificationSetting
+ * @property-read \App\Models\User|null $owner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $gymMembers
  * @property-read int|null $gym_members_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
@@ -156,6 +158,11 @@ class Gym extends Model
     public function settings(): HasMany
     {
         return $this->hasMany(GymSetting::class);
+    }
+
+    public function notificationSetting(): HasOne
+    {
+        return $this->hasOne(NotificationSetting::class);
     }
 
     public function getSetting(string $key, mixed $default = null): mixed

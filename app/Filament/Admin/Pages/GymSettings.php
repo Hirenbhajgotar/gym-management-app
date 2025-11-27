@@ -18,6 +18,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Http;
 
+/**
+ * @property Form $form
+ */
 class GymSettings extends Page implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
@@ -34,9 +37,16 @@ class GymSettings extends Page implements HasActions, HasForms
 
     public ?array $data = [];
 
+    private function getGym(): \App\Models\Gym
+    {
+        /** @var \App\Models\Gym $gym */
+        $gym = Filament::getTenant();
+        return $gym;
+    }
+
     public function mount(): void
     {
-        $settings = GymSetting::where("gym_id", Filament::getTenant()?->id)
+        $settings = GymSetting::where("gym_id", $this->getGym()->id)
             ->pluck("value", "key")
             ->all();
 
@@ -105,7 +115,7 @@ class GymSettings extends Page implements HasActions, HasForms
                                 if ($state) {
                                     $settings = GymSetting::where(
                                         "gym_id",
-                                        Filament::getTenant()?->id,
+                                        $this->getGym()->id,
                                     )
                                         ->pluck("value", "key")
                                         ->all();
@@ -329,7 +339,7 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getWhatsAppTab(): Forms\Components\Tabs\Tab
     {
-        $gymId = Filament::getTenant()?->id;
+        $gymId = $this->getGym()->id;
         $balance = GymWhatsAppBalance::where("gym_id", $gymId)->first();
 
         return Forms\Components\Tabs\Tab::make("whatsapp")
@@ -414,7 +424,7 @@ class GymSettings extends Page implements HasActions, HasForms
     public function save(): void
     {
         $data = $this->form->getState();
-        $gym = Filament::getTenant();
+        $gym = $this->getGym();
 
         foreach ($data as $key => $value) {
             $this->saveSetting($gym->id, $key, $value);
@@ -478,7 +488,7 @@ class GymSettings extends Page implements HasActions, HasForms
                     return;
                 }
 
-                $gymId = Filament::getTenant()?->id;
+                $gymId = $this->getGym()->id;
 
                 // Create Razorpay order
                 try {

@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $check_out_time
  * @property AttendanceStatus|null $status
  * @property string|null $note
+ * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Model|\Eloquent $attendanceable
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $attendanceable
  * @property-read mixed $duration
  * @property-read mixed $duration_in_minutes
  * @property-read \App\Models\Gym $gym

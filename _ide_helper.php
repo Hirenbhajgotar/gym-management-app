@@ -1618,11 +1618,15 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * {@inheritdoc}
+         * Finds an entry of the container by its identifier and returns it.
          *
          * @template TClass of object
          * @param string|class-string<TClass> $id
          * @return ($id is class-string<TClass> ? TClass : mixed)
+         * @param string $id Identifier of the entry to look for.
+         * @throws NotFoundExceptionInterface  No entry was found for **this** identifier.
+         * @throws ContainerExceptionInterface Error while retrieving the entry.
+         * @return mixed Entry.
          * @static
          */
         public static function get($id)
@@ -24894,6 +24898,41 @@ namespace MarcelWeidum\ExpirationNoticePlugin\Facades {
             }
     }
 
+namespace Spatie\SignalAwareCommand\Facades {
+    /**
+     * @see \Spatie\SignalAwareCommand\Signal
+     */
+    class Signal {
+        /**
+         * @static
+         */
+        public static function handle($signal, $callable)
+        {
+            /** @var \Spatie\SignalAwareCommand\Signal $instance */
+            return $instance->handle($signal, $callable);
+        }
+
+        /**
+         * @static
+         */
+        public static function executeSignalHandlers($signal, $command)
+        {
+            /** @var \Spatie\SignalAwareCommand\Signal $instance */
+            return $instance->executeSignalHandlers($signal, $command);
+        }
+
+        /**
+         * @static
+         */
+        public static function clearHandlers($signal = null)
+        {
+            /** @var \Spatie\SignalAwareCommand\Signal $instance */
+            return $instance->clearHandlers($signal);
+        }
+
+            }
+    }
+
 namespace Illuminate\Support {
     /**
      * @template TKey of array-key
@@ -28374,6 +28413,25 @@ namespace App\Filament\SuperAdmin\Resources\PlanResource\Pages {
             }
     }
 
+namespace App\Filament\SuperAdmin\Resources\RequestContactResource\Pages {
+    /**
+     */
+    class CreateRequestContact extends \Filament\Resources\Pages\CreateRecord {
+            }
+    /**
+     */
+    class EditRequestContact extends \Filament\Resources\Pages\EditRecord {
+            }
+    /**
+     */
+    class ListRequestContacts extends \Filament\Resources\Pages\ListRecords {
+            }
+    /**
+     */
+    class ViewRequestContact extends \Filament\Resources\Pages\ViewRecord {
+            }
+    }
+
 namespace App\Filament\SuperAdmin\Resources\StateResource\Pages {
     /**
      */
@@ -28401,6 +28459,13 @@ namespace App\Filament\SuperAdmin\Resources\UserResource\Pages {
     /**
      */
     class ListUsers extends \Filament\Resources\Pages\ListRecords {
+            }
+    }
+
+namespace App\Filament\SuperAdmin\Resources\UserResource\RelationManagers {
+    /**
+     */
+    class SubscriptionRelationManager extends \Filament\Resources\RelationManagers\RelationManager {
             }
     }
 
@@ -28648,6 +28713,10 @@ namespace App\Livewire\Frontend {
     /**
      */
     class HomeController extends \Livewire\Component {
+            }
+    /**
+     */
+    class RequestDemo extends \Livewire\Component {
             }
     /**
      */
@@ -34005,9 +34074,15 @@ namespace  {
     class Livewire extends \Livewire\Livewire {}
     class Excel extends \Maatwebsite\Excel\Facades\Excel {}
     class ExpirationNoticePlugin extends \MarcelWeidum\ExpirationNoticePlugin\Facades\ExpirationNoticePlugin {}
+    class Signal extends \Spatie\SignalAwareCommand\Facades\Signal {}
 }
 
 
+namespace Facades\Livewire\Features\SupportFileUploads {
+    /**
+     * @mixin \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl     */
+    class GenerateSignedUploadUrl extends \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl {}
+}
 
 
 
