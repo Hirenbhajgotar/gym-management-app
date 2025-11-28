@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AttendanceStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
@@ -63,7 +64,7 @@ class Attendances extends Model
         'status' => AttendanceStatus::class,
     ];
 
-    public function attendanceable()
+    public function attendanceable(): MorphTo
     {
         return $this->morphTo();
     }

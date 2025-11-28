@@ -88,7 +88,7 @@ class AttendanceService
             'check_out_time' => now(),
             'status' => AttendanceStatus::Completed,
             'duration_in_minutes' => $duration,
-            'notes' => $notes ? ($attendance->notes ? $attendance->notes . "\n" . $notes : $notes) : $attendance->notes,
+            'notes' => $notes ? ($attendance->note ? $attendance->note . "\n" . $notes : $notes) : $attendance->note,
         ]);
 
         return $attendance;
@@ -244,7 +244,7 @@ class AttendanceService
             $attendance->update([
                 'check_out_time' => $checkOutTime,
                 'status' => AttendanceStatus::Completed,
-                'notes' => ($attendance->notes ? $attendance->notes . "\n" : '') . 'Auto checked out after ' . $hoursThreshold . ' hours',
+                'notes' => ($attendance->note ? $attendance->note . "\n" : '') . 'Auto checked out after ' . $hoursThreshold . ' hours',
             ]);
         }
 
