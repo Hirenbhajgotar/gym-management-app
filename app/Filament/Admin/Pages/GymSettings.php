@@ -104,80 +104,28 @@ class GymSettings extends Page implements HasActions, HasForms
                                 callable $set,
                                 $state,
                             ) {
+                                $notificationKeys = [
+                                    'membership_expiry_notifications',
+                                    'birthday_notifications',
+                                    'attendance_reminders',
+                                    'payment_reminders',
+                                    'followup_reminders',
+                                    'lead_reminders_notifications',
+                                ];
+
                                 if ($state) {
-                                    $settings = GymSetting::where(
-                                        'gym_id',
-                                        $this->getGym()->id,
-                                    )
+                                    $settings = GymSetting::where('gym_id', $this->getGym()->id)
+                                        ->whereIn('key', $notificationKeys)
                                         ->pluck('value', 'key')
                                         ->all();
-                                    $set(
-                                        'membership_expiry_notifications',
-                                        isset(
-                                            $settings['membership_expiry_notifications'],
-                                        ) &&
-                                            $settings['membership_expiry_notifications'] === 'true'
-                                            ? true
-                                            : false,
-                                    );
-                                    $set(
-                                        'birthday_notifications',
-                                        isset(
-                                            $settings['birthday_notifications'],
-                                        ) &&
-                                            $settings['birthday_notifications'] ===
-                                            'true'
-                                            ? true
-                                            : false,
-                                    );
-                                    $set(
-                                        'attendance_reminders',
-                                        isset(
-                                            $settings['attendance_reminders'],
-                                        ) &&
-                                            $settings['attendance_reminders'] ===
-                                            'true'
-                                            ? true
-                                            : false,
-                                    );
-                                    $set(
-                                        'payment_reminders',
-                                        isset($settings['payment_reminders']) &&
-                                            $settings['payment_reminders'] ===
-                                            'true'
-                                            ? true
-                                            : false,
-                                    );
-                                    $set(
-                                        'followup_reminders',
-                                        isset(
-                                            $settings['followup_reminders'],
-                                        ) &&
-                                            $settings['followup_reminders'] ===
-                                            'true'
-                                            ? true
-                                            : false,
-                                    );
-                                    $set(
-                                        'lead_reminders_notifications',
-                                        isset(
-                                            $settings['lead_reminders_notifications'],
-                                        ) &&
-                                            $settings['lead_reminders_notifications'] ===
-                                            'true'
-                                            ? true
-                                            : false,
-                                    );
+
+                                    foreach ($notificationKeys as $key) {
+                                        $set($key, ($settings[$key] ?? 'false') === 'true');
+                                    }
                                 } else {
-                                    $set(
-                                        'membership_expiry_notifications',
-                                        false,
-                                    );
-                                    $set('birthday_notifications', false);
-                                    $set('attendance_reminders', false);
-                                    $set('payment_reminders', false);
-                                    $set('followup_reminders', false);
-                                    $set('lead_reminders_notifications', false);
+                                    foreach ($notificationKeys as $key) {
+                                        $set($key, false);
+                                    }
                                 }
                             })
                             ->helperText(
