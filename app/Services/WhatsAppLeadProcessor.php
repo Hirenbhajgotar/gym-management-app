@@ -33,7 +33,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             }
 
             // Get tenant configuration
-            $config = $this->getTenantConfig($data['business_phone_number_id'] ?? $data['phone_number_id'] ?? '');
+            $config = $this->getTenantConfig($data['phone_number_id'] ?? '');
             if (! $config) {
                 Log::warning('No tenant configuration found for WhatsApp Business number', ['data' => $data]);
 
@@ -206,7 +206,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
                         'whatsapp_user_id' => $from,
                         'message_id' => $message['id'] ?? '',
                         'timestamp' => $message['timestamp'] ?? time(),
-                        'business_phone_number_id' => $value['metadata']['phone_number_id'] ?? '',
+                        'phone_number_id' => $value['metadata']['phone_number_id'] ?? '',
                         'display_phone_number' => $value['metadata']['display_phone_number'] ?? '',
                         'source' => 'whatsapp_business',
                     ];
@@ -302,7 +302,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             }
 
             $templateName = $config->auto_reply_template ?? 'welcome_message';
-            $businessPhoneId = $config->business_phone_number_id;
+            $businessPhoneId = $config->phone_number_id;
 
             if (! $businessPhoneId) {
                 Log::warning('No business phone number ID configured for WhatsApp auto-reply');

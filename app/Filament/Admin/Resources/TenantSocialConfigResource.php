@@ -289,19 +289,19 @@ class TenantSocialConfigResource extends Resource
                                             ->maxValue(10000)
                                             ->helperText('Maximum number of leads to process per hour'),
 
-                                        Textarea::make('custom_fields_mapping')
-                                            ->label('Custom Fields Mapping')
-                                            ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
-                                            ->rows(5)
-                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
+                                        // Textarea::make('custom_fields_mapping')
+                                        //     ->label('Custom Fields Mapping')
+                                        //     ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
+                                        //     ->rows(5)
+                                        //     ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                        //     ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
 
-                                        Textarea::make('webhook_filters')
-                                            ->label('Webhook Filters')
-                                            ->helperText('JSON configuration for filtering incoming webhooks')
-                                            ->rows(5)
-                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
+                                        // Textarea::make('webhook_filters')
+                                        //     ->label('Webhook Filters')
+                                        //     ->helperText('JSON configuration for filtering incoming webhooks')
+                                        //     ->rows(5)
+                                        //     ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                        //     ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
                                     ]),
                             ]),
                     ]),

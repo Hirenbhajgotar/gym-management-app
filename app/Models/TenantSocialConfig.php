@@ -36,6 +36,14 @@ use Illuminate\Support\Facades\Crypt;
  * @property-read \App\Models\User|null $assignedUser
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialMediaWebhookLog> $webhookLogs
  * @property-read int|null $webhook_logs_count
+ * @property bool $auto_reply_enabled
+ * @property bool $sms_acknowledgment_enabled
+ * @property bool $email_acknowledgment_enabled
+ * @property string|null $sms_template
+ * @property string|null $email_template
+ * @property int|null $reply_delay_minutes
+ * @property bool $debug_mode
+ * @property int|null $rate_limit
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig byPlatform($platform)
@@ -85,6 +93,14 @@ class TenantSocialConfig extends Model
         'is_active',
         'token_expires_at',
         'assigned_user_id',
+        'auto_reply_enabled',
+        'sms_acknowledgment_enabled',
+        'email_acknowledgment_enabled',
+        'sms_template',
+        'email_template',
+        'reply_delay_minutes',
+        'debug_mode',
+        'rate_limit',
     ];
 
     protected $casts = [
