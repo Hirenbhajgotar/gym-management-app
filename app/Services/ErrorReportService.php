@@ -114,6 +114,7 @@ class ErrorReportService
         $file = null;
         $line = null;
         $exception_class = null;
+        $errorMessage = '';
 
         if ($exceptionId) {
             $exceptionData = resolve(ExceptionStorageService::class)->retrieve($exceptionId);
