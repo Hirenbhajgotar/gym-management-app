@@ -17,6 +17,7 @@ trait HasTenantAccess
     {
         /** @var Gym $gym */
         $gym = Filament::getTenant();
+
         return $gym;
     }
 
