@@ -333,9 +333,8 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             }
 
             $apiKey = $config->api_key ?? config('services.indiamart.api_key');
-            $userId = $config->user_id;
 
-            if (! $apiKey || ! $userId) {
+            if (! $apiKey) {
                 Log::warning('Missing IndiaMart API credentials for acknowledgment');
 
                 return;
