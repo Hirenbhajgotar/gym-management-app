@@ -36,6 +36,15 @@ class GymSettings extends Page implements HasActions, HasForms
 
     public ?array $data = [];
 
+    private const NOTIFICATION_KEYS = [
+        'membership_expiry_notifications',
+        'birthday_notifications',
+        'attendance_reminders',
+        'payment_reminders',
+        'followup_reminders',
+        'lead_reminders_notifications',
+    ];
+
     public function mount(): void
     {
         $settings = GymSetting::where('gym_id', $this->getGym()->id)
@@ -104,28 +113,16 @@ class GymSettings extends Page implements HasActions, HasForms
                                 callable $set,
                                 $state,
                             ) {
-                                $notificationKeys = [
-                                    'membership_expiry_notifications',
-                                    'birthday_notifications',
-                                    'attendance_reminders',
-                                    'payment_reminders',
-                                    'followup_reminders',
-                                    'lead_reminders_notifications',
-                                ];
-
+                                $settings = [];
                                 if ($state) {
                                     $settings = GymSetting::where('gym_id', $this->getGym()->id)
-                                        ->whereIn('key', $notificationKeys)
+                                        ->whereIn('key', self::NOTIFICATION_KEYS)
                                         ->pluck('value', 'key')
                                         ->all();
+                                }
 
-                                    foreach ($notificationKeys as $key) {
-                                        $set($key, ($settings[$key] ?? 'false') === 'true');
-                                    }
-                                } else {
-                                    foreach ($notificationKeys as $key) {
-                                        $set($key, false);
-                                    }
+                                foreach (self::NOTIFICATION_KEYS as $key) {
+                                    $set($key, $state && ($settings[$key] ?? 'false') === 'true');
                                 }
                             })
                             ->helperText(
