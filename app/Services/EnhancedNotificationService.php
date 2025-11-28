@@ -6,17 +6,19 @@ use App\Models\NotificationLog;
 use App\Models\NotificationSetting;
 use App\Models\NotificationTemplate;
 use App\Models\User;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 
 class EnhancedNotificationService extends NotificationService
 {
+    use HasTenantAccess;
+
     public function sendNotification(
         User $recipient,
         string $type,
         array $channels = ['whatsapp'],
         array $variables = []
     ): void {
-        $tenantId = Filament::getTenant()->id;
+        $tenantId = $this->getGymId();
         $gymOwner = $this->getGymOwner($tenantId);
 
         $settings = NotificationSetting::where('gym_id', $tenantId)
@@ -111,7 +113,7 @@ class EnhancedNotificationService extends NotificationService
     private function logError(User $recipient, string $error): void
     {
         NotificationLog::create([
-            'gym_id' => Filament::getTenant()->id,
+            'gym_id' => $this->getGymId(),
             'user_id' => $recipient->id,
             'type' => 'system_error',
             'channel' => 'system',
