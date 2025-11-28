@@ -6,9 +6,9 @@ use App\Models\GymSetting;
 use App\Models\GymWhatsAppBalance;
 use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
+use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -16,48 +16,40 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Http;
 
 /**
  * @property Form $form
  */
 class GymSettings extends Page implements HasActions, HasForms
 {
-    use InteractsWithActions, InteractsWithForms;
+    use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
-    protected static string $view = "filament.admin.pages.gym-settings";
+    protected static string $view = 'filament.admin.pages.gym-settings';
 
-    protected static ?string $navigationGroup = "Settings";
+    protected static ?string $navigationGroup = 'Settings';
 
-    protected static ?string $navigationLabel = "Settings";
+    protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?string $slug = "settings";
+    protected static ?string $slug = 'settings';
 
-    protected ?string $heading = "Settings";
+    protected ?string $heading = 'Settings';
 
     public ?array $data = [];
 
-    private function getGym(): \App\Models\Gym
-    {
-        /** @var \App\Models\Gym $gym */
-        $gym = Filament::getTenant();
-        return $gym;
-    }
-
     public function mount(): void
     {
-        $settings = GymSetting::where("gym_id", $this->getGym()->id)
-            ->pluck("value", "key")
+        $settings = GymSetting::where('gym_id', $this->getGym()->id)
+            ->pluck('value', 'key')
             ->all();
 
         $this->form->fill(
             collect($settings)
                 ->map(function ($value) {
-                    if ($value === "true") {
+                    if ($value === 'true') {
                         return true;
                     }
 
-                    if ($value === "false") {
+                    if ($value === 'false') {
                         return false;
                     }
 
@@ -69,8 +61,8 @@ class GymSettings extends Page implements HasActions, HasForms
 
     public function form(Form $form): Form
     {
-        return $form->statePath("data")->schema([
-            Forms\Components\Tabs::make("Settings")
+        return $form->statePath('data')->schema([
+            Forms\Components\Tabs::make('Settings')
                 ->tabs([
                     $this->getNotificationTab(),
                     $this->getWhatsAppTab(),
@@ -79,17 +71,17 @@ class GymSettings extends Page implements HasActions, HasForms
                 ])
                 ->columnSpanFull()
                 ->persistTab()
-                ->id("tenant-settings-tabs"),
+                ->id('tenant-settings-tabs'),
         ]);
     }
 
     private function getNotificationTab(): Forms\Components\Tabs\Tab
     {
-        return Forms\Components\Tabs\Tab::make("notifications")
-            ->label("Notifications")
-            ->icon("heroicon-o-bell")
+        return Forms\Components\Tabs\Tab::make('notifications')
+            ->label('Notifications')
+            ->icon('heroicon-o-bell')
             ->schema([
-                Forms\Components\Tabs::make("Notification Preferences")->tabs([
+                Forms\Components\Tabs::make('Notification Preferences')->tabs([
                     $this->getWhatsAppNotificationTab(),
                 ]),
             ]);
@@ -97,15 +89,15 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getWhatsAppNotificationTab(): Forms\Components\Tabs\Tab
     {
-        return Forms\Components\Tabs\Tab::make("whatsapp")
-            ->label("WhatsApp Settings")
-            ->icon("heroicon-o-device-phone-mobile")
+        return Forms\Components\Tabs\Tab::make('whatsapp')
+            ->label('WhatsApp Settings')
+            ->icon('heroicon-o-device-phone-mobile')
             ->schema([
-                Forms\Components\Section::make("Notification Preferences")
-                    ->description("Configure whatsapp notifications.")
+                Forms\Components\Section::make('Notification Preferences')
+                    ->description('Configure whatsapp notifications.')
                     ->schema([
-                        Forms\Components\Toggle::make("whatsapp_notifications")
-                            ->label("WhatsApp Notifications")
+                        Forms\Components\Toggle::make('whatsapp_notifications')
+                            ->label('WhatsApp Notifications')
                             ->default(true)
                             ->live()
                             ->afterStateUpdated(function (
@@ -114,123 +106,123 @@ class GymSettings extends Page implements HasActions, HasForms
                             ) {
                                 if ($state) {
                                     $settings = GymSetting::where(
-                                        "gym_id",
+                                        'gym_id',
                                         $this->getGym()->id,
                                     )
-                                        ->pluck("value", "key")
+                                        ->pluck('value', 'key')
                                         ->all();
                                     $set(
-                                        "membership_expiry_notifications",
+                                        'membership_expiry_notifications',
                                         isset(
-                                            $settings["membership_expiry_notifications"],
+                                            $settings['membership_expiry_notifications'],
                                         ) &&
-                                            $settings["membership_expiry_notifications"] === "true"
+                                            $settings['membership_expiry_notifications'] === 'true'
                                             ? true
                                             : false,
                                     );
                                     $set(
-                                        "birthday_notifications",
+                                        'birthday_notifications',
                                         isset(
-                                            $settings["birthday_notifications"],
+                                            $settings['birthday_notifications'],
                                         ) &&
-                                            $settings["birthday_notifications"] ===
-                                            "true"
+                                            $settings['birthday_notifications'] ===
+                                            'true'
                                             ? true
                                             : false,
                                     );
                                     $set(
-                                        "attendance_reminders",
+                                        'attendance_reminders',
                                         isset(
-                                            $settings["attendance_reminders"],
+                                            $settings['attendance_reminders'],
                                         ) &&
-                                            $settings["attendance_reminders"] ===
-                                            "true"
+                                            $settings['attendance_reminders'] ===
+                                            'true'
                                             ? true
                                             : false,
                                     );
                                     $set(
-                                        "payment_reminders",
-                                        isset($settings["payment_reminders"]) &&
-                                            $settings["payment_reminders"] ===
-                                            "true"
+                                        'payment_reminders',
+                                        isset($settings['payment_reminders']) &&
+                                            $settings['payment_reminders'] ===
+                                            'true'
                                             ? true
                                             : false,
                                     );
                                     $set(
-                                        "followup_reminders",
+                                        'followup_reminders',
                                         isset(
-                                            $settings["followup_reminders"],
+                                            $settings['followup_reminders'],
                                         ) &&
-                                            $settings["followup_reminders"] ===
-                                            "true"
+                                            $settings['followup_reminders'] ===
+                                            'true'
                                             ? true
                                             : false,
                                     );
                                     $set(
-                                        "lead_reminders_notifications",
+                                        'lead_reminders_notifications',
                                         isset(
-                                            $settings["lead_reminders_notifications"],
+                                            $settings['lead_reminders_notifications'],
                                         ) &&
-                                            $settings["lead_reminders_notifications"] ===
-                                            "true"
+                                            $settings['lead_reminders_notifications'] ===
+                                            'true'
                                             ? true
                                             : false,
                                     );
                                 } else {
                                     $set(
-                                        "membership_expiry_notifications",
+                                        'membership_expiry_notifications',
                                         false,
                                     );
-                                    $set("birthday_notifications", false);
-                                    $set("attendance_reminders", false);
-                                    $set("payment_reminders", false);
-                                    $set("followup_reminders", false);
-                                    $set("lead_reminders_notifications", false);
+                                    $set('birthday_notifications', false);
+                                    $set('attendance_reminders', false);
+                                    $set('payment_reminders', false);
+                                    $set('followup_reminders', false);
+                                    $set('lead_reminders_notifications', false);
                                 }
                             })
                             ->helperText(
-                                "Enable/disable WhatsApp notifications for all notification types",
+                                'Enable/disable WhatsApp notifications for all notification types',
                             ),
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make("Specific Notification Types")
-                    ->description("Enable/disable specific notification types.")
+                Forms\Components\Section::make('Specific Notification Types')
+                    ->description('Enable/disable specific notification types.')
                     ->schema([
                         Forms\Components\Toggle::make(
-                            "membership_expiry_notifications",
+                            'membership_expiry_notifications',
                         )
-                            ->label("Membership Expiry Notifications")
+                            ->label('Membership Expiry Notifications')
                             ->helperText(
-                                "Send notifications before and after membership expiry",
+                                'Send notifications before and after membership expiry',
                             ),
 
-                        Forms\Components\Toggle::make("birthday_notifications")
-                            ->label("Birthday Notifications")
-                            ->helperText("Send birthday wishes to members"),
+                        Forms\Components\Toggle::make('birthday_notifications')
+                            ->label('Birthday Notifications')
+                            ->helperText('Send birthday wishes to members'),
 
-                        Forms\Components\Toggle::make("attendance_reminders")
-                            ->label("Attendance Reminders")
+                        Forms\Components\Toggle::make('attendance_reminders')
+                            ->label('Attendance Reminders')
                             ->helperText(
-                                "Send reminders for regular attendance",
+                                'Send reminders for regular attendance',
                             ),
 
-                        Forms\Components\Toggle::make("payment_reminders")
-                            ->label("Payment Reminders")
+                        Forms\Components\Toggle::make('payment_reminders')
+                            ->label('Payment Reminders')
                             ->helperText(
-                                "Send payment reminders for pending dues",
+                                'Send payment reminders for pending dues',
                             ),
 
-                        Forms\Components\Toggle::make("followup_reminders")
-                            ->label("Follow-up Reminders")
+                        Forms\Components\Toggle::make('followup_reminders')
+                            ->label('Follow-up Reminders')
                             ->helperText(
-                                "Send follow-up reminders for new leads",
+                                'Send follow-up reminders for new leads',
                             ),
 
-                        Forms\Components\Toggle::make("lead_reminders_notifications")
-                            ->label("Lead Reminders")
+                        Forms\Components\Toggle::make('lead_reminders_notifications')
+                            ->label('Lead Reminders')
                             ->helperText(
-                                "Send reminders for pending leads that need attention",
+                                'Send reminders for pending leads that need attention',
                             ),
                     ])
                     ->columns(2),
@@ -239,60 +231,60 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getMembershipTab(): Forms\Components\Tabs\Tab
     {
-        return Forms\Components\Tabs\Tab::make("membership")
-            ->label("Membership Settings")
-            ->icon("heroicon-o-credit-card")
+        return Forms\Components\Tabs\Tab::make('membership')
+            ->label('Membership Settings')
+            ->icon('heroicon-o-credit-card')
             ->schema([
-                Forms\Components\Section::make("Membership Configuration")
+                Forms\Components\Section::make('Membership Configuration')
                     ->schema([
                         Forms\Components\Select::make(
-                            "default_membership_duration",
+                            'default_membership_duration',
                         )
-                            ->label("Default Membership Duration")
+                            ->label('Default Membership Duration')
                             ->options([
-                                "1" => "1 Month",
-                                "3" => "3 Months",
-                                "6" => "6 Months",
-                                "12" => "1 Year",
+                                '1' => '1 Month',
+                                '3' => '3 Months',
+                                '6' => '6 Months',
+                                '12' => '1 Year',
                             ])
-                            ->default("1"),
+                            ->default('1'),
 
-                        Forms\Components\TextInput::make("grace_period_days")
-                            ->label("Grace Period (Days)")
+                        Forms\Components\TextInput::make('grace_period_days')
+                            ->label('Grace Period (Days)')
                             ->numeric()
                             ->default(
-                                config("subscription.grace_period_days", 7),
+                                config('subscription.grace_period_days', 7),
                             )
                             ->helperText(
-                                "Number of days after subscription expiry when gym owner still has access",
+                                'Number of days after subscription expiry when gym owner still has access',
                             ),
 
-                        Forms\Components\Toggle::make("auto_renew_memberships")
-                            ->label("Auto Renew Memberships")
+                        Forms\Components\Toggle::make('auto_renew_memberships')
+                            ->label('Auto Renew Memberships')
                             ->default(false)
                             ->helperText(
-                                "Automatically renew memberships when they expire",
+                                'Automatically renew memberships when they expire',
                             ),
 
                         Forms\Components\Toggle::make(
-                            "require_membership_for_attendance",
+                            'require_membership_for_attendance',
                         )
-                            ->label("Require Active Membership for Attendance")
+                            ->label('Require Active Membership for Attendance')
                             ->default(true),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make("Pricing Settings")
+                Forms\Components\Section::make('Pricing Settings')
                     ->schema([
                         Forms\Components\TextInput::make(
-                            "minimum_membership_amount",
+                            'minimum_membership_amount',
                         )
-                            ->label("Minimum Membership Amount")
+                            ->label('Minimum Membership Amount')
                             ->numeric()
-                            ->prefix("₹"),
+                            ->prefix('₹'),
 
-                        Forms\Components\Toggle::make("show_prices_to_members")
-                            ->label("Show Prices to Members")
+                        Forms\Components\Toggle::make('show_prices_to_members')
+                            ->label('Show Prices to Members')
                             ->default(true),
                     ])
                     ->columns(2),
@@ -301,36 +293,36 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getAttendanceTab(): Forms\Components\Tabs\Tab
     {
-        return Forms\Components\Tabs\Tab::make("attendance")
-            ->label("Attendance Settings")
-            ->icon("heroicon-o-user-group")
+        return Forms\Components\Tabs\Tab::make('attendance')
+            ->label('Attendance Settings')
+            ->icon('heroicon-o-user-group')
             ->schema([
-                Forms\Components\Section::make("Attendance Configuration")
+                Forms\Components\Section::make('Attendance Configuration')
                     ->schema([
-                        Forms\Components\Toggle::make("require_check_in")
-                            ->label("Require Check-in/Check-out")
+                        Forms\Components\Toggle::make('require_check_in')
+                            ->label('Require Check-in/Check-out')
                             ->default(true)
-                            ->helperText("Members must check in and out"),
+                            ->helperText('Members must check in and out'),
 
-                        Forms\Components\Select::make("check_in_method")
-                            ->label("Check-in Method")
+                        Forms\Components\Select::make('check_in_method')
+                            ->label('Check-in Method')
                             ->options([
-                                "qr" => "QR Code",
-                                "manual" => "Manual Entry",
-                                "rfid" => "RFID Card",
+                                'qr' => 'QR Code',
+                                'manual' => 'Manual Entry',
+                                'rfid' => 'RFID Card',
                             ])
-                            ->default("qr"),
+                            ->default('qr'),
 
-                        Forms\Components\TextInput::make("max_daily_visits")
-                            ->label("Maximum Daily Visits")
+                        Forms\Components\TextInput::make('max_daily_visits')
+                            ->label('Maximum Daily Visits')
                             ->numeric()
                             ->default(2)
                             ->helperText(
-                                "Maximum number of visits per day allowed",
+                                'Maximum number of visits per day allowed',
                             ),
 
-                        Forms\Components\Toggle::make("send_attendance_summary")
-                            ->label("Send Daily Attendance Summary")
+                        Forms\Components\Toggle::make('send_attendance_summary')
+                            ->label('Send Daily Attendance Summary')
                             ->default(false),
                     ])
                     ->columns(2),
@@ -340,81 +332,82 @@ class GymSettings extends Page implements HasActions, HasForms
     private function getWhatsAppTab(): Forms\Components\Tabs\Tab
     {
         $gymId = $this->getGym()->id;
-        $balance = GymWhatsAppBalance::where("gym_id", $gymId)->first();
+        $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
 
-        return Forms\Components\Tabs\Tab::make("whatsapp")
-            ->label("WhatsApp Messages")
-            ->icon("heroicon-o-chat-bubble-left-right")
+        return Forms\Components\Tabs\Tab::make('whatsapp')
+            ->label('WhatsApp Messages')
+            ->icon('heroicon-o-chat-bubble-left-right')
             ->schema([
-                Forms\Components\Section::make("Message Balance")
+                Forms\Components\Section::make('Message Balance')
                     ->description(
-                        "Current WhatsApp message balance and usage statistics.",
+                        'Current WhatsApp message balance and usage statistics.',
                     )
                     ->schema([
-                        Forms\Components\Placeholder::make("remaining_messages")
-                            ->label("Remaining Messages")
+                        Forms\Components\Placeholder::make('remaining_messages')
+                            ->label('Remaining Messages')
                             ->content($balance?->balance_messages ?? 0),
 
-                        Forms\Components\Placeholder::make("total_purchased")
-                            ->label("Total Purchased")
+                        Forms\Components\Placeholder::make('total_purchased')
+                            ->label('Total Purchased')
                             ->content($balance?->total_messages_purchased ?? 0),
 
-                        Forms\Components\Placeholder::make("messages_used")
-                            ->label("Messages Used")
+                        Forms\Components\Placeholder::make('messages_used')
+                            ->label('Messages Used')
                             ->content($balance?->messages_used ?? 0),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make("Purchase Message Packages")
-                    ->description("Buy additional WhatsApp message packages.")
+                Forms\Components\Section::make('Purchase Message Packages')
+                    ->description('Buy additional WhatsApp message packages.')
                     ->schema([
-                        Forms\Components\Select::make("message_package")
-                            ->label("Select Package")
+                        Forms\Components\Select::make('message_package')
+                            ->label('Select Package')
                             ->options(
                                 WhatsAppMessagePackage::active()
-                                    ->orderBy("sort_order")
+                                    ->orderBy('sort_order')
                                     ->get()
                                     ->mapWithKeys(function ($package) {
                                         $label =
                                             $package->name .
-                                            " (" .
+                                            ' (' .
                                             $package->message_count .
-                                            " messages - ₹" .
+                                            ' messages - ₹' .
                                             $package->price .
-                                            ")";
+                                            ')';
+
                                         return [$package->id => $label];
                                     }),
                             )
-                            ->placeholder("Choose a package")
+                            ->placeholder('Choose a package')
                             ->helperText(
-                                "Select a message package to purchase",
+                                'Select a message package to purchase',
                             ),
                     ])
                     ->columns(1)
                     ->headerActions([$this->getPurchaseAction()]),
 
-                Forms\Components\Section::make("Low Balance Alerts")
+                Forms\Components\Section::make('Low Balance Alerts')
                     ->description(
-                        "Configure alerts when message balance is low.",
+                        'Configure alerts when message balance is low.',
                     )
                     ->schema([
                         Forms\Components\TextInput::make(
-                            "low_balance_threshold",
+                            'low_balance_threshold',
                         )
-                            ->label("Low Balance Threshold")
+                            ->label('Low Balance Threshold')
                             ->numeric()
                             ->default(100)
                             ->helperText(
-                                "Send alert when remaining messages drop below this number",
+                                'Send alert when remaining messages drop below this number',
                             ),
 
                         Forms\Components\Toggle::make(
-                            "enable_low_balance_alerts",
+                            'enable_low_balance_alerts',
                         )
-                            ->label("Enable Low Balance Alerts")
+                            ->label('Enable Low Balance Alerts')
                             ->default(true)
                             ->helperText(
-                                "Receive notifications when message balance is low",
+                                'Receive notifications when message balance is low',
                             ),
                     ])
                     ->columns(2),
@@ -431,7 +424,7 @@ class GymSettings extends Page implements HasActions, HasForms
         }
 
         Notification::make()
-            ->title("Settings saved successfully!")
+            ->title('Settings saved successfully!')
             ->success()
             ->send();
     }
@@ -439,52 +432,54 @@ class GymSettings extends Page implements HasActions, HasForms
     private function saveSetting(int $gymId, string $key, $value): void
     {
         GymSetting::updateOrCreate(
-            ["gym_id" => $gymId, "key" => $key],
-            ["value" => $value, "type" => gettype($value)],
+            ['gym_id' => $gymId, 'key' => $key],
+            ['value' => $value, 'type' => gettype($value)],
         );
     }
 
     public function getPurchaseAction(): Action
     {
-        return Action::make("purchasePackage")
-            ->label("Purchase Messages")
-            ->icon("heroicon-o-shopping-cart")
-            ->color("success")
+        return Action::make('purchasePackage')
+            ->label('Purchase Messages')
+            ->icon('heroicon-o-shopping-cart')
+            ->color('success')
             ->requiresConfirmation()
-            ->modalHeading("Confirm Purchase")
+            ->modalHeading('Confirm Purchase')
             ->modalDescription(function () {
-                $packageId = $this->form->getState()["message_package"] ?? null;
-                if (!$packageId) {
-                    return "Please select a package first.";
+                $packageId = $this->form->getState()['message_package'] ?? null;
+                if (! $packageId) {
+                    return 'Please select a package first.';
                 }
 
                 $package = WhatsAppMessagePackage::find($packageId);
-                if (!$package) {
-                    return "Invalid package selected.";
+                if (! $package) {
+                    return 'Invalid package selected.';
                 }
 
                 return "Are you sure you want to purchase the {$package->name} package for ₹{$package->price}? This will add {$package->message_count} messages to your balance.";
             })
-            ->modalSubmitActionLabel("Purchase")
+            ->modalSubmitActionLabel('Purchase')
             ->action(function () {
-                $packageId = $this->form->getState()["message_package"] ?? null;
+                $packageId = $this->form->getState()['message_package'] ?? null;
 
-                if (!$packageId) {
+                if (! $packageId) {
                     Notification::make()
-                        ->title("No package selected")
-                        ->body("Please select a message package to purchase.")
+                        ->title('No package selected')
+                        ->body('Please select a message package to purchase.')
                         ->danger()
                         ->send();
+
                     return;
                 }
 
                 $package = WhatsAppMessagePackage::find($packageId);
-                if (!$package) {
+                if (! $package) {
                     Notification::make()
-                        ->title("Invalid package")
-                        ->body("The selected package is not available.")
+                        ->title('Invalid package')
+                        ->body('The selected package is not available.')
                         ->danger()
                         ->send();
+
                     return;
                 }
 
@@ -495,41 +490,40 @@ class GymSettings extends Page implements HasActions, HasForms
                     $razorpayService = app(RazorpayService::class);
 
                     $orderData = $razorpayService->createOrder([
-                        "amount" => $package->price,
-                        "currency" => "INR",
-                        "receipt" =>
-                        "WAP-" .
+                        'amount' => $package->price,
+                        'currency' => 'INR',
+                        'receipt' => 'WAP-' .
                             $package->id .
-                            "-" .
+                            '-' .
                             $gymId .
-                            "-" .
+                            '-' .
                             uniqid(),
-                        "gym_id" => $gymId,
-                        "package_id" => $package->id,
-                        "payment_type" => "whatsapp_package",
-                        "description" => "Purchase of {$package->name} - {$package->message_count} messages",
-                        "notes" => [
-                            "package_name" => $package->name,
-                            "message_count" => $package->message_count,
+                        'gym_id' => $gymId,
+                        'package_id' => $package->id,
+                        'payment_type' => 'whatsapp_package',
+                        'description' => "Purchase of {$package->name} - {$package->message_count} messages",
+                        'notes' => [
+                            'package_name' => $package->name,
+                            'message_count' => $package->message_count,
                         ],
                     ]);
 
                     // Reset the form field
-                    $this->form->fill(["message_package" => null]);
+                    $this->form->fill(['message_package' => null]);
 
                     // Redirect to payment page with order data
-                    return redirect()->route("payments.checkout", [
-                        "order_id" => $orderData["order_id"],
-                        "amount" => $orderData["amount"],
-                        "key" => $orderData["key"],
-                        "package_name" => $package->name,
-                        "message_count" => $package->message_count,
-                        "tenantId" => $gymId,
+                    return redirect()->route('payments.checkout', [
+                        'order_id' => $orderData['order_id'],
+                        'amount' => $orderData['amount'],
+                        'key' => $orderData['key'],
+                        'package_name' => $package->name,
+                        'message_count' => $package->message_count,
+                        'tenantId' => $gymId,
                     ]);
                 } catch (\Exception $e) {
                     Notification::make()
-                        ->title("Payment Error")
-                        ->body("Failed to initiate payment. Please try again.")
+                        ->title('Payment Error')
+                        ->body('Failed to initiate payment. Please try again.')
                         ->danger()
                         ->send();
 

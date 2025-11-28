@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $check_out_time
  * @property AttendanceStatus|null $status
  * @property string|null $note
- * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $attendanceable
@@ -23,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read mixed $duration_in_minutes
  * @property-read \App\Models\Gym $gym
  * @property-read mixed $is_active
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances absent()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byDate($date)
@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereNote($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperAttendances
  */

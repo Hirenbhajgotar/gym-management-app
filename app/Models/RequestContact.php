@@ -15,9 +15,6 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @property string|null $company_name
  * @property int|null $gym_size
  * @property string|null $message
- * @property string|null $job_title
- * @property string|null $preferred_contact_method
- * @property string|null $best_time_to_contact
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property bool $is_contacted

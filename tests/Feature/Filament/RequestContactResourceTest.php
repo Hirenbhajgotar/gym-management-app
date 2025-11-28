@@ -117,10 +117,7 @@ class RequestContactResourceTest extends TestCase
                 'email' => 'test@example.com',
                 'phone' => '+1234567890',
                 'company_name' => 'Test Company',
-                'job_title' => 'Manager',
                 'gym_size' => 100,
-                'preferred_contact_method' => 'email',
-                'best_time_to_contact' => 'morning',
                 'message' => 'This is a test message',
             ])
             ->call('create')

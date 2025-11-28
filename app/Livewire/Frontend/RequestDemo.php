@@ -2,11 +2,9 @@
 
 namespace App\Livewire\Frontend;
 
-use App\Models\BusinessType;
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
 use App\Services\TwilioWhatsAppService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,59 +12,59 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Layout("frontend.layouts.app_new")]
-#[Title("Request Demo - FitnessFlow")]
+#[Layout('frontend.layouts.app_new')]
+#[Title('Request Demo - FitnessFlow')]
 class RequestDemo extends Component
 {
-    public string $name = "";
+    public string $name = '';
 
-    public string $email = "";
+    public string $email = '';
 
-    public string $phone = "";
+    public string $phone = '';
 
-    public string $company_name = "";
+    public string $company_name = '';
 
     public ?int $gym_size = null;
 
-    public string $message = "";
+    public string $message = '';
 
     public bool $isSubmitting = false;
 
     protected function rules(): array
     {
         return [
-            "name" => ["required", "string", "min:2", "max:255"],
-            "email" => ["required", "email", "max:255"],
-            "phone" => ["required", "phone:US,IN,PK"],
-            "company_name" => ["nullable", "string", "max:255"],
-            "gym_size" => ["nullable", "integer", "min:1", "max:100000"],
-            "message" => ["nullable", "string", "max:1000"],
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'phone:US,IN,PK'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'gym_size' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'message' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
     protected function validationAttributes(): array
     {
         return [
-            "name" => "full name",
-            "email" => "email address",
-            "phone" => "phone number",
-            "company_name" => "company name",
-            "gym_size" => "gym size",
-            "message" => "message",
+            'name' => 'full name',
+            'email' => 'email address',
+            'phone' => 'phone number',
+            'company_name' => 'company name',
+            'gym_size' => 'gym size',
+            'message' => 'message',
         ];
     }
 
     public function submitRequest(): void
     {
         // Rate limiting - 3 requests per hour per IP
-        $key = "request-demo:" . request()->ip();
+        $key = 'request-demo:' . request()->ip();
 
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             $minutes = ceil($seconds / 60);
 
             $this->dispatch(
-                "show-error",
+                'show-error',
                 message: "Too many requests. Please try again in {$minutes} minutes.",
             );
 
@@ -81,14 +79,14 @@ class RequestDemo extends Component
         try {
             // Create the request contact record
             $requestContact = RequestContact::create([
-                "name" => $validated["name"],
-                "email" => $validated["email"],
-                "phone" => $validated["phone"],
-                "company_name" => $validated["company_name"] ?? null,
-                "gym_size" => $validated["gym_size"] ?? null,
-                "message" => $validated["message"] ?? null,
-                "ip_address" => request()->ip(),
-                "user_agent" => request()->userAgent(),
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'company_name' => $validated['company_name'] ?? null,
+                'gym_size' => $validated['gym_size'] ?? null,
+                'message' => $validated['message'] ?? null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
             ]);
 
             // Hit rate limiter
@@ -99,21 +97,18 @@ class RequestDemo extends Component
 
             // Show success message
             $this->dispatch(
-                "show-success",
-                message: "Request submitted successfully! Thank you for your interest. Our team will contact you shortly.",
+                'show-success',
+                message: 'Request submitted successfully! Thank you for your interest. Our team will contact you shortly.',
             );
 
             // Reset form
             $this->reset([
-                "name",
-                "email",
-                "phone",
-                "company_name",
-                "job_title",
-                "gym_size",
-                "message",
-                "preferred_contact_method",
-                "best_time_to_contact",
+                'name',
+                'email',
+                'phone',
+                'company_name',
+                'gym_size',
+                'message',
             ]);
 
             // Optional: Redirect to thank you page or home
@@ -121,18 +116,18 @@ class RequestDemo extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Validation errors are automatically displayed
             $this->dispatch(
-                "show-error",
-                message: "Validation error. Please check the form and correct the errors.",
+                'show-error',
+                message: 'Validation error. Please check the form and correct the errors.',
             );
         } catch (\Exception $e) {
-            Log::error("Request Demo Submission Error", [
-                "error" => $e->getMessage(),
-                "trace" => $e->getTraceAsString(),
+            Log::error('Request Demo Submission Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             $this->dispatch(
-                "show-error",
-                message: "Something went wrong. Please try again later.",
+                'show-error',
+                message: 'Something went wrong. Please try again later.',
             );
         } finally {
             $this->isSubmitting = false;
@@ -143,24 +138,24 @@ class RequestDemo extends Component
         RequestContact $requestContact,
     ): void {
         try {
-            $adminEmail = config("app.contact_email");
-            $adminPhone = config("app.contact_phone");
+            $adminEmail = config('app.contact_email');
+            $adminPhone = config('app.contact_phone');
 
             // Send email notification
             if ($adminEmail) {
                 try {
-                    Notification::route("mail", $adminEmail)->notify(
+                    Notification::route('mail', $adminEmail)->notify(
                         new RequestDemoNotification($requestContact),
                     );
 
-                    Log::info("Demo request email sent successfully", [
-                        "request_id" => $requestContact->id,
-                        "admin_email" => $adminEmail,
+                    Log::info('Demo request email sent successfully', [
+                        'request_id' => $requestContact->id,
+                        'admin_email' => $adminEmail,
                     ]);
                 } catch (\Exception $e) {
-                    Log::error("Failed to send demo request email", [
-                        "error" => $e->getMessage(),
-                        "request_id" => $requestContact->id,
+                    Log::error('Failed to send demo request email', [
+                        'error' => $e->getMessage(),
+                        'request_id' => $requestContact->id,
                     ]);
                 }
             }
@@ -173,16 +168,16 @@ class RequestDemo extends Component
                         $adminPhone,
                     );
                 } catch (\Exception $e) {
-                    Log::error("Failed to send demo request WhatsApp", [
-                        "error" => $e->getMessage(),
-                        "request_id" => $requestContact->id,
+                    Log::error('Failed to send demo request WhatsApp', [
+                        'error' => $e->getMessage(),
+                        'request_id' => $requestContact->id,
                     ]);
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Failed to send admin notifications", [
-                "error" => $e->getMessage(),
-                "request_id" => $requestContact->id,
+            Log::error('Failed to send admin notifications', [
+                'error' => $e->getMessage(),
+                'request_id' => $requestContact->id,
             ]);
         }
     }
@@ -213,52 +208,52 @@ class RequestDemo extends Component
 
             $message .=
                 "\n⏰ Submitted: " .
-                $requestContact->created_at->format("M d, Y H:i A");
+                $requestContact->created_at->format('M d, Y H:i A');
             $message .=
                 "\n\n_Please respond to this request as soon as possible._";
 
             // Use Twilio WhatsApp Service
             // Note: For system-level notifications, you might need to use master account
             // or create a system tenant ID configuration
-            $tenantId = config("app.system_tenant_id", "system");
+            $tenantId = config('app.system_tenant_id', 'system');
 
             $whatsappService = new TwilioWhatsAppService($tenantId);
 
             $result = $whatsappService->sendMessage($adminPhone, $message, [
-                "template_sid" => config(
-                    "services.twilio.demo_request_template_sid",
+                'template_sid' => config(
+                    'services.twilio.demo_request_template_sid',
                 ),
-                "template_variables" => [
-                    "1" => $requestContact->name,
-                    "2" => $requestContact->email,
-                    "3" => $requestContact->phone,
-                    "4" => $requestContact->gym_size,
-                    "5" => $requestContact->message,
-                    "6" => $requestContact->created_at->format("M d, Y H:i A"),
+                'template_variables' => [
+                    '1' => $requestContact->name,
+                    '2' => $requestContact->email,
+                    '3' => $requestContact->phone,
+                    '4' => $requestContact->gym_size,
+                    '5' => $requestContact->message,
+                    '6' => $requestContact->created_at->format('M d, Y H:i A'),
                 ],
             ]);
 
-            if ($result["success"]) {
-                Log::info("Demo request WhatsApp sent successfully", [
-                    "request_id" => $requestContact->id,
-                    "message_id" => $result["message_id"] ?? null,
+            if ($result['success']) {
+                Log::info('Demo request WhatsApp sent successfully', [
+                    'request_id' => $requestContact->id,
+                    'message_id' => $result['message_id'] ?? null,
                 ]);
             } else {
-                Log::warning("Demo request WhatsApp failed", [
-                    "request_id" => $requestContact->id,
-                    "error" => $result["error"] ?? "Unknown error",
+                Log::warning('Demo request WhatsApp failed', [
+                    'request_id' => $requestContact->id,
+                    'error' => $result['error'] ?? 'Unknown error',
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error("WhatsApp notification error", [
-                "error" => $e->getMessage(),
-                "request_id" => $requestContact->id,
+            Log::error('WhatsApp notification error', [
+                'error' => $e->getMessage(),
+                'request_id' => $requestContact->id,
             ]);
         }
     }
 
     public function render()
     {
-        return view("livewire.frontend.request-demo");
+        return view('livewire.frontend.request-demo');
     }
 }

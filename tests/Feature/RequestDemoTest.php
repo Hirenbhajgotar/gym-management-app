@@ -57,14 +57,11 @@ class RequestDemoTest extends TestCase
             ->set('email', 'jane@fitzone.com')
             ->set('phone', '+1987654321')
             ->set('company_name', 'FitZone Gym')
-            ->set('job_title', 'Owner')
             ->set('gym_size', 500)
             ->set(
                 'message',
                 'Looking for a comprehensive gym management solution.',
             )
-            ->set('preferred_contact_method', 'whatsapp')
-            ->set('best_time_to_contact', 'Morning (9 AM - 12 PM)')
             ->call('submitRequest')
             ->assertHasNoErrors();
 
@@ -73,11 +70,8 @@ class RequestDemoTest extends TestCase
             'email' => 'jane@fitzone.com',
             'phone' => '+1987654321',
             'company_name' => 'FitZone Gym',
-            'job_title' => 'Owner',
             'gym_size' => 500,
             'message' => 'Looking for a comprehensive gym management solution.',
-            'preferred_contact_method' => 'whatsapp',
-            'best_time_to_contact' => 'Morning (9 AM - 12 PM)',
         ]);
     }
 

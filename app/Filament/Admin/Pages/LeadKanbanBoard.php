@@ -8,14 +8,13 @@ use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
+use App\Traits\HasTenantAccess;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -27,8 +26,7 @@ use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 {
-    use InteractsWithActions;
-    use InteractsWithForms;
+    use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
     protected static ?string $navigationIcon = 'phosphor-columns';
 
@@ -41,11 +39,6 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected static string $recordTitleAttribute = 'name';
 
     protected static string $recordStatusAttribute = 'status';
-
-    private function getGym(): Gym
-    {
-        return Filament::getTenant();
-    }
 
     protected function records(): Collection
     {
@@ -66,7 +59,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     \Filament\Forms\Components\Section::make()
                         ->schema([
                             \Filament\Forms\Components\Hidden::make('gym_id')
-                                ->default($this->getGym()->id),
+                                ->default($this->getGymId()),
 
                             \Filament\Forms\Components\Hidden::make('created_by')
                                 ->default(auth()->user()->id),
