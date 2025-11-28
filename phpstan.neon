@@ -16,5 +16,8 @@ parameters:
     ignoreErrors:
         - '#PHPDoc tag @var#'
 
+        # Class name case false positive
+        - '#Class App\\Models\\WhatsappTemplate referenced with incorrect case#'
+
 #    excludePaths:
 #        - ./*/*/FileToBeExcluded.php
