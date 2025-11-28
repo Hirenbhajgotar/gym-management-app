@@ -73,13 +73,13 @@ class EnhancedNotificationService extends NotificationService
         string $type,
         string $message
     ): void {
-        if (! $recipient->whatsapp_number) {
+        if (! $recipient->phone) {
             return;
         }
 
         // Use gym owner's individual Twilio account
         $whatsappService = new TwilioWhatsAppService($settings->gym_id);
-        $result = $whatsappService->sendMessage($recipient->whatsapp_number, $message);
+        $result = $whatsappService->sendMessage($recipient->phone, $message);
 
         // Enhanced logging with owner's number info
         NotificationLog::create([
@@ -91,7 +91,7 @@ class EnhancedNotificationService extends NotificationService
             'message' => $message,
             'response_data' => array_merge($result['data'] ?? [], [
                 'from_number' => $settings->whatsapp_business_number,
-                'to_number' => $recipient->whatsapp_number,
+                'to_number' => $recipient->phone,
             ]),
             'external_id' => $result['message_id'] ?? null,
             'sent_at' => $result['success'] ? now() : null,
