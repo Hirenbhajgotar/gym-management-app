@@ -57,7 +57,12 @@ class EditGymProfile extends EditTenantProfile
     {
         parent::save(false);
 
-        $redirectUrl = route($this->getRouteName(), ['tenant' => $this->tenant->slug]);
+        /**
+         * @var Gym $tenant
+         */
+        $tenant = $this->tenant;
+
+        $redirectUrl = route($this->getRouteName(), ['tenant' => $tenant->slug]);
 
         $this->redirect($redirectUrl);
     }
