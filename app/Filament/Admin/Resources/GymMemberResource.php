@@ -48,7 +48,10 @@ class GymMemberResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         // Set the permissions team ID based on the current Filament tenant
-        $tenantId = Filament::getTenant()->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $tenantId = $tenant?->id;
+
         setPermissionsTeamId($tenantId);
 
         $user = auth()->user();
@@ -144,7 +147,7 @@ class GymMemberResource extends Resource
                         // Check if membership ends within 2 months (on or before July 31, 2025)
                         $diffInMonths = $now->diffInMonths($membershipEnd, false);
                         if ($diffInMonths <= 2 && $diffInMonths >= 0) {
-                            $diffInDays = round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
+                            $diffInDays = (int) round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
 
                             return "Expire in {$diffInDays} " . Str::plural('day', $diffInDays);
                         }
@@ -573,7 +576,12 @@ class GymMemberResource extends Resource
                 ->description('Configure membership settings')
                 ->schema([
                     Forms\Components\Hidden::make('gym_id')
-                        ->default(fn () => Filament::getTenant()->id),
+                        ->default(function () {
+                            /** @var \App\Models\Gym|null $tenant */
+                            $tenant = Filament::getTenant();
+
+                            return $tenant?->id;
+                        }),
 
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
@@ -582,7 +590,9 @@ class GymMemberResource extends Resource
                             // if (!$gymId) {
                             //     return [];
                             // }
-                            $gymId = Filament::getTenant()->id;
+                            /** @var \App\Models\Gym|null $tenant */
+                            $tenant = Filament::getTenant();
+                            $gymId = $tenant?->id;
 
                             return Trainer::where('gym_id', $gymId)
                                 ->available()

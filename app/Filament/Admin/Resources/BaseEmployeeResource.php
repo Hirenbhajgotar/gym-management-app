@@ -40,10 +40,17 @@ abstract class BaseEmployeeResource extends Resource
         return Auth::check() && Auth::user()->hasAnyRole(['gym_owner']);
     }
 
+    /**
+     * @return Builder<User>
+     */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->role(static::getEmployeeRole())
+        /**
+         * @var Builder<User> $query
+         */
+        $query = parent::getEloquentQuery();
+
+        return $query->role(static::getEmployeeRole())
             ->with(['employeeDetails', 'address']);
     }
 
