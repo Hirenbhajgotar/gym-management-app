@@ -12,7 +12,7 @@ class WhatsAppTemplateManager
 {
     private string $tenantId;
 
-    private bool $useSandbox;
+    protected bool $useSandbox;
 
     public function __construct(string $tenantId)
     {
