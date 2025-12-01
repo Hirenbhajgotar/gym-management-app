@@ -19,5 +19,8 @@ parameters:
         # Class name case false positive
         - '#Class App\\Models\\WhatsappTemplate referenced with incorrect case#'
 
+        # Spatie Permission role method not recognized by PHPStan
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder(::|::role\(\))#'
+
 #    excludePaths:
 #        - ./*/*/FileToBeExcluded.php
