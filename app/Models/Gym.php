@@ -119,6 +119,7 @@ class Gym extends Model
         return $this->hasOne(BusinessDetail::class);
     }
 
+    /** @return HasMany<\App\Models\TenantSocialConfig, self> */
     public function socialConfigs(): HasMany
     {
         return $this->hasMany(TenantSocialConfig::class);
@@ -146,6 +147,9 @@ class Gym extends Model
 
     public static function getCurrentTenantUsers()
     {
+        /**
+         * @var \App\Models\Gym $currentTenant
+         */
         $currentTenant = \Filament\Facades\Filament::getTenant();
 
         if ($currentTenant) {
@@ -155,6 +159,7 @@ class Gym extends Model
         return User::query()->whereRaw('1 = 0'); // Return an empty query
     }
 
+    /** @return HasMany<\App\Models\GymSetting, self> */
     public function settings(): HasMany
     {
         return $this->hasMany(GymSetting::class);
