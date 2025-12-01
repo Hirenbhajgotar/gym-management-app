@@ -22,7 +22,11 @@ class ListStates extends ListRecords
 
     public function getTabs(): array
     {
-        // Fetch counts in a single query
+        /**
+         * Fetch counts in a single query
+         *
+         * @var \Illuminate\Database\Eloquent\Builder $counts
+         */
         $counts = State::query()
             ->selectRaw('
                 COUNT(*) as total,
