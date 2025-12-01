@@ -21,23 +21,23 @@ class SubscriptionService
         array $options = [],
     ): Subscription {
         // Check if user already has an active subscription
-        if ($user?->subscription()?->isActive()) {
-            throw new \Exception("User already has an active subscription");
+        if ($user->subscription()?->isActive()) {
+            throw new \Exception('User already has an active subscription');
         }
 
         // Check if user can get a free trial
         $hasUsedTrial = $user->hasUsedTrial();
 
-        $billingCycle = $options["billing_cycle"] ?? "monthly";
+        $billingCycle = $options['billing_cycle'] ?? 'monthly';
 
         $trialDays = 0;
-        if (isset($options["trial_days"])) {
-            $trialDays = $options["trial_days"];
-        } elseif (!$hasUsedTrial && $plan->trial_days) {
+        if (isset($options['trial_days'])) {
+            $trialDays = $options['trial_days'];
+        } elseif (! $hasUsedTrial && $plan->trial_days) {
             $trialDays = $plan->trial_days;
         }
 
-        if (isset($options["force_status"]) && $options["force_status"] !== SubscriptionStatus::TRIAL) {
+        if (isset($options['force_status']) && $options['force_status'] !== SubscriptionStatus::TRIAL) {
             $trialDays = 0;
         }
 
@@ -49,7 +49,7 @@ class SubscriptionService
             $options,
         ) {
             // Determine status - allow override for admin assignments
-            $status = $options["force_status"] ?? (
+            $status = $options['force_status'] ?? (
                 $trialDays > 0
                 ? SubscriptionStatus::TRIAL
                 : SubscriptionStatus::ACTIVE
@@ -57,19 +57,17 @@ class SubscriptionService
 
             // Create subscription
             $subscription = Subscription::create([
-                "user_id" => $user->id,
-                "plan_id" => $plan->id,
-                "status" => $status,
-                "billing_cycle" => $billingCycle,
-                "price" =>
-                $billingCycle === "yearly"
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'status' => $status,
+                'billing_cycle' => $billingCycle,
+                'price' => $billingCycle === 'yearly'
                     ? $plan->price_yearly
                     : $plan->price_monthly,
-                "currency" => $plan->currency,
-                "trial_ends_at" =>
-                $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
-                "current_period_start" => Carbon::now(),
-                "current_period_end" => $this->calculatePeriodEnd(
+                'currency' => $plan->currency,
+                'trial_ends_at' => $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
+                'current_period_start' => Carbon::now(),
+                'current_period_end' => $this->calculatePeriodEnd(
                     Carbon::now(),
                     $billingCycle,
                 ),
@@ -91,25 +89,25 @@ class SubscriptionService
         Subscription $subscription,
         bool $immediately = false,
     ): bool {
-        if (!$subscription->isActive()) {
-            throw new \Exception("Subscription is not active");
+        if (! $subscription->isActive()) {
+            throw new \Exception('Subscription is not active');
         }
 
-        $trialEnd = $subscription?->trial_ends_at?->isFuture()
+        $trialEnd = $subscription->trial_ends_at?->isFuture()
             ? now()
             : $subscription->trial_ends_at;
 
         $updateData = [
-            "status" => SubscriptionStatus::CANCELLED,
-            "cancelled_at" => Carbon::now(),
-            "trial_ends_at" => $trialEnd ?? null,
+            'status' => SubscriptionStatus::CANCELLED,
+            'cancelled_at' => Carbon::now(),
+            'trial_ends_at' => $trialEnd ?? null,
         ];
 
         if ($immediately) {
-            $updateData["ends_at"] = Carbon::now();
-            $updateData["current_period_end"] = Carbon::now();
+            $updateData['ends_at'] = Carbon::now();
+            $updateData['current_period_end'] = Carbon::now();
         } else {
-            $updateData["ends_at"] = $subscription->current_period_end;
+            $updateData['ends_at'] = $subscription->current_period_end;
         }
 
         return $subscription->update($updateData);
@@ -137,10 +135,10 @@ class SubscriptionService
             : $subscription->trial_ends_at;
 
         return $subscription->update([
-            "current_period_start" => $newPeriodStart,
-            "current_period_end" => $newPeriodEnd,
-            "status" => SubscriptionStatus::ACTIVE, // Ensure it's active after renewal
-            "trial_ends_at" => $trialEnd,
+            'current_period_start' => $newPeriodStart,
+            'current_period_end' => $newPeriodEnd,
+            'status' => SubscriptionStatus::ACTIVE, // Ensure it's active after renewal
+            'trial_ends_at' => $trialEnd,
         ]);
     }
 
@@ -152,13 +150,13 @@ class SubscriptionService
         Plan $newPlan,
         array $options = [],
     ): Subscription {
-        if (!$subscription->isActive()) {
-            throw new \Exception("Subscription is not active");
+        if (! $subscription->isActive()) {
+            throw new \Exception('Subscription is not active');
         }
 
         $billingCycle =
-            $options["billing_cycle"] ?? $subscription->billing_cycle;
-        $prorate = $options["prorate"] ?? false;
+            $options['billing_cycle'] ?? $subscription->billing_cycle;
+        $prorate = $options['prorate'] ?? false;
 
         DB::transaction(function () use (
             $subscription,
@@ -167,10 +165,9 @@ class SubscriptionService
             $prorate,
         ) {
             $updateData = [
-                "plan_id" => $newPlan->id,
-                "billing_cycle" => $billingCycle,
-                "price" =>
-                $billingCycle === "yearly"
+                'plan_id' => $newPlan->id,
+                'billing_cycle' => $billingCycle,
+                'price' => $billingCycle === 'yearly'
                     ? $newPlan->price_yearly
                     : $newPlan->price_monthly,
             ];
@@ -184,7 +181,7 @@ class SubscriptionService
                         $billingCycle,
                         $remainingDays,
                     );
-                    $updateData["current_period_end"] = $newPeriodEnd;
+                    $updateData['current_period_end'] = $newPeriodEnd;
                 }
             }
 
@@ -203,12 +200,12 @@ class SubscriptionService
      */
     public function suspendSubscription(Subscription $subscription): bool
     {
-        if (!$subscription->isActive()) {
+        if (! $subscription->isActive()) {
             return false;
         }
 
         return $subscription->update([
-            "status" => SubscriptionStatus::SUSPENDED,
+            'status' => SubscriptionStatus::SUSPENDED,
         ]);
     }
 
@@ -222,7 +219,7 @@ class SubscriptionService
         }
 
         return $subscription->update([
-            "status" => SubscriptionStatus::ACTIVE,
+            'status' => SubscriptionStatus::ACTIVE,
         ]);
     }
 
@@ -232,7 +229,7 @@ class SubscriptionService
     public function expireSubscription(Subscription $subscription): bool
     {
         return $subscription->update([
-            "status" => SubscriptionStatus::EXPIRED,
+            'status' => SubscriptionStatus::EXPIRED,
         ]);
     }
 
@@ -242,7 +239,7 @@ class SubscriptionService
     public function checkExpiredSubscriptions(): int
     {
         $expiredSubscriptions = Subscription::active()
-            ->where("current_period_end", "<", Carbon::now())
+            ->where('current_period_end', '<', Carbon::now())
             ->get();
 
         $count = 0;
@@ -260,17 +257,17 @@ class SubscriptionService
     public function checkExpiredTrials(): int
     {
         $expiredTrials = Subscription::where(
-            "status",
+            'status',
             SubscriptionStatus::TRIAL,
         )
-            ->where("trial_ends_at", "<", Carbon::now())
+            ->where('trial_ends_at', '<', Carbon::now())
             ->get();
 
         $count = 0;
         foreach ($expiredTrials as $subscription) {
             // Expire trial immediately without grace period
             $subscription->update([
-                "status" => SubscriptionStatus::EXPIRED,
+                'status' => SubscriptionStatus::EXPIRED,
                 // 'trial_ends_at' => null,
             ]);
             $count++;
@@ -284,13 +281,13 @@ class SubscriptionService
      */
     public function endTrial(Subscription $subscription): bool
     {
-        if (!$subscription->isOnTrial()) {
+        if (! $subscription->isOnTrial()) {
             return false;
         }
 
         return $subscription->update([
-            "status" => SubscriptionStatus::ACTIVE,
-            "trial_ends_at" => null,
+            'status' => SubscriptionStatus::ACTIVE,
+            'trial_ends_at' => null,
         ]);
     }
 
@@ -303,8 +300,8 @@ class SubscriptionService
         int $additionalDays = 0,
     ): Carbon {
         $endDate = match ($billingCycle) {
-            "yearly" => $startDate->copy()->addYear(),
-            "monthly" => $startDate->copy()->addMonth(),
+            'yearly' => $startDate->copy()->addYear(),
+            'monthly' => $startDate->copy()->addMonth(),
             default => $startDate->copy()->addMonth(),
         };
 
@@ -321,16 +318,16 @@ class SubscriptionService
     public function getSubscriptionStats(): array
     {
         return [
-            "total_active" => Subscription::active()->count(),
-            "total_trial" => Subscription::where(
-                "status",
+            'total_active' => Subscription::active()->count(),
+            'total_trial' => Subscription::where(
+                'status',
                 SubscriptionStatus::TRIAL,
             )->count(),
-            "total_cancelled" => Subscription::cancelled()->count(),
-            "total_expired" => Subscription::expired()->count(),
-            "total_suspended" => Subscription::suspended()->count(),
-            "expiring_soon" => Subscription::active()
-                ->where("current_period_end", "<=", Carbon::now()->addDays(7))
+            'total_cancelled' => Subscription::cancelled()->count(),
+            'total_expired' => Subscription::expired()->count(),
+            'total_suspended' => Subscription::suspended()->count(),
+            'expiring_soon' => Subscription::active()
+                ->where('current_period_end', '<=', Carbon::now()->addDays(7))
                 ->count(),
         ];
     }
@@ -346,12 +343,12 @@ class SubscriptionService
 
         foreach ($planFeatures as $planFeature) {
             SubscriptionFeature::create([
-                "subscription_id" => $subscription->id,
-                "plan_feature_id" => $planFeature->id,
-                "feature_name" => $planFeature->feature_name,
-                "value" => $planFeature->value,
-                "brief_description" => $planFeature->brief_description,
-                "order_column" => $planFeature?->order_column ?? 1,
+                'subscription_id' => $subscription->id,
+                'plan_feature_id' => $planFeature->id,
+                'feature_name' => $planFeature->feature_name,
+                'value' => $planFeature->value,
+                'brief_description' => $planFeature->brief_description,
+                'order_column' => $planFeature->order_column ?? 1,
             ]);
         }
     }
@@ -394,7 +391,7 @@ class SubscriptionService
                     'assigned_at' => Carbon::now()->toISOString(),
                     'assignment_type' => 'manual',
                     'notes' => $options['notes'] ?? null,
-                ])
+                ]),
             ]);
 
             return $subscription;
