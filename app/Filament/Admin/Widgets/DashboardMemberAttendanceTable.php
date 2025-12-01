@@ -24,8 +24,12 @@ class DashboardMemberAttendanceTable extends BaseWidget
 
     public function table(Table $table): Table
     {
+        /**
+         * @var \App\Models\Gym $tenant
+         */
+        $tenant = Filament::getTenant();
         $today = Carbon::today();
-        $currentGymId = Filament::getTenant()->id;
+        $currentGymId = $tenant->id;
 
         return $table
             ->query(
