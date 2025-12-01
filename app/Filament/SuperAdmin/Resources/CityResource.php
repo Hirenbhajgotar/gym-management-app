@@ -4,6 +4,7 @@ namespace App\Filament\SuperAdmin\Resources;
 
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CityResource\Pages;
+use App\Filament\SuperAdmin\Resources\StateResource;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
@@ -37,8 +38,8 @@ class CityResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         // Fetch active state's record
-        return parent::getEloquentQuery()->whereHas('state', function ($state) {
-            $state->active();
+        return parent::getEloquentQuery()->whereHas('state', function (Builder $state) {
+            $state->where('status', 1);
         });
     }
 
