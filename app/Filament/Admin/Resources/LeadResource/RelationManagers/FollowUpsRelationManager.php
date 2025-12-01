@@ -8,6 +8,7 @@ use App\Models\FollowUp;
 use App\Models\Gym;
 use App\Notifications\LeadFollowUpNotification;
 use App\Traits\HasTenantAccess;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
@@ -50,9 +51,14 @@ class FollowUpsRelationManager extends RelationManager
      */
     public static function getFollowUpFormSchema(): array
     {
+        /**
+         * @var Gym $currentGym
+         */
+        $currentGym = Filament::getTenant();
+
         return [
             Forms\Components\Hidden::make('gym_id')
-                ->default(\Filament\Facades\Filament::getTenant()->id),
+                ->default($currentGym->id),
 
             Section::make('Follow-Up Details')
                 ->icon('heroicon-o-calendar')
