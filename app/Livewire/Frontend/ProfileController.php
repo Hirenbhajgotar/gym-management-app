@@ -160,6 +160,7 @@ class ProfileController extends Component
             return null;
         }
 
+        /** @var \App\Models\Subscription $subscription */
         $this->clearSessionData();
 
         // Store renewal information in session
