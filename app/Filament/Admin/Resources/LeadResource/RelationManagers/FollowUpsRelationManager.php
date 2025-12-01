@@ -29,7 +29,7 @@ class FollowUpsRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form
-            ->schema($this->getFormSchema());
+            ->schema(self::getFollowUpFormSchema());
     }
 
     public function table(Table $table): Table
@@ -48,11 +48,11 @@ class FollowUpsRelationManager extends RelationManager
     /**
      * Get form schema for follow-up creation/editing
      */
-    protected function getFormSchema(): array
+    public static function getFollowUpFormSchema(): array
     {
         return [
             Forms\Components\Hidden::make('gym_id')
-                ->default($this->getGymId()),
+                ->default(\Filament\Facades\Filament::getTenant()->id),
 
             Section::make('Follow-Up Details')
                 ->icon('heroicon-o-calendar')
@@ -84,7 +84,9 @@ class FollowUpsRelationManager extends RelationManager
 
                         Forms\Components\Select::make('user_id')
                             ->label('Assigned To')
-                            ->options(fn () => $this->getTenantUsers())
+                            ->options(fn () => Gym::getCurrentTenantUsers()
+                                ->pluck('users.name', 'users.id')
+                                ->toArray())
                             ->default(auth()->id())
                             ->required()
                             ->searchable()
@@ -107,6 +109,14 @@ class FollowUpsRelationManager extends RelationManager
                 ])
                 ->columns(2),
         ];
+    }
+
+    /**
+     * Get form schema for follow-up creation/editing (deprecated)
+     */
+    protected function getFormSchema(): array
+    {
+        return self::getFollowUpFormSchema();
     }
 
     /**

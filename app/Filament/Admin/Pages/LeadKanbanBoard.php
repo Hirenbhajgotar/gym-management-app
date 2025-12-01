@@ -108,7 +108,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->icon('heroicon-m-plus-circle')
             ->color('primary')
             ->form(
-                app(FollowUpsRelationManager::class)->getFormSchema(),
+                FollowUpsRelationManager::getFollowUpFormSchema(),
             )
             ->action(function (array $data, array $arguments): void {
                 $record = Lead::find($arguments['id']);
