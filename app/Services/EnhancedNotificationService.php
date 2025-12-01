@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationLog;
 use App\Models\NotificationSetting;
 use App\Models\NotificationTemplate;
@@ -37,7 +38,7 @@ class EnhancedNotificationService extends NotificationService
             }
 
             // Check if WhatsApp account is properly set up
-            if ($channel === 'whatsapp' && $settings->verification_status !== 'verified') {
+            if ($channel === 'whatsapp' && $settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
                 // Fallback to SMS or email
                 $fallbackChannel = $this->getFallbackChannel($channel);
                 if ($fallbackChannel && $settings->isNotificationEnabled($type, $fallbackChannel)) {
