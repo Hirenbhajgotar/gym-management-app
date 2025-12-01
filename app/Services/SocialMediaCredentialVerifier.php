@@ -18,7 +18,7 @@ class SocialMediaCredentialVerifier
         /**
          * @var \App\Enums\SocialPlatform $platform
          */
-        $platform = $config?->platform;
+        $platform = $config->platform;
         try {
             return match ($platform) {
                 SocialPlatform::Facebook => $this->verifyFacebook($config),
