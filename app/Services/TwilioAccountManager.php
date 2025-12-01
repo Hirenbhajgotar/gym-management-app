@@ -418,7 +418,7 @@ class TwilioAccountManager
                 'twilio_account_sid',
                 $accountSid,
             )->value('gym_id') ??
-            (Filament::getTenant()?->id ?? 'unknown');
+            (Filament::getTenant()->id ?? 'unknown');
 
         $friendlyName = "Verify Service for {$tenantId}";
 
