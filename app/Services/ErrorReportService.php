@@ -161,11 +161,7 @@ class ErrorReportService
     {
         try {
             // Critical errors
-            if (
-                $exception instanceof \Error ||
-                $exception instanceof \ParseError ||
-                $exception instanceof \TypeError
-            ) {
+            if ($exception instanceof \Error) {
                 return ErrorPriority::CRITICAL->value;
             }
 
@@ -271,11 +267,7 @@ class ErrorReportService
     public function shouldAutoReport(Throwable $exception): bool
     {
         // Always report critical errors
-        if (
-            $exception instanceof \Error ||
-            $exception instanceof \ParseError ||
-            $exception instanceof \TypeError
-        ) {
+        if ($exception instanceof \Error) {
             return true;
         }
 
