@@ -96,10 +96,13 @@ class MembershipPlanResource extends Resource
 
     public static function planFormSchema(): array
     {
+        /**
+         * @var \App\Models\Gym $gym
+         */
+        $gym = Filament::getTenant();
+
         return [
-            Forms\Components\Hidden::make('gym_id')->default(
-                Filament::getTenant()->id,
-            ),
+            Forms\Components\Hidden::make('gym_id')->default($gym->id),
 
             Forms\Components\TextInput::make('name')
                 ->required()
