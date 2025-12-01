@@ -23,6 +23,9 @@ class ListCities extends ListRecords
     public function getTabs(): array
     {
         // Fetch counts in a single query
+        /**
+         * @var \Illuminate\Database\Eloquent\Builder $counts
+         */
         $counts = City::query()
             ->selectRaw('
                 COUNT(*) as total,
