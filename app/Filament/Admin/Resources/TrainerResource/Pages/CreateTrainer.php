@@ -4,18 +4,18 @@ namespace App\Filament\Admin\Resources\TrainerResource\Pages;
 
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Services\AvatarService;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateTrainer extends CreateRecord
 {
-    // use HasWizard;
+    use HasTenantAccess;
 
     protected static string $resource = TrainerResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['gym_id'] = Filament::getTenant()->id;
+        $data['gym_id'] = $this->getGymId();
 
         // Generate avatar if no profile photo is uploaded
         if (empty($data['profile_photo'])) {
