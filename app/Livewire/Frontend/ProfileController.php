@@ -2,29 +2,28 @@
 
 namespace App\Livewire\Frontend;
 
-use App\Models\Gym;
 use App\Models\Plan;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class ProfileController extends Component
 {
-    public $selectedPlan = null;
+    public ?int $selectedPlan = null;
 
-    public $renewingPlan = false;
+    public bool $renewingPlan = false;
 
-    public $selectingPlan = false;
+    public bool $selectingPlan = false;
 
-    public $upgradingPlan = false;
+    public bool $upgradingPlan = false;
 
-    public $loggingOut = false;
+    public bool $loggingOut = false;
 
-    #[Layout("frontend.layouts.profile")]
-    public function render()
+    #[Layout('frontend.layouts.profile')]
+    public function render(): \Illuminate\Contracts\View\View
     {
         $user = auth()
             ->user()
-            ->load(["roles", "gyms"]);
+            ->load(['roles', 'gyms']);
 
         // Get only active subscription
         $subscription = $user->subscription();
@@ -32,24 +31,24 @@ class ProfileController extends Component
 
         // dd($subscription->wasTrial(), $user->hasUsedTrial());
 
-        $allPlans = Plan::with(["features"])
-            ->active()
-            ->orderBy("price_monthly")
+        $allPlans = Plan::with(['features'])
+            ->where('is_active', true)
+            ->orderBy('price_monthly')
             ->get();
 
-        return view("livewire.frontend.profile-controller", [
-            "user" => $user,
-            "subscription" => $subscription,
-            "currentPlan" => $currentPlan,
-            "allPlans" => $allPlans,
+        return view('livewire.frontend.profile-controller', [
+            'user' => $user,
+            'subscription' => $subscription,
+            'currentPlan' => $currentPlan,
+            'allPlans' => $allPlans,
         ]);
     }
 
-    public function selectPlan($planId)
+    public function selectPlan(int $planId): mixed
     {
         $this->selectingPlan = true;
 
-        $plan = Plan::with(["features"])->findOrFail($planId);
+        $plan = Plan::with(['features'])->findOrFail($planId);
         $user = auth()->user();
 
         $this->clearSessionData();
@@ -57,7 +56,7 @@ class ProfileController extends Component
         // Check if user can get a free trial
         $hasUsedTrial = $user->hasUsedTrial();
         $trialDays =
-            !$hasUsedTrial && $plan->trial_days ? $plan->trial_days : 0;
+            ! $hasUsedTrial && $plan->trial_days ? $plan->trial_days : 0;
 
         // If it's a free trial, create subscription directly without payment
         if ($trialDays > 0) {
@@ -66,35 +65,35 @@ class ProfileController extends Component
                     \App\Services\SubscriptionService::class,
                 );
                 $subscriptionService->createSubscription($user, $plan, [
-                    "billing_cycle" => "yearly",
-                    "trial_days" => $trialDays,
+                    'billing_cycle' => 'yearly',
+                    'trial_days' => $trialDays,
                 ]);
 
                 session()->flash(
-                    "success",
+                    'success',
                     "Your {$trialDays}-day free trial has started! You can start using {$plan->name} plan immediately.",
                 );
 
-                return redirect()->route("profile");
+                return redirect()->route('profile');
             } catch (\Exception $e) {
                 session()->flash(
-                    "error",
-                    "Failed to start trial. Please try again.",
+                    'error',
+                    'Failed to start trial. Please try again.',
                 );
                 $this->selectingPlan = false;
 
-                return;
+                return null;
             }
         }
 
         // For paid plans, proceed to checkout
-        session(["selected_plan_id" => $plan->id]);
+        session(['selected_plan_id' => $plan->id]);
 
         // Redirect to checkout
-        return redirect()->route("subscriptions.checkout");
+        return redirect()->route('subscriptions.checkout');
     }
 
-    public function upgradePlan($planId)
+    public function upgradePlan(int $planId): mixed
     {
         $this->upgradingPlan = true;
 
@@ -102,14 +101,14 @@ class ProfileController extends Component
         $currentSubscription = $user->subscription();
 
         // Check if user can upgrade (has active subscription)
-        if (!$currentSubscription) {
+        if (! $currentSubscription) {
             session()->flash(
-                "error",
-                "You need an active subscription to upgrade.",
+                'error',
+                'You need an active subscription to upgrade.',
             );
             $this->upgradingPlan = false;
 
-            return;
+            return null;
         }
 
         // $newPlan = Plan::findOrFail($planId);
@@ -125,62 +124,66 @@ class ProfileController extends Component
 
         // Store upgrade information in session
         session([
-            "upgrade_plan_id" => $planId,
-            "current_subscription_id" => $currentSubscription->id,
+            'upgrade_plan_id' => $planId,
+            'current_subscription_id' => $currentSubscription->id,
         ]);
 
         // Redirect to checkout for upgrade
-        return redirect()->route("subscriptions.checkout");
+        return redirect()->route('subscriptions.checkout');
     }
 
-    public function renewPlan()
+    public function renewPlan(): mixed
     {
         $this->renewingPlan = true;
 
+        /**
+         * @var \App\Models\User $user
+         */
         $user = auth()->user();
         // Get active subscription or expired trial subscription that can be renewed
         $subscription = $user
             ->subscriptions()
             ->where(function ($query) {
-                $query->active()->orWhere(function ($q) {
-                    $q->where("status", "expired")->whereNotNull(
-                        "trial_ends_at",
-                    ); // Expired trials can be renewed
-                });
+                $query->whereIn('status', [\App\Enums\SubscriptionStatus::TRIAL, \App\Enums\SubscriptionStatus::ACTIVE])
+                    ->orWhere(function ($q) {
+                        $q->where('status', 'expired')->whereNotNull(
+                            'trial_ends_at',
+                        ); // Expired trials can be renewed
+                    });
             })
             ->first();
 
-        if (!$subscription) {
-            session()->flash("error", "No subscription found to renew.");
+        if (! $subscription) {
+            session()->flash('error', 'No subscription found to renew.');
             $this->renewingPlan = false;
 
-            return;
+            return null;
         }
 
         $this->clearSessionData();
 
         // Store renewal information in session
         session([
-            "renew_plan_id" => $subscription->plan_id,
-            "renew_subscription_id" => $subscription->id,
+            'renew_plan_id' => $subscription->plan_id,
+            'renew_subscription_id' => $subscription->id,
         ]);
 
         // Redirect to subscription checkout for renewal
-        return redirect()->route("subscriptions.checkout");
+        return redirect()->route('subscriptions.checkout');
     }
 
     private function clearSessionData(): void
     {
         session()->forget([
-            "renew_plan_id",
-            "renew_subscription_id",
-            "upgrade_plan_id",
-            "current_subscription_id",
-            "selected_plan_id",
+            'renew_plan_id',
+            'renew_subscription_id',
+            'upgrade_plan_id',
+            'current_subscription_id',
+            'selected_plan_id',
         ]);
     }
 
-    public function logout()
+    public function logout(): \Illuminate\Http\RedirectResponse
     {
         $this->loggingOut = true;
 
@@ -188,6 +191,6 @@ class ProfileController extends Component
         session()->invalidate();
         session()->regenerateToken();
 
-        return redirect()->route("home");
+        return redirect()->route('home');
     }
 }
