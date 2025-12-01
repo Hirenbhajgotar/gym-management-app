@@ -323,47 +323,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
         }
     }
 
-    private function quickSetupPermissions(): void
-    {
-        try {
-            $roleName = $this->getRoleName();
-            $quickSetupPermissions = $this->getQuickSetupPermissions();
-
-            DB::beginTransaction();
-
-            $role = Role::firstOrCreate([
-                'name' => $roleName,
-                'guard_name' => 'web',
-                'gym_id' => $this->getGymId(),
-            ]);
-
-            $gymPermissions = [];
-            foreach ($quickSetupPermissions as $permissionName) {
-                $permission = Permission::firstOrCreate([
-                    'name' => $permissionName,
-                    'guard_name' => 'web',
-                ]);
-                $gymPermissions[] = $permission;
-            }
-
-            $role->syncPermissions($gymPermissions);
-            $this->updateRoleUsers($role, $this->getGym());
-            $this->loadRolePermissions();
-
-            DB::commit();
-
-            Notification::make()
-                ->title('Quick Setup Complete')
-                ->body('Common ' . strtolower($this->getRoleDisplayName()) . ' permissions have been applied.')
-                ->success()
-                ->send();
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error($e);
-            NotificationHelper::unexpectedError('quick setup permissions', $e)->send();
-        }
-    }
-
     protected function getHeaderWidgets(): array
     {
         return [
@@ -430,18 +389,5 @@ abstract class BasePermissionsPage extends Page implements HasForms
         }
 
         return $sections;
-    }
-
-    // Get appropriate icon for each category
-    private function getCategoryIcon(string $category): string
-    {
-        try {
-            $permissionCategory = PermissionCategory::from($category);
-
-            return $permissionCategory->getIcon() ?? 'heroicon-o-folder';
-        } catch (ValueError) {
-            // If category doesn't exist in enum, return default icon
-            return 'heroicon-o-folder';
-        }
     }
 }
