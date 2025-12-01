@@ -44,15 +44,19 @@ class EditReceptionist extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Load the employee details and address data
+        /**
+         * Load the employee details and address data
+         *
+         * @var \App\Models\User $user
+         */
         $user = $this->record;
 
-        if ($user->employeeDetails) {
-            $data['employeeDetails'] = $user->employeeDetails->toArray();
+        if ($employeeDetails = $user->employeeDetails) {
+            $data['employeeDetails'] = $employeeDetails->toArray();
         }
 
-        if ($user->address) {
-            $data['address'] = $user->address->toArray();
+        if ($address = $user->address) {
+            $data['address'] = $address->toArray();
         }
 
         return $data;
