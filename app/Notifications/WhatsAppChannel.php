@@ -22,19 +22,19 @@ class WhatsAppChannel
      * Send the given notification.
      *
      * @param  mixed  $notifiable
-     * @return void
+     * @return array<string, mixed>|null
      */
     public function send($notifiable, Notification $notification)
     {
         if (! method_exists($notification, 'toWhatsApp')) {
-            return;
+            return null;
         }
 
         // Get the WhatsApp message from the notification
         $message = $notification->toWhatsApp($notifiable);
 
         if (! $message) {
-            return;
+            return null;
         }
 
         // Get the gym/tenant ID
@@ -49,8 +49,7 @@ class WhatsAppChannel
         if (! $gymId) {
             if (isset($notifiable->gym_id)) {
                 $gymId = $notifiable->gym_id;
-            } elseif (method_exists($notifiable, 'gym')) {
-                /** @var object{gym: object{id: int|string}} $notifiable */
+            } elseif (method_exists($notifiable, 'gym') && is_object($notifiable) && property_exists($notifiable, 'gym')) {
                 if ($notifiable->gym) {
                     $gymId = $notifiable->gym->id;
                 }
@@ -59,10 +58,16 @@ class WhatsAppChannel
 
         // 3. Handle User model with tenants as a fallback
         if (! $gymId && $notifiable instanceof User) {
-            if (class_exists(Filament::class) && Filament::isServing() && ($tenant = $this->getGym())) {
+            try {
+                $tenant = $this->getGym();
                 $gymId = $tenant->id;
-            } elseif ($notifiable->gyms()->count() === 1) {
-                $gymId = $notifiable->gyms()->first()?->id;
+            } catch (\Exception $e) {
+                // No tenant set, check if user has exactly one gym
+                if ($notifiable->gyms()->count() === 1) {
+                    /** @var \App\Models\Gym $gym */
+                    $gym = $notifiable->gyms()->first();
+                    $gymId = $gym->id;
+                }
             }
         }
 
