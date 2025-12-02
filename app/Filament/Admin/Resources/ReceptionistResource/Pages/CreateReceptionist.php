@@ -8,7 +8,7 @@ use App\Models\EmployeeDetail;
 use App\Models\User;
 use App\Notifications\ReceptionistCreate;
 use App\Services\AvatarService;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateReceptionist extends CreateRecord
 {
-    use HasWizard;
+    use HasTenantAccess, HasWizard;
 
     protected static string $resource = ReceptionistResource::class;
 
@@ -64,7 +64,7 @@ class CreateReceptionist extends CreateRecord
         // Assign role
         $receptionist->assignRole($receptionistRole);
 
-        $currentTenant = Filament::getTenant();
+        $currentTenant = $this->getGym();
         if ($currentTenant) {
             $receptionist->gyms()->attach($currentTenant->id, [
                 'role' => $receptionistRole,

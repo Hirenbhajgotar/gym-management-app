@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
 use App\Filament\Admin\Resources\ManagerResource;
+use App\Models\Address;
 use App\Models\EmployeeDetail;
+use App\Models\User;
 use Filament\Actions;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -12,12 +16,23 @@ use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Edit Manager Page.
+ *
+ * Handles the wizard-based editing of existing manager accounts including
+ * user details, employee information, and address updates.
+ */
 class EditManager extends EditRecord
 {
     use HasWizard;
 
     protected static string $resource = ManagerResource::class;
 
+    /**
+     * Configure header actions for viewing and deleting managers.
+     *
+     * @return array<Actions\Action>
+     */
     protected function getHeaderActions(): array
     {
         return [
@@ -28,6 +43,9 @@ class EditManager extends EditRecord
         ];
     }
 
+    /**
+     * Configure the form with a wizard interface.
+     */
     public function form(Form $form): Form
     {
         return parent::form($form)
@@ -37,65 +55,145 @@ class EditManager extends EditRecord
                     ->cancelAction($this->getCancelFormAction())
                     ->submitAction($this->getSubmitFormAction())
                     ->skippable($this->hasSkippableSteps())
-                    // ->skippable(true)
                     ->contained(true),
             ])
             ->columns(null);
     }
 
+    /**
+     * Mutate form data before filling the form with existing record data.
+     *
+     * Loads employee details and address data from relationships.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Load the employee details and address data
+        /** @var User $user */
         $user = $this->record;
 
-        if ($user->employeeDetails) {
-            $data['employeeDetails'] = $user->employeeDetails->toArray();
+        // Load employee details if available
+        if ($employeeDetails = $user->employeeDetails) {
+            $data['employeeDetails'] = $employeeDetails->toArray();
         }
 
-        if ($user->address) {
-            $data['address'] = $user->address->toArray();
+        // Load address if available
+        if ($address = $user->address) {
+            $data['address'] = $address->toArray();
         }
 
         return $data;
     }
 
-    protected function handleRecordUpdate($record, array $data): Model
+    /**
+     * Handle the update of an existing manager record.
+     *
+     * Updates user data, employee details, and address information.
+     *
+     * @param  User  $record  The manager user model
+     * @param  array<string, mixed>  $data  Form data
+     * @return User The updated manager user model
+     */
+    protected function handleRecordUpdate($record, array $data): User
     {
-        // Remove password confirmation and nested relationship data from main update
-        $userData = collect($data)->except(['passwordConfirmation', 'password',  'employeeDetails', 'address'])->toArray();
+        // Update main user record
+        $this->updateUserData($record, $data);
 
-        // Update password only if a new value is provided
-        if (filled($data['password'])) {
+        // Update employee details
+        $this->updateEmployeeDetails($record, $data);
+
+        // Update address
+        $this->updateAddress($record, $data);
+
+        return $record->refresh();
+    }
+
+    /**
+     * Update main user data excluding nested relationships.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function updateUserData(User $record, array $data): void
+    {
+        // Handle email verification
+        $data['email_verified_at'] = $data['email_verified_at'] ? now() : null;
+
+        $userData = collect($data)
+            ->except(['passwordConfirmation', 'password', 'employeeDetails', 'address'])
+            ->toArray();
+
+        // Only update password if a new value is provided
+        if (filled($data['password'] ?? null)) {
             $userData['password'] = $data['password'];
         }
 
-        // dd($userData);
-        // Update the main user record
         $record->update($userData);
+    }
 
-        // Update employee details
-        if (isset($data['employeeDetails']) && is_array($data['employeeDetails'])) {
-            if ($record->employeeDetails) {
-                $record->employeeDetails->update($data['employeeDetails']);
-            } else {
-                $data['employeeDetails']['user_id'] = $record->id;
-                EmployeeDetail::create($data['employeeDetails']);
-            }
+    /**
+     * Update or create employee details for the manager.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function updateEmployeeDetails(User $record, array $data): void
+    {
+        $employeeData = $data['employeeDetails'] ?? null;
+
+        if (! is_array($employeeData) || empty($employeeData)) {
+            return;
         }
 
-        return $record;
+        /**
+         * @var EmployeeDetail $employeeDetails
+         */
+        $employeeDetails = $record->employeeDetails;
+        if ($employeeDetails) {
+            $employeeDetails->update($employeeData);
+        } else {
+            EmployeeDetail::create([
+                ...$employeeData,
+                'user_id' => $record->id,
+            ]);
+        }
     }
 
+    /**
+     * Update or create address for the manager.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function updateAddress(User $record, array $data): void
+    {
+        $addressData = $data['address'] ?? null;
+
+        if (! is_array($addressData) || empty($addressData)) {
+            return;
+        }
+
+        if ($record->address) {
+            $record->address->update($addressData);
+        } else {
+            $record->address()->create($addressData);
+        }
+    }
+
+    /**
+     * Redirect to the manager list after successful update.
+     */
     protected function getRedirectUrl(): string
     {
-        return ManagerResource::getUrl('index'); // Redirect to index page after create
+        return ManagerResource::getUrl('index');
     }
 
+    /**
+     * Display a success notification after manager update.
+     */
     protected function getSavedNotification(): ?Notification
     {
         return Notification::make()
             ->title('Manager Updated')
-            ->body('A manager has been updated.')
+            ->body('The manager has been successfully updated.')
             ->success()
             ->send();
     }

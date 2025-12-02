@@ -10,9 +10,9 @@ use App\Helpers\NotificationHelper;
 use App\Models\Permission;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
+use App\Traits\HasTenantAccess;
 use Exception;
 use Filament\Actions\Action;
-use Filament\Facades\Filament as FacadesFilament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
@@ -34,7 +34,7 @@ use ValueError;
  */
 abstract class BasePermissionsPage extends Page implements HasForms
 {
-    use DefaultPermissionResourceTrait, InteractsWithForms;
+    use DefaultPermissionResourceTrait, HasTenantAccess, InteractsWithForms;
 
     protected static ?string $cluster = Permissions::class;
     // protected static string $view = 'filament.admin.clusters.permissions.pages.base-permissions-page';
@@ -113,12 +113,11 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
     private function loadRolePermissions(): void
     {
-        $currentTenant = FacadesFilament::getTenant();
         $roleName = $this->getRoleName();
 
         // Get the role for the current gym
         $role = Role::where('name', $roleName)
-            ->where('gym_id', $currentTenant?->id)
+            ->where('gym_id', $this->getGymId())
             ->first();
 
         if (! $role) {
@@ -126,7 +125,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role = Role::create([
                 'name' => $roleName,
                 'guard_name' => 'web',
-                'gym_id' => $currentTenant?->id,
+                'gym_id' => $this->getGymId(),
             ]);
         }
 
@@ -168,14 +167,13 @@ abstract class BasePermissionsPage extends Page implements HasForms
             DB::beginTransaction();
 
             $data = $this->form->getState();
-            $currentTenant = FacadesFilament::getTenant();
             $roleName = $this->getRoleName();
 
             // Get or create the role for the current gym
             $role = Role::firstOrCreate([
                 'name' => $roleName,
                 'guard_name' => 'web',
-                'gym_id' => $currentTenant?->id,
+                'gym_id' => $this->getGymId(),
             ]);
 
             // Collect all permissions from the form
@@ -200,7 +198,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role->syncPermissions($gymPermissions);
 
             // Update all users with this role in this gym
-            $this->updateRoleUsers($role, $currentTenant);
+            $this->updateRoleUsers($role, $this->getGym());
 
             DB::commit();
 
@@ -284,7 +282,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
     private function resetToDefaultPermissions(): void
     {
         try {
-            $currentTenant = FacadesFilament::getTenant();
             $roleName = $this->getRoleName();
             $defaultPermissions = $this->getDefaultPermissions();
 
@@ -293,7 +290,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role = Role::firstOrCreate([
                 'name' => $roleName,
                 'guard_name' => 'web',
-                'gym_id' => $currentTenant->id,
+                'gym_id' => $this->getGymId(),
             ]);
 
             // Create default permissions
@@ -307,7 +304,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             }
 
             $role->syncPermissions($gymPermissions);
-            $this->updateRoleUsers($role, $currentTenant);
+            $this->updateRoleUsers($role, $this->getGym());
             DB::commit();
 
             $this->loadRolePermissions();
@@ -323,48 +320,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
             DB::rollBack();
             Log::error($e);
             NotificationHelper::unexpectedError('resetting permissions', $e)->send();
-        }
-    }
-
-    private function quickSetupPermissions(): void
-    {
-        try {
-            $currentTenant = FacadesFilament::getTenant();
-            $roleName = $this->getRoleName();
-            $quickSetupPermissions = $this->getQuickSetupPermissions();
-
-            DB::beginTransaction();
-
-            $role = Role::firstOrCreate([
-                'name' => $roleName,
-                'guard_name' => 'web',
-                'gym_id' => $currentTenant->id,
-            ]);
-
-            $gymPermissions = [];
-            foreach ($quickSetupPermissions as $permissionName) {
-                $permission = Permission::firstOrCreate([
-                    'name' => $permissionName,
-                    'guard_name' => 'web',
-                ]);
-                $gymPermissions[] = $permission;
-            }
-
-            $role->syncPermissions($gymPermissions);
-            $this->updateRoleUsers($role, $currentTenant);
-            $this->loadRolePermissions();
-
-            DB::commit();
-
-            Notification::make()
-                ->title('Quick Setup Complete')
-                ->body('Common ' . strtolower($this->getRoleDisplayName()) . ' permissions have been applied.')
-                ->success()
-                ->send();
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error($e);
-            NotificationHelper::unexpectedError('quick setup permissions', $e)->send();
         }
     }
 
@@ -434,18 +389,5 @@ abstract class BasePermissionsPage extends Page implements HasForms
         }
 
         return $sections;
-    }
-
-    // Get appropriate icon for each category
-    private function getCategoryIcon(string $category): string
-    {
-        try {
-            $permissionCategory = PermissionCategory::from($category);
-
-            return $permissionCategory->getIcon() ?? 'heroicon-o-folder';
-        } catch (ValueError) {
-            // If category doesn't exist in enum, return default icon
-            return 'heroicon-o-folder';
-        }
     }
 }

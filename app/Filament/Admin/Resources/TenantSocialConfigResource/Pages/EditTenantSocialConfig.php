@@ -32,6 +32,9 @@ class EditTenantSocialConfig extends EditRecord
     private function testWebhook(): void
     {
         try {
+            /**
+             * @var \App\Models\TenantSocialConfig $config
+             */
             $config = $this->getRecord();
 
             // Create test lead data

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PlanFeature> $features
  * @property-read int|null $features_count
+ *
  * @method static Builder<static>|Plan active()
  * @method static Builder<static>|Plan newModelQuery()
  * @method static Builder<static>|Plan newQuery()
@@ -41,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Plan whereSlug($value)
  * @method static Builder<static>|Plan whereTrialDays($value)
  * @method static Builder<static>|Plan whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperPlan
  */
@@ -103,6 +105,9 @@ class Plan extends Model
      */
     public function getFeatureValue(string $featureName): ?string
     {
+        /**
+         * @var PlanFeature $feature
+         */
         $feature = $this->features()->where('feature_name', $featureName)->first();
 
         return $feature ? $feature->value : null;

@@ -33,7 +33,7 @@ This is a **Laravel 12** multi-tenant gym management system built with modern PH
 
 ```json
 {
-  "laravel/sanctum": "included in Laravel 12",
+  "laravel/sanctum": "^4.0",
   "spatie/laravel-permission": "^6.20"
 }
 ```
@@ -60,7 +60,13 @@ use `DefaultRole.php` enum for role
   "marcelweidum/filament-expiration-notice": "^1.0",
   "mokhosh/filament-rating": "^1.4",
   "rmsramos/activitylog": "^1.0",
-  "ysfkaya/filament-phone-input": "^3.1"
+  "ysfkaya/filament-phone-input": "^3.1",
+  "codeat3/blade-phosphor-icons": "^2.3",
+  "eightynine/filament-excel-import": "^3.1",
+  "mokhosh/filament-kanban": "^2.11",
+  "propaganistas/laravel-phone": "^6.0",
+  "spatie/eloquent-sortable": "^4.5",
+  "spatie/laravel-backup": "^9.3"
 }
 ```
 
@@ -73,6 +79,23 @@ use `DefaultRole.php` enum for role
 }
 ```
 
+### Payment Gateways
+
+```json
+{
+  "razorpay/razorpay": "2.*"
+}
+```
+
+### Third-party SDKs
+
+```json
+{
+  "facebook/graph-sdk": "*",
+  "twilio/sdk": "^8.8"
+}
+```
+
 ### Frontend Build & Styling
 
 ```json
@@ -82,7 +105,8 @@ use `DefaultRole.php` enum for role
   "@tailwindcss/vite": "^4.0.7",
   "laravel-vite-plugin": "^1.0",
   "autoprefixer": "^10.4.20",
-  "axios": "^1.7.4"
+  "axios": "^1.7.4",
+  "concurrently": "^9.0.1"
 }
 ```
 
@@ -105,7 +129,12 @@ use `DefaultRole.php` enum for role
   "laravel/boost": "^1.0",
   "laravel/pail": "^1.2.2",
   "barryvdh/laravel-debugbar": "^3.15",
-  "phpunit/phpunit": "^11.5.3"
+  "phpunit/phpunit": "^11.5.3",
+  "barryvdh/laravel-ide-helper": "^3.6",
+  "fakerphp/faker": "^1.23",
+  "larastan/larastan": "^3.0",
+  "mockery/mockery": "^1.6",
+  "nunomaduro/collision": "^8.6"
 }
 ```
 
@@ -3281,6 +3310,14 @@ $delete = fn(Product $product) => $product->delete();
 
 - You must run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style.
 - Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.
+
+=== larastan/core rules ===
+
+## Laravel Static Analysis
+
+- Run `vendor/bin/larastan analyze` for static analysis before finalizing changes.
+- Run `vendor/bin/larastan analyze file-path` to analyze a specific file.
+
 
 === tailwindcss/core rules ===
 

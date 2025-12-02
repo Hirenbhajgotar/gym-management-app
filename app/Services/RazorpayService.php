@@ -8,10 +8,16 @@ use Razorpay\Api\Api;
 
 class RazorpayService
 {
+    /**
+     * @var Api&object{order: \Razorpay\Api\Order, payment: \Razorpay\Api\Payment, utility: \Razorpay\Api\Utility}
+     */
     protected Api $api;
 
     public function __construct()
     {
+        /**
+         * @var Api $api
+         */
         $this->api = new Api(
             config('services.razorpay.key_id'),
             config('services.razorpay.key_secret')
@@ -38,6 +44,9 @@ class RazorpayService
                 $orderData['notes'] = $data['notes'];
             }
 
+            /**
+             * @var \Razorpay\Api\Order&object{id: string, amount: int, currency: string} $razorpayOrder
+             */
             $razorpayOrder = $this->api->order->create($orderData);
 
             // Create payment record
@@ -205,6 +214,7 @@ class RazorpayService
     public function getPayment(string $paymentId): ?array
     {
         try {
+            /** @var \Razorpay\Api\Payment&object{id: string, amount: int, currency: string, status: string, method: string, order_id: string, captured: bool} $razorpayPayment */
             $razorpayPayment = $this->api->payment->fetch($paymentId);
 
             return [
@@ -237,6 +247,7 @@ class RazorpayService
                 $refundData['amount'] = (int) ($amount * 100);
             }
 
+            /** @var \Razorpay\Api\Refund&object{id: string, payment_id: string, amount: int, status: string} $refund */
             $refund = $this->api->payment->fetch($paymentId)->refund($refundData);
 
             return [

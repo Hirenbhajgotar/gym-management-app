@@ -42,6 +42,13 @@ class TenantSocialConfigResource extends Resource
 
     public static function form(Form $form): Form
     {
+        /**
+         * Get the current tenant
+         *
+         * @var \App\Models\Gym $tenant
+         */
+        $tenant = Filament::getTenant();
+
         return $form
             ->schema([
                 Section::make('Basic Configuration')
@@ -50,7 +57,7 @@ class TenantSocialConfigResource extends Resource
                         Grid::make(2)
                             ->schema([
                                 Hidden::make('gym_id')
-                                    ->default(Filament::getTenant()->id),
+                                    ->default($tenant->id),
 
                                 Select::make('platform')
                                     ->label('Platform')
@@ -289,19 +296,19 @@ class TenantSocialConfigResource extends Resource
                                             ->maxValue(10000)
                                             ->helperText('Maximum number of leads to process per hour'),
 
-                                        Textarea::make('custom_fields_mapping')
-                                            ->label('Custom Fields Mapping')
-                                            ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
-                                            ->rows(5)
-                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
+                                        // Textarea::make('custom_fields_mapping')
+                                        //     ->label('Custom Fields Mapping')
+                                        //     ->helperText('JSON configuration for mapping platform-specific fields to lead attributes')
+                                        //     ->rows(5)
+                                        //     ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                        //     ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
 
-                                        Textarea::make('webhook_filters')
-                                            ->label('Webhook Filters')
-                                            ->helperText('JSON configuration for filtering incoming webhooks')
-                                            ->rows(5)
-                                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
-                                            ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
+                                        // Textarea::make('webhook_filters')
+                                        //     ->label('Webhook Filters')
+                                        //     ->helperText('JSON configuration for filtering incoming webhooks')
+                                        //     ->rows(5)
+                                        //     ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
+                                        //     ->dehydrateStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state),
                                     ]),
                             ]),
                     ]),
@@ -489,7 +496,12 @@ class TenantSocialConfigResource extends Resource
         $timestamp = time();
         $uniqueId = uniqid('test_', true);
 
-        return match ($config->platform) {
+        /**
+         * @var \App\Enums\SocialPlatform $platform
+         */
+        $platform = $config->platform;
+
+        return match ($platform) {
             \App\Enums\SocialPlatform::Facebook,
             \App\Enums\SocialPlatform::Instagram => [
                 'object' => 'page',
@@ -565,7 +577,7 @@ class TenantSocialConfigResource extends Resource
                 'email' => "test.{$uniqueId}@example.com",
                 'phone' => '+91' . rand(7000000000, 9999999999),
                 'notes' => 'Test YouTube inquiry - interested in fitness programs',
-                'platform' => 'youtube',
+                'platform' => SocialPlatform::YouTube->value,
             ],
 
             default => [
@@ -573,7 +585,7 @@ class TenantSocialConfigResource extends Resource
                 'email' => "test.{$uniqueId}@example.com",
                 'phone' => '+91' . rand(7000000000, 9999999999),
                 'notes' => 'Test webhook from Filament admin',
-                'platform' => $config->platform->value,
+                'platform' => $platform->value,
                 'page_id' => $config->page_id,
             ],
         };

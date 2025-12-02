@@ -177,11 +177,8 @@ class RolesAndPermissionsService
 
             setPermissionsTeamId($tenant->id);
 
-            if ($user) {
-                $user->forgetCachedPermissions();
-                // Reload user's roles to ensure role checks use the updated team context
-                $user->load('roles');
-            }
+            // Reload user's roles to ensure role checks use the updated team context
+            $user->load('roles');
 
             // Assign the role to the user
             $user->assignRole($role);

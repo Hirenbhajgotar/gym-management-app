@@ -169,7 +169,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->gyms->contains($tenant);
     }
 
-    public function gyms()
+    public function gyms(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Gym::class, 'gym_user')
             ->withPivot(['role', 'active'])
@@ -196,21 +196,15 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->hasOne(Subscription::class)->active()->whereDate('current_period_end', '>=', now());
     }
 
-    public function subscription()
+    public function subscription(): ?Subscription
     {
-        return Subscription::active()
-            ->where('user_id', $this->id)
-            ->whereDate('current_period_end', '>=', now())
-            ->first();
+        return $this->activeSubscription()->first();
     }
 
     // Subscription-based access control methods
     public function hasActiveSubscription(): bool
     {
-        return $this->subscriptions()
-            ->active()
-            ->whereDate('current_period_end', '>=', now())
-            ->exists();
+        return $this->activeSubscription()->exists();
     }
 
     public function canAccessFeatures(): bool
@@ -218,24 +212,19 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->subscription()?->canAccessFeatures() ?? false;
     }
 
-    public function getSubscriptionPlan()
+    public function getSubscriptionPlan(): mixed
     {
         return $this->subscription()?->plan;
     }
 
     public function getFeatureLimit(string $featureName): int|string|null
     {
-        return $this->subscription()?->getFeatureLimit($featureName) ?? null;
+        return $this->subscription()?->getFeatureLimit($featureName);
     }
 
-    public function canUseFeature(
-        string $featureName,
-        int $currentUsage = 0,
-    ): bool {
-        return $this->subscription()?->canUseFeature(
-            $featureName,
-            $currentUsage,
-        );
+    public function canUseFeature(string $featureName, int $currentUsage = 0): bool
+    {
+        return $this->subscription()?->canUseFeature($featureName, $currentUsage) ?? false;
     }
 
     public function hasUsedTrial(): bool
@@ -251,24 +240,21 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     {
         $limit = $this->getFeatureLimit('max_gyms');
 
-        return $limit === null || $limit === 'unlimited'
-            ? PHP_INT_MAX
-            : (int) $limit;
+        return match ($limit) {
+            null, 'unlimited' => PHP_INT_MAX,
+            default => (int) $limit,
+        };
     }
 
     public function canCreateMoreGyms(): bool
     {
-        if (! $this->canAccessFeatures()) {
-            return false;
-        }
-
-        return $this->gyms()->count() < $this->getMaxGyms();
+        return $this->canAccessFeatures() && $this->gyms()->count() < $this->getMaxGyms();
     }
 
     /**
      * Get all subscription history for this user
      */
-    public function subscriptionHistory()
+    public function subscriptionHistory(): Collection
     {
         return $this->subscriptions()
             ->with(['plan', 'features'])

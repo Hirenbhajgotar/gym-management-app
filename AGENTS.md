@@ -35,7 +35,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## Framework Rules
 - Follow Laravel Boost guidelines (.cursor/rules/laravel-boost.mdc)
+- Follow Gemini rules (GEMINI.md)
 - Follow Kilo Code rules (.kilocode/rules/laravel-gym-app.md)
 - Use artisan commands for file generation
+- Use docker-compose command for docker and artisan commands
 - Test with PHPUnit/Pest, eager loading for N+1 prevention
 - Run pint before commits, use Volt for interactive components
+- Run larastan/phpstan for static analysis

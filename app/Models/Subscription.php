@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $features_count
  * @property-read \App\Models\Plan $plan
  * @property-read \App\Models\User $user
+ *
  * @method static Builder<static>|Subscription active()
  * @method static Builder<static>|Subscription cancelled()
  * @method static Builder<static>|Subscription expired()
@@ -57,6 +58,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Subscription whereTrialEndsAt($value)
  * @method static Builder<static>|Subscription whereUpdatedAt($value)
  * @method static Builder<static>|Subscription whereUserId($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperSubscription
  */
@@ -65,34 +67,34 @@ class Subscription extends Model
     use HasFactory;
 
     protected $fillable = [
-        "user_id",
-        "plan_id",
-        "status",
-        "billing_cycle",
-        "price",
-        "currency",
-        "trial_ends_at",
-        "current_period_start",
-        "current_period_end",
-        "ends_at",
-        "cancelled_at",
-        "grace_period_ends_at",
-        "metadata",
+        'user_id',
+        'plan_id',
+        'status',
+        'billing_cycle',
+        'price',
+        'currency',
+        'trial_ends_at',
+        'current_period_start',
+        'current_period_end',
+        'ends_at',
+        'cancelled_at',
+        'grace_period_ends_at',
+        'metadata',
     ];
 
     protected function casts(): array
     {
         return [
-            "price" => "decimal:2",
-            "trial_ends_at" => "datetime",
-            "current_period_start" => "datetime",
-            "current_period_end" => "datetime",
-            "ends_at" => "datetime",
-            "cancelled_at" => "datetime",
-            "grace_period_ends_at" => "datetime",
-            "metadata" => "array",
-            "status" => SubscriptionStatus::class,
-            "currency" => Currency::class,
+            'price' => 'decimal:2',
+            'trial_ends_at' => 'datetime',
+            'current_period_start' => 'datetime',
+            'current_period_end' => 'datetime',
+            'ends_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'grace_period_ends_at' => 'datetime',
+            'metadata' => 'array',
+            'status' => SubscriptionStatus::class,
+            'currency' => Currency::class,
         ];
     }
 
@@ -116,7 +118,7 @@ class Subscription extends Model
     #[Scope]
     protected function active(Builder $query)
     {
-        return $query->whereIn("status", [
+        return $query->whereIn('status', [
             SubscriptionStatus::TRIAL,
             SubscriptionStatus::ACTIVE,
         ]);
@@ -125,19 +127,19 @@ class Subscription extends Model
     #[Scope]
     protected function expired(Builder $query)
     {
-        return $query->where("status", SubscriptionStatus::EXPIRED);
+        return $query->where('status', SubscriptionStatus::EXPIRED);
     }
 
     #[Scope]
     protected function cancelled(Builder $query)
     {
-        return $query->where("status", SubscriptionStatus::CANCELLED);
+        return $query->where('status', SubscriptionStatus::CANCELLED);
     }
 
     #[Scope]
     protected function suspended(Builder $query)
     {
-        return $query->where("status", SubscriptionStatus::SUSPENDED);
+        return $query->where('status', SubscriptionStatus::SUSPENDED);
     }
 
     // Helper methods
@@ -165,7 +167,7 @@ class Subscription extends Model
         if (
             $this->status === SubscriptionStatus::EXPIRED &&
             $this->isInGracePeriod() &&
-            !$this->wasTrial()
+            ! $this->wasTrial()
         ) {
             return true;
         }
@@ -198,7 +200,7 @@ class Subscription extends Model
 
     public function trialDaysLeft(): int
     {
-        if (!$this->isOnTrial()) {
+        if (! $this->isOnTrial()) {
             return 0;
         }
 
@@ -207,7 +209,7 @@ class Subscription extends Model
 
     public function daysUntilExpiry(): int
     {
-        if (!$this->current_period_end) {
+        if (! $this->current_period_end) {
             return 0;
         }
 
@@ -216,7 +218,7 @@ class Subscription extends Model
 
     public function getCurrentPrice(): float
     {
-        return $this->billing_cycle === "yearly"
+        return $this->billing_cycle === 'yearly'
             ? $this->plan->price_yearly ?? 0
             : $this->plan->price_monthly ?? 0;
     }
@@ -224,7 +226,7 @@ class Subscription extends Model
     public function getSubscriptionFeature(
         string $featureName,
     ): ?SubscriptionFeature {
-        return $this->features()->where("feature_name", $featureName)->first();
+        return $this->features()->where('feature_name', $featureName)->first();
     }
 
     public function getFeatureLimit(string $featureName): mixed
@@ -243,13 +245,13 @@ class Subscription extends Model
         string $featureName,
         int $currentUsage = 0,
     ): bool {
-        if (!$this->canAccessFeatures()) {
+        if (! $this->canAccessFeatures()) {
             return false;
         }
 
         $limit = $this->getFeatureLimit($featureName);
 
-        if ($limit === null || $limit === "unlimited") {
+        if ($limit === null || $limit === 'unlimited') {
             return true;
         }
 
@@ -271,7 +273,7 @@ class Subscription extends Model
     protected function daysInGracePeriod(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn() => $this->isInGracePeriod()
+            get: fn () => $this->isInGracePeriod()
                 ? Carbon::now()->diffInDays($this->grace_period_ends_at, false)
                 : 0,
         );

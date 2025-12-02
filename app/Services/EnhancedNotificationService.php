@@ -2,21 +2,24 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\NotificationLog;
 use App\Models\NotificationSetting;
 use App\Models\NotificationTemplate;
 use App\Models\User;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 
 class EnhancedNotificationService extends NotificationService
 {
+    use HasTenantAccess;
+
     public function sendNotification(
         User $recipient,
         string $type,
         array $channels = ['whatsapp'],
         array $variables = []
     ): void {
-        $tenantId = Filament::getTenant()->id;
+        $tenantId = $this->getGymId();
         $gymOwner = $this->getGymOwner($tenantId);
 
         $settings = NotificationSetting::where('gym_id', $tenantId)
@@ -35,7 +38,7 @@ class EnhancedNotificationService extends NotificationService
             }
 
             // Check if WhatsApp account is properly set up
-            if ($channel === 'whatsapp' && $settings->verification_status !== 'verified') {
+            if ($channel === 'whatsapp' && $settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
                 // Fallback to SMS or email
                 $fallbackChannel = $this->getFallbackChannel($channel);
                 if ($fallbackChannel && $settings->isNotificationEnabled($type, $fallbackChannel)) {
@@ -73,13 +76,13 @@ class EnhancedNotificationService extends NotificationService
         string $type,
         string $message
     ): void {
-        if (! $recipient->whatsapp_number) {
+        if (! $recipient->phone) {
             return;
         }
 
         // Use gym owner's individual Twilio account
         $whatsappService = new TwilioWhatsAppService($settings->gym_id);
-        $result = $whatsappService->sendMessage($recipient->whatsapp_number, $message);
+        $result = $whatsappService->sendMessage($recipient->phone, $message);
 
         // Enhanced logging with owner's number info
         NotificationLog::create([
@@ -91,7 +94,7 @@ class EnhancedNotificationService extends NotificationService
             'message' => $message,
             'response_data' => array_merge($result['data'] ?? [], [
                 'from_number' => $settings->whatsapp_business_number,
-                'to_number' => $recipient->whatsapp_number,
+                'to_number' => $recipient->phone,
             ]),
             'external_id' => $result['message_id'] ?? null,
             'sent_at' => $result['success'] ? now() : null,
@@ -111,7 +114,7 @@ class EnhancedNotificationService extends NotificationService
     private function logError(User $recipient, string $error): void
     {
         NotificationLog::create([
-            'gym_id' => Filament::getTenant()->id,
+            'gym_id' => $this->getGymId(),
             'user_id' => $recipient->id,
             'type' => 'system_error',
             'channel' => 'system',

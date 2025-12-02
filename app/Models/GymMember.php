@@ -26,8 +26,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $profile_photo
  * @property string $email
  * @property string|null $phone
- * @property numeric|null $weight Weight in kg
- * @property numeric|null $height Height in cm
+ * @property float|null $weight Weight in kg
+ * @property float|null $height Height in cm
  * @property int|null $age
  * @property \Illuminate\Support\Carbon|null $dob
  * @property \Illuminate\Support\Carbon|null $membership_start
@@ -81,8 +81,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereWeight($value)
  *
- * @mixin \Eloquent
  * @mixin IdeHelperGymMember
+ * @mixin \Eloquent
  */
 class GymMember extends Model
 {
@@ -170,7 +170,7 @@ class GymMember extends Model
         return match ($eventName) {
             'created' => "{$this->name} joined",
             'deleted' => "{$this->name} was removed",
-            default => parent::getDescriptionForEvent($eventName),
+            default => "Gym member {$eventName}",
         };
     }
 
@@ -243,7 +243,7 @@ class GymMember extends Model
         return $this->morphMany(Attendances::class, 'attendanceable');
     }
 
-    public function currentAttendance()
+    public function currentAttendance(): ?Attendances
     {
         return $this->attendances()
             ->where('status', 'checked_in')

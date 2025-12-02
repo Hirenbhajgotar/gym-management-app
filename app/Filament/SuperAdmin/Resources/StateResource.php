@@ -35,7 +35,7 @@ class StateResource extends Resource
     {
         // Fetch active country's record
         return parent::getEloquentQuery()->whereHas('country', function ($country) {
-            $country->active();
+            $country->where('status', 1);
         });
 
         // return parent::getEloquentQuery()

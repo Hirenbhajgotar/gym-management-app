@@ -4,12 +4,14 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Models\Gym;
 use App\Models\MemberPayment;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 
 class GymRevenueChart extends ChartWidget
 {
+    use HasTenantAccess;
+
     protected static ?string $heading = 'Monthly Revenue (Past 12 Months)';
 
     protected static ?string $pollingInterval = '900s';
@@ -42,7 +44,7 @@ class GymRevenueChart extends ChartWidget
         // Define the start and end date for the past 12 months
         $endDate = now();
         $startDate = now()->subMonths(11)->startOfMonth();
-        $tenantId = Filament::getTenant()?->id;
+        $tenantId = $this->getGymId();
         // Base query for MemberPayment
         $query = MemberPayment::query()
             ->whereHas('member.gym', fn ($query) => $query->where('id', $tenantId));

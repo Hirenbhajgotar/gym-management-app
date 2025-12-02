@@ -17,7 +17,7 @@ class NotificationChannelResolver
     ): array {
         $settings = self::getSetting($gym->id);
 
-        $emailEnabled = $settings->get('email_notifications')?->value ?? true;
+        $emailEnabled = $settings->get('email_notifications')->value ?? true;
 
         $whatsappEnabled = $settings->get('whatsapp_notifications')?->value
             ? true

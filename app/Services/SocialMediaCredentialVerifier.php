@@ -15,17 +15,21 @@ class SocialMediaCredentialVerifier
      */
     public function verify(TenantSocialConfig $config): array
     {
+        /**
+         * @var \App\Enums\SocialPlatform $platform
+         */
+        $platform = $config->platform;
         try {
-            return match ($config->platform) {
+            return match ($platform) {
                 SocialPlatform::Facebook => $this->verifyFacebook($config),
                 SocialPlatform::Instagram => $this->verifyInstagram($config),
                 SocialPlatform::WhatsApp => $this->verifyWhatsApp($config),
                 SocialPlatform::YouTube => $this->verifyYouTube($config),
-                default => throw new Exception("Platform {$config->platform->value} verification not implemented"),
+                default => throw new Exception("Platform {$platform->value} verification not implemented"),
             };
         } catch (Exception $e) {
             Log::error('Social media credential verification failed', [
-                'platform' => $config->platform->value,
+                'platform' => $platform->value,
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);

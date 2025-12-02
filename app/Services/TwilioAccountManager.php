@@ -24,29 +24,29 @@ class TwilioAccountManager
 
     public function __construct(?Client $masterClient = null)
     {
-        $this->useSandbox = config("services.twilio.use_sandbox", true);
+        $this->useSandbox = config('services.twilio.use_sandbox', true);
 
         // If a Client instance is explicitly provided, use it (useful for tests)
         if ($masterClient !== null) {
             $this->masterClient = $masterClient;
-            $this->masterAccountSid = config("services.twilio.master_sid", "");
-            $this->masterAuthToken = config("services.twilio.master_token", "");
+            $this->masterAccountSid = config('services.twilio.master_sid', '');
+            $this->masterAuthToken = config('services.twilio.master_token', '');
 
             return;
         }
 
         // If the container has a bound Client (test mocks), resolve it from the container
-        if (function_exists("app") && app()->bound(Client::class)) {
+        if (function_exists('app') && app()->bound(Client::class)) {
             $this->masterClient = app(Client::class);
-            $this->masterAccountSid = config("services.twilio.master_sid", "");
-            $this->masterAuthToken = config("services.twilio.master_token", "");
+            $this->masterAccountSid = config('services.twilio.master_sid', '');
+            $this->masterAuthToken = config('services.twilio.master_token', '');
 
             return;
         }
 
         // Default: create a real Twilio client using configured master credentials
-        $this->masterAccountSid = config("services.twilio.master_sid");
-        $this->masterAuthToken = config("services.twilio.master_token");
+        $this->masterAccountSid = config('services.twilio.master_sid');
+        $this->masterAuthToken = config('services.twilio.master_token');
         $this->masterClient = new Client(
             $this->masterAccountSid,
             $this->masterAuthToken,
@@ -68,7 +68,7 @@ class TwilioAccountManager
 
             // Check if account already exists
             $existingSetting = NotificationSetting::where(
-                "gym_id",
+                'gym_id',
                 $tenantId,
             )->first();
 
@@ -85,14 +85,13 @@ class TwilioAccountManager
                         $whatsappNumber,
                     );
 
-                    if ($verificationResult["success"]) {
+                    if ($verificationResult['success']) {
                         DB::commit();
 
                         return [
-                            "success" => true,
-                            "message" =>
-                                "Account already exists. Verification code resent to WhatsApp.",
-                            "verification_required" => true,
+                            'success' => true,
+                            'message' => 'Account already exists. Verification code resent to WhatsApp.',
+                            'verification_required' => true,
                         ];
                     }
                 }
@@ -100,33 +99,31 @@ class TwilioAccountManager
                 DB::commit();
 
                 return [
-                    "success" => false,
-                    "error" => "Account already exists for this gym",
-                    "message" =>
-                        "An account is already configured for this gym.",
+                    'success' => false,
+                    'error' => 'Account already exists for this gym',
+                    'message' => 'An account is already configured for this gym.',
                 ];
             }
 
             // Create Twilio Subaccount
             $subaccount = $this->masterClient->api->v2010->accounts->create([
-                "friendlyName" => "Gym: {$gymName} - Owner: {$gymOwnerName}",
+                'friendlyName' => "Gym: {$gymName} - Owner: {$gymOwnerName}",
             ]);
 
             // Store account details in database
             $accountData = [
-                "gym_id" => $tenantId,
-                "twilio_account_sid" => $subaccount->sid,
-                "twilio_auth_token" => $subaccount->authToken,
-                "whatsapp_business_number" => $whatsappNumber,
-                "account_status" => NotificationAccountStatusEnum::CREATED,
-                "verification_status" =>
-                    NotificationVerificationStatusEnum::PENDING,
-                "created_at" => now(),
+                'gym_id' => $tenantId,
+                'twilio_account_sid' => $subaccount->sid,
+                'twilio_auth_token' => $subaccount->authToken,
+                'whatsapp_business_number' => $whatsappNumber,
+                'account_status' => NotificationAccountStatusEnum::CREATED,
+                'verification_status' => NotificationVerificationStatusEnum::PENDING,
+                'created_at' => now(),
             ];
 
             // Store in notification_settings table
             NotificationSetting::updateOrCreate(
-                ["gym_id" => $tenantId],
+                ['gym_id' => $tenantId],
                 $accountData,
             );
 
@@ -137,58 +134,57 @@ class TwilioAccountManager
                 $whatsappNumber,
             );
 
-            if (!$verificationResult["success"]) {
+            if (! $verificationResult['success']) {
                 throw new \Exception(
-                    $verificationResult["error"] ??
-                        "Failed to start verification",
+                    $verificationResult['error'] ??
+                        'Failed to start verification',
                 );
             }
 
             DB::commit();
 
             return [
-                "success" => true,
-                "account_sid" => $subaccount->sid,
-                "auth_token" => $subaccount->authToken,
-                "verification_required" => true,
-                "verification_method" => "whatsapp",
-                "message" =>
-                    "Twilio account created successfully. Please check your WhatsApp for a verification message.",
+                'success' => true,
+                'account_sid' => $subaccount->sid,
+                'auth_token' => $subaccount->authToken,
+                'verification_required' => true,
+                'verification_method' => 'whatsapp',
+                'message' => 'Twilio account created successfully. Please check your WhatsApp for a verification message.',
             ];
         } catch (RestException $e) {
             DB::rollBack();
 
-            Log::error("Twilio account creation failed", [
-                "error" => $e->getMessage(),
-                "code" => $e->getCode(),
-                "tenant_id" => $tenantId,
+            Log::error('Twilio account creation failed', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'tenant_id' => $tenantId,
             ]);
 
-            $message = "Failed to create Twilio account";
+            $message = 'Failed to create Twilio account';
             if ($e->getCode() === 21217) {
                 // Reached maximum number of subaccounts
                 $message =
-                    "You have reached the maximum number of subaccounts for your Twilio account. Please upgrade your Twilio plan or contact Twilio support.";
+                    'You have reached the maximum number of subaccounts for your Twilio account. Please upgrade your Twilio plan or contact Twilio support.';
             }
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "code" => $e->getCode(),
-                "message" => $message,
+                'success' => false,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'message' => $message,
             ];
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error("Unexpected error during account creation", [
-                "error" => $e->getMessage(),
-                "tenant_id" => $tenantId,
+            Log::error('Unexpected error during account creation', [
+                'error' => $e->getMessage(),
+                'tenant_id' => $tenantId,
             ]);
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "message" => "Unexpected error occurred",
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Unexpected error occurred',
             ];
         }
     }
@@ -215,20 +211,20 @@ class TwilioAccountManager
 
             $verification = $client->verify->v2
                 ->services($verifyServiceSid)
-                ->verifications->create($whatsappNumber, "whatsapp"); // Send code via WhatsApp
+                ->verifications->create($whatsappNumber, 'whatsapp'); // Send code via WhatsApp
 
             return [
-                "success" => true,
-                "sid" => $verification->sid,
-                "status" => $verification->status,
+                'success' => true,
+                'sid' => $verification->sid,
+                'status' => $verification->status,
             ];
         } catch (RestException $e) {
             Log::error("Twilio WhatsApp verification initiation failed: $e ");
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "code" => $e->getCode(),
+                'success' => false,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
             ];
         } catch (\Exception $e) {
             Log::error(
@@ -236,8 +232,8 @@ class TwilioAccountManager
             );
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
+                'success' => false,
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -251,15 +247,15 @@ class TwilioAccountManager
     ): array {
         try {
             $settings = NotificationSetting::where(
-                "gym_id",
+                'gym_id',
                 $tenantId,
             )->first();
 
-            if (!$settings || !$settings->twilio_account_sid) {
+            if (! $settings || ! $settings->twilio_account_sid) {
                 // throw new \Exception('No Twilio account found for this gym');
                 return [
-                    "success" => false,
-                    "error" => "No Twilio account found for this gym",
+                    'success' => false,
+                    'error' => 'No Twilio account found for this gym',
                 ];
             }
 
@@ -268,8 +264,8 @@ class TwilioAccountManager
                 NotificationVerificationStatusEnum::VERIFIED
             ) {
                 return [
-                    "success" => false,
-                    "error" => "Number is already verified",
+                    'success' => false,
+                    'error' => 'Number is already verified',
                 ];
             }
 
@@ -293,63 +289,61 @@ class TwilioAccountManager
             $verificationCheck = $client->verify->v2
                 ->services($verifyServiceSid)
                 ->verificationChecks->create([
-                    "to" => $settings->whatsapp_business_number,
-                    "code" => $verificationCode,
+                    'to' => $settings->whatsapp_business_number,
+                    'code' => $verificationCode,
                 ]);
 
-            if ($verificationCheck->status === "approved") {
+            if ($verificationCheck->status === 'approved') {
                 // Update status in database
                 $settings->update([
-                    "verification_status" =>
-                        NotificationVerificationStatusEnum::VERIFIED,
-                    "account_status" => NotificationAccountStatusEnum::ACTIVE,
-                    "verified_at" => now(),
+                    'verification_status' => NotificationVerificationStatusEnum::VERIFIED,
+                    'account_status' => NotificationAccountStatusEnum::ACTIVE,
+                    'verified_at' => now(),
                 ]);
 
                 // Test the WhatsApp integration by sending a welcome message
                 $testResult = $this->sendTestWhatsAppMessage($settings);
 
-                Log::info("WhatsApp verification completed", [
-                    "gym_id" => $tenantId,
-                    "verified_number" => $settings->whatsapp_business_number,
-                    "test_message_sent" => $testResult["success"] ?? false,
-                    "test_message_id" => $testResult["message_id"] ?? null,
+                Log::info('WhatsApp verification completed', [
+                    'gym_id' => $tenantId,
+                    'verified_number' => $settings->whatsapp_business_number,
+                    'test_message_sent' => $testResult['success'] ?? false,
+                    'test_message_id' => $testResult['message_id'] ?? null,
                 ]);
 
                 return [
-                    "success" => true,
-                    "message" => "WhatsApp number verified successfully",
-                    "test_message_sent" => $testResult["success"] ?? false,
-                    "test_message_id" => $testResult["message_id"] ?? null,
+                    'success' => true,
+                    'message' => 'WhatsApp number verified successfully',
+                    'test_message_sent' => $testResult['success'] ?? false,
+                    'test_message_id' => $testResult['message_id'] ?? null,
                 ];
             } else {
                 return [
-                    "success" => false,
-                    "error" => "Invalid verification code",
-                    "message" =>
-                        "Verification failed: " . $verificationCheck->status,
+                    'success' => false,
+                    'error' => 'Invalid verification code',
+                    'message' => 'Verification failed: ' . $verificationCheck->status,
                 ];
             }
         } catch (RestException $e) {
             Log::error(
-                "Twilio WhatsApp verification failed: " . $e->getMessage(),
+                'Twilio WhatsApp verification failed: ' . $e->getMessage(),
             );
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "message" => "Verification failed",
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Verification failed',
             ];
         } catch (\Exception $e) {
             Log::error(
-                "Unexpected error during WhatsApp verification: " .
+                'Unexpected error during WhatsApp verification: ' .
                     $e->getMessage(),
             );
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "message" => "Verification failed",
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Verification failed',
             ];
         }
     }
@@ -359,12 +353,12 @@ class TwilioAccountManager
      */
     public function getAccountStatus(string $tenantId): array
     {
-        $settings = NotificationSetting::where("gym_id", $tenantId)->first();
+        $settings = NotificationSetting::where('gym_id', $tenantId)->first();
 
-        if (!$settings || !$settings->twilio_account_sid) {
+        if (! $settings || ! $settings->twilio_account_sid) {
             return [
-                "status" => "not_created",
-                "message" => "No Twilio account found",
+                'status' => 'not_created',
+                'message' => 'No Twilio account found',
             ];
         }
 
@@ -381,9 +375,9 @@ class TwilioAccountManager
 
             // Get usage for current month
             $usage = $client->usage->records->read([
-                "category" => "totalprice",
-                "startDate" => now()->startOfMonth()->format("Y-m-d"),
-                "endDate" => now()->format("Y-m-d"),
+                'category' => 'totalprice',
+                'startDate' => now()->startOfMonth()->format('Y-m-d'),
+                'endDate' => now()->format('Y-m-d'),
             ]);
 
             $messageCount = 0;
@@ -394,20 +388,20 @@ class TwilioAccountManager
             }
 
             return [
-                "status" => $account->status,
-                "verification_status" => $settings->verification_status,
+                'status' => $account->status,
+                'verification_status' => $settings->verification_status,
                 // 'balance' => $client->balance->fetch()->balance,
-                "messages_sent" => $messageCount,
-                "monthly_cost" => $cost,
-                "account_created" => $settings->created_at,
-                "last_activity" => now(),
+                'messages_sent' => $messageCount,
+                'monthly_cost' => $cost,
+                'account_created' => $settings->created_at,
+                'last_activity' => now(),
             ];
         } catch (RestException $e) {
-            Log::error("Failed to fetch Twilio account status: " . $e);
+            Log::error('Failed to fetch Twilio account status: ' . $e);
 
             return [
-                "status" => "error",
-                "error" => $e->getMessage(),
+                'status' => 'error',
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -421,10 +415,10 @@ class TwilioAccountManager
     ): string {
         $tenantId =
             NotificationSetting::where(
-                "twilio_account_sid",
+                'twilio_account_sid',
                 $accountSid,
-            )->value("gym_id") ??
-            (Filament::getTenant()?->id ?? "unknown");
+            )->value('gym_id') ??
+            (Filament::getTenant()->id ?? 'unknown');
 
         $friendlyName = "Verify Service for {$tenantId}";
 
@@ -463,8 +457,8 @@ class TwilioAccountManager
                 empty($settings->twilio_auth_token)
             ) {
                 return [
-                    "success" => false,
-                    "error" => "Twilio credentials are not configured.",
+                    'success' => false,
+                    'error' => 'Twilio credentials are not configured.',
                 ];
             }
 
@@ -475,17 +469,17 @@ class TwilioAccountManager
 
             // Get from number based on sandbox or production
             $fromNumber = $this->useSandbox
-                ? config("services.twilio.sandbox_number") // e.g., '+14155238886'
+                ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
                 : app(TwilioWhatsAppService::class)->getProductionFromNumber(
                     $settings,
                 );
 
             // Get gym name for personalized message
             $gym = \App\Models\Gym::find($settings->gym_id);
-            $gymName = $gym ? $gym->name : "Your Gym";
+            $gymName = $gym ? $gym->name : 'Your Gym';
 
             $messageParams = [
-                "from" => "whatsapp:" . $fromNumber,
+                'from' => 'whatsapp:' . $fromNumber,
             ];
 
             // In sandbox mode, we can send free-form messages
@@ -508,9 +502,9 @@ class TwilioAccountManager
                 $messageBody .=
                     "This is a test message to confirm everything is working perfectly.\n\n";
                 $messageBody .=
-                    "_Sent at: " . now()->format("M d, Y H:i A") . "_";
+                    '_Sent at: ' . now()->format('M d, Y H:i A') . '_';
 
-                $messageParams["body"] = $messageBody;
+                $messageParams['body'] = $messageBody;
             } else {
                 // Production: Use approved template (required for business-initiated messages)
                 // First, try to get template from database
@@ -518,100 +512,99 @@ class TwilioAccountManager
                     $settings->gym_id,
                 );
                 $template = $templateManager->getTemplate(
-                    "whatsapp_integration_active_message",
+                    'whatsapp_integration_active_message',
                 );
 
                 // Fallback to config if not in database
                 $templateSid = $template
                     ? $template->template_sid
                     : config(
-                        "services.twilio.whatsapp_integration_active_template_sid",
+                        'services.twilio.whatsapp_integration_active_template_sid',
                     );
 
-                if (!$templateSid) {
+                if (! $templateSid) {
                     // No template available - return helpful error
                     return [
-                        "success" => false,
-                        "error" =>
-                            "No approved WhatsApp template found. Please:\n" .
+                        'success' => false,
+                        'error' => "No approved WhatsApp template found. Please:\n" .
                             "1. Create and approve a 'welcome_message' template in Twilio console, OR\n" .
                             "2. Set TWILIO_WELCOME_TEMPLATE_SID in your .env file, OR\n" .
-                            "3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.",
-                        "requires_template" => true,
+                            '3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.',
+                        'requires_template' => true,
                     ];
                 }
 
                 // Use template with variables
-                $messageParams["contentSid"] = $templateSid;
-                $messageParams["contentVariables"] = json_encode([
-                    "1" => $gymName, // Variable 1: Gym name
-                    "2" => now()->format("M d, Y H:i A"), // Variable 2: Timestamp
+                $messageParams['contentSid'] = $templateSid;
+                $messageParams['contentVariables'] = json_encode([
+                    '1' => $gymName, // Variable 1: Gym name
+                    '2' => now()->format('M d, Y H:i A'), // Variable 2: Timestamp
                 ]);
 
-                Log::info("Using WhatsApp template for test message", [
-                    "gym_id" => $settings->gym_id,
-                    "template_sid" => $templateSid,
-                    "source" => $template ? "database" : "config",
+                Log::info('Using WhatsApp template for test message', [
+                    'gym_id' => $settings->gym_id,
+                    'template_sid' => $templateSid,
+                    'source' => $template ? 'database' : 'config',
                 ]);
             }
 
             // Send test message to gym owner
             $message = $client->messages->create(
-                "whatsapp:" . $settings->whatsapp_business_number,
+                'whatsapp:' . $settings->whatsapp_business_number,
                 $messageParams,
             );
 
-            Log::info("Test WhatsApp message sent successfully", [
-                "gym_id" => $settings->gym_id,
-                "message_id" => $message->sid,
-                "to" => $settings->whatsapp_business_number,
-                "status" => $message->status,
-                "mode" => $this->useSandbox ? "sandbox" : "production",
-                "uses_template" => !$this->useSandbox,
+            Log::info('Test WhatsApp message sent successfully', [
+                'gym_id' => $settings->gym_id,
+                'message_id' => $message->sid,
+                'to' => $settings->whatsapp_business_number,
+                'status' => $message->status,
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
+                'uses_template' => ! $this->useSandbox,
             ]);
 
             return [
-                "success" => true,
-                "message_id" => $message->sid,
-                "status" => $message->status,
-                "to" => $settings->whatsapp_business_number,
-                "mode" => $this->useSandbox ? "sandbox" : "production",
+                'success' => true,
+                'message_id' => $message->sid,
+                'status' => $message->status,
+                'to' => $settings->whatsapp_business_number,
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
             ];
         } catch (RestException $e) {
-            Log::error("Twilio WhatsApp test message error", [
-                "gym_id" => $settings->gym_id ?? null,
-                "error" => $e->getMessage(),
-                "code" => $e->getCode(),
-                "mode" => $this->useSandbox ? "sandbox" : "production",
+            Log::error('Twilio WhatsApp test message error', [
+                'gym_id' => $settings->gym_id ?? null,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
             ]);
 
             // Provide helpful error message for common production mode issues
             $errorMessage = $e->getMessage();
             if (
-                !$this->useSandbox &&
-                strpos($errorMessage, "template") !== false
+                ! $this->useSandbox &&
+                strpos($errorMessage, 'template') !== false
             ) {
                 $errorMessage .=
                     " - Business-initiated messages require approved templates. Please create a 'welcome_message' template or use sandbox mode.";
             }
 
             return [
-                "success" => false,
-                "error" => $errorMessage,
-                "code" => $e->getCode(),
-                "mode" => $this->useSandbox ? "sandbox" : "production",
+                'success' => false,
+                'error' => $errorMessage,
+                'code' => $e->getCode(),
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
             ];
         } catch (\Exception $e) {
-            Log::error("Unexpected error sending test WhatsApp message", [
-                "gym_id" => $settings->gym_id ?? null,
-                "error" => $e->getMessage(),
-                "mode" => $this->useSandbox ? "sandbox" : "production",
+            Log::error('Unexpected error sending test WhatsApp message', [
+                'gym_id' => $settings->gym_id ?? null,
+                'error' => $e->getMessage(),
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
             ]);
 
             return [
-                "success" => false,
-                "error" => $e->getMessage(),
-                "mode" => $this->useSandbox ? "sandbox" : "production",
+                'success' => false,
+                'error' => $e->getMessage(),
+                'mode' => $this->useSandbox ? 'sandbox' : 'production',
             ];
         }
     }
@@ -648,8 +641,8 @@ class TwilioAccountManager
         // For testing, use master account credentials
         if ($this->useSandbox) {
             return new Client(
-                config("services.twilio.master_sid"),
-                config("services.twilio.master_token"),
+                config('services.twilio.master_sid'),
+                config('services.twilio.master_token'),
             );
         }
 

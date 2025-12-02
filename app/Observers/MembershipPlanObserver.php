@@ -13,7 +13,7 @@ class MembershipPlanObserver
      */
     public function created(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan->gym?->owner() ?? auth()->user();
+        $recipient = $membershipPlan->gym->owner() ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
         if (! $recipient) {
@@ -44,7 +44,7 @@ class MembershipPlanObserver
      */
     public function deleted(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan->gym?->owner() ?? auth()->user();
+        $recipient = $membershipPlan->gym->owner() ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
         if (! $recipient) {

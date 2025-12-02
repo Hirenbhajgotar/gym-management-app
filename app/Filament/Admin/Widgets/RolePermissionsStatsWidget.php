@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\User;
+use App\Traits\HasTenantAccess;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -12,6 +13,8 @@ use Spatie\Permission\Models\Role;
 
 class RolePermissionsStatsWidget extends BaseWidget
 {
+    use HasTenantAccess;
+
     protected static ?string $pollingInterval = null;
 
     // Widget configuration properties
@@ -122,7 +125,7 @@ class RolePermissionsStatsWidget extends BaseWidget
 
     private function getActiveRoleQuery()
     {
-        $currentTenant = Filament::getTenant();
+        $currentTenant = $this->getGym();
 
         $roleQuery = Role::where('name', $this->role);
 

@@ -7,8 +7,7 @@ use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
 use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
-use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
+use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +16,8 @@ use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
+    use HasTenantAccess;
+
     protected RazorpayService $razorpayService;
 
     public function __construct(RazorpayService $razorpayService)
@@ -39,7 +40,7 @@ class PaymentController extends Controller
             $gym = Gym::findOrFail($request->gym_id);
 
             // Check if user has permission to purchase for this gym
-            if (Filament::getTenant()?->id !== $gym->id) {
+            if ($this->getGymId() !== $gym->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access to gym.',

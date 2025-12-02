@@ -90,7 +90,12 @@ class ManagerResource extends BaseEmployeeResource
                 ->label('Export ' . static::getPluralLabel())
                 ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ManagerExporter::class)
-                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole())),
+                ->modifyQueryUsing(function (Builder $query) {
+                    /**
+                     * @var Builder<User> $query
+                     */
+                    $query->role(static::getEmployeeRole());
+                }),
 
             // Import action
             ExcelImportAction::make()

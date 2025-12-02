@@ -14,12 +14,12 @@ class CreateUser extends CreateRecord
     protected function afterCreate(): void
     {
         // Notify admin if new user is a gym_owner
-        if ($this->record->hasRole('gym_owner')) {
-            $admin = User::role('super_admin')->get();
+        /** @var User $user */
+        $user = $this->record;
+        if ($user->hasRole('gym_owner')) {
+            $admins = User::role('super_admin')->get();
             $details = 'Plan End Date: Not applicable'; // Add plan end date logic if available
-            $admin->notify(new UserActionNotification('created', $this->record, $details));
-            // foreach ($admins as $admin) {
-            // }
+            $admins->each(fn (User $admin) => $admin->notify(new UserActionNotification('created', $user, $details)));
         }
     }
 }

@@ -3,13 +3,15 @@
 namespace App\Filament\BaseWidgets;
 
 use App\Services\AttendanceService;
+use App\Traits\HasTenantAccess;
 use Carbon\Carbon;
-use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 abstract class BaseAttendanceStats extends BaseWidget
 {
+    use HasTenantAccess;
+
     abstract protected function getAttendanceableType(): string;
 
     abstract protected function getEntityName(): string;
@@ -19,12 +21,11 @@ abstract class BaseAttendanceStats extends BaseWidget
     protected function getStats(): array
     {
         $today = Carbon::today();
-        $currentGymId = Filament::getTenant()->id;
         $attendanceableType = $this->getAttendanceableType();
         $entityName = $this->getEntityName();
         $entityModel = $this->getEntityModel();
 
-        $todayStats = AttendanceService::getUserTypeStatsForToday($currentGymId, $attendanceableType, $entityModel);
+        $todayStats = AttendanceService::getUserTypeStatsForToday($this->getGymId(), $attendanceableType, $entityModel);
 
         $totalPresent = $todayStats['active_count'] ?? 0;
 

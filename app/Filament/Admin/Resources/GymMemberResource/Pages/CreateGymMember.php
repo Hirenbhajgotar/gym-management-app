@@ -11,8 +11,8 @@ use App\Mail\WelcomeMemberMail;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
+use App\Traits\HasTenantAccess;
 use Carbon\Carbon;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Notification;
 
 class CreateGymMember extends CreateRecord
 {
-    use HasWizard;
+    use HasTenantAccess, HasWizard;
 
     protected static string $resource = GymMemberResource::class;
 
@@ -83,9 +83,13 @@ class CreateGymMember extends CreateRecord
     {
         // Send email to the gym member
         try {
-            if (empty($this->record->email)) {
+            /**
+             * @var \App\Models\GymMember $member
+             */
+            $member = $this->record;
+            if (empty($member->email)) {
                 Log::warning('No email provided for gym member', [
-                    'member_id' => $this->record->id,
+                    'member_id' => $member->id,
                 ]);
 
                 return;
@@ -98,7 +102,7 @@ class CreateGymMember extends CreateRecord
                 ! isset($this->paymentData['membership_end'])
             ) {
                 Log::error('Missing required member data for email notification', [
-                    'member_id' => $this->record->id,
+                    'member_id' => $member->id,
                     'has_plan' => isset($this->paymentData['membership_plan_id']),
                     'has_start_date' => isset($this->paymentData['membership_start']),
                     'has_end_date' => isset($this->paymentData['membership_end']),
@@ -107,21 +111,21 @@ class CreateGymMember extends CreateRecord
                 return;
             }
 
-            // Mail::to($this->record->email)->send(new WelcomeMemberMail($this->record));
+            // Mail::to($member->email)->send(new WelcomeMemberMail($member));
 
-            Notification::send($this->record, new WelcomeNotification($this->record));
+            Notification::send($member, new WelcomeNotification($member));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email to member', [
-                'member_id' => $this->record->id,
-                'email' => $this->record->email ?? 'not_set',
+                'member_id' => $member->id,
+                'email' => $member->email ?? 'not_set',
                 'error' => $e->getMessage(),
             ]);
         }
 
         // Create the payment if payment data is provided
         if (! empty($this->paymentData['membership_plan_id'])) {
-            $this->record->payments()->create([
-                'member_id' => $this->record->id,
+            $member->payments()->create([
+                'member_id' => $member->id,
                 'membership_plan_id' => $this->paymentData['membership_plan_id'],
                 'amount' => $this->paymentData['amount'],
                 'currency' => $this->paymentData['currency'],
@@ -134,7 +138,7 @@ class CreateGymMember extends CreateRecord
             ]);
 
             // Update the member's payment_status and membership dates
-            $this->record->update([
+            $member->update([
                 'gym_membership_plan_id' => $this->paymentData['membership_plan_id'],
                 'membership_start' => $this->paymentData['membership_start'],
                 'membership_end' => $this->paymentData['membership_end'],
@@ -180,12 +184,12 @@ class CreateGymMember extends CreateRecord
                 ->description('Configure membership settings')
                 ->schema([
                     Forms\Components\Hidden::make('gym_id')
-                        ->default(fn () => Filament::getTenant()->id),
+                        ->default(fn () => $this->getGymId()),
 
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            return Trainer::where('gym_id', Filament::getTenant()->id)
+                            return Trainer::where('gym_id', $this->getGymId())
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option
@@ -216,7 +220,7 @@ class CreateGymMember extends CreateRecord
                         })
                         ->options(function (callable $get) {
                             return MembershipPlan::query()
-                                ->where('gym_id', Filament::getTenant()->id)
+                                ->where('gym_id', $this->getGymId())
                                 ->where('is_active', true)
                                 ->pluck('name', 'id')
                                 ->toArray();

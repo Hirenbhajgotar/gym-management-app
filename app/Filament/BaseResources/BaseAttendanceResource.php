@@ -23,7 +23,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 abstract class BaseAttendanceResource extends Resource
@@ -47,25 +46,28 @@ abstract class BaseAttendanceResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $currentGymId = Filament::getTenant()->id;
+        /**
+         * @var \App\Models\Gym $currentGym
+         */
+        $currentGym = Filament::getTenant();
         $attendanceableModel = static::getAttendanceableType();
 
         $select = Select::make('attendanceable_id')
             ->label(static::getLabelForSelect())
             ->required()
             ->searchable()
-            ->options(function () use ($currentGymId, $attendanceableModel) {
+            ->options(function () use ($currentGym, $attendanceableModel) {
                 $modelClass = $attendanceableModel;
 
-                return $modelClass::where('gym_id', $currentGymId)->orderBy('name', 'asc')->pluck('name', 'id');
+                return $modelClass::where('gym_id', $currentGym->id)->orderBy('name', 'asc')->pluck('name', 'id');
             });
 
         // Conditionally add createOptionForm if getOptionFormSchema() exists in the child class
         if (method_exists(static::class, 'getOptionFormSchema')) {
             $select
                 ->createOptionForm(static::getOptionFormSchema())
-                ->createOptionUsing(function (array $data) {
-                    $data['gym_id'] = Filament::getTenant()->id;
+                ->createOptionUsing(function (array $data) use ($currentGym) {
+                    $data['gym_id'] = $currentGym->id;
                     $modelClass = static::getAttendanceableType();
                     $attendance = $modelClass::create($data);
 
@@ -148,10 +150,11 @@ abstract class BaseAttendanceResource extends Resource
                 SelectFilter::make('attendanceable_id')
                     ->label('Member')
                     ->options(function () {
-                        $currentGymId = Filament::getTenant()->id;
+                        /** @var \App\Models\Gym $currentGym */
+                        $currentGym = Filament::getTenant();
                         $modelClass = static::getAttendanceableType();
 
-                        return $modelClass::where('gym_id', $currentGymId)->pluck('name', 'id');
+                        return $modelClass::where('gym_id', $currentGym->id)->pluck('name', 'id');
                     })
                     ->searchable()
                     ->preload(),
@@ -160,7 +163,7 @@ abstract class BaseAttendanceResource extends Resource
                 Action::make('checkIn')
                     ->label('Check-In')
                     ->color('success')
-                    ->action(function (Model $record) {
+                    ->action(function (Attendances $record) {
                         if (! $record->check_in_time) {
                             $record->update([
                                 'check_in_time' => now(),
@@ -172,12 +175,12 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-In')
                     ->modalDescription('Are you sure you want to check in this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-In')
-                    ->visible(fn (Model $record) => (! $record->check_in_time && $record->status !== AttendanceStatus::Absent)),
+                    ->visible(fn (Attendances $record) => (! $record->check_in_time && $record->status !== AttendanceStatus::Absent)),
 
                 Action::make('checkOut')
                     ->label('Check-Out')
                     ->color('success')
-                    ->action(function (Model $record) {
+                    ->action(function (Attendances $record) {
                         if ($record->check_in_time && ! $record->check_out_time) {
                             $record->update([
                                 'check_out_time' => now(),
@@ -189,12 +192,12 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Confirm Check-Out')
                     ->modalDescription('Are you sure you want to check out this ' . static::getEntityType() . '?')
                     ->modalSubmitActionLabel('Yes, Check-Out')
-                    ->visible(fn (Model $record) => ($record->check_in_time && ! $record->check_out_time) && $record->status !== AttendanceStatus::Absent),
+                    ->visible(fn (Attendances $record) => ($record->check_in_time && ! $record->check_out_time) && $record->status !== AttendanceStatus::Absent),
 
                 Action::make('markAbsent')
                     ->label('Mark Absent')
                     ->color('danger')
-                    ->action(function (Model $record) {
+                    ->action(function (Attendances $record) {
                         if (! $record->check_in_time && ! $record->check_out_time) {
                             $record->update([
                                 'status' => AttendanceStatus::Absent,
@@ -205,7 +208,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->modalHeading('Mark as Absent')
                     ->modalDescription('Are you sure you want to mark this ' . static::getEntityType() . ' as absent?')
                     ->modalSubmitActionLabel('Yes, Mark Absent')
-                    ->visible(fn (Model $record) => ! $record->check_in_time && ! $record->check_out_time),
+                    ->visible(fn (Attendances $record) => ! $record->check_in_time && ! $record->check_out_time),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -217,7 +220,7 @@ abstract class BaseAttendanceResource extends Resource
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
                         ->action(function (Collection $records) {
-                            $records->each(function (Model $record) {
+                            $records->each(function (Attendances $record) {
                                 if (! $record->check_in_time && ! $record->check_out_time) {
                                     $record->update(['status' => AttendanceStatus::Absent]);
                                 }

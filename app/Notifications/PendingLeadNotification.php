@@ -32,7 +32,7 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
     {
         return NotificationChannelResolver::getChannelsForGym(
             $this->lead->gym,
-            "lead_reminders_notifications",
+            'lead_reminders_notifications',
         );
     }
 
@@ -41,22 +41,22 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage())
+        return (new MailMessage)
             ->subject("Pending Lead Reminder: {$this->lead->name}")
             ->greeting("Hello {$notifiable->name},")
             ->line(
-                "This is a reminder about a pending lead that requires attention.",
+                'This is a reminder about a pending lead that requires attention.',
             )
-            ->line("Lead: " . $this->lead->name)
-            ->line("Email: " . $this->lead->email)
-            ->line("Phone: " . $this->lead->phone)
-            ->line("Status: " . $this->lead->status->getLabel())
-            ->line("Created: " . $this->lead->created_at->format("M d, Y"))
+            ->line('Lead: ' . $this->lead->name)
+            ->line('Email: ' . $this->lead->email)
+            ->line('Phone: ' . $this->lead->phone)
+            ->line('Status: ' . $this->lead->status->getLabel())
+            ->line('Created: ' . $this->lead->created_at->format('M d, Y'))
             ->action(
-                "View Lead",
-                url("/admin/leads/" . $this->lead->id . "/edit"),
+                'View Lead',
+                url('/admin/leads/' . $this->lead->id . '/edit'),
             )
-            ->line("Please follow up with this lead as soon as possible.");
+            ->line('Please follow up with this lead as soon as possible.');
     }
 
     /**
@@ -64,12 +64,12 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
      */
     public function toWhatsapp(object $notifiable): ?array
     {
-        $useSandbox = config("services.twilio.use_sandbox", true);
-        $phoneNumber = $this->lead?->gym?->owner()?->phone;
+        $useSandbox = config('services.twilio.use_sandbox', true);
+        $phoneNumber = $this->lead->gym->owner()?->phone;
 
-        if (!$phoneNumber) {
-            Log::warning("Gym owner has no phone number for WhatsApp", [
-                "owner_id" => $this->lead?->gym?->owner()?->id,
+        if (! $phoneNumber) {
+            Log::warning('Gym owner has no phone number for WhatsApp', [
+                'owner_id' => $this->lead->gym->owner()?->id,
             ]);
 
             return null;
@@ -81,26 +81,26 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
         );
 
         $message =
-            "Pending Lead Reminder: " .
+            'Pending Lead Reminder: ' .
             $this->lead->name .
             "\n" .
-            "Email: " .
+            'Email: ' .
             $this->lead->email .
             "\n" .
-            "Phone: " .
+            'Phone: ' .
             $this->lead->phone .
             "\n" .
-            "Status: " .
+            'Status: ' .
             $this->lead->status->getLabel() .
             "\n" .
-            "Created: " .
-            $this->lead->created_at->format("M d, Y");
+            'Created: ' .
+            $this->lead->created_at->format('M d, Y');
 
         if ($useSandbox) {
             // Use sandbox message for testing
             return [
-                "to" => "+919265098227",
-                "body" => $message,
+                'to' => '+919265098227',
+                'body' => $message,
             ];
         }
 
@@ -109,14 +109,14 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
                 $this->lead?->gym?->id,
             );
             $template = $templateManager->getTemplate(
-                "pending_lead_reminder_template",
+                'pending_lead_reminder_template',
             );
 
-            if (!$template) {
+            if (! $template) {
                 Log::error(
-                    "pending_lead_reminder_template template not found",
+                    'pending_lead_reminder_template template not found',
                     [
-                        "gym_id" => $this->lead?->gym?->id,
+                        'gym_id' => $this->lead?->gym?->id,
                     ],
                 );
 
@@ -125,23 +125,22 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
 
             // Use contentSid for production
             return [
-                "to" => $phoneNumber,
-                "template_sid" =>
-                $template?->template_sid ??
+                'to' => $phoneNumber,
+                'template_sid' => $template?->template_sid ??
                     config(
-                        "services.twilio.pending_lead_reminder_template_sid",
+                        'services.twilio.pending_lead_reminder_template_sid',
                     ),
-                "template_variables" => [
-                    "1" => $this->lead->name,
-                    "2" => $this->lead->email,
-                    "3" => $this->lead->phone,
-                    "4" => $this->lead->status->getLabel(),
-                    "5" => $this->lead->created_at->format("M d, Y"),
+                'template_variables' => [
+                    '1' => $this->lead->name,
+                    '2' => $this->lead->email,
+                    '3' => $this->lead->phone,
+                    '4' => $this->lead->status->getLabel(),
+                    '5' => $this->lead->created_at->format('M d, Y'),
                 ],
             ];
         } catch (Exception $e) {
-            Log::error("Failed to prepare WhatsApp message", [
-                "error" => $e->getMessage(),
+            Log::error('Failed to prepare WhatsApp message', [
+                'error' => $e->getMessage(),
             ]);
 
             return null;
@@ -156,13 +155,13 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
     public function toArray(object $notifiable): array
     {
         return [
-            "lead_id" => $this->lead->id,
-            "lead_name" => $this->lead->name,
-            "lead_email" => $this->lead->email,
-            "lead_phone" => $this->lead->phone,
-            "lead_status" => $this->lead->status->value,
-            "created_at" => $this->lead->created_at->toDateTimeString(),
-            "message" => "Pending lead reminder for " . $this->lead->name,
+            'lead_id' => $this->lead->id,
+            'lead_name' => $this->lead->name,
+            'lead_email' => $this->lead->email,
+            'lead_phone' => $this->lead->phone,
+            'lead_status' => $this->lead->status->value,
+            'created_at' => $this->lead->created_at->toDateTimeString(),
+            'message' => 'Pending lead reminder for ' . $this->lead->name,
         ];
     }
 
