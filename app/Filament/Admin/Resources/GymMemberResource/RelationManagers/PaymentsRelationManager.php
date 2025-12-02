@@ -55,7 +55,8 @@ class PaymentsRelationManager extends RelationManager
                             ->required()
                             ->prefix(fn ($get) => $this->getCurrencySymbol($get))
                             ->minValue(0)
-                            ->step(0.01),
+                            ->step(0.01)
+                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                         Forms\Components\Select::make('currency')
                             ->options(Currency::toSelectOptions())
@@ -87,7 +88,8 @@ class PaymentsRelationManager extends RelationManager
 
                         Forms\Components\Textarea::make('notes')
                             ->maxLength(65535)
-                            ->placeholder('e.g., Paid via UPI ID: user@upi'),
+                            ->placeholder('e.g., Paid via UPI ID: user@upi')
+                            ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                         Forms\Components\DatePicker::make('payment_date')
                             ->required()
