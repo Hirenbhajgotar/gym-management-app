@@ -9,6 +9,7 @@ use App\Models\Trainer;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -16,6 +17,8 @@ use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use libphonenumber\PhoneNumberType;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class TrainerResource extends Resource
 {
@@ -71,48 +74,45 @@ class TrainerResource extends Resource
             Forms\Components\Section::make('Basic Information')
                 ->description('Enter trainer\'s personal details')
                 ->schema([
-                    Forms\Components\TextInput::make('name')
-                        ->required()
-                        ->maxLength(255)
-                        ->placeholder('Enter trainer full name')
-                        ->columnSpan(2),
+                    Forms\Components\FileUpload::make('profile_photo')
+                        ->image()
+                        ->avatar()
+                        ->imageEditor()
+                        ->circleCropper()
+                        ->directory('employee-photos')
+                        ->maxSize(2048)
+                        ->columnSpanFull(),
+
+                    Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Full Name')
+                                ->required()
+                                ->maxLength(255)
+                                ->placeholder('Enter full name')
+                                ->prefixIcon('heroicon-o-user')
+                                ->autocomplete('given-name'),
+                        ]),
 
                     Forms\Components\TextInput::make('email')
                         ->email()
                         ->required()
                         ->unique(Trainer::class, 'email', ignoreRecord: true)
                         ->placeholder('trainer@example.com')
-                        ->suffixIcon('heroicon-m-envelope')
+                        ->prefixIcon('heroicon-m-envelope')
                         ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('phone')
-                        ->tel()
-                        ->maxLength(20)
-                        ->placeholder('+91 9876543210')
-                        ->suffixIcon('heroicon-m-phone')
-                        ->columnSpan(1),
+                    PhoneInput::make('phone')
+                        ->defaultCountry('IN')
+                        ->required()
+                        ->validateFor(
+                            country: ['IN', 'PK', 'BD', 'US'],
+                            type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                            lenient: true,
+                        ),
                 ])
                 ->columns(2)
                 ->collapsible(),
-
-            // Gym Assignment Section
-            // Forms\Components\Section::make('Gym Assignment')
-            //     ->description('Select the gym where this trainer will work')
-            //     ->schema([
-            //         Forms\Components\Select::make('gym_id')
-            //             ->label('Gym')
-            //             ->relationship('gym', 'name')
-            //             ->required()
-            //             ->searchable()
-            //             ->preload()
-            //             ->options(function () {
-            //                 return Gym::whereIn('id', Auth::user()->gyms()->get()->pluck('id'))->pluck('name', 'id');
-            //             })
-            //             ->placeholder('Select a gym')
-            //             ->columnSpan(2),
-            //     ])
-            //     ->columns(2)
-            //     ->collapsible(),
 
             // Professional Information Section
             Forms\Components\Section::make('Professional Information')
@@ -185,6 +185,7 @@ class TrainerResource extends Resource
                         ))
                         ->required()
                         ->default(Currency::INR->value)
+                        ->reactive()
                         ->columnSpan(2),
 
                     Forms\Components\TextInput::make('basic_salary')
@@ -192,7 +193,6 @@ class TrainerResource extends Resource
                         ->numeric()
                         ->minValue(0)
                         ->required()
-                        ->default(0.00)
                         ->step(0.01)
                         ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
                         ->placeholder('0.00')
@@ -203,7 +203,6 @@ class TrainerResource extends Resource
                         ->numeric()
                         ->minValue(0)
                         ->required()
-                        ->default(0.00)
                         ->step(0.01)
                         ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
                         ->placeholder('0.00')
@@ -218,8 +217,11 @@ class TrainerResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('gym.name')
-                    ->sortable(),
+                Tables\Columns\ImageColumn::make('profile_photo')
+                    ->circular()
+                    ->extraImgAttributes(['loading' => 'lazy'])
+                    ->label(''),
+
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
@@ -244,17 +246,7 @@ class TrainerResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_available'),
-                Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name', function ($query) {
-                        if (filament()->getId() === 'admin') {
-                            return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
-                        } elseif (filament()->getId() === 'staff') {
-                            return $query->whereIn('id', Auth::guard('staff')->user()?->gyms()->get()->pluck('id'));
-                        }
 
-                        return $query->whereIn('id', Auth::guard('web')->user()?->gyms()->get()->pluck('id'));
-                    })
-                    ->label('Gym'),
                 Tables\Filters\Filter::make('basic_salary')
                     ->form([
                         Forms\Components\TextInput::make('basic_salary_min')

@@ -102,6 +102,57 @@ Different user roles with specific permissions:
 - Data backup and recovery
 - System settings management
 
+## Deployment
+
+### Production Setup
+
+1. **Environment Configuration**
+   - Copy `.env.example` to `.env`
+   - Set `APP_ENV=production`
+   - Configure database settings for production
+   - Set up Redis for queue and cache if using
+   - Configure mail settings for email notifications
+
+2. **Razorpay Configuration**
+   - Set `RAZORPAY_KEY_ID` with your live Razorpay key ID
+   - Set `RAZORPAY_KEY_SECRET` with your live Razorpay key secret
+   - Set `RAZORPAY_WEBHOOK_SECRET` with your webhook secret
+   - Configure webhook URL in Razorpay dashboard: `https://yourdomain.com/payments/webhook`
+
+3. **Queue Configuration**
+   - Set `QUEUE_CONNECTION` to `database` or `redis`
+   - Run queue worker: `php artisan queue:work`
+   - Schedule the renewal job to run daily at 2 AM
+
+4. **Scheduled Jobs**
+   The application includes scheduled jobs that should run periodically:
+   - Subscription renewal job (runs daily at 2 AM)
+   - Error report cleanup (runs daily at 1 AM)
+   - Subscription expiry alerts (runs daily at 9 AM)
+
+   Add this to your server's crontab:
+   ```
+   * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+   ```
+
+5. **SSL Certificate**
+   - Ensure SSL certificate is installed for HTTPS
+   - Update `APP_URL` to use `https://`
+
+6. **File Permissions**
+   - Set proper permissions for storage and bootstrap/cache directories
+   - Ensure web server can write to these directories
+
+7. **Database Migration**
+   - Run `php artisan migrate --force` in production
+   - Run `php artisan db:seed` if needed
+
+8. **Cache and Optimization**
+   - Run `php artisan config:cache`
+   - Run `php artisan route:cache`
+   - Run `php artisan view:cache`
+   - Run `composer install --optimize-autoloader --no-dev`
+
 ## Technical Stack
 
 - **Framework**: Laravel 12

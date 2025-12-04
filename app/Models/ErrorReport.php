@@ -9,6 +9,53 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string|null $error_type
+ * @property string|null $error_message
+ * @property string|null $error_hash
+ * @property string|null $stack_trace
+ * @property array<array-key, mixed>|null $context
+ * @property ErrorCategory|null $category
+ * @property ErrorStatus|null $status
+ * @property string|null $user_description
+ * @property ErrorPriority|null $priority
+ * @property int $duplicate_count
+ * @property \Illuminate\Support\Carbon|null $last_occurrence
+ * @property \Illuminate\Support\Carbon $occurred_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport autoReported()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport frequent()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport highPriority()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport pending()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport recent()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport resolved()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport userReported()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereCategory($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereContext($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereDuplicateCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorHash($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereLastOccurrence($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereOccurredAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport wherePriority($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereStackTrace($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserId($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperErrorReport
+ */
 class ErrorReport extends Model
 {
     use HasFactory;

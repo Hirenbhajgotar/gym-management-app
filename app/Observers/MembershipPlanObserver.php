@@ -13,7 +13,7 @@ class MembershipPlanObserver
      */
     public function created(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan->gym?->owner ?? auth()->user();
+        $recipient = $membershipPlan->gym->owner() ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
         if (! $recipient) {
@@ -22,7 +22,9 @@ class MembershipPlanObserver
 
         Notification::make()
             ->title('New Subscription Plan Added')
-            ->body("Subscription Plan '{$membershipPlan->name}' has been added successfully.")
+            ->body(
+                "Subscription Plan '{$membershipPlan->name}' has been added successfully.",
+            )
             ->success()
             ->sendToDatabase($recipient);
 
@@ -42,7 +44,7 @@ class MembershipPlanObserver
      */
     public function deleted(MembershipPlan $membershipPlan): void
     {
-        $recipient = $membershipPlan->gym?->owner ?? auth()->user();
+        $recipient = $membershipPlan->gym->owner() ?? auth()->user();
 
         // Skip sending notification if no recipient is available (e.g., during seeding)
         if (! $recipient) {
@@ -50,14 +52,26 @@ class MembershipPlanObserver
         }
 
         $planName = $membershipPlan->name;
-        Notification::make()
-            ->title("{$planName} removed")
-            ->body("Subscription Plan '{$planName}' has been removed successfully.")
-            ->danger()
-            ->sendToDatabase($recipient)
-            ->send();
 
-        event(new DatabaseNotificationsSent($recipient));
+        if ($recipient->is(auth()->user())) {
+            Notification::make()
+                ->title("{$planName} removed")
+                ->body(
+                    "Subscription Plan '{$planName}' has been removed successfully.",
+                )
+                ->success()
+                ->send();
+        } elseif ($recipient->isNot(auth()->user())) {
+            Notification::make()
+                ->title("{$planName} removed")
+                ->body(
+                    "Subscription Plan '{$planName}' has been removed successfully.",
+                )
+                ->danger()
+                ->sendToDatabase($recipient)
+                ->send();
+            event(new DatabaseNotificationsSent($recipient));
+        }
     }
 
     /**

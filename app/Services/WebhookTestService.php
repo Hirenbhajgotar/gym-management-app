@@ -2,15 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class WebhookTestService
@@ -30,7 +27,7 @@ class WebhookTestService
             // Get the appropriate processor for the platform
             $processor = $this->getPlatformProcessor($platform);
 
-            if (!$processor) {
+            if (! $processor) {
                 return [
                     'success' => false,
                     'message' => "No processor available for platform: {$platform}",
@@ -92,7 +89,7 @@ class WebhookTestService
             // Get the appropriate processor for the platform
             $processor = $this->getPlatformProcessor($platform);
 
-            if (!$processor) {
+            if (! $processor) {
                 return [
                     'success' => false,
                     'message' => "No processor available for platform: {$platform}",
@@ -101,7 +98,7 @@ class WebhookTestService
 
             // Add gym_id to sample data
             $gym = Gym::where('tenant_id', $config->tenant_id)->first();
-            if (!$gym) {
+            if (! $gym) {
                 return [
                     'success' => false,
                     'message' => 'No gym found for tenant',
@@ -157,11 +154,11 @@ class WebhookTestService
     private function getPlatformProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => new FacebookLeadProcessor(),
-            'instagram' => new InstagramLeadProcessor(),
-            'whatsapp' => new WhatsAppLeadProcessor(),
-            'indiamart' => new IndiaMartLeadProcessor(),
-            'justdial' => new JustDialLeadProcessor(),
+            'facebook' => new FacebookLeadProcessor,
+            'instagram' => new InstagramLeadProcessor,
+            'whatsapp' => new WhatsAppLeadProcessor,
+            'indiamart' => new IndiaMartLeadProcessor,
+            'justdial' => new JustDialLeadProcessor,
             default => null,
         };
     }
@@ -173,7 +170,7 @@ class WebhookTestService
     {
         $gym = Gym::where('tenant_id', $config->tenant_id)->first();
 
-        if (!$gym) {
+        if (! $gym) {
             throw new \Exception('No gym found for tenant');
         }
 

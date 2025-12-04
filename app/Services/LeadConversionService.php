@@ -6,17 +6,19 @@ use App\Enums\LeadStatus;
 use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\LeadConversion;
-use Filament\Facades\Filament;
+use App\Traits\HasTenantAccess;
 use Illuminate\Support\Facades\DB;
 
 class LeadConversionService
 {
+    use HasTenantAccess;
+
     public function convert(Lead $lead, array $extraData = []): GymMember
     {
         return DB::transaction(function () use ($lead, $extraData) {
             // 1. Create a GymMember from the Lead
             $gymMember = GymMember::create([
-                'gym_id' => Filament::getTenant()?->id ?? null,
+                'gym_id' => $this->getGymId(),
                 'name' => $lead->name,
                 'email' => $lead->email,
                 'phone' => $lead->phone,

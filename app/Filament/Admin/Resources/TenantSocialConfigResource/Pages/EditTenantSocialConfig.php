@@ -18,7 +18,7 @@ class EditTenantSocialConfig extends EditRecord
                 ->label('Test Webhook')
                 ->icon('heroicon-o-bolt')
                 ->color('warning')
-                ->action(fn() => $this->testWebhook())
+                ->action(fn () => $this->testWebhook())
                 ->requiresConfirmation()
                 ->modalHeading('Test Webhook')
                 ->modalDescription('This will send a test webhook to verify the configuration.')
@@ -32,6 +32,9 @@ class EditTenantSocialConfig extends EditRecord
     private function testWebhook(): void
     {
         try {
+            /**
+             * @var \App\Models\TenantSocialConfig $config
+             */
             $config = $this->getRecord();
 
             // Create test lead data

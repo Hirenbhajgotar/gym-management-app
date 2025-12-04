@@ -1,0 +1,61 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "permission": {
+        "bash": {
+            "*": "ask",
+            "pwd": "allow",
+            "ls": "allow",
+            "git status": "allow",
+            "git diff": "allow",
+            "git log": "allow",
+            "cat": "allow",
+            "grep": "allow",
+            "find": "allow",
+            "tree": "allow"
+        },
+        "edit": "allow",
+    },
+    "mcp": {
+        "laravel-boost": {
+            "type": "local",
+            "command": [
+                "docker-compose",
+                "exec",
+                "-T", // Optional: Disables TTY allocation if needed for background/server processes
+                "app", // Replace with your PHP service name, e.g., "php-fpm" or "laravel"
+                "php",
+                "artisan",
+                "boost:mcp"
+            ],
+            "enabled": true
+        },
+        "chrome-devtools": {
+            "type": "local",
+            "command": [
+                "npx",
+                "chrome-devtools-mcp@latest"
+            ],
+            "enabled": true
+        },
+        "github": {
+            "type": "local",
+            "command": [
+                "npx",
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "environment": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+            },
+            "enabled": true
+        },
+        "context7": {
+            "type": "remote",
+            "url": "https://mcp.context7.com/mcp",
+            "headers": {
+                "CONTEXT7_API_KEY": "ctx7sk-44c99d93-c0a5-4335-80c7-6d347e132057"
+            },
+            "enabled": true
+        }
+    }
+}

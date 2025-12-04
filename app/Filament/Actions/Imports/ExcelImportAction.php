@@ -3,6 +3,7 @@
 namespace App\Filament\Actions\Imports;
 
 use App\Models\User;
+use App\Traits\HasTenantAccess;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Actions\Action as ActionsAction;
@@ -27,6 +28,8 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class ExcelImportAction extends Action
 {
+    use HasTenantAccess;
+
     /**
      * The importer class to be used for processing the Excel file.
      */
@@ -103,7 +106,8 @@ class ExcelImportAction extends Action
             }
 
             // Instantiate the importer and queue the import.
-            $importer = new $importerClass($modelClass);
+            $tenantId = $this->getGymId();
+            $importer = new $importerClass($tenantId);
             Excel::import($importer, $filePath);
         });
     }

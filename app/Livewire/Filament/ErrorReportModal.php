@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * @property Form $form
+ */
 class ErrorReportModal extends Component implements HasForms
 {
     use InteractsWithForms;

@@ -24,4 +24,14 @@ enum Currency: string implements HasLabel
             self::INR => '₹',
         };
     }
+
+    /**
+     * Get options array for Filament select components
+     */
+    public static function toSelectOptions(): array
+    {
+        return collect(self::cases())->mapWithKeys(
+            fn (self $case) => [$case->value => $case->getLabel()]
+        )->toArray();
+    }
 }

@@ -8,10 +8,16 @@ use Razorpay\Api\Api;
 
 class RazorpayService
 {
+    /**
+     * @var Api&object{order: \Razorpay\Api\Order, payment: \Razorpay\Api\Payment, utility: \Razorpay\Api\Utility}
+     */
     protected Api $api;
 
     public function __construct()
     {
+        /**
+         * @var Api $api
+         */
         $this->api = new Api(
             config('services.razorpay.key_id'),
             config('services.razorpay.key_secret')
@@ -38,23 +44,41 @@ class RazorpayService
                 $orderData['notes'] = $data['notes'];
             }
 
+            /**
+             * @var \Razorpay\Api\Order&object{id: string, amount: int, currency: string} $razorpayOrder
+             */
             $razorpayOrder = $this->api->order->create($orderData);
 
             // Create payment record
-            $payment = Payment::create([
-                'gym_id' => $data['gym_id'],
+            $paymentData = [
                 'razorpay_order_id' => $razorpayOrder->id,
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'INR',
                 'status' => 'pending',
                 'payment_type' => $data['payment_type'] ?? 'whatsapp_package',
-                'metadata' => [
+                'metadata' => $data['notes'] ?? [],
+            ];
+
+            // Handle different payment types
+            if ($data['payment_type'] === 'subscription_renewal' || $data['payment_type'] === 'subscription_upgrade' || $data['payment_type'] === 'subscription_new') {
+                $paymentData['user_id'] = $data['user_id'];
+                $paymentData['metadata'] = array_merge($paymentData['metadata'], [
+                    'subscription_id' => $data['subscription_id'] ?? null,
+                    'plan_id' => $data['plan_id'] ?? null,
+                    'description' => $data['description'] ?? null,
+                ]);
+            } else {
+                // WhatsApp package payments
+                $paymentData['gym_id'] = $data['gym_id'];
+                $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'package_id' => $data['package_id'] ?? null,
                     'description' => $data['description'] ?? null,
                     'package_name' => $data['notes']['package_name'] ?? null,
                     'message_count' => $data['notes']['message_count'] ?? null,
-                ],
-            ]);
+                ]);
+            }
+
+            $payment = Payment::create($paymentData);
 
             Log::info('Razorpay order created', [
                 'order_id' => $razorpayOrder->id,
@@ -134,8 +158,9 @@ class RazorpayService
         $event = $payload['event'] ?? null;
         $paymentEntity = $payload['payment']['entity'] ?? null;
 
-        if (!$event || !$paymentEntity) {
+        if (! $event || ! $paymentEntity) {
             Log::warning('Invalid webhook payload', ['payload' => $payload]);
+
             return;
         }
 
@@ -152,11 +177,12 @@ class RazorpayService
 
         $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
 
-        if (!$payment) {
+        if (! $payment) {
             Log::warning('Payment not found for webhook', [
                 'order_id' => $razorpayOrderId,
                 'payment_id' => $razorpayPaymentId,
             ]);
+
             return;
         }
 
@@ -188,6 +214,7 @@ class RazorpayService
     public function getPayment(string $paymentId): ?array
     {
         try {
+            /** @var \Razorpay\Api\Payment&object{id: string, amount: int, currency: string, status: string, method: string, order_id: string, captured: bool} $razorpayPayment */
             $razorpayPayment = $this->api->payment->fetch($paymentId);
 
             return [
@@ -220,6 +247,7 @@ class RazorpayService
                 $refundData['amount'] = (int) ($amount * 100);
             }
 
+            /** @var \Razorpay\Api\Refund&object{id: string, payment_id: string, amount: int, status: string} $refund */
             $refund = $this->api->payment->fetch($paymentId)->refund($refundData);
 
             return [

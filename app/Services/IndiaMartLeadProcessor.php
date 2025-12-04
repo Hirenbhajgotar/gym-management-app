@@ -2,14 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
 {
@@ -31,13 +27,15 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
 
             if (empty($leadData)) {
                 Log::warning('No lead data extracted from IndiaMart webhook', ['data' => $data]);
+
                 return null;
             }
 
             // Get tenant configuration
             $config = $this->getTenantConfig($data['glusr_crm_key'] ?? $data['user_id'] ?? '');
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for IndiaMart account', ['data' => $data]);
+
                 return null;
             }
 
@@ -63,6 +61,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
                 'data' => $data,
             ]);
             $this->logWebhook($data, 'error', $e->getMessage());
+
             return null;
         }
     }
@@ -86,18 +85,20 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             }
 
             $config = $this->getTenantConfig($userId);
-            if (!$config) {
+            if (! $config) {
                 return false;
             }
 
             // Verify API key matches
             $expectedApiKey = $config->api_key ?? config('services.indiamart.api_key');
+
             return $apiKey === $expectedApiKey;
         } catch (\Exception $e) {
             Log::error('IndiaMart webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
             ]);
+
             return false;
         }
     }
@@ -129,12 +130,14 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             }
 
             Log::warning('Unknown IndiaMart webhook format', ['data' => $data]);
+
             return [];
         } catch (\Exception $e) {
             Log::error('Failed to extract lead data from IndiaMart', [
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             return [];
         }
     }
@@ -161,59 +164,59 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
         $notes = [];
 
         // Product information
-        if (!empty($data['PRODUCT_NAME'])) {
-            $notes[] = "Product: " . $this->cleanString($data['PRODUCT_NAME']);
+        if (! empty($data['PRODUCT_NAME'])) {
+            $notes[] = 'Product: ' . $this->cleanString($data['PRODUCT_NAME']);
         }
 
-        if (!empty($data['PRODUCT_URL'])) {
-            $notes[] = "Product URL: " . $this->cleanString($data['PRODUCT_URL']);
+        if (! empty($data['PRODUCT_URL'])) {
+            $notes[] = 'Product URL: ' . $this->cleanString($data['PRODUCT_URL']);
         }
 
-        if (!empty($data['PRODUCT_IMAGE'])) {
-            $notes[] = "Product Image: " . $this->cleanString($data['PRODUCT_IMAGE']);
+        if (! empty($data['PRODUCT_IMAGE'])) {
+            $notes[] = 'Product Image: ' . $this->cleanString($data['PRODUCT_IMAGE']);
         }
 
         // Inquiry details
-        if (!empty($data['QUERY_MESSAGE'])) {
-            $notes[] = "Inquiry: " . $this->cleanString($data['QUERY_MESSAGE']);
+        if (! empty($data['QUERY_MESSAGE'])) {
+            $notes[] = 'Inquiry: ' . $this->cleanString($data['QUERY_MESSAGE']);
         }
 
-        if (!empty($data['QUERY_TYPE'])) {
-            $notes[] = "Query Type: " . $this->cleanString($data['QUERY_TYPE']);
+        if (! empty($data['QUERY_TYPE'])) {
+            $notes[] = 'Query Type: ' . $this->cleanString($data['QUERY_TYPE']);
         }
 
-        if (!empty($data['QUERY_MCAT_NAME'])) {
-            $notes[] = "Category: " . $this->cleanString($data['QUERY_MCAT_NAME']);
+        if (! empty($data['QUERY_MCAT_NAME'])) {
+            $notes[] = 'Category: ' . $this->cleanString($data['QUERY_MCAT_NAME']);
         }
 
         // Location information
-        if (!empty($data['SENDER_COMPANY'])) {
-            $notes[] = "Company: " . $this->cleanString($data['SENDER_COMPANY']);
+        if (! empty($data['SENDER_COMPANY'])) {
+            $notes[] = 'Company: ' . $this->cleanString($data['SENDER_COMPANY']);
         }
 
-        if (!empty($data['SENDER_ADDRESS'])) {
-            $notes[] = "Address: " . $this->cleanString($data['SENDER_ADDRESS']);
+        if (! empty($data['SENDER_ADDRESS'])) {
+            $notes[] = 'Address: ' . $this->cleanString($data['SENDER_ADDRESS']);
         }
 
-        if (!empty($data['SENDER_CITY'])) {
-            $notes[] = "City: " . $this->cleanString($data['SENDER_CITY']);
+        if (! empty($data['SENDER_CITY'])) {
+            $notes[] = 'City: ' . $this->cleanString($data['SENDER_CITY']);
         }
 
-        if (!empty($data['SENDER_STATE'])) {
-            $notes[] = "State: " . $this->cleanString($data['SENDER_STATE']);
+        if (! empty($data['SENDER_STATE'])) {
+            $notes[] = 'State: ' . $this->cleanString($data['SENDER_STATE']);
         }
 
-        if (!empty($data['SENDER_COUNTRY_ISO'])) {
-            $notes[] = "Country: " . $this->cleanString($data['SENDER_COUNTRY_ISO']);
+        if (! empty($data['SENDER_COUNTRY_ISO'])) {
+            $notes[] = 'Country: ' . $this->cleanString($data['SENDER_COUNTRY_ISO']);
         }
 
         // Quantity and requirements
-        if (!empty($data['QUERY_QUANTITY'])) {
-            $notes[] = "Quantity: " . $this->cleanString($data['QUERY_QUANTITY']);
+        if (! empty($data['QUERY_QUANTITY'])) {
+            $notes[] = 'Quantity: ' . $this->cleanString($data['QUERY_QUANTITY']);
         }
 
-        if (!empty($data['QUERY_UNIT'])) {
-            $notes[] = "Unit: " . $this->cleanString($data['QUERY_UNIT']);
+        if (! empty($data['QUERY_UNIT'])) {
+            $notes[] = 'Unit: ' . $this->cleanString($data['QUERY_UNIT']);
         }
 
         $leadData['notes'] = implode("\n", $notes);
@@ -258,14 +261,14 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             $leadData['email'] = $this->cleanString($inquiry['email'] ?? '');
 
             $notes = [];
-            if (!empty($inquiry['message'])) {
-                $notes[] = "Message: " . $this->cleanString($inquiry['message']);
+            if (! empty($inquiry['message'])) {
+                $notes[] = 'Message: ' . $this->cleanString($inquiry['message']);
             }
-            if (!empty($inquiry['product_name'])) {
-                $notes[] = "Product: " . $this->cleanString($inquiry['product_name']);
+            if (! empty($inquiry['product_name'])) {
+                $notes[] = 'Product: ' . $this->cleanString($inquiry['product_name']);
             }
-            if (!empty($inquiry['quantity'])) {
-                $notes[] = "Quantity: " . $this->cleanString($inquiry['quantity']);
+            if (! empty($inquiry['quantity'])) {
+                $notes[] = 'Quantity: ' . $this->cleanString($inquiry['quantity']);
             }
 
             $leadData['notes'] = implode("\n", $notes);
@@ -288,6 +291,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
         // Process the first valid lead
         if (isset($data['leads']) && is_array($data['leads']) && count($data['leads']) > 0) {
             $firstLead = $data['leads'][0];
+
             return $this->extractStandardLeadData($firstLead);
         }
 
@@ -324,15 +328,15 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
     private function sendAcknowledgment(Lead $lead, TenantSocialConfig $config): void
     {
         try {
-            if (!$config->auto_reply_enabled) {
+            if (! $config->auto_reply_enabled) {
                 return;
             }
 
             $apiKey = $config->api_key ?? config('services.indiamart.api_key');
-            $userId = $config->user_id;
 
-            if (!$apiKey || !$userId) {
+            if (! $apiKey) {
                 Log::warning('Missing IndiaMart API credentials for acknowledgment');
+
                 return;
             }
 

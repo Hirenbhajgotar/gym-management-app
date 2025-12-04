@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\SubscriptionStatus;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
@@ -20,6 +21,58 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property bool|null $is_active
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string $password
+ * @property string|null $remember_token
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Address|null $address
+ * @property-read \App\Models\Gym|null $gym
+ * @property-read \App\Models\EmployeeDetail|null $employeeDetails
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Gym> $gyms
+ * @property-read int|null $gyms_count
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Permission> $permissions
+ * @property-read int|null $permissions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read int|null $roles_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Subscription> $subscriptions
+ * @property-read int|null $subscriptions_count
+ *
+ * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User permission($permissions, $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User role($roles, $guard = null, $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerifiedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutPermission($permissions)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutRole($roles, $guard = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
+ *
+ * @mixin \Eloquent
+ * @mixin IdeHelperUser
+ */
 class User extends Authenticatable implements FilamentUser, HasName, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -37,6 +90,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         'phone',
         'is_active',
         'email_verified_at',
+        'profile_photo',
     ];
 
     /**
@@ -44,10 +98,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
      *
      * @var list<string>
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     /**
      * Get the attributes that should be cast.
@@ -79,14 +130,15 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
             ->implode('');
     }
 
-    public function canAccessPanel(\Filament\Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'super-admin') {
             return $this->hasRole('super_admin');
         }
 
         if ($panel->getId() === 'admin' || $panel->getId() === 'staff') {
-            // Then check for tenant-specific access
+            // Check for tenant-specific access AND active subscription/trial
+            // return $this->hasActiveTenant() && $this->canAccessFeatures(); // temporary bypass
             return $this->hasActiveTenant();
         }
 
@@ -117,7 +169,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->gyms->contains($tenant);
     }
 
-    public function gyms()
+    public function gyms(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Gym::class, 'gym_user')
             ->withPivot(['role', 'active'])
@@ -134,59 +186,79 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
         return $this->morphOne(Address::class, 'addressable');
     }
 
-    public function interactions(): HasMany
+    public function subscriptions(): HasMany
     {
-        return $this->hasMany(Interaction::class);
+        return $this->hasMany(Subscription::class);
     }
 
-    public function tasks(): HasMany
+    public function activeSubscription(): HasOne
     {
-        return $this->hasMany(Task::class, 'assigned_to_user_id');
+        return $this->hasOne(Subscription::class)->active()->whereDate('current_period_end', '>=', now());
     }
 
-    public function subscription()
+    public function subscription(): ?Subscription
     {
-        return $this->hasOne(Subscription::class);
+        return $this->activeSubscription()->first();
     }
 
     // Subscription-based access control methods
     public function hasActiveSubscription(): bool
     {
-        return $this->subscription && $this->subscription->isActive();
+        return $this->activeSubscription()->exists();
     }
 
     public function canAccessFeatures(): bool
     {
-        return $this->subscription && $this->subscription->canAccessFeatures();
+        return $this->subscription()?->canAccessFeatures() ?? false;
     }
 
-    public function getSubscriptionPlan()
+    public function getSubscriptionPlan(): mixed
     {
-        return $this->subscription?->plan;
+        return $this->subscription()?->plan;
     }
 
     public function getFeatureLimit(string $featureName): int|string|null
     {
-        return $this->subscription?->getFeatureLimit($featureName);
+        return $this->subscription()?->getFeatureLimit($featureName);
     }
 
     public function canUseFeature(string $featureName, int $currentUsage = 0): bool
     {
-        return $this->subscription && $this->subscription->canUseFeature($featureName, $currentUsage);
+        return $this->subscription()?->canUseFeature($featureName, $currentUsage) ?? false;
+    }
+
+    public function hasUsedTrial(): bool
+    {
+        return Subscription::where('user_id', $this->id)
+            ->where('status', '!=', SubscriptionStatus::TRIAL)
+            ->whereNotNull('trial_ends_at')
+            ->where('trial_ends_at', '<=', now())
+            ->exists();
     }
 
     public function getMaxGyms(): int
     {
         $limit = $this->getFeatureLimit('max_gyms');
-        return $limit === null || $limit === 'unlimited' ? PHP_INT_MAX : (int) $limit;
+
+        return match ($limit) {
+            null, 'unlimited' => PHP_INT_MAX,
+            default => (int) $limit,
+        };
     }
 
     public function canCreateMoreGyms(): bool
     {
-        if (!$this->canAccessFeatures()) {
-            return false;
-        }
+        return $this->canAccessFeatures() && $this->gyms()->count() < $this->getMaxGyms();
+    }
 
-        return $this->gyms()->count() < $this->getMaxGyms();
+    /**
+     * Get all subscription history for this user
+     */
+    public function subscriptionHistory(): Collection
+    {
+        return $this->subscriptions()
+            ->with(['plan', 'features'])
+            ->latest()
+            ->get();
     }
 }

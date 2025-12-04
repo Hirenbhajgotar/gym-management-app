@@ -48,7 +48,10 @@ class GymMemberResource extends Resource
     public static function canAccess(array $parameters = []): bool
     {
         // Set the permissions team ID based on the current Filament tenant
-        $tenantId = Filament::getTenant()->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $tenantId = $tenant?->id;
+
         setPermissionsTeamId($tenantId);
 
         $user = auth()->user();
@@ -99,32 +102,34 @@ class GymMemberResource extends Resource
                     ->circular()
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
+
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Email copied!')
                     ->icon('heroicon-o-envelope')
                     ->color('gray'),
+
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
-                Tables\Columns\TextColumn::make('gym.name')
-                    ->label('Gym')
+
+                Tables\Columns\TextColumn::make('membershipPlan.name')
+                    ->label('Plan')
                     ->badge()
-                    ->color('primary'),
-                // Tables\Columns\TextColumn::make('membershipPlan.name')
-                //     ->label('Plan')
-                //     ->badge()
-                //     ->color('success'),
+                    ->color('success'),
+
                 Tables\Columns\TextColumn::make('membership_start')
                     ->date()
                     ->badge()
                     ->icon('heroicon-o-calendar')
                     ->color('info'),
+
                 Tables\Columns\TextColumn::make('membership_end')
                     ->formatStateUsing(function ($state) {
                         if (! $state) {
@@ -142,7 +147,7 @@ class GymMemberResource extends Resource
                         // Check if membership ends within 2 months (on or before July 31, 2025)
                         $diffInMonths = $now->diffInMonths($membershipEnd, false);
                         if ($diffInMonths <= 2 && $diffInMonths >= 0) {
-                            $diffInDays = round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
+                            $diffInDays = (int) round($now->diffInDays($membershipEnd, false)); // Round to nearest whole number
 
                             return "Expire in {$diffInDays} " . Str::plural('day', $diffInDays);
                         }
@@ -200,6 +205,7 @@ class GymMemberResource extends Resource
                         // More than 2 month
                         return 'info';
                     }),
+
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment Status')
                     ->badge(),
@@ -212,20 +218,6 @@ class GymMemberResource extends Resource
                 //     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('gym_id')
-                    ->relationship('gym', 'name', function ($query) {
-                        if (filament()->getId() === 'admin') {
-                            if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
-                            }
-                            if (auth()->user()->hasRole('super_admin')) {
-                                return $query;
-                            }
-                        } elseif (filament()->getId() === 'staff') {
-                            return $query->whereIn('id', auth()->user()?->gyms()->get()->pluck('id'));
-                        }
-                    })
-                    ->label('Gym'),
                 Tables\Filters\SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name', function ($query) {
                         if (filament()->getId() === 'admin') {
@@ -240,24 +232,31 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->label('Plan'),
+
                 SelectFilter::make('payment_status')
                     ->options([
                         'paid' => 'Paid',
                         'unpaid' => 'Unpaid',
+                        'expire' => 'Expired',
                     ])
                     ->query(function ($query, array $state) {
-                        if (! empty($state['value'])) {
-                            $value = $state['value'];
-                            if ($value === 'paid') {
-                                $query->whereHas('payments', function ($q) {
-                                    $q->where('status', 'completed');
-                                });
-                            } elseif ($value === 'unpaid') {
-                                $query->whereDoesntHave('payments', function ($q) {
-                                    $q->where('status', 'completed');
-                                });
-                            }
+                        $value = $state['value'];
+                        if (! $value) {
+                            return;
                         }
+
+                        $query->where(function ($query) use ($value) {
+                            if ($value === 'paid') {
+                                $query->where('payment_status', \App\Enums\PaymentStatus::COMPLETED);
+                            } elseif ($value === 'unpaid') {
+                                $query->whereIn('payment_status', [
+                                    \App\Enums\PaymentStatus::PENDING,
+                                    \App\Enums\PaymentStatus::FAILED,
+                                ]);
+                            } elseif ($value === 'expire') {
+                                $query->where('payment_status', \App\Enums\PaymentStatus::EXPIRED);
+                            }
+                        });
                     })
                     ->label('Payment Status'),
             ])
@@ -576,27 +575,13 @@ class GymMemberResource extends Resource
                 ->icon('heroicon-o-ticket')
                 ->description('Configure membership settings')
                 ->schema([
-                    Forms\Components\Select::make('gym_id')
-                        ->relationship('gym', 'name', function ($query) {
-                            return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                        })
-                        ->required()
-                        ->placeholder('Select a gym')
-                        ->live()
-                        ->rules([
-                            'required_if:visible,true',
-                            fn ($get) => function ($attribute, $value, $fail) {
-                                if (filament()->getId() === 'admin') {
-                                    if (auth()->user()->hasRole('gym_owner') && ! $value) {
-                                        $fail('You must create a gym before adding members.');
-                                    }
-                                } elseif (filament()->getId() === 'staff') {
-                                    if (! $value) {
-                                        $fail('You must select a gym to assign this member.');
-                                    }
-                                }
-                            },
-                        ]),
+                    Forms\Components\Hidden::make('gym_id')
+                        ->default(function () {
+                            /** @var \App\Models\Gym|null $tenant */
+                            $tenant = Filament::getTenant();
+
+                            return $tenant?->id;
+                        }),
 
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
@@ -605,7 +590,9 @@ class GymMemberResource extends Resource
                             // if (!$gymId) {
                             //     return [];
                             // }
-                            $gymId = Filament::getTenant()->id;
+                            /** @var \App\Models\Gym|null $tenant */
+                            $tenant = Filament::getTenant();
+                            $gymId = $tenant?->id;
 
                             return Trainer::where('gym_id', $gymId)
                                 ->available()

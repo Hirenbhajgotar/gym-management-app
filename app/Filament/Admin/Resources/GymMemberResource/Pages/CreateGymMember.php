@@ -6,13 +6,13 @@ use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Mail\WelcomeMemberMail;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
-use App\Notifications\MemberActionNotification;
+use App\Traits\HasTenantAccess;
 use Carbon\Carbon;
-use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Notification;
 
 class CreateGymMember extends CreateRecord
 {
-    use HasWizard;
+    use HasTenantAccess, HasWizard;
 
     protected static string $resource = GymMemberResource::class;
 
@@ -47,38 +47,11 @@ class CreateGymMember extends CreateRecord
             ->columns(null);
     }
 
-    // protected function getFormSchema(): array
-    // {
-    //     $parentSchema = parent::getFormSchema();
-    //     $parentSchema[] = Forms\Components\Section::make('Payment Option')
-    //         ->icon('heroicon-o-currency-dollar')
-    //         ->description('Optionally add an initial payment after creating the member')
-    //         ->schema([
-    //             Forms\Components\Checkbox::make('add_payment')
-    //                 ->label('Add initial payment after creation')
-    //                 ->default(true)
-    //                 ->live(),
-    //         ])
-    //         ->collapsible();
-
-    //     return $parentSchema;
-    // }
-
-    // protected function getFormActions(): array
-    // {
-    //     return [
-    //         $this->getCreateFormAction()->label('Save Member'),
-    //         Action::make('cancel')
-    //             ->label('Cancel')
-    //             ->action(fn() => $this->redirect(GymMemberResource::getUrl('index')))
-    //             ->color('gray'),
-    //     ];
-    // }
-
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Store payment data for use in afterCreate
         $this->paymentData = [
+            'gym_id' => $data['gym_id'] ?? null,
             'membership_plan_id' => $data['membership_plan_id'] ?? null,
             'amount' => $data['amount'] ?? null,
             'currency' => $data['currency'] ?? null,
@@ -108,19 +81,15 @@ class CreateGymMember extends CreateRecord
 
     protected function afterCreate(): void
     {
-
-        // if ($this->record->user) {
-        //     $this->record->user->notify(new MemberActionNotification('created', $this->record));
-        // } else {
-        //     // Fallback: Notify current authenticated user
-        //     auth()->user()->notify(new MemberActionNotification('created', $this->record));
-        // }
-
         // Send email to the gym member
         try {
-            if (empty($this->record->email)) {
+            /**
+             * @var \App\Models\GymMember $member
+             */
+            $member = $this->record;
+            if (empty($member->email)) {
                 Log::warning('No email provided for gym member', [
-                    'member_id' => $this->record->id,
+                    'member_id' => $member->id,
                 ]);
 
                 return;
@@ -133,7 +102,7 @@ class CreateGymMember extends CreateRecord
                 ! isset($this->paymentData['membership_end'])
             ) {
                 Log::error('Missing required member data for email notification', [
-                    'member_id' => $this->record->id,
+                    'member_id' => $member->id,
                     'has_plan' => isset($this->paymentData['membership_plan_id']),
                     'has_start_date' => isset($this->paymentData['membership_start']),
                     'has_end_date' => isset($this->paymentData['membership_end']),
@@ -142,21 +111,21 @@ class CreateGymMember extends CreateRecord
                 return;
             }
 
-            // Mail::to($this->record->email)->send(new WelcomeMemberMail($this->record));
+            // Mail::to($member->email)->send(new WelcomeMemberMail($member));
 
-            Notification::send($this->record, new WelcomeNotification($this->record));
+            Notification::send($member, new WelcomeNotification($member));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email to member', [
-                'member_id' => $this->record->id,
-                'email' => $this->record->email ?? 'not_set',
+                'member_id' => $member->id,
+                'email' => $member->email ?? 'not_set',
                 'error' => $e->getMessage(),
             ]);
         }
 
         // Create the payment if payment data is provided
         if (! empty($this->paymentData['membership_plan_id'])) {
-            $this->record->payments()->create([
-                'member_id' => $this->record->id,
+            $member->payments()->create([
+                'member_id' => $member->id,
                 'membership_plan_id' => $this->paymentData['membership_plan_id'],
                 'amount' => $this->paymentData['amount'],
                 'currency' => $this->paymentData['currency'],
@@ -169,7 +138,7 @@ class CreateGymMember extends CreateRecord
             ]);
 
             // Update the member's payment_status and membership dates
-            $this->record->update([
+            $member->update([
                 'gym_membership_plan_id' => $this->paymentData['membership_plan_id'],
                 'membership_start' => $this->paymentData['membership_start'],
                 'membership_end' => $this->paymentData['membership_end'],
@@ -208,41 +177,19 @@ class CreateGymMember extends CreateRecord
     {
         return [
             Hidden::make('user_id')
-                ->default(fn() => auth()->id()),
+                ->default(fn () => auth()->id()),
 
             Forms\Components\Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
                 ->description('Configure membership settings')
                 ->schema([
-                    Forms\Components\Select::make('gym_id')
-                        ->relationship('gym', 'name', function ($query) {
-                            if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-                            }
-
-                            return $query;
-                        })
-                        ->required()
-                        ->placeholder('Select a gym')
-                        ->live()
-                        ->rules([
-                            'required_if:visible,true',
-                            fn($get) => function ($attribute, $value, $fail) {
-                                if (auth()->user()->hasRole('gym_owner') && ! $value) {
-                                    $fail('You must create a gym before adding members.');
-                                }
-                            },
-                        ]),
+                    Forms\Components\Hidden::make('gym_id')
+                        ->default(fn () => $this->getGymId()),
 
                     Forms\Components\Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            $gymId = $get('gym_id');
-                            if (! $gymId) {
-                                return [];
-                            }
-
-                            return Trainer::where('gym_id', $gymId)
+                            return Trainer::where('gym_id', $this->getGymId())
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option
@@ -258,7 +205,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('membership_plan_id')
                         ->label('Membership Plan')
-                        ->placeholder('Select a membership plan')
+                        ->placeholder('Select a plan')
                         ->reactive()
                         ->required()
                         ->afterStateUpdated(function ($state, callable $set, $get) {
@@ -272,18 +219,26 @@ class CreateGymMember extends CreateRecord
                             }
                         })
                         ->options(function (callable $get) {
-                            $gymId = $get('gym_id');
-                            if (! $gymId) {
-                                return [];
-                            }
-
                             return MembershipPlan::query()
-                                ->where('gym_id', $gymId)
+                                ->where('gym_id', $this->getGymId())
                                 ->where('is_active', true)
                                 ->pluck('name', 'id')
                                 ->toArray();
                         })
-                        ->dehydrated(true),
+                        ->dehydrated(true)
+                        ->createOptionForm([
+                            Forms\Components\Section::make('Plan Details')
+                                ->icon('heroicon-o-ticket')
+                                ->description('Create a membership plan for your gym')
+                                ->schema(MembershipPlanResource::planFormSchema())
+                                ->columns(2),
+                        ])
+                        ->createOptionUsing(function (array $data) {
+                            // Create the new state and return its ID
+                            $state = MembershipPlan::create($data);
+
+                            return $state->id;
+                        }),
 
                     Forms\Components\DatePicker::make('membership_start')
                         ->placeholder('Select start date')
@@ -325,7 +280,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(Currency::INR->value)
@@ -333,7 +288,7 @@ class CreateGymMember extends CreateRecord
 
                     Forms\Components\Select::make('payment_method')
                         ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn($method) => [$method->value => $method->getLabel()]
+                            fn ($method) => [$method->value => $method->getLabel()]
                         ))
                         ->required()
                         ->default(PaymentMethod::CASH->value),

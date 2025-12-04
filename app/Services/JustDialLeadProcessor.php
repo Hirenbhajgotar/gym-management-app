@@ -2,14 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use App\Models\Gym;
-use App\Enums\LeadSource;
-use App\Enums\LeadStatus;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class JustDialLeadProcessor extends SocialMediaLeadProcessor
 {
@@ -31,13 +27,15 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
 
             if (empty($leadData)) {
                 Log::warning('No lead data extracted from JustDial webhook', ['data' => $data]);
+
                 return null;
             }
 
             // Get tenant configuration
             $config = $this->getTenantConfig($data['vendor_id'] ?? $data['company_id'] ?? '');
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No tenant configuration found for JustDial account', ['data' => $data]);
+
                 return null;
             }
 
@@ -63,6 +61,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
                 'data' => $data,
             ]);
             $this->logWebhook($data, 'error', $e->getMessage());
+
             return null;
         }
     }
@@ -86,18 +85,20 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             }
 
             $config = $this->getTenantConfig($vendorId);
-            if (!$config) {
+            if (! $config) {
                 return false;
             }
 
             // Verify API key matches
             $expectedApiKey = $config->api_key ?? config('services.justdial.api_key');
+
             return $apiKey === $expectedApiKey;
         } catch (\Exception $e) {
             Log::error('JustDial webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
             ]);
+
             return false;
         }
     }
@@ -129,12 +130,14 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             }
 
             Log::warning('Unknown JustDial webhook format', ['data' => $data]);
+
             return [];
         } catch (\Exception $e) {
             Log::error('Failed to extract lead data from JustDial', [
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             return [];
         }
     }
@@ -161,56 +164,56 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
         $notes = [];
 
         // Service/Category information
-        if (!empty($data['category'])) {
-            $notes[] = "Category: " . $this->cleanString($data['category']);
+        if (! empty($data['category'])) {
+            $notes[] = 'Category: ' . $this->cleanString($data['category']);
         }
 
-        if (!empty($data['subcategory'])) {
-            $notes[] = "Subcategory: " . $this->cleanString($data['subcategory']);
+        if (! empty($data['subcategory'])) {
+            $notes[] = 'Subcategory: ' . $this->cleanString($data['subcategory']);
         }
 
-        if (!empty($data['service_name'])) {
-            $notes[] = "Service: " . $this->cleanString($data['service_name']);
+        if (! empty($data['service_name'])) {
+            $notes[] = 'Service: ' . $this->cleanString($data['service_name']);
         }
 
         // Inquiry details
-        if (!empty($data['requirement'])) {
-            $notes[] = "Requirement: " . $this->cleanString($data['requirement']);
+        if (! empty($data['requirement'])) {
+            $notes[] = 'Requirement: ' . $this->cleanString($data['requirement']);
         }
 
-        if (!empty($data['description'])) {
-            $notes[] = "Description: " . $this->cleanString($data['description']);
+        if (! empty($data['description'])) {
+            $notes[] = 'Description: ' . $this->cleanString($data['description']);
         }
 
-        if (!empty($data['message'])) {
-            $notes[] = "Message: " . $this->cleanString($data['message']);
+        if (! empty($data['message'])) {
+            $notes[] = 'Message: ' . $this->cleanString($data['message']);
         }
 
         // Location information
-        if (!empty($data['city'])) {
-            $notes[] = "City: " . $this->cleanString($data['city']);
+        if (! empty($data['city'])) {
+            $notes[] = 'City: ' . $this->cleanString($data['city']);
         }
 
-        if (!empty($data['area'])) {
-            $notes[] = "Area: " . $this->cleanString($data['area']);
+        if (! empty($data['area'])) {
+            $notes[] = 'Area: ' . $this->cleanString($data['area']);
         }
 
-        if (!empty($data['address'])) {
-            $notes[] = "Address: " . $this->cleanString($data['address']);
+        if (! empty($data['address'])) {
+            $notes[] = 'Address: ' . $this->cleanString($data['address']);
         }
 
         // Company information
-        if (!empty($data['company_name'])) {
-            $notes[] = "Company: " . $this->cleanString($data['company_name']);
+        if (! empty($data['company_name'])) {
+            $notes[] = 'Company: ' . $this->cleanString($data['company_name']);
         }
 
         // Budget and timeline
-        if (!empty($data['budget'])) {
-            $notes[] = "Budget: " . $this->cleanString($data['budget']);
+        if (! empty($data['budget'])) {
+            $notes[] = 'Budget: ' . $this->cleanString($data['budget']);
         }
 
-        if (!empty($data['timeline'])) {
-            $notes[] = "Timeline: " . $this->cleanString($data['timeline']);
+        if (! empty($data['timeline'])) {
+            $notes[] = 'Timeline: ' . $this->cleanString($data['timeline']);
         }
 
         $leadData['notes'] = implode("\n", $notes);
@@ -259,14 +262,14 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             $leadData['email'] = $this->cleanString($inquiry['email'] ?? '');
 
             $notes = [];
-            if (!empty($inquiry['message'])) {
-                $notes[] = "Message: " . $this->cleanString($inquiry['message']);
+            if (! empty($inquiry['message'])) {
+                $notes[] = 'Message: ' . $this->cleanString($inquiry['message']);
             }
-            if (!empty($inquiry['service'])) {
-                $notes[] = "Service: " . $this->cleanString($inquiry['service']);
+            if (! empty($inquiry['service'])) {
+                $notes[] = 'Service: ' . $this->cleanString($inquiry['service']);
             }
-            if (!empty($inquiry['location'])) {
-                $notes[] = "Location: " . $this->cleanString($inquiry['location']);
+            if (! empty($inquiry['location'])) {
+                $notes[] = 'Location: ' . $this->cleanString($inquiry['location']);
             }
 
             $leadData['notes'] = implode("\n", $notes);
@@ -289,6 +292,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
         // Process the first valid lead
         if (isset($data['leads']) && is_array($data['leads']) && count($data['leads']) > 0) {
             $firstLead = $data['leads'][0];
+
             return $this->extractStandardLeadData($firstLead);
         }
 
@@ -325,7 +329,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
     private function sendAcknowledgment(Lead $lead, TenantSocialConfig $config): void
     {
         try {
-            if (!$config->auto_reply_enabled) {
+            if (! $config->auto_reply_enabled) {
                 return;
             }
 

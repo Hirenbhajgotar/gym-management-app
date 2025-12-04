@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Enums\LeadStatus;
-use App\Models\Deal;
 use App\Models\Lead;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

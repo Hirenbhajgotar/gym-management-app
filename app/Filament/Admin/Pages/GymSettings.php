@@ -6,9 +6,9 @@ use App\Models\GymSetting;
 use App\Models\GymWhatsAppBalance;
 use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
+use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -16,11 +16,13 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Http;
 
+/**
+ * @property Form $form
+ */
 class GymSettings extends Page implements HasActions, HasForms
 {
-    use InteractsWithActions, InteractsWithForms;
+    use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
     protected static string $view = 'filament.admin.pages.gym-settings';
 
@@ -34,41 +36,52 @@ class GymSettings extends Page implements HasActions, HasForms
 
     public ?array $data = [];
 
+    private const NOTIFICATION_KEYS = [
+        'membership_expiry_notifications',
+        'birthday_notifications',
+        'attendance_reminders',
+        'payment_reminders',
+        'followup_reminders',
+        'lead_reminders_notifications',
+    ];
+
     public function mount(): void
     {
-        $settings = GymSetting::where('gym_id', Filament::getTenant()?->id)->pluck('value', 'key')->all();
+        $settings = GymSetting::where('gym_id', $this->getGym()->id)
+            ->pluck('value', 'key')
+            ->all();
 
         $this->form->fill(
-            collect($settings)->map(function ($value) {
-                if ($value === 'true') {
-                    return true;
-                }
+            collect($settings)
+                ->map(function ($value) {
+                    if ($value === 'true') {
+                        return true;
+                    }
 
-                if ($value === 'false') {
-                    return false;
-                }
+                    if ($value === 'false') {
+                        return false;
+                    }
 
-                return $value;
-            })->all()
+                    return $value;
+                })
+                ->all(),
         );
     }
 
     public function form(Form $form): Form
     {
-        return $form
-            ->statePath('data')
-            ->schema([
-                Forms\Components\Tabs::make('Settings')
-                    ->tabs([
-                        $this->getNotificationTab(),
-                        $this->getWhatsAppTab(),
-                        // $this->getMembershipTab(),
-                        // $this->getAttendanceTab(),
-                    ])
-                    ->columnSpanFull()
-                    ->persistTab()
-                    ->id('tenant-settings-tabs'),
-            ]);
+        return $form->statePath('data')->schema([
+            Forms\Components\Tabs::make('Settings')
+                ->tabs([
+                    $this->getNotificationTab(),
+                    $this->getWhatsAppTab(),
+                    // $this->getMembershipTab(),
+                    // $this->getAttendanceTab(),
+                ])
+                ->columnSpanFull()
+                ->persistTab()
+                ->id('tenant-settings-tabs'),
+        ]);
     }
 
     private function getNotificationTab(): Forms\Components\Tabs\Tab
@@ -77,10 +90,9 @@ class GymSettings extends Page implements HasActions, HasForms
             ->label('Notifications')
             ->icon('heroicon-o-bell')
             ->schema([
-                Forms\Components\Tabs::make('Notification Preferences')
-                    ->tabs([
-                        $this->getWhatsAppNotificationTab(),
-                    ]),
+                Forms\Components\Tabs::make('Notification Preferences')->tabs([
+                    $this->getWhatsAppNotificationTab(),
+                ]),
             ]);
     }
 
@@ -97,32 +109,38 @@ class GymSettings extends Page implements HasActions, HasForms
                             ->label('WhatsApp Notifications')
                             ->default(true)
                             ->live()
-                            ->afterStateUpdated(function (callable $set, $state) {
+                            ->afterStateUpdated(function (
+                                callable $set,
+                                $state,
+                            ) {
+                                $settings = [];
                                 if ($state) {
-                                    $settings = GymSetting::where('gym_id', Filament::getTenant()?->id)->pluck('value', 'key')->all();
-                                    $set('membership_expiry_notifications', isset($settings['membership_expiry_notifications']) && $settings['membership_expiry_notifications'] === 'true' ? true : false);
-                                    $set('birthday_notifications', isset($settings['birthday_notifications']) && $settings['birthday_notifications'] === 'true' ? true : false);
-                                    $set('attendance_reminders', isset($settings['attendance_reminders']) && $settings['attendance_reminders'] === 'true' ? true : false);
-                                    $set('payment_reminders', isset($settings['payment_reminders']) && $settings['payment_reminders'] === 'true' ? true : false);
-                                    $set('followup_reminders', isset($settings['followup_reminders']) && $settings['followup_reminders'] === 'true' ? true : false);
-                                } else {
-                                    $set('membership_expiry_notifications', false);
-                                    $set('birthday_notifications', false);
-                                    $set('attendance_reminders', false);
-                                    $set('payment_reminders', false);
-                                    $set('followup_reminders', false);
+                                    $settings = GymSetting::where('gym_id', $this->getGym()->id)
+                                        ->whereIn('key', self::NOTIFICATION_KEYS)
+                                        ->pluck('value', 'key')
+                                        ->all();
+                                }
+
+                                foreach (self::NOTIFICATION_KEYS as $key) {
+                                    $set($key, $state && ($settings[$key] ?? 'false') === 'true');
                                 }
                             })
-                            ->helperText('Enable/disable WhatsApp notifications for all notification types'),
+                            ->helperText(
+                                'Enable/disable WhatsApp notifications for all notification types',
+                            ),
                     ])
                     ->columns(1),
 
                 Forms\Components\Section::make('Specific Notification Types')
                     ->description('Enable/disable specific notification types.')
                     ->schema([
-                        Forms\Components\Toggle::make('membership_expiry_notifications')
+                        Forms\Components\Toggle::make(
+                            'membership_expiry_notifications',
+                        )
                             ->label('Membership Expiry Notifications')
-                            ->helperText('Send notifications before and after membership expiry'),
+                            ->helperText(
+                                'Send notifications before and after membership expiry',
+                            ),
 
                         Forms\Components\Toggle::make('birthday_notifications')
                             ->label('Birthday Notifications')
@@ -130,15 +148,27 @@ class GymSettings extends Page implements HasActions, HasForms
 
                         Forms\Components\Toggle::make('attendance_reminders')
                             ->label('Attendance Reminders')
-                            ->helperText('Send reminders for regular attendance'),
+                            ->helperText(
+                                'Send reminders for regular attendance',
+                            ),
 
                         Forms\Components\Toggle::make('payment_reminders')
                             ->label('Payment Reminders')
-                            ->helperText('Send payment reminders for pending dues'),
+                            ->helperText(
+                                'Send payment reminders for pending dues',
+                            ),
 
                         Forms\Components\Toggle::make('followup_reminders')
                             ->label('Follow-up Reminders')
-                            ->helperText('Send follow-up reminders for new leads'),
+                            ->helperText(
+                                'Send follow-up reminders for new leads',
+                            ),
+
+                        Forms\Components\Toggle::make('lead_reminders_notifications')
+                            ->label('Lead Reminders')
+                            ->helperText(
+                                'Send reminders for pending leads that need attention',
+                            ),
                     ])
                     ->columns(2),
             ]);
@@ -152,7 +182,9 @@ class GymSettings extends Page implements HasActions, HasForms
             ->schema([
                 Forms\Components\Section::make('Membership Configuration')
                     ->schema([
-                        Forms\Components\Select::make('default_membership_duration')
+                        Forms\Components\Select::make(
+                            'default_membership_duration',
+                        )
                             ->label('Default Membership Duration')
                             ->options([
                                 '1' => '1 Month',
@@ -165,15 +197,23 @@ class GymSettings extends Page implements HasActions, HasForms
                         Forms\Components\TextInput::make('grace_period_days')
                             ->label('Grace Period (Days)')
                             ->numeric()
-                            ->default(3)
-                            ->helperText('Number of days after expiry when member still has access'),
+                            ->default(
+                                config('subscription.grace_period_days', 7),
+                            )
+                            ->helperText(
+                                'Number of days after subscription expiry when gym owner still has access',
+                            ),
 
                         Forms\Components\Toggle::make('auto_renew_memberships')
                             ->label('Auto Renew Memberships')
                             ->default(false)
-                            ->helperText('Automatically renew memberships when they expire'),
+                            ->helperText(
+                                'Automatically renew memberships when they expire',
+                            ),
 
-                        Forms\Components\Toggle::make('require_membership_for_attendance')
+                        Forms\Components\Toggle::make(
+                            'require_membership_for_attendance',
+                        )
                             ->label('Require Active Membership for Attendance')
                             ->default(true),
                     ])
@@ -181,7 +221,9 @@ class GymSettings extends Page implements HasActions, HasForms
 
                 Forms\Components\Section::make('Pricing Settings')
                     ->schema([
-                        Forms\Components\TextInput::make('minimum_membership_amount')
+                        Forms\Components\TextInput::make(
+                            'minimum_membership_amount',
+                        )
                             ->label('Minimum Membership Amount')
                             ->numeric()
                             ->prefix('₹'),
@@ -220,7 +262,9 @@ class GymSettings extends Page implements HasActions, HasForms
                             ->label('Maximum Daily Visits')
                             ->numeric()
                             ->default(2)
-                            ->helperText('Maximum number of visits per day allowed'),
+                            ->helperText(
+                                'Maximum number of visits per day allowed',
+                            ),
 
                         Forms\Components\Toggle::make('send_attendance_summary')
                             ->label('Send Daily Attendance Summary')
@@ -232,7 +276,7 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getWhatsAppTab(): Forms\Components\Tabs\Tab
     {
-        $gymId = Filament::getTenant()?->id;
+        $gymId = $this->getGym()->id;
         $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
 
         return Forms\Components\Tabs\Tab::make('whatsapp')
@@ -240,7 +284,9 @@ class GymSettings extends Page implements HasActions, HasForms
             ->icon('heroicon-o-chat-bubble-left-right')
             ->schema([
                 Forms\Components\Section::make('Message Balance')
-                    ->description('Current WhatsApp message balance and usage statistics.')
+                    ->description(
+                        'Current WhatsApp message balance and usage statistics.',
+                    )
                     ->schema([
                         Forms\Components\Placeholder::make('remaining_messages')
                             ->label('Remaining Messages')
@@ -262,36 +308,52 @@ class GymSettings extends Page implements HasActions, HasForms
                         Forms\Components\Select::make('message_package')
                             ->label('Select Package')
                             ->options(
-                                WhatsAppMessagePackage::where('is_active', true)
+                                WhatsAppMessagePackage::active()
                                     ->orderBy('sort_order')
-                                    ->pluck('name', 'id')
-                                    ->map(function ($name, $id) {
-                                        $package = WhatsAppMessagePackage::find($id);
+                                    ->get()
+                                    ->mapWithKeys(function ($package) {
+                                        $label =
+                                            $package->name .
+                                            ' (' .
+                                            $package->message_count .
+                                            ' messages - ₹' .
+                                            $package->price .
+                                            ')';
 
-                                        return $name . ' (' . $package->message_count . ' messages - ₹' . $package->price . ')';
-                                    })
+                                        return [$package->id => $label];
+                                    }),
                             )
                             ->placeholder('Choose a package')
-                            ->helperText('Select a message package to purchase'),
+                            ->helperText(
+                                'Select a message package to purchase',
+                            ),
                     ])
                     ->columns(1)
-                    ->headerActions([
-                        $this->getPurchaseAction(),
-                    ]),
+                    ->headerActions([$this->getPurchaseAction()]),
 
                 Forms\Components\Section::make('Low Balance Alerts')
-                    ->description('Configure alerts when message balance is low.')
+                    ->description(
+                        'Configure alerts when message balance is low.',
+                    )
                     ->schema([
-                        Forms\Components\TextInput::make('low_balance_threshold')
+                        Forms\Components\TextInput::make(
+                            'low_balance_threshold',
+                        )
                             ->label('Low Balance Threshold')
                             ->numeric()
                             ->default(100)
-                            ->helperText('Send alert when remaining messages drop below this number'),
+                            ->helperText(
+                                'Send alert when remaining messages drop below this number',
+                            ),
 
-                        Forms\Components\Toggle::make('enable_low_balance_alerts')
+                        Forms\Components\Toggle::make(
+                            'enable_low_balance_alerts',
+                        )
                             ->label('Enable Low Balance Alerts')
                             ->default(true)
-                            ->helperText('Receive notifications when message balance is low'),
+                            ->helperText(
+                                'Receive notifications when message balance is low',
+                            ),
                     ])
                     ->columns(2),
             ]);
@@ -300,7 +362,7 @@ class GymSettings extends Page implements HasActions, HasForms
     public function save(): void
     {
         $data = $this->form->getState();
-        $gym = Filament::getTenant();
+        $gym = $this->getGym();
 
         foreach ($data as $key => $value) {
             $this->saveSetting($gym->id, $key, $value);
@@ -316,7 +378,7 @@ class GymSettings extends Page implements HasActions, HasForms
     {
         GymSetting::updateOrCreate(
             ['gym_id' => $gymId, 'key' => $key],
-            ['value' => $value, 'type' => gettype($value)]
+            ['value' => $value, 'type' => gettype($value)],
         );
     }
 
@@ -330,12 +392,12 @@ class GymSettings extends Page implements HasActions, HasForms
             ->modalHeading('Confirm Purchase')
             ->modalDescription(function () {
                 $packageId = $this->form->getState()['message_package'] ?? null;
-                if (!$packageId) {
+                if (! $packageId) {
                     return 'Please select a package first.';
                 }
 
                 $package = WhatsAppMessagePackage::find($packageId);
-                if (!$package) {
+                if (! $package) {
                     return 'Invalid package selected.';
                 }
 
@@ -345,26 +407,28 @@ class GymSettings extends Page implements HasActions, HasForms
             ->action(function () {
                 $packageId = $this->form->getState()['message_package'] ?? null;
 
-                if (!$packageId) {
+                if (! $packageId) {
                     Notification::make()
                         ->title('No package selected')
                         ->body('Please select a message package to purchase.')
                         ->danger()
                         ->send();
+
                     return;
                 }
 
                 $package = WhatsAppMessagePackage::find($packageId);
-                if (!$package) {
+                if (! $package) {
                     Notification::make()
                         ->title('Invalid package')
                         ->body('The selected package is not available.')
                         ->danger()
                         ->send();
+
                     return;
                 }
 
-                $gymId = Filament::getTenant()?->id;
+                $gymId = $this->getGym()->id;
 
                 // Create Razorpay order
                 try {
@@ -373,7 +437,12 @@ class GymSettings extends Page implements HasActions, HasForms
                     $orderData = $razorpayService->createOrder([
                         'amount' => $package->price,
                         'currency' => 'INR',
-                        'receipt' => 'WAP-' . $package->id . '-' . $gymId . '-' . time(),
+                        'receipt' => 'WAP-' .
+                            $package->id .
+                            '-' .
+                            $gymId .
+                            '-' .
+                            uniqid(),
                         'gym_id' => $gymId,
                         'package_id' => $package->id,
                         'payment_type' => 'whatsapp_package',

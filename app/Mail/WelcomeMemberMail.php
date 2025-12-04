@@ -32,9 +32,9 @@ class WelcomeMemberMail extends Mailable
             markdown: 'emails.welcome-member',
             with: [
                 'memberName' => $this->member->name,
-                'planName' => $this->member->membershipPlan->name,
-                'startDate' => $this->member->membership_start->format('Y-m-d'),
-                'endDate' => $this->member->membership_end->format('Y-m-d'),
+                'planName' => $this->member->membershipPlan?->name ?? 'Membership',
+                'startDate' => $this->member->membership_start?->format('Y-m-d') ?? now()->format('Y-m-d'),
+                'endDate' => $this->member->membership_end?->format('Y-m-d') ?? 'N/A',
                 'gymName' => $this->member->gym?->name ?? 'the Gym',
             ],
         );

@@ -135,14 +135,13 @@ class AdminPanelProvider extends PanelProvider
                 'panels::body.end',
                 fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
             )
-            // Add feedback button to sidebar bottom
-            ->renderHook(
-                'panels::sidebar.nav.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.sidebar-feedback-button')
-            )
             ->renderHook(
                 'panels::body.end',
                 fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+            )
+            ->renderHook(
+                'panels::body.end',
+                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.floating-feedback-button')
             );
     }
 

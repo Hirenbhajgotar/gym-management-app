@@ -34,10 +34,10 @@ class SubscriptionCreated extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('New Subscription Created - Welcome to ' . config('app.name'))
             ->greeting("Congratulations {$notifiable->name}!")
-            ->line("A new subscription has been created for your gym.")
+            ->line('A new subscription has been created for your gym.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Billing Cycle:** {$this->subscription->billing_cycle}")
-            ->line("**Price:** {$this->subscription->price} {$this->subscription->currency}")
+            ->line("**Price:** {$this->subscription->price} {$this->subscription->currency->value}")
             ->line("**Status:** {$this->subscription->status->value}")
             ->when($this->subscription->trial_ends_at, function ($mail) {
                 return $mail->line("**Trial Ends:** {$this->subscription->trial_ends_at->format('M j, Y')}");

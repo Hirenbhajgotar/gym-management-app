@@ -7,16 +7,17 @@ use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
 use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
-use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
-use Illuminate\Http\Request;
+use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
+    use HasTenantAccess;
+
     protected RazorpayService $razorpayService;
 
     public function __construct(RazorpayService $razorpayService)
@@ -39,7 +40,7 @@ class PaymentController extends Controller
             $gym = Gym::findOrFail($request->gym_id);
 
             // Check if user has permission to purchase for this gym
-            if (Filament::getTenant()?->id !== $gym->id) {
+            if ($this->getGymId() !== $gym->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access to gym.',
@@ -92,13 +93,15 @@ class PaymentController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
+
             $isVerified = $this->razorpayService->verifyPayment(
                 $request->razorpay_order_id,
                 $request->razorpay_payment_id,
                 $request->razorpay_signature
             );
 
-            if (!$isVerified) {
+            if (! $isVerified) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment verification failed.',
@@ -108,17 +111,19 @@ class PaymentController extends Controller
             // Get payment record
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment record not found.',
                 ], 404);
             }
 
-            $tenant = Gym::where('id', $request->tenant_id)->first();
+            // $tenant = Gym::where('id', $request->tenant_id)->first();
 
             // Process the purchase (add messages to balance)
             $this->processWhatsAppPackagePurchase($payment);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -127,6 +132,8 @@ class PaymentController extends Controller
                 // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
@@ -152,10 +159,12 @@ class PaymentController extends Controller
             // Verify webhook signature
             $secret = config('services.razorpay.webhook_secret');
             if ($secret) {
-                $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+                // $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+                $generatedSignature = hash_hmac('sha256', $request->getContent(), $secret);
 
-                if (!hash_equals($generatedSignature, $expectedSignature)) {
+                if (! hash_equals($generatedSignature, $expectedSignature)) {
                     Log::warning('Invalid webhook signature', ['payload' => $payload]);
+
                     return response()->json(['status' => 'error'], 400);
                 }
             }
@@ -167,8 +176,12 @@ class PaymentController extends Controller
                 $paymentEntity = $payload['payment']['entity'] ?? null;
                 if ($paymentEntity) {
                     $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
-                    if ($payment && $payment->payment_type === 'whatsapp_package') {
-                        $this->processWhatsAppPackagePurchase($payment);
+                    if ($payment) {
+                        if ($payment->payment_type === 'whatsapp_package') {
+                            $this->processWhatsAppPackagePurchase($payment);
+                        } elseif (str_starts_with($payment->payment_type, 'subscription_')) {
+                            $this->processSubscriptionPayment($payment);
+                        }
                     }
                 }
             }
@@ -216,7 +229,7 @@ class PaymentController extends Controller
 
         $tenant = Gym::where('id', $tenantId)->firstOrFail();
 
-        if (!$orderId || !$amount || !$key) {
+        if (! $orderId || ! $amount || ! $key) {
             abort(400, 'Invalid payment parameters');
         }
 
@@ -250,43 +263,102 @@ class PaymentController extends Controller
     }
 
     /**
+     * Process subscription payment
+     */
+    private function processSubscriptionPayment(Payment $payment): void
+    {
+        $subscriptionId = $payment->metadata['subscription_id'] ?? null;
+
+        if (! $subscriptionId) {
+            Log::error('Subscription ID not found in payment metadata', ['payment_id' => $payment->id]);
+
+            return;
+        }
+
+        $subscription = \App\Models\Subscription::find($subscriptionId);
+        if (! $subscription) {
+            Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
+
+            return;
+        }
+
+        $subscriptionService = app(\App\Services\SubscriptionService::class);
+
+        try {
+            DB::beginTransaction();
+
+            // Renew the subscription
+            $subscriptionService->renewSubscription($subscription);
+
+            // Clear pending renewal metadata
+            $metadata = $subscription->metadata ?? [];
+            unset($metadata['pending_renewal_order_id'], $metadata['pending_renewal_payment_id'], $metadata['pending_renewal_created_at']);
+            $subscription->update(['metadata' => $metadata]);
+
+            // Send success notification
+            $subscription->user->notify(new \App\Notifications\RenewalSuccessNotification($subscription));
+
+            DB::commit();
+
+            Log::info('Subscription payment processed successfully', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'user_id' => $subscription->user_id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to process subscription payment', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Send failure notification
+            $subscription->user->notify(new \App\Notifications\PaymentFailedNotification($subscription));
+        }
+    }
+
+    /**
      * Process WhatsApp package purchase
      */
     private function processWhatsAppPackagePurchase(Payment $payment): void
     {
-        DB::transaction(function () use ($payment) {
-            $packageId = $payment->metadata['package_id'] ?? null;
+        // DB::transaction(function () use ($payment) {
+        // });
 
-            if (!$packageId) {
-                Log::error('Package ID not found in payment metadata', ['payment_id' => $payment->id]);
-                return;
-            }
+        $packageId = $payment->metadata['package_id'] ?? null;
 
-            $package = WhatsAppMessagePackage::find($packageId);
-            if (!$package) {
-                Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
-                return;
-            }
+        if (! $packageId) {
+            Log::error('Package ID not found in payment metadata', ['payment_id' => $payment->id]);
 
-            // Update or create WhatsApp balance
-            $balance = GymWhatsAppBalance::firstOrCreate(
-                ['gym_id' => $payment->gym_id],
-                [
-                    'balance_messages' => 0,
-                    'total_messages_purchased' => 0,
-                    'messages_used' => 0,
-                ]
-            );
+            return;
+        }
 
-            $balance->increment('balance_messages', $package->message_count);
-            $balance->increment('total_messages_purchased', $package->message_count);
+        $package = WhatsAppMessagePackage::find($packageId);
+        if (! $package) {
+            Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
 
-            Log::info('WhatsApp package purchase processed', [
-                'payment_id' => $payment->id,
-                'package_id' => $packageId,
-                'messages_added' => $package->message_count,
-                'gym_id' => $payment->gym_id,
-            ]);
-        });
+            return;
+        }
+
+        // Update or create WhatsApp balance
+        $balance = GymWhatsAppBalance::firstOrCreate(
+            ['gym_id' => $payment->gym_id],
+            [
+                'balance_messages' => 0,
+                'total_messages_purchased' => 0,
+                'messages_used' => 0,
+            ]
+        );
+
+        $balance->increment('balance_messages', $package->message_count);
+        $balance->increment('total_messages_purchased', $package->message_count);
+
+        Log::info('WhatsApp package purchase processed', [
+            'payment_id' => $payment->id,
+            'package_id' => $packageId,
+            'messages_added' => $package->message_count,
+            'gym_id' => $payment->gym_id,
+        ]);
     }
 }

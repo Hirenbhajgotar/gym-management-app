@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Subscription;
+use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -23,7 +24,7 @@ class TrialEndingNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'filament'];
     }
 
     /**
@@ -34,13 +35,34 @@ class TrialEndingNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your Trial is Ending Soon - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
-            ->line("Your trial period for your gym subscription is ending soon.")
+            ->line('Your trial period for your gym subscription is ending soon.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Trial Ends:** {$this->subscription->trial_ends_at->format('M j, Y')}")
             ->line('To continue using all the features, please ensure your payment method is up to date.')
             // ->line('Your subscription will automatically renew at the end of your trial period.')
             ->action('Update Payment Method', url('/billing'))
             ->salutation('Best regards,<br>' . config('app.name') . ' Team');
+    }
+
+    /**
+     * Get the Filament notification representation.
+     */
+    public function toFilament(object $notifiable): array
+    {
+        return [
+            'title' => 'Trial Ending Soon',
+            'body' => "Your {$this->subscription->plan->name} trial ends on {$this->subscription->trial_ends_at->format('M j, Y')}",
+            'icon' => 'heroicon-o-exclamation-triangle',
+            'color' => 'warning',
+            'actions' => [
+                [
+                    'name' => 'update_payment',
+                    'label' => 'Update Payment',
+                    'url' => '/billing',
+                    'button' => true,
+                ],
+            ],
+        ];
     }
 
     /**

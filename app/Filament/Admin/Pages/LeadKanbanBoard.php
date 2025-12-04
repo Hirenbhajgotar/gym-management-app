@@ -4,28 +4,29 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
+use App\Traits\HasTenantAccess;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification as FacadesNotification;
+use libphonenumber\PhoneNumberType;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 {
-    use InteractsWithActions;
-    use InteractsWithForms;
+    use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
     protected static ?string $navigationIcon = 'phosphor-columns';
 
@@ -55,24 +56,59 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             \Filament\Actions\CreateAction::make()
                 ->model(Lead::class)
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('name')->required(),
-                    \Filament\Forms\Components\TextInput::make('email')->email(),
-                    \Filament\Forms\Components\TextInput::make('phone'),
-                    \Filament\Forms\Components\Select::make('source')->options(LeadSource::class),
-                    \Filament\Forms\Components\Textarea::make('interest')->columnSpanFull(),
-                    \Filament\Forms\Components\Textarea::make('notes')->columnSpanFull(),
+                    \Filament\Forms\Components\Section::make()
+                        ->schema([
+                            \Filament\Forms\Components\Hidden::make('gym_id')
+                                ->default($this->getGymId()),
+
+                            \Filament\Forms\Components\Hidden::make('created_by')
+                                ->default(auth()->user()->id),
+
+                            \Filament\Forms\Components\TextInput::make('name')
+                                ->required(),
+
+                            \Filament\Forms\Components\TextInput::make('email')
+                                ->required()
+                                ->email(),
+
+                            PhoneInput::make('phone')
+                                ->required()
+                                ->defaultCountry('IN')
+                                ->validateFor(
+                                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
+                                ),
+
+                            \Filament\Forms\Components\Select::make('source')
+                                ->options(LeadSource::class),
+
+                            \Filament\Forms\Components\TagsInput::make('interest')
+                                ->splitKeys(['Tab', ','])
+                                ->placeholder(
+                                    'Add tags (e.g., High Priority, Referral)',
+                                )
+                                ->suggestions(
+                                    collect(LeadTag::cases())
+                                        ->map(fn (LeadTag $tag) => $tag->getLabel())
+                                        ->toArray(),
+                                )
+                                ->columnSpanFull(),
+
+                            \Filament\Forms\Components\Textarea::make('notes')
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2),
                 ]),
         ];
     }
 
     public function addFollowUpAction(): Action
     {
-        return Action::make('add_follow_up')
+        return Action::make('addFollowUp')
             ->label('Add Follow-Up')
             ->icon('heroicon-m-plus-circle')
             ->color('primary')
             ->form(
-                app(FollowUpsRelationManager::class)->getFormSchema(),
+                FollowUpsRelationManager::getFollowUpFormSchema(),
             )
             ->action(function (array $data, array $arguments): void {
                 $record = Lead::find($arguments['id']);
@@ -88,7 +124,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 }
 
                 FollowUp::create([
-                    'gym_id' => Filament::getTenant()->id,
+                    'gym_id' => $this->getGym()->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
                     'scheduled_date' => $data['scheduled_date'],
@@ -114,7 +150,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function convertToMemberAction(): Action
     {
-        return Action::make('convert_to_member')
+        return Action::make('convertToMember')
             ->label('Convert to Member')
             ->icon('heroicon-m-user-plus')
             ->color('primary')
@@ -209,6 +245,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 
@@ -222,6 +259,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 
@@ -234,6 +272,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
             // Refresh the kanban board to revert the change
             $this->dispatch('refresh');
+
             return;
         }
 

@@ -31,19 +31,21 @@ class InstagramLeadController extends Controller
             // Get the configuration for this webhook
             $config = $this->getConfig($request);
 
-            if (!$config) {
+            if (! $config) {
                 Log::warning('No Instagram configuration found for webhook', [
                     'request_data' => $request->all(),
                 ]);
+
                 return response()->json(['error' => 'Configuration not found'], 404);
             }
 
             // Verify webhook signature
-            if (!$this->processor->verifyWebhook($request->all(), $request->headers->all())) {
+            if (! $this->processor->verifyWebhook($request->all(), $request->headers->all())) {
                 Log::warning('Instagram webhook verification failed', [
                     'config_id' => $config->id,
                     'headers' => $request->headers->all(),
                 ]);
+
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 

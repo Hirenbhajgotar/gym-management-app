@@ -43,14 +43,46 @@ class ExportServiceProvider extends ServiceProvider
             }
 
             $disk = Storage::disk($export->file_disk);
-            if (! $disk->exists($export->file_name)) {
-                Log::error('Export file validation failed: file does not exist on disk', [
-                    'export_id' => $export->id,
-                    'file_name' => $export->file_name,
-                    'file_disk' => $export->file_disk,
-                ]);
+            $fileName = $export->file_name;
 
-                return false;
+            // Check if file exists exactly as stored
+            if (! $disk->exists($fileName)) {
+                // Try with extensions and directory structure
+                $found = false;
+                $pathsToCheck = [
+                    $fileName,
+                    $fileName . '.xlsx',
+                    $fileName . '.csv',
+                    'filament_exports/' . $export->id . '/' . $fileName,
+                    'filament_exports/' . $export->id . '/' . $fileName . '.xlsx',
+                    'filament_exports/' . $export->id . '/' . $fileName . '.csv',
+                ];
+
+                foreach ($pathsToCheck as $path) {
+                    if ($disk->exists($path)) {
+                        $export->file_name = $path;
+                        $found = true;
+                        break;
+                    }
+                }
+
+                if ($found) {
+                    // Save the corrected filename to the database
+                    $export->save();
+
+                    return true;
+                }
+
+                if (! $found) {
+                    Log::error('Export file validation failed: file does not exist on disk', [
+                        'export_id' => $export->id,
+                        'file_name' => $export->file_name,
+                        'file_disk' => $export->file_disk,
+                        'checked_paths' => $pathsToCheck,
+                    ]);
+
+                    return false;
+                }
             }
 
             // Check if the file is readable

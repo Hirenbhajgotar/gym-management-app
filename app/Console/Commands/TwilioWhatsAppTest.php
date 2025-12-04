@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class TwilioWhatsAppTest extends Command
 {
     protected $signature = 'twilio:test {phone} {--message=}';
+
     protected $description = 'Send a test Twilio WhatsApp message';
 
     public function handle()
@@ -24,15 +25,15 @@ class TwilioWhatsAppTest extends Command
             $result = $service->sendMessage($phone, $message);
 
             if ($result['success']) {
-                $this->info("✅ Message sent successfully!");
+                $this->info('✅ Message sent successfully!');
                 $this->info("Message ID: {$result['message_id']}");
                 $this->info("Status: {$result['status']}");
             } else {
-                $this->error("❌ Failed to send message");
+                $this->error('❌ Failed to send message');
                 $this->error("Error: {$result['error']}");
             }
         } catch (\Exception $e) {
-            $this->error("❌ Exception: " . $e->getMessage());
+            $this->error('❌ Exception: ' . $e->getMessage());
         }
     }
 }

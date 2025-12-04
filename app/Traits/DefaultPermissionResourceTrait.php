@@ -50,7 +50,7 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultPermissions(): array
     {
-        return $this->permissionSetting?->default_permissions ?? [];
+        return $this->permissionSetting->default_permissions ?? [];
     }
 
     protected function getPermissionsSettings(?string $role = null): ?PermissionSetting

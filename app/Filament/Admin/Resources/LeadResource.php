@@ -10,19 +10,18 @@ use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelation
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\MembershipPlan;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use libphonenumber\PhoneNumberType;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class LeadResource extends Resource
 {
@@ -42,19 +41,44 @@ class LeadResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $selectMembershipPlan = Select::make('membership_plan_id')
+            ->label('Membership Plan')
+            ->options(MembershipPlan::pluck('name', 'id'))
+            ->required();
+
+        if (method_exists(MembershipPlanResource::class, 'planFormSchema')) {
+            $selectMembershipPlan
+                ->createOptionForm([
+                    Forms\Components\Section::make('Plan Details')
+                        ->icon('heroicon-o-ticket')
+                        ->description('Create a membership plan for your gym')
+                        ->schema(MembershipPlanResource::planFormSchema())
+                        ->collapsible()
+                        ->columns(2),
+                ])
+                ->createOptionUsing(function (array $data) {
+                    // Create the new state and return its ID
+                    $state = MembershipPlan::create($data);
+
+                    return $state->id;
+                });
+        }
+
         return $form->schema([
             Section::make('Lead Details')->schema([
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
                     TextInput::make('email')->email()->required(),
-                    TextInput::make('phone')->tel()->required(),
+                    PhoneInput::make('phone')
+                        ->required()
+                        ->defaultCountry('IN')
+                        ->validateFor(
+                            type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
+                        ),
                 ]),
 
                 Grid::make(2)->schema([
-                    Select::make('membership_plan_id')
-                        ->label('Membership Plan')
-                        ->options(MembershipPlan::pluck('name', 'id'))
-                        ->required(),
+                    $selectMembershipPlan,
 
                     Forms\Components\Select::make('status')
                         ->options(LeadStatus::class)
@@ -66,21 +90,36 @@ class LeadResource extends Resource
 
                     Forms\Components\Select::make('created_by')
                         ->label('Created By')
-                        ->options(fn() => Gym::getCurrentTenantUsers()->pluck('users.name', 'users.id'))
+                        ->options(
+                            fn () => Gym::getCurrentTenantUsers()->pluck(
+                                'users.name',
+                                'users.id',
+                            ),
+                        )
                         ->searchable()
                         ->default(auth()->id()),
 
-                    Forms\Components\TagsInput::make('interest')
-                        ->placeholder('Add interests (e.g., Yoga, Weight Loss)'),
+                    Forms\Components\TagsInput::make('interest')->placeholder(
+                        'Add interests (e.g., Yoga, Weight Loss)',
+                    ),
 
                     Forms\Components\TagsInput::make('tags')
-                        ->placeholder('Add tags (e.g., High Priority, Referral)')
+                        ->placeholder(
+                            'Add tags (e.g., High Priority, Referral)',
+                        )
                         ->splitKeys(['Tab', ','])
-                        ->suggestions(collect(LeadTag::cases())->map(fn(LeadTag $tag) => $tag->getLabel())->toArray()),
+                        ->suggestions(
+                            collect(LeadTag::cases())
+                                ->map(fn (LeadTag $tag) => $tag->getLabel())
+                                ->toArray(),
+                        ),
                 ]),
-                Forms\Components\RichEditor::make('notes')
+                Forms\Components\Textarea::make('notes')
                     ->label('Conversion Notes')
-                    ->placeholder('Add any relevant notes about the conversion...')
+                    ->rows(6)
+                    ->placeholder(
+                        'Add any relevant notes about the conversion...',
+                    )
                     ->columnSpanFull(),
             ]),
         ]);
@@ -95,14 +134,21 @@ class LeadResource extends Resource
                 TextColumn::make('phone')->searchable(),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('source')->sortable(),
-                TextColumn::make('creator.name')->label('Created By')->sortable(),
-                TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('creator.name')
+                    ->label('Created By')
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(LeadStatus::class),
-                Tables\Filters\SelectFilter::make('source')
-                    ->options(LeadSource::class),
+                Tables\Filters\SelectFilter::make('status')->options(
+                    LeadStatus::class,
+                ),
+                Tables\Filters\SelectFilter::make('source')->options(
+                    LeadSource::class,
+                ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -118,9 +164,7 @@ class LeadResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            FollowUpsRelationManager::class,
-        ];
+        return [FollowUpsRelationManager::class];
     }
 
     public static function getPages(): array
@@ -137,16 +181,38 @@ class LeadResource extends Resource
     {
         return [
             Forms\Components\Section::make('Convert to Member')
-                ->description('Convert this lead into a new gym member and assign a membership plan.')
+                ->description(
+                    'Convert this lead into a new gym member and assign a membership plan.',
+                )
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\Select::make('membership_plan_id')
                             ->label('Membership Plan')
-                            ->options(fn() => MembershipPlan::pluck('name', 'id'))
-                            ->default(fn(?Lead $record) => $record?->membership_plan_id)
+                            ->options(
+                                fn () => MembershipPlan::pluck('name', 'id'),
+                            )
+                            ->default(
+                                fn (
+                                    ?Lead $record,
+                                ) => $record?->membership_plan_id,
+                            )
                             ->searchable()
                             ->required()
-                            ->placeholder('Select a membership plan')
+                            ->createOptionForm([
+                                Forms\Components\Section::make('Plan Details')
+                                    ->icon('heroicon-o-ticket')
+                                    ->description('Create a membership plan for your gym')
+                                    ->schema(MembershipPlanResource::planFormSchema())
+                                    ->collapsible()
+                                    ->columns(2),
+                            ])
+                            ->createOptionUsing(function (array $data) {
+                                // Create the new state and return its ID
+                                $plan = MembershipPlan::create($data);
+
+                                return $plan->id;
+                            })
+                            ->placeholder('Select a plan')
                             ->prefixIcon('phosphor-crown'),
 
                         Forms\Components\DatePicker::make('conversion_date')
@@ -158,7 +224,9 @@ class LeadResource extends Resource
 
                     Forms\Components\RichEditor::make('notes')
                         ->label('Conversion Notes')
-                        ->placeholder('Add any relevant notes about the conversion...')
+                        ->placeholder(
+                            'Add any relevant notes about the conversion...',
+                        )
                         ->columnSpanFull(),
                 ]),
         ];

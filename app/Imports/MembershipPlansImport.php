@@ -4,15 +4,20 @@ namespace App\Imports;
 
 use App\Enums\Currency;
 use App\Models\MembershipPlan;
-use Filament\Facades\Filament;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Validation\Rule;
 
-class MembershipPlansImport extends BaseImporter
+class MembershipPlansImport extends BaseImporter implements ShouldQueue
 {
+    public function __construct(public string $tenantId)
+    {
+        parent::__construct();
+    }
+
     public function processRow($row): void
     {
         MembershipPlan::create([
-            'gym_id' => Filament::getTenant()->id,
+            'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'description' => $row['description'],
             'price' => $row['price'],

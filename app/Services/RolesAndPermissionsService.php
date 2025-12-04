@@ -26,7 +26,7 @@ class RolesAndPermissionsService
         // Get all tenant-specific roles
         $roles = DefaultRole::tenantRoles();
 
-        $roleData = array_map(fn($role) => [
+        $roleData = array_map(fn ($role) => [
             'name' => $role->value,
             'guard_name' => 'web',
             'gym_id' => $tenant->id,
@@ -177,11 +177,8 @@ class RolesAndPermissionsService
 
             setPermissionsTeamId($tenant->id);
 
-            if ($user) {
-                $user->forgetCachedPermissions();
-                // Reload user's roles to ensure role checks use the updated team context
-                $user->load('roles');
-            }
+            // Reload user's roles to ensure role checks use the updated team context
+            $user->load('roles');
 
             // Assign the role to the user
             $user->assignRole($role);

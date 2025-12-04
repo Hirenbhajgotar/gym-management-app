@@ -10,7 +10,6 @@ use App\Services\IndiaMartLeadProcessor;
 use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
-use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -30,7 +29,7 @@ class WebhookTestController extends Controller
     public function testWebhook(Request $request, string $platform)
     {
         try {
-            if (!isset($this->processors[$platform])) {
+            if (! isset($this->processors[$platform])) {
                 return response()->json([
                     'error' => 'Unsupported platform',
                     'supported_platforms' => array_keys($this->processors),
@@ -49,7 +48,7 @@ class WebhookTestController extends Controller
             // Get configuration for the platform
             $config = $this->getConfig($request, $platform);
 
-            if (!$config) {
+            if (! $config) {
                 return response()->json([
                     'error' => 'No active configuration found for this platform',
                     'platform' => $platform,
@@ -113,7 +112,7 @@ class WebhookTestController extends Controller
     public function getVerificationStatus(Request $request, string $platform)
     {
         try {
-            if (!isset($this->processors[$platform])) {
+            if (! isset($this->processors[$platform])) {
                 return response()->json([
                     'error' => 'Unsupported platform',
                     'supported_platforms' => array_keys($this->processors),
@@ -122,7 +121,7 @@ class WebhookTestController extends Controller
 
             $config = $this->getConfig($request, $platform);
 
-            if (!$config) {
+            if (! $config) {
                 return response()->json([
                     'platform' => $platform,
                     'configured' => false,
@@ -290,8 +289,9 @@ class WebhookTestController extends Controller
     {
         // For testing, we'll use the first available gym's ID
         $gym = Gym::first();
-        if (!$gym) {
+        if (! $gym) {
             Log::error('No gym found for testing webhook configuration.');
+
             return null;
         }
 
@@ -337,10 +337,10 @@ class WebhookTestController extends Controller
     private function checkVerificationStatus(TenantSocialConfig $config, string $platform): array
     {
         $status = [
-            'webhook_verify_token' => !empty($config->webhook_verify_token),
-            'api_key_configured' => !empty($config->api_key),
-            'webhook_url_configured' => !empty($config->webhook_url),
-            'page_id_configured' => !empty($config->page_id),
+            'webhook_verify_token' => ! empty($config->webhook_verify_token),
+            'api_key_configured' => ! empty($config->api_key),
+            'webhook_url_configured' => ! empty($config->webhook_url),
+            'page_id_configured' => ! empty($config->page_id),
             'app_id_configured' => isset($config->config['app_id']),
         ];
 

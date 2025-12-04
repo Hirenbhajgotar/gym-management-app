@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateTenantSocialConfig extends CreateRecord
 {
     protected static string $resource = TenantSocialConfigResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return TenantSocialConfigResource::getUrl('index');
+    }
 }

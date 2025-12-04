@@ -2,14 +2,66 @@
 
 namespace App\Models;
 
+use App\Enums\Currency;
 use App\Enums\SubscriptionStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $plan_id
+ * @property SubscriptionStatus $status
+ * @property string $billing_cycle
+ * @property numeric $price
+ * @property Currency $currency
+ * @property \Illuminate\Support\Carbon|null $trial_ends_at
+ * @property \Illuminate\Support\Carbon|null $current_period_start
+ * @property \Illuminate\Support\Carbon|null $current_period_end
+ * @property \Illuminate\Support\Carbon|null $ends_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property \Illuminate\Support\Carbon|null $grace_period_ends_at
+ * @property array<array-key, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read mixed $days_in_grace_period
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SubscriptionFeature> $features
+ * @property-read int|null $features_count
+ * @property-read \App\Models\Plan $plan
+ * @property-read \App\Models\User $user
+ *
+ * @method static Builder<static>|Subscription active()
+ * @method static Builder<static>|Subscription cancelled()
+ * @method static Builder<static>|Subscription expired()
+ * @method static Builder<static>|Subscription newModelQuery()
+ * @method static Builder<static>|Subscription newQuery()
+ * @method static Builder<static>|Subscription query()
+ * @method static Builder<static>|Subscription suspended()
+ * @method static Builder<static>|Subscription whereBillingCycle($value)
+ * @method static Builder<static>|Subscription whereCancelledAt($value)
+ * @method static Builder<static>|Subscription whereCreatedAt($value)
+ * @method static Builder<static>|Subscription whereCurrency($value)
+ * @method static Builder<static>|Subscription whereCurrentPeriodEnd($value)
+ * @method static Builder<static>|Subscription whereCurrentPeriodStart($value)
+ * @method static Builder<static>|Subscription whereEndsAt($value)
+ * @method static Builder<static>|Subscription whereGracePeriodEndsAt($value)
+ * @method static Builder<static>|Subscription whereId($value)
+ * @method static Builder<static>|Subscription whereMetadata($value)
+ * @method static Builder<static>|Subscription wherePlanId($value)
+ * @method static Builder<static>|Subscription wherePrice($value)
+ * @method static Builder<static>|Subscription whereStatus($value)
+ * @method static Builder<static>|Subscription whereTrialEndsAt($value)
+ * @method static Builder<static>|Subscription whereUpdatedAt($value)
+ * @method static Builder<static>|Subscription whereUserId($value)
+ *
+ * @mixin \Eloquent
+ * @mixin IdeHelperSubscription
+ */
 class Subscription extends Model
 {
     use HasFactory;
@@ -26,6 +78,7 @@ class Subscription extends Model
         'current_period_end',
         'ends_at',
         'cancelled_at',
+        'grace_period_ends_at',
         'metadata',
     ];
 
@@ -38,8 +91,10 @@ class Subscription extends Model
             'current_period_end' => 'datetime',
             'ends_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'grace_period_ends_at' => 'datetime',
             'metadata' => 'array',
             'status' => SubscriptionStatus::class,
+            'currency' => Currency::class,
         ];
     }
 
@@ -54,11 +109,19 @@ class Subscription extends Model
         return $this->belongsTo(Plan::class);
     }
 
+    public function features(): HasMany
+    {
+        return $this->hasMany(SubscriptionFeature::class);
+    }
+
     // Scopes
     #[Scope]
     protected function active(Builder $query)
     {
-        return $query->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE]);
+        return $query->whereIn('status', [
+            SubscriptionStatus::TRIAL,
+            SubscriptionStatus::ACTIVE,
+        ]);
     }
 
     #[Scope]
@@ -87,17 +150,42 @@ class Subscription extends Model
 
     public function canAccessFeatures(): bool
     {
-        return $this->status->canAccessFeatures();
+        // Allow access if status is active or trial
+        if ($this->isActive()) {
+            // Additional check: if this is a trial, ensure it hasn't expired
+            if (
+                $this->status === SubscriptionStatus::TRIAL &&
+                ($this->trial_ends_at?->isPast() ?? false)
+            ) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // Allow access during grace period only for paid subscriptions (not trials)
+        if (
+            $this->status === SubscriptionStatus::EXPIRED &&
+            $this->isInGracePeriod() &&
+            ! $this->wasTrial()
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isOnTrial(): bool
     {
-        return $this->status === SubscriptionStatus::TRIAL;
+        return $this->status === SubscriptionStatus::TRIAL &&
+            $this->trial_ends_at &&
+            ($this->trial_ends_at?->isFuture() ?? false);
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === SubscriptionStatus::CANCELLED;
+        return $this->status === SubscriptionStatus::CANCELLED &&
+            $this->cancelled_at?->isPast();
     }
 
     public function isExpired(): bool
@@ -110,14 +198,9 @@ class Subscription extends Model
         return $this->status === SubscriptionStatus::SUSPENDED;
     }
 
-    public function onTrial(): bool
-    {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
-    }
-
     public function trialDaysLeft(): int
     {
-        if (!$this->onTrial()) {
+        if (! $this->isOnTrial()) {
             return 0;
         }
 
@@ -126,7 +209,7 @@ class Subscription extends Model
 
     public function daysUntilExpiry(): int
     {
-        if (!$this->current_period_end) {
+        if (! $this->current_period_end) {
             return 0;
         }
 
@@ -140,25 +223,29 @@ class Subscription extends Model
             : $this->plan->price_monthly ?? 0;
     }
 
-    public function getPlanFeature(string $featureName): ?PlanFeature
-    {
-        return $this->plan->features()->where('feature_name', $featureName)->first();
+    public function getSubscriptionFeature(
+        string $featureName,
+    ): ?SubscriptionFeature {
+        return $this->features()->where('feature_name', $featureName)->first();
     }
 
-    public function getFeatureLimit(string $featureName): int|string|null
+    public function getFeatureLimit(string $featureName): mixed
     {
-        $feature = $this->getPlanFeature($featureName);
+        $feature = $this->getSubscriptionFeature($featureName);
+
         return $feature?->value;
     }
 
     public function hasFeature(string $featureName): bool
     {
-        return $this->getPlanFeature($featureName) !== null;
+        return $this->getSubscriptionFeature($featureName) !== null;
     }
 
-    public function canUseFeature(string $featureName, int $currentUsage = 0): bool
-    {
-        if (!$this->canAccessFeatures()) {
+    public function canUseFeature(
+        string $featureName,
+        int $currentUsage = 0,
+    ): bool {
+        if (! $this->canAccessFeatures()) {
             return false;
         }
 
@@ -169,5 +256,40 @@ class Subscription extends Model
         }
 
         return $currentUsage < (int) $limit;
+    }
+
+    // Grace period methods
+    public function isInGracePeriod(): bool
+    {
+        return $this->grace_period_ends_at?->isFuture() ?? false;
+    }
+
+    public function gracePeriodEndsAt(): ?Carbon
+    {
+        return $this->grace_period_ends_at;
+    }
+
+    // Accessor for days_in_grace_period
+    protected function daysInGracePeriod(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn () => $this->isInGracePeriod()
+                ? Carbon::now()->diffInDays($this->grace_period_ends_at, false)
+                : 0,
+        );
+    }
+
+    public function setGracePeriod(int $days): void
+    {
+        $this->grace_period_ends_at = Carbon::now()->addDays($days);
+        $this->save();
+    }
+
+    // Helper method to check if subscription was originally a trial
+    public function wasTrial(): bool
+    {
+        return $this->status !== SubscriptionStatus::TRIAL &&
+            $this->trial_ends_at !== null &&
+            $this->trial_ends_at->isPast();
     }
 }

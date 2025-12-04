@@ -7,7 +7,6 @@ use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\LeadConversion;
 use App\Models\MembershipPlan;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,6 +29,7 @@ class LeadConversionFactory extends Factory
             'membership_plan_id' => function () {
                 // Get a gym first, then create a membership plan for that gym
                 $gym = Gym::inRandomOrder()->first() ?? Gym::factory()->create();
+
                 return MembershipPlan::factory()->create(['gym_id' => $gym->id])->id;
             },
             'conversion_date' => $this->faker->dateTimeBetween('-1 month', 'now'),

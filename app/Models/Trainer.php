@@ -9,6 +9,53 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property string|null $name
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $specialization
+ * @property int|null $experience_years
+ * @property string|null $certifications
+ * @property bool|null $is_available
+ * @property string|null $available_hours
+ * @property numeric|null $basic_salary
+ * @property numeric|null $pt_salary_per_member
+ * @property string|null $currency
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
+ * @property-read int|null $attendances_count
+ * @property-read float $total_earnings
+ * @property-read \App\Models\Gym $gym
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
+ * @property-read int|null $members_count
+ *
+ * @method static Builder<static>|Trainer available()
+ * @method static \Database\Factories\TrainerFactory factory($count = null, $state = [])
+ * @method static Builder<static>|Trainer newModelQuery()
+ * @method static Builder<static>|Trainer newQuery()
+ * @method static Builder<static>|Trainer query()
+ * @method static Builder<static>|Trainer whereAvailableHours($value)
+ * @method static Builder<static>|Trainer whereBasicSalary($value)
+ * @method static Builder<static>|Trainer whereCertifications($value)
+ * @method static Builder<static>|Trainer whereCreatedAt($value)
+ * @method static Builder<static>|Trainer whereCurrency($value)
+ * @method static Builder<static>|Trainer whereEmail($value)
+ * @method static Builder<static>|Trainer whereExperienceYears($value)
+ * @method static Builder<static>|Trainer whereGymId($value)
+ * @method static Builder<static>|Trainer whereId($value)
+ * @method static Builder<static>|Trainer whereIsAvailable($value)
+ * @method static Builder<static>|Trainer whereName($value)
+ * @method static Builder<static>|Trainer wherePhone($value)
+ * @method static Builder<static>|Trainer wherePtSalaryPerMember($value)
+ * @method static Builder<static>|Trainer whereSpecialization($value)
+ * @method static Builder<static>|Trainer whereUpdatedAt($value)
+ *
+ * @mixin \Eloquent
+ * @mixin IdeHelperTrainer
+ */
 class Trainer extends Model
 {
     /** @use HasFactory<\Database\Factories\TrainerFactory> */
@@ -27,6 +74,7 @@ class Trainer extends Model
         'basic_salary',
         'pt_salary_per_member',
         'currency',
+        'profile_photo',
     ];
 
     protected $casts = [

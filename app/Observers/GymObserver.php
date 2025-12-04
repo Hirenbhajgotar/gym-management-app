@@ -16,7 +16,7 @@ class GymObserver
     {
         app(GymSettingService::class)->createDefaultSettings($gym);
 
-        $recipient = $gym?->owner ?? auth()->user();
+        $recipient = $gym->owner() ?? auth()->user();
 
         if ($recipient) {
             Notification::make()
@@ -43,7 +43,7 @@ class GymObserver
      */
     public function deleted(Gym $gym): void
     {
-        $recipient = $gym?->owner ?? auth()->user();
+        $recipient = $gym->owner() ?? auth()->user();
 
         if ($recipient) {
             $gymName = $gym->name;

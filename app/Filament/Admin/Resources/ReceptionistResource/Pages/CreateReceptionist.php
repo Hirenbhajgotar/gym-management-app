@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
 use App\Notifications\ReceptionistCreate;
-use Filament\Facades\Filament;
+use App\Services\AvatarService;
+use App\Traits\HasTenantAccess;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateReceptionist extends CreateRecord
 {
-    use HasWizard;
+    use HasTenantAccess, HasWizard;
 
     protected static string $resource = ReceptionistResource::class;
 
@@ -38,6 +40,12 @@ class CreateReceptionist extends CreateRecord
     {
         $plainPassword = $data['password'];
 
+        $data['email_verified_at'] = $data['email_verified_at'] ? now() : null;
+
+        if (is_null($data['profile_photo']) || empty($data['profile_photo'])) {
+            $data['profile_photo'] = app(AvatarService::class)->generate($data['name']);
+        }
+
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 
         // Create the user first
@@ -51,13 +59,15 @@ class CreateReceptionist extends CreateRecord
             EmployeeDetail::create($employeeDetailsData);
         }
 
-        // Assign role
-        $receptionist->assignRole('receptionist');
+        $receptionistRole = DefaultRole::RECEPTIONIST->value;
 
-        $currentTenant = Filament::getTenant();
+        // Assign role
+        $receptionist->assignRole($receptionistRole);
+
+        $currentTenant = $this->getGym();
         if ($currentTenant) {
             $receptionist->gyms()->attach($currentTenant->id, [
-                'role' => 'receptionist',
+                'role' => $receptionistRole,
                 'active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),

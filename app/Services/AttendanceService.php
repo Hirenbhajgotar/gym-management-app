@@ -88,7 +88,7 @@ class AttendanceService
             'check_out_time' => now(),
             'status' => AttendanceStatus::Completed,
             'duration_in_minutes' => $duration,
-            'notes' => $notes ? ($attendance->notes ? $attendance->notes . "\n" . $notes : $notes) : $attendance->notes,
+            'notes' => $notes ? ($attendance->note ? $attendance->note . "\n" . $notes : $notes) : $attendance->note,
         ]);
 
         return $attendance;
@@ -170,21 +170,21 @@ class AttendanceService
     {
         $today = Carbon::today();
 
-        $query = Attendances::where('gym_id', $gymId)
+        $baseQuery = Attendances::where('gym_id', $gymId)
             ->where('attendanceable_type', $userType);
 
         return [
-            'active_count' => $query->where('status', AttendanceStatus::Present)
+            'active_count' => $baseQuery->clone()->where('status', AttendanceStatus::Present)
                 ->whereDate('check_in_time', $today)
                 ->whereNull('check_out_time')->count(),
 
             'absent_count' => app($entityModel)->where('gym_id', $gymId)
                 ->whereNotIn(
                     'id',
-                    $query->whereDate('check_in_time', $today)->pluck('attendanceable_id')
+                    $baseQuery->clone()->whereDate('check_in_time', $today)->pluck('attendanceable_id')
                 )->count(),
 
-            'completed_count' => $query->where('status', AttendanceStatus::Completed)
+            'completed_count' => $baseQuery->clone()->where('status', AttendanceStatus::Completed)
                 ->whereDate('check_in_time', $today)
                 ->whereNotNull('check_out_time')->count(),
         ];
@@ -244,7 +244,7 @@ class AttendanceService
             $attendance->update([
                 'check_out_time' => $checkOutTime,
                 'status' => AttendanceStatus::Completed,
-                'notes' => ($attendance->notes ? $attendance->notes . "\n" : '') . 'Auto checked out after ' . $hoursThreshold . ' hours',
+                'notes' => ($attendance->note ? $attendance->note . "\n" : '') . 'Auto checked out after ' . $hoursThreshold . ' hours',
             ]);
         }
 

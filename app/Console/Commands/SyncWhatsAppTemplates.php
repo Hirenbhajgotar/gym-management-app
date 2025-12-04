@@ -45,7 +45,6 @@ class SyncWhatsAppTemplates extends Command
             }
         });
 
-
         return 0;
     }
 }

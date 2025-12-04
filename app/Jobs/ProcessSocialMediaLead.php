@@ -2,20 +2,20 @@
 
 namespace App\Jobs;
 
+use App\Events\LeadCreated;
+use App\Models\Lead;
+use App\Services\FacebookLeadProcessor;
+use App\Services\IndiaMartLeadProcessor;
+use App\Services\InstagramLeadProcessor;
+use App\Services\JustDialLeadProcessor;
+use App\Services\SocialMediaLeadProcessor;
+use App\Services\WhatsAppLeadProcessor;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use App\Models\Lead;
-use App\Services\SocialMediaLeadProcessor;
-use App\Services\FacebookLeadProcessor;
-use App\Services\InstagramLeadProcessor;
-use App\Services\WhatsAppLeadProcessor;
-use App\Services\IndiaMartLeadProcessor;
-use App\Services\JustDialLeadProcessor;
-use App\Events\LeadCreated;
 use Throwable;
 
 class ProcessSocialMediaLead implements ShouldQueue
@@ -67,9 +67,10 @@ class ProcessSocialMediaLead implements ShouldQueue
             // Get the appropriate processor
             $processor = $this->getProcessor($this->platform);
 
-            if (!$processor) {
+            if (! $processor) {
                 Log::error('No processor available for platform', ['platform' => $this->platform]);
                 $this->fail(new \Exception("No processor available for platform: {$this->platform}"));
+
                 return;
             }
 
@@ -102,6 +103,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                         'platform' => $this->platform,
                         'webhook_id' => $this->webhookId,
                     ]);
+
                     return;
                 }
 
@@ -123,6 +125,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                     'error' => $e->getMessage(),
                 ]);
                 $this->fail($e);
+
                 return;
             }
 
@@ -268,12 +271,12 @@ class ProcessSocialMediaLead implements ShouldQueue
         }
 
         // Check for invalid phone format
-        if (isset($data['phone']) && !preg_match('/^[+]?[0-9\s\-\(\)]+$/', $data['phone'])) {
+        if (isset($data['phone']) && ! preg_match('/^[+]?[0-9\s\-\(\)]+$/', $data['phone'])) {
             return true;
         }
 
         // Check for invalid email format
-        if (isset($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        if (isset($data['email']) && ! filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             return true;
         }
 

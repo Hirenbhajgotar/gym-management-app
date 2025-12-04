@@ -2,7 +2,7 @@
     $recordKey = $record->getKey();
     $recordTitle = $record->{static::$recordTitleAttribute};
 @endphp
-<div id="{{ $recordKey }}" data-record-id="{{ $recordKey }}"
+<div id="{{ $recordKey }}" wire:key="record-{{ $recordKey }}" data-record-id="{{ $recordKey }}"
     class="record bg-white dark:bg-gray-700 rounded-lg p-4 font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 ease-in-out cursor-grab"
     @if ($record->timestamps && now()->diffInSeconds($record->{$record::UPDATED_AT}, true) < 3) x-data
         x-init="
@@ -127,18 +127,21 @@
         @if ($record->status !== \App\Enums\LeadStatus::CONVERTED && $record->status !== \App\Enums\LeadStatus::LOST)
             <div class="flex flex-wrap gap-x-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
                 <x-filament::button icon="heroicon-m-plus-circle" color="success" size="xs" tooltip="Add Follow-Up"
-                    wire:click="mountAction('addFollowUp', { id: {{ $recordKey }} })" outlined>
+                    wire:click.stop="mountAction('addFollowUp', { id: '{{ $recordKey }}' })"
+                    wire:key="action-follow-up-{{ $recordKey }}" outlined>
                     Follow-Up
                 </x-filament::button>
 
                 <x-filament::button icon="heroicon-m-user-plus" color="gray" size="xs"
                     tooltip="Convert to Member"
-                    wire:click="mountAction('convertToMember', { id: {{ $recordKey }} })" outlined>
+                    wire:click.stop="mountAction('convertToMember', { id: '{{ $recordKey }}' })"
+                    wire:key="action-convert-{{ $recordKey }}" outlined>
                     Convert
                 </x-filament::button>
 
                 <x-filament::button icon="heroicon-m-archive-box" color="gray" size="xs"
-                    wire:click="mountAction('archive', { id: {{ $recordKey }} })" outlined tooltip="Archive Lead">
+                    wire:click.stop="mountAction('archive', { id: '{{ $recordKey }}' })"
+                    wire:key="action-archive-{{ $recordKey }}" outlined tooltip="Archive Lead">
                     Archive
                 </x-filament::button>
             </div>

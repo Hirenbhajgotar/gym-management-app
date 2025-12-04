@@ -37,42 +37,55 @@ new class extends Component {
     }
 }; ?>
 
-<section class="w-full">
-    @include('partials.settings-heading')
+<x-settings.layout :heading="__('Update Password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+        <!-- Password Update Form -->
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Change Password</h3>
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <form wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
-                wire:model="current_password"
-                :label="__('Current password')"
-                type="password"
-                required
-                autocomplete="current-password"
-            />
-            <flux:input
-                wire:model="password"
-                :label="__('New password')"
-                type="password"
-                required
-                autocomplete="new-password"
-            />
-            <flux:input
-                wire:model="password_confirmation"
-                :label="__('Confirm Password')"
-                type="password"
-                required
-                autocomplete="new-password"
-            />
+            <form wire:submit="updatePassword" class="space-y-6">
+                <div class="grid grid-cols-1 gap-6">
+                    <flux:input
+                        wire:model="current_password"
+                        :label="__('Current Password')"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                        class="w-full"
+                    />
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+                    <flux:input
+                        wire:model="password"
+                        :label="__('New Password')"
+                        type="password"
+                        required
+                        autocomplete="new-password"
+                        class="w-full"
+                    />
+
+                    <flux:input
+                        wire:model="password_confirmation"
+                        :label="__('Confirm New Password')"
+                        type="password"
+                        required
+                        autocomplete="new-password"
+                        class="w-full"
+                    />
                 </div>
 
-                <x-action-message class="me-3" on="password-updated">
-                    {{ __('Saved.') }}
-                </x-action-message>
-            </div>
-        </form>
+                <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <x-action-message class="text-sm" on="password-updated">
+                        <div class="flex items-center text-green-600 dark:text-green-400">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            {{ __('Password updated successfully.') }}
+                        </div>
+                    </x-action-message>
+
+                    <flux:button variant="primary" type="submit" class="px-6 py-2">
+                        {{ __('Update Password') }}
+                    </flux:button>
+                </div>
+            </form>
+        </div>
     </x-settings.layout>
-</section>
