@@ -3,9 +3,6 @@ set -e
 
 echo "Deployment started ..."
 
-# Navigate to project directory
-# cd /var/www/gym-management-app
-
 # Turn ON Maintenance Mode or return true
 # if already is in maintenance mode
 (php artisan down) || true
