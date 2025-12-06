@@ -37,7 +37,7 @@
                     </h1>
 
                     <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                        Schedule a personalized demo with our team and discover how FitnessFlow can transform your gym management experience.
+                        Schedule a personalized demo with our team and discover how Fluxfitness can transform your gym management experience.
                     </p>
 
                     <!-- Features Grid -->
