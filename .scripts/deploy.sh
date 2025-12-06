@@ -40,7 +40,7 @@ sudo chmod -R 775 storage bootstrap/cache
 
 # Restart PHP-FPM (adjust version if needed)
 echo "🔄 Restarting PHP-FPM..."
-sudo systemctl restart php8.5-fpm
+sudo systemctl restart php8.3-fpm
 
 # Turn OFF Maintenance mode
 echo "Turning OFF Maintenance mode..."
