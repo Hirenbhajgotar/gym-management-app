@@ -37,7 +37,7 @@ class RequestDemoNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $appName = config('app.name', 'FitnessFlow');
+        $appName = config('app.name', 'Fluxfitness');
 
         return (new MailMessage)
             ->subject('New Demo Request - ' . $this->requestContact->name)
