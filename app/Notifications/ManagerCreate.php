@@ -29,7 +29,7 @@ class ManagerCreate extends Notification implements ShouldQueue
         $this->user = $user;
         $this->password = $password;
         $this->loginUrl = $this->generateLoginUrl();
-        $this->appName = config('app.name', 'FitnessFlow');
+        $this->appName = config('app.name', 'Fluxfitness');
     }
 
     /**

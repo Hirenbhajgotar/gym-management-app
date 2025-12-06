@@ -13,7 +13,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('frontend.layouts.app_new')]
-#[Title('Request Demo - FitnessFlow')]
+#[Title('Request Demo - Fluxfitness')]
 class RequestDemo extends Component
 {
     public string $name = '';

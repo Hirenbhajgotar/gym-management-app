@@ -31,13 +31,13 @@
                     <h1 class="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
                         See
                         <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                            FitnessFlow
+                            Fluxfitness
                         </span>
                         <br>in Action
                     </h1>
 
                     <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                        Schedule a personalized demo with our team and discover how FitnessFlow can transform your gym management experience.
+                        Schedule a personalized demo with our team and discover how Fluxfitness can transform your gym management experience.
                     </p>
 
                     <!-- Features Grid -->
