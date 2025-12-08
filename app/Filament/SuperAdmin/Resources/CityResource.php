@@ -4,7 +4,6 @@ namespace App\Filament\SuperAdmin\Resources;
 
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CityResource\Pages;
-use App\Filament\SuperAdmin\Resources\StateResource;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
@@ -91,6 +90,7 @@ class CityResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
