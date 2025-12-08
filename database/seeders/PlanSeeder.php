@@ -22,7 +22,7 @@ class PlanSeeder extends Seeder
                 'price_monthly' => 0,
                 'price_yearly' => 0,
                 'currency' => 'INR',
-                'is_active' => true,
+                'is_active' => false,
                 'trial_days' => 14,
                 'features' => [
                     ['feature_name' => 'max_gyms', 'value' => '1', 'description' => 'Maximum number of gyms'],
