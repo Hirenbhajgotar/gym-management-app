@@ -24,6 +24,10 @@ npm run build
 echo "Running database migrations..."
 php artisan migrate --force
 
+# Restart queue workers after deployment
+echo "Restarting queue workers..."
+sudo supervisorctl restart laravel-worker:* || true
+
 # Clearing Cache
 echo "Clearing Cache..."
 php artisan optimize:clear
