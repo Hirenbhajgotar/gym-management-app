@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DefaultRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -13,15 +14,17 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
+        // Add role for super-admin if not exists
+        $role = Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value]);
+
         $superAdmin = User::updateOrCreate([
-            'email' => 'admin@sidcraft.com',
+            'email' => 'hiren@fluxfitness.in',
         ], [
-            'name' => 'Super Admin',
-            'password' => '123456789',
+            'name' => 'Hiren Super Admin',
+            'password' => 'hiren@8918514',
             'email_verified_at' => now(),
         ]);
-        // $role = Role::create(['name' => 'super_admin']);
-        $superAdmin->assignRole('super_admin');
+        $superAdmin->assignRole(DefaultRole::SUPER_ADMIN->value);
 
         // $gymOwner = User::updateOrCreate([
         //     'email' => 'hiren@example.com',
