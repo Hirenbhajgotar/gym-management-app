@@ -2,24 +2,154 @@
 
 namespace App\Filament\SuperAdmin\Resources\UserResource\Pages;
 
+use App\Enums\DefaultRole;
 use App\Filament\SuperAdmin\Resources\UserResource;
+use App\Helpers\FeedbackHelper;
+use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\UserActionNotification;
+use App\Services\RolesAndPermissionsService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\DB;
 
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        // Store plain password temporarily for notification
+        if (isset($data['password'])) {
+            $this->plainPassword = $data['password'];
+        }
+
+        return $data;
+    }
+
     protected function afterCreate(): void
     {
-        // Notify admin if new user is a gym_owner
         /** @var User $user */
         $user = $this->record;
-        if ($user->hasRole('gym_owner')) {
-            $admins = User::role('super_admin')->get();
-            $details = 'Plan End Date: Not applicable'; // Add plan end date logic if available
-            $admins->each(fn (User $admin) => $admin->notify(new UserActionNotification('created', $user, $details)));
+
+        // Get the role from form data
+        $role = $this->data['role'] ?? DefaultRole::GYM_OWNER->value;
+
+        try {
+            DB::beginTransaction();
+
+            // If gym_owner, create gym and associate
+            if ($role === DefaultRole::GYM_OWNER->value) {
+                $this->setupGymOwner($user);
+            }
+
+            // Mark email as verified for SuperAdmin-created users
+            if (! $user->hasVerifiedEmail()) {
+                $user->markEmailAsVerified();
+            }
+
+            DB::commit();
+
+            // Send welcome notification
+            // $this->sendWelcomeNotification($user);
+
+            // Notify SuperAdmins about new gym owner
+            $this->notifySuperAdmins($user);
+
+            // Store feedback cache
+            FeedbackHelper::storeFeedbackCache($user?->id, 15);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Notification::make()
+                ->danger()
+                ->title('Error Creating Gym Owner')
+                ->body($e->getMessage())
+                ->send();
+
+            throw $e;
         }
     }
+
+    protected function setupGymOwner(User $user): void
+    {
+        // Create gym for the owner
+        $gymName = "{$user->name}'s Gym";
+        $slug = Gym::generateUniqueSlug($gymName);
+
+        $gym = Gym::create([
+            'name' => $gymName,
+            'slug' => $slug,
+        ]);
+
+        // Create default roles and permissions for the gym
+        app(
+            RolesAndPermissionsService::class,
+        )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+
+        // Assign the gym to the user with proper role
+        app(RolesAndPermissionsService::class)->assignRoleToTenant(
+            $gym,
+            $user,
+            DefaultRole::GYM_OWNER,
+        );
+
+        // Associate user with gym through pivot table
+        $gym->users()->attach($user->id, [
+            'role' => DefaultRole::GYM_OWNER->value,
+            'active' => true,
+        ]);
+
+        // Grant ALL permissions to gym_owner for their gym
+        // This ensures they have full access to all resources
+        $this->grantAllPermissionsToGymOwner($user, $gym);
+    }
+
+    protected function sendWelcomeNotification(User $user): void
+    {
+        // Send welcome email with credentials
+        $user->notify(new \App\Notifications\UserActionNotification(
+            'created',
+            $user,
+            "Your gym management account has been created.\n\nLogin Credentials:\nEmail: {$user->email}\nPassword: {$this->plainPassword}\n\nPlease login and change your password."
+        ));
+    }
+
+    protected function notifySuperAdmins(User $user): void
+    {
+        $admins = User::role('super_admin')->get();
+        $details = "New gym owner created: {$user->name}\nEmail: {$user->email}";
+
+        $admins->each(fn (User $admin) => $admin->notify(new UserActionNotification('created', $user, $details)));
+    }
+
+    /**
+     * Grant all available permissions to the gym owner.
+     * This ensures they have full access to all resources including Manager, Receptionist, Membership, etc.
+     */
+    protected function grantAllPermissionsToGymOwner(User $user, Gym $gym): void
+    {
+        // Set the permission team context to the gym
+        setPermissionsTeamId($gym->id);
+
+        // Get the gym_owner role for this specific gym
+        $gymOwnerRole = \Spatie\Permission\Models\Role::where('name', DefaultRole::GYM_OWNER->value)
+            ->where('gym_id', $gym->id)
+            ->first();
+
+        if ($gymOwnerRole) {
+            // Get ALL permissions available in the system
+            $allPermissions = \App\Models\Permission::all();
+
+            // Assign all permissions to the gym_owner role
+            $gymOwnerRole->syncPermissions($allPermissions);
+
+            // Clear permission cache to ensure changes take effect immediately
+            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        }
+    }
+
+    /** @var string|null */
+    private $plainPassword;
 }

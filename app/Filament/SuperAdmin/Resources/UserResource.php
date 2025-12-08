@@ -60,12 +60,23 @@ class UserResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('role')
+                    ->label('Role')
+                    ->options([
+                        \App\Enums\DefaultRole::GYM_OWNER->value => \App\Enums\DefaultRole::GYM_OWNER->getLabel(),
+                    ])
+                    ->default(\App\Enums\DefaultRole::GYM_OWNER->value)
+                    ->required()
+                    ->visible(fn (string $context): bool => $context === 'create')
+                    ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
                 Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
+                    ->revealable()
                     ->maxLength(255)
-                    ->visible(fn (string $context): bool => $context === 'create'),
+                    ->visible(fn (string $context): bool => $context === 'create')
+                    ->helperText('User will receive this password in their welcome email'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),
