@@ -40,7 +40,7 @@ Schedule::job(new CheckWhatsAppBalanceJob)->daily();
 Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
 
 // Auto checkout gym members and trainers attendance daily at 11 PM and 1 AM
-Schedule::command('attendance:auto-checkout')->twiceDailyAt('23:00', '01:00');
+Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
 // Check for expired memberships daily
 Schedule::command('gym:check-membership-expiry')->daily();
