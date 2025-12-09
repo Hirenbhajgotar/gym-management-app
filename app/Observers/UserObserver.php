@@ -42,7 +42,7 @@ class UserObserver
             // (members, trainers, settings, social configs, etc.)
             $ownedGyms = Gym::whereHas('users', function ($query) use ($user) {
                 $query->where('users.id', $user->id)
-                    ->wherePivot('role', DefaultRole::GYM_OWNER->value);
+                    ->where('gym_user.role', DefaultRole::GYM_OWNER->value);
             })->get();
 
             foreach ($ownedGyms as $gym) {
@@ -118,9 +118,6 @@ class UserObserver
      */
     public function deleted(User $user): void
     {
-        Log::info('User successfully deleted', [
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-        ]);
+        //
     }
 }

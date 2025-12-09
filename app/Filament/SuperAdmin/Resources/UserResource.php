@@ -42,10 +42,31 @@ class UserResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return cache()->remember(
-            'users_navigation_badge_count_' . auth()->id(),
-            now()->addMinutes(15),
-            fn () => static::getModel()::count(),
+        return cache()->flexible('users_navigation_badge_count_' . auth()->id(), [20, 30],
+            fn () => static::getModel()::query()
+                ->whereExists(function ($query) {
+                    $query
+                        ->select(DB::raw(1))
+                        ->from('model_has_roles')
+                        ->join(
+                            'roles',
+                            'roles.id',
+                            '=',
+                            'model_has_roles.role_id',
+                        )
+                        ->whereColumn(
+                            'users.id',
+                            '=',
+                            'model_has_roles.model_id',
+                        )
+                        ->where(
+                            'model_has_roles.model_type',
+                            '=',
+                            'App\\Models\\User',
+                        )
+                        ->where('roles.name', '=', 'gym_owner');
+                })
+                ->count(),
         );
     }
 
