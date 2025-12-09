@@ -331,7 +331,7 @@ class SubscriptionController extends Controller
 
         $plan = Plan::findOrFail($registrationData['selected_plan_id']);
 
-        // Create Razorpay order
+        // Create Razorpay order with complete registration data in metadata
         $orderData = $this->razorpayService->createOrder([
             'amount' => $plan->price_yearly,
             'currency' => $plan->currency,
@@ -343,6 +343,10 @@ class SubscriptionController extends Controller
                 'user_name' => $registrationData['name'],
                 'owner_email' => $registrationData['email'],
             ],
+            // Store complete registration data for webhook to access
+            'metadata' => [
+                'registration_data' => $registrationData,
+            ],
         ]);
 
         return view('subscriptions.checkout', [
@@ -353,6 +357,7 @@ class SubscriptionController extends Controller
             'checkoutType' => 'gym_owner_registration',
             'title' => 'Complete Your Gym Registration',
             'gymName' => $registrationData['gym_name'],
+            'user_name' => $registrationData['name'],
         ]);
     }
 

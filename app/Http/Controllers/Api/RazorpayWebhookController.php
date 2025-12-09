@@ -141,11 +141,23 @@ class RazorpayWebhookController
         try {
             $metadata = $payment->metadata;
 
-            // Get email from metadata
-            $email = $metadata['owner_email'] ?? null;
+            // Get registration data from payment metadata (stored when order was created)
+            $registrationData = $metadata['registration_data'] ?? null;
+
+            if (! $registrationData) {
+                Log::error('Missing registration_data in payment metadata', [
+                    'payment_id' => $payment->id,
+                    'metadata' => $metadata,
+                ]);
+
+                return;
+            }
+
+            // Get email from registration data
+            $email = $registrationData['email'] ?? null;
 
             if (! $email) {
-                Log::error('Missing owner_email in payment metadata', [
+                Log::error('Missing email in registration data', [
                     'payment_id' => $payment->id,
                 ]);
 
@@ -161,22 +173,6 @@ class RazorpayWebhookController
                     'payment_id' => $payment->id,
                 ]);
 
-                return;
-            }
-
-            // Get registration data from session or create from metadata
-            $registrationData = session('gym_owner_registration');
-
-            if (! $registrationData) {
-                // Webhook is being processed after session expired or from different server
-                // We'll need the complete registration data to be stored in payment metadata
-                Log::warning('Session data not available for gym owner registration webhook', [
-                    'payment_id' => $payment->id,
-                    'email' => $email,
-                ]);
-
-                // For now, we can't proceed without complete registration data
-                // This is a limitation - we'll address this by storing full data in metadata
                 return;
             }
 
