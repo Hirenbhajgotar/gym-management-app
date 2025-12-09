@@ -368,8 +368,6 @@ class SubscriptionController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
             // Get registration data from session
             $registrationData = session('gym_owner_registration');
 
@@ -377,14 +375,75 @@ class SubscriptionController extends Controller
                 throw new \Exception('Registration data not found');
             }
 
-            $plan = Plan::findOrFail($registrationData['selected_plan_id']);
-
-            // Verify payment
+            // Verify payment signature
             $isVerified = $this->razorpayService->verifyPayment(
                 $request->razorpay_order_id,
                 $request->razorpay_payment_id,
                 $request->razorpay_signature
             );
+
+            // Get payment record
+            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
+
+            // Use the reusable method to create gym owner
+            $result = $this->createGymOwnerFromRegistrationData($registrationData, $payment);
+
+            // Clear session data
+            session()->forget('gym_owner_registration');
+
+            // Success message based on subscription status
+            if ($result['already_exists']) {
+                $successMessage = 'Your account already exists. Please log in.';
+            } else {
+                $subscriptionStatus = $result['subscription_status'] ?? 'pending';
+                $successMessage = $subscriptionStatus === 'active'
+                    ? 'Registration completed successfully! Your subscription is now active.'
+                    : 'Registration completed! Please complete the payment to activate your subscription.';
+            }
+
+            return redirect()
+                ->route('thank-you')
+                ->with('success', $successMessage);
+        } catch (\Exception $e) {
+            Log::error('Gym owner payment verification failed', [
+                'error' => $e->getMessage(),
+                'order_id' => $request->razorpay_order_id ?? null,
+            ]);
+
+            return redirect()
+                ->route('gym.register')
+                ->with('error', 'Payment verification failed. Please try again or contact support.');
+        }
+    }
+
+    /**
+     * Create gym owner, gym, and subscription from registration data
+     * This method is used by both redirect verification and webhook processing
+     */
+    public function createGymOwnerFromRegistrationData(array $registrationData, ?Payment $payment = null): array
+    {
+        return DB::transaction(function () use ($registrationData, $payment) {
+            $plan = Plan::findOrFail($registrationData['selected_plan_id']);
+
+            // Check if user already exists (idempotency)
+            $existingUser = \App\Models\User::where('email', $registrationData['email'])->first();
+
+            if ($existingUser) {
+                Log::info('User already exists, skipping creation', [
+                    'email' => $registrationData['email'],
+                ]);
+
+                // Find the gym
+                $gym = $existingUser->gyms()->first();
+                $subscription = $existingUser->subscriptions()->first();
+
+                return [
+                    'user' => $existingUser,
+                    'gym' => $gym,
+                    'subscription' => $subscription,
+                    'already_exists' => true,
+                ];
+            }
 
             // Create User
             $user = \App\Models\User::create([
@@ -400,17 +459,20 @@ class SubscriptionController extends Controller
                 'slug' => \App\Models\Gym::generateUniqueSlug($registrationData['gym_name']),
             ]);
 
+            // Determine if payment was verified
+            $isVerified = $payment && $payment->status === 'completed';
+
             // Create subscription based on payment status
             if ($isVerified) {
                 // Create ACTIVE subscription for successful payment
-                $this->subscriptionService->createSubscription($user, $plan, [
+                $subscription = $this->subscriptionService->createSubscription($user, $plan, [
                     'billing_cycle' => 'yearly',
                     'force_status' => \App\Enums\SubscriptionStatus::ACTIVE,
                 ]);
                 $subscriptionStatus = 'active';
             } else {
-                // Create PENDING subscription for failed payment
-                $this->subscriptionService->createPendingSubscription($user, $plan, [
+                // Create PENDING subscription for failed/pending payment
+                $subscription = $this->subscriptionService->createPendingSubscription($user, $plan, [
                     'billing_cycle' => 'yearly',
                 ]);
                 $subscriptionStatus = 'pending';
@@ -463,13 +525,8 @@ class SubscriptionController extends Controller
             // Grant ALL permissions to gym_owner for their gym
             $this->grantAllPermissionsToGymOwner($user, $gym);
 
-            DB::commit();
-
             // Store feedback cache
             \App\Helpers\FeedbackHelper::storeFeedbackCache($user->id, 15);
-
-            // Clear session data
-            session()->forget('gym_owner_registration');
 
             // Send notification to super-admins
             $superAdmins = \App\Models\User::role('super_admin')->get();
@@ -494,25 +551,14 @@ class SubscriptionController extends Controller
                 event(new \Filament\Notifications\Events\DatabaseNotificationsSent($superAdmin));
             }
 
-            // Success message based on subscription status
-            $successMessage = $isVerified
-                ? 'Registration completed successfully! Your subscription is now active.'
-                : 'Registration completed! Please complete the payment to activate your subscription.';
-
-            return redirect()
-                ->route('thank-you')
-                ->with('success', $successMessage);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Gym owner payment verification failed', [
-                'error' => $e->getMessage(),
-                'order_id' => $request->razorpay_order_id ?? null,
-            ]);
-
-            return redirect()
-                ->route('gym.register')
-                ->with('error', 'Payment verification failed. Please try again or contact support.');
-        }
+            return [
+                'user' => $user,
+                'gym' => $gym,
+                'subscription' => $subscription,
+                'subscription_status' => $subscriptionStatus,
+                'already_exists' => false,
+            ];
+        });
     }
 
     /**

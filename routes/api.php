@@ -47,6 +47,12 @@ Route::prefix('webhooks')->group(function () {
     // Route::post('/justdial/leads', [JustDialLeadController::class, 'handleWebhook'])
     //     ->name('api.webhooks.justdial.leads');
 
+    // Razorpay Payment Webhook
+    Route::post('/razorpay/payment', [
+        \App\Http\Controllers\Api\RazorpayWebhookController::class,
+        'handlePaymentWebhook',
+    ])->name('api.webhooks.razorpay.payment');
+
     // Webhook Verification Routes (GET)
     Route::get('/facebook/leads', [FacebookLeadController::class, 'verifyWebhook'])
         ->name('api.webhooks.facebook.verify');

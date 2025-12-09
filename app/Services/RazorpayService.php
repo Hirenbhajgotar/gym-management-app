@@ -271,4 +271,22 @@ class RazorpayService
             return null;
         }
     }
+
+    /**
+     * Verify Razorpay webhook signature
+     */
+    public function verifyWebhookSignature(string $payload, string $signature): bool
+    {
+        try {
+            $expectedSignature = hash_hmac('sha256', $payload, config('services.razorpay.webhook_secret'));
+
+            return hash_equals($expectedSignature, $signature);
+        } catch (\Exception $e) {
+            Log::error('Webhook signature verification failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
 }
