@@ -184,7 +184,7 @@ class UserResource extends Resource
                     ->color(fn ($record): string => $record->activeSubscription ? 'primary' : 'gray')
                     ->placeholder('No plan assigned'),
                 Tables\Columns\TextColumn::make('activeSubscription.status')
-                    ->label('Status')
+                    ->label('Subscription Status')
                     ->badge()
                     ->color(fn ($record): string => $record->activeSubscription?->status->getColor() ?? 'gray'),
                 Tables\Columns\TextColumn::make('activeSubscription.current_period_end')
