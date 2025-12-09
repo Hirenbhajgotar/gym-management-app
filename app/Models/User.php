@@ -5,10 +5,12 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Enums\SubscriptionStatus;
+use App\Observers\UserObserver;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,6 +75,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @mixin \Eloquent
  * @mixin IdeHelperUser
  */
+#[ObservedBy([UserObserver::class])]
 class User extends Authenticatable implements FilamentUser, HasName, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

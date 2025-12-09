@@ -42,10 +42,31 @@ class UserResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return cache()->remember(
-            'users_navigation_badge_count_' . auth()->id(),
-            now()->addMinutes(15),
-            fn () => static::getModel()::count(),
+        return cache()->flexible('users_navigation_badge_count_' . auth()->id(), [20, 30],
+            fn () => static::getModel()::query()
+                ->whereExists(function ($query) {
+                    $query
+                        ->select(DB::raw(1))
+                        ->from('model_has_roles')
+                        ->join(
+                            'roles',
+                            'roles.id',
+                            '=',
+                            'model_has_roles.role_id',
+                        )
+                        ->whereColumn(
+                            'users.id',
+                            '=',
+                            'model_has_roles.model_id',
+                        )
+                        ->where(
+                            'model_has_roles.model_type',
+                            '=',
+                            'App\\Models\\User',
+                        )
+                        ->where('roles.name', '=', 'gym_owner');
+                })
+                ->count(),
         );
     }
 
@@ -60,12 +81,23 @@ class UserResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('role')
+                    ->label('Role')
+                    ->options([
+                        \App\Enums\DefaultRole::GYM_OWNER->value => \App\Enums\DefaultRole::GYM_OWNER->getLabel(),
+                    ])
+                    ->default(\App\Enums\DefaultRole::GYM_OWNER->value)
+                    ->required()
+                    ->visible(fn (string $context): bool => $context === 'create')
+                    ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
                 Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
+                    ->revealable()
                     ->maxLength(255)
-                    ->visible(fn (string $context): bool => $context === 'create'),
+                    ->visible(fn (string $context): bool => $context === 'create')
+                    ->helperText('User will receive this password in their welcome email'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),
@@ -152,7 +184,7 @@ class UserResource extends Resource
                     ->color(fn ($record): string => $record->activeSubscription ? 'primary' : 'gray')
                     ->placeholder('No plan assigned'),
                 Tables\Columns\TextColumn::make('activeSubscription.status')
-                    ->label('Status')
+                    ->label('Subscription Status')
                     ->badge()
                     ->color(fn ($record): string => $record->activeSubscription?->status->getColor() ?? 'gray'),
                 Tables\Columns\TextColumn::make('activeSubscription.current_period_end')

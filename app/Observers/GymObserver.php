@@ -39,6 +39,76 @@ class GymObserver
     }
 
     /**
+     * Handle the Gym "deleting" event.
+     *
+     * This handles cascade deletion of all gym-related data before the gym is deleted.
+     */
+    public function deleting(Gym $gym): void
+    {
+        try {
+            \Illuminate\Support\Facades\Log::info('Starting cascade deletion for gym', [
+                'gym_id' => $gym->id,
+                'gym_name' => $gym->name,
+            ]);
+
+            // 1. Delete all gym members and their associated data
+            foreach ($gym->gymMembers as $member) {
+                $member->delete(); // GymMemberObserver will handle related data
+            }
+
+            // 2. Delete all membership plans
+            $gym->membershipPlans()->delete();
+
+            // 3. Delete all trainers
+            $gym->trainers()->delete();
+
+            // 4. Delete all leads and their follow-ups
+            foreach ($gym->leads as $lead) {
+                $lead->followUps()->delete();
+                $lead->delete();
+            }
+
+            // 5. Delete all attendances
+            $gym->attendances()->delete();
+
+            // 6. Delete gym settings
+            $gym->settings()->delete();
+
+            // 7. Delete notification settings
+            if ($gym->notificationSetting) {
+                $gym->notificationSetting->delete();
+            }
+
+            // 8. Delete social configs
+            $gym->socialConfigs()->delete();
+
+            // 9. Delete business details
+            if ($gym->businessDetail) {
+                $gym->businessDetail->delete();
+            }
+
+            // 10. Delete address
+            if ($gym->address) {
+                $gym->address->delete();
+            }
+
+            // 11. Detach all users from this gym (gym_user pivot table)
+            $gym->users()->detach();
+
+            \Illuminate\Support\Facades\Log::info('Successfully completed cascade deletion for gym', [
+                'gym_id' => $gym->id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cascade delete gym data', [
+                'gym_id' => $gym->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
      * Handle the Gym "deleted" event.
      */
     public function deleted(Gym $gym): void

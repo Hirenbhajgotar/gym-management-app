@@ -30,7 +30,7 @@ class UserActionNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ["mail"];
+        return ['mail'];
     }
 
     /**
@@ -38,17 +38,17 @@ class UserActionNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage())
+        return (new MailMessage)
             ->subject("New Gym Owner {$this->action} Notification")
-            ->greeting("Hello!")
+            ->greeting('Hello!')
             ->line("A new gym owner has been {$this->action}:")
             ->line("Name: {$this->user->name}")
             ->line("Email: {$this->user->email}")
             ->when(
                 $this->details,
-                fn($mail) => $mail->line("Details: {$this->details}"),
+                fn ($mail) => $mail->line("Details: {$this->details}"),
             )
-            ->action("View Users", url("/admin/users"));
+            ->action('View Users', url('/admin/users'));
     }
 
     /**
@@ -59,12 +59,12 @@ class UserActionNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            "action" => $this->action,
-            "user_id" => $this->user->id,
-            "user_name" => $this->user->name,
-            "user_email" => $this->user->email,
-            "details" => $this->details,
-            "created_at" => now(),
+            'action' => $this->action,
+            'user_id' => $this->user->id,
+            'user_name' => $this->user->name,
+            'user_email' => $this->user->email,
+            'details' => $this->details,
+            'created_at' => now(),
         ];
     }
 }
