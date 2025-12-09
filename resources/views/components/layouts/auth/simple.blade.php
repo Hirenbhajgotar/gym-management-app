@@ -5,6 +5,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     @include('partials.head')
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
         .animate-slide-up {
             animation: slideUp 0.8s ease-out;
         }
@@ -64,14 +68,10 @@
 
     <div class="relative flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
         <div class="flex w-full max-w-xl flex-col gap-2">
-            <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium animate-slide-up">
+            <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium">
                 <span
-                    class="flex h-12 w-12 mb-2 items-center justify-center rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500">
-                    <x-app-logo-icon class="size-10 fill-current text-white" />
-                </span>
-                <span
-                    class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                    {{ config('app.name') }}
+                    class="flex h-24 w-24 mb-2 items-center justify-center rounded-xl ">
+                    <x-app-logo-icon class="size-24 fill-current text-white h-24" variant="full" />
                 </span>
             </a>
             <div class="flex flex-col gap-6 animate-float">
