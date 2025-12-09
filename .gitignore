@@ -1,6 +1,8 @@
 /.phpunit.cache
 /node_modules
 /public
+!/public/favicon.ico
+!/public/favicon.svg
 /storage/*.key
 /storage/pail
 /vendor
