@@ -60,8 +60,13 @@ class RazorpayService
             ];
 
             // Handle different payment types
-            if ($data['payment_type'] === 'subscription_renewal' || $data['payment_type'] === 'subscription_upgrade' || $data['payment_type'] === 'subscription_new') {
-                $paymentData['user_id'] = $data['user_id'];
+            if (
+                $data['payment_type'] === 'subscription_renewal' ||
+                $data['payment_type'] === 'subscription_upgrade' ||
+                $data['payment_type'] === 'subscription_new' ||
+                $data['payment_type'] === 'gym_owner_registration'
+            ) {
+                $paymentData['user_id'] = $data['user_id'] ?? null;
                 $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'subscription_id' => $data['subscription_id'] ?? null,
                     'plan_id' => $data['plan_id'] ?? null,
