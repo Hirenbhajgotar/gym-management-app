@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Observers;
+
+use App\Enums\DefaultRole;
+use App\Models\Gym;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class UserObserver
+{
+    /**
+     * Handle the User "deleting" event.
+     *
+     * This observer handles cascade deletion of all related data when a gym_owner is deleted.
+     * It ensures complete data cleanup including:
+     * - All gyms owned by the user (which triggers GymObserver to clean gym-related data)
+     * - User subscriptions
+     * - Roles and permissions assignments
+     * - Pivot table relationships
+     */
+    public function deleting(User $user): void
+    {
+        // Only cascade delete if user is a gym_owner
+        if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            Log::info('Starting cascade deletion for gym_owner', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+            ]);
+
+            // 1. Delete all gyms owned by this user
+            // Note: GymObserver will handle deletion of gym-related data
+            // (members, trainers, settings, social configs, etc.)
+            $ownedGyms = Gym::whereHas('users', function ($query) use ($user) {
+                $query->where('users.id', $user->id)
+                    ->wherePivot('role', DefaultRole::GYM_OWNER->value);
+            })->get();
+
+            foreach ($ownedGyms as $gym) {
+                Log::info('Deleting gym', [
+                    'gym_id' => $gym->id,
+                    'gym_name' => $gym->name,
+                    'owner_id' => $user->id,
+                ]);
+                $gym->delete();
+            }
+
+            // 2. Delete all subscriptions
+            $user->subscriptions()->delete();
+            Log::info('Deleted user subscriptions', ['user_id' => $user->id]);
+
+            // 3. Delete employee details if exists
+            if ($user->employeeDetails) {
+                $user->employeeDetails->delete();
+                Log::info('Deleted employee details', ['user_id' => $user->id]);
+            }
+
+            // 4. Delete address if exists
+            if ($user->address) {
+                $user->address->delete();
+                Log::info('Deleted user address', ['user_id' => $user->id]);
+            }
+
+            // 5. Detach from any gyms (gym_user pivot table)
+            $user->gyms()->detach();
+            Log::info('Detached user from all gyms', ['user_id' => $user->id]);
+
+            // 6. Remove all role assignments (model_has_roles pivot table)
+            // This is handled by Spatie's HasRoles trait, but we'll be explicit
+            DB::table('model_has_roles')
+                ->where('model_type', User::class)
+                ->where('model_id', $user->id)
+                ->delete();
+            Log::info('Deleted role assignments', ['user_id' => $user->id]);
+
+            // 7. Remove all permission assignments (model_has_permissions pivot table)
+            DB::table('model_has_permissions')
+                ->where('model_type', User::class)
+                ->where('model_id', $user->id)
+                ->delete();
+            Log::info('Deleted permission assignments', ['user_id' => $user->id]);
+
+            // 8. Delete notification logs
+            DB::table('notification_logs')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted notification logs', ['user_id' => $user->id]);
+
+            DB::commit();
+
+            Log::info('Successfully completed cascade deletion for gym_owner', [
+                'user_id' => $user->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to cascade delete gym_owner data', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle the User "deleted" event.
+     */
+    public function deleted(User $user): void
+    {
+        Log::info('User successfully deleted', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+        ]);
+    }
+}
