@@ -27,7 +27,7 @@ class UserObserver
      * - Social media configurations and other user-specific data
      * - Pivot table relationships
      */
-    public function deleting(User $user): void
+    public function forceDeleting(User $user): void
     {
         // Only cascade delete if user is a gym_owner
         if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {

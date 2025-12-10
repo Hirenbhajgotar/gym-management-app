@@ -52,12 +52,6 @@ class CleanDeletedGymOwnersCommand extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->confirm('Do you want to permanently delete these gym owners and all their related data? This action cannot be undone.')) {
-            $this->info('Cleanup cancelled.');
-
-            return self::SUCCESS;
-        }
-
         $deletedCount = 0;
         $errors = [];
 
