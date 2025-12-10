@@ -44,3 +44,6 @@ Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
 // Check for expired memberships daily
 Schedule::command('gym:check-membership-expiry')->daily();
+
+// Clean deleted gym owners daily
+Schedule::command('owners:clean-deleted')->dailyAt('02:00');
