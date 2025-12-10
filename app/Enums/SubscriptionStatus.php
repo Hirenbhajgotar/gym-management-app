@@ -10,6 +10,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
 {
     case TRIAL = 'trial';
     case ACTIVE = 'active';
+    case PENDING = 'pending';
     case CANCELLED = 'cancelled';
     case EXPIRED = 'expired';
     case SUSPENDED = 'suspended';
@@ -19,6 +20,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::TRIAL => 'Trial',
             self::ACTIVE => 'Active',
+            self::PENDING => 'Pending',
             self::CANCELLED => 'Cancelled',
             self::EXPIRED => 'Expired',
             self::SUSPENDED => 'Suspended',
@@ -30,6 +32,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::TRIAL => 'info',
             self::ACTIVE => 'success',
+            self::PENDING => 'warning',
             self::CANCELLED => 'warning',
             self::EXPIRED => 'danger',
             self::SUSPENDED => 'danger',
@@ -41,6 +44,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::TRIAL => 'heroicon-m-clock',
             self::ACTIVE => 'heroicon-m-check-circle',
+            self::PENDING => 'heroicon-m-ellipsis-horizontal-circle',
             self::CANCELLED => 'heroicon-m-x-circle',
             self::EXPIRED => 'heroicon-m-exclamation-triangle',
             self::SUSPENDED => 'heroicon-m-pause-circle',

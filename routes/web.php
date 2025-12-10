@@ -136,6 +136,18 @@ Route::middleware(['auth'])->group(function () {
     ])->name('payments.failure');
 });
 
+// Gym Owner Registration Checkout Routes (no auth required for initial registration)
+Route::prefix('gym-owner')->name('gym-owner.')->group(function () {
+    Route::get('/checkout', [
+        \App\Http\Controllers\SubscriptionController::class,
+        'handleGymOwnerCheckout',
+    ])->name('checkout');
+    Route::post('/verify-payment', [
+        \App\Http\Controllers\SubscriptionController::class,
+        'verifyGymOwnerPayment',
+    ])->name('verify-payment');
+});
+
 // Subscription Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/subscriptions/checkout', [

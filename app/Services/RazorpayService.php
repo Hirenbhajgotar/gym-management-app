@@ -60,8 +60,13 @@ class RazorpayService
             ];
 
             // Handle different payment types
-            if ($data['payment_type'] === 'subscription_renewal' || $data['payment_type'] === 'subscription_upgrade' || $data['payment_type'] === 'subscription_new') {
-                $paymentData['user_id'] = $data['user_id'];
+            if (
+                $data['payment_type'] === 'subscription_renewal' ||
+                $data['payment_type'] === 'subscription_upgrade' ||
+                $data['payment_type'] === 'subscription_new' ||
+                $data['payment_type'] === 'gym_owner_registration'
+            ) {
+                $paymentData['user_id'] = $data['user_id'] ?? null;
                 $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'subscription_id' => $data['subscription_id'] ?? null,
                     'plan_id' => $data['plan_id'] ?? null,
@@ -122,6 +127,7 @@ class RazorpayService
             if ($payment) {
                 $payment->update([
                     'razorpay_payment_id' => $razorpayPaymentId,
+                    'razorpay_signature' => $razorpaySignature,
                     'status' => 'completed',
                     'paid_at' => now(),
                 ]);
@@ -144,6 +150,7 @@ class RazorpayService
             Payment::where('razorpay_order_id', $razorpayOrderId)->update([
                 'status' => 'failed',
                 'razorpay_payment_id' => $razorpayPaymentId,
+                'razorpay_signature' => $razorpaySignature,
             ]);
 
             return false;
@@ -264,6 +271,85 @@ class RazorpayService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * Verify Razorpay webhook signature
+     */
+    public function verifyWebhookSignature(string $payload, string $signature): bool
+    {
+        try {
+            $expectedSignature = hash_hmac('sha256', $payload, config('services.razorpay.webhook_secret'));
+
+            return hash_equals($expectedSignature, $signature);
+        } catch (\Exception $e) {
+            Log::error('Webhook signature verification failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Verify payment directly with Razorpay API using Order ID
+     * This is useful when signature is not available or for double verification
+     */
+    public function verifyPaymentByOrderId(string $orderId): array
+    {
+        try {
+            // Fetch order and its payments
+            /** @var \Razorpay\Api\Order&object{payments: \Razorpay\Api\Collection} $order */
+            $order = $this->api->order->fetch($orderId);
+            $payments = $order->payments(); // Helper method on the resource
+
+            if ($payments->count() === 0) {
+                return ['verified' => false, 'reason' => 'no_payments_found'];
+            }
+
+            // Check if any payment is captured/authorized
+            $successfulPayment = null;
+            foreach ($payments->items as $payment) {
+                if ($payment->status === 'captured' || $payment->status === 'authorized') {
+                    $successfulPayment = $payment;
+                    break;
+                }
+            }
+
+            if (! $successfulPayment) {
+                return ['verified' => false, 'reason' => 'no_successful_payment'];
+            }
+
+            // Update local payment record if verified
+            $localPayment = Payment::where('razorpay_order_id', $orderId)->first();
+            if ($localPayment) {
+                // Only update if not already completed to avoid overwriting newer data
+                if (! $localPayment->isCompleted()) {
+                    $localPayment->update([
+                        'razorpay_payment_id' => $successfulPayment->id,
+                        'status' => 'completed',
+                        'paid_at' => now(),
+                        // We don't have signature here, but we verified via API
+                    ]);
+                }
+
+                return [
+                    'verified' => true,
+                    'payment_id' => $successfulPayment->id,
+                    'status' => $successfulPayment->status,
+                    'amount' => $successfulPayment->amount / 100,
+                ];
+            }
+
+            return ['verified' => false, 'reason' => 'local_record_not_found'];
+        } catch (\Exception $e) {
+            Log::error('API-based payment verification failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['verified' => false, 'reason' => 'api_error', 'message' => $e->getMessage()];
         }
     }
 }

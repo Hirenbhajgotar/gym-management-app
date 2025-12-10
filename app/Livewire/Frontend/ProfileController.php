@@ -184,7 +184,7 @@ class ProfileController extends Component
         ]);
     }
 
-    public function logout(): \Illuminate\Http\RedirectResponse
+    public function logout(): \Illuminate\Http\RedirectResponse|\Livewire\Features\SupportRedirects\Redirector
     {
         $this->loggingOut = true;
 

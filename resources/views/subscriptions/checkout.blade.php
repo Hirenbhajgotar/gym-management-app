@@ -271,15 +271,27 @@
 
                 <!-- Back Link -->
                 <div class="mt-6 text-center">
-                    <a href="{{ route('profile') }}"
-                        class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors group">
-                        <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span>Back to Profile</span>
-                    </a>
+                    @if($checkoutType === 'gym_owner_registration')
+                        <a href="{{ route('gym.register') }}"
+                            class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors group">
+                            <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>Back to Registration</span>
+                        </a>
+                    @else
+                        <a href="{{ route('profile') }}"
+                            class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors group">
+                            <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>Back to Profile</span>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -328,10 +340,18 @@
                     currency: "INR",
                     order_id: "{{ $orderId }}",
                     name: "{{ config('app.name') }}",
-                    description: "{{ $checkoutType === 'renewal' ? 'Subscription Renewal' : ($checkoutType === 'upgrade' ? 'Subscription Upgrade' : 'New Subscription') }}",
+                    description: "{{ $checkoutType === 'gym_owner_registration' ? 'Gym Owner Registration' : ($checkoutType === 'renewal' ? 'Subscription Renewal' : ($checkoutType === 'upgrade' ? 'Subscription Upgrade' : 'New Subscription')) }}",
                     prefill: {
-                        name: "{{ auth()->user()->name }}",
-                        email: "{{ auth()->user()->email }}",
+                        @if($checkoutType === 'gym_owner_registration' && isset($user_name))
+                            name: "{{ $user_name }}",
+                            email: "",
+                        @elseif(auth()->check())
+                            name: "{{ auth()->user()->name }}",
+                            email: "{{ auth()->user()->email }}",
+                        @else
+                            name: "",
+                            email: "",
+                        @endif
                     },
                     theme: {
                         color: "#2563eb"
@@ -349,7 +369,11 @@
 
                         // Create hidden form and submit
                         const form = document.createElement('form');
-                        form.action = "{{ route('subscriptions.verify-payment') }}";
+                        @if($checkoutType === 'gym_owner_registration')
+                            form.action = "{{ route('gym-owner.verify-payment') }}";
+                        @else
+                            form.action = "{{ route('subscriptions.verify-payment') }}";
+                        @endif
                         form.method = "POST";
 
                         // Add CSRF token

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\FacebookLeadController;
-use App\Http\Controllers\Api\IndiaMartLeadController;
 use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
 use App\Http\Controllers\Api\WebhookTestController;
@@ -41,12 +40,18 @@ Route::prefix('webhooks')->group(function () {
         ->name('api.webhooks.whatsapp.messages');
 
     // IndiaMart Lead Webhook
-    Route::post('/indiamart/leads', [IndiaMartLeadController::class, 'handleWebhook'])
-        ->name('api.webhooks.indiamart.leads');
+    // Route::post('/indiamart/leads', [IndiaMartLeadController::class, 'handleWebhook'])
+    //     ->name('api.webhooks.indiamart.leads');
 
-    // JustDial Lead Webhook
-    Route::post('/justdial/leads', [JustDialLeadController::class, 'handleWebhook'])
-        ->name('api.webhooks.justdial.leads');
+    // // JustDial Lead Webhook
+    // Route::post('/justdial/leads', [JustDialLeadController::class, 'handleWebhook'])
+    //     ->name('api.webhooks.justdial.leads');
+
+    // Razorpay Payment Webhook
+    Route::post('/razorpay/payment', [
+        \App\Http\Controllers\Api\RazorpayWebhookController::class,
+        'handlePaymentWebhook',
+    ])->name('api.webhooks.razorpay.payment');
 
     // Webhook Verification Routes (GET)
     Route::get('/facebook/leads', [FacebookLeadController::class, 'verifyWebhook'])
@@ -58,11 +63,11 @@ Route::prefix('webhooks')->group(function () {
     Route::get('/whatsapp/messages', [WhatsAppLeadController::class, 'verifyWebhook'])
         ->name('api.webhooks.whatsapp.verify');
 
-    Route::get('/indiamart/leads', [IndiaMartLeadController::class, 'verifyWebhook'])
-        ->name('api.webhooks.indiamart.verify');
+    // Route::get('/indiamart/leads', [IndiaMartLeadController::class, 'verifyWebhook'])
+    //     ->name('api.webhooks.indiamart.verify');
 
-    Route::get('/justdial/leads', [JustDialLeadController::class, 'verifyWebhook'])
-        ->name('api.webhooks.justdial.verify');
+    // Route::get('/justdial/leads', [JustDialLeadController::class, 'verifyWebhook'])
+    //     ->name('api.webhooks.justdial.verify');
 
     // Webhook Testing Routes
     // Webhook Testing Routes (unauthenticated for ease of testing)
