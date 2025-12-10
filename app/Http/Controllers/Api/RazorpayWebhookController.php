@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Payment;
+use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 class RazorpayWebhookController
 {
     public function __construct(
-        protected RazorpayService $razorpayService
+        protected RazorpayService $razorpayService,
+        protected GymOwnerRegistrationService $gymOwnerRegistrationService
     ) {}
 
     /**
@@ -176,9 +178,8 @@ class RazorpayWebhookController
                 return;
             }
 
-            // Use the shared method from SubscriptionController
-            app(\App\Http\Controllers\SubscriptionController::class)
-                ->createGymOwnerFromRegistrationData($registrationData, $payment);
+            // Use the service to create gym owner
+            $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);
 
             Log::info('Gym owner created successfully via webhook', [
                 'email' => $email,

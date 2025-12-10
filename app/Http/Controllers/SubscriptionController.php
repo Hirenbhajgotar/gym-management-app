@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\User;
+use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
@@ -14,17 +18,11 @@ use Illuminate\View\View;
 
 class SubscriptionController extends Controller
 {
-    protected RazorpayService $razorpayService;
-
-    protected SubscriptionService $subscriptionService;
-
     public function __construct(
-        RazorpayService $razorpayService,
-        SubscriptionService $subscriptionService,
-    ) {
-        $this->razorpayService = $razorpayService;
-        $this->subscriptionService = $subscriptionService;
-    }
+        protected RazorpayService $razorpayService,
+        protected SubscriptionService $subscriptionService,
+        protected GymOwnerRegistrationService $gymOwnerRegistrationService
+    ) {}
 
     /**
      * Show subscription checkout page
@@ -391,7 +389,7 @@ class SubscriptionController extends Controller
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
 
             // Use the reusable method to create gym owner
-            $result = $this->createGymOwnerFromRegistrationData($registrationData, $payment);
+            $result = $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);
 
             // Clear session data
             session()->forget('gym_owner_registration');
@@ -423,172 +421,13 @@ class SubscriptionController extends Controller
 
     /**
      * Create gym owner, gym, and subscription from registration data
-     * This method is used by both redirect verification and webhook processing
+     * Delegates to GymOwnerRegistrationService for business logic
+     *
+     * @deprecated This method delegates to GymOwnerRegistrationService. Use the service directly instead.
      */
     public function createGymOwnerFromRegistrationData(array $registrationData, ?Payment $payment = null): array
     {
-        return DB::transaction(function () use ($registrationData, $payment) {
-            $plan = Plan::findOrFail($registrationData['selected_plan_id']);
-
-            // Check if user already exists (idempotency)
-            $existingUser = \App\Models\User::where('email', $registrationData['email'])->first();
-
-            if ($existingUser) {
-                Log::info('User already exists, skipping creation', [
-                    'email' => $registrationData['email'],
-                ]);
-
-                // Find the gym
-                $gym = $existingUser->gyms()->first();
-                $subscription = $existingUser->subscriptions()->first();
-
-                return [
-                    'user' => $existingUser,
-                    'gym' => $gym,
-                    'subscription' => $subscription,
-                    'already_exists' => true,
-                ];
-            }
-
-            // Create User
-            $user = \App\Models\User::create([
-                'name' => $registrationData['name'],
-                'email' => $registrationData['email'],
-                'phone' => $registrationData['phone'],
-                'password' => $registrationData['password'],
-            ]);
-
-            // Create Gym with unique slug
-            $gym = \App\Models\Gym::create([
-                'name' => $registrationData['gym_name'],
-                'slug' => \App\Models\Gym::generateUniqueSlug($registrationData['gym_name']),
-            ]);
-
-            // Determine if payment was verified
-            $isVerified = $payment && $payment->status === 'completed';
-
-            // Create subscription based on payment status
-            if ($isVerified) {
-                // Create ACTIVE subscription for successful payment
-                $subscription = $this->subscriptionService->createSubscription($user, $plan, [
-                    'billing_cycle' => 'yearly',
-                    'force_status' => \App\Enums\SubscriptionStatus::ACTIVE,
-                ]);
-                $subscriptionStatus = 'active';
-            } else {
-                // Create PENDING subscription for failed/pending payment
-                $subscription = $this->subscriptionService->createPendingSubscription($user, $plan, [
-                    'billing_cycle' => 'yearly',
-                ]);
-                $subscriptionStatus = 'pending';
-            }
-
-            // Create default roles and permissions for the gym
-            app(
-                \App\Services\RolesAndPermissionsService::class,
-            )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
-
-            // Assign the gym owner role to the user
-            app(\App\Services\RolesAndPermissionsService::class)->assignRoleToTenant(
-                $gym,
-                $user,
-                \App\Enums\DefaultRole::GYM_OWNER,
-            );
-
-            // Create Address for Gym
-            $gym->address()->create([
-                'street' => $registrationData['address']['street'],
-                'city_id' => $registrationData['address']['city_id'],
-                'state_id' => $registrationData['address']['state_id'],
-                'country_id' => $registrationData['address']['country_id'],
-                'postal_code' => $registrationData['address']['postal_code'],
-                'latitude' => $registrationData['address']['latitude'] &&
-                    ! empty($registrationData['address']['latitude'])
-                        ? $registrationData['address']['latitude']
-                        : null,
-                'longitude' => $registrationData['address']['longitude'] &&
-                    ! empty($registrationData['address']['longitude'])
-                        ? $registrationData['address']['longitude']
-                        : null,
-            ]);
-
-            // Create Business Detail for Gym
-            $gym->businessDetail()->create([
-                'gym_id' => $gym->id,
-                'business_type_id' => $registrationData['business_type'] ?: null,
-                'years_in_business' => $registrationData['years_in_business'],
-                'number_of_locations' => $registrationData['number_of_locations'],
-                'website' => $registrationData['website'],
-                'gym_size' => $registrationData['gym_size'],
-                'business_description' => $registrationData['business_description'],
-                'special_requirements' => $registrationData['special_requirements'],
-            ]);
-
-            // Attach User to Gym in pivot table
-            $user->gyms()->attach($gym->id, ['role' => 'gym_owner']);
-
-            // Grant ALL permissions to gym_owner for their gym
-            $this->grantAllPermissionsToGymOwner($user, $gym);
-
-            // Store feedback cache
-            \App\Helpers\FeedbackHelper::storeFeedbackCache($user->id, 15);
-
-            // Send notification to super-admins
-            $superAdmins = \App\Models\User::role('super_admin')->get();
-            foreach ($superAdmins as $superAdmin) {
-                $superAdmin->notify(
-                    new \App\Notifications\UserActionNotification(
-                        'created',
-                        $user,
-                        "Gym: {$gym->name}",
-                    ),
-                );
-
-                \Filament\Notifications\Notification::make()
-                    ->title('New Business Added - ' . $gym->name)
-                    ->body(
-                        "A new business '{$gym->name}' has been registered by '{$user->name}'. Subscription status: {$subscriptionStatus}",
-                    )
-                    ->success()
-                    ->sendToDatabase($superAdmin)
-                    ->send();
-
-                event(new \Filament\Notifications\Events\DatabaseNotificationsSent($superAdmin));
-            }
-
-            return [
-                'user' => $user,
-                'gym' => $gym,
-                'subscription' => $subscription,
-                'subscription_status' => $subscriptionStatus,
-                'already_exists' => false,
-            ];
-        });
-    }
-
-    /**
-     * Grant all available permissions to the gym owner
-     */
-    protected function grantAllPermissionsToGymOwner(\App\Models\User $user, \App\Models\Gym $gym): void
-    {
-        // Set the permission team context to the gym
-        setPermissionsTeamId($gym->id);
-
-        // Get the gym_owner role for this specific gym
-        $gymOwnerRole = \Spatie\Permission\Models\Role::where('name', \App\Enums\DefaultRole::GYM_OWNER->value)
-            ->where('gym_id', $gym->id)
-            ->first();
-
-        if ($gymOwnerRole) {
-            // Get ALL permissions available in the system
-            $allPermissions = \App\Models\Permission::all();
-
-            // Assign all permissions to the gym_owner role
-            $gymOwnerRole->syncPermissions($allPermissions);
-
-            // Clear permission cache to ensure changes take effect immediately
-            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        }
+        return $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);
     }
 
     private function clearSessionData(): void
