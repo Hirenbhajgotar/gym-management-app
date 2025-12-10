@@ -18,11 +18,16 @@ class UserObserver
      * This observer handles cascade deletion of all related data when a gym_owner is deleted.
      * It ensures complete data cleanup including:
      * - All gyms owned by the user (which triggers GymObserver to clean gym-related data)
-     * - User subscriptions
+     * - User subscriptions, payments, and billing data
+     * - Employee details and addresses
      * - Roles and permissions assignments
+     * - Notification templates, settings, and logs
+     * - Leads, follow-ups, feedback, and error reports
+     * - Payments, exports, imports, and billing data
+     * - Social media configurations and other user-specific data
      * - Pivot table relationships
      */
-    public function deleting(User $user): void
+    public function forceDeleting(User $user): void
     {
         // Only cascade delete if user is a gym_owner
         if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {
@@ -94,6 +99,61 @@ class UserObserver
                 ->where('user_id', $user->id)
                 ->delete();
             Log::info('Deleted notification logs', ['user_id' => $user->id]);
+
+            // 9. Delete all payments associated with this user
+            DB::table('payments')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted user payments', ['user_id' => $user->id]);
+
+            // 10. Delete tenant social configs assigned to this user
+            DB::table('tenant_social_configs')
+                ->where('assigned_user_id', $user->id)
+                ->delete();
+            Log::info('Deleted tenant social configs', ['user_id' => $user->id]);
+
+            // 11. Delete notification templates owned by this user
+            DB::table('notification_templates')
+                ->where('gym_owner_id', $user->id)
+                ->delete();
+            Log::info('Deleted notification templates', ['user_id' => $user->id]);
+
+            // 12. Delete notification settings owned by this user
+            DB::table('notification_settings')
+                ->where('gym_owner_id', $user->id)
+                ->delete();
+            Log::info('Deleted notification settings', ['user_id' => $user->id]);
+
+            // 13. Delete leads created or updated by this user
+            DB::table('leads')
+                ->where('created_by', $user->id)
+                ->orWhere('updated_by', $user->id)
+                ->delete();
+            Log::info('Deleted leads', ['user_id' => $user->id]);
+
+            // 14. Delete follow-ups associated with this user
+            DB::table('follow_ups')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted follow-ups', ['user_id' => $user->id]);
+
+            // 16. Delete error reports associated with this user
+            DB::table('error_reports')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted error reports', ['user_id' => $user->id]);
+
+            // 17. Delete exports created by this user
+            DB::table('exports')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted exports', ['user_id' => $user->id]);
+
+            // 18. Delete imports created by this user
+            DB::table('imports')
+                ->where('user_id', $user->id)
+                ->delete();
+            Log::info('Deleted imports', ['user_id' => $user->id]);
 
             DB::commit();
 
