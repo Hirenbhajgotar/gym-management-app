@@ -2,20 +2,10 @@
 
 namespace App\Livewire;
 
-use App\Enums\DefaultRole;
-use App\Helpers\FeedbackHelper;
 use App\Models\BusinessType;
-use App\Models\Gym;
 use App\Models\Plan;
-use App\Models\User;
-use App\Notifications\UserActionNotification;
-use App\Services\RolesAndPermissionsService;
-use App\Services\SubscriptionService;
 use Exception;
-use Filament\Notifications\Events\DatabaseNotificationsSent;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
@@ -193,117 +183,35 @@ class GymOwnerRegister extends Component
         for ($i = 1; $i <= $this->totalSteps; $i++) {
             $this->validateStep($i);
         }
-        try {
-            DB::beginTransaction();
 
-            // Create User
-            $user = User::create([
+        try {
+            // Store all registration data in session
+            session()->put('gym_owner_registration', [
                 'name' => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
                 'password' => $this->password,
-            ]);
-
-            // Create Gym with unique slug
-            $gym = Gym::create([
-                'name' => $this->gym_name,
-                'slug' => Gym::generateUniqueSlug($this->gym_name),
-            ]);
-
-            // Create subscription if plan is selected
-            if ($this->selectedPlan) {
-                $subscriptionService = app(SubscriptionService::class);
-                $subscriptionService->createSubscription(
-                    $user,
-                    $this->selectedPlan,
-                    [
-                        'billing_cycle' => 'yearly', // Default to yearly
-                    ],
-                );
-            }
-
-            // Create default roles and permissions for the gym
-            app(
-                RolesAndPermissionsService::class,
-            )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
-
-            // Assign the gym to the user
-            app(RolesAndPermissionsService::class)->assignRoleToTenant(
-                $gym,
-                $user,
-                DefaultRole::GYM_OWNER,
-            );
-
-            // Create Address for Gym
-            $gym->address()->create([
-                'street' => $this->address['street'],
-                'city_id' => $this->address['city_id'],
-                'state_id' => $this->address['state_id'],
-                'country_id' => $this->address['country_id'],
-                'postal_code' => $this->address['postal_code'],
-                'latitude' => $this->address['latitude'] &&
-                    ! empty($this->address['latitude'])
-                        ? $this->address['latitude']
-                        : null,
-                'longitude' => $this->address['longitude'] &&
-                    ! empty($this->address['longitude'])
-                        ? $this->address['longitude']
-                        : null,
-            ]);
-
-            // Create Business Detail for Gym
-            $gym->businessDetail()->create([
-                'gym_id' => $gym->id,
-                'business_type_id' => $this->business_type ?: null,
-                'years_in_business' => $this->years_in_business,
+                'gym_name' => $this->gym_name,
+                'business_type' => $this->business_type,
                 'number_of_locations' => $this->number_of_locations,
+                'years_in_business' => $this->years_in_business,
+                'business_description' => $this->business_description,
+                'address' => $this->address,
                 'website' => $this->website,
                 'gym_size' => $this->gym_size,
-                'business_description' => $this->business_description,
                 'special_requirements' => $this->special_requirements,
+                'selected_plan_id' => $this->selectedPlan?->id,
             ]);
 
-            // Attach User to Gym in pivot table
-            $user->gyms()->attach($gym->id, ['role' => 'gym_owner']);
-
-            DB::commit();
-
-            // Store feedback cache
-            FeedbackHelper::storeFeedbackCache($user?->id, 15);
-
-            // Show a success message
+            // Show a message
             session()->flash(
-                'success',
-                'Registration submitted successfully! We will review your application and contact you soon.',
+                'info',
+                'Please complete the payment to finalize your registration.',
             );
 
-            // Send notification to super-admins
-            $superAdmins = User::role('super_admin')->get();
-            foreach ($superAdmins as $superAdmin) {
-                $superAdmin->notify(
-                    new UserActionNotification(
-                        'created',
-                        $user,
-                        "Gym: {$gym->name}",
-                    ),
-                );
-
-                Notification::make()
-                    ->title('New Business Added - ' . $gym->name)
-                    ->body(
-                        "A new business '{$gym->name}' has been registered by '{$user->name}'. Please review their application.",
-                    )
-                    ->success()
-                    ->sendToDatabase($superAdmin)
-                    ->send();
-
-                event(new DatabaseNotificationsSent($superAdmin));
-            }
-
-            // Redirect to thank you page
-            return redirect()->route('thank-you');
+            // Redirect to Razorpay checkout
+            return redirect()->route('gym-owner.checkout');
         } catch (Exception $e) {
-            DB::rollBack();
             Log::error($e);
             session()->flash(
                 'error',

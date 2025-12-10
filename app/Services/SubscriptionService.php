@@ -83,6 +83,67 @@ class SubscriptionService
     }
 
     /**
+     * Create a pending subscription for failed/incomplete payments
+     */
+    public function createPendingSubscription(
+        User $user,
+        Plan $plan,
+        array $options = [],
+    ): Subscription {
+        $billingCycle = $options['billing_cycle'] ?? 'monthly';
+
+        $subscription = DB::transaction(function () use (
+            $user,
+            $plan,
+            $billingCycle,
+        ) {
+            // Create subscription with PENDING status
+            $subscription = Subscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'status' => SubscriptionStatus::PENDING,
+                'billing_cycle' => $billingCycle,
+                'price' => $billingCycle === 'yearly'
+                    ? $plan->price_yearly
+                    : $plan->price_monthly,
+                'currency' => $plan->currency,
+                'trial_ends_at' => null, // No trial for pending subscriptions
+                'current_period_start' => Carbon::now(),
+                'current_period_end' => $this->calculatePeriodEnd(
+                    Carbon::now(),
+                    $billingCycle,
+                ),
+            ]);
+
+            // Create feature snapshots
+            $this->createFeatureSnapshots($subscription, $plan);
+
+            return $subscription;
+        });
+
+        return $subscription;
+    }
+
+    /**
+     * Activate a pending subscription after successful payment
+     */
+    public function activateSubscription(Subscription $subscription): bool
+    {
+        if ($subscription->status !== SubscriptionStatus::PENDING) {
+            throw new \Exception('Only pending subscriptions can be activated');
+        }
+
+        return $subscription->update([
+            'status' => SubscriptionStatus::ACTIVE,
+            'current_period_start' => Carbon::now(),
+            'current_period_end' => $this->calculatePeriodEnd(
+                Carbon::now(),
+                $subscription->billing_cycle,
+            ),
+        ]);
+    }
+
+    /**
      * Cancel a subscription
      */
     public function cancelSubscription(
@@ -130,7 +191,7 @@ class SubscriptionService
 
         // If subscription is still in trial period, end it immediately by setting trial_ends_at to now
         // Otherwise, keep the existing trial_ends_at value
-        $trialEnd = $subscription->trial_ends_at->isFuture()
+        $trialEnd = $subscription->trial_ends_at?->isFuture()
             ? now()
             : $subscription->trial_ends_at;
 

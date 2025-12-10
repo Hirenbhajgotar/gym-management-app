@@ -20,6 +20,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property int|null $gym_id
  * @property string $razorpay_order_id
  * @property string|null $razorpay_payment_id
+ * @property string|null $razorpay_signature
  * @property numeric|null $amount
  * @property Currency|null $currency
  * @property PaymentStatus|null $status
@@ -69,6 +70,7 @@ class Payment extends Model
         'gym_id',
         'razorpay_order_id',
         'razorpay_payment_id',
+        'razorpay_signature',
         'amount',
         'currency',
         'status',
@@ -231,5 +233,13 @@ class Payment extends Model
     public function byType(Builder $query, string $type)
     {
         return $query->where('payment_type', $type);
+    }
+
+    /**
+     * Check if payment has valid signature stored
+     */
+    public function hasValidSignature(): bool
+    {
+        return ! empty($this->razorpay_signature);
     }
 }

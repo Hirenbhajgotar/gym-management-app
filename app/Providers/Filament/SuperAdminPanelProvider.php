@@ -27,6 +27,7 @@ class SuperAdminPanelProvider extends PanelProvider
         return $panel
             ->id('super-admin')
             ->path('super-admin')
+            ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Emerald,
                 'orange' => Color::Orange,

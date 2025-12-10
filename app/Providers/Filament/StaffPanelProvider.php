@@ -33,6 +33,7 @@ class StaffPanelProvider extends PanelProvider
             ->path('staff')
             // ->authGuard('web')
             ->login()
+            ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
             ])

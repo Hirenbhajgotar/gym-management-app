@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->emailVerification()
             ->profile(isSimple: false)
+            ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
                 'danger' => Color::Red,
