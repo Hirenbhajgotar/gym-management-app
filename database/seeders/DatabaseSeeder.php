@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             WhatsAppMessagePackagesSeeder::class,
             SuperAdminSeeder::class,
             RolesAndPermissionsSeeder::class,
+            PermissionDescriptionSeeder::class,
             CountryStateSeeder::class,
         ]);
     }
