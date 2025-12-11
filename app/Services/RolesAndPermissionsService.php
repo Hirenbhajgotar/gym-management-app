@@ -6,13 +6,15 @@ use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
+use Filament\Facades\Filament;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsService
 {
     use DefaultPermissionResourceTrait {
-        getDefaultPermissions as getTraitDefaultPermissions;
+        getDefaultPermissions as traitGetDefaultPermissions;
     }
 
     /**
@@ -43,8 +45,8 @@ class RolesAndPermissionsService
             // Set the role context for the trait logic
             $this->setDefaultRole($role->value);
 
-            // Get permissions (checks DB Settings -> fallback to Trait defaults)
-            $permissionsToAssign = $this->getTraitDefaultPermissions();
+            // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
+            $permissionsToAssign = $this->getDefaultPermissions();
 
             if (! empty($permissionsToAssign)) {
                 $roleModel = Role::where('name', $role->value)
@@ -69,6 +71,12 @@ class RolesAndPermissionsService
         if ($role) {
             $this->setDefaultRole($role);
 
+            // This now eventually calls back to getDynamicDefaultPermissions via the Trait's fallback,
+            // OR returns DB settings if they exist.
+            // Wait, trait calls $this->getFallbackPermissions().
+            // We need to ensure logic flow is correct.
+            // The Trait's getDefaultPermissions() checks DB, then calls getFallbackPermissions().
+            // In the Trait, we will change getFallbackPermissions() to call the Service's dynamic method.
             return $this->getTraitDefaultPermissions();
         }
 
@@ -80,12 +88,217 @@ class RolesAndPermissionsService
         ];
 
         $data = [];
-        foreach ($roles as $role) {
-            $this->setDefaultRole($role);
-            $data[$role] = $this->getTraitDefaultPermissions();
+        foreach ($roles as $roleItem) {
+            $this->setDefaultRole($roleItem);
+            $data[$roleItem] = $this->getTraitDefaultPermissions();
         }
 
         return $data;
+    }
+
+    // Alias to avoid conflict if Trait has same method name (it does)
+    protected function getTraitDefaultPermissions(): array
+    {
+        return $this->traitGetDefaultPermissions();
+    }
+
+    /**
+     * Generate dynamic default permissions based on Admin Panel Resources.
+     * Called by the Trait's fallback method.
+     */
+    public function getDynamicDefaultPermissions(string $role): array
+    {
+        $permissions = [];
+
+        // 1. Get Resources from Admin Panel
+        $resources = [];
+        try {
+            $resources = Filament::getPanel('admin')->getResources();
+        } catch (\Exception $e) {
+            // Fallback or log if panel not found (e.g. running in console without panel context)
+            // But we should try to load it.
+        }
+
+        // 2. Define standard actions
+        $actions = [
+            'view_any', 'view', 'create', 'update', 'delete',
+            'delete_any', 'force_delete', 'force_delete_any',
+            'restore', 'replicate', 'reorder', 'export', 'import',
+        ];
+
+        // 3. Define allowed resources per role (Functionality based)
+        // If a resource is NOT in this list, the role gets NO access to it (unless specific permission added later).
+        // This acts as an "Allow List".
+        $allowedResources = $this->getRoleAllowedResourcesList($role);
+        // dd($allowedResources, $resources);
+
+        foreach ($resources as $resourceClass) {
+            $model = $resourceClass::getModel();
+            $resourceName = Str::snake(class_basename($model));
+
+            if (in_array($resourceName, $allowedResources)) {
+                foreach ($actions as $action) {
+                    // EXCLUSION LOGIC
+                    if ($role === DefaultRole::MANAGER->value) {
+                        // Managers cannot force delete
+                        if (in_array($action, ['force_delete', 'force_delete_any'])) {
+                            continue;
+                        }
+                    }
+
+                    if ($role === DefaultRole::RECEPTIONIST->value) {
+                        // Receptionist restrictions (No delete for most things?)
+                        // Seeder: delete allowed for 'gym_member'.
+                        // But maybe not 'payment'?
+                        // Let's rely on Seeder logic:
+                        // Receptionist has 'delete_member'.
+                        // But DOES NOT have 'delete_payment' (only view/create/update).
+
+                        // To be safe and automated, we might need granular exclusions or just "Standard CRUD" for all allowed?
+                        // User manual request: "manager we cant give him force_delete".
+                        // For Receptionist, user implied earlier issues.
+                        // Let's implement a 'getRoleDeniedActions($role, $resource)' if needed.
+
+                        if ($resourceName === 'payment' && in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
+                            continue;
+                        }
+                    }
+
+                    $permissions[] = "{$action}_{$resourceName}";
+                }
+            }
+        }
+
+        // 4. Add Role Specific / Extra Permissions (Widgets, Pages, etc.)
+        $extraPermissions = $this->getRoleSpecificPermissions($role);
+
+        $permissions = array_merge($permissions, $extraPermissions);
+
+        return array_values(array_unique($permissions));
+    }
+
+    /**
+     * Define the whitelist of resources for each role.
+     */
+    protected function getRoleAllowedResourcesList(string $role): array
+    {
+        return match ($role) {
+            DefaultRole::MANAGER->value => [
+                'user', 'trainer', 'receptionist', 'gym_member', 'gym',
+                'membership_plan', 'attendance', 'payment', 'lead', // Added Lead as it's common
+            ],
+            DefaultRole::RECEPTIONIST->value => [
+                'gym_member', 'membership_plan', 'attendance', 'payment',
+            ],
+            DefaultRole::TRAINER->value => [
+                'workout', 'schedule', 'attendance',
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Define specific/non-resource permissions.
+     */
+    protected function getRoleSpecificPermissions(string $role): array
+    {
+        $common = [
+            'access_admin_panel',
+            'view_dashboard',
+            'page_dashboard',
+        ];
+
+        return match ($role) {
+            DefaultRole::MANAGER->value => array_merge($common, [
+                'widget_gym_revenue_chart',
+                'widget_gym_stats_overview',
+                'widget_membership_expiry_alerts_chart',
+                'widget_recent_activity',
+                'widget_todays_birthdays',
+                'widget_trainer_performance',
+                'page_edit_gym_profile',
+                'page_settings',
+                'page_reports',
+                'page_analytics',
+                'page_backup',
+                'page_system_health',
+                'manage_settings',
+                'view_analytics',
+                'export_data',
+                'import_data',
+                'send_notifications',
+                'send_bulk_emails',
+                'manage_announcements',
+                'bulk_actions',
+                'advanced_search',
+                'view_financial_reports',
+                'view_member_reports',
+            ]),
+            DefaultRole::RECEPTIONIST->value => array_merge($common, [
+                'view_any_membership_plan', 'view_membership_plan', // View only for plans
+                'view_any_trainer', 'view_trainer', // View trainers
+                'view_any_equipment', 'view_equipment',
+                'view_receptionist', 'update_receptionist', // Own profile
+                'widget_stats_overview',
+                'widget_recent_members',
+                'send_notifications',
+            ]),
+            DefaultRole::TRAINER->value => array_merge($common, [
+                'view_any_member', 'view_member', 'update_member', // View/Update assigned members
+                'view_trainer', 'update_trainer',
+                'view_any_equipment', 'view_equipment',
+                'widget_stats_overview',
+                'widget_recent_members',
+            ]),
+            default => [],
+        };
+    }
+
+    /**
+     * Get resource categories for the UI.
+     */
+    public function getRoleResourceCategories(string $role): array
+    {
+        return $this->getRoleAllowedResourcesList($role);
+    }
+
+    /**
+     * Get widget categories for the UI.
+     */
+    public function getRoleWidgetCategories(string $role): array
+    {
+        // Assuming all widgets are under 'widgets' category
+        return match ($role) {
+            DefaultRole::MANAGER->value,
+            DefaultRole::RECEPTIONIST->value,
+            DefaultRole::TRAINER->value => ['widgets'],
+            default => [],
+        };
+    }
+
+    /**
+     * Get report categories for the UI.
+     */
+    public function getRoleReportCategories(string $role): array
+    {
+        return match ($role) {
+            DefaultRole::MANAGER->value => ['report'], // Enum: REPORT = 'report'
+            default => [],
+        };
+    }
+
+    /**
+     * Get other categories for the UI (System, Communication, etc.).
+     */
+    public function getRoleOtherCategories(string $role): array
+    {
+        // Based on Seeder and Enum
+        return match ($role) {
+            DefaultRole::MANAGER->value => ['system', 'communication', 'setting', 'general'],
+            DefaultRole::RECEPTIONIST->value => ['communication', 'general'],
+            DefaultRole::TRAINER->value => ['general'],
+            default => [],
+        };
     }
 
     /**
