@@ -6,47 +6,66 @@ use App\Models\PermissionSetting;
 
 trait DefaultPermissionResourceTrait
 {
-    private $defaultPermissionResource = null;
+    public ?string $permissionSettingRole = null;
 
-    public $permissionSettingRole = null;
+    public ?PermissionSetting $permissionSetting = null;
 
-    public $permissionSetting = null;
+    protected array $resourceActions = [
+        'view_any',
+        'view',
+        'create',
+        'update',
+        'delete',
+        'delete_any',
+        'force_delete',
+        'force_delete_any',
+        'restore',
+        'replicate',
+        'reorder',
+        'export',
+        'import',
+    ];
 
-    protected function getDefaultResources(): array
-    {
-        return isset($this->defaultPermissionResource['resources']) && ! empty($this->defaultPermissionResource['resources']) ? $this->defaultPermissionResource['resources'] : $this->getFallbackResources();
-    }
-
-    protected function getDefaultWidgets(): array
-    {
-        return isset($this->defaultPermissionResource['widgets']) && ! empty($this->defaultPermissionResource['widgets']) ? $this->defaultPermissionResource['widgets'] : $this->getFallbackWidgets();
-    }
-
-    protected function getDefaultReports(): array
-    {
-        return isset($this->defaultPermissionResource['reports']) && ! empty($this->defaultPermissionResource['reports']) ? $this->defaultPermissionResource['reports'] : $this->getFallbackReports();
-    }
-
-    protected function getOtherDefaultResource(): array
-    {
-        return isset($this->defaultPermissionResource['other']) && ! empty($this->defaultPermissionResource['other']) ? $this->defaultPermissionResource['other'] : $this->getFallbackOtherResources();
-    }
-
-    public function setDefaultRole(?string $role = null)
+    public function setDefaultRole(string $role): self
     {
         $this->permissionSettingRole = $role;
 
-        $this->permissionSetting = $this->getPermissionsSettings($this->permissionSettingRole);
+        $this->permissionSetting = PermissionSetting::where('role', $role)->first();
 
-        $this->defaultPermissionResource = $this->permissionSetting?->default_resources;
+        return $this;
+    }
+
+    public function getDefaultResources(): array
+    {
+        return isset($this->permissionSetting->default_resources) && ! empty($this->permissionSetting->default_resources)
+            ? $this->permissionSetting->default_resources
+            : $this->getFallbackResources();
+    }
+
+    public function getDefaultWidgets(): array
+    {
+        return isset($this->permissionSetting->default_widgets) && ! empty($this->permissionSetting->default_widgets)
+            ? $this->permissionSetting->default_widgets
+            : $this->getFallbackWidgets();
+    }
+
+    public function getDefaultReports(): array
+    {
+        return isset($this->permissionSetting->default_reports) && ! empty($this->permissionSetting->default_reports)
+            ? $this->permissionSetting->default_reports
+            : $this->getFallbackReports();
+    }
+
+    public function getOtherDefaultResource(): array
+    {
+        return isset($this->permissionSetting->other_default_resources) && ! empty($this->permissionSetting->other_default_resources)
+            ? $this->permissionSetting->other_default_resources
+            : $this->getFallbackOtherResources();
     }
 
     /**
-     * Return the default permissions associated with the currently set role.
-     *
-     * If no role is set or no permission setting exists for the role, an empty array is returned.
-     *
-     * @return array<string>
+     * Get default permissions.
+     * Checks database settings first, then falls back to dynamic generation.
      */
     public function getDefaultPermissions(): array
     {
@@ -55,305 +74,225 @@ trait DefaultPermissionResourceTrait
             : $this->getFallbackPermissions();
     }
 
-    protected function getPermissionsSettings(?string $role = null): ?PermissionSetting
-    {
-        if (! $role) {
-            return null;
-        }
-
-        return PermissionSetting::where('role', $role)->first();
-    }
-
+    /**
+     * Generate fallback permissions dynamically based on allowed resources.
+     */
     protected function getFallbackPermissions(): array
     {
-        return match ($this->permissionSettingRole) {
-            'receptionist' => [
-                'view_gym_member',
-                'view_any_gym_member',
-                'create_gym_member',
-                'edit_gym_member',
-                'view_membership_plan',
-                'view_any_membership_plan',
-                'create_membership_plan',
-                'edit_membership_plan',
-                'view_payment',
-                'view_any_payment',
-                'create_payment',
-                'edit_payment',
-                'widget_stats_overview',
-                'widget_recent_members',
-                'widget_membership_expiry_alerts_chart',
-                'widget_todays_birthdays',
-                'access_notifications',
-                'manage_member_notes',
-                'send_notifications',
-                'access_member_communication',
-            ],
+        if (! $this->permissionSettingRole) {
+            return [];
+        }
+
+        $permissions = [];
+
+        // 1. Generate permissions from allowed resources
+        $resources = $this->getRoleAllowedResources($this->permissionSettingRole);
+        
+        foreach ($resources as $resource) {
+            foreach ($this->resourceActions as $action) {
+                // Determine resource name suffix (handle potential naming variations if needed)
+                // Seeder uses: $action . '_' . $resource;
+                $permissions[] = "{$action}_{$resource}";
+            }
+        }
+
+        // 2. Add role-specific/extra permissions
+        $extraPermissions = $this->getRoleSpecificPermissions($this->permissionSettingRole);
+        
+        $permissions = array_merge($permissions, $extraPermissions);
+
+        return array_values(array_unique($permissions));
+    }
+
+    /**
+     * Define which resources a role has FULL access to.
+     * Used to generate standard CRUD permissions.
+     */
+    protected function getRoleAllowedResources(string $role): array
+    {
+        return match ($role) {
             'manager' => [
-                // Members
-                'view_gym_member',
-                'view_any_gym_member',
-                'create_gym_member',
-                'edit_gym_member',
-                'delete_gym_member',
-                'export_gym_member',
-                
-                // Plans
-                'view_membership_plan',
+                'user',
+                'trainer',
+                'receptionist',
+                'gym_member',
+                'gym',
+                'membership_plan',
+                'attendance',
+                'payment',
+            ],
+            'receptionist' => [
+                'gym_member',
+                // 'payment', // Payment is full CRUD in Seeder except 'delete'? No, Seeder has create, update, view. Missing delete.
+                // 'attendance', // Seeder has create, view_any, view. Missing update? No. Seeder: view_any, view, create. 
+                // So purely FULL CRUD resources for Receptionist are: gym_member (yes, delete is there), membership (create, update, view..).
+                // Actually Seeder Receptionist has 'delete_member' (for gym_member).
+                // So 'gym_member' is safe.
+            ],
+            'trainer' => [
+                 // Trainer mostly has limited access (view/update), not full CRUD.
+                 // Exceptions: workout, schedule, attendance (CRUD-ish).
+                 'workout',
+                 'schedule', // Seeder: view_any, view, create, update, delete.
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Define specific permissions that don't fit the standard "Full CRUD" pattern or are widgets/pages.
+     */
+    protected function getRoleSpecificPermissions(string $role): array
+    {
+        return match ($role) {
+            'manager' => [
+                 // Manager Specifics (Seeder excludes some, but typically Manager needs Dashboard etc)
+                 // Seeder excludes 'access_admin_panel' from Manager via logic error?
+                 // But we should include access permissions.
+                 'access_admin_panel',
+                 'view_dashboard',
+                 
+                 // Widgets
+                 'widget_gym_revenue_chart',
+                 'widget_gym_stats_overview',
+                 'widget_membership_expiry_alerts_chart',
+                 'widget_recent_activity',
+                 'widget_todays_birthdays',
+                 'widget_trainer_performance',
+
+                 // Pages
+                 'page_dashboard',
+                 'page_edit_gym_profile',
+                 'page_register_gym', // Seeder might exclude this for Manager?
+                 'page_settings',
+                 'page_reports',
+                 'page_analytics',
+                 'page_backup',
+                 'page_system_health',
+
+                 // System & Communication
+                 'manage_settings',
+                 'view_analytics',
+                 'export_data',
+                 'import_data',
+                 'manage_backups',
+                 'view_system_logs',
+                 'send_notifications',
+                 'send_bulk_emails',
+                 'manage_announcements',
+                 'bulk_actions', // Advanced
+                 'advanced_search',
+                 'view_financial_reports',
+                 'view_member_reports',
+                 'view_trainer_reports',
+                 'view_equipment_reports',
+                 'export_reports',
+            ],
+            'receptionist' => [
+                'access_admin_panel',
+                'view_dashboard',
+                'page_dashboard',
+
+                // Membership Plans (View Only)
                 'view_any_membership_plan',
-                'create_membership_plan',
-                'edit_membership_plan',
-                'delete_membership_plan',
+                'view_membership_plan',
                 
-                // Trainers
-                'view_trainer',
-                'create_trainer',
-                'edit_trainer',
-                'delete_trainer',
-                
-                // Payments
-                'view_payment',
+                // Memberships (CRUD but maybe not delete?)
+                // Seeder: view_any, view, create, update. (No delete).
+                'view_any_membership',
+                'view_membership',
+                'create_membership',
+                'update_membership',
+
+                // Payments (View/Create/Update - No delete)
                 'view_any_payment',
+                'view_payment',
                 'create_payment',
-                'edit_payment',
-                
+                'update_payment',
+
+                // Attendance (Create/View - No update/delete?)
+                'view_any_attendance',
+                'view_attendance',
+                'create_attendance',
+
+                // Trainers (View Only)
+                'view_any_trainer',
+                'view_trainer',
+
+                // Equipment (View Only)
+                'view_any_equipment',
+                'view_equipment',
+
+                // Profile
+                'view_receptionist', // specific permission to view own profile? Seeder says 'view_receptionist'.
+                'update_receptionist',
+
                 // Widgets
                 'widget_stats_overview',
                 'widget_recent_members',
-                'widget_membership_expiry_alerts_chart',
-                'widget_todays_birthdays',
-                
-                // Others
-                'manage_staff',
-                'access_notifications',
-                'view_analytics',
-                'manage_member_notes',
+
+                // Comm
                 'send_notifications',
-                'access_member_communication',
-                'view_financial_reports',
             ],
             'trainer' => [
-                'view_gym_member',
-                'view_any_gym_member',
-                'view_class',
-                'view_any_class',
-                'create_class',
-                'edit_class',
-                'manage_class_bookings',
-                'mark_attendance',
-                'view_member_progress',
-                'create_member_progress',
-                'edit_member_progress',
-                'dashboard_access',
-                'widget_stats_overview', 
+                'access_admin_panel',
+                'view_dashboard',
+                'page_dashboard',
+
+                 // Members (View/Update only)
+                'view_any_member', // Seeder uses 'member' suffix for permissions here?
+                'view_member',
+                'update_member',
+
+                // Workouts (Full CRUD in AllowedResources? Yes)
+                // Schedules (Full CRUD in AllowedResources? Yes)
+
+                // Attendance (Create/Update/View)
+                'view_any_attendance',
+                'view_attendance',
+                'create_attendance',
+                'update_attendance',
+
+                // Profile
+                'view_trainer',
+                'update_trainer',
+
+                // Equipment (View Only)
+                'view_any_equipment',
+                'view_equipment',
+
+                // Widgets
+                'widget_stats_overview',
                 'widget_recent_members',
             ],
-            default => []
+            default => [],
         };
     }
 
-    // Fallback methods for when no PermissionSetting exists
+    // Legacy/Helper methods (Optional: remove if not used, or keep for compatibility)
     protected function getFallbackResources(): array
     {
-        return match ($this->permissionSettingRole) {
-            'receptionist' => [
-                'gym_member',
-                'membership_plan',
-                'attendance',
-                'payment',
-            ],
-            'manager' => [
-                'gym_member',
-                'membership_plan',
-                'trainer',
-                'receptionist',
-                'attendance',
-                'payment',
-                // 'equipment',
-                // 'class',
-            ],
-            'trainer' => [
-                'gym_member',
-                'attendance',
-                // 'class',
-                // 'equipment',
-                // 'training_session',
-                // 'workout_plan',
-                // 'nutrition_plan',
-            ],
-            default => [
-                'attendance',
-                'gym_member',
-                'membership_plan',
-                'receptionist',
-                'trainer',
-            ]
-        };
+        return $this->getAvailableCategoriesForRole($this->permissionSettingRole ?? '')['resources'] ?? [];
     }
 
     protected function getFallbackWidgets(): array
     {
-        return match ($this->permissionSettingRole) {
-            'receptionist' => [
-                'widgets',
-            ],
-            'manager' => [
-                'widgets',
-            ],
-            'trainer' => [
-                'widgets',
-            ],
-            default => [
-                'widgets',
-            ]
-        };
+        return $this->getAvailableCategoriesForRole($this->permissionSettingRole ?? '')['widgets'] ?? [];
     }
-
+    
     protected function getFallbackReports(): array
     {
-        return match ($this->permissionSettingRole) {
-            'receptionist' => [
-                'report',
-            ],
-            'manager' => [
-                'report',
-            ],
-            'trainer' => [
-                'report',
-            ],
-            default => [
-                'report',
-            ]
-        };
+        return $this->getAvailableCategoriesForRole($this->permissionSettingRole ?? '')['reports'] ?? [];
     }
 
     protected function getFallbackOtherResources(): array
     {
-        return match ($this->permissionSettingRole) {
-            'receptionist' => [
-                'communication',
-                'setting',
-                'general',
-            ],
-            'manager' => [
-                'communication',
-                'setting',
-                'general',
-                'system',
-            ],
-            'trainer' => [
-                'communication',
-                'general',
-            ],
-            default => [
-                'communication',
-                'setting',
-                'general',
-            ]
-        };
-    }
-
-    /**
-     * Get role-specific permissions for bulk operations
-     */
-    protected function getRoleSpecificPermissions(string $role, string $type = 'default'): array
-    {
-        $permissionMap = [
-            'receptionist' => [
-                'default' => [
-                    'view_gym_member',
-                    'create_gym_member',
-                    'edit_gym_member',
-                    'view_membership_plan',
-                    'create_membership_plan',
-                    'edit_membership_plan',
-                ],
-                'extended' => [
-                    'view_gym_member',
-                    'view_any_gym_member',
-                    'create_gym_member',
-                    'edit_gym_member',
-                    'view_membership_plan',
-                    'view_any_membership_plan',
-                    'create_membership_plan',
-                    'edit_membership_plan',
-                    'view_payment',
-                    'create_payment',
-                    'edit_payment',
-                ],
-            ],
-            'manager' => [
-                'default' => [
-                    'view_gym_member',
-                    'view_any_gym_member',
-                    'create_gym_member',
-                    'edit_gym_member',
-                    'delete_gym_member',
-                    'view_membership_plan',
-                    'view_any_membership_plan',
-                    'create_membership_plan',
-                    'edit_membership_plan',
-                    'delete_membership_plan',
-                    'view_trainer',
-                    'create_trainer',
-                    'edit_trainer',
-                ],
-                'extended' => [
-                    'view_gym_member',
-                    'view_any_gym_member',
-                    'create_gym_member',
-                    'edit_gym_member',
-                    'delete_gym_member',
-                    'export_gym_member',
-                    'view_membership_plan',
-                    'view_any_membership_plan',
-                    'create_membership_plan',
-                    'edit_membership_plan',
-                    'delete_membership_plan',
-                    'view_trainer',
-                    'create_trainer',
-                    'edit_trainer',
-                    'delete_trainer',
-                    'manage_staff',
-                ],
-            ],
-            'trainer' => [
-                'default' => [
-                    'view_gym_member',
-                    'view_class',
-                    'create_class',
-                    'edit_class',
-                    'manage_class_bookings',
-                    'mark_attendance',
-                    'view_member_progress',
-                    'create_member_progress',
-                    'edit_member_progress',
-                ],
-                'extended' => [
-                    'view_gym_member',
-                    'view_any_gym_member',
-                    'edit_gym_member',
-                    'view_class',
-                    'view_any_class',
-                    'create_class',
-                    'edit_class',
-                    'manage_class_bookings',
-                    'mark_attendance',
-                    'view_member_progress',
-                    'create_member_progress',
-                    'edit_member_progress',
-                    'create_workout_plan',
-                    'edit_workout_plan',
-                    'assign_workout_plan',
-                ],
-            ],
-        ];
-
-        return $permissionMap[$role][$type] ?? [];
+        return $this->getAvailableCategoriesForRole($this->permissionSettingRole ?? '')['other'] ?? [];
     }
 
     /**
      * Get all available categories for a specific role
+     * @deprecated Used for legacy fallback methods
      */
     protected function getAvailableCategoriesForRole(string $role): array
     {
@@ -384,133 +323,5 @@ trait DefaultPermissionResourceTrait
             'reports' => ['report'],
             'other' => ['communication', 'setting', 'general'],
         ];
-    }
-
-    /**
-     * Check if a permission is allowed for a specific role
-     */
-    protected function isPermissionAllowedForRole(string $permission, string $role): bool
-    {
-        $restrictedPermissions = [
-            'receptionist' => [
-                'delete_gym_member',
-                'force_delete_gym_member',
-                'delete_membership_plan',
-                'manage_settings',
-                'manage_backups',
-                'view_financial_reports',
-                'delete_trainer',
-                'create_trainer',
-            ],
-            'trainer' => [
-                'delete_gym_member',
-                'force_delete_gym_member',
-                'create_gym_member',
-                'delete_membership_plan',
-                'create_membership_plan',
-                'edit_membership_plan',
-                'manage_settings',
-                'manage_backups',
-                'view_financial_reports',
-                'delete_payment',
-                'create_payment',
-                'edit_payment',
-            ],
-            'manager' => [
-                // Managers have fewer restrictions
-                'manage_gym_settings',
-                'delete_gym',
-                'transfer_ownership',
-            ],
-        ];
-
-        $restricted = $restrictedPermissions[$role] ?? [];
-
-        return ! in_array($permission, $restricted);
-    }
-
-    /**
-     * Get permissions that should be auto-selected for a role
-     */
-    protected function getAutoSelectedPermissions(string $role): array
-    {
-        $autoSelect = [
-            'receptionist' => [
-                'view_gym_member',
-                'access_notifications',
-            ],
-            'manager' => [
-                'view_gym_member',
-                'view_any_gym_member',
-                'access_notifications',
-                'view_analytics',
-            ],
-            'trainer' => [
-                'view_gym_member',
-                'view_class',
-                'mark_attendance',
-            ],
-        ];
-
-        return $autoSelect[$role] ?? [];
-    }
-
-    /**
-     * Validate permission combination for a role
-     */
-    protected function validatePermissionCombination(array $permissions, string $role): array
-    {
-        $errors = [];
-
-        // Check for required dependencies
-        $dependencies = [
-            'create_gym_member' => ['view_gym_member'],
-            'edit_gym_member' => ['view_gym_member'],
-            'delete_gym_member' => ['view_gym_member', 'edit_gym_member'],
-            'create_membership_plan' => ['view_membership_plan'],
-            'edit_membership_plan' => ['view_membership_plan'],
-            'delete_membership_plan' => ['view_membership_plan', 'edit_membership_plan'],
-        ];
-
-        foreach ($permissions as $permission) {
-            if (isset($dependencies[$permission])) {
-                foreach ($dependencies[$permission] as $dependency) {
-                    if (! in_array($dependency, $permissions)) {
-                        $errors[] = "Permission '{$permission}' requires '{$dependency}' to be selected.";
-                    }
-                }
-            }
-        }
-
-        // Role-specific validations
-        if ($role === 'trainer') {
-            if (in_array('manage_class_bookings', $permissions) && ! in_array('view_class', $permissions)) {
-                $errors[] = "Trainers need 'view_class' permission to manage class bookings.";
-            }
-        }
-
-        return $errors;
-    }
-
-    /**
-     * Get suggested permissions based on selected ones
-     */
-    protected function getSuggestedPermissions(array $selectedPermissions, string $role): array
-    {
-        $suggestions = [];
-
-        if (in_array('view_gym_member', $selectedPermissions) && ! in_array('create_gym_member', $selectedPermissions)) {
-            $suggestions[] = 'create_gym_member';
-        }
-
-        if (in_array('create_gym_member', $selectedPermissions) && ! in_array('edit_gym_member', $selectedPermissions)) {
-            $suggestions[] = 'edit_gym_member';
-        }
-
-        if (in_array('view_class', $selectedPermissions) && $role === 'trainer' && ! in_array('mark_attendance', $selectedPermissions)) {
-            $suggestions[] = 'mark_attendance';
-        }
-
-        return array_filter($suggestions, fn ($permission) => $this->isPermissionAllowedForRole($permission, $role));
     }
 }

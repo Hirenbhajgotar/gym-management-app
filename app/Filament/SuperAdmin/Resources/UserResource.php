@@ -97,8 +97,8 @@ class UserResource extends Resource
                     ->maxLength(255)
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $context): bool => $context === 'create')
-                    ->helperText(fn (string $context): string => $context === 'create' 
-                        ? 'User will receive this password in their welcome email' 
+                    ->helperText(fn (string $context): string => $context === 'create'
+                        ? 'User will receive this password in their welcome email'
                         : 'Leave empty to keep current password'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
