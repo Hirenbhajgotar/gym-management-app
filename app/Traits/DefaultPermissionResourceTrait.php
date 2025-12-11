@@ -14,22 +14,22 @@ trait DefaultPermissionResourceTrait
 
     protected function getDefaultResources(): array
     {
-        return isset($this->defaultPermissionResource['resources']) ? $this->defaultPermissionResource['resources'] : $this->getFallbackResources();
+        return isset($this->defaultPermissionResource['resources']) && ! empty($this->defaultPermissionResource['resources']) ? $this->defaultPermissionResource['resources'] : $this->getFallbackResources();
     }
 
     protected function getDefaultWidgets(): array
     {
-        return isset($this->defaultPermissionResource['widgets']) ? $this->defaultPermissionResource['widgets'] : $this->getFallbackWidgets();
+        return isset($this->defaultPermissionResource['widgets']) && ! empty($this->defaultPermissionResource['widgets']) ? $this->defaultPermissionResource['widgets'] : $this->getFallbackWidgets();
     }
 
     protected function getDefaultReports(): array
     {
-        return isset($this->defaultPermissionResource['reports']) ? $this->defaultPermissionResource['reports'] : $this->getFallbackReports();
+        return isset($this->defaultPermissionResource['reports']) && ! empty($this->defaultPermissionResource['reports']) ? $this->defaultPermissionResource['reports'] : $this->getFallbackReports();
     }
 
     protected function getOtherDefaultResource(): array
     {
-        return isset($this->defaultPermissionResource['other']) ? $this->defaultPermissionResource['other'] : $this->getFallbackOtherResources();
+        return isset($this->defaultPermissionResource['other']) && ! empty($this->defaultPermissionResource['other']) ? $this->defaultPermissionResource['other'] : $this->getFallbackOtherResources();
     }
 
     public function setDefaultRole(?string $role = null)
@@ -50,7 +50,9 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultPermissions(): array
     {
-        return $this->permissionSetting->default_permissions ?? [];
+        return isset($this->permissionSetting->default_permissions) && ! empty($this->permissionSetting->default_permissions)
+            ? $this->permissionSetting->default_permissions
+            : $this->getFallbackPermissions();
     }
 
     protected function getPermissionsSettings(?string $role = null): ?PermissionSetting
@@ -60,6 +62,94 @@ trait DefaultPermissionResourceTrait
         }
 
         return PermissionSetting::where('role', $role)->first();
+    }
+
+    protected function getFallbackPermissions(): array
+    {
+        return match ($this->permissionSettingRole) {
+            'receptionist' => [
+                'view_gym_member',
+                'view_any_gym_member',
+                'create_gym_member',
+                'edit_gym_member',
+                'view_membership_plan',
+                'view_any_membership_plan',
+                'create_membership_plan',
+                'edit_membership_plan',
+                'view_payment',
+                'view_any_payment',
+                'create_payment',
+                'edit_payment',
+                'widget_stats_overview',
+                'widget_recent_members',
+                'widget_membership_expiry_alerts_chart',
+                'widget_todays_birthdays',
+                'access_notifications',
+                'manage_member_notes',
+                'send_notifications',
+                'access_member_communication',
+            ],
+            'manager' => [
+                // Members
+                'view_gym_member',
+                'view_any_gym_member',
+                'create_gym_member',
+                'edit_gym_member',
+                'delete_gym_member',
+                'export_gym_member',
+                
+                // Plans
+                'view_membership_plan',
+                'view_any_membership_plan',
+                'create_membership_plan',
+                'edit_membership_plan',
+                'delete_membership_plan',
+                
+                // Trainers
+                'view_trainer',
+                'create_trainer',
+                'edit_trainer',
+                'delete_trainer',
+                
+                // Payments
+                'view_payment',
+                'view_any_payment',
+                'create_payment',
+                'edit_payment',
+                
+                // Widgets
+                'widget_stats_overview',
+                'widget_recent_members',
+                'widget_membership_expiry_alerts_chart',
+                'widget_todays_birthdays',
+                
+                // Others
+                'manage_staff',
+                'access_notifications',
+                'view_analytics',
+                'manage_member_notes',
+                'send_notifications',
+                'access_member_communication',
+                'view_financial_reports',
+            ],
+            'trainer' => [
+                'view_gym_member',
+                'view_any_gym_member',
+                'view_class',
+                'view_any_class',
+                'create_class',
+                'edit_class',
+                'manage_class_bookings',
+                'mark_attendance',
+                'view_member_progress',
+                'create_member_progress',
+                'edit_member_progress',
+                'dashboard_access',
+                'widget_stats_overview', 
+                'widget_recent_members',
+            ],
+            default => []
+        };
     }
 
     // Fallback methods for when no PermissionSetting exists
