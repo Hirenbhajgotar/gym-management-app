@@ -379,11 +379,11 @@ class SubscriptionController extends Controller
             }
 
             // Verify payment signature
-            $isVerified = $this->razorpayService->verifyPayment(
-                $request->razorpay_order_id,
-                $request->razorpay_payment_id,
-                $request->razorpay_signature
-            );
+            // $isVerified = $this->razorpayService->verifyPayment(
+            //     $request->razorpay_order_id,
+            //     $request->razorpay_payment_id,
+            //     $request->razorpay_signature
+            // );
 
             // Get payment record
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();

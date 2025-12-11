@@ -12,7 +12,7 @@ return [
     ],
 
     DefaultRole::TRAINER->value => [
-        'workout', 'schedule', 'attendance',
+        'attendance', 'gym_member',
     ],
 
     'default' => [],

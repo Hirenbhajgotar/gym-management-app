@@ -138,7 +138,7 @@ class RolesAndPermissionsService
                 // Receptionist Exclusions
                 if ($role === DefaultRole::RECEPTIONIST->value) {
                     // Receptionists should not delete payments
-                    if ($resourceName === 'payment' || in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
+                    if (in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
                         continue;
                     }
                     // For safety, maybe block delete on everything EXCEPT gym_member?
@@ -217,13 +217,13 @@ class RolesAndPermissionsService
                 'widget_recent_members',
                 'send_notifications',
             ]),
-            DefaultRole::TRAINER->value => array_merge($common, [
-                'view_any_member', 'view_member', 'update_member', // View/Update assigned members
-                'view_trainer', 'update_trainer',
-                'view_any_equipment', 'view_equipment',
-                'widget_stats_overview',
-                'widget_recent_members',
-            ]),
+            // DefaultRole::TRAINER->value => array_merge($common, [
+            //     'view_any_member', 'view_member', 'update_member', // View/Update assigned members
+            //     'view_trainer', 'update_trainer',
+            //     'view_any_equipment', 'view_equipment',
+            //     'widget_stats_overview',
+            //     'widget_recent_members',
+            // ]),
             default => [],
         };
     }

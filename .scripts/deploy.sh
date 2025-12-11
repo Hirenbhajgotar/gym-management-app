@@ -24,6 +24,11 @@ npm run build
 echo "Running database migrations..."
 php artisan migrate --force
 
+# Running database seeder for roles and permissions
+echo "Running database seeder for roles and permissions..."
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan db:seed --class=PermissionDescriptionSeeder
+
 # Restart queue workers after deployment
 echo "Restarting queue workers..."
 sudo supervisorctl restart laravel-worker:* || true
