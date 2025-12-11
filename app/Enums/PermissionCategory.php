@@ -27,6 +27,7 @@ enum PermissionCategory: string implements HasIcon, HasLabel
     case GENERAL = 'general';
     case MANAGER = 'manager';
     case PAYMENT = 'payment';
+    case LEAD = 'lead';
 
     public function getLabel(): string
     {
@@ -51,6 +52,7 @@ enum PermissionCategory: string implements HasIcon, HasLabel
             self::GENERAL => 'General',
             self::MANAGER => 'Manager',
             self::PAYMENT => 'Payment',
+            self::LEAD => 'Lead',
         };
     }
 
@@ -76,6 +78,7 @@ enum PermissionCategory: string implements HasIcon, HasLabel
             self::COMMUNICATION => 'heroicon-o-chat-bubble-left-right',
             self::GENERAL => 'heroicon-o-light-bulb',
             self::PAYMENT => 'heroicon-o-credit-card',
+            self::LEAD => 'heroicon-o-user',
         };
     }
 }

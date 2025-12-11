@@ -93,11 +93,13 @@ class UserResource extends Resource
                 Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required()
                     ->revealable()
                     ->maxLength(255)
-                    ->visible(fn (string $context): bool => $context === 'create')
-                    ->helperText('User will receive this password in their welcome email'),
+                    ->dehydrated(fn ($state) => filled($state))
+                    ->required(fn (string $context): bool => $context === 'create')
+                    ->helperText(fn (string $context): string => $context === 'create'
+                        ? 'User will receive this password in their welcome email'
+                        : 'Leave empty to keep current password'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),

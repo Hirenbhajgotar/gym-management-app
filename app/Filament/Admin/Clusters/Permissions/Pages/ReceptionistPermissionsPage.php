@@ -51,6 +51,10 @@ class ReceptionistPermissionsPage extends BasePermissionsPage
             'manage_member_notes',
             'send_notifications',
             'access_member_communication',
+            'view_lead',
+            'view_any_lead',
+            'create_lead',
+            'edit_lead',
         ];
     }
 
