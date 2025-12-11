@@ -54,13 +54,13 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultPermissions(): array
     {
-        //Alias usage in service: use DefaultPermissionResourceTrait { getDefaultPermissions as traitGetDefaultPermissions; }
-        
+        // Alias usage in service: use DefaultPermissionResourceTrait { getDefaultPermissions as traitGetDefaultPermissions; }
+
         return isset($this->permissionSetting->default_permissions) && ! empty($this->permissionSetting->default_permissions)
             ? $this->permissionSetting->default_permissions
             : $this->getFallbackPermissions();
     }
-    
+
     protected function getFallbackPermissions(): array
     {
         if (! $this->permissionSettingRole) {
@@ -71,14 +71,14 @@ trait DefaultPermissionResourceTrait
         return app(RolesAndPermissionsService::class)->getDynamicDefaultPermissions($this->permissionSettingRole);
     }
 
-
     // Delegate fallbacks to Service to ensure UI BasePermissionsPage receives valid categories
-    
+
     protected function getFallbackResources(): array
     {
         if (! $this->permissionSettingRole) {
             return [];
         }
+
         return app(RolesAndPermissionsService::class)->getRoleResourceCategories($this->permissionSettingRole);
     }
 
@@ -87,14 +87,16 @@ trait DefaultPermissionResourceTrait
         if (! $this->permissionSettingRole) {
             return [];
         }
+
         return app(RolesAndPermissionsService::class)->getRoleWidgetCategories($this->permissionSettingRole);
     }
-    
+
     protected function getFallbackReports(): array
     {
         if (! $this->permissionSettingRole) {
             return [];
         }
+
         return app(RolesAndPermissionsService::class)->getRoleReportCategories($this->permissionSettingRole);
     }
 
@@ -103,6 +105,7 @@ trait DefaultPermissionResourceTrait
         if (! $this->permissionSettingRole) {
             return [];
         }
+
         return app(RolesAndPermissionsService::class)->getRoleOtherCategories($this->permissionSettingRole);
     }
 }

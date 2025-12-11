@@ -7,7 +7,6 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
 use Filament\Facades\Filament;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -103,73 +102,55 @@ class RolesAndPermissionsService
     }
 
     /**
-     * Generate dynamic default permissions based on Admin Panel Resources.
-     * Called by the Trait's fallback method.
+     * Generate dynamic default permissions based on Allowed List.
+     * We iterate the ALLOWED LIST directly, instead of Filament Resources.
+     * This ensures that "Virtual" resources (like Payment, if no Resource class exists)
+     * and "Shared Model" resources (Receptionist -> User model) are handled correctly.
      */
     public function getDynamicDefaultPermissions(string $role): array
     {
         $permissions = [];
 
-        // 1. Get Resources from Admin Panel
-        $resources = [];
-        try {
-            $resources = Filament::getPanel('admin')->getResources();
-        } catch (\Exception $e) {
-            // Fallback or log if panel not found (e.g. running in console without panel context)
-            // But we should try to load it.
-        }
-
-        // 2. Define standard actions
+        // 1. Define standard actions
         $actions = [
             'view_any', 'view', 'create', 'update', 'delete',
             'delete_any', 'force_delete', 'force_delete_any',
             'restore', 'replicate', 'reorder', 'export', 'import',
         ];
 
-        // 3. Define allowed resources per role (Functionality based)
-        // If a resource is NOT in this list, the role gets NO access to it (unless specific permission added later).
-        // This acts as an "Allow List".
+        // 2. Get the "Allow List" for this role.
+        // This is the source of truth for what they SHOULD have access to.
         $allowedResources = $this->getRoleAllowedResourcesList($role);
-        // dd($allowedResources, $resources);
+        // dd($allowedResources);
 
-        foreach ($resources as $resourceClass) {
-            $model = $resourceClass::getModel();
-            $resourceName = Str::snake(class_basename($model));
+        foreach ($allowedResources as $resourceName) {
+            foreach ($actions as $action) {
+                // EXCLUSION LOGIC
 
-            if (in_array($resourceName, $allowedResources)) {
-                foreach ($actions as $action) {
-                    // EXCLUSION LOGIC
-                    if ($role === DefaultRole::MANAGER->value) {
-                        // Managers cannot force delete
-                        if (in_array($action, ['force_delete', 'force_delete_any'])) {
-                            continue;
-                        }
+                // Manager Exclusions
+                if ($role === DefaultRole::MANAGER->value) {
+                    // Managers cannot force delete anything
+                    if (in_array($action, ['force_delete', 'force_delete_any'])) {
+                        continue;
                     }
-
-                    if ($role === DefaultRole::RECEPTIONIST->value) {
-                        // Receptionist restrictions (No delete for most things?)
-                        // Seeder: delete allowed for 'gym_member'.
-                        // But maybe not 'payment'?
-                        // Let's rely on Seeder logic:
-                        // Receptionist has 'delete_member'.
-                        // But DOES NOT have 'delete_payment' (only view/create/update).
-
-                        // To be safe and automated, we might need granular exclusions or just "Standard CRUD" for all allowed?
-                        // User manual request: "manager we cant give him force_delete".
-                        // For Receptionist, user implied earlier issues.
-                        // Let's implement a 'getRoleDeniedActions($role, $resource)' if needed.
-
-                        if ($resourceName === 'payment' && in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
-                            continue;
-                        }
-                    }
-
-                    $permissions[] = "{$action}_{$resourceName}";
                 }
+
+                // Receptionist Exclusions
+                if ($role === DefaultRole::RECEPTIONIST->value) {
+                    // Receptionists should not delete payments
+                    if (in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
+                        continue;
+                    }
+                    // For safety, maybe block delete on everything EXCEPT gym_member?
+                    // But for now, let's stick to specific exclusions or the Seeder's pattern.
+                }
+
+                // Generate permission string: action_resource
+                $permissions[] = "{$action}_{$resourceName}";
             }
         }
 
-        // 4. Add Role Specific / Extra Permissions (Widgets, Pages, etc.)
+        // 3. Add Role Specific / Extra Permissions (Widgets, Pages, etc.)
         $extraPermissions = $this->getRoleSpecificPermissions($role);
 
         $permissions = array_merge($permissions, $extraPermissions);
