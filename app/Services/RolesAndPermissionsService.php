@@ -71,12 +71,6 @@ class RolesAndPermissionsService
         if ($role) {
             $this->setDefaultRole($role);
 
-            // This now eventually calls back to getDynamicDefaultPermissions via the Trait's fallback,
-            // OR returns DB settings if they exist.
-            // Wait, trait calls $this->getFallbackPermissions().
-            // We need to ensure logic flow is correct.
-            // The Trait's getDefaultPermissions() checks DB, then calls getFallbackPermissions().
-            // In the Trait, we will change getFallbackPermissions() to call the Service's dynamic method.
             return $this->getTraitDefaultPermissions();
         }
 
@@ -141,8 +135,6 @@ class RolesAndPermissionsService
                     if (in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
                         continue;
                     }
-                    // For safety, maybe block delete on everything EXCEPT gym_member?
-                    // But for now, let's stick to specific exclusions or the Seeder's pattern.
                 }
 
                 // Generate permission string: action_resource
@@ -217,13 +209,6 @@ class RolesAndPermissionsService
                 'widget_recent_members',
                 'send_notifications',
             ]),
-            // DefaultRole::TRAINER->value => array_merge($common, [
-            //     'view_any_member', 'view_member', 'update_member', // View/Update assigned members
-            //     'view_trainer', 'update_trainer',
-            //     'view_any_equipment', 'view_equipment',
-            //     'widget_stats_overview',
-            //     'widget_recent_members',
-            // ]),
             default => [],
         };
     }
@@ -317,7 +302,7 @@ class RolesAndPermissionsService
 
     public function getPermissionDescription(string $permissionName): string
     {
-        return ucwords(str_replace(['_', '-'], ' ', 'can_' . $this->getPermissionDisplayName($permissionName)));
+        return 'can_' . $this->getPermissionDisplayName($permissionName);
     }
 
     public function getPermissionCategory(string $permissionName): ?string
