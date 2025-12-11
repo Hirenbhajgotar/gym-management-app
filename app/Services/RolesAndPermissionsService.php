@@ -203,10 +203,7 @@ class RolesAndPermissionsService
             DefaultRole::RECEPTIONIST->value => array_merge($common, [
                 'view_any_membership_plan', 'view_membership_plan', // View only for plans
                 'view_any_trainer', 'view_trainer', // View trainers
-                'view_any_equipment', 'view_equipment',
                 'view_receptionist', 'update_receptionist', // Own profile
-                'widget_stats_overview',
-                'widget_recent_members',
                 'send_notifications',
             ]),
             default => [],
