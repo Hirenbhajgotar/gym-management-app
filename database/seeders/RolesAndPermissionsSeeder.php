@@ -25,30 +25,31 @@ class RolesAndPermissionsSeeder extends Seeder
         $gyms = Gym::all();
 
         if ($gyms->isEmpty()) {
-            $this->command->warn("⚠️ No gyms found. Creating default gym...");
+            $this->command->warn('⚠️ No gyms found. Creating default gym...');
             $gym = Gym::create([
-                "name" => "Default gym",
-                "slug" => "default-gym",
+                'name' => 'Default gym',
+                'slug' => 'default-gym',
             ]);
             $gyms = collect([$gym]);
         }
 
         // Define your models/resources - these should match your Filament Resources
         $resources = [
-            "user",
-            "city",
-            "state",
-            "country",
-            "plan",
-            "gym_member",
-            "gym",
-            "membership_plan",
-            "trainer",
-            "receptionist",
-            "manager",
-            "attendance",
-            "payment",
-            "permission",
+            'user',
+            'city',
+            'state',
+            'country',
+            'plan',
+            'gym_member',
+            'gym',
+            'membership_plan',
+            'trainer',
+            'receptionist',
+            'manager',
+            'attendance',
+            'payment',
+            'permission',
+            'lead',
             // 'equipment',
             // 'workout',
             // 'schedule',
@@ -60,19 +61,19 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Define Filament v3 standard permissions
         $resourceActions = [
-            "view_any", // List/Index page
-            "view", // View single record
-            "create", // Create new record
-            "update", // Edit existing record
-            "delete", // Delete record
-            "delete_any",
-            "force_delete", // Permanently delete
-            "force_delete_any", // Force delete multiple records
-            "restore", // Restore soft deleted
-            "replicate", // Replicate record
-            "reorder", // Reorder records
-            "export",
-            "import",
+            'view_any', // List/Index page
+            'view', // View single record
+            'create', // Create new record
+            'update', // Edit existing record
+            'delete', // Delete record
+            'delete_any',
+            'force_delete', // Permanently delete
+            'force_delete_any', // Force delete multiple records
+            'restore', // Restore soft deleted
+            'replicate', // Replicate record
+            'reorder', // Reorder records
+            'export',
+            'import',
         ];
 
         // Create permissions for each resource
@@ -82,26 +83,26 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach ($resources as $resource) {
             foreach ($resourceActions as $action) {
-                $permissionName = $action . "_" . $resource;
+                $permissionName = $action . '_' . $resource;
                 $permission = ModelsPermission::firstOrCreate([
-                    "name" => $permissionName,
-                    "guard_name" => "web",
+                    'name' => $permissionName,
+                    'guard_name' => 'web',
                 ]);
                 $allPermissions[] = $permission;
 
                 // Add gym owner permissions
                 if (
                     in_array($resource, [
-                        "user",
-                        "trainer",
-                        "receptionist",
-                        "manager",
-                        "gym_member",
-                        "gym",
-                        "membership_plan",
-                        "attendance",
-                        "payment",
-                        "permission",
+                        'user',
+                        'trainer',
+                        'receptionist',
+                        'manager',
+                        'gym_member',
+                        'gym',
+                        'membership_plan',
+                        'attendance',
+                        'payment',
+                        'permission',
                     ])
                 ) {
                     $gymOwnerPermissions[] = $permission;
@@ -110,14 +111,14 @@ class RolesAndPermissionsSeeder extends Seeder
                 // Add gym manager permissions
                 if (
                     in_array($resource, [
-                        "user",
-                        "trainer",
-                        "receptionist",
-                        "gym_member",
-                        "gym",
-                        "membership_plan",
-                        "attendance",
-                        "payment",
+                        'user',
+                        'trainer',
+                        'receptionist',
+                        'gym_member',
+                        'gym',
+                        'membership_plan',
+                        'attendance',
+                        'payment',
                     ])
                 ) {
                     $gymManagerPermissions[] = $permission;
@@ -128,94 +129,94 @@ class RolesAndPermissionsSeeder extends Seeder
         // Add Filament v3 specific permissions
         $filamentPermissions = [
             // Admin Panel Access
-            "access_admin_panel",
+            'access_admin_panel',
 
             // Dashboard & Widgets
-            "view_dashboard",
-            "widget_gym_revenue_chart",
-            "widget_gym_stats_overview",
-            "widget_membership_expiry_alerts_chart",
-            "widget_recent_activity",
-            "widget_todays_birthdays",
-            "widget_trainer_performance",
+            'view_dashboard',
+            'widget_gym_revenue_chart',
+            'widget_gym_stats_overview',
+            'widget_membership_expiry_alerts_chart',
+            'widget_recent_activity',
+            'widget_todays_birthdays',
+            'widget_trainer_performance',
 
             // Pages
-            "page_dashboard",
-            "page_edit_gym_profile",
-            "page_register_gym",
-            "page_settings",
-            "page_reports",
-            "page_analytics",
-            "page_backup",
-            "page_system_health",
+            'page_dashboard',
+            'page_edit_gym_profile',
+            'page_register_gym',
+            'page_settings',
+            'page_reports',
+            'page_analytics',
+            'page_backup',
+            'page_system_health',
 
             // System Operations
-            "manage_settings",
-            "view_analytics",
-            "export_data",
-            "import_data",
-            "manage_backups",
-            "view_system_logs",
-            "clear_cache",
-            "run_commands",
+            'manage_settings',
+            'view_analytics',
+            'export_data',
+            'import_data',
+            'manage_backups',
+            'view_system_logs',
+            'clear_cache',
+            'run_commands',
 
             // Notifications & Communication
-            "send_notifications",
-            "send_bulk_emails",
-            "manage_announcements",
+            'send_notifications',
+            'send_bulk_emails',
+            'manage_announcements',
 
             // Advanced Features
-            "bulk_actions",
-            "advanced_search",
-            "manage_integrations",
-            "api_access",
+            'bulk_actions',
+            'advanced_search',
+            'manage_integrations',
+            'api_access',
 
             // Reports & Analytics
-            "view_financial_reports",
-            "view_member_reports",
-            "view_trainer_reports",
-            "view_equipment_reports",
-            "export_reports",
+            'view_financial_reports',
+            'view_member_reports',
+            'view_trainer_reports',
+            'view_equipment_reports',
+            'export_reports',
         ];
 
         $gymOwnerExceptPermissions = [
-            "access_admin_panel",
-            "clear_cache",
-            "run_commands",
-            "manage_integrations",
-            "page_system_health",
+            'access_admin_panel',
+            'clear_cache',
+            'run_commands',
+            'manage_integrations',
+            'page_system_health',
         ];
         $filamentManagerPermissions = [
-            "access_admin_panel",
-            "clear_cache",
-            "run_commands",
-            "manage_integrations",
-            "page_system_health",
-            "page_register_gym",
-            "page_edit_gym_profile",
+            'access_admin_panel',
+            'clear_cache',
+            'run_commands',
+            'manage_integrations',
+            'page_system_health',
+            'page_register_gym',
+            'page_edit_gym_profile',
         ];
 
         foreach ($filamentPermissions as $permissionName) {
             $permission = ModelsPermission::firstOrCreate([
-                "name" => $permissionName,
-                "guard_name" => "web",
+                'name' => $permissionName,
+                'guard_name' => 'web',
             ]);
             $allPermissions[] = $permission;
 
             // Add gym owner permissions
-            if (!in_array($resource, $gymOwnerExceptPermissions)) {
+            if (! in_array($resource, $gymOwnerExceptPermissions)) {
                 $gymOwnerPermissions[] = $permission;
             }
 
-            if (!in_array($resource, $filamentManagerPermissions)) {
+            if (! in_array($resource, $filamentManagerPermissions)) {
                 $gymManagerPermissions[] = $permission;
             }
         }
 
         // Create Super Admin role with all permissions
         $superAdminRole = Role::firstOrCreate([
-            "name" => DefaultRole::SUPER_ADMIN->value,
-            "guard_name" => "web",
+            'name' => DefaultRole::SUPER_ADMIN->value,
+            'guard_name' => 'web',
         ]);
         $superAdminRole->syncPermissions($allPermissions);
 
@@ -228,7 +229,7 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
         $this->command->info(
-            "✅ Tenant-specific roles and permissions have been seeded successfully!",
+            '✅ Tenant-specific roles and permissions have been seeded successfully!',
         );
 
         // Display summary
@@ -245,166 +246,166 @@ class RolesAndPermissionsSeeder extends Seeder
     ) {
         // Create Gym Owner role with all permissions (same as super admin)
         $gymOwnerRole = Role::firstOrCreate([
-            "name" => DefaultRole::GYM_OWNER->value,
-            "guard_name" => "web",
-            "gym_id" => $gym->id,
+            'name' => DefaultRole::GYM_OWNER->value,
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
         $gymOwnerRole->syncPermissions($gymOwnerPermissions);
 
-        $gymOwnerRole = Role::firstOrCreate([
-            "name" => DefaultRole::MANAGER->value,
-            "guard_name" => "web",
-            "gym_id" => $gym->id,
+        $managerRole = Role::firstOrCreate([
+            'name' => DefaultRole::MANAGER->value,
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
-        $gymOwnerRole->syncPermissions($gymManagerPermissions);
+        $managerRole->syncPermissions($gymManagerPermissions);
 
         // Create Trainer role with limited permissions
         $trainerRole = Role::firstOrCreate([
-            "name" => "trainer",
-            "guard_name" => "web",
-            "gym_id" => $gym->id,
+            'name' => 'trainer',
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $trainerPermissions = [
             // Basic access
-            "access_admin_panel",
-            "view_dashboard",
-            "page_dashboard",
+            'access_admin_panel',
+            'view_dashboard',
+            'page_dashboard',
 
             // Members (limited to assigned members)
-            "view_any_member",
-            "view_member",
-            "update_member",
+            'view_any_member',
+            'view_member',
+            'update_member',
 
             // Workouts
-            "view_any_workout",
-            "view_workout",
-            "create_workout",
-            "update_workout",
-            "delete_workout",
+            'view_any_workout',
+            'view_workout',
+            'create_workout',
+            'update_workout',
+            'delete_workout',
 
             // Schedules
-            "view_any_schedule",
-            "view_schedule",
-            "create_schedule",
-            "update_schedule",
-            "delete_schedule",
+            'view_any_schedule',
+            'view_schedule',
+            'create_schedule',
+            'update_schedule',
+            'delete_schedule',
 
             // Attendance
-            "view_any_attendance",
-            "view_attendance",
-            "create_attendance",
-            "update_attendance",
+            'view_any_attendance',
+            'view_attendance',
+            'create_attendance',
+            'update_attendance',
 
             // Own profile
-            "view_trainer",
-            "update_trainer",
+            'view_trainer',
+            'update_trainer',
 
             // Equipment (view only)
-            "view_any_equipment",
-            "view_equipment",
+            'view_any_equipment',
+            'view_equipment',
 
             // Widgets
-            "widget_stats_overview",
-            "widget_recent_members",
+            'widget_stats_overview',
+            'widget_recent_members',
         ];
 
         $trainerRole->syncPermissions(
-            Permission::whereIn("name", $trainerPermissions)->get(),
+            Permission::whereIn('name', $trainerPermissions)->get(),
         );
 
         // Create Receptionist role with customer service permissions
         $receptionistRole = Role::firstOrCreate([
-            "name" => "receptionist",
-            "guard_name" => "web",
-            "gym_id" => $gym->id,
+            'name' => 'receptionist',
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $receptionistPermissions = [
             // Basic access
-            "access_admin_panel",
-            "view_dashboard",
-            "page_dashboard",
+            'access_admin_panel',
+            'view_dashboard',
+            'page_dashboard',
 
             // Members (full CRUD)
-            "view_any_member",
-            "view_member",
-            "create_member",
-            "update_member",
-            "delete_member",
+            'view_any_member',
+            'view_member',
+            'create_member',
+            'update_member',
+            'delete_member',
 
             // Memberships
-            "view_any_membership",
-            "view_membership",
-            "create_membership",
-            "update_membership",
+            'view_any_membership',
+            'view_membership',
+            'create_membership',
+            'update_membership',
 
             // Membership Plans (view only)
-            "view_any_membership_plan",
-            "view_membership_plan",
+            'view_any_membership_plan',
+            'view_membership_plan',
 
             // Payments
-            "view_any_payment",
-            "view_payment",
-            "create_payment",
-            "update_payment",
+            'view_any_payment',
+            'view_payment',
+            'create_payment',
+            'update_payment',
 
             // Attendance
-            "view_any_attendance",
-            "view_attendance",
-            "create_attendance",
+            'view_any_attendance',
+            'view_attendance',
+            'create_attendance',
 
             // Trainers (view only)
-            "view_any_trainer",
-            "view_trainer",
+            'view_any_trainer',
+            'view_trainer',
 
             // Equipment (view only)
-            "view_any_equipment",
-            "view_equipment",
+            'view_any_equipment',
+            'view_equipment',
 
             // Own profile
-            "view_receptionist",
-            "update_receptionist",
+            'view_receptionist',
+            'update_receptionist',
 
             // Widgets
-            "widget_stats_overview",
-            "widget_recent_members",
+            'widget_stats_overview',
+            'widget_recent_members',
 
             // Communication
-            "send_notifications",
+            'send_notifications',
         ];
 
         $receptionistRole->syncPermissions(
-            Permission::whereIn("name", $receptionistPermissions)->get(),
+            Permission::whereIn('name', $receptionistPermissions)->get(),
         );
 
         // Create Member role (if you want members to have limited access)
         $memberRole = Role::firstOrCreate([
-            "name" => "member",
-            "guard_name" => "web",
-            "gym_id" => $gym->id,
+            'name' => 'member',
+            'guard_name' => 'web',
+            'gym_id' => $gym->id,
         ]);
 
         $memberPermissions = [
             // Very limited access - only their own data
-            "access_admin_panel",
-            "view_dashboard",
+            'access_admin_panel',
+            'view_dashboard',
 
             // Own profile only
-            "view_member",
-            "update_member",
+            'view_member',
+            'update_member',
 
             // Own workouts and schedules
-            "view_workout",
-            "view_schedule",
-            "view_attendance",
+            'view_workout',
+            'view_schedule',
+            'view_attendance',
 
             // View trainers (to see who they're assigned to)
-            "view_trainer",
+            'view_trainer',
         ];
 
         $memberRole->syncPermissions(
-            Permission::whereIn("name", $memberPermissions)->get(),
+            Permission::whereIn('name', $memberPermissions)->get(),
         );
     }
 
@@ -413,12 +414,12 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function displaySummary($gyms)
     {
-        $this->command->info("📊 Summary:");
+        $this->command->info('📊 Summary:');
 
         foreach ($gyms as $gym) {
             $this->command->info("   🏢 Gym: {$gym->name}");
 
-            $gymRoles = Role::where("gym_id", $gym->id)->get();
+            $gymRoles = Role::where('gym_id', $gym->id)->get();
             foreach ($gymRoles as $role) {
                 $permissionCount = $role->permissions()->count();
                 $this->command->info(

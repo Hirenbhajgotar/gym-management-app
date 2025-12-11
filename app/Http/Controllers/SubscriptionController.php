@@ -378,13 +378,6 @@ class SubscriptionController extends Controller
                 throw new \Exception('Registration data not found');
             }
 
-            // Verify payment signature
-            $isVerified = $this->razorpayService->verifyPayment(
-                $request->razorpay_order_id,
-                $request->razorpay_payment_id,
-                $request->razorpay_signature
-            );
-
             // Get payment record
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
 
