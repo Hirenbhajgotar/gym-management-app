@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DefaultRole;
+use App\Enums\PermissionCategory;
 use App\Models\Gym;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
@@ -121,7 +122,6 @@ class RolesAndPermissionsService
         // 2. Get the "Allow List" for this role.
         // This is the source of truth for what they SHOULD have access to.
         $allowedResources = $this->getRoleAllowedResourcesList($role);
-        // dd($allowedResources);
 
         foreach ($allowedResources as $resourceName) {
             foreach ($actions as $action) {
@@ -138,7 +138,7 @@ class RolesAndPermissionsService
                 // Receptionist Exclusions
                 if ($role === DefaultRole::RECEPTIONIST->value) {
                     // Receptionists should not delete payments
-                    if (in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
+                    if ($resourceName === 'payment' || in_array($action, ['delete', 'delete_any', 'force_delete', 'force_delete_any'])) {
                         continue;
                     }
                     // For safety, maybe block delete on everything EXCEPT gym_member?
@@ -164,16 +164,9 @@ class RolesAndPermissionsService
     protected function getRoleAllowedResourcesList(string $role): array
     {
         return match ($role) {
-            DefaultRole::MANAGER->value => [
-                'user', 'trainer', 'receptionist', 'gym_member', 'gym',
-                'membership_plan', 'attendance', 'payment', 'lead', // Added Lead as it's common
-            ],
-            DefaultRole::RECEPTIONIST->value => [
-                'gym_member', 'membership_plan', 'attendance', 'payment',
-            ],
-            DefaultRole::TRAINER->value => [
-                'workout', 'schedule', 'attendance',
-            ],
+            DefaultRole::MANAGER->value => config('default-roles-and-permissions.' . DefaultRole::MANAGER->value),
+            DefaultRole::RECEPTIONIST->value => config('default-roles-and-permissions.' . DefaultRole::RECEPTIONIST->value),
+            DefaultRole::TRAINER->value => config('default-roles-and-permissions.' . DefaultRole::TRAINER->value),
             default => [],
         };
     }
@@ -315,5 +308,20 @@ class RolesAndPermissionsService
         } else {
             throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
         }
+    }
+
+    public function getPermissionDisplayName(string $permissionName): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', $permissionName));
+    }
+
+    public function getPermissionDescription(string $permissionName): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', 'can_' . $this->getPermissionDisplayName($permissionName)));
+    }
+
+    public function getPermissionCategory(string $permissionName): ?string
+    {
+        return PermissionCategory::tryFrom($permissionName)->value ?? null;
     }
 }

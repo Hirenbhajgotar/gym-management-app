@@ -29,6 +29,7 @@ class PermissionDescriptionSeeder extends Seeder
                 'receptionist' => 'Receptionist',
                 'payment' => 'Payment',
                 'permission' => 'Permission',
+                'lead' => 'Lead',
                 // 'equipment',
                 // 'workout',
                 // 'schedule',

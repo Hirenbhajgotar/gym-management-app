@@ -49,6 +49,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance',
             'payment',
             'permission',
+            'lead',
             // 'equipment',
             // 'workout',
             // 'schedule',
