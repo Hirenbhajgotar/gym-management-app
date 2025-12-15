@@ -39,14 +39,14 @@ class AdminPanelProvider extends PanelProvider
             // ->registration()
             ->passwordReset()
             ->emailVerification()
-            ->profile(isSimple: false)
+            // ->profile(isSimple: false)
             ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
                 'danger' => Color::Red,
             ])
             ->spa()
-            ->spaUrlExceptions(fn(): array => [
+            ->spaUrlExceptions(fn (): array => [
                 // Allow all files in the import/templates directory
                 // Allow the download of the sample file
                 url('import/templates/*'),
@@ -134,15 +134,15 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
             )
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
             )
             ->renderHook(
                 'panels::body.end',
-                fn(): \Illuminate\Contracts\View\View => view('filament.hooks.floating-feedback-button')
+                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.floating-feedback-button')
             );
     }
 
