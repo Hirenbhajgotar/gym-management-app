@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\GymSetting;
 use App\Models\GymWhatsAppBalance;
+use App\Models\Payment;
 use App\Models\WhatsAppMessagePackage;
 use App\Services\RazorpayService;
 use App\Traits\HasTenantAccess;
@@ -16,6 +17,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @property Form $form
@@ -356,6 +358,15 @@ class GymSettings extends Page implements HasActions, HasForms
                             ),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('Purchase History')
+                    ->description('Recent WhatsApp package purchases and invoices.')
+                    ->schema([
+                        Forms\Components\ViewField::make('whatsapp_invoices')
+                            ->view('filament.forms.components.whatsapp-invoice-table')
+                            ->hiddenLabel(),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -444,11 +455,13 @@ class GymSettings extends Page implements HasActions, HasForms
                             '-' .
                             uniqid(),
                         'gym_id' => $gymId,
+                        'user_id' => Auth::id(),
                         'package_id' => $package->id,
                         'payment_type' => 'whatsapp_package',
                         'description' => "Purchase of {$package->name} - {$package->message_count} messages",
                         'notes' => [
                             'package_name' => $package->name,
+                            'plan_name' => $package->name,
                             'message_count' => $package->message_count,
                         ],
                     ]);
@@ -475,5 +488,13 @@ class GymSettings extends Page implements HasActions, HasForms
                     return;
                 }
             });
+    }
+
+    public function downloadInvoice(int $paymentId)
+    {
+        $payment = Payment::where('gym_id', $this->getGym()->id)
+            ->findOrFail($paymentId);
+
+        return app(\App\Services\InvoiceService::class)->downloadInvoice($payment);
     }
 }

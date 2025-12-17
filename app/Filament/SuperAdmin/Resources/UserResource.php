@@ -17,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
 class UserResource extends Resource
@@ -257,6 +258,11 @@ class UserResource extends Resource
                                     ->label('Notes')
                                     ->placeholder('Add notes about this assignment...')
                                     ->columnSpanFull(),
+
+                                Forms\Components\Toggle::make('generate_invoice')
+                                    ->label('Generate Invoice')
+                                    ->default(true)
+                                    ->columnSpanFull(),
                             ])->columns(2),
 
                     ])
@@ -272,6 +278,30 @@ class UserResource extends Resource
                                 'assigned_by' => auth()->id(),
                                 'notes' => $data['notes'] ?? null,
                             ]);
+
+                            if (! empty($data['generate_invoice'])) {
+                                $amount = $data['billing_cycle'] === 'monthly' ? $plan->price_monthly : $plan->price_yearly;
+
+                                $payment = \App\Models\Payment::create([
+                                    'user_id' => $record->id,
+                                    'gym_id' => $record->gyms()->first()?->id,
+                                    'amount' => $amount,
+                                    'currency' => $plan->currency,
+                                    'status' => \App\Enums\PaymentStatus::COMPLETED,
+                                    'payment_type' => 'manual_assignment',
+                                    'razorpay_order_id' => 'MAN-ORD-' . Str::ulid(),
+                                    'razorpay_payment_id' => 'MAN-PAY-' . Str::ulid(),
+                                    'metadata' => [
+                                        'plan_id' => $plan->id,
+                                        'plan_name' => $plan->name,
+                                        'billing_cycle' => $data['billing_cycle'],
+                                        'assigned_by' => auth()->id(),
+                                    ],
+                                    'paid_at' => now(),
+                                ]);
+
+                                app(\App\Services\InvoiceService::class)->generateInvoice($payment);
+                            }
                         } catch (Exception $e) {
                             throw $e;
                         }

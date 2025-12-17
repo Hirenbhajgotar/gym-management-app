@@ -21,7 +21,8 @@ class GymOwnerRegistrationService
 {
     public function __construct(
         protected SubscriptionService $subscriptionService,
-        protected RolesAndPermissionsService $rolesAndPermissionsService
+        protected RolesAndPermissionsService $rolesAndPermissionsService,
+        protected InvoiceService $invoiceService
     ) {}
 
     /**
@@ -171,6 +172,13 @@ class GymOwnerRegistrationService
                         'payment_id' => $payment->id,
                         'order_id' => $payment->razorpay_order_id,
                     ]);
+
+                    // Generate invoice
+                    try {
+                        $this->invoiceService->generateInvoice($payment);
+                    } catch (Exception $e) {
+                         Log::error('Failed to generate invoice during manual verification', ['error' => $e->getMessage()]);
+                    }
                 }
             }
         }

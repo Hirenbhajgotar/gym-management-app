@@ -194,4 +194,11 @@ class ProfileController extends Component
 
         return redirect()->route('home');
     }
+    public function downloadInvoice(int $paymentId)
+    {
+        $payment = \App\Models\Payment::where('user_id', auth()->id())
+            ->findOrFail($paymentId);
+
+        return app(\App\Services\InvoiceService::class)->downloadInvoice($payment);
+    }
 }

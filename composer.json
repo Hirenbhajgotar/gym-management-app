@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "codeat3/blade-phosphor-icons": "^2.3",
         "dotswan/filament-laravel-pulse": "^1.1",
         "eightynine/filament-excel-import": "^3.1",
