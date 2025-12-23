@@ -264,4 +264,9 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
             ->latest()
             ->get();
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

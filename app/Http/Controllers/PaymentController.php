@@ -19,10 +19,12 @@ class PaymentController extends Controller
     use HasTenantAccess;
 
     protected RazorpayService $razorpayService;
+    protected \App\Services\InvoiceService $invoiceService;
 
-    public function __construct(RazorpayService $razorpayService)
+    public function __construct(RazorpayService $razorpayService, \App\Services\InvoiceService $invoiceService)
     {
         $this->razorpayService = $razorpayService;
+        $this->invoiceService = $invoiceService;
     }
 
     /**
@@ -305,6 +307,13 @@ class PaymentController extends Controller
                 'subscription_id' => $subscriptionId,
                 'user_id' => $subscription->user_id,
             ]);
+
+            // Generate invoice
+            try {
+                $this->invoiceService->generateInvoice($payment);
+            } catch (\Exception $e) {
+                Log::error('Failed to generate invoice for subscription payment', ['error' => $e->getMessage()]);
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to process subscription payment', [
@@ -360,5 +369,12 @@ class PaymentController extends Controller
             'messages_added' => $package->message_count,
             'gym_id' => $payment->gym_id,
         ]);
+
+        // Generate invoice
+        try {
+            $this->invoiceService->generateInvoice($payment);
+        } catch (\Exception $e) {
+            Log::error('Failed to generate invoice for WhatsApp purchase', ['error' => $e->getMessage()]);
+        }
     }
 }

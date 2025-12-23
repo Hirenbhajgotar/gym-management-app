@@ -75,6 +75,7 @@ class RazorpayService
             } else {
                 // WhatsApp package payments
                 $paymentData['gym_id'] = $data['gym_id'];
+                $paymentData['user_id'] = $data['user_id'] ?? null;
                 $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'package_id' => $data['package_id'] ?? null,
                     'description' => $data['description'] ?? null,
