@@ -6,7 +6,7 @@
     <title>Invoice {{ $invoice_number }}</title>
     <style>
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif;
             font-size: 14px;
             color: #1f2937; /* Gray 800 */
             line-height: 1.5;
@@ -142,7 +142,7 @@
         }
         .grand-total-value {
             font-size: 20px;
-            font-weight: 800;
+            font-weight: 700;
             color: #4f46e5;
         }
         
@@ -281,7 +281,7 @@
                         {{ $payment->razorpay_payment_id ?? 'N/A' }}
                     </td>
                     <td class="text-right font-bold">
-                        {{ number_format($payment->amount, 2) }}
+                        {!! $payment->formatted_amount !!}
                     </td>
                 </tr>
             </tbody>
@@ -303,12 +303,12 @@
                     <table class="totals-table">
                         <tr>
                             <td class="totals-label">Subtotal</td>
-                            <td class="totals-value">{{ number_format($payment->amount, 2) }}</td>
+                            <td class="totals-value">{!! $payment->formatted_amount !!}</td>
                         </tr>
                         <!-- Tax rows can be added here if needed -->
                         <tr class="grand-total-row">
                             <td class="totals-label grand-total-label">Total</td>
-                            <td class="totals-value grand-total-value">{{ number_format($payment->amount, 2) }}</td>
+                            <td class="totals-value grand-total-value">{!! $payment->formatted_amount !!}</td>
                         </tr>
                     </table>
                 </td>

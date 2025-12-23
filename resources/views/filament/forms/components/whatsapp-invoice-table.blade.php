@@ -1,11 +1,3 @@
-@php
-    $payments = \App\Models\Payment::where('gym_id', $this->getGym()->id)
-        ->where('payment_type', 'whatsapp_package')
-        ->latest()
-        ->take(10)
-        ->get();
-@endphp
-
 <div class="overflow-x-auto border border-gray-200 dark:border-white/10 rounded-lg">
     <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 dark:bg-white/5">

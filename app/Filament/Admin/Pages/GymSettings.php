@@ -364,6 +364,13 @@ class GymSettings extends Page implements HasActions, HasForms
                     ->schema([
                         Forms\Components\ViewField::make('whatsapp_invoices')
                             ->view('filament.forms.components.whatsapp-invoice-table')
+                            ->viewData([
+                                'payments' => Payment::where('gym_id', $this->getGym()->id)
+                                    ->where('payment_type', 'whatsapp_package')
+                                    ->latest()
+                                    ->take(10)
+                                    ->get(),
+                            ])
                             ->hiddenLabel(),
                     ])
                     ->columnSpanFull(),
