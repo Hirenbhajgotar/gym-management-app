@@ -428,6 +428,10 @@ class SubscriptionService
                     'status' => SubscriptionStatus::CANCELLED,
                     'cancelled_at' => Carbon::now(),
                     'ends_at' => Carbon::now(),
+                    'metadata' => [
+                        'cancelled_by' => 'admin',
+                        'description' => 'This plan was cancelled because a new plan was assigned manually by a super-admin.',
+                    ],
                 ]);
 
             // Prepare options for subscription creation

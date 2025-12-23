@@ -292,7 +292,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/10">
-                                        @foreach (auth()->user()->payments()->latest()->take(5)->get() as $payment)
+                                        @foreach ($this->latestPayments(5) as $payment)
                                             <tr class="text-sm">
                                                 <td class="py-4 text-white">{{ $payment->created_at->format('M d, Y') }}</td>
                                                 <td class="py-4 text-white">{{ $payment->metadata['plan_name'] ?? '' }}</td>
@@ -304,7 +304,7 @@
                                                     @endif
                                                 </td>
                                                 <td class="py-4 text-white">
-                                                    {{ $payment->formattedAmount }}
+                                                    {{ $payment->formatted_amount }}
                                                 </td>
                                                 <td class="py-4">
                                                     <span class="px-2 py-1 rounded text-xs font-medium

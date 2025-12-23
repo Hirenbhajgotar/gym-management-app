@@ -223,7 +223,7 @@ class SubscriptionController extends Controller
 
             // Generate invoice
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
-            if ($payment) {
+            if ($payment?->isCompleted()) {
                 try {
                     $this->invoiceService->generateInvoice($payment);
                 } catch (\Exception $e) {

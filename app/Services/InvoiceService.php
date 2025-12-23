@@ -39,7 +39,7 @@ class InvoiceService
 
         // Save PDF to storage
         $path = "invoices/{$payment->invoice_number}.pdf";
-        Storage::put($path, $pdf->output());
+        Storage::disk('local')->put($path, $pdf->output());
 
         // Update payment with invoice path
         $payment->invoice_path = $path;
@@ -56,6 +56,6 @@ class InvoiceService
             $this->generateInvoice($payment);
         }
 
-        return Storage::download($payment->invoice_path, "{$payment->invoice_number}.pdf");
+        return Storage::disk('local')->download($payment->invoice_path, "{$payment->invoice_number}.pdf");
     }
 }

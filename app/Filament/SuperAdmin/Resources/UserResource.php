@@ -284,7 +284,6 @@ class UserResource extends Resource
 
                                 $payment = \App\Models\Payment::create([
                                     'user_id' => $record->id,
-                                    'gym_id' => $record->gyms()->first()?->id,
                                     'amount' => $amount,
                                     'currency' => $plan->currency,
                                     'status' => \App\Enums\PaymentStatus::COMPLETED,

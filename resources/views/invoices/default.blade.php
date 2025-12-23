@@ -2,128 +2,171 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Invoice {{ $invoice_number }}</title>
     <style>
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 14px;
-            color: #333;
-            line-height: 1.6;
+            color: #1f2937; /* Gray 800 */
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
         }
         .container {
             width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            background: #fff;
         }
+        /* Layout Helpers */
+        .w-full { width: 100%; }
+        .w-half { width: 50%; }
+        .align-top { vertical-align: top; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        
+        /* Typography */
+        h1, h2, h3, h4 { margin: 0; font-weight: 700; }
+        .text-sm { font-size: 12px; }
+        .text-xs { font-size: 10px; }
+        .text-lg { font-size: 18px; }
+        .text-xl { font-size: 24px; }
+        .font-bold { font-weight: bold; }
+        .text-gray { color: #6b7280; }
+        .text-primary { color: #4f46e5; }
+        .uppercase { text-transform: uppercase; }
+        
+        /* Header */
         .header {
-            display: table;
-            width: 100%;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 30px;
         }
-        .logo {
-            display: table-cell;
+        .logo-text {
             font-size: 24px;
-            font-weight: bold;
-            color: #4F46E5; /* Indigo 600 */
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #4f46e5;
         }
-        .invoice-details {
-            display: table-cell;
-            text-align: right;
-        }
-        .invoice-title {
-            font-size: 28px;
-            color: #111;
+        .invoice-label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            text-transform: uppercase;
             margin-bottom: 5px;
         }
-        .invoice-meta {
-            color: #666;
-            font-size: 12px;
-        }
-        .addresses {
-            display: table;
+        
+        /* Info Section */
+        .info-table {
             width: 100%;
             margin-bottom: 40px;
         }
-        .address-box {
-            display: table-cell;
-            width: 48%;
-            vertical-align: top;
-        }
-        .address-title {
-            font-weight: bold;
-            color: #888;
-            text-transform: uppercase;
+        .info-label {
             font-size: 11px;
-            margin-bottom: 10px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
         }
-        .table {
+        .info-content {
+            font-size: 13px;
+        }
+        
+        /* Items Table */
+        .items-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
         }
-        .table th {
-            background-color: #f9fafb;
-            padding: 12px 10px;
+        .items-table th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
             text-align: left;
-            font-weight: bold;
-            color: #555;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }
-        .table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
+        .items-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
         }
-        .text-right {
-            text-align: right;
+        .items-table tr:last-child td {
+            border-bottom: none;
         }
-        .totals {
-            width: 40%;
-            margin-left: auto;
+        .item-description {
+            font-weight: 600;
+            margin-bottom: 4px;
         }
-        .totals-row {
-            display: table;
+        .item-subtext {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* Totals */
+        .totals-table {
             width: 100%;
-            padding: 5px 0;
+            border-collapse: collapse;
+        }
+        .totals-table td {
+            padding: 8px 0;
+            text-align: right;
         }
         .totals-label {
-            display: table-cell;
-            text-align: right;
+            font-weight: 600;
+            color: #6b7280;
             padding-right: 20px;
-            font-weight: bold;
         }
         .totals-value {
-            display: table-cell;
-            text-align: right;
-            width: 100px;
+            color: #111827;
+            width: 150px;
         }
-        .grand-total {
-            font-size: 18px;
-            font-weight: bold;
-            color: #4F46E5;
-            border-top: 2px solid #eee;
-            padding-top: 10px;
-            margin-top: 10px;
+        .grand-total-row td {
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border-top: 2px solid #e5e7eb;
         }
+        .grand-total-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .grand-total-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #4f46e5;
+        }
+        
+        /* Footer */
         .footer {
             margin-top: 60px;
-            border-top: 1px solid #eee;
             padding-top: 20px;
-            text-align: center;
-            color: #888;
+            border-top: 1px solid #e5e7eb;
             font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
         }
+        
+        /* Status Badges */
         .badge {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 9999px;
             font-size: 10px;
-            font-weight: bold;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .badge-paid {
+        .badge-completed {
             background-color: #d1fae5;
             color: #065f46;
         }
@@ -139,100 +182,143 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">
-                {{ config('app.name') }}
-            </div>
-            <div class="invoice-details">
-                <div class="invoice-title">INVOICE</div>
-                <div class="invoice-meta">#{{ $invoice_number }}</div>
-                <div class="invoice-meta">Issued: {{ $date }}</div>
-            </div>
-        </div>
+        <!-- Header -->
+        <table class="w-full header">
+            <tr>
+                <td class="w-half align-top">
+                    <div class="logo-text">
+                        {{ config('app.name') }}
+                    </div>
+                </td>
+                <td class="w-half align-top text-right">
+                    <div class="invoice-label">Invoice</div>
+                    <div class="text-xl font-bold text-gray-900">#{{ $invoice_number }}</div>
+                    <div class="text-sm text-gray mt-4">
+                        Date: <span class="text-gray-900 font-bold">{{ $date }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-        <div class="addresses">
-            <div class="address-box">
-                <div class="address-title">Billed To</div>
-                @if($gym)
-                    <strong>{{ $gym->name }}</strong><br>
-                @endif
-                <strong>{{ $user->name }}</strong><br>
-                {{ $user->email }}<br>
-                {{ $user->phone }}
-                @if($gym && $gym->address)
-                    <br>{{ $gym->address->street }}<br>
-                    {{ $gym->address->city->name }}, {{ $gym->address->state->name }} {{ $gym->address->postal_code }}
-                @endif
-            </div>
-            <div class="address-box text-right">
-                <div class="address-title">From</div>
-                <strong>{{ config('app.name') }}</strong><br>
-                <!-- Add platform address here if available -->
-                support@fluxfitness.com
-            </div>
-        </div>
+        <!-- Billing Info -->
+        <table class="info-table">
+            <tr>
+                <td class="w-half align-top">
+                    <div class="info-label">Billed To</div>
+                    <div class="info-content">
+                        @if($gym)
+                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $gym->name }}</div>
+                        @else
+                           <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
+                        @endif
+                        
+                        @if($gym && $gym->name != $user->name)
+                             <div class="text-gray-700">{{ $user->name }}</div>
+                        @endif
 
-        <table class="table">
+                        <div class="text-gray-600">{{ $user->email }}</div>
+                        <div class="text-gray-600">{{ $user->phone }}</div>
+                        
+                        @if($gym && $gym->address)
+                            <div class="mt-4 text-gray-600">
+                                {{ $gym->address->street }}<br>
+                                {{ $gym->address->city->name }}, {{ $gym->address->state->name }} {{ $gym->address->postal_code }}
+                            </div>
+                        @endif
+                    </div>
+                </td>
+                <td class="w-half align-top text-right">
+                    <div class="info-label">Pay To</div>
+                    <div class="info-content">
+                        <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ config('app.name') }}</div>
+                        <div class="text-gray-600">support@fluxfitness.com</div>
+                    </div>
+                    
+                    <div class="mt-4">
+                         <div class="info-label">Payment Status</div>
+                        @if($payment->status->value == 'completed')
+                            <span class="badge badge-completed">PAID</span>
+                        @elseif($payment->status->value == 'pending')
+                            <span class="badge badge-pending">PENDING</span>
+                        @else
+                            <span class="badge badge-failed">{{ strtoupper($payment->status->value) }}</span>
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items -->
+        <table class="items-table">
             <thead>
                 <tr>
-                    <th>Description</th>
-                    <th>Reference</th>
-                    <th class="text-right">Amount</th>
+                    <th style="width: 50%;">Description</th>
+                    <th style="width: 25%;">Reference ID</th>
+                    <th style="width: 25%;" class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>
                         @if($payment->payment_type == 'whatsapp_package')
-                            WhatsApp Message Package
-                            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                            <div class="item-description">WhatsApp Message Package</div>
+                            <div class="item-subtext">
                                 {{ $payment->metadata['package_name'] ?? 'Message Package' }} 
-                                ({{ $payment->metadata['message_count'] ?? 0 }} messages)
+                                &bull; {{ $payment->metadata['message_count'] ?? 0 }} messages
                             </div>
-                        @elseif(str_starts_with($payment->payment_type, 'subscription'))
-                            Subscription Payment
-                            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                        @elseif(str_starts_with($payment->payment_type, 'subscription') || $payment->payment_type == 'gym_owner_registration')
+                            <div class="item-description">
+                                {{ $payment->metadata['plan_name'] ?? 'Subscription' }} Plan
+                            </div>
+                            <div class="item-subtext">
                                 {{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}
                             </div>
                         @else
-                            {{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}
+                            <div class="item-description">{{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}</div>
                         @endif
                     </td>
-                    <td>{{ $payment->razorpay_payment_id ?? 'N/A' }}</td>
-                    {{-- <td class="text-right">{{ Number::currency($payment->amount) }}</td> --}}
-                    <td class="text-right">{{ number_format($payment->amount, 2) }}</td>
+                    <td class="text-gray-600 font-mono text-xs">
+                        {{ $payment->razorpay_payment_id ?? 'N/A' }}
+                    </td>
+                    <td class="text-right font-bold">
+                        {{ number_format($payment->amount, 2) }}
+                    </td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="totals">
-            <div class="totals-row">
-                <div class="totals-label">Subtotal</div>
-                <div class="totals-value">{{ number_format($payment->amount, 2) }}</div>
-            </div>
-            <div class="totals-row">
-                <div class="totals-label">Total</div>
-                <div class="totals-value grand-total">
-                    {{ number_format($payment->amount, 2) }}
-                </div>
-            </div>
-            <div class="totals-row" style="margin-top: 10px;">
-                <div class="totals-label">Status</div>
-                <div class="totals-value">
-                    @if($payment->status->value == 'completed')
-                        <span class="badge badge-paid">PAID</span>
-                    @elseif($payment->status->value == 'pending')
-                        <span class="badge badge-pending">PENDING</span>
-                    @else
-                        <span class="badge badge-failed">{{ strtoupper($payment->status->value) }}</span>
-                    @endif
-                </div>
-            </div>
-        </div>
+        <!-- Totals -->
+        <table class="w-full">
+            <tr>
+                <td style="width: 60%;">
+                    <!-- Optional Notes Section -->
+                    <div style="padding-right: 40px;">
+                        <div class="info-label">Note</div>
+                        <div class="text-sm text-gray-500">
+                            Thank you for your business. This is a computer-generated invoice and requires no signature.
+                        </div>
+                    </div>
+                </td>
+                <td style="width: 40%;">
+                    <table class="totals-table">
+                        <tr>
+                            <td class="totals-label">Subtotal</td>
+                            <td class="totals-value">{{ number_format($payment->amount, 2) }}</td>
+                        </tr>
+                        <!-- Tax rows can be added here if needed -->
+                        <tr class="grand-total-row">
+                            <td class="totals-label grand-total-label">Total</td>
+                            <td class="totals-value grand-total-value">{{ number_format($payment->amount, 2) }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
+        <!-- Footer -->
         <div class="footer">
-            Thank you for your business!<br>
-            If you have any questions about this invoice, please contact support.
+            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
+            For any inquiries, please contact us at support@fluxfitness.com
         </div>
     </div>
 </body>
