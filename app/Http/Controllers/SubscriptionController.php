@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateInvoiceJob;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
-use App\Services\InvoiceService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
@@ -21,8 +21,7 @@ class SubscriptionController extends Controller
     public function __construct(
         protected RazorpayService $razorpayService,
         protected SubscriptionService $subscriptionService,
-        protected GymOwnerRegistrationService $gymOwnerRegistrationService,
-        protected InvoiceService $invoiceService
+        protected GymOwnerRegistrationService $gymOwnerRegistrationService
     ) {}
 
     /**
@@ -218,11 +217,7 @@ class SubscriptionController extends Controller
 
             // Generate invoice
             if ($verifiedPayment->isCompleted()) {
-                try {
-                    $this->invoiceService->generateInvoice($verifiedPayment);
-                } catch (\Exception $e) {
-                    Log::error('Failed to generate invoice in verifyPayment', ['error' => $e->getMessage()]);
-                }
+                GenerateInvoiceJob::dispatch($verifiedPayment);
             }
 
             return redirect()

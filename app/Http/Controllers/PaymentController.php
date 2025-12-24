@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
@@ -305,11 +306,7 @@ class PaymentController extends Controller
             ]);
 
             // Generate invoice
-            try {
-                $this->invoiceService->generateInvoice($payment);
-            } catch (\Exception $e) {
-                Log::error('Failed to generate invoice for subscription payment', ['error' => $e->getMessage()]);
-            }
+            GenerateInvoiceJob::dispatch($payment);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to process subscription payment', [
@@ -367,10 +364,6 @@ class PaymentController extends Controller
         ]);
 
         // Generate invoice
-        try {
-            $this->invoiceService->generateInvoice($payment);
-        } catch (\Exception $e) {
-            Log::error('Failed to generate invoice for WhatsApp purchase', ['error' => $e->getMessage()]);
-        }
+        GenerateInvoiceJob::dispatch($payment);
     }
 }
