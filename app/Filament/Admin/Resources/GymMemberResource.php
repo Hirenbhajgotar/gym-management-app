@@ -546,6 +546,7 @@ class GymMemberResource extends Resource
             Forms\Components\DatePicker::make('dob')
                 ->label('Date of Birth')
                 ->placeholder('Select date of birth')
+                ->native(false)
                 ->reactive()
                 ->afterStateUpdated(function ($state, callable $set) {
                     if ($state) {
