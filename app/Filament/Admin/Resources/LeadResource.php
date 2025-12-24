@@ -80,8 +80,13 @@ class LeadResource extends Resource
                 Grid::make(2)->schema([
                     $selectMembershipPlan,
 
+                    Forms\Components\Hidden::make('status')
+                        ->default(LeadStatus::NEW)
+                        ->visibleOn('create'),
+
                     Forms\Components\Select::make('status')
                         ->options(LeadStatus::class)
+                        ->visibleOn('edit')
                         ->required(),
 
                     Forms\Components\Select::make('source')
