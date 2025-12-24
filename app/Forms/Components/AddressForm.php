@@ -61,7 +61,6 @@ class AddressForm extends Field
         return [
             Forms\Components\TextInput::make('street')
                 ->label('Street Address')
-                ->required()
                 ->placeholder('e.g., 123 Main St')
                 ->maxLength(255),
             Forms\Components\Grid::make(3)
@@ -70,7 +69,6 @@ class AddressForm extends Field
                         ->label('Country')
                         ->options(Country::active()->pluck('name', 'id'))
                         ->default($indiaId) // Set India as default
-                        ->required()
                         ->live()
                         ->afterStateUpdated(function (callable $set, $state) {
                             $set('state_id', null);
@@ -90,7 +88,6 @@ class AddressForm extends Field
                                 ->orderBy('name', 'asc')
                                 ->pluck('name', 'id');
                         })
-                        ->required()
                         ->live()
                         ->afterStateUpdated(fn (callable $set) => $set('city_id', null))
                         ->disabled(fn (callable $get) => ! $get('country_id')),
@@ -109,7 +106,6 @@ class AddressForm extends Field
                                 ->pluck('name', 'id');
                         })
                         ->searchable()
-                        ->required()
                         ->live()
                         ->disabled(fn (callable $get) => ! $get('state_id')),
                 ]),
@@ -118,18 +114,6 @@ class AddressForm extends Field
                     Forms\Components\TextInput::make('postal_code')
                         ->label('Zip / Postal code')
                         ->maxLength(20),
-
-                    Forms\Components\TextInput::make('latitude')
-                        ->label('Latitude')
-                        ->numeric()
-                        ->minValue(-90)
-                        ->maxValue(90),
-
-                    Forms\Components\TextInput::make('longitude')
-                        ->label('Longitude')
-                        ->numeric()
-                        ->minValue(-180)
-                        ->maxValue(180),
                 ]),
         ];
     }
