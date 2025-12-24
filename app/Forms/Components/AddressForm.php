@@ -36,9 +36,10 @@ class AddressForm extends Field
         // Prepare the address data
         $addressData = [
             'street' => $state['street'] ?? null,
-            'city_id' => $state['city_id'] ?? null,
-            'state_id' => $state['state_id'] ?? null,
-            'country_id' => $state['country_id'] ?? null,
+            // Ensure empty strings are converted to null to prevent integer casting errors
+            'city_id' => ! empty($state['city_id']) ? $state['city_id'] : null,
+            'state_id' => ! empty($state['state_id']) ? $state['state_id'] : null,
+            'country_id' => ! empty($state['country_id']) ? $state['country_id'] : null,
             'postal_code' => $state['postal_code'] ?? null,
             'latitude' => isset($state['latitude']) && ! empty($state['latitude']) ? $state['latitude'] : null,
             'longitude' => isset($state['longitude']) && ! empty($state['longitude']) ? $state['longitude'] : null,
