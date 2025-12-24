@@ -112,7 +112,7 @@ class RazorpayService
     /**
      * Verify payment signature
      */
-    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): bool
+    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): Payment
     {
         try {
             $attributes = [
@@ -139,7 +139,7 @@ class RazorpayService
                 ]);
             }
 
-            return true;
+            return $payment->fresh();
         } catch (\Exception $e) {
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
@@ -148,13 +148,14 @@ class RazorpayService
             ]);
 
             // Update payment status to failed
-            Payment::where('razorpay_order_id', $razorpayOrderId)->update([
+            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            $payment->update([
                 'status' => 'failed',
                 'razorpay_payment_id' => $razorpayPaymentId,
                 'razorpay_signature' => $razorpaySignature,
             ]);
 
-            return false;
+            return $payment->fresh();
         }
     }
 

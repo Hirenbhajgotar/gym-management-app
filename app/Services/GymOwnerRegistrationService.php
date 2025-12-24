@@ -177,7 +177,7 @@ class GymOwnerRegistrationService
                     try {
                         $this->invoiceService->generateInvoice($payment);
                     } catch (Exception $e) {
-                         Log::error('Failed to generate invoice during manual verification', ['error' => $e->getMessage()]);
+                        Log::error('Failed to generate invoice during manual verification', ['error' => $e->getMessage()]);
                     }
                 }
             }

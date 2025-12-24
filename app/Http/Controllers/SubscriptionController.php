@@ -13,7 +13,6 @@ use App\Services\InvoiceService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -186,16 +185,14 @@ class SubscriptionController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
             // Verify payment
-            $isVerified = $this->razorpayService->verifyPayment(
+            $verifiedPayment = $this->razorpayService->verifyPayment(
                 $request->razorpay_order_id,
                 $request->razorpay_payment_id,
                 $request->razorpay_signature,
             );
 
-            if (! $isVerified) {
+            if (! $verifiedPayment->isCompleted()) {
                 throw new \Exception('Payment verification failed');
             }
 
@@ -209,8 +206,6 @@ class SubscriptionController extends Controller
                 $this->processNewSubscription();
             }
 
-            DB::commit();
-
             // Clear session data
             $this->clearSessionData();
 
@@ -222,10 +217,9 @@ class SubscriptionController extends Controller
             };
 
             // Generate invoice
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
-            if ($payment?->isCompleted()) {
+            if ($verifiedPayment->isCompleted()) {
                 try {
-                    $this->invoiceService->generateInvoice($payment);
+                    $this->invoiceService->generateInvoice($verifiedPayment);
                 } catch (\Exception $e) {
                     Log::error('Failed to generate invoice in verifyPayment', ['error' => $e->getMessage()]);
                 }
@@ -235,7 +229,6 @@ class SubscriptionController extends Controller
                 ->route('profile')
                 ->with('success', $successMessage);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Subscription payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
