@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
+use App\Services\InvoiceService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
@@ -21,7 +22,8 @@ class SubscriptionController extends Controller
     public function __construct(
         protected RazorpayService $razorpayService,
         protected SubscriptionService $subscriptionService,
-        protected GymOwnerRegistrationService $gymOwnerRegistrationService
+        protected GymOwnerRegistrationService $gymOwnerRegistrationService,
+        protected InvoiceService $invoiceService
     ) {}
 
     /**
@@ -116,6 +118,7 @@ class SubscriptionController extends Controller
                 'subscription_id' => $subscription->id,
                 'from_plan' => $subscription?->plan?->name,
                 'to_plan' => $newPlan?->name,
+                'plan_name' => $newPlan?->name,
             ],
         ]);
 
@@ -217,6 +220,16 @@ class SubscriptionController extends Controller
                 'new' => 'Subscription created successfully!',
                 default => 'Payment processed successfully!',
             };
+
+            // Generate invoice
+            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
+            if ($payment?->isCompleted()) {
+                try {
+                    $this->invoiceService->generateInvoice($payment);
+                } catch (\Exception $e) {
+                    Log::error('Failed to generate invoice in verifyPayment', ['error' => $e->getMessage()]);
+                }
+            }
 
             return redirect()
                 ->route('profile')

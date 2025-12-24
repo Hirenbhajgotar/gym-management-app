@@ -141,11 +141,11 @@
                                             <h4 class="font-semibold text-white">{{ $gym->name }}</h4>
                                             <p class="text-sm text-gray-400">
                                                 {{ $gym->address->city->name ?? 'Location not set' }}</p>
-                                            <span
+                                            {{-- <span
                                                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                                         {{ $gym->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                                                 {{ $gym->is_active ? 'Active' : 'Inactive' }}
-                                            </span>
+                                            </span> --}}
                                         </div>
                                     @endforeach
                                 </div>
@@ -274,6 +274,68 @@
                                         to get started.</p>
                                 </div>
                             @endif
+                        </div>
+
+                        <!-- Payment History -->
+                        <div class="feature-card rounded-2xl p-6 mb-6">
+                            <h3 class="text-2xl font-bold mb-6">Payment History</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-gray-400 text-sm border-b border-white/10">
+                                            <th class="pb-3">Date</th>
+                                            <th class="pb-3">Plan</th>
+                                            <th class="pb-3">Type</th>
+                                            <th class="pb-3">Amount</th>
+                                            <th class="pb-3">Status</th>
+                                            <th class="pb-3 text-right">Invoice</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/10">
+                                        @foreach ($this->latestPayments(5) as $payment)
+                                            <tr class="text-sm">
+                                                <td class="py-4 text-white">{{ $payment->created_at->format('M d, Y') }}</td>
+                                                <td class="py-4 text-white">{{ $payment->metadata['plan_name'] ?? '' }}</td>
+                                                <td class="py-4 text-gray-300">
+                                                    @if($payment->payment_type == 'whatsapp_package')
+                                                        WhatsApp Package
+                                                    @else
+                                                        {{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}
+                                                    @endif
+                                                </td>
+                                                <td class="py-4 text-white">
+                                                    {{ $payment->formatted_amount }}
+                                                </td>
+                                                <td class="py-4">
+                                                    <span class="px-2 py-1 rounded text-xs font-medium
+                                                        {{ $payment->status->value === 'completed' ? 'bg-green-500/20 text-green-400' : 
+                                                           ($payment->status->value === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400') }}">
+                                                        {{ ucfirst($payment->status->value) }}
+                                                    </span>
+                                                </td>
+                                                <td class="py-4 text-right">
+                                                    @if($payment->status->value === 'completed')
+                                                        <button wire:click="downloadInvoice({{ $payment->id }})" 
+                                                                wire:loading.attr="disabled"
+                                                                class="text-purple-400 hover:text-purple-300 transition-colors">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                            </svg>
+                                                        </button>
+                                                    @else
+                                                        <span class="text-gray-600">-</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @if(auth()->user()->payments()->count() == 0)
+                                            <tr>
+                                                <td colspan="5" class="py-4 text-center text-gray-500">No payment history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <!-- Available Plans -->

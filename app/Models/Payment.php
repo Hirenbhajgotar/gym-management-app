@@ -36,6 +36,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read mixed $formatted_amount
  * @property-read \App\Models\Gym|null $gym
  * @property-read \App\Models\User|null $user
+ *
  * @method static Builder<static>|Payment byType(string $type)
  * @method static Builder<static>|Payment completed()
  * @method static Builder<static>|Payment failed()
@@ -58,6 +59,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static>|Payment whereStatus($value)
  * @method static Builder<static>|Payment whereUpdatedAt($value)
  * @method static Builder<static>|Payment whereUserId($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperPayment
  */
@@ -79,6 +81,8 @@ class Payment extends Model
         'paid_at',
         'refunded_at',
         'refund_amount',
+        'invoice_number',
+        'invoice_path',
     ];
 
     protected function casts(): array
@@ -195,7 +199,7 @@ class Payment extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes) => Number::currency($attributes['amount'], in: $attributes['currency']->value),
+            get: fn (mixed $value, array $attributes) => Number::currency($this->amount, in: $this->currency->value),
         );
     }
 
