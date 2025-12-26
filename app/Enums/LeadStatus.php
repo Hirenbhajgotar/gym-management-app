@@ -12,7 +12,6 @@ enum LeadStatus: string implements HasColor, HasLabel
 
     case NEW = 'new';
     case CONTACTED = 'contacted';
-    case FOLLOW_UP_PENDING = 'follow-up-pending';
     case CONVERTED = 'converted';
     case LOST = 'lost';
 
@@ -21,7 +20,6 @@ enum LeadStatus: string implements HasColor, HasLabel
         return match ($this) {
             self::NEW => 'New',
             self::CONTACTED => 'Contacted',
-            self::FOLLOW_UP_PENDING => 'Follow-up Pending',
             self::CONVERTED => 'Converted',
             self::LOST => 'Lost',
         };
@@ -32,7 +30,6 @@ enum LeadStatus: string implements HasColor, HasLabel
         return match ($this) {
             self::NEW => 'primary',
             self::CONTACTED => 'warning',
-            self::FOLLOW_UP_PENDING => 'danger',
             self::CONVERTED => 'success',
             self::LOST => 'danger',
         };
