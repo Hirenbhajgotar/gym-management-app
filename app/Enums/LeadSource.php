@@ -9,11 +9,11 @@ enum LeadSource: string implements HasLabel
     case WEBSITE = 'website';
     case WALK_IN = 'walk_in';
     case REFERRAL = 'referral';
+    case CALL = 'call';
     case SOCIAL_MEDIA = 'social_media';
     case FACEBOOK = 'facebook';
     case INSTAGRAM = 'instagram';
     case WHATSAPP = 'whatsapp';
-    case INDIAMART = 'indiamart';
     case JUSTDIAL = 'justdial';
     case OTHER = 'other';
 
@@ -23,11 +23,11 @@ enum LeadSource: string implements HasLabel
             self::WEBSITE => 'Website',
             self::WALK_IN => 'Walk-in',
             self::REFERRAL => 'Referral',
+            self::CALL => 'Call',
             self::SOCIAL_MEDIA => 'Social Media',
             self::FACEBOOK => 'Facebook',
             self::INSTAGRAM => 'Instagram',
             self::WHATSAPP => 'WhatsApp',
-            self::INDIAMART => 'IndiaMart',
             self::JUSTDIAL => 'JustDial',
             self::OTHER => 'Other',
         };

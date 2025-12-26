@@ -36,9 +36,10 @@ class AddressForm extends Field
         // Prepare the address data
         $addressData = [
             'street' => $state['street'] ?? null,
-            'city_id' => $state['city_id'] ?? null,
-            'state_id' => $state['state_id'] ?? null,
-            'country_id' => $state['country_id'] ?? null,
+            // Ensure empty strings are converted to null to prevent integer casting errors
+            'city_id' => ! empty($state['city_id']) ? $state['city_id'] : null,
+            'state_id' => ! empty($state['state_id']) ? $state['state_id'] : null,
+            'country_id' => ! empty($state['country_id']) ? $state['country_id'] : null,
             'postal_code' => $state['postal_code'] ?? null,
             'latitude' => isset($state['latitude']) && ! empty($state['latitude']) ? $state['latitude'] : null,
             'longitude' => isset($state['longitude']) && ! empty($state['longitude']) ? $state['longitude'] : null,
@@ -61,7 +62,6 @@ class AddressForm extends Field
         return [
             Forms\Components\TextInput::make('street')
                 ->label('Street Address')
-                ->required()
                 ->placeholder('e.g., 123 Main St')
                 ->maxLength(255),
             Forms\Components\Grid::make(3)
@@ -70,7 +70,6 @@ class AddressForm extends Field
                         ->label('Country')
                         ->options(Country::active()->pluck('name', 'id'))
                         ->default($indiaId) // Set India as default
-                        ->required()
                         ->live()
                         ->afterStateUpdated(function (callable $set, $state) {
                             $set('state_id', null);
@@ -90,7 +89,6 @@ class AddressForm extends Field
                                 ->orderBy('name', 'asc')
                                 ->pluck('name', 'id');
                         })
-                        ->required()
                         ->live()
                         ->afterStateUpdated(fn (callable $set) => $set('city_id', null))
                         ->disabled(fn (callable $get) => ! $get('country_id')),
@@ -109,7 +107,6 @@ class AddressForm extends Field
                                 ->pluck('name', 'id');
                         })
                         ->searchable()
-                        ->required()
                         ->live()
                         ->disabled(fn (callable $get) => ! $get('state_id')),
                 ]),
@@ -118,18 +115,6 @@ class AddressForm extends Field
                     Forms\Components\TextInput::make('postal_code')
                         ->label('Zip / Postal code')
                         ->maxLength(20),
-
-                    Forms\Components\TextInput::make('latitude')
-                        ->label('Latitude')
-                        ->numeric()
-                        ->minValue(-90)
-                        ->maxValue(90),
-
-                    Forms\Components\TextInput::make('longitude')
-                        ->label('Longitude')
-                        ->numeric()
-                        ->minValue(-180)
-                        ->maxValue(180),
                 ]),
         ];
     }

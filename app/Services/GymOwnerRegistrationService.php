@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\DefaultRole;
+use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -174,11 +175,7 @@ class GymOwnerRegistrationService
                     ]);
 
                     // Generate invoice
-                    try {
-                        $this->invoiceService->generateInvoice($payment);
-                    } catch (Exception $e) {
-                         Log::error('Failed to generate invoice during manual verification', ['error' => $e->getMessage()]);
-                    }
+                    GenerateInvoiceJob::dispatch($payment);
                 }
             }
         }

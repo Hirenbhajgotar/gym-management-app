@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Payment;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Razorpay\Api\Api;
 
@@ -112,7 +113,7 @@ class RazorpayService
     /**
      * Verify payment signature
      */
-    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): bool
+    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): Payment
     {
         try {
             $attributes = [
@@ -139,8 +140,8 @@ class RazorpayService
                 ]);
             }
 
-            return true;
-        } catch (\Exception $e) {
+            return $payment->fresh();
+        } catch (Exception $e) {
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $razorpayOrderId,
@@ -148,13 +149,18 @@ class RazorpayService
             ]);
 
             // Update payment status to failed
-            Payment::where('razorpay_order_id', $razorpayOrderId)->update([
-                'status' => 'failed',
-                'razorpay_payment_id' => $razorpayPaymentId,
-                'razorpay_signature' => $razorpaySignature,
-            ]);
+            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'failed',
+                    'razorpay_payment_id' => $razorpayPaymentId,
+                    'razorpay_signature' => $razorpaySignature,
+                ]);
 
-            return false;
+                return $payment->fresh();
+            }
+
+            throw $e;
         }
     }
 

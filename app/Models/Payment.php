@@ -199,7 +199,7 @@ class Payment extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes) => Number::currency($this->amount, in: $this->currency->value),
+            get: fn () => Number::currency($this->amount, in: $this->currency->value),
         );
     }
 

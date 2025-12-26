@@ -126,6 +126,7 @@ class CreateGymMember extends CreateRecord
         if (! empty($this->paymentData['membership_plan_id'])) {
             $member->payments()->create([
                 'member_id' => $member->id,
+                'gym_id' => $member->gym_id,
                 'membership_plan_id' => $this->paymentData['membership_plan_id'],
                 'amount' => $this->paymentData['amount'],
                 'currency' => $this->paymentData['currency'],
