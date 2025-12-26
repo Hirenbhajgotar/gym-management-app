@@ -292,7 +292,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/10">
-                                        @foreach ($this->latestPayments(5) as $payment)
+                                        @forelse ($latestPayments as $payment)
                                             <tr class="text-sm">
                                                 <td class="py-4 text-white">{{ $payment->created_at->format('M d, Y') }}</td>
                                                 <td class="py-4 text-white">{{ $payment->metadata['plan_name'] ?? '' }}</td>
@@ -327,12 +327,11 @@
                                                     @endif
                                                 </td>
                                             </tr>
-                                        @endforeach
-                                        @if(auth()->user()->payments()->count() == 0)
+                                        @empty
                                             <tr>
                                                 <td colspan="5" class="py-4 text-center text-gray-500">No payment history found</td>
                                             </tr>
-                                        @endif
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>

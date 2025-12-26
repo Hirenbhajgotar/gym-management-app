@@ -14,14 +14,14 @@ class PendingLeadNotificationCommand extends Command
      *
      * @var string
      */
-    protected $signature = "leads:send-pending-reminders";
+    protected $signature = 'leads:send-pending-reminders';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = "Send reminders for leads that have been pending for 2+ days with no follow-ups";
+    protected $description = 'Send reminders for leads that have been pending for 2+ days with no follow-ups';
 
     /**
      * Execute the console command.
@@ -29,17 +29,16 @@ class PendingLeadNotificationCommand extends Command
     public function handle()
     {
         // Get leads that are pending for 2+ days with no recent follow-ups
-        $pendingLeads = Lead::whereIn("status", [
+        $pendingLeads = Lead::whereIn('status', [
             LeadStatus::NEW,
             LeadStatus::CONTACTED,
-            LeadStatus::FOLLOW_UP_PENDING,
         ])
-            ->where("created_at", "<", now()->subDays(2))
+            ->where('created_at', '<', now()->subDays(2))
             ->where(function ($query) {
                 $query
-                    ->whereDoesntHave("followUps")
-                    ->orWhere("last_follow_up_date", "<", now()->subDays(2))
-                    ->orWhereNull("last_follow_up_date");
+                    ->whereDoesntHave('followUps')
+                    ->orWhere('last_follow_up_date', '<', now()->subDays(2))
+                    ->orWhereNull('last_follow_up_date');
             })
             ->get();
 
@@ -61,6 +60,6 @@ class PendingLeadNotificationCommand extends Command
             }
         }
 
-        $this->info("Pending lead reminders sent successfully.");
+        $this->info('Pending lead reminders sent successfully.');
     }
 }

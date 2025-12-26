@@ -36,11 +36,14 @@ class ProfileController extends Component
             ->orderBy('price_monthly')
             ->get();
 
+        $latestPayments = auth()->user()->payments()->latest()->take(5)->get();
+
         return view('livewire.frontend.profile-controller', [
             'user' => $user,
             'subscription' => $subscription,
             'currentPlan' => $currentPlan,
             'allPlans' => $allPlans,
+            'latestPayments' => $latestPayments,
         ]);
     }
 
@@ -201,10 +204,5 @@ class ProfileController extends Component
             ->findOrFail($paymentId);
 
         return app(\App\Services\InvoiceService::class)->downloadInvoice($payment);
-    }
-
-    public function latestPayments(int $limit = 5)
-    {
-        return auth()->user()->payments()->latest()->take($limit)->get();
     }
 }

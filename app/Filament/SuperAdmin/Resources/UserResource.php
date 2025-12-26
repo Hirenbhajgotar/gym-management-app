@@ -7,6 +7,7 @@ use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
 use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers;
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\SubscriptionService;
@@ -269,7 +270,7 @@ class UserResource extends Resource
                     ->action(function (User $record, array $data): void {
                         $subscriptionService = app(SubscriptionService::class);
 
-                        try {
+                        DB::transaction(function () use ($record, $data, $subscriptionService) {
                             $plan = Plan::findOrFail($data['plan_id']);
                             $subscriptionService->assignPlanToUser($record, $plan, [
                                 'billing_cycle' => $data['billing_cycle'],
@@ -282,7 +283,7 @@ class UserResource extends Resource
                             if (! empty($data['generate_invoice'])) {
                                 $amount = $data['billing_cycle'] === 'monthly' ? $plan->price_monthly : $plan->price_yearly;
 
-                                $payment = \App\Models\Payment::create([
+                                $payment = Payment::create([
                                     'user_id' => $record->id,
                                     'amount' => $amount,
                                     'currency' => $plan->currency,
@@ -301,9 +302,7 @@ class UserResource extends Resource
 
                                 app(\App\Services\InvoiceService::class)->generateInvoice($payment);
                             }
-                        } catch (Exception $e) {
-                            throw $e;
-                        }
+                        });
                     })
                     ->successNotificationTitle('Plan assigned successfully')
                     ->color('primary'),

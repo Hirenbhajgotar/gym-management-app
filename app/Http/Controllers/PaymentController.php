@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
@@ -19,6 +20,7 @@ class PaymentController extends Controller
     use HasTenantAccess;
 
     protected RazorpayService $razorpayService;
+
     protected \App\Services\InvoiceService $invoiceService;
 
     public function __construct(RazorpayService $razorpayService, \App\Services\InvoiceService $invoiceService)
@@ -97,40 +99,35 @@ class PaymentController extends Controller
         try {
             DB::beginTransaction();
 
-            $isVerified = $this->razorpayService->verifyPayment(
+            $verifiedPayment = $this->razorpayService->verifyPayment(
                 $request->razorpay_order_id,
                 $request->razorpay_payment_id,
                 $request->razorpay_signature
             );
 
-            if (! $isVerified) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment verification failed.',
-                ], 400);
-            }
-
-            // Get payment record
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
-
-            if (! $payment) {
+            if (! $verifiedPayment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment record not found.',
                 ], 404);
             }
 
-            // $tenant = Gym::where('id', $request->tenant_id)->first();
+            if (! $verifiedPayment->isCompleted()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment verification failed.',
+                ], 400);
+            }
 
             // Process the purchase (add messages to balance)
-            $this->processWhatsAppPackagePurchase($payment);
+            $this->processWhatsAppPackagePurchase($verifiedPayment);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Payment verified and package purchased successfully.',
-                'payment_id' => $payment->razorpay_payment_id,
+                'payment_id' => $verifiedPayment->razorpay_payment_id,
                 // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
         } catch (\Exception $e) {
@@ -309,11 +306,7 @@ class PaymentController extends Controller
             ]);
 
             // Generate invoice
-            try {
-                $this->invoiceService->generateInvoice($payment);
-            } catch (\Exception $e) {
-                Log::error('Failed to generate invoice for subscription payment', ['error' => $e->getMessage()]);
-            }
+            GenerateInvoiceJob::dispatch($payment);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to process subscription payment', [
@@ -371,10 +364,6 @@ class PaymentController extends Controller
         ]);
 
         // Generate invoice
-        try {
-            $this->invoiceService->generateInvoice($payment);
-        } catch (\Exception $e) {
-            Log::error('Failed to generate invoice for WhatsApp purchase', ['error' => $e->getMessage()]);
-        }
+        GenerateInvoiceJob::dispatch($payment);
     }
 }
