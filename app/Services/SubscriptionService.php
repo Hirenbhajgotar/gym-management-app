@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionFeature;
 use App\Models\User;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
@@ -15,39 +16,54 @@ class SubscriptionService
     /**
      * Create a new subscription for a user
      */
-    public function createSubscription(
-        User $user,
-        Plan $plan,
-        array $options = [],
-    ): Subscription {
-        // Check if user already has an active subscription
-        if ($user->subscription()?->isActive()) {
-            throw new \Exception('User already has an active subscription');
-        }
+    public function createSubscription(User $user, Plan $plan, array $options = []): Subscription
+    {
+        return DB::transaction(function () use ($user, $plan, $options) {
+            // Lock user first (consistent order)
+            $lockedUser = User::where('id', $user->id)
+                ->lockForUpdate()
+                ->first();
 
-        // Check if user can get a free trial
-        $hasUsedTrial = $user->hasUsedTrial();
+            if (! $lockedUser) {
+                throw new Exception('User not found');
+            }
 
-        $billingCycle = $options['billing_cycle'] ?? 'monthly';
+            // Check if user already has an active subscription
+            $activeSubscription = Subscription::where('user_id', $lockedUser->id)
+                ->active()
+                ->lockForUpdate()
+                ->first();
 
-        $trialDays = 0;
-        if (isset($options['trial_days'])) {
-            $trialDays = $options['trial_days'];
-        } elseif (! $hasUsedTrial && $plan->trial_days) {
-            $trialDays = $plan->trial_days;
-        }
+            if ($activeSubscription) {
+                throw new Exception('User already has an active subscription');
+            }
 
-        if (isset($options['force_status']) && $options['force_status'] !== SubscriptionStatus::TRIAL) {
+            // Lock plan and load features (prevent concurrent plan updates)
+            $lockedPlan = Plan::with('features')
+                ->where('id', $plan->id)
+                ->sharedLock()
+                ->first();
+
+            if (! $lockedPlan) {
+                throw new Exception('Plan not found');
+            }
+
+            // Check if user can get a free trial
+            $hasUsedTrial = $lockedUser->hasUsedTrial();
+
+            $billingCycle = $options['billing_cycle'] ?? 'monthly';
+
             $trialDays = 0;
-        }
+            if (isset($options['trial_days'])) {
+                $trialDays = $options['trial_days'];
+            } elseif (! $hasUsedTrial && $lockedPlan->trial_days) {
+                $trialDays = $lockedPlan->trial_days;
+            }
 
-        $subscription = DB::transaction(function () use (
-            $user,
-            $plan,
-            $billingCycle,
-            $trialDays,
-            $options,
-        ) {
+            if (isset($options['force_status']) && $options['force_status'] !== SubscriptionStatus::TRIAL) {
+                $trialDays = 0;
+            }
+
             // Determine status - allow override for admin assignments
             $status = $options['force_status'] ?? (
                 $trialDays > 0
@@ -55,31 +71,35 @@ class SubscriptionService
                 : SubscriptionStatus::ACTIVE
             );
 
+            $metadata = null;
+            if (isset($options['metadata']) && ! empty($options['metadata'])) {
+                $metadata = $options['metadata'];
+            }
+
             // Create subscription
             $subscription = Subscription::create([
-                'user_id' => $user->id,
-                'plan_id' => $plan->id,
+                'user_id' => $lockedUser->id,
+                'plan_id' => $lockedPlan->id,
                 'status' => $status,
                 'billing_cycle' => $billingCycle,
                 'price' => $billingCycle === 'yearly'
-                    ? $plan->price_yearly
-                    : $plan->price_monthly,
-                'currency' => $plan->currency,
+                    ? $lockedPlan->price_yearly
+                    : $lockedPlan->price_monthly,
+                'currency' => $lockedPlan->currency,
                 'trial_ends_at' => $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
                 'current_period_start' => Carbon::now(),
                 'current_period_end' => $this->calculatePeriodEnd(
                     Carbon::now(),
                     $billingCycle,
                 ),
+                'metadata' => $metadata,
             ]);
 
             // Create feature snapshots
-            $this->createFeatureSnapshots($subscription, $plan);
+            $this->createFeatureSnapshots($subscription, $lockedPlan);
 
             return $subscription;
-        });
-
-        return $subscription;
+        }, attempts: 3); // Retry 3 times for deadlock handling
     }
 
     /**
@@ -396,21 +416,21 @@ class SubscriptionService
     /**
      * Create feature snapshots for a subscription
      */
-    private function createFeatureSnapshots(
-        Subscription $subscription,
-        Plan $plan,
-    ): void {
-        $planFeatures = $plan->features;
+    private function createFeatureSnapshots(Subscription $subscription, Plan $plan): void
+    {
+        $features = $plan->features->map(fn ($planFeature) => [
+            'subscription_id' => $subscription->id,
+            'plan_feature_id' => $planFeature->id,
+            'feature_name' => $planFeature->feature_name,
+            'value' => $planFeature->value,
+            'brief_description' => $planFeature->brief_description,
+            'order_column' => $planFeature->order_column ?? 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->toArray();
 
-        foreach ($planFeatures as $planFeature) {
-            SubscriptionFeature::create([
-                'subscription_id' => $subscription->id,
-                'plan_feature_id' => $planFeature->id,
-                'feature_name' => $planFeature->feature_name,
-                'value' => $planFeature->value,
-                'brief_description' => $planFeature->brief_description,
-                'order_column' => $planFeature->order_column ?? 1,
-            ]);
+        if (! empty($features)) {
+            SubscriptionFeature::insert($features);
         }
     }
 
@@ -421,18 +441,42 @@ class SubscriptionService
     public function assignPlanToUser(User $user, Plan $plan, array $options = []): Subscription
     {
         return DB::transaction(function () use ($user, $plan, $options) {
-            // Cancel any existing active subscriptions
-            Subscription::where('user_id', $user->id)
-                ->whereIn('status', [SubscriptionStatus::ACTIVE, SubscriptionStatus::TRIAL])
-                ->update([
-                    'status' => SubscriptionStatus::CANCELLED,
-                    'cancelled_at' => Carbon::now(),
-                    'ends_at' => Carbon::now(),
-                    'metadata' => [
-                        'cancelled_by' => 'admin',
-                        'description' => 'This plan was cancelled because a new plan was assigned manually by a super-admin.',
-                    ],
-                ]);
+            // Lock user first to prevent race conditions and consistent locking order (User -> Plan)
+            $lockedUser = User::where('id', $user->id)->lockForUpdate()->first();
+
+            if (! $lockedUser) {
+                throw new \Exception('User not found');
+            }
+
+            $lockedPlan = Plan::with('features')
+                ->where('id', $plan->id)
+                ->sharedLock()
+                ->first();
+
+            if (! $lockedPlan) {
+                throw new \Exception('Plan not found');
+            }
+
+            $activeSubscriptions = Subscription::where('user_id', $lockedUser->id)
+                ->active()
+                ->lockForUpdate()
+                ->get();
+
+            if ($activeSubscriptions->isNotEmpty()) {
+                $cancelledIds = $activeSubscriptions->pluck('id')->toArray();
+
+                // Cancel any existing active/trial subscriptions
+                Subscription::whereIn('id', $cancelledIds)
+                    ->update([
+                        'status' => SubscriptionStatus::CANCELLED,
+                        'cancelled_at' => Carbon::now(),
+                        'ends_at' => Carbon::now(),
+                        'metadata' => [
+                            'cancelled_by' => 'admin',
+                            'description' => 'This plan was cancelled because a new plan was assigned manually by a super-admin.',
+                        ],
+                    ]);
+            }
 
             // Prepare options for subscription creation
             $subscriptionOptions = [
@@ -446,20 +490,19 @@ class SubscriptionService
                 $subscriptionOptions['trial_days'] = $trialDays;
             }
 
-            // Create new subscription
-            $subscription = $this->createSubscription($user, $plan, $subscriptionOptions);
-
             // Add metadata for manual assignment
-            $subscription->update([
-                'metadata' => array_merge($subscription->metadata ?? [], [
-                    'assigned_by' => $options['assigned_by'] ?? auth()->id(),
-                    'assigned_at' => Carbon::now()->toISOString(),
-                    'assignment_type' => 'manual',
-                    'notes' => $options['notes'] ?? null,
-                ]),
-            ]);
+            $subscriptionOptions['metadata'] = [
+                'assigned_by' => $options['assigned_by'] ?? auth()->id(),
+                'assigned_at' => Carbon::now()->toISOString(),
+                'assignment_type' => 'manual',
+                'notes' => $options['notes'] ?? null,
+            ];
+
+            // Create new subscription
+            // Note: createSubscription also locks the user, which is safe within the same transaction/connection.
+            $subscription = $this->createSubscription($lockedUser, $lockedPlan, $subscriptionOptions);
 
             return $subscription;
-        });
+        }, attempts: 3); // Retry 3 times for deadlock handling
     }
 }
