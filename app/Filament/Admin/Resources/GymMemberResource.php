@@ -2,30 +2,37 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\Currency;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Admin\Resources\GymMemberResource\Pages;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
+use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\User;
 use Carbon\Carbon;
+use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Notifications\Events\DatabaseNotificationsSent;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
-use Maatwebsite\Excel\Facades\Excel;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class GymMemberResource extends Resource
@@ -608,6 +615,129 @@ class GymMemberResource extends Resource
                             }
                         })
                         ->helperText('Leave as "None" if the member does not want a personal trainer.'),
+                ])
+                ->columns(2),
+        ];
+    }
+
+    public static function getMembershipPlanFormSchema(Closure|int|string|null $gymId = null): array
+    {
+        return [
+            Select::make('membership_plan_id')
+                ->label('Membership Plan')
+                ->placeholder('Select a plan')
+                ->reactive()
+                ->required()
+                ->afterStateUpdated(function ($state, callable $set, $get) {
+                    if ($state) {
+                        $plan = MembershipPlan::find($state);
+                        if ($plan && $plan->duration) {
+                            $start = $get('membership_start') ?? now();
+                            $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+                            $set('amount', $plan->price);
+                        }
+                    }
+                })
+                ->options(function () use ($gymId) {
+                    $gymId = $gymId instanceof Closure ? $gymId() : $gymId;
+                    if (! $gymId) {
+                        /** @var \App\Models\Gym|null $tenant */
+                        $tenant = Filament::getTenant();
+                        $gymId = $tenant?->id;
+                    }
+
+                    return MembershipPlan::query()
+                        ->where('gym_id', $gymId)
+                        ->where('is_active', true)
+                        ->pluck('name', 'id')
+                        ->toArray();
+                })
+                ->dehydrated(true)
+                ->createOptionForm([
+                    Section::make('Plan Details')
+                        ->icon('heroicon-o-ticket')
+                        ->description('Create a membership plan for your gym')
+                        ->schema(MembershipPlanResource::planFormSchema())
+                        ->columns(2),
+                ])
+                ->createOptionUsing(function (array $data) {
+                    // Create the new state and return its ID
+                    $state = MembershipPlan::create($data);
+
+                    return $state->id;
+                }),
+
+            DatePicker::make('membership_start')
+                ->placeholder('Select start date')
+                ->live()
+                ->required()
+                ->default(now())
+                ->reactive()
+                ->afterStateUpdated(function ($state, callable $set, $get) {
+                    $planId = $get('membership_plan_id');
+                    if ($planId && $state) {
+                        $plan = MembershipPlan::find($planId);
+                        if ($plan && $plan->duration) {
+                            $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+                        }
+                    }
+                }),
+            DatePicker::make('membership_end')
+                ->placeholder('Auto-calculated based on plan')
+                ->required()
+                ->default(now()),
+        ];
+    }
+
+    public static function getPaymentFormSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('Payment Details')
+                ->icon('heroicon-o-credit-card')
+                ->description('Record the member\'s payment')
+                ->schema([
+                    TextInput::make('amount')
+                        ->numeric()
+                        ->required()
+                        ->prefix(function ($get) {
+                            $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+
+                            return $currency?->getSymbol() ?? Currency::INR->getSymbol();
+                        })
+                        ->minValue(0)
+                        ->step(0.01)
+                        ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
+                    Select::make('currency')
+                        ->options(collect(Currency::cases())->mapWithKeys(
+                            fn ($method) => [$method->value => $method->getLabel()]
+                        ))
+                        ->required()
+                        ->default(Currency::INR->value)
+                        ->reactive(),
+
+                    Select::make('payment_method')
+                        ->options(collect(PaymentMethod::cases())->mapWithKeys(
+                            fn ($method) => [$method->value => $method->getLabel()]
+                        ))
+                        ->required()
+                        ->default(PaymentMethod::CASH->value),
+
+                    ToggleButtons::make('status')
+                        ->inline()
+                        ->options(PaymentStatus::class)
+                        ->required(),
+
+                    DatePicker::make('payment_date')
+                        ->required()
+                        ->default(now()),
+
+                    Textarea::make('notes')
+                        ->maxLength(65535)
+                        ->placeholder('e.g., Paid via UPI ID: user@upi')
+                        ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'])
+                        ->rows(3)
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
         ];

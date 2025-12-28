@@ -141,8 +141,8 @@
 
                 <x-filament::button icon="heroicon-m-archive-box" color="gray" size="xs"
                     wire:click.stop="mountAction('archive', { id: '{{ $recordKey }}' })"
-                    wire:key="action-archive-{{ $recordKey }}" outlined tooltip="Archive Lead">
-                    Archive
+                    wire:key="action-archive-{{ $recordKey }}" outlined tooltip="Lost Lead">
+                    Lost
                 </x-filament::button>
             </div>
         @endif

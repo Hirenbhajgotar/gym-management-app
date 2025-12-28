@@ -10,6 +10,7 @@ use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelation
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\MembershipPlan;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
@@ -185,49 +186,41 @@ class LeadResource extends Resource
     public static function getConvertToMemberFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Convert to Member')
-                ->description(
-                    'Convert this lead into a new gym member and assign a membership plan.',
-                )
+            Forms\Components\Group::make()
                 ->schema([
-                    Forms\Components\Grid::make(2)->schema([
-                        Forms\Components\Select::make('membership_plan_id')
-                            ->label('Membership Plan')
-                            ->options(
-                                fn () => MembershipPlan::pluck('name', 'id'),
-                            )
-                            ->default(
-                                fn (
-                                    ?Lead $record,
-                                ) => $record?->membership_plan_id,
-                            )
-                            ->searchable()
-                            ->required()
-                            ->createOptionForm([
-                                Forms\Components\Section::make('Plan Details')
-                                    ->icon('heroicon-o-ticket')
-                                    ->description('Create a membership plan for your gym')
-                                    ->schema(MembershipPlanResource::planFormSchema())
-                                    ->collapsible()
-                                    ->columns(2),
-                            ])
-                            ->createOptionUsing(function (array $data) {
-                                // Create the new state and return its ID
-                                $plan = MembershipPlan::create($data);
+                    Forms\Components\Section::make('Membership Details')
+                        ->icon('heroicon-o-ticket')
+                        ->description('Configure membership settings')
+                        ->schema([
+                            Forms\Components\Hidden::make('gym_id')
+                                ->default(fn () => Filament::getTenant()->id ?? null),
 
-                                return $plan->id;
-                            })
-                            ->placeholder('Select a plan')
-                            ->prefixIcon('phosphor-crown'),
+                            Forms\Components\Select::make('trainer_id')
+                                ->label('Assign Trainer')
+                                ->options(function (callable $get) {
+                                    $gymId = Filament::getTenant()->id ?? null;
+                                    if (! $gymId) {
+                                        return [];
+                                    }
 
-                        Forms\Components\DatePicker::make('conversion_date')
-                            ->label('Conversion Date')
-                            ->default(now())
-                            ->required()
-                            ->prefixIcon('phosphor-calendar'),
-                    ]),
+                                    return \App\Models\Trainer::where('gym_id', $gymId)
+                                        ->available()
+                                        ->pluck('name', 'id')
+                                        ->prepend('None', null);
+                                })
+                                ->reactive()
+                                ->nullable()
+                                ->helperText('Leave as "None" if the member does not want a personal trainer.'),
 
-                    Forms\Components\RichEditor::make('notes')
+                            ...GymMemberResource::getMembershipPlanFormSchema(function () {
+                                return Filament::getTenant()->id ?? null;
+                            }),
+                        ])
+                        ->columns(2),
+
+                    GymMemberResource::getPaymentFormSchema()['0'],
+
+                    Forms\Components\RichEditor::make('conversion_notes')
                         ->label('Conversion Notes')
                         ->placeholder(
                             'Add any relevant notes about the conversion...',

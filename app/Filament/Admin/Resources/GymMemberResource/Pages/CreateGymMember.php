@@ -2,17 +2,11 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
-use App\Enums\Currency;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
-use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Mail\WelcomeMemberMail;
-use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
-use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
@@ -204,113 +198,12 @@ class CreateGymMember extends CreateRecord
                         })
                         ->helperText('Leave as "None" if the member does not want a personal trainer.'),
 
-                    Forms\Components\Select::make('membership_plan_id')
-                        ->label('Membership Plan')
-                        ->placeholder('Select a plan')
-                        ->reactive()
-                        ->required()
-                        ->afterStateUpdated(function ($state, callable $set, $get) {
-                            if ($state) {
-                                $plan = MembershipPlan::find($state);
-                                if ($plan && $plan->duration) {
-                                    $start = $get('membership_start') ?? now();
-                                    $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
-                                    $set('amount', $plan->price);
-                                }
-                            }
-                        })
-                        ->options(function (callable $get) {
-                            return MembershipPlan::query()
-                                ->where('gym_id', $this->getGymId())
-                                ->where('is_active', true)
-                                ->pluck('name', 'id')
-                                ->toArray();
-                        })
-                        ->dehydrated(true)
-                        ->createOptionForm([
-                            Forms\Components\Section::make('Plan Details')
-                                ->icon('heroicon-o-ticket')
-                                ->description('Create a membership plan for your gym')
-                                ->schema(MembershipPlanResource::planFormSchema())
-                                ->columns(2),
-                        ])
-                        ->createOptionUsing(function (array $data) {
-                            // Create the new state and return its ID
-                            $state = MembershipPlan::create($data);
-
-                            return $state->id;
-                        }),
-
-                    Forms\Components\DatePicker::make('membership_start')
-                        ->placeholder('Select start date')
-                        ->live()
-                        ->required()
-                        ->default(now())
-                        ->reactive()
-                        ->afterStateUpdated(function ($state, callable $set, $get) {
-                            $planId = $get('membership_plan_id');
-                            if ($planId && $state) {
-                                $plan = MembershipPlan::find($planId);
-                                if ($plan && $plan->duration) {
-                                    $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
-                                }
-                            }
-                        }),
-                    Forms\Components\DatePicker::make('membership_end')
-                        ->placeholder('Auto-calculated based on plan')
-                        ->required()
-                        ->default(now()),
+                    ...GymMemberResource::getMembershipPlanFormSchema($this->getGymId()),
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Payment Details')
-                ->icon('heroicon-o-credit-card')
-                ->description('Record the member\'s payment')
-                ->schema([
-                    Forms\Components\TextInput::make('amount')
-                        ->numeric()
-                        ->required()
-                        ->prefix(function ($get) {
-                            $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+            ...GymMemberResource::getPaymentFormSchema(),
 
-                            return $currency?->getSymbol() ?? Currency::INR->getSymbol();
-                        })
-                        ->minValue(0)
-                        ->step(0.01)
-                        ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                    Forms\Components\Select::make('currency')
-                        ->options(collect(Currency::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
-                        ))
-                        ->required()
-                        ->default(Currency::INR->value)
-                        ->reactive(),
-
-                    Forms\Components\Select::make('payment_method')
-                        ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
-                        ))
-                        ->required()
-                        ->default(PaymentMethod::CASH->value),
-
-                    Forms\Components\ToggleButtons::make('status')
-                        ->inline()
-                        ->options(PaymentStatus::class)
-                        ->required(),
-
-                    Forms\Components\DatePicker::make('payment_date')
-                        ->required()
-                        ->default(now()),
-
-                    Forms\Components\Textarea::make('notes')
-                        ->maxLength(65535)
-                        ->placeholder('e.g., Paid via UPI ID: user@upi')
-                        ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'])
-                        ->rows(3)
-                        ->columnSpanFull(),
-                ])
-                ->columns(2),
         ];
     }
 }

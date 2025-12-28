@@ -156,7 +156,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->color('primary')
             ->modalHeading('Convert Lead to Member')
             ->modalSubmitActionLabel('Convert to Member')
-            ->modalWidth('2xl')
+            ->modalWidth('5xl')
             ->form(
                 LeadResource::getConvertToMemberFormSchema(),
             )
@@ -192,17 +192,17 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected function archiveAction(): Action
     {
         return Action::make('archive')
-            ->label('Archive')
+            ->label('Lost')
             ->icon('heroicon-m-archive-box')
             ->color('warning')
             ->requiresConfirmation()
-            ->modalHeading('Archive Lead')
+            ->modalHeading('Lost Lead')
             ->modalDescription(function (array $arguments) {
                 $record = Lead::find($arguments['id']);
 
-                return $record ? "Are you sure you want to archive '{$record->name}'? The lead will be moved to archived status." : 'Lead not found';
+                return $record ? "Are you sure you want to lost '{$record->name}'? The lead will be moved to lost status." : 'Lead not found';
             })
-            ->modalSubmitActionLabel('Archive Lead')
+            ->modalSubmitActionLabel('Lost Lead')
             ->action(function (array $arguments): void {
                 $record = Lead::find($arguments['id']);
 
@@ -222,8 +222,8 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 ]);
 
                 Notification::make()
-                    ->title('Lead archived')
-                    ->body("{$record->name} has been archived")
+                    ->title('Lead lost')
+                    ->body("{$record->name} has been lost")
                     ->success()
                     ->send();
 
