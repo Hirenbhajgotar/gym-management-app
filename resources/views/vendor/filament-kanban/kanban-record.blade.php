@@ -145,6 +145,14 @@
                     Lost
                 </x-filament::button>
             </div>
+        @else
+            <div class="flex flex-wrap gap-x-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-600 justify-end">
+                <x-filament::button icon="heroicon-m-trash" color="danger" size="xs"
+                    wire:click.stop="mountAction('delete', { id: '{{ $recordKey }}' })"
+                    wire:key="action-delete-{{ $recordKey }}" outlined tooltip="Delete Lead">
+                    Delete
+                </x-filament::button>
+            </div>
         @endif
     </div>
 </div>

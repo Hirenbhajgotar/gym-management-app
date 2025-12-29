@@ -233,6 +233,46 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             });
     }
 
+    protected function deleteAction(): Action
+    {
+        return Action::make('delete')
+            ->label('Delete')
+            ->icon('heroicon-m-trash')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete Lead')
+            ->modalDescription(function (array $arguments) {
+                $record = Lead::find($arguments['id']);
+
+                return $record ? "Are you sure you want to delete '{$record->name}'? This action cannot be undone." : 'Lead not found';
+            })
+            ->modalSubmitActionLabel('Delete Lead')
+            ->action(function (array $arguments): void {
+                $record = Lead::find($arguments['id']);
+
+                if (! $record) {
+                    Notification::make()
+                        ->title('Error')
+                        ->body('Lead not found')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $record->delete();
+
+                Notification::make()
+                    ->title('Lead deleted')
+                    ->body("{$record->name} has been deleted")
+                    ->success()
+                    ->send();
+
+                // Refresh the kanban board
+                $this->dispatch('refresh');
+            });
+    }
+
     public function onStatusChanged(int|string $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
     {
         $currentLead = Lead::find($recordId);
