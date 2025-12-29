@@ -7,6 +7,7 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Jobs\SendNotificationJob;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
@@ -19,7 +20,6 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Notification as FacadesNotification;
 use libphonenumber\PhoneNumberType;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
@@ -176,7 +176,8 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
                 $member = app(LeadConversionService::class)->convert($record, $data);
 
-                FacadesNotification::send($member, new WelcomeNotification($member));
+                // Send welcome notification to member in the background,
+                SendNotificationJob::dispatch($member, new WelcomeNotification($member));
 
                 Notification::make()
                     ->title('Lead converted successfully')
