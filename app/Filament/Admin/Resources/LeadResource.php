@@ -192,7 +192,7 @@ class LeadResource extends Resource
                         ])
                         ->columns(2),
 
-                    GymMemberResource::getPaymentFormSchema()['0'],
+                    ...GymMemberResource::getPaymentFormSchema(),
 
                     Forms\Components\RichEditor::make('conversion_notes')
                         ->label('Conversion Notes')

@@ -51,7 +51,7 @@ class LeadConversionService
             LeadConversion::create([
                 'lead_id' => $lockedLead->id,
                 'gym_member_id' => $gymMember->id,
-                'membership_plan_id' => $extraData['membership_plan_id'],
+                'membership_plan_id' => $extraData['membership_plan_id'] ?? null,
                 'conversion_date' => $extraData['conversion_date'] ?? $now,
                 'notes' => $extraData['conversion_notes'] ?? null,
             ]);

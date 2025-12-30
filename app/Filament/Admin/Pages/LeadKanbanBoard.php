@@ -203,7 +203,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->modalDescription(function (array $arguments) {
                 $record = Lead::find($arguments['id']);
 
-                return $record ? "Are you sure you want to lost '{$record->name}'? The lead will be moved to lost status." : 'Lead not found';
+                return $record ? "Are you sure you want to mark '{$record->name}' as lost? The lead will be moved to lost status." : 'Lead not found';
             })
             ->modalSubmitActionLabel('Lost Lead')
             ->action(function (array $arguments): void {
