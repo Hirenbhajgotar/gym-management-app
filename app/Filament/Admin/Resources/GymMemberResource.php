@@ -725,7 +725,11 @@ class GymMemberResource extends Resource
 
                     ToggleButtons::make('status')
                         ->inline()
-                        ->options(PaymentStatus::class)
+                        ->options(collect(PaymentStatus::cases())
+                            ->filter(fn ($status) => $status !== PaymentStatus::EXPIRED)
+                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
+                            ->toArray()
+                        )
                         ->required(),
 
                     DatePicker::make('payment_date')
