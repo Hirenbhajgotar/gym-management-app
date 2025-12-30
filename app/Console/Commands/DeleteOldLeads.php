@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Enums\LeadStatus;
+use App\Models\FollowUp;
 use App\Models\Lead;
+use App\Models\LeadConversion;
 use Illuminate\Console\Command;
 
 class DeleteOldLeads extends Command
@@ -28,11 +30,36 @@ class DeleteOldLeads extends Command
     public function handle()
     {
         $cutoffDate = now()->subMonths(2);
+        $totalDeleted = 0;
 
-        $count = Lead::whereIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
-            ->where('updated_at', '<', $cutoffDate)
-            ->delete();
+        $this->info("Starting cleanup of leads older than {$cutoffDate->toDateTimeString()}...");
 
-        $this->info("Deleted {$count} old leads.");
+        // Process in chunks to manage memory usage
+        Lead::query()
+            ->whereIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
+            ->whereDate('updated_at', '<', $cutoffDate)
+            ->chunkById(500, function ($leads) use (&$totalDeleted) {
+                $leadIds = $leads->pluck('id')->toArray();
+
+                if (empty($leadIds)) {
+                    return;
+                }
+
+                $count = count($leadIds);
+
+                // Delete related FollowUps
+                FollowUp::whereIn('lead_id', $leadIds)->delete();
+
+                // Delete related LeadConversions
+                LeadConversion::whereIn('lead_id', $leadIds)->delete();
+
+                // Delete Leads
+                Lead::whereIn('id', $leadIds)->delete();
+
+                $totalDeleted += $count;
+                $this->info("Deleted batch of {$count} leads and related data.");
+            });
+
+        $this->info("Cleanup complete. Total leads deleted: {$totalDeleted}.");
     }
 }

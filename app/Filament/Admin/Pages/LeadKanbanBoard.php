@@ -42,7 +42,9 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function records(): Collection
     {
-        return Lead::with(['creator', 'membershipPlan'])->ordered()->get();
+        return Lead::with(['creator', 'membershipPlan'])
+            ->orderBy('id', 'desc')
+            ->get();
     }
 
     public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void

@@ -60,9 +60,11 @@
             <x-filament::badge icon="heroicon-m-user" color="gray" size="sm">
                 {{ $record?->creator?->name ?? 'N/A' }}
             </x-filament::badge>
-            <x-filament::badge icon="heroicon-m-star" color="success" size="sm">
-                {{ Str::title($record?->membershipPlan?->name ?? 'No Plan') }}
-            </x-filament::badge>
+            @if ($record?->membershipPlan?->name)
+                <x-filament::badge icon="heroicon-m-star" color="success" size="sm">
+                    {{ Str::title($record?->membershipPlan?->name) }}
+                </x-filament::badge>
+            @endif
         </div>
 
         {{-- Tags Source --}}
@@ -113,7 +115,23 @@
         @endif
 
         {{-- Dates and Next Action --}}
-        @if ($record->last_follow_up_date)
+        @if ($record->status === \App\Enums\LeadStatus::CONVERTED)
+            <div
+                class="space-y-2 text-xs text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-x-2">
+                    <x-filament::icon icon="heroicon-m-check-circle" class="h-4 w-4 text-success-500" />
+                    <span>Converted: {{ $record->updated_at?->format('M d, Y') }}</span>
+                </div>
+            </div>
+        @elseif ($record->status === \App\Enums\LeadStatus::LOST)
+            <div
+                class="space-y-2 text-xs text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-x-2">
+                    <x-filament::icon icon="heroicon-m-archive-box" class="h-4 w-4 text-danger-500" />
+                    <span>Lost: {{ $record->updated_at?->format('M d, Y') }}</span>
+                </div>
+            </div>
+        @elseif ($record->last_follow_up_date)
             <div
                 class="space-y-2 text-xs text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center gap-x-2">
