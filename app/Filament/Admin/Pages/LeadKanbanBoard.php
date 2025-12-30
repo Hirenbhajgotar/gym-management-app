@@ -7,6 +7,7 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Jobs\SendNotificationJob;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
@@ -19,7 +20,6 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Notification as FacadesNotification;
 use libphonenumber\PhoneNumberType;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
@@ -42,7 +42,9 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected function records(): Collection
     {
-        return Lead::with(['creator', 'membershipPlan'])->ordered()->get();
+        return Lead::with(['creator', 'membershipPlan'])
+            ->orderBy('id', 'desc')
+            ->get();
     }
 
     public function onSortChanged(int|string $recordId, string $status, array $orderedIds): void
@@ -156,7 +158,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->color('primary')
             ->modalHeading('Convert Lead to Member')
             ->modalSubmitActionLabel('Convert to Member')
-            ->modalWidth('2xl')
+            ->modalWidth('5xl')
             ->form(
                 LeadResource::getConvertToMemberFormSchema(),
             )
@@ -176,7 +178,8 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
                 $member = app(LeadConversionService::class)->convert($record, $data);
 
-                FacadesNotification::send($member, new WelcomeNotification($member));
+                // Send welcome notification to member in the background,
+                SendNotificationJob::dispatch($member, new WelcomeNotification($member));
 
                 Notification::make()
                     ->title('Lead converted successfully')
@@ -192,17 +195,17 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected function archiveAction(): Action
     {
         return Action::make('archive')
-            ->label('Archive')
+            ->label('Lost')
             ->icon('heroicon-m-archive-box')
             ->color('warning')
             ->requiresConfirmation()
-            ->modalHeading('Archive Lead')
+            ->modalHeading('Lost Lead')
             ->modalDescription(function (array $arguments) {
                 $record = Lead::find($arguments['id']);
 
-                return $record ? "Are you sure you want to archive '{$record->name}'? The lead will be moved to archived status." : 'Lead not found';
+                return $record ? "Are you sure you want to mark '{$record->name}' as lost? The lead will be moved to lost status." : 'Lead not found';
             })
-            ->modalSubmitActionLabel('Archive Lead')
+            ->modalSubmitActionLabel('Lost Lead')
             ->action(function (array $arguments): void {
                 $record = Lead::find($arguments['id']);
 
@@ -222,8 +225,48 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 ]);
 
                 Notification::make()
-                    ->title('Lead archived')
-                    ->body("{$record->name} has been archived")
+                    ->title('Lead lost')
+                    ->body("{$record->name} has been lost")
+                    ->success()
+                    ->send();
+
+                // Refresh the kanban board
+                $this->dispatch('refresh');
+            });
+    }
+
+    protected function deleteAction(): Action
+    {
+        return Action::make('delete')
+            ->label('Delete')
+            ->icon('heroicon-m-trash')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete Lead')
+            ->modalDescription(function (array $arguments) {
+                $record = Lead::find($arguments['id']);
+
+                return $record ? "Are you sure you want to delete '{$record->name}'? This action cannot be undone." : 'Lead not found';
+            })
+            ->modalSubmitActionLabel('Delete Lead')
+            ->action(function (array $arguments): void {
+                $record = Lead::find($arguments['id']);
+
+                if (! $record) {
+                    Notification::make()
+                        ->title('Error')
+                        ->body('Lead not found')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $record->delete();
+
+                Notification::make()
+                    ->title('Lead deleted')
+                    ->body("{$record->name} has been deleted")
                     ->success()
                     ->send();
 

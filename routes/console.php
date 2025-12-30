@@ -47,3 +47,6 @@ Schedule::command('gym:check-membership-expiry')->daily();
 
 // Clean deleted gym owners daily
 Schedule::command('owners:clean-deleted')->dailyAt('02:00');
+
+// Clean old converted and lost leads older than 2 months
+Schedule::command('leads:cleanup-old')->dailyAt('02:00');

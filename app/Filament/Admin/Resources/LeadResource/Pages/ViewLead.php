@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\LeadResource;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
+use Exception;
 use Filament\Actions;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
@@ -201,8 +202,8 @@ class ViewLead extends ViewRecord
                             ->success()
                             ->send();
 
-                        return redirect()->route('filament.admin.resources.gym-members.view', $gymMember);
-                    } catch (\Exception $e) {
+                        return redirect()->route('filament.admin.resources.gym-members.edit', $gymMember);
+                    } catch (Exception $e) {
                         Notification::make()
                             ->title('Conversion failed!')
                             ->body($e->getMessage())
