@@ -9,12 +9,10 @@ use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\Gym;
 use App\Models\Lead;
-use App\Models\MembershipPlan;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -42,29 +40,6 @@ class LeadResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $selectMembershipPlan = Select::make('membership_plan_id')
-            ->label('Membership Plan')
-            ->options(MembershipPlan::pluck('name', 'id'))
-            ->required();
-
-        if (method_exists(MembershipPlanResource::class, 'planFormSchema')) {
-            $selectMembershipPlan
-                ->createOptionForm([
-                    Forms\Components\Section::make('Plan Details')
-                        ->icon('heroicon-o-ticket')
-                        ->description('Create a membership plan for your gym')
-                        ->schema(MembershipPlanResource::planFormSchema())
-                        ->collapsible()
-                        ->columns(2),
-                ])
-                ->createOptionUsing(function (array $data) {
-                    // Create the new state and return its ID
-                    $state = MembershipPlan::create($data);
-
-                    return $state->id;
-                });
-        }
-
         return $form->schema([
             Section::make('Lead Details')->schema([
                 Grid::make(3)->schema([
@@ -79,8 +54,6 @@ class LeadResource extends Resource
                 ]),
 
                 Grid::make(2)->schema([
-                    $selectMembershipPlan,
-
                     Forms\Components\Hidden::make('status')
                         ->default(LeadStatus::NEW)
                         ->visibleOn('create'),
@@ -136,7 +109,7 @@ class LeadResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('email')->searchable(),
+                TextColumn::make('email')->searchable()->sortable(),
                 TextColumn::make('phone')->searchable(),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('source')->sortable(),
@@ -148,6 +121,7 @@ class LeadResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(
                     LeadStatus::class,
