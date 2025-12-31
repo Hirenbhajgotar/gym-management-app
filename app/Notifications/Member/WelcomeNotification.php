@@ -42,12 +42,24 @@ class WelcomeNotification extends Notification implements HasGymContext
     {
         $memberName = $this->member->name ?? 'Member';
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
+            ->from($this->gym->email, $this->gym->name)
             ->subject("Welcome to {$this->gym->name}")
             ->greeting("Hello {$memberName},")
             ->line('Welcome to our gym! We are excited to have you on board.')
             ->line('Thank you for joining us!')
             ->salutation("Regards, {$this->gym->name}");
+
+        // Attach invoice if exists on the latest payment
+        $latestPayment = $this->member->latestPayment;
+        if ($latestPayment && $latestPayment->invoice_path && \Illuminate\Support\Facades\Storage::exists($latestPayment->invoice_path)) {
+            $mail->attach(\Illuminate\Support\Facades\Storage::path($latestPayment->invoice_path), [
+                'as' => $latestPayment->invoice_number . '.pdf',
+                'mime' => 'application/pdf',
+            ]);
+        }
+
+        return $mail;
     }
 
     public function toWhatsApp(object $notifiable): ?array

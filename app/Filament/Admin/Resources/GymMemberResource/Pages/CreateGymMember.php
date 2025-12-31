@@ -15,6 +15,9 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
+use App\Jobs\GenerateInvoiceJob;
+use App\Jobs\SendNotificationJob;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -75,50 +78,12 @@ class CreateGymMember extends CreateRecord
 
     protected function afterCreate(): void
     {
-        // Send email to the gym member
-        try {
-            /**
-             * @var \App\Models\GymMember $member
-             */
-            $member = $this->record;
-            if (empty($member->email)) {
-                Log::warning('No email provided for gym member', [
-                    'member_id' => $member->id,
-                ]);
-
-                return;
-            }
-
-            // Ensure required member data is available
-            if (
-                ! isset($this->paymentData['membership_plan_id']) ||
-                ! isset($this->paymentData['membership_start']) ||
-                ! isset($this->paymentData['membership_end'])
-            ) {
-                Log::error('Missing required member data for email notification', [
-                    'member_id' => $member->id,
-                    'has_plan' => isset($this->paymentData['membership_plan_id']),
-                    'has_start_date' => isset($this->paymentData['membership_start']),
-                    'has_end_date' => isset($this->paymentData['membership_end']),
-                ]);
-
-                return;
-            }
-
-            // Mail::to($member->email)->send(new WelcomeMemberMail($member));
-
-            Notification::send($member, new WelcomeNotification($member));
-        } catch (\Exception $e) {
-            Log::error('Failed to send welcome email to member', [
-                'member_id' => $member->id,
-                'email' => $member->email ?? 'not_set',
-                'error' => $e->getMessage(),
-            ]);
-        }
+        /** @var \App\Models\GymMember $member */
+        $member = $this->record;
 
         // Create the payment if payment data is provided
         if (! empty($this->paymentData['membership_plan_id'])) {
-            $member->payments()->create([
+            $payment = $member->payments()->create([
                 'member_id' => $member->id,
                 'gym_id' => $member->gym_id,
                 'membership_plan_id' => $this->paymentData['membership_plan_id'],
@@ -138,7 +103,25 @@ class CreateGymMember extends CreateRecord
                 'membership_start' => $this->paymentData['membership_start'],
                 'membership_end' => $this->paymentData['membership_end'],
                 'payment_status' => $this->paymentData['status'],
+                'latest_payment_at' => $this->paymentData['payment_date'],
             ]);
+
+            // Chain Invoice Generation and Welcome Notification
+            Bus::chain([
+                new GenerateInvoiceJob($payment),
+                new SendNotificationJob($member, new WelcomeNotification($member)),
+            ])->dispatch();
+
+        } else {
+             // If no payment, just send the notification immediately
+             // Ensure required member data is available before sending
+            if (empty($member->email)) {
+                Log::warning('No email provided for gym member', [
+                    'member_id' => $member->id,
+                ]);
+                return;
+            }
+             Notification::send($member, new WelcomeNotification($member));
         }
     }
 

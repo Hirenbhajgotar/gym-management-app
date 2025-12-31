@@ -224,4 +224,9 @@ class Gym extends Model
     {
         return $this->subscription()?->getFeatureLimit($featureName) ?? null;
     }
+
+    public function getEmailAttribute(): ?string
+    {
+        return $this->owner()?->email;
+    }
 }

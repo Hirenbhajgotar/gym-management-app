@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
@@ -101,6 +102,7 @@ class GymMember extends Model
         'membership_start',
         'membership_end',
         'payment_status',
+        'latest_payment_at',
         'gym_membership_plan_id',
         'trainer_id',
         'user_id',
@@ -114,6 +116,8 @@ class GymMember extends Model
         'weight' => 'decimal:2',
         'height' => 'decimal:2',
         'age' => 'integer',
+        'is_active' => 'boolean',
+        'latest_payment_at' => 'date',
         'payment_status' => PaymentStatus::class,
     ];
 
@@ -231,6 +235,11 @@ class GymMember extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(MemberPayment::class, 'member_id', 'id');
+    }
+
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(MemberPayment::class, 'member_id')->latestOfMany();
     }
 
     public function address(): MorphOne
