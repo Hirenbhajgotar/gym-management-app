@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class BirthdayNotificationCommand extends Command
 {
@@ -34,6 +35,12 @@ class BirthdayNotificationCommand extends Command
             }])
             ->chunkById(200, function ($members) {
                 foreach ($members as $member) {
+                    $cacheKey = "birthday_sent_{$member->id}_" . now()->year;
+
+                    if (Cache::has($cacheKey)) {
+                        continue;
+                    }
+
                     $owner = $member->gym->users->first();
                     $member->notify(
                         new \App\Notifications\BirthdayNotification(
@@ -42,6 +49,8 @@ class BirthdayNotificationCommand extends Command
                             $owner?->phone
                         ),
                     );
+
+                    Cache::put($cacheKey, true, now()->endOfDay());
                 }
             });
 
