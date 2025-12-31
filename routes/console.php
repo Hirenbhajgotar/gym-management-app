@@ -50,3 +50,6 @@ Schedule::command('owners:clean-deleted')->dailyAt('02:00');
 
 // Clean old converted and lost leads older than 2 months
 Schedule::command('leads:cleanup-old')->dailyAt('02:00');
+
+// Send birthday notifications daily at 7 AM
+Schedule::command('notification:send-birthday-notifications')->dailyAt('07:00');
