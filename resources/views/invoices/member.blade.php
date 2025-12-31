@@ -74,7 +74,7 @@
                 <td class="w-half align-top text-right">
                     <div class="info-label">Pay To</div>
                     <div class="font-bold text-gray-900 mb-2">{{ $gym->name }}</div>
-                    @if($gym->email) <div class="text-gray-600">{{ $gym->email }}</div> @endif
+                    @if($gym->owner_email) <div class="text-gray-600">{{ $gym->owner_email }}</div> @endif
                     @if($gym->phone) <div class="text-gray-600">{{ $gym->phone }}</div> @endif
                     @if($gym->address)
                         <div class="mt-4 text-gray-600">

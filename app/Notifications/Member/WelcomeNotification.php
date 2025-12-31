@@ -43,7 +43,7 @@ class WelcomeNotification extends Notification implements HasGymContext
         $memberName = $this->member->name ?? 'Member';
 
         $mail = (new MailMessage)
-            ->from($this->gym->email, $this->gym->name)
+            ->from($this->gym->owner_email, $this->gym->name)
             ->subject("Welcome to {$this->gym->name}")
             ->greeting("Hello {$memberName},")
             ->line('Welcome to our gym! We are excited to have you on board.')
