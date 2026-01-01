@@ -41,13 +41,8 @@ class BirthdayNotificationCommand extends Command
                         continue;
                     }
 
-                    $owner = $member->gym->users->first();
                     $member->notify(
-                        new \App\Notifications\BirthdayNotification(
-                            $member,
-                            $owner?->email,
-                            $owner?->phone
-                        ),
+                        new \App\Notifications\BirthdayNotification($member),
                     );
 
                     Cache::put($cacheKey, true, now()->endOfDay());

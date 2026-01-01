@@ -45,14 +45,7 @@ class TodaysBirthdays extends BaseWidget
                     ->color('success')
                     ->disabled(fn (GymMember $record) => Cache::has("birthday_sent_{$record->id}_" . now()->year))
                     ->action(function (GymMember $record) {
-                        $owner = $record->gym->users->first();
-                        $record->notify(
-                            new BirthdayNotification(
-                                $record,
-                                $owner?->email,
-                                $owner?->phone
-                            )
-                        );
+                        $record->notify(new BirthdayNotification($record));
 
                         Cache::put("birthday_sent_{$record->id}_" . now()->year, true, now()->endOfDay());
 
