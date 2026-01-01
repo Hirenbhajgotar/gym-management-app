@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\User|null $gymOwner
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting query()
@@ -50,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappBusinessNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappInstanceId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|NotificationSetting whereWhatsappProvider($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperNotificationSetting
  */
@@ -98,5 +100,15 @@ class NotificationSetting extends Model
         $types = $this->notification_types ?? [];
 
         return isset($types[$type]) && in_array($channel, $types[$type] ?? []);
+    }
+
+    public function isAccountActive(): bool
+    {
+        return $this->account_status === NotificationAccountStatusEnum::ACTIVE;
+    }
+
+    public function isAccountVerified(): bool
+    {
+        return $this->verification_status === NotificationVerificationStatusEnum::VERIFIED;
     }
 }
