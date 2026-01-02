@@ -3,7 +3,8 @@
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Filament\Admin\Resources\GymMemberResource;
-use App\Mail\WelcomeMemberMail;
+use App\Jobs\GenerateInvoiceJob;
+use App\Jobs\SendNotificationJob;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
@@ -15,11 +16,8 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
-use App\Jobs\GenerateInvoiceJob;
-use App\Jobs\SendNotificationJob;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 
 class CreateGymMember extends CreateRecord
@@ -113,15 +111,16 @@ class CreateGymMember extends CreateRecord
             ])->dispatch();
 
         } else {
-             // If no payment, just send the notification immediately
-             // Ensure required member data is available before sending
+            // If no payment, just send the notification immediately
+            // Ensure required member data is available before sending
             if (empty($member->email)) {
                 Log::warning('No email provided for gym member', [
                     'member_id' => $member->id,
                 ]);
+
                 return;
             }
-             Notification::send($member, new WelcomeNotification($member));
+            SendNotificationJob::dispatch($member, new WelcomeNotification($member));
         }
     }
 

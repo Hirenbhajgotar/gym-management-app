@@ -29,7 +29,7 @@ class SendFollowUpRemindersCommand extends Command
     public function handle()
     {
         // Get follow-ups scheduled for today and pending
-        $followUps = FollowUp::with(['user', 'lead', 'gym.notificationSetting', 'gym.owner'])
+        $followUps = FollowUp::with(['user', 'lead', 'gym.notificationSetting', 'gym.users'])
             ->whereDate('scheduled_date', today())
             ->where('status', FollowUpStatus::PENDING->value)
             ->get();

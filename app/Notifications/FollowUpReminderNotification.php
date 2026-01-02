@@ -169,7 +169,7 @@ class FollowUpReminderNotification extends Notification implements HasGymContext
     private function getWhatsAppTemplate(): ?object
     {
         $templateManager = new WhatsAppTemplateManager($this->gym->id);
-        $template = $templateManager->getTemplate('birthday_lead_followup_reminder_templategreeting');
+        $template = $templateManager->getTemplate('lead_followup_reminder_template');
 
         if (! $template) {
             Log::error('lead_followup_reminder_template template not found', ['gym_id' => $this->gym->id]);
