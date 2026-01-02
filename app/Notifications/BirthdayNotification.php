@@ -81,10 +81,6 @@ class BirthdayNotification extends Notification implements HasGymContext, Should
             return null;
         }
 
-        // Fetch Notification Settings for the Gym
-        $notificationSetting = $this->gym->notificationSetting;
-        $fromNumber = $notificationSetting?->whatsapp_business_number;
-
         // PRODUCTION MODE: Use approved templates
         try {
             $config = $this->getGymWhatsAppConfig();

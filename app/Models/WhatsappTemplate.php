@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate query()
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate whereTemplateSid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappTemplate whereVariables($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperWhatsappTemplate
  */
