@@ -6,7 +6,6 @@ use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\GymWhatsAppBalance;
 use App\Notifications\Contracts\HasGymContext;
-use App\Services\WhatsAppTemplateManager;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,7 +13,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue, HasGymContext
+class LowWhatsAppBalanceNotification extends Notification implements HasGymContext, ShouldQueue
 {
     use Queueable;
 
@@ -64,81 +63,67 @@ class LowWhatsAppBalanceNotification extends Notification implements ShouldQueue
      */
     public function toWhatsApp(object $notifiable): ?array
     {
-        $useSandbox = config("services.twilio.use_sandbox", true);
+        if (config('services.twilio.use_sandbox')) {
+            return $this->getSandboxWhatsAppPayload();
+        }
 
+        // Ensure member has a phone number
+        $phoneNumber = $this->getRecipientPhoneNumber();
+        if (! $phoneNumber) {
+            return null;
+        }
+
+        try {
+            return [
+                'to' => $phoneNumber,
+                'template_sid' => config('services.twilio.low_whatsapp_message_balance_template_sid'),
+                'template_variables' => [
+                    '1' => $this->gym?->name,
+                    '2' => $this->remainingMessages,
+                ],
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to prepare WhatsApp message', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function getSandboxWhatsAppPayload(): array
+    {
+        $message =
+            'Low WhatsApp Balance Alert for ' .
+            $this->gym->name .
+            ".\n" .
+            'You have ' .
+            $this->remainingMessages .
+            " message(s) remaining.\n" .
+            'Please purchase more messages to continue sending notifications to your members.';
+
+        // Sandbox mode uses a fixed test number
+        return [
+            'to' => '+919265098227',
+            'body' => $message,
+        ];
+    }
+
+    private function getRecipientPhoneNumber(): ?string
+    {
         $this->gym->load('users');
         $owner = $this->gym?->owner();
         $phoneNumber = $owner?->phone;
 
-        if (!$phoneNumber) {
-            Log::warning("Gym owner has no phone number for WhatsApp", [
-                "owner_id" => $owner?->id,
+        if (! $phoneNumber) {
+            Log::warning('Gym owner has no phone number for WhatsApp', [
+                'owner_id' => $owner?->id,
             ]);
 
             return null;
         }
 
-        // Format phone number (ensure it has country code)
-        $phoneNumber = ParserHelper::formatPhoneNumberWithCountryCode(
-            $phoneNumber,
-        );
-
-        $message =
-            "Low WhatsApp Balance Alert for " .
-            $this->gym->name .
-            ".\n" .
-            "You have " .
-            $this->remainingMessages .
-            " message(s) remaining.\n" .
-            "Please purchase more messages to continue sending notifications to your members.";
-
-        if ($useSandbox) {
-            // Use sandbox message for testing
-            return [
-                "to" => "+919265098227",
-                "body" => $message,
-            ];
-        }
-
-        try {
-            $templateManager = new WhatsAppTemplateManager(
-                $this->gym?->id,
-            );
-            $template = $templateManager->getTemplate(
-                "low_whatsapp_message_balance_template",
-            );
-
-            if (!$template) {
-                Log::error(
-                    "low_whatsapp_message_balance_template template not found",
-                    [
-                        "gym_id" => $this->gym?->id,
-                    ],
-                );
-
-                return null;
-            }
-
-            // Use contentSid for production
-            return [
-                "to" => $phoneNumber,
-                "template_sid" =>
-                $template?->template_sid ??
-                    config(
-                        "services.twilio.low_whatsapp_message_balance_template_sid",
-                    ),
-                "template_variables" => [
-                    "1" => $this->gym?->name,
-                    "2" => $this->remainingMessages,
-                ],
-            ];
-        } catch (Exception $e) {
-            Log::error("Failed to prepare WhatsApp message", [
-                "error" => $e->getMessage(),
-            ]);
-
-            return null;
-        }
+        return ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
     }
 
     /**

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read mixed $remaining_messages
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance query()
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereMessagesUsed($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereTotalMessagesPurchased($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymWhatsAppBalance whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperGymWhatsAppBalance
  */
