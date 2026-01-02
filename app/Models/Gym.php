@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DefaultRole;
 use App\Observers\GymObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -137,7 +138,7 @@ class Gym extends Model
     public function owner()
     {
         return $this->users()
-            ->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)
+            ->wherePivot('role', DefaultRole::GYM_OWNER->value)
             ->first();
     }
 
