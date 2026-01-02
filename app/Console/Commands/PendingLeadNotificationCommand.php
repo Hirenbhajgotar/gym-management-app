@@ -29,7 +29,7 @@ class PendingLeadNotificationCommand extends Command
     public function handle()
     {
         // Get leads that are pending for 2+ days with no recent follow-ups
-        $pendingLeads = Lead::whereIn('status', [
+        $pendingLeads = Lead::with(['gym.users'])->whereIn('status', [
             LeadStatus::NEW,
             LeadStatus::CONTACTED,
         ])

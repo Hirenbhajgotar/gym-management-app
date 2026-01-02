@@ -59,7 +59,7 @@ class PaymentsRelationManager extends RelationManager
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                         Forms\Components\Select::make('currency')
-                            ->options(Currency::toSelectOptions())
+                            ->options(Currency::class)
                             ->required()
                             ->default(Currency::INR->value)
                             ->reactive(),
@@ -111,7 +111,7 @@ class PaymentsRelationManager extends RelationManager
                     ->color('success'),
 
                 Tables\Columns\TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency)
+                    ->money(fn ($record) => $record->currency->value)
                     ->summarize(Tables\Columns\Summarizers\Sum::make()),
 
                 Tables\Columns\TextColumn::make('payment_method')

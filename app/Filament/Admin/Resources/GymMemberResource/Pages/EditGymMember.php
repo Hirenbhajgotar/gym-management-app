@@ -18,6 +18,13 @@ class EditGymMember extends EditRecord
     {
 
         return [
+            Actions\Action::make('view_invoice')
+                ->label('View Invoice')
+                ->icon('heroicon-o-document-text')
+                ->url(fn (GymMember $member) => $member->latestPayment ? route('member.invoice.show', $member->latestPayment) : null)
+                ->openUrlInNewTab()
+                ->visible(fn (GymMember $member) => $member->latestPayment()->exists() && $member->latestPayment->invoice_path),
+
             Actions\DeleteAction::make()
                 ->after(function (GymMember $member) {
                     try {

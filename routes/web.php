@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MemberInvoiceController;
 use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\RequestDemo;
 use App\Livewire\GymOwnerRegister;
@@ -162,6 +163,12 @@ Route::middleware(['auth'])->group(function () {
         \App\Http\Controllers\SubscriptionController::class,
         'completePendingPayment',
     ])->name('subscription.payment.complete');
+
+    // Member Invoice Route
+    Route::get('/member/invoice/{payment}', [
+        MemberInvoiceController::class,
+        'show',
+    ])->name('member.invoice.show');
 });
 
 // Razorpay Webhook (no auth required)
