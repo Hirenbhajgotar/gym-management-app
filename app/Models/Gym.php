@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\DefaultRole;
 use App\Observers\GymObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -136,7 +138,7 @@ class Gym extends Model
     public function owner()
     {
         return $this->users()
-            ->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)
+            ->wherePivot('role', DefaultRole::GYM_OWNER->value)
             ->first();
     }
 
@@ -223,5 +225,12 @@ class Gym extends Model
     public function getFeatureLimit(string $featureName): int|string|null
     {
         return $this->subscription()?->getFeatureLimit($featureName) ?? null;
+    }
+
+    protected function ownerEmail(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->owner()?->email,
+        );
     }
 }

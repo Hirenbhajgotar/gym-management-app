@@ -206,23 +206,24 @@
                 <td class="w-half align-top">
                     <div class="info-label">Billed To</div>
                     <div class="info-content">
+                        {{-- For System Payments: Bill to the Gym or Gym Owner --}}
                         @if($gym)
                             <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $gym->name }}</div>
                         @else
                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
                         @endif
-                        
+
                         @if($gym && $gym->name != $user->name)
                              <div class="text-gray-700">{{ $user->name }}</div>
                         @endif
 
                         <div class="text-gray-600">{{ $user->email }}</div>
                         <div class="text-gray-600">{{ $user->phone }}</div>
-                        
+
                         @if($gym && $gym->address)
                             <div class="mt-4 text-gray-600">
                                 {{ $gym->address->street }}<br>
-                                {{ $gym->address->city->name }}, {{ $gym->address->state->name }} {{ $gym->address->postal_code }}
+                                {{ $gym->address->city?->name }}, {{ $gym->address->state?->name }} {{ $gym->address->postal_code }}
                             </div>
                         @endif
                     </div>
@@ -230,10 +231,11 @@
                 <td class="w-half align-top text-right">
                     <div class="info-label">Pay To</div>
                     <div class="info-content">
+                        {{-- For System Payments: Pay to the Platform --}}
                         <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ config('app.name') }}</div>
                         <div class="text-gray-600">support@fluxfitness.com</div>
                     </div>
-                    
+
                     <div class="mt-4">
                          <div class="info-label">Payment Status</div>
                         @if($payment->status->value == 'completed')
@@ -274,7 +276,7 @@
                                 {{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}
                             </div>
                         @else
-                            <div class="item-description">{{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}</div>
+                            <div class="item-description">{{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'Payment')) }}</div>
                         @endif
                     </td>
                     <td class="text-gray-600 font-mono text-xs">

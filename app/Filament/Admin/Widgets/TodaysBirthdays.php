@@ -3,9 +3,11 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\GymMember;
+use App\Notifications\BirthdayNotification;
+use Filament\Notifications\Notification;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 
 class TodaysBirthdays extends BaseWidget
 {
@@ -13,34 +15,46 @@ class TodaysBirthdays extends BaseWidget
 
     protected static ?int $sort = 5;
 
-    // protected int|string|array $columnSpan = 'full';
-
     public static function canView(): bool
     {
         return auth()->user()->hasRole('gym_owner');
     }
 
-    protected function getTableQuery(): Builder
+    public function table(Table $table): Table
     {
-        // Replace with your actual query to fetch members with birthdays today
-        return GymMember::query()
-            ->whereHas('gym')
-            ->whereMonth('dob', now()->month)
-            ->whereDay('dob', now()->day)
-            ->orderBy('name', 'asc');
-    }
+        return $table
+            ->query(
+                GymMember::query()
+                    ->whereHas('gym')
+                    ->whereMonth('dob', now()->month)
+                    ->whereDay('dob', now()->day)
+                    ->orderBy('name', 'asc')
+            )
+            ->columns([
+                \Filament\Tables\Columns\TextColumn::make('name')
+                    ->label('Name')
+                    ->description(fn (GymMember $record) => $record->dob->format('F j, Y')),
+                \Filament\Tables\Columns\TextColumn::make('dob')
+                    ->label('Age')
+                    ->getStateUsing(fn (GymMember $record) => $record->dob->age . ' Years Old'),
+            ])
+            ->actions([
+                \Filament\Tables\Actions\Action::make('wish')
+                    ->label('Wish Happy Birthday')
+                    ->icon('phosphor-gift')
+                    ->color('success')
+                    ->disabled(fn (GymMember $record) => Cache::has("birthday_sent_{$record->id}_" . now()->year))
+                    ->action(function (GymMember $record) {
+                        $record->notify(new BirthdayNotification($record));
 
-    protected function getTableColumns(): array
-    {
-        // Define your table columns here (example)
-        return [
-            \Filament\Tables\Columns\TextColumn::make('name')->label('Name'),
-            \Filament\Tables\Columns\TextColumn::make('birth_date')->label('Birthday'),
-        ];
-    }
+                        Cache::put("birthday_sent_{$record->id}_" . now()->year, true, now()->endOfDay());
 
-    protected function getTableEmptyStateHeading(): ?string
-    {
-        return 'No birthdays today.';
+                        Notification::make()
+                            ->title('Birthday wish sent successfully')
+                            ->success()
+                            ->send();
+                    }),
+            ])
+            ->emptyStateHeading('No birthdays today.');
     }
 }

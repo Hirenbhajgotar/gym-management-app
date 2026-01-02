@@ -3,10 +3,11 @@
 namespace App\Notifications;
 
 use App\Helpers\ParserHelper;
+use App\Models\Gym;
 use App\Models\Lead;
+use App\Models\User;
 use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
-use App\Services\WhatsAppTemplateManager;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,10 +19,18 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
 {
     use Queueable;
 
+    private readonly Gym $gym;
+
+    private readonly User $owner;
+
     /**
      * Create a new notification instance.
      */
-    public function __construct(public Lead $lead) {}
+    public function __construct(public Lead $lead)
+    {
+        $this->gym = $lead->gym;
+        $this->owner = $this->gym->owner();
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -31,7 +40,7 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
     public function via(object $notifiable): array
     {
         return NotificationChannelResolver::getChannelsForGym(
-            $this->lead->gym,
+            $this->gym,
             'lead_reminders_notifications',
         );
     }
@@ -64,22 +73,47 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
      */
     public function toWhatsapp(object $notifiable): ?array
     {
-        $useSandbox = config('services.twilio.use_sandbox', true);
-        $phoneNumber = $this->lead->gym->owner()?->phone;
+        if (config('services.twilio.use_sandbox')) {
+            return $this->getSandboxWhatsAppPayload();
+        }
 
+        // Ensure member has a phone number
+        $phoneNumber = $this->getRecipientPhoneNumber();
         if (! $phoneNumber) {
-            Log::warning('Gym owner has no phone number for WhatsApp', [
-                'owner_id' => $this->lead->gym->owner()?->id,
+            return null;
+        }
+
+        try {
+            $config = $this->getGymWhatsAppConfig();
+            if (! $config) {
+                return null;
+            }
+
+            [$templateSid] = $config;
+
+            // Use contentSid for production
+            return [
+                'to' => $phoneNumber,
+                'template_sid' => $templateSid,
+                'template_variables' => [
+                    '1' => $this->lead->name,
+                    '2' => $this->lead->email,
+                    '3' => $this->lead->phone,
+                    '4' => $this->lead->status->getLabel(),
+                    '5' => $this->lead->created_at->format('M d, Y'),
+                ],
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to prepare WhatsApp message', [
+                'error' => $e->getMessage(),
             ]);
 
             return null;
         }
+    }
 
-        // Format phone number (ensure it has country code)
-        $phoneNumber = ParserHelper::formatPhoneNumberWithCountryCode(
-            $phoneNumber,
-        );
-
+    private function getSandboxWhatsAppPayload(): array
+    {
         $message =
             'Pending Lead Reminder: ' .
             $this->lead->name .
@@ -96,55 +130,51 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
             'Created: ' .
             $this->lead->created_at->format('M d, Y');
 
-        if ($useSandbox) {
-            // Use sandbox message for testing
-            return [
-                'to' => '+919265098227',
-                'body' => $message,
-            ];
+        // Sandbox mode uses a fixed test number
+        return [
+            'to' => '+919265098227', // Consider moving this to config if used frequently
+            'body' => $message,
+        ];
+    }
+
+    /**
+     * @return array{string, string}|null Returns [fromNumber, templateSid] or null on failure
+     */
+    private function getGymWhatsAppConfig(): ?array
+    {
+        $notificationSetting = $this->gym?->notificationSetting;
+
+        if (! $notificationSetting) {
+            Log::error('Notification setting not found for gym', ['gym_id' => $this->gym->id]);
+
+            return null;
         }
 
-        try {
-            $templateManager = new WhatsAppTemplateManager(
-                $this->lead?->gym?->id,
-            );
-            $template = $templateManager->getTemplate(
-                'pending_lead_reminder_template',
-            );
+        if (! $notificationSetting->isAccountActive() || ! $notificationSetting->isAccountVerified()) {
+            Log::error('Notification account is not active or verified', ['gym_id' => $this->gym->id]);
 
-            if (! $template) {
-                Log::error(
-                    'pending_lead_reminder_template template not found',
-                    [
-                        'gym_id' => $this->lead?->gym?->id,
-                    ],
-                );
+            return null;
+        }
 
-                return null;
-            }
+        $templateSid = config('services.twilio.pending_lead_reminder_template_sid');
 
-            // Use contentSid for production
-            return [
-                'to' => $phoneNumber,
-                'template_sid' => $template?->template_sid ??
-                    config(
-                        'services.twilio.pending_lead_reminder_template_sid',
-                    ),
-                'template_variables' => [
-                    '1' => $this->lead->name,
-                    '2' => $this->lead->email,
-                    '3' => $this->lead->phone,
-                    '4' => $this->lead->status->getLabel(),
-                    '5' => $this->lead->created_at->format('M d, Y'),
-                ],
-            ];
-        } catch (Exception $e) {
-            Log::error('Failed to prepare WhatsApp message', [
-                'error' => $e->getMessage(),
+        return [$templateSid];
+    }
+
+    private function getRecipientPhoneNumber(): ?string
+    {
+        // Ensure lead has a phone number
+        $phoneNumber = $this->owner?->phone;
+        if (! $phoneNumber) {
+            Log::warning('Owner has no phone number for WhatsApp', [
+                'owner_id' => $this->owner?->id,
             ]);
 
             return null;
         }
+
+        // Format phone number (ensure it has country code)
+        return ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\MemberPayment;
 use App\Models\Payment;
 use App\Services\InvoiceService;
 use Illuminate\Bus\Queueable;
@@ -19,7 +20,7 @@ class GenerateInvoiceJob implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        public Payment $payment
+        public Payment|MemberPayment $payment
     ) {}
 
     /**
@@ -28,7 +29,13 @@ class GenerateInvoiceJob implements ShouldQueue
     public function handle(InvoiceService $invoiceService): void
     {
         try {
-            $invoiceService->generateInvoice($this->payment);
+            if ($this->payment instanceof MemberPayment) {
+                $invoiceService->generateMemberInvoice($this->payment);
+            } else {
+                /** @var Payment $payment */
+                $payment = $this->payment;
+                $invoiceService->generateInvoice($payment);
+            }
         } catch (\Exception $e) {
             Log::error('Failed to generate invoice', [
                 'error' => $e->getMessage(),

@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Jobs\SendMembershipExpiryNotificationJob;
 use App\Models\GymMember;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -57,6 +59,21 @@ class MembershipExpiryAlerts extends BaseWidget
             ->actions([
                 Tables\Actions\Action::make('open')
                     ->url(fn (GymMember $record): string => GymMemberResource::getUrl('edit', ['record' => $record])),
+                Tables\Actions\Action::make('sendAlert')
+                    ->label('Send Alert')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->action(function (GymMember $record) {
+                        $daysLeft = now()->diffInDays($record->membership_end, false);
+
+                        SendMembershipExpiryNotificationJob::dispatch($record, (int) $daysLeft);
+
+                        Notification::make()
+                            ->title('Alert sent successfully')
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation(),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('viewAllMembers')

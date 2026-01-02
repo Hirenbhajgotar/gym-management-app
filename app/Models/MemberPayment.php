@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\Currency;
 use App\Enums\PaymentStatus;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,6 +71,8 @@ class MemberPayment extends Model
         'payment_date',
         'membership_start',
         'membership_end',
+        'invoice_number',
+        'invoice_path',
     ];
 
     protected $casts = [
@@ -77,6 +81,7 @@ class MemberPayment extends Model
         'membership_start' => 'date',
         'membership_end' => 'date',
         'status' => PaymentStatus::class,
+        'currency' => Currency::class,
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -90,7 +95,7 @@ class MemberPayment extends Model
 
     public function getDescriptionForEvent(string $eventName): string
     {
-        $payment = Number::currency($this->amount, in: $this->currency);
+        $payment = $this->formatted_amount;
 
         return match ($eventName) {
             'created' => "Payment of {$payment} received from {$this->member?->name}",
@@ -113,5 +118,15 @@ class MemberPayment extends Model
     public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class);
+    }
+
+    /**
+     * Get formatted amount
+     */
+    protected function formattedAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Number::currency($this->amount, in: $this->currency->value),
+        );
     }
 }

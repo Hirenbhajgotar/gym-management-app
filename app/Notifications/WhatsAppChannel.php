@@ -7,7 +7,6 @@ use App\Notifications\Contracts\HasGymContext;
 use App\Services\TwilioWhatsAppService;
 use App\Traits\HasTenantAccess;
 use Exception;
-use Filament\Facades\Filament;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
