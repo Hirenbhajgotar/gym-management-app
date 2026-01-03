@@ -4,12 +4,17 @@ namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
-use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\EditTenantProfile;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class EditGymProfile extends EditTenantProfile
 {
@@ -22,39 +27,120 @@ class EditGymProfile extends EditTenantProfile
     {
         return $form
             ->schema([
-                Section::make()
-                    ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('e.g., Fitness Hub')
-                            ->autofocus()
-                            ->reactive()
-                            ->afterStateUpdated(function (callable $set, $state, $context) {
-                                $set('slug', Gym::generateUniqueSlug($state));
-                            })
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+                Tabs::make('Tabs')
+                    ->tabs([
+                        Tabs\Tab::make('General')
+                            ->icon('heroicon-o-building-storefront')
+                            ->schema([
+                                FileUpload::make('logo')
+                                    ->label('Gym Logo')
+                                    ->image()
+                                    ->avatar()
+                                    ->imageEditor()
+                                    ->directory('gym-logos')
+                                    ->columnSpanFull(),
 
-                        TextInput::make('slug')
-                            ->required()
-                            ->unique(Gym::class, 'slug', ignoreRecord: true)
-                            ->helperText('This will be used in the URL (e.g., /admin/your-slug)')
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                $set('slug', Str::slug($state));
-                            }),
+                                TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('e.g., Fitness Hub')
+                                    ->autofocus()
+                                    ->reactive()
+                                    ->afterStateUpdated(function (callable $set, $state, $context) {
+                                        $set('slug', Gym::generateUniqueSlug($state));
+                                    })
+                                    ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
-                        AddressForm::make('address')
-                            ->columnSpan('full'),
+                                TextInput::make('slug')
+                                    ->required()
+                                    ->unique(Gym::class, 'slug', ignoreRecord: true)
+                                    ->helperText('This will be used in the URL (e.g., /admin/your-slug)')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        $set('slug', Str::slug($state));
+                                    }),
+
+                                AddressForm::make('address')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
+
+                        Tabs\Tab::make('Security')
+                            ->icon('heroicon-o-lock-closed')
+                            ->schema([
+                                Grid::make()
+                                    ->schema([
+                                        TextInput::make('current_password')
+                                            ->label('Current Password')
+                                            ->password()
+                                            ->revealable()
+                                            // ->dehydrated(false)
+                                            ->requiredWith('new_password')
+                                            ->rule(function () {
+                                                return function (string $attribute, $value, \Closure $fail) {
+                                                    if (! \Illuminate\Support\Facades\Hash::check($value, auth()->user()->password)) {
+                                                        $fail('The provided password does not match your current password.');
+                                                    }
+                                                };
+                                            }),
+                                    ]),
+
+                                TextInput::make('new_password')
+                                    ->label('New Password')
+                                    ->password()
+                                    ->revealable()
+                                    ->rule(Password::default())
+                                    ->hint('Need a strong password?')
+                                    ->hintAction(
+                                        Action::make('generatePassword')
+                                            ->label('Generate')
+                                            ->icon('heroicon-o-key')
+                                            ->action(function (Set $set) {
+                                                $password = Str::password(12);
+                                                $set('new_password', $password);
+                                                $set('new_password_confirmation', $password);
+                                            })
+                                    ),
+
+                                TextInput::make('new_password_confirmation')
+                                    ->label('Confirm Password')
+                                    ->password()
+                                    ->revealable()
+                                    ->same('new_password')
+                                    ->requiredWith('new_password'),
+                            ])->columns(2),
                     ])
-                    ->columns(2) // This creates a 2-column layout within the section
-                    ->columnSpan('full'), // This makes the section span full width
+                    ->columnSpanFull(),
             ])
             ->columns(1);
     }
 
     public function save(bool $shouldRedirect = true): void
     {
+        $data = $this->form->getState();
+
+        if (! empty($data['new_password'])) {
+            // Re-validate current password on save to be secure
+            if (! \Illuminate\Support\Facades\Hash::check($data['current_password'], auth()->user()->password)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'current_password' => 'The provided password does not match your current password.',
+                ]);
+            }
+
+            $user = auth()->user();
+
+            if ($user) {
+                $user->password = $data['new_password'];
+                $user->save();
+
+                Notification::make()
+                    ->success()
+                    ->title('Password Updated')
+                    ->body('Your password has been successfully updated.')
+                    ->send();
+            }
+        }
+
         parent::save(false);
 
         /**
