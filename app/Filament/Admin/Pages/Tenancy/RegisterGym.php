@@ -89,7 +89,9 @@ class RegisterGym extends RegisterTenant
                                 $set('slug', Str::slug($state));
                             }),
 
-                        AddressForm::make('address')->columnSpan('full'),
+                        AddressForm::make('address')
+                            ->required()
+                            ->columnSpan('full'),
                     ])
                     ->columns(2) // This creates a 2-column layout within the section
                     ->columnSpan('full'), // This makes the section span full width

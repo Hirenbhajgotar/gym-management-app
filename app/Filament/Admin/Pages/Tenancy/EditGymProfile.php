@@ -61,6 +61,7 @@ class EditGymProfile extends EditTenantProfile
                                     }),
 
                                 AddressForm::make('address')
+                                    ->required()
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
