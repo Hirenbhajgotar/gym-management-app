@@ -17,6 +17,35 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=null
+      - SESSION_DRIVER=redis
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gym-worker
+    command: php artisan queue:work --tries=3 --delay=3
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - SESSION_DRIVER=redis
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+      - DB_HOST=db
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_DATABASE=gym_app
     depends_on:
       - redis
       - db
@@ -56,6 +85,7 @@ services:
     container_name: gym-redis
     ports:
       - "6379:6379"
+      - "8010:8001"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
