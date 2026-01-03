@@ -20,6 +20,10 @@ services:
       - SESSION_DRIVER=redis
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
+      - DB_HOST=db
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_DATABASE=gym_app
     depends_on:
       - redis
       - db

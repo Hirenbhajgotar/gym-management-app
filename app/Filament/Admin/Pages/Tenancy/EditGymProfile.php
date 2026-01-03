@@ -130,16 +130,14 @@ class EditGymProfile extends EditTenantProfile
 
             $user = auth()->user();
 
-            if ($user) {
-                $user->password = $data['new_password'];
-                $user->save();
+            $user->password = $data['new_password'];
+            $user->save();
 
-                Notification::make()
-                    ->success()
-                    ->title('Password Updated')
-                    ->body('Your password has been successfully updated.')
-                    ->send();
-            }
+            Notification::make()
+                ->success()
+                ->title('Password Updated')
+                ->body('Your password has been successfully updated.')
+                ->send();
         }
 
         parent::save(false);
