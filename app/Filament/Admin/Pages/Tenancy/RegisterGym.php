@@ -6,6 +6,7 @@ use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use App\Services\RolesAndPermissionsService;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -15,7 +16,7 @@ use Illuminate\Support\Str;
 
 class RegisterGym extends RegisterTenant
 {
-    protected static string $view = "filament.admin.pages.register-gym";
+    protected static string $view = 'filament.admin.pages.register-gym';
 
     public int $totalGyms = 1; // Maximum gyms allowed per owner
 
@@ -29,7 +30,7 @@ class RegisterGym extends RegisterTenant
 
     public static function getLabel(): string
     {
-        return "Register Gym";
+        return 'Register Gym';
     }
 
     public static function canView(): bool
@@ -43,10 +44,18 @@ class RegisterGym extends RegisterTenant
             ->schema([
                 Section::make()
                     ->schema([
-                        TextInput::make("name")
+                        FileUpload::make('logo')
+                            ->label('Gym Logo')
+                            ->image()
+                            ->avatar()
+                            ->imageEditor()
+                            ->directory('gym-logos')
+                            ->columnSpanFull(),
+
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder("e.g., Fitness Hub")
+                            ->placeholder('e.g., Fitness Hub')
                             ->autofocus()
                             ->reactive()
                             ->live(onBlur: true)
@@ -57,34 +66,33 @@ class RegisterGym extends RegisterTenant
                             ) {
                                 if ($state) {
                                     $set(
-                                        "slug",
+                                        'slug',
                                         Gym::generateUniqueSlug($state),
                                     );
                                 }
                             })
                             ->extraInputAttributes([
-                                "class" =>
-                                    "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
+                                'class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
                             ]),
 
-                        TextInput::make("slug")
+                        TextInput::make('slug')
                             ->required()
-                            ->unique(Gym::class, "slug", ignoreRecord: true)
+                            ->unique(Gym::class, 'slug', ignoreRecord: true)
                             ->helperText(
-                                "This will be used in the URL (e.g., /admin/your-slug)",
+                                'This will be used in the URL (e.g., /admin/your-slug)',
                             )
                             ->reactive()
                             ->afterStateUpdated(function (
                                 $state,
                                 callable $set,
                             ) {
-                                $set("slug", Str::slug($state));
+                                $set('slug', Str::slug($state));
                             }),
 
-                        AddressForm::make("address")->columnSpan("full"),
+                        AddressForm::make('address')->columnSpan('full'),
                     ])
                     ->columns(2) // This creates a 2-column layout within the section
-                    ->columnSpan("full"), // This makes the section span full width
+                    ->columnSpan('full'), // This makes the section span full width
             ])
             ->columns(1); // This sets the main form to single column (full width)
     }
@@ -102,9 +110,9 @@ class RegisterGym extends RegisterTenant
         $remaining = $this->totalGyms - $currentCount;
 
         if ($remaining <= 0) {
-            return "⚠️ You have reached the maximum limit of " .
+            return '⚠️ You have reached the maximum limit of ' .
                 $this->totalGyms .
-                " gyms. Contact support to register more gyms.";
+                ' gyms. Contact support to register more gyms.';
         }
 
         return "📍 You can register {$remaining} more gym(s). Current: {$currentCount}/{$this->totalGyms}";
@@ -124,8 +132,8 @@ class RegisterGym extends RegisterTenant
         // Double-check the limit before processing
         if ($this->hasReachedGymLimit()) {
             Notification::make()
-                ->title("Registration Failed")
-                ->body("You have reached the maximum limit of 3 gyms.")
+                ->title('Registration Failed')
+                ->body('You have reached the maximum limit of 3 gyms.')
                 ->danger()
                 ->send();
 
@@ -140,7 +148,7 @@ class RegisterGym extends RegisterTenant
         // Final check before creating the gym
         if ($this->hasReachedGymLimit()) {
             throw new \Exception(
-                "Gym limit exceeded. Cannot register more than 3 gyms.",
+                'Gym limit exceeded. Cannot register more than 3 gyms.',
             );
         }
 
@@ -149,7 +157,7 @@ class RegisterGym extends RegisterTenant
         $gym = Gym::create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
-        $gym->users()->attach($user, ["role" => DefaultRole::GYM_OWNER->value]);
+        $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
 
         // Create default roles and permissions for the gym
         app(
