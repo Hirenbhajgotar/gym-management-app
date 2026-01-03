@@ -11,12 +11,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
-Route::get('/clear-cache', function () {
-    Artisan::call('optimize:clear');
-
-    return redirect()->route('home');
-})->name('clear-cache');
-
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('/request-demo', RequestDemo::class)->name('request-demo');
@@ -40,6 +34,12 @@ Route::get('/thank-you', function () {
 Route::get('business-register', GymOwnerRegister::class)->name('gym.register');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/clear-cache', function () {
+        Artisan::call('optimize:clear');
+
+        return redirect()->route('home');
+    })->name('clear-cache');
+
     // Download failed rows CSV
     Route::get('/download-failed-rows/{file}', function ($file) {
         \Illuminate\Support\Facades\Log::info(
