@@ -20,10 +20,10 @@ services:
       - SESSION_DRIVER=redis
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
-      - DB_HOST=db
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - DB_DATABASE=gym_app
+      - DB_HOST=${DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
     depends_on:
       - redis
       - db
@@ -46,10 +46,10 @@ services:
       - SESSION_DRIVER=redis
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
-      - DB_HOST=db
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - DB_DATABASE=gym_app
+      - DB_HOST=${DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
     depends_on:
       - redis
       - db
@@ -73,10 +73,10 @@ services:
     image: mysql:8.0
     container_name: gym-db
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: gym_app # Changed to match your previous database name
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # Changed to match your previous database name
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
