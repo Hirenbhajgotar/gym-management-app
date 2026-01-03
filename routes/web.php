@@ -6,13 +6,16 @@ use App\Livewire\Frontend\RequestDemo;
 use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// })->name('home');
+Route::get('/clear-cache', function () {
+    Artisan::call('optimize:clear');
+
+    return redirect()->route('home');
+})->name('clear-cache');
 
 Route::get('/', HomeController::class)->name('home');
 
