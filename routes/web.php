@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MemberInvoiceController;
 use App\Livewire\Frontend\HomeController;
+use App\Livewire\Frontend\ProfileController;
 use App\Livewire\Frontend\RequestDemo;
 use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
@@ -15,7 +16,7 @@ Route::get('/', HomeController::class)->name('home');
 
 Route::get('/request-demo', RequestDemo::class)->name('request-demo');
 
-Route::get('/profile', App\Livewire\Frontend\ProfileController::class)
+Route::get('/profile', ProfileController::class)
     ->name('profile')
     ->middleware('auth');
 

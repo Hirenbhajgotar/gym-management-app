@@ -7,9 +7,10 @@
     <title>{{ $title ?? config('app.name') }} - Complete Gym Management System</title>
 
     <!-- Favicons -->
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('fluxfitness-icon.png') }}">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>

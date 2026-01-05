@@ -70,7 +70,7 @@
         <div class="flex w-full max-w-xl flex-col gap-2">
             <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium">
                 <span
-                    class="flex h-24 w-24 mb-2 items-center justify-center rounded-xl ">
+                    class="flex h-24 w-auto mb-2 items-center justify-center rounded-xl ">
                     <x-app-logo-icon class="size-24 fill-current text-white h-24" variant="full" />
                 </span>
             </a>
