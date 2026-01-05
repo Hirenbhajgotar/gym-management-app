@@ -150,7 +150,7 @@ class RegisterGym extends RegisterTenant
         // Final check before creating the gym
         if ($this->hasReachedGymLimit()) {
             throw new \Exception(
-                'Gym limit exceeded. Cannot register more than 3 gyms.',
+                'Gym limit exceeded. Cannot register more than ' . $this->totalGyms . ' gyms.',
             );
         }
 
