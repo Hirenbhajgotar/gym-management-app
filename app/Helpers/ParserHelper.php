@@ -12,7 +12,7 @@ class ParserHelper
      */
     public static function clearPhoneNumberFormat(string $phoneNumber): string
     {
-        return preg_replace("/[^0-9]/", "", $phoneNumber);
+        return preg_replace('/[^0-9]/', '', $phoneNumber);
     }
 
     /**
@@ -27,19 +27,19 @@ class ParserHelper
         $phone = (string) $phone;
 
         // 1. Strip everything that is not a digit or a leading "+"
-        $clean = preg_replace("/(?!^\+)\D/", "", $phone);
+        $clean = preg_replace("/(?!^\+)\D/", '', $phone);
 
         // 2. If the number already starts with "+" we are done
-        if (str_starts_with($clean, "+")) {
+        if (str_starts_with($clean, '+')) {
             return $clean;
         }
 
         // 3. Otherwise prepend the default country code
         $countryCode =
-            $defaultCountryCode ?? config("app.default_country_code", "+91"); // fallback to +91
+            $defaultCountryCode ?? config('app.default_country_code', '+91'); // fallback to +91
 
         // Ensure we have a single "+" and no spaces
-        $countryCode = "+" . ltrim($countryCode, "+");
+        $countryCode = '+' . ltrim($countryCode, '+');
 
         return $countryCode . $clean;
     }
@@ -50,5 +50,16 @@ class ParserHelper
     public static function isValidEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    public static function getDurationLabel(int $months): string
+    {
+        if ($months % 12 === 0) {
+            $years = $months / 12;
+
+            return "{$years} " . ($years === 1 ? 'Year' : 'Years');
+        }
+
+        return "{$months} " . ($months === 1 ? 'Month' : 'Months');
     }
 }

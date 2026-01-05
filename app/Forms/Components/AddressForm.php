@@ -59,11 +59,14 @@ class AddressForm extends Field
         // Get India's ID (assuming you have India in your countries table)
         $indiaId = Country::whereRaw('LOWER(name) = ?', ['india'])->first()?->id;
 
+        $isMarkedAsRequired = $this->isRequired();
+
         return [
             Forms\Components\TextInput::make('street')
                 ->label('Street Address')
                 ->placeholder('e.g., 123 Main St')
-                ->maxLength(255),
+                ->maxLength(255)
+                ->required($isMarkedAsRequired),
             Forms\Components\Grid::make(3)
                 ->schema([
                     Forms\Components\Select::make('country_id')
@@ -74,7 +77,8 @@ class AddressForm extends Field
                         ->afterStateUpdated(function (callable $set, $state) {
                             $set('state_id', null);
                             $set('city_id', null);
-                        }),
+                        })
+                        ->required($isMarkedAsRequired),
 
                     Forms\Components\Select::make('state_id')
                         ->label('State / Province')
@@ -91,7 +95,8 @@ class AddressForm extends Field
                         })
                         ->live()
                         ->afterStateUpdated(fn (callable $set) => $set('city_id', null))
-                        ->disabled(fn (callable $get) => ! $get('country_id')),
+                        ->disabled(fn (callable $get) => ! $get('country_id'))
+                        ->required($isMarkedAsRequired),
 
                     Forms\Components\Select::make('city_id')
                         ->label('City')
@@ -108,13 +113,15 @@ class AddressForm extends Field
                         })
                         ->searchable()
                         ->live()
-                        ->disabled(fn (callable $get) => ! $get('state_id')),
+                        ->disabled(fn (callable $get) => ! $get('state_id'))
+                        ->required($isMarkedAsRequired),
                 ]),
             Forms\Components\Grid::make(3)
                 ->schema([
                     Forms\Components\TextInput::make('postal_code')
                         ->label('Zip / Postal code')
-                        ->maxLength(20),
+                        ->maxLength(20)
+                        ->required($isMarkedAsRequired),
                 ]),
         ];
     }
