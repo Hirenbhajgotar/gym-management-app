@@ -14,7 +14,7 @@
         </h1>
 
         <div class="prose dark:prose-invert max-w-none">
-            {!! $page->content !!}
+            {!! str($page->content)->sanitizeHtml() !!}
         </div>
     </div>
 </div>
