@@ -1,12 +1,19 @@
 <?php
 
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SubscriptionController;
+use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
+use App\Livewire\Frontend\ProfileController;
 use App\Livewire\Frontend\RequestDemo;
 use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Notification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
@@ -15,7 +22,7 @@ Route::get('/', HomeController::class)->name('home');
 
 Route::get('/request-demo', RequestDemo::class)->name('request-demo');
 
-Route::get('/profile', App\Livewire\Frontend\ProfileController::class)
+Route::get('/profile', ProfileController::class)
     ->name('profile')
     ->middleware('auth');
 
@@ -42,21 +49,21 @@ Route::middleware(['auth'])->group(function () {
 
     // Download failed rows CSV
     Route::get('/download-failed-rows/{file}', function ($file) {
-        \Illuminate\Support\Facades\Log::info(
+        Log::info(
             'Attempting to download failed rows CSV',
             ['file' => $file],
         );
         $fullPath = 'imports/' . $file;
         $storagePath = storage_path('app/' . $fullPath);
         if (Storage::disk('local')->exists($fullPath)) {
-            \Illuminate\Support\Facades\Log::info(
+            Log::info(
                 'File found, initiating download',
                 ['file' => $fullPath, 'storage_path' => $storagePath],
             );
 
             return response()->download($storagePath);
         }
-        \Illuminate\Support\Facades\Log::error('Failed rows CSV not found', [
+        Log::error('Failed rows CSV not found', [
             'file' => $fullPath,
             'storage_path' => $storagePath,
         ]);
@@ -71,9 +78,7 @@ Route::middleware(['auth'])->group(function () {
             ->with('error', 'File not found.');
     })->name('download.failed.rows');
 
-    Route::get('/filament/failed-import-download/{importId}', function (
-        $importId,
-    ) {
+    Route::get('/filament/failed-import-download/{importId}', function ($importId) {
         $import = Import::where('id', $importId)
             ->where('user_id', auth()->id())
             ->firstOrFail();
@@ -103,10 +108,7 @@ Route::middleware(['auth'])->group(function () {
     // Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-Route::get('/download-sample/{file}', function (
-    $file,
-    \Illuminate\Http\Request $request,
-) {
+Route::get('/download-sample/{file}', function ($file, Request $request) {
     $fileName = $request->get('fileName', 'sample.xlsx');
     $path = 'import/templates/xls/' . $file;
     if (! Storage::disk('public')->exists($path)) {
@@ -118,71 +120,34 @@ Route::get('/download-sample/{file}', function (
 
 // Payment Routes
 Route::middleware(['auth'])->group(function () {
-    Route::post('/payments/create-order', [
-        \App\Http\Controllers\PaymentController::class,
-        'createOrder',
-    ])->name('payments.create-order');
-    Route::post('/payments/verify', [
-        \App\Http\Controllers\PaymentController::class,
-        'verifyPayment',
-    ])->name('payments.verify');
-    Route::get('/payments/checkout', [
-        \App\Http\Controllers\PaymentController::class,
-        'checkout',
-    ])->name('payments.checkout');
-    Route::get('/payments/success', [
-        \App\Http\Controllers\PaymentController::class,
-        'success',
-    ])->name('payments.success');
-    Route::get('/payments/failure', [
-        \App\Http\Controllers\PaymentController::class,
-        'failure',
-    ])->name('payments.failure');
+    Route::post('/payments/create-order', [PaymentController::class, 'createOrder'])->name('payments.create-order');
+    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
+    Route::get('/payments/checkout', [PaymentController::class, 'checkout'])->name('payments.checkout');
+    Route::get('/payments/success', [PaymentController::class, 'success'])->name('payments.success');
+    Route::get('/payments/failure', [PaymentController::class, 'failure'])->name('payments.failure');
 });
 
 // Gym Owner Registration Checkout Routes (no auth required for initial registration)
 Route::prefix('gym-owner')->name('gym-owner.')->group(function () {
-    Route::get('/checkout', [
-        \App\Http\Controllers\SubscriptionController::class,
-        'handleGymOwnerCheckout',
-    ])->name('checkout');
-    Route::post('/verify-payment', [
-        \App\Http\Controllers\SubscriptionController::class,
-        'verifyGymOwnerPayment',
-    ])->name('verify-payment');
+    Route::get('/checkout', [SubscriptionController::class, 'handleGymOwnerCheckout'])->name('checkout');
+    Route::post('/verify-payment', [SubscriptionController::class, 'verifyGymOwnerPayment'])->name('verify-payment');
 });
 
 // Subscription Routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/subscriptions/checkout', [
-        \App\Http\Controllers\SubscriptionController::class,
-        'checkout',
-    ])->name('subscriptions.checkout');
-    Route::post('/subscriptions/verify-payment', [
-        \App\Http\Controllers\SubscriptionController::class,
-        'verifyPayment',
-    ])->name('subscriptions.verify-payment');
-    Route::get('/subscriptions/payment/{orderId}', [
-        \App\Http\Controllers\SubscriptionController::class,
-        'completePendingPayment',
-    ])->name('subscription.payment.complete');
+    Route::get('/subscriptions/checkout', [SubscriptionController::class, 'checkout'])->name('subscriptions.checkout');
+    Route::post('/subscriptions/verify-payment', [SubscriptionController::class, 'verifyPayment'])->name('subscriptions.verify-payment');
+    Route::get('/subscriptions/payment/{orderId}', [SubscriptionController::class, 'completePendingPayment'])->name('subscription.payment.complete');
 
     // Member Invoice Route
-    Route::get('/member/invoice/{payment}', [
-        MemberInvoiceController::class,
-        'show',
-    ])->name('member.invoice.show');
+    Route::get('/member/invoice/{payment}', [MemberInvoiceController::class, 'show'])->name('member.invoice.show');
 });
 
 // Razorpay Webhook (no auth required)
-Route::post('/payments/webhook', [
-    \App\Http\Controllers\PaymentController::class,
-    'handleWebhook',
-])->name('payments.webhook');
+Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
+
+Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
 require __DIR__ . '/auth.php';
 
-Route::get('/download-sample-excel/{type}', [
-    \App\Http\Controllers\ImportController::class,
-    'downloadSample',
-])->name('download.sample.excel');
+Route::get('/download-sample-excel/{type}', [ImportController::class, 'downloadSample'])->name('download.sample.excel');
