@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use RuntimeException;
 
 class GenerateFavicons extends Command
 {
@@ -20,40 +21,77 @@ class GenerateFavicons extends Command
      */
     protected $description = 'Generate favicon.svg and favicon.ico from a source PNG image';
 
+    protected const ICON_SIZE = 256;
+
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
+    {
+        try {
+            $sourcePath = $this->resolveSourcePath();
+            $this->info("Using source: {$sourcePath}");
+
+            $imageInfo = $this->validateImage($sourcePath);
+            $this->info("Source dimensions: {$imageInfo['width']}x{$imageInfo['height']}");
+
+            $fileContent = file_get_contents($sourcePath);
+            if ($fileContent === false) {
+                throw new RuntimeException("Failed to read source file: {$sourcePath}");
+            }
+
+            $this->generateSvg($fileContent, $imageInfo['width'], $imageInfo['height'], $imageInfo['mime']);
+            $this->generateIco($sourcePath, $fileContent, $imageInfo['width'], $imageInfo['height']);
+
+            return self::SUCCESS;
+        } catch (RuntimeException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+    }
+
+    protected function resolveSourcePath(): string
     {
         $source = $this->argument('source') ?? 'public/fluxfitness-icon.png';
-        
-        // Ensure paths are relative to base path if not absolute
-        if (!file_exists($source) && file_exists(base_path($source))) {
-            $source = base_path($source);
-        } elseif (!file_exists($source)) {
-             $this->error("Source file not found: $source");
-             return 1;
+
+        if (file_exists($source)) {
+            return $source;
         }
 
-        $svgDest = public_path('favicon.svg');
-        $icoDest = public_path('favicon.ico');
+        $absolutePath = base_path($source);
+        if (file_exists($absolutePath)) {
+            return $absolutePath;
+        }
 
-        $this->info("Using source: $source");
+        throw new RuntimeException("Source file not found: {$source}");
+    }
 
-        $info = getimagesize($source);
-        if (!$info) {
-            $this->error("Could not get image info.");
-            return 1;
+    /**
+     * @return array{width: int, height: int, mime: string}
+     */
+    protected function validateImage(string $path): array
+    {
+        $info = getimagesize($path);
+
+        if (! $info) {
+            throw new RuntimeException('Could not get image info.');
         }
 
         $width = $info[0];
         $height = $info[1];
         $mime = $info['mime'];
 
-        $this->info("Source dimensions: {$width}x{$height}");
+        if ($mime !== 'image/png') {
+            throw new RuntimeException("Source file must be a PNG image. Found: {$mime}");
+        }
 
-        // --- SVG Generation ---
-        $content = file_get_contents($source);
+        return ['width' => $width, 'height' => $height, 'mime' => $mime];
+    }
+
+    protected function generateSvg(string $content, int $width, int $height, string $mime): void
+    {
+        $dest = public_path('favicon.svg');
         $base64 = base64_encode($content);
 
         $svg = <<<SVG
@@ -62,68 +100,91 @@ class GenerateFavicons extends Command
 </svg>
 SVG;
 
-        file_put_contents($svgDest, $svg);
-        $this->info("Generated $svgDest");
+        if (file_put_contents($dest, $svg) === false) {
+            throw new RuntimeException("Failed to write SVG to {$dest}");
+        }
 
-        // --- ICO Generation ---
-        $pngContent = $content;
+        $this->info("Generated {$dest}");
+    }
+
+    protected function generateIco(string $sourcePath, string $originalContent, int $width, int $height): void
+    {
+        $dest = public_path('favicon.ico');
+        $pngContent = $originalContent;
         $finalWidth = $width;
         $finalHeight = $height;
 
-        if ($width > 256 || $height > 256) {
-            $this->info("Image > 256px, resizing for ICO...");
-            $im = imagecreatefrompng($source);
-            if ($im) {
-                $newWidth = 256;
-                $newHeight = 256;
-                
-                $resized = imagecreatetruecolor($newWidth, $newHeight);
-                
-                // Preserve transparency
-                imagealphablending($resized, false);
-                imagesavealpha($resized, true);
-                $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
-                imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
-                
-                imagecopyresampled($resized, $im, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-                
-                ob_start();
-                imagepng($resized);
-                $pngContent = ob_get_clean();
-                
-                $finalWidth = $newWidth;
-                $finalHeight = $newHeight;
-                
-                imagedestroy($im);
-                imagedestroy($resized);
+        if ($width > self::ICON_SIZE || $height > self::ICON_SIZE) {
+            $this->info('Image > 256px, resizing for ICO...');
+            $resizedPng = $this->createResizedImage($sourcePath);
+
+            if ($resizedPng) {
+                $pngContent = $resizedPng;
+                $finalWidth = self::ICON_SIZE;
+                $finalHeight = self::ICON_SIZE;
             } else {
-                $this->warn("GD failed to load image, using original content (may be too large for some old ICO readers)");
+                $this->warn('GD failed to load image, using original content (may be too large for some old ICO readers)');
             }
         }
 
-        // ICO Header
-        // Reserved (2), Type (2), Count (2)
+        // ICO Header: Reserved (2), Type (2), Count (2)
         $icoHeader = pack('v3', 0, 1, 1);
 
-        // Directory Entry
-        // Width (1), Height (1), ColorCount (1), Reserved (1), Planes (2), BitCount (2), SizeInBytes (4), Offset (4)
+        // Directory Entry: Width (1), Height (1), ColorCount (1), Reserved (1), Planes (2), BitCount (2), SizeInBytes (4), Offset (4)
         $wVal = ($finalWidth >= 256) ? 0 : $finalWidth;
         $hVal = ($finalHeight >= 256) ? 0 : $finalHeight;
 
-        $entry = pack('C4v2V2', 
-            $wVal, 
-            $hVal, 
+        $entry = pack(
+            'C4v2V2',
+            $wVal,
+            $hVal,
             0, // Color count (0 for >= 8bpp)
             0, // Reserved
             1, // Planes
             32, // BitCount (assuming 32 for PNG with alpha)
-            strlen($pngContent), 
+            strlen($pngContent),
             22 // Offset (6 header + 16 entry)
         );
 
-        file_put_contents($icoDest, $icoHeader . $entry . $pngContent);
-        $this->info("Generated $icoDest");
-        
-        return 0;
+        if (file_put_contents($dest, $icoHeader . $entry . $pngContent) === false) {
+            throw new RuntimeException("Failed to write ICO to {$dest}");
+        }
+
+        $this->info("Generated {$dest}");
+    }
+
+    protected function createResizedImage(string $sourcePath): ?string
+    {
+        $im = @imagecreatefrompng($sourcePath);
+        if (! $im) {
+            return null;
+        }
+
+        $resized = imagecreatetruecolor(self::ICON_SIZE, self::ICON_SIZE);
+        if (! $resized) {
+            imagedestroy($im);
+
+            return null;
+        }
+
+        // Preserve transparency
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+        imagefilledrectangle($resized, 0, 0, self::ICON_SIZE, self::ICON_SIZE, $transparent);
+
+        $width = imagesx($im);
+        $height = imagesy($im);
+
+        imagecopyresampled($resized, $im, 0, 0, 0, 0, self::ICON_SIZE, self::ICON_SIZE, $width, $height);
+
+        ob_start();
+        imagepng($resized);
+        $pngContent = ob_get_clean();
+
+        imagedestroy($im);
+        imagedestroy($resized);
+
+        return $pngContent ?: null;
     }
 }
