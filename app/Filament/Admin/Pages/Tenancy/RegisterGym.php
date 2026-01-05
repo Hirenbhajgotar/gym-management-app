@@ -135,7 +135,7 @@ class RegisterGym extends RegisterTenant
         if ($this->hasReachedGymLimit()) {
             Notification::make()
                 ->title('Registration Failed')
-                ->body('You have reached the maximum limit of 3 gyms.')
+                ->body('You have reached the maximum limit of ' . $this->totalGyms . ' gyms.')
                 ->danger()
                 ->send();
 
