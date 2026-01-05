@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{config('app.name')}} - Profile</title>
+    <title>{{ $title ?? config('app.name') }} - Complete Gym Management System</title>
+    @stack('meta')
     
     <!-- Favicons -->
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
