@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\CmsPageController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\ProfileController;
 use App\Livewire\Frontend\RequestDemo;
@@ -78,9 +78,7 @@ Route::middleware(['auth'])->group(function () {
             ->with('error', 'File not found.');
     })->name('download.failed.rows');
 
-    Route::get('/filament/failed-import-download/{importId}', function (
-        $importId,
-    ) {
+    Route::get('/filament/failed-import-download/{importId}', function ($importId) {
         $import = Import::where('id', $importId)
             ->where('user_id', auth()->id())
             ->firstOrFail();
@@ -148,7 +146,7 @@ Route::middleware(['auth'])->group(function () {
 // Razorpay Webhook (no auth required)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
-Route::get('/page/{slug}', [CmsPageController::class, 'show'])->name('cms.page');
+Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
 require __DIR__ . '/auth.php';
 

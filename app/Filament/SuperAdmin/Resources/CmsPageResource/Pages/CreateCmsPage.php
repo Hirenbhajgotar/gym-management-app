@@ -8,4 +8,14 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateCmsPage extends CreateRecord
 {
     protected static string $resource = CmsPageResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
+    protected function getCreatedNotificationTitle(): ?string
+    {
+        return 'Cms Page Created';
+    }
 }

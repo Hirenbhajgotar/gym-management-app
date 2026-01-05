@@ -104,12 +104,12 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('cms.page', 'privacy-policy') }}" class="hover:text-purple-400 transition-colors duration-300">
                             Privacy Policy
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('cms.page', 'terms-of-service') }}" class="hover:text-purple-400 transition-colors duration-300">
                             Terms of Service
                         </a>
                     </li>

@@ -103,4 +103,9 @@ class CmsPageResource extends Resource
             'edit' => Pages\EditCmsPage::route('/{record}/edit'),
         ];
     }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('is_published', true)->count();
+    }
 }
