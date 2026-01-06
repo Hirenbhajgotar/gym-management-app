@@ -6,10 +6,12 @@ use App\Models\BusinessType;
 use App\Models\Plan;
 use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -78,6 +80,44 @@ class GymOwnerRegister extends Component
     public function getBusinessTypes(): Collection
     {
         return BusinessType::active()->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function countries()
+    {
+        return Cache::flexible('countries', [86400, 604800], function () {
+            return \App\Models\Country::where('name', 'like', '%')->orderBy('name')->pluck('name', 'id');
+        });
+    }
+
+    #[Computed]
+    public function states()
+    {
+        if (! $this->address['country_id']) {
+            return [];
+        }
+
+        return Cache::flexible('states_' . $this->address['country_id'], [86400, 604800], function () {
+            return \App\Models\State::where('country_id', $this->address['country_id'])
+                ->active()
+                ->orderBy('name')
+                ->pluck('name', 'id');
+        });
+    }
+
+    #[Computed]
+    public function cities()
+    {
+        if (! $this->address['state_id']) {
+            return [];
+        }
+
+        return Cache::flexible('cities_' . $this->address['state_id'], [86400, 604800], function () {
+            return \App\Models\City::where('state_id', $this->address['state_id'])
+                ->active()
+                ->orderBy('name')
+                ->pluck('name', 'id');
+        });
     }
 
     public function getGymSizes(): array
