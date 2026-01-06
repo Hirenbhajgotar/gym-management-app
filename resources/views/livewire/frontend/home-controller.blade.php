@@ -668,56 +668,15 @@
                                         <span class="text-gray-300 group-hover:text-gray-200 transition-colors">{!! $feature->brief_description !!}</span>
                                     </li>
                                 @endforeach
-                                {{-- @if ($plan->getMaxValue('max_gyms') == -1)
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited gyms</li>
-                                @else
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up to
-                                        {{ $plan->getMaxValue('max_gyms') }}
-                                        gym{{ $plan->getMaxValue('max_gyms') > 1 ? 's' : '' }}</li>
-                                @endif
-
-                                @if ($plan->getMaxValue('max_users') == -1)
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Unlimited members
-                                    </li>
-                                @else
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Up to
-                                        {{ number_format($plan->getMaxValue('max_users')) }} members</li>
-                                @endif
-
-                                @if ($plan->hasFeature('whatsapp_enabled'))
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>{{ $plan->getMaxValue('whatsapp_credit') }}
-                                        WhatsApp credits/month</li>
-                                @endif
-
-                                @if ($plan->hasFeature('advanced_crm'))
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Advanced CRM</li>
-                                @elseif($plan->hasFeature('basic_crm'))
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Basic CRM</li>
-                                @endif
-
-                                @if ($plan->hasFeature('website_integration'))
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Website Integration
-                                    </li>
-                                @endif
-
-                                @if ($plan->hasFeature('mobile_app'))
-                                    <li class="flex items-center"><span
-                                            class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>Mobile App</li>
-                                @endif --}}
                             </ul>
                         </div>
 
                         <button wire:click="selectPlan({{ $plan->id }})"
                             class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50' : 'border-2 border-gray-600 hover:border-cyan-400 hover:bg-cyan-400/10 text-white' }} rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
-                            {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
+                            <span wire:loading.remove wire:target="selectPlan({{ $plan->id }})">
+                                {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
+                            </span>
+                            <x-loading-icon target="selectPlan({{ $plan->id }})" variant="text" name="Loading" />
                         </button>
                     </div>
                 @endforeach

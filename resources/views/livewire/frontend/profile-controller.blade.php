@@ -313,7 +313,7 @@
                                                             <svg wire:loading.remove wire:target="downloadInvoice({{ $payment->id }})" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                                             </svg>
-                                                            <x-loading-icon variant='text' target="downloadInvoice({{ $payment->id }})" />
+                                                            <x-loading-icon target="downloadInvoice({{ $payment->id }})" />
                                                         </button>
                                                     @else
                                                         <span class="text-gray-600">-</span>
