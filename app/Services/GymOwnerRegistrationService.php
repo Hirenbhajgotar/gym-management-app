@@ -274,17 +274,13 @@ class GymOwnerRegistrationService
     protected function createGymAddress(Gym $gym, array $registrationData): void
     {
         $gym->address()->create([
-            'street' => isset($registrationData['address']['street']) ? $registrationData['address']['street'] : null,
-            'city_id' => isset($registrationData['address']['city_id']) ? $registrationData['address']['city_id'] : null,
-            'state_id' => isset($registrationData['address']['state_id']) ? $registrationData['address']['state_id'] : null,
-            'country_id' => isset($registrationData['address']['country_id']) ? $registrationData['address']['country_id'] : null,
-            'postal_code' => isset($registrationData['address']['postal_code']) ? $registrationData['address']['postal_code'] : null,
-            'latitude' => isset($registrationData['address']['latitude']) && ! empty($registrationData['address']['latitude'])
-                ? $registrationData['address']['latitude']
-                : null,
-            'longitude' => isset($registrationData['address']['longitude']) && ! empty($registrationData['address']['longitude'])
-                ? $registrationData['address']['longitude']
-                : null,
+            'street' => $registrationData['address']['street'] ?? null,
+            'city_id' => $registrationData['address']['city_id'] ?? null,
+            'state_id' => $registrationData['address']['state_id'] ?? null,
+            'country_id' => $registrationData['address']['country_id'] ?? null,
+            'postal_code' => $registrationData['address']['postal_code'] ?? null,
+            'latitude' => $registrationData['address']['latitude'] ?? null,
+            'longitude' => $registrationData['address']['longitude'] ?? null,
         ]);
     }
 
