@@ -108,16 +108,8 @@
                             <div class="pt-4 {{ $dashboardUrl !== '#' ? '' : 'border-t border-white/10' }}">
                                 <button wire:click="logout" wire:loading.attr="disabled"
                                     class="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 hover:border-red-500/50 transition-all duration-300 text-sm font-medium group disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span wire:loading.flex wire:target="logout"
-                                        class="hidden-- w-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 animate-spin mr-2" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                            </path>
-                                        </svg>
-                                        Logging out...
-                                    </span>
+                                    <x-loading-icon variant='text' name='Logging out' target="logout" />
+
                                     <span wire:loading.remove wire:target="logout"
                                         class="w-full flex items-center justify-center">
                                         <svg class="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"
@@ -314,13 +306,14 @@
                                                     </span>
                                                 </td>
                                                 <td class="py-4 text-right">
-                                                    @if($payment->status->value === 'completed')
+                                                    @if($payment->isCompleted())
                                                         <button wire:click="downloadInvoice({{ $payment->id }})" 
                                                                 wire:loading.attr="disabled"
                                                                 class="text-purple-400 hover:text-purple-300 transition-colors">
-                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg wire:loading.remove wire:target="downloadInvoice({{ $payment->id }})" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                                             </svg>
+                                                            <x-loading-icon variant='text' target="downloadInvoice({{ $payment->id }})" />
                                                         </button>
                                                     @else
                                                         <span class="text-gray-600">-</span>
