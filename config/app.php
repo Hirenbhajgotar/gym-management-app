@@ -124,7 +124,7 @@ return [
 
     'default_country_code' => '+91',
 
-    'contact_email' => env('CONTACT_EMAIL', 'contact@fluxfitness.com'),
+    'contact_email' => env('CONTACT_EMAIL', 'contact.fluxfitness@gmail.com'),
     'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
     'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
 ];

@@ -187,7 +187,7 @@
             <tr>
                 <td class="w-half align-top">
                     <div class="logo-text">
-                        <x-app-logo-icon variant="full" />
+                        <img src="{{ public_path('fluxfitness-logo.svg') }}" alt="{{ config('app.name') }}" style="height: 50px; width: auto;">
                     </div>
                 </td>
                 <td class="w-half align-top text-right">
@@ -206,16 +206,7 @@
                 <td class="w-half align-top">
                     <div class="info-label">Billed To</div>
                     <div class="info-content">
-                        {{-- For System Payments: Bill to the Gym or Gym Owner --}}
-                        @if($gym)
-                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $gym->name }}</div>
-                        @else
-                           <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
-                        @endif
-
-                        @if($gym && $gym->name != $user->name)
-                             <div class="text-gray-700">{{ $user->name }}</div>
-                        @endif
+                        <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
 
                         <div class="text-gray-600">{{ $user->email }}</div>
                         <div class="text-gray-600">{{ $user->phone }}</div>
@@ -233,7 +224,7 @@
                     <div class="info-content">
                         {{-- For System Payments: Pay to the Platform --}}
                         <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ config('app.name') }}</div>
-                        <div class="text-gray-600">support@fluxfitness.com</div>
+                        <div class="text-gray-600">{{ config('app.contact_email') }}</div>
                     </div>
 
                     <div class="mt-4">

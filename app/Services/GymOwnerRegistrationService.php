@@ -96,6 +96,11 @@ class GymOwnerRegistrationService
             $this->storeFeedbackCache($user);
             $this->sendNotifications($user, $gym, $subscriptionResult['status']);
 
+            if ($payment->hasValidSignature() && $payment->isCompleted()) {
+                // Generate invoice
+                GenerateInvoiceJob::dispatch($payment);
+            }
+
             return [
                 'user' => $user,
                 'gym' => $gym,
@@ -203,9 +208,6 @@ class GymOwnerRegistrationService
                         'payment_id' => $payment->id,
                         'order_id' => $payment->razorpay_order_id,
                     ]);
-
-                    // Generate invoice
-                    GenerateInvoiceJob::dispatch($payment);
                 }
             }
         }
@@ -272,19 +274,17 @@ class GymOwnerRegistrationService
     protected function createGymAddress(Gym $gym, array $registrationData): void
     {
         $gym->address()->create([
-            'street' => $registrationData['address']['street'],
-            'city_id' => $registrationData['address']['city_id'],
-            'state_id' => $registrationData['address']['state_id'],
-            'country_id' => $registrationData['address']['country_id'],
-            'postal_code' => $registrationData['address']['postal_code'],
-            'latitude' => $registrationData['address']['latitude'] &&
-                ! empty($registrationData['address']['latitude'])
-                    ? $registrationData['address']['latitude']
-                    : null,
-            'longitude' => $registrationData['address']['longitude'] &&
-                ! empty($registrationData['address']['longitude'])
-                    ? $registrationData['address']['longitude']
-                    : null,
+            'street' => isset($registrationData['address']['street']) ? $registrationData['address']['street'] : null,
+            'city_id' => isset($registrationData['address']['city_id']) ? $registrationData['address']['city_id'] : null,
+            'state_id' => isset($registrationData['address']['state_id']) ? $registrationData['address']['state_id'] : null,
+            'country_id' => isset($registrationData['address']['country_id']) ? $registrationData['address']['country_id'] : null,
+            'postal_code' => isset($registrationData['address']['postal_code']) ? $registrationData['address']['postal_code'] : null,
+            'latitude' => isset($registrationData['address']['latitude']) && ! empty($registrationData['address']['latitude'])
+                ? $registrationData['address']['latitude']
+                : null,
+            'longitude' => isset($registrationData['address']['longitude']) && ! empty($registrationData['address']['longitude'])
+                ? $registrationData['address']['longitude']
+                : null,
         ]);
     }
 

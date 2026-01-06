@@ -43,7 +43,11 @@
             <tr>
                 <td class="w-half align-top">
                     <div class="logo-text">
-                        {{ $gym->name }}
+                        @if ($gym->logo)
+                            <img src="{{ storage_path('app/public/' . $gym->logo) }}" alt="{{ $gym->name }}" style="height: 50px; width: auto;">
+                        @else
+                            {{ $gym->name }}
+                        @endif
                     </div>
                 </td>
                 <td class="w-half align-top text-right">
