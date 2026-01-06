@@ -17,11 +17,24 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
+    protected ?array $gymData = [];
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Store plain password temporarily for notification
         if (isset($data['password'])) {
             $this->plainPassword = $data['password'];
+        }
+
+        // Extract Gym Data
+        if (isset($data['gym_name'])) {
+            $this->gymData['name'] = $data['gym_name'];
+            unset($data['gym_name']);
+        }
+
+        if (isset($data['address'])) {
+            $this->gymData['address'] = $data['address'];
+            unset($data['address']);
         }
 
         return $data;
@@ -75,13 +88,17 @@ class CreateUser extends CreateRecord
     protected function setupGymOwner(User $user): void
     {
         // Create gym for the owner
-        $gymName = "{$user->name}'s Gym";
+        $gymName = $this->gymData['name'] ?? "{$user->name}'s Gym";
         $slug = Gym::generateUniqueSlug($gymName);
 
         $gym = Gym::create([
             'name' => $gymName,
             'slug' => $slug,
         ]);
+
+        if (! empty($this->gymData['address'])) {
+            $gym->address()->create($this->gymData['address']);
+        }
 
         // Create default roles and permissions for the gym
         app(
