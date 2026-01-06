@@ -329,7 +329,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="5" class="py-4 text-center text-gray-500">No payment history found</td>
+                                                <td colspan="6" class="py-4 text-center text-gray-500">No payment history found</td>
                                             </tr>
                                         @endforelse
                                     </tbody>

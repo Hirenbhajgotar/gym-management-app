@@ -9,6 +9,7 @@ use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,12 @@ class GymOwnerRegistrationService
                 $gym = $existingUser->gyms()->first();
                 $subscription = $existingUser->subscriptions()->first();
 
+                $this->updatePayment($payment, $subscription, [
+                    'gym_id' => $gym->id,
+                    'plan_id' => $plan->id,
+                    'user_id' => $existingUser->id,
+                ]);
+
                 return [
                     'user' => $existingUser,
                     'gym' => $gym,
@@ -65,6 +72,14 @@ class GymOwnerRegistrationService
 
             // Create subscription
             $subscriptionResult = $this->createSubscription($user, $plan, $payment);
+
+            $subscription = $subscriptionResult['subscription'];
+
+            $this->updatePayment($payment, $subscription, [
+                'gym_id' => $gym->id,
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+            ]);
 
             // Setup roles and permissions
             $this->setupRolesAndPermissions($user, $gym);
@@ -103,6 +118,21 @@ class GymOwnerRegistrationService
                 'already_exists' => false,
             ];
         }
+    }
+
+    public function updatePayment(Payment $payment, Subscription $subscription, $data = []): ?Payment
+    {
+        $metadata = $payment->metadata;
+        $metadata['subscription_id'] = $subscription->id ?? null;
+        $metadata['plan_id'] = $data['plan_id'] ?? null;
+
+        Payment::where('id', $payment->id)->update([
+            'user_id' => $data['user_id'] ?? null,
+            'gym_id' => $data['gym_id'] ?? null,
+            'metadata' => $metadata,
+        ]);
+
+        return $payment->fresh();
     }
 
     /**

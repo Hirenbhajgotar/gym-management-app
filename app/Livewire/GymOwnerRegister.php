@@ -67,9 +67,12 @@ class GymOwnerRegister extends Component
     {
         // Get selected plan from session
         $planId = session('selected_plan_id');
-        if ($planId) {
-            $this->selectedPlan = Plan::find($planId);
+
+        if (! $planId) {
+            return redirect()->route('home')->with('error', 'Plan not selected');
         }
+
+        $this->selectedPlan = Plan::find($planId);
     }
 
     public function getBusinessTypes(): Collection

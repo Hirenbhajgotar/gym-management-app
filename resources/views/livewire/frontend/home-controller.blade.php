@@ -1,4 +1,7 @@
 <div>
+    <!-- Toast Messages -->
+    @livewire('toast')
+    
     <!-- Hero Section -->
     <section id="home" class="min-h-screen flex items-center pt-20">
         <div class="container mx-auto px-6">

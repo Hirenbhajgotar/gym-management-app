@@ -187,7 +187,7 @@
             <tr>
                 <td class="w-half align-top">
                     <div class="logo-text">
-                        {{ config('app.name') }}
+                        <x-app-logo-icon variant="full" />
                     </div>
                 </td>
                 <td class="w-half align-top text-right">
