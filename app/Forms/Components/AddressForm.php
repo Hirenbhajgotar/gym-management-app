@@ -71,7 +71,9 @@ class AddressForm extends Field
                 ->schema([
                     Forms\Components\Select::make('country_id')
                         ->label('Country')
-                        ->options(Country::active()->pluck('name', 'id'))
+                        ->options(fn () => \Illuminate\Support\Facades\Cache::flexible('countries_list', [604800, 1209600], function () {
+                            return Country::active()->orderBy('name')->pluck('name', 'id');
+                        }))
                         ->default($indiaId) // Set India as default
                         ->live()
                         ->afterStateUpdated(function (callable $set, $state) {
@@ -88,10 +90,12 @@ class AddressForm extends Field
                                 return [];
                             }
 
-                            return State::where('country_id', $countryId)
-                                ->active()
-                                ->orderBy('name', 'asc')
-                                ->pluck('name', 'id');
+                            return \Illuminate\Support\Facades\Cache::flexible('states_of_' . $countryId, [604800, 1209600], function () use ($countryId) {
+                                return State::where('country_id', $countryId)
+                                    ->active()
+                                    ->orderBy('name', 'asc')
+                                    ->pluck('name', 'id');
+                            });
                         })
                         ->live()
                         ->afterStateUpdated(fn (callable $set) => $set('city_id', null))
@@ -106,10 +110,12 @@ class AddressForm extends Field
                                 return [];
                             }
 
-                            return City::where('state_id', $stateId)
-                                ->active()
-                                ->orderBy('name', 'asc')
-                                ->pluck('name', 'id');
+                            return \Illuminate\Support\Facades\Cache::flexible('cities_of_' . $stateId, [604800, 1209600], function () use ($stateId) {
+                                return City::where('state_id', $stateId)
+                                    ->active()
+                                    ->orderBy('name', 'asc')
+                                    ->pluck('name', 'id');
+                            });
                         })
                         ->searchable()
                         ->live()

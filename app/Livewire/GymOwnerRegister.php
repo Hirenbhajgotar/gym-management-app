@@ -85,7 +85,7 @@ class GymOwnerRegister extends Component
     #[Computed]
     public function countries()
     {
-        return Cache::flexible('countries', [86400, 604800], function () {
+        return Cache::flexible('countries', [604800, 1209600], function () {
             return \App\Models\Country::where('name', 'like', '%')->orderBy('name')->pluck('name', 'id');
         });
     }
@@ -97,7 +97,7 @@ class GymOwnerRegister extends Component
             return [];
         }
 
-        return Cache::flexible('states_' . $this->address['country_id'], [86400, 604800], function () {
+        return Cache::flexible('states_' . $this->address['country_id'], [604800, 1209600], function () {
             return \App\Models\State::where('country_id', $this->address['country_id'])
                 ->active()
                 ->orderBy('name')
@@ -112,7 +112,7 @@ class GymOwnerRegister extends Component
             return [];
         }
 
-        return Cache::flexible('cities_' . $this->address['state_id'], [86400, 604800], function () {
+        return Cache::flexible('cities_' . $this->address['state_id'], [604800, 1209600], function () {
             return \App\Models\City::where('state_id', $this->address['state_id'])
                 ->active()
                 ->orderBy('name')
