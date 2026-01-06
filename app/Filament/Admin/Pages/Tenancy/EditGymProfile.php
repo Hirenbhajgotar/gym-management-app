@@ -121,13 +121,6 @@ class EditGymProfile extends EditTenantProfile
         $data = $this->form->getState();
 
         if (! empty($data['new_password'])) {
-            // Re-validate current password on save to be secure
-            if (! \Illuminate\Support\Facades\Hash::check($data['current_password'], auth()->user()->password)) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'current_password' => 'The provided password does not match your current password.',
-                ]);
-            }
-
             $user = auth()->user();
 
             $user->password = $data['new_password'];

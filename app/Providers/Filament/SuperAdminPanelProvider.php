@@ -43,6 +43,10 @@ class SuperAdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('Content Management')
+                    ->icon('heroicon-o-document-text'),
+
+                NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-cog-6-tooth'),
 

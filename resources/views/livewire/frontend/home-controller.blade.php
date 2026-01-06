@@ -17,13 +17,34 @@
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
                         <button wire:click="startFreeTrial" wire:loading.attr="disabled"
                             class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
-                            <span wire:loading.remove wire:target="startFreeTrial">Start 14-Day Free Trial</span>
+                            <span wire:loading.remove wire:target="startFreeTrial">Start a Free Trial</span>
                             <span wire:loading wire:target="startFreeTrial">Starting...</span>
                         </button>
-                        <button
-                            class="px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold">
-                            Watch Demo
-                        </button>
+                        <x-frontend.modal size="xl">
+                            <x-slot:trigger>
+                                <button
+                                    class="px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold cursor-pointer">
+                                    Watch Demo
+                                </button>
+                            </x-slot:trigger>
+
+                            <div class="flex flex-col items-center justify-center space-y-4">
+                                <div class="h-16 w-16 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 animate-pulse">
+                                    <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                
+                                <h3 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                                    Coming Soon!
+                                </h3>
+                                
+                                <p class="text-gray-300">
+                                    Our interactive demo is currently being polished and will be available shortly.
+                                </p>
+                            </div>
+                        </x-frontend.modal>
                     </div>
                     <div class="flex items-center space-x-8 text-sm text-gray-400">
                         <div class="flex items-center">

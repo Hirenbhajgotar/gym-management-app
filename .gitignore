@@ -3,6 +3,8 @@
 /public
 !/public/favicon.ico
 !/public/favicon.svg
+!/public/fluxfitness-icon.png
+!/public/fluxfitness-logo.svg
 /storage/*.key
 /storage/pail
 /vendor
