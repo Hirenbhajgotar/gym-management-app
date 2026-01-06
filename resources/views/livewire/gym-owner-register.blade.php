@@ -390,7 +390,7 @@
                                         class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                         wire:change="$refresh">
                                         <option value="">Select Country</option>
-                                        @foreach (\App\Models\Country::where('name', 'like', '%')->pluck('name', 'id') as $id => $name)
+                                        @foreach ($this->countries as $id => $name)
                                             <option value="{{ $id }}">{{ $name }}</option>
                                         @endforeach
                                     </select>
@@ -410,7 +410,7 @@
                                         wire:change="$refresh" {{ $address['country_id'] == '' ? 'disabled' : '' }}>
                                         <option value="">Select State</option>
                                         @if ($address['country_id'])
-                                            @foreach (\App\Models\State::where('country_id', $address['country_id'])->active()->pluck('name', 'id') as $id => $name)
+                                            @foreach ($this->states as $id => $name)
                                                 <option value="{{ $id }}">{{ $name }}</option>
                                             @endforeach
                                         @endif
@@ -431,7 +431,7 @@
                                         wire:change="$refresh" {{ $address['state_id'] == '' ? 'disabled' : '' }}>
                                         <option value="">Select City</option>
                                         @if ($address['state_id'])
-                                            @foreach (\App\Models\City::where('state_id', $address['state_id'])->active()->pluck('name', 'id') as $id => $name)
+                                            @foreach ($this->cities as $id => $name)
                                                 <option value="{{ $id }}">{{ $name }}</option>
                                             @endforeach
                                         @endif
@@ -454,32 +454,6 @@
                                         placeholder="e.g., 90210">
                                 </div>
                                 @error('address.postal_code')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="latitude"
-                                    class="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
-                                <div class="relative">
-                                    <input type="number" wire:model="address.latitude" id="latitude"
-                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md !rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                        step="0.000001" min="-90" max="90">
-                                </div>
-                                @error('address.latitude')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="longitude"
-                                    class="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
-                                <div class="relative">
-                                    <input type="number" wire:model="address.longitude" id="longitude"
-                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md !rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                        step="0.000001" min="-180" max="180">
-                                </div>
-                                @error('address.longitude')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

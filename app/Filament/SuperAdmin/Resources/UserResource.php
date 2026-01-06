@@ -11,7 +11,6 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\SubscriptionService;
-use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -75,73 +74,95 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('User Information')->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('role')
-                    ->label('Role')
-                    ->options([
-                        \App\Enums\DefaultRole::GYM_OWNER->value => \App\Enums\DefaultRole::GYM_OWNER->getLabel(),
-                    ])
-                    ->default(\App\Enums\DefaultRole::GYM_OWNER->value)
-                    ->required()
-                    ->visible(fn (string $context): bool => $context === 'create')
-                    ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->revealable()
-                    ->maxLength(255)
-                    ->dehydrated(fn ($state) => filled($state))
-                    ->required(fn (string $context): bool => $context === 'create')
-                    ->helperText(fn (string $context): string => $context === 'create'
-                        ? 'User will receive this password in their welcome email'
-                        : 'Leave empty to keep current password'),
-                Forms\Components\Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-            ]),
-            Forms\Components\Section::make('Plan Assignment')->schema([
-                Forms\Components\Grid::make(2)->schema([
-                    Forms\Components\Select::make('activeSubscription.plan_id')
-                        ->label('Assign Plan')
-                        ->options(Plan::active()->pluck('name', 'id'))
-                        ->searchable()
-                        ->preload()
-                        ->placeholder('Select a plan to assign')
-                        ->reactive(),
-                    Forms\Components\Select::make('activeSubscription.billing_cycle')
-                        ->label('Billing Cycle')
-                        ->options([
-                            'monthly' => 'Monthly',
-                            'yearly' => 'Yearly',
-                        ])
-                        ->default('monthly')
-                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
-                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
-                ]),
-                Forms\Components\Grid::make(2)->schema([
-                    Forms\Components\DateTimePicker::make('activeSubscription.trial_ends_at')
-                        ->label('Trial End Date')
-                        ->placeholder('Optional trial end date')
-                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
-                    Forms\Components\Select::make('activeSubscription.status')
-                        ->label('Subscription Status')
-                        ->options(SubscriptionStatus::class)
-                        ->default(SubscriptionStatus::ACTIVE)
-                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
-                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
-                ]),
-                Forms\Components\RichEditor::make('activeSubscription.notes')
-                    ->label('Assignment Notes')
-                    ->placeholder('Notes about this plan assignment (e.g., offline purchase, manual assignment, etc.)')
-                    ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
-            ])->visible(fn (string $context): bool => $context === 'edit'),
+            Forms\Components\Tabs::make('User Creation')
+                ->tabs([
+                    Forms\Components\Tabs\Tab::make('User Information')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->required()
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('email')
+                                ->email()
+                                ->required()
+                                ->unique(ignoreRecord: true)
+                                ->maxLength(255),
+                            Forms\Components\Select::make('role')
+                                ->label('Role')
+                                ->options([
+                                    \App\Enums\DefaultRole::GYM_OWNER->value => \App\Enums\DefaultRole::GYM_OWNER->getLabel(),
+                                ])
+                                ->default(\App\Enums\DefaultRole::GYM_OWNER->value)
+                                ->required()
+                                ->visible(fn (string $context): bool => $context === 'create')
+                                ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
+                            Forms\Components\DateTimePicker::make('email_verified_at')
+                                ->native(false)
+                                ->closeOnDateSelection()
+                                ->default(now()),
+                            Forms\Components\TextInput::make('password')
+                                ->password()
+                                ->revealable()
+                                ->maxLength(255)
+                                ->dehydrated(fn ($state) => filled($state))
+                                ->required(fn (string $context): bool => $context === 'create')
+                                ->helperText(fn (string $context): string => $context === 'create'
+                                    ? 'User will receive this password in their welcome email'
+                                    : 'Leave empty to keep current password'),
+                            Forms\Components\Toggle::make('is_active')
+                                ->label('Active')
+                                ->default(true)
+                                ->columnSpanFull(),
+
+                            Forms\Components\Section::make('Plan Assignment')->schema([
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\Select::make('activeSubscription.plan_id')
+                                        ->label('Assign Plan')
+                                        ->options(Plan::active()->pluck('name', 'id'))
+                                        ->searchable()
+                                        ->preload()
+                                        ->placeholder('Select a plan to assign')
+                                        ->reactive(),
+                                    Forms\Components\Select::make('activeSubscription.billing_cycle')
+                                        ->label('Billing Cycle')
+                                        ->options([
+                                            'monthly' => 'Monthly',
+                                            'yearly' => 'Yearly',
+                                        ])
+                                        ->default('monthly')
+                                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
+                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                ]),
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\DateTimePicker::make('activeSubscription.trial_ends_at')
+                                        ->label('Trial End Date')
+                                        ->placeholder('Optional trial end date')
+                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                    Forms\Components\Select::make('activeSubscription.status')
+                                        ->label('Subscription Status')
+                                        ->options(SubscriptionStatus::class)
+                                        ->default(SubscriptionStatus::ACTIVE)
+                                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
+                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                ]),
+                                Forms\Components\RichEditor::make('activeSubscription.notes')
+                                    ->label('Assignment Notes')
+                                    ->placeholder('Notes about this plan assignment (e.g., offline purchase, manual assignment, etc.)')
+                                    ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                            ])->visible(fn (string $context): bool => $context === 'edit'),
+                        ])->columns(2),
+
+                    Forms\Components\Tabs\Tab::make('Gym Information')
+                        ->visible(fn (string $context): bool => $context === 'create')
+                        ->schema([
+                            Forms\Components\TextInput::make('gym_name')
+                                ->label('Gym Name')
+                                ->required()
+                                ->maxLength(255),
+                            \App\Forms\Components\AddressForm::make('address')
+                                ->dehydrated(true),
+                        ]),
+                ])
+                ->columnSpanFull(),
         ]);
     }
 
