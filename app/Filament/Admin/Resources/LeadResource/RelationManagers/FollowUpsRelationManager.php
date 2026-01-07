@@ -83,6 +83,7 @@ class FollowUpsRelationManager extends RelationManager
                             ->label('Scheduled Date & Time')
                             ->required()
                             ->native(false)
+                            ->closeOnDateSelection(true)
                             ->seconds(false)
                             ->default(now()->addDay())
                             ->minDate(now())

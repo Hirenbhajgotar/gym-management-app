@@ -156,6 +156,8 @@ class RequestContactResource extends Resource
                     ->inline(false),
 
                 Forms\Components\DateTimePicker::make('contacted_at')
+                    ->native(false)
+                    ->closeOnDateSelection(true)
                     ->label('Contacted At'),
 
                 Forms\Components\Textarea::make('admin_notes')
@@ -258,9 +260,13 @@ class RequestContactResource extends Resource
             Tables\Filters\Filter::make('created_at')
                 ->form([
                     Forms\Components\DatePicker::make('created_from')
-                        ->label('Submitted from'),
+                        ->label('Submitted from')
+                        ->native(false)
+                        ->closeOnDateSelection(true),
                     Forms\Components\DatePicker::make('created_until')
-                        ->label('Submitted until'),
+                        ->label('Submitted until')
+                        ->native(false)
+                        ->closeOnDateSelection(true),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query

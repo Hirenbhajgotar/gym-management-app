@@ -214,6 +214,8 @@ abstract class BaseEmployeeResource extends Resource
                         ->schema([
                             Forms\Components\DatePicker::make('employeeDetails.date_of_birth')
                                 ->label('Date of Birth')
+                                ->native(false)
+                                ->closeOnDateSelection(true)
                                 ->maxDate(now()->subYears(16))
                                 ->displayFormat('M d, Y')
                                 ->prefixIcon('heroicon-o-calendar-days')
@@ -303,7 +305,8 @@ abstract class BaseEmployeeResource extends Resource
                                 ->maxDate(now())
                                 ->displayFormat('M d, Y')
                                 ->prefixIcon('heroicon-o-calendar')
-                                ->native(false),
+                                ->native(false)
+                                ->closeOnDateSelection(true),
                         ]),
 
                     Grid::make(2)
