@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Admin\Resources\GymMemberResource\Pages;
+use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
@@ -468,6 +469,7 @@ class GymMemberResource extends Resource
     {
         return [
             PaymentsRelationManager::class,
+            MeasurementsRelationManager::class,
         ];
     }
 

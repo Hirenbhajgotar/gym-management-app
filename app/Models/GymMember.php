@@ -284,4 +284,9 @@ class GymMember extends Model
     {
         return $this->belongsTo(Lead::class);
     }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
+    }
 }
