@@ -52,6 +52,8 @@ class SubscriptionRelationManager extends RelationManager
                             ->required(),
                         Forms\Components\DateTimePicker::make('trial_ends_at')
                             ->label('Trial End Date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->placeholder('Optional trial end date'),
                         Forms\Components\RichEditor::make('notes')
                             ->label('Notes')
@@ -64,12 +66,18 @@ class SubscriptionRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\DateTimePicker::make('current_period_start')
                             ->label('Current Period Start')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('current_period_end')
                             ->label('Current Period End')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('ends_at')
                             ->label('Subscription End Date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(3)
@@ -79,9 +87,13 @@ class SubscriptionRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\DateTimePicker::make('cancelled_at')
                             ->label('Cancelled At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('grace_period_ends_at')
                             ->label('Grace Period Ends At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(2)
@@ -94,9 +106,13 @@ class SubscriptionRelationManager extends RelationManager
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('created_at')
                             ->label('Created At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('updated_at')
                             ->label('Updated At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(1)

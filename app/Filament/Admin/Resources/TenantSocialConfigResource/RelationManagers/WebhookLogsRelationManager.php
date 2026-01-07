@@ -43,10 +43,14 @@ class WebhookLogsRelationManager extends RelationManager
 
                         Forms\Components\DateTimePicker::make('created_at')
                             ->label('Received At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
 
                         Forms\Components\DateTimePicker::make('processed_at')
                             ->label('Processed At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(2),

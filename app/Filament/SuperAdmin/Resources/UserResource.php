@@ -97,7 +97,7 @@ class UserResource extends Resource
                                 ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
                             Forms\Components\DateTimePicker::make('email_verified_at')
                                 ->native(false)
-                                ->closeOnDateSelection()
+                                ->closeOnDateSelection(true)
                                 ->default(now()),
                             Forms\Components\TextInput::make('password')
                                 ->password()
@@ -135,6 +135,8 @@ class UserResource extends Resource
                                 Forms\Components\Grid::make(2)->schema([
                                     Forms\Components\DateTimePicker::make('activeSubscription.trial_ends_at')
                                         ->label('Trial End Date')
+                                        ->native(false)
+                                        ->closeOnDateSelection(true)
                                         ->placeholder('Optional trial end date')
                                         ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
                                     Forms\Components\Select::make('activeSubscription.status')
@@ -274,6 +276,8 @@ class UserResource extends Resource
 
                                 Forms\Components\DateTimePicker::make('trial_ends_at')
                                     ->label('Trial End Date')
+                                    ->native(false)
+                                    ->closeOnDateSelection(true)
                                     ->helperText('Optional - for trial subscriptions'),
 
                                 Forms\Components\RichEditor::make('notes')
@@ -358,6 +362,8 @@ class UserResource extends Resource
                                 ->required(),
                             Forms\Components\DateTimePicker::make('trial_ends_at')
                                 ->label('Trial End Date')
+                                ->native(false)
+                                ->closeOnDateSelection(true)
                                 ->helperText('Optional - for trial subscriptions'),
                             Forms\Components\Textarea::make('notes')
                                 ->label('Notes')

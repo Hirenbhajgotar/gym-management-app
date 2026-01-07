@@ -546,6 +546,7 @@ class GymMemberResource extends Resource
                 ->label('Date of Birth')
                 ->placeholder('Select date of birth')
                 ->native(false)
+                ->closeOnDateSelection(true)
                 ->reactive()
                 ->afterStateUpdated(function ($state, callable $set) {
                     if ($state) {
@@ -661,6 +662,8 @@ class GymMemberResource extends Resource
 
             DatePicker::make('membership_start')
                 ->placeholder('Select start date')
+                ->native(false)
+                ->closeOnDateSelection(true)
                 ->live()
                 ->required()
                 ->default(now())
@@ -676,6 +679,8 @@ class GymMemberResource extends Resource
                 }),
             DatePicker::make('membership_end')
                 ->placeholder('Auto-calculated based on plan')
+                ->native(false)
+                ->closeOnDateSelection(true)
                 ->required()
                 ->default(now()),
         ];
@@ -725,6 +730,8 @@ class GymMemberResource extends Resource
                         ->required(),
 
                     DatePicker::make('payment_date')
+                        ->native(false)
+                        ->closeOnDateSelection(true)
                         ->required()
                         ->default(now()),
 
