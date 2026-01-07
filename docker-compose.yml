@@ -65,11 +65,28 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:alpine
+    container_name: gym-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
   db-data:
+  redis-data:
   vendor:
   node_modules:
