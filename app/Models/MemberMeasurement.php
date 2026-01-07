@@ -63,4 +63,17 @@ class MemberMeasurement extends Model
             }
         );
     }
+
+    public function bmi(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->height && $this->weight) {
+                    return round($this->weight / (($this->height / 100) ** 2), 1);
+                }
+
+                return null;
+            }
+        );
+    }
 }

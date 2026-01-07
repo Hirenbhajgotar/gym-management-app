@@ -48,15 +48,15 @@ class MemberProgressChart extends ChartWidget
             return [
                 'datasets' => [
                     [
-                        'label' => 'Weight (kg)',
-                        'data' => $measurements->pluck('weight'),
+                        'label' => 'BMI',
+                        'data' => $measurements->pluck('bmi'),
                         'borderColor' => '#3b82f6',
                         'fill' => false,
                         'tension' => 0.4,
                         'spanGaps' => true, // Connect lines across missing days
                     ],
                 ],
-                'labels' => $measurements->pluck('measured_at')->map(fn ($date) => $date->format('M d')),
+                'labels' => $measurements->pluck('measured_at')->map(fn ($date) => $date->format('M d, Y')),
             ];
         }
         );
@@ -65,5 +65,37 @@ class MemberProgressChart extends ChartWidget
     protected function getType(): string
     {
         return 'line';
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'plugins' => [
+                'legend' => ['display' => false],
+                'annotation' => [
+                    'annotations' => [
+                        // Add BMI category bands
+                        [
+                            'type' => 'box',
+                            'yMin' => 18.5,
+                            'yMax' => 25,
+                            'backgroundColor' => 'rgba(34, 197, 94, 0.2)',
+                            'label' => ['content' => 'Normal', 'display' => true],
+                        ],
+                    ],
+                ],
+            ],
+            'scales' => [
+                'y' => [
+                    'min' => 15,
+                    'max' => 40,
+                    'ticks' => [
+                        'callback' => "function(value) {
+                            return value + ' BMI';
+                        }",
+                    ],
+                ],
+            ],
+        ];
     }
 }
