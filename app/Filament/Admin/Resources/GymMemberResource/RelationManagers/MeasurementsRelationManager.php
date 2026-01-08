@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
+use App\Helpers\BmiHelper;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -64,11 +65,8 @@ class MeasurementsRelationManager extends RelationManager
         $height = $get('height');
 
         if ($weight && $height) {
-            $heightInMeters = $height / 100;
-            if ($heightInMeters > 0) {
-                $bmi = round($weight / ($heightInMeters * $heightInMeters), 2);
-                $set('bmi', $bmi);
-            }
+            $bmi = BmiHelper::calculateBmi($weight, $height);
+            $set('bmi', $bmi);
         }
     }
 
@@ -78,12 +76,7 @@ class MeasurementsRelationManager extends RelationManager
             return null;
         }
 
-        return match (true) {
-            $bmi < 18.5 => 'Underweight',
-            $bmi < 25 => 'Normal',
-            $bmi < 30 => 'Overweight',
-            default => 'Obese',
-        };
+        return BmiHelper::getStatus($bmi);
     }
 
     public function table(Table $table): Table
@@ -109,12 +102,7 @@ class MeasurementsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('bmi')
                     ->label('BMI')
                     ->badge()
-                    ->color(fn ($state) => match (true) {
-                        $state < 18.5 => 'warning',
-                        $state < 25 => 'success',
-                        $state < 30 => 'warning',
-                        default => 'danger',
-                    })
+                    ->color(fn ($state) => BmiHelper::getColor($state))
                     ->description(fn ($record) => $record->status ?? ''),
 
                 Tables\Columns\TextColumn::make('notes')

@@ -10,7 +10,7 @@ use Livewire\Attributes\On;
 
 class MemberProgressChart extends ChartWidget
 {
-    protected static ?string $heading = 'Weight Progress';
+    protected static ?string $heading = 'BMI Progress';
 
     protected int|string|array $columnSpan = 'full';
 
@@ -18,6 +18,17 @@ class MemberProgressChart extends ChartWidget
     public ?Model $record = null;
 
     protected static ?string $pollingInterval = null;
+
+    #[On('member-measurement-updated')]
+    public function refreshChart(): void
+    {
+        Log::info('Refreshing chart for member: ' . $this->record->id);
+        if ($this->record) {
+            Cache::forget("member_weight_progress_{$this->record->id}");
+        }
+
+        $this->updateChartData();
+    }
 
     protected function getData(): array
     {
@@ -33,35 +44,31 @@ class MemberProgressChart extends ChartWidget
         // Cache key based on member ID and latest measurement update
         // We use flexible cache: fresh for 1 hour, stale allowed for 1 week
         return Cache::flexible("member_weight_progress_{$record->id}", [3600, 604800], function () use ($record) {
-            // Get the earliest measurement date to start the trend
-            $firstMeasurement = $record->measurements()->oldest('measured_at')->first();
+            $measurements = $record->measurements()
+                ->orderBy('measured_at')
+                ->get();
 
-            if (! $firstMeasurement) {
+            if ($measurements->isEmpty()) {
                 return [
                     'datasets' => [],
                     'labels' => [],
                 ];
             }
 
-            $measurements = $record->measurements()
-                ->orderBy('measured_at')
-                ->get();
-
             return [
                 'datasets' => [
                     [
                         'label' => 'BMI',
-                        'data' => $measurements->pluck('bmi'),
-                        'borderColor' => '#3b82f6',
-                        'fill' => false,
+                        'data' => $measurements->pluck('bmi')->toArray(),
+                        'borderColor' => '#10b981',
+                        'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                         'tension' => 0.4,
                         'spanGaps' => true, // Connect lines across missing days
                     ],
                 ],
                 'labels' => $measurements->pluck('measured_at')->map(fn ($date) => $date->format('M d, Y')),
             ];
-        }
-        );
+        });
     }
 
     protected function getType(): string
@@ -99,16 +106,5 @@ class MemberProgressChart extends ChartWidget
                 ],
             ],
         ];
-    }
-
-    #[On('member-measurement-updated')]
-    public function refreshChart(): void
-    {
-        Log::info('Refreshing chart for member: ' . $this->record->id);
-        if ($this->record) {
-            Cache::forget("member_weight_progress_{$this->record->id}");
-        }
-
-        $this->updateChartData();
     }
 }

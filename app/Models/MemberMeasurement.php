@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\BmiHelper;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,11 +32,7 @@ class MemberMeasurement extends Model
     {
         static::saving(function ($measurement) {
             if ($measurement->weight && $measurement->height) {
-                // Height in cm to meters
-                $heightInMeters = $measurement->height / 100;
-                if ($heightInMeters > 0) {
-                    $measurement->bmi = round($measurement->weight / ($heightInMeters * $heightInMeters), 2);
-                }
+                $measurement->bmi = BmiHelper::calculateBmi($measurement->weight, $measurement->height);
             }
         });
     }
@@ -54,12 +51,7 @@ class MemberMeasurement extends Model
                     return null;
                 }
 
-                return match (true) {
-                    $bmi < 18.5 => 'Underweight',
-                    $bmi < 25 => 'Normal',
-                    $bmi < 30 => 'Overweight',
-                    default => 'Obese',
-                };
+                return BmiHelper::getStatus($bmi);
             }
         );
     }
@@ -69,7 +61,7 @@ class MemberMeasurement extends Model
         return Attribute::make(
             get: function () {
                 if ($this->height && $this->weight) {
-                    return round($this->weight / (($this->height / 100) ** 2), 1);
+                    return BmiHelper::calculateBmi($this->weight, $this->height);
                 }
 
                 return null;
