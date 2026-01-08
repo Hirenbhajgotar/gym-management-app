@@ -82,7 +82,7 @@ class MeasurementsRelationManager extends RelationManager
     public static function getBmiStatus($bmi)
     {
         if (! $bmi) {
-            return null;
+            return '';
         }
 
         return BmiHelper::getStatus($bmi);

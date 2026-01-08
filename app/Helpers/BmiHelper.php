@@ -9,18 +9,17 @@ class BmiHelper
      *
      * @param  float  $weight  Weight in kilograms.
      * @param  float  $height  Height in centimeters.
-     * @return float|null BMI value or null if height is invalid.
+     * @return float|null BMI value or null if weight/height is invalid.
      */
-    public static function calculateBmi($weight, $height): ?float
+    public static function calculateBmi(float $weight, float $height): ?float
     {
-        $heightInMeters = $height / 100;
-        if ($heightInMeters > 0) {
-            $bmi = round($weight / ($heightInMeters ** 2), 1);
-
-            return $bmi;
+        if ($weight <= 0 || $height <= 0) {
+            return null;
         }
 
-        return null;
+        $heightInMeters = $height / 100;
+
+        return round($weight / ($heightInMeters ** 2), 1);
     }
 
     /**

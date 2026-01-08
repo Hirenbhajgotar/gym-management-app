@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Filament\Admin\Resources\GymMemberResource;
-use App\Helpers\BmiHelper;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
 use App\Models\Trainer;
@@ -91,11 +90,10 @@ class CreateGymMember extends CreateRecord
         $member = $this->record;
 
         // Create measurement if provided
-        if (! empty($this->measurementData['weight']) || ! empty($this->measurementData['height'])) {
+        if (! empty($this->measurementData['weight']) && ! empty($this->measurementData['height'])) {
             $member->measurements()->create([
                 'weight' => $this->measurementData['weight'],
                 'height' => $this->measurementData['height'],
-                'bmi' => BmiHelper::calculateBmi($this->measurementData['weight'], $this->measurementData['height']),
                 'measured_at' => now(),
             ]);
         }
