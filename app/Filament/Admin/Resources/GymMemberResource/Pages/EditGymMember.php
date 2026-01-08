@@ -54,4 +54,11 @@ class EditGymMember extends EditRecord
                 }),
         ];
     }
+
+    public function getFooterWidgets(): array
+    {
+        return [
+            \App\Filament\Admin\Resources\GymMemberResource\Widgets\MemberProgressChart::class,
+        ];
+    }
 }

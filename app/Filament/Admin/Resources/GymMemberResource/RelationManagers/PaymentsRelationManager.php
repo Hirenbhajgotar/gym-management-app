@@ -27,6 +27,8 @@ class PaymentsRelationManager extends RelationManager
 
     protected static string $relationship = 'payments';
 
+    protected static ?string $icon = 'heroicon-o-credit-card';
+
     public function form(Form $form): Form
     {
         return $form

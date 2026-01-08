@@ -7,8 +7,10 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Admin\Resources\GymMemberResource\Pages;
+use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Forms\Components\AddressForm;
+use App\Helpers\BmiHelper;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
@@ -115,6 +117,8 @@ class GymMemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
+                    ->copyable()
+                    ->copyMessage('Phone copied!')
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
 
@@ -260,6 +264,29 @@ class GymMemberResource extends Resource
                     ->label('Payment Status'),
             ])
             ->actions([
+                Tables\Actions\Action::make('quick_measure')
+                    ->label('Measure')
+                    ->icon('heroicon-o-scale')
+                    ->form([
+                        Section::make('Create member measurement')
+                            ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
+                            ->columns(2),
+                    ])
+                    ->action(function (GymMember $record, array $data) {
+                        $record->measurements()->create([
+                            'weight' => $data['weight'],
+                            'height' => $data['height'],
+                            'measured_at' => $data['measured_at'],
+                            'bmi' => BmiHelper::calculateBmi($data['weight'], $data['height']),
+                            'notes' => $data['notes'],
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Measurement Added')
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
@@ -269,7 +296,6 @@ class GymMemberResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member')
-
                     ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
                     ->modalSubmitActionLabel('Confirm Delete')
                     ->form([
@@ -468,6 +494,7 @@ class GymMemberResource extends Resource
     {
         return [
             PaymentsRelationManager::class,
+            MeasurementsRelationManager::class,
         ];
     }
 
@@ -532,7 +559,8 @@ class GymMemberResource extends Resource
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(500)
-                ->placeholder('e.g., 75.5'),
+                ->placeholder('e.g., 75.5')
+                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
 
             Forms\Components\TextInput::make('height')
                 ->numeric()
@@ -540,7 +568,8 @@ class GymMemberResource extends Resource
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(300)
-                ->placeholder('e.g., 175'),
+                ->placeholder('e.g., 175')
+                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
 
             Forms\Components\DatePicker::make('dob')
                 ->label('Date of Birth')

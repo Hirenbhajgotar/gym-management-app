@@ -95,8 +95,6 @@ class GymMember extends Model
         'profile_photo',
         'email',
         'phone',
-        'weight',
-        'height',
         'age',
         'dob',
         'membership_start',
@@ -113,8 +111,6 @@ class GymMember extends Model
         'dob' => 'date',
         'membership_start' => 'date',
         'membership_end' => 'date',
-        'weight' => 'decimal:2',
-        'height' => 'decimal:2',
         'age' => 'integer',
         'is_active' => 'boolean',
         'latest_payment_at' => 'date',
@@ -283,5 +279,10 @@ class GymMember extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
     }
 }
