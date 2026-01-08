@@ -95,11 +95,15 @@ abstract class BaseAttendanceResource extends Resource
 
                         DateTimePicker::make('check_in_time')
                             ->label('Check-In Time')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->required(fn (Get $get) => $get('status') !== AttendanceStatus::Absent->value)
                             ->default(now()),
 
                         DateTimePicker::make('check_out_time')
                             ->label('Check-Out Time')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->nullable(),
 
                         Textarea::make('note')

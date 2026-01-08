@@ -13,9 +13,9 @@ class InvoiceService
     /**
      * Generate an invoice for a payment
      */
-    public function generateInvoice(Payment $payment): void
+    public function generateInvoice(Payment $payment, bool $force = false): void
     {
-        if ($this->invoiceExists($payment)) {
+        if (! $force && $this->invoiceExists($payment)) {
             return;
         }
 
@@ -33,9 +33,9 @@ class InvoiceService
         $this->createPdf('invoices.default', $data, $payment);
     }
 
-    public function generateMemberInvoice(MemberPayment $payment): void
+    public function generateMemberInvoice(MemberPayment $payment, bool $force = false): void
     {
-        if ($this->invoiceExists($payment)) {
+        if (! $force && $this->invoiceExists($payment)) {
             return;
         }
 

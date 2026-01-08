@@ -124,4 +124,31 @@ class ErrorReport extends Model
     {
         return $query->where('occurred_at', '>', now()->subDay());
     }
+    public function toMarkdown(): string
+    {
+        $markdown = "### Error: {$this->error_message}\n\n";
+        $markdown .= "**Type:** {$this->error_type}\n";
+        $markdown .= "**Status:** " . ($this->status?->value ?? 'N/A') . "\n";
+        $markdown .= "**Priority:** " . ($this->priority?->value ?? 'N/A') . "\n";
+        $markdown .= "**Occurred:** " . ($this->occurred_at?->toDateTimeString() ?? 'N/A') . "\n\n";
+
+        if ($this->user) {
+            $markdown .= "**User:** {$this->user->name} ({$this->user->email})\n\n";
+        }
+
+        if ($this->user_description) {
+            $markdown .= "#### User Description\n{$this->user_description}\n\n";
+        }
+
+        if ($this->stack_trace) {
+            $markdown .= "#### Stack Trace\n```php\n{$this->stack_trace}\n```\n\n";
+        }
+
+        if ($this->context) {
+            $context = json_encode($this->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $markdown .= "#### Context\n```json\n{$context}\n```\n";
+        }
+
+        return $markdown;
+    }
 }

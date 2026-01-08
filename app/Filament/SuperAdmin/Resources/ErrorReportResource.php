@@ -115,6 +115,7 @@ class ErrorReportResource extends Resource
                     ]),
             ])
             ->actions([
+                self::getCopyToMarkdownAction(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -129,6 +130,25 @@ class ErrorReportResource extends Resource
                 ]),
             ])
             ->defaultSort('occurred_at', 'desc');
+    }
+
+    public static function getCopyToMarkdownAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('copyMarkdown')
+            ->label('Copy as Markdown')
+            ->icon('heroicon-o-clipboard-document')
+            ->action(function (ErrorReport $record, $livewire) {
+                // Use json_encode to safely escape the string for JavaScript
+                $jsString = json_encode($record->toMarkdown());
+                
+                $livewire->js("
+                    window.navigator.clipboard.writeText({$jsString});
+                    new FilamentNotification()
+                        .title('Copied to clipboard')
+                        .success()
+                        .send();
+                ");
+            });
     }
 
     public static function getRelations(): array

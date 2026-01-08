@@ -94,8 +94,7 @@ class CityResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('status')
-                    ->boolean(),
+                Tables\Columns\ToggleColumn::make('status'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

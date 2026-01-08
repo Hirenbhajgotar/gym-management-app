@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
 use App\Filament\Admin\Resources\GymMemberResource\Pages;
+use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
@@ -54,19 +55,11 @@ class GymMemberResource extends Resource
     // Restrict to admins or gym owners with gyms
     public static function canAccess(array $parameters = []): bool
     {
-        // Set the permissions team ID based on the current Filament tenant
-        /** @var \App\Models\Gym|null $tenant */
-        $tenant = Filament::getTenant();
-        $tenantId = $tenant?->id;
-
-        setPermissionsTeamId($tenantId);
-
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
-        // Clear cached permissions and reload roles for the current team context
-        if ($user) {
-            $user->forgetCachedPermissions();
-            $user->load('roles');
+        if (! $user) {
+            return false;
         }
 
         if (filament()->getId() === 'admin') {
@@ -123,6 +116,8 @@ class GymMemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
+                    ->copyable()
+                    ->copyMessage('Phone copied!')
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
 
@@ -268,6 +263,28 @@ class GymMemberResource extends Resource
                     ->label('Payment Status'),
             ])
             ->actions([
+                Tables\Actions\Action::make('quick_measure')
+                    ->label('Measure')
+                    ->icon('heroicon-o-scale')
+                    ->form([
+                        Section::make('Create member measurement')
+                            ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
+                            ->columns(2),
+                    ])
+                    ->action(function (GymMember $record, array $data) {
+                        $record->measurements()->create([
+                            'weight' => $data['weight'],
+                            'height' => $data['height'],
+                            'measured_at' => $data['measured_at'],
+                            'notes' => $data['notes'],
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Measurement Added')
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
@@ -277,7 +294,6 @@ class GymMemberResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Delete Member')
-
                     ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
                     ->modalSubmitActionLabel('Confirm Delete')
                     ->form([
@@ -476,6 +492,7 @@ class GymMemberResource extends Resource
     {
         return [
             PaymentsRelationManager::class,
+            MeasurementsRelationManager::class,
         ];
     }
 
@@ -540,7 +557,8 @@ class GymMemberResource extends Resource
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(500)
-                ->placeholder('e.g., 75.5'),
+                ->placeholder('e.g., 75.5')
+                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
 
             Forms\Components\TextInput::make('height')
                 ->numeric()
@@ -548,12 +566,14 @@ class GymMemberResource extends Resource
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(300)
-                ->placeholder('e.g., 175'),
+                ->placeholder('e.g., 175')
+                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
 
             Forms\Components\DatePicker::make('dob')
                 ->label('Date of Birth')
                 ->placeholder('Select date of birth')
                 ->native(false)
+                ->closeOnDateSelection(true)
                 ->reactive()
                 ->afterStateUpdated(function ($state, callable $set) {
                     if ($state) {
@@ -669,6 +689,8 @@ class GymMemberResource extends Resource
 
             DatePicker::make('membership_start')
                 ->placeholder('Select start date')
+                ->native(false)
+                ->closeOnDateSelection(true)
                 ->live()
                 ->required()
                 ->default(now())
@@ -684,6 +706,8 @@ class GymMemberResource extends Resource
                 }),
             DatePicker::make('membership_end')
                 ->placeholder('Auto-calculated based on plan')
+                ->native(false)
+                ->closeOnDateSelection(true)
                 ->required()
                 ->default(now()),
         ];
@@ -733,6 +757,8 @@ class GymMemberResource extends Resource
                         ->required(),
 
                     DatePicker::make('payment_date')
+                        ->native(false)
+                        ->closeOnDateSelection(true)
                         ->required()
                         ->default(now()),
 

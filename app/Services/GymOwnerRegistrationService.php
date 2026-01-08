@@ -9,6 +9,7 @@ use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,12 @@ class GymOwnerRegistrationService
                 $gym = $existingUser->gyms()->first();
                 $subscription = $existingUser->subscriptions()->first();
 
+                $this->updatePayment($payment, $subscription, [
+                    'gym_id' => $gym->id,
+                    'plan_id' => $plan->id,
+                    'user_id' => $existingUser->id,
+                ]);
+
                 return [
                     'user' => $existingUser,
                     'gym' => $gym,
@@ -66,6 +73,14 @@ class GymOwnerRegistrationService
             // Create subscription
             $subscriptionResult = $this->createSubscription($user, $plan, $payment);
 
+            $subscription = $subscriptionResult['subscription'];
+
+            $this->updatePayment($payment, $subscription, [
+                'gym_id' => $gym->id,
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+            ]);
+
             // Setup roles and permissions
             $this->setupRolesAndPermissions($user, $gym);
 
@@ -80,6 +95,11 @@ class GymOwnerRegistrationService
             // Post-creation tasks
             $this->storeFeedbackCache($user);
             $this->sendNotifications($user, $gym, $subscriptionResult['status']);
+
+            if ($payment->hasValidSignature() && $payment->isCompleted()) {
+                // Generate invoice
+                GenerateInvoiceJob::dispatch($payment);
+            }
 
             return [
                 'user' => $user,
@@ -103,6 +123,21 @@ class GymOwnerRegistrationService
                 'already_exists' => false,
             ];
         }
+    }
+
+    public function updatePayment(Payment $payment, Subscription $subscription, $data = []): ?Payment
+    {
+        $metadata = $payment->metadata;
+        $metadata['subscription_id'] = $subscription->id ?? null;
+        $metadata['plan_id'] = $data['plan_id'] ?? null;
+
+        Payment::where('id', $payment->id)->update([
+            'user_id' => $data['user_id'] ?? null,
+            'gym_id' => $data['gym_id'] ?? null,
+            'metadata' => $metadata,
+        ]);
+
+        return $payment->fresh();
     }
 
     /**
@@ -173,9 +208,6 @@ class GymOwnerRegistrationService
                         'payment_id' => $payment->id,
                         'order_id' => $payment->razorpay_order_id,
                     ]);
-
-                    // Generate invoice
-                    GenerateInvoiceJob::dispatch($payment);
                 }
             }
         }
@@ -242,19 +274,13 @@ class GymOwnerRegistrationService
     protected function createGymAddress(Gym $gym, array $registrationData): void
     {
         $gym->address()->create([
-            'street' => $registrationData['address']['street'],
-            'city_id' => $registrationData['address']['city_id'],
-            'state_id' => $registrationData['address']['state_id'],
-            'country_id' => $registrationData['address']['country_id'],
-            'postal_code' => $registrationData['address']['postal_code'],
-            'latitude' => $registrationData['address']['latitude'] &&
-                ! empty($registrationData['address']['latitude'])
-                    ? $registrationData['address']['latitude']
-                    : null,
-            'longitude' => $registrationData['address']['longitude'] &&
-                ! empty($registrationData['address']['longitude'])
-                    ? $registrationData['address']['longitude']
-                    : null,
+            'street' => $registrationData['address']['street'] ?? null,
+            'city_id' => $registrationData['address']['city_id'] ?? null,
+            'state_id' => $registrationData['address']['state_id'] ?? null,
+            'country_id' => $registrationData['address']['country_id'] ?? null,
+            'postal_code' => $registrationData['address']['postal_code'] ?? null,
+            'latitude' => $registrationData['address']['latitude'] ?? null,
+            'longitude' => $registrationData['address']['longitude'] ?? null,
         ]);
     }
 

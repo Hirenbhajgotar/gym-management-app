@@ -27,6 +27,8 @@ class PaymentsRelationManager extends RelationManager
 
     protected static string $relationship = 'payments';
 
+    protected static ?string $icon = 'heroicon-o-credit-card';
+
     public function form(Form $form): Form
     {
         return $form
@@ -71,6 +73,8 @@ class PaymentsRelationManager extends RelationManager
 
                         Forms\Components\DatePicker::make('membership_start')
                             ->placeholder('Select start date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->live()
                             ->required()
                             ->default(now())
@@ -79,6 +83,8 @@ class PaymentsRelationManager extends RelationManager
 
                         Forms\Components\DatePicker::make('membership_end')
                             ->placeholder('Auto-calculated based on plan')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->required(),
 
                         Forms\Components\ToggleButtons::make('status')
@@ -92,6 +98,8 @@ class PaymentsRelationManager extends RelationManager
                             ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                         Forms\Components\DatePicker::make('payment_date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->required()
                             ->default(now()),
                     ])

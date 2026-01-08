@@ -52,6 +52,8 @@ class SubscriptionRelationManager extends RelationManager
                             ->required(),
                         Forms\Components\DateTimePicker::make('trial_ends_at')
                             ->label('Trial End Date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->placeholder('Optional trial end date'),
                         Forms\Components\RichEditor::make('notes')
                             ->label('Notes')
@@ -64,12 +66,18 @@ class SubscriptionRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\DateTimePicker::make('current_period_start')
                             ->label('Current Period Start')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('current_period_end')
                             ->label('Current Period End')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('ends_at')
                             ->label('Subscription End Date')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(3)
@@ -79,9 +87,13 @@ class SubscriptionRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\DateTimePicker::make('cancelled_at')
                             ->label('Cancelled At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('grace_period_ends_at')
                             ->label('Grace Period Ends At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(2)
@@ -94,9 +106,13 @@ class SubscriptionRelationManager extends RelationManager
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('created_at')
                             ->label('Created At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('updated_at')
                             ->label('Updated At')
+                            ->native(false)
+                            ->closeOnDateSelection(true)
                             ->disabled(),
                     ])
                     ->columns(1)
@@ -171,6 +187,37 @@ class SubscriptionRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('regenerate_invoice')
+                    ->label('Regenerate Invoice')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalIcon('heroicon-o-document-arrow-down')
+                    ->modalDescription('Are you sure you want to regenerate the latest invoice for this plan? This will overwrite existing files.')
+                    ->action(function (\App\Models\Subscription $record) {
+                        // Find the latest payment for this user and this plan
+                        $payment = \App\Models\Payment::where('user_id', $record->user_id)
+                            ->whereJsonContains('metadata->plan_id', $record->plan_id)
+                            ->latest()
+                            ->first();
+
+                        if (! $payment) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No payment found for this subscription plan')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        app(\App\Services\InvoiceService::class)->generateInvoice($payment, force: true);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Invoice regenerated successfully')
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

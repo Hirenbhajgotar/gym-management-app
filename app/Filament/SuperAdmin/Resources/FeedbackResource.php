@@ -37,6 +37,8 @@ class FeedbackResource extends Resource
                     ->required()
                     ->columnSpanFull(),
                 Forms\Components\DateTimePicker::make('submitted_at')
+                    ->native(false)
+                    ->closeOnDateSelection(true)
                     ->required(),
                 FileUpload::make('files'),
             ]);
