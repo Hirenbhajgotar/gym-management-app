@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Widgets;
 
+use App\Helpers\BmiHelper;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -10,7 +11,7 @@ use Livewire\Attributes\On;
 
 class MemberProgressChart extends ChartWidget
 {
-    protected static ?string $heading = 'BMI Progress';
+    protected static ?string $heading = 'Health Score Progress';
 
     protected int|string|array $columnSpan = 'full';
 
@@ -58,12 +59,22 @@ class MemberProgressChart extends ChartWidget
             return [
                 'datasets' => [
                     [
-                        'label' => 'BMI',
-                        'data' => $measurements->pluck('bmi')->toArray(),
+                        'label' => 'Health Score',
+                        'data' => $measurements->map(fn ($m) => BmiHelper::calculateHealthScore($m->bmi))->toArray(),
+                        'bmiData' => $measurements->pluck('bmi')->toArray(),
                         'borderColor' => '#10b981',
                         'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                         'tension' => 0.4,
-                        'spanGaps' => true, // Connect lines across missing days
+                        'spanGaps' => true,
+                        'fill' => true,
+                    ],
+                    [
+                        'label' => 'BMI',
+                        'data' => $measurements->pluck('bmi')->toArray(),
+                        'borderColor' => '#64748b',
+                        'backgroundColor' => 'transparent',
+                        'borderDash' => [5, 5],
+                        'yAxisID' => 'y1', // Secondary axis
                     ],
                 ],
                 'labels' => $measurements->pluck('measured_at')->map(fn ($date) => $date->format('M d, Y')),
@@ -79,30 +90,38 @@ class MemberProgressChart extends ChartWidget
     protected function getOptions(): array
     {
         return [
+            'responsive' => true,
             'plugins' => [
-                'legend' => ['display' => false],
-                'annotation' => [
-                    'annotations' => [
-                        // Add BMI category bands
-                        [
-                            'type' => 'box',
-                            'yMin' => 18.5,
-                            'yMax' => 25,
-                            'backgroundColor' => 'rgba(34, 197, 94, 0.2)',
-                            'label' => ['content' => 'Normal', 'display' => true],
-                        ],
+                'legend' => ['display' => true],
+                'tooltip' => [
+                    'callbacks' => [
+                        'label' => "function(context) {
+                            if (context.dataset.label === 'Health Score') {
+                                return 'Health: ' + context.parsed.y + '/100';
+                            }
+                            return 'BMI: ' + context.parsed.y;
+                        }",
                     ],
                 ],
             ],
             'scales' => [
                 'y' => [
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'left',
+                    'min' => 0,
+                    'max' => 100,
+                    'grid' => ['color' => 'rgba(16, 185, 129, 0.1)'],
+                    'title' => ['display' => true, 'text' => 'Health Score'],
+                ],
+                'y1' => [
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'right',
                     'min' => 15,
                     'max' => 40,
-                    'ticks' => [
-                        'callback' => "function(value) {
-                            return value + ' BMI';
-                        }",
-                    ],
+                    'grid' => ['drawOnChartArea' => false],
+                    'title' => ['display' => true, 'text' => 'BMI'],
                 ],
             ],
         ];
