@@ -123,12 +123,15 @@ class MeasurementsRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Record Measurement')
+                    ->successNotificationTitle('Measurement Added')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
+                    ->successNotificationTitle('Measurement Updated')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
                 Tables\Actions\DeleteAction::make()
+                    ->successNotificationTitle('Measurement Deleted')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->bulkActions([

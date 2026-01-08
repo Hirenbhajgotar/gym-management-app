@@ -117,6 +117,8 @@ class GymMemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
+                    ->copyable()
+                    ->copyMessage('Phone copied!')
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
 
