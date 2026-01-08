@@ -64,7 +64,7 @@ class CreateUser extends CreateRecord
             DB::commit();
 
             // Send welcome notification
-            // $this->sendWelcomeNotification($user);
+            $this->sendWelcomeNotification($user);
 
             // Notify SuperAdmins about new gym owner
             $this->notifySuperAdmins($user);
@@ -126,10 +126,9 @@ class CreateUser extends CreateRecord
     protected function sendWelcomeNotification(User $user): void
     {
         // Send welcome email with credentials
-        $user->notify(new \App\Notifications\UserActionNotification(
-            'created',
+        $user->notify(new \App\Notifications\GymOwnerWelcomeNotification(
             $user,
-            "Your gym management account has been created.\n\nLogin Credentials:\nEmail: {$user->email}\nPassword: {$this->plainPassword}\n\nPlease login and change your password."
+            $this->plainPassword
         ));
     }
 

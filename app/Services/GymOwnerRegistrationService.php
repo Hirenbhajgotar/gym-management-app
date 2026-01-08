@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\DefaultRole;
-use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -94,12 +93,14 @@ class GymOwnerRegistrationService
             DB::commit();
             // Post-creation tasks
             $this->storeFeedbackCache($user);
-            $this->sendNotifications($user, $gym, $subscriptionResult['status']);
 
-            if ($payment->hasValidSignature() && $payment->isCompleted()) {
-                // Generate invoice
-                GenerateInvoiceJob::dispatch($payment);
+            // Generate invoice if payment is successful
+            // We do this synchronously here to ensure it's available for the welcome email attachment
+            if ($payment && $payment->hasValidSignature() && $payment->isCompleted()) {
+                $this->invoiceService->generateInvoice($payment);
             }
+
+            $this->sendNotifications($user, $gym, $subscriptionResult['status'], $payment);
 
             return [
                 'user' => $user,
@@ -310,11 +311,13 @@ class GymOwnerRegistrationService
     }
 
     /**
-     * Send notifications to super-admins about new gym owner registration
+     * Send notifications to super-admins and the new user
      */
-    protected function sendNotifications(User $user, Gym $gym, string $subscriptionStatus): void
+    protected function sendNotifications(User $user, Gym $gym, string $subscriptionStatus, ?Payment $payment = null): void
     {
-        $superAdmins = User::role('super_admin')->get();
+        $superAdmins = \Illuminate\Support\Facades\Cache::flexible('super-admins-to-send-notifications', [86400, 604800], function () {
+            return User::role('super_admin')->get();
+        });
 
         foreach ($superAdmins as $superAdmin) {
             $superAdmin->notify(
@@ -335,6 +338,16 @@ class GymOwnerRegistrationService
                 ->send();
 
             event(new \Filament\Notifications\Events\DatabaseNotificationsSent($superAdmin));
+        }
+
+        // Send welcome notification to the new gym owner
+        try {
+            $user->notify(new \App\Notifications\GymOwnerWelcomeNotification($user, null, $payment));
+        } catch (Exception $e) {
+            Log::error('Failed to send welcome notification', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }
