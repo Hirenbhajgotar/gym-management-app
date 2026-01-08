@@ -125,15 +125,19 @@ class MeasurementsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Record Measurement'),
+                    ->label('Record Measurement')
+                    ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
+                Tables\Actions\DeleteAction::make()
+                    ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
                 ]),
             ])
             ->defaultSort('measured_at', 'desc');

@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Resources\GymMemberResource\Widgets;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\On;
 
 class MemberProgressChart extends ChartWidget
 {
@@ -97,5 +99,16 @@ class MemberProgressChart extends ChartWidget
                 ],
             ],
         ];
+    }
+
+    #[On('member-measurement-updated')]
+    public function refreshChart(): void
+    {
+        Log::info('Refreshing chart for member: ' . $this->record->id);
+        if ($this->record) {
+            Cache::forget("member_weight_progress_{$this->record->id}");
+        }
+
+        $this->updateChartData();
     }
 }
