@@ -10,7 +10,6 @@ use App\Filament\Admin\Resources\GymMemberResource\Pages;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Forms\Components\AddressForm;
-use App\Helpers\BmiHelper;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
@@ -277,7 +276,6 @@ class GymMemberResource extends Resource
                             'weight' => $data['weight'],
                             'height' => $data['height'],
                             'measured_at' => $data['measured_at'],
-                            'bmi' => BmiHelper::calculateBmi($data['weight'], $data['height']),
                             'notes' => $data['notes'],
                         ]);
 

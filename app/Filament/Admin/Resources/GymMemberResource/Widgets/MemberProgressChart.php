@@ -6,7 +6,6 @@ use App\Helpers\BmiHelper;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
 class MemberProgressChart extends ChartWidget
@@ -23,7 +22,6 @@ class MemberProgressChart extends ChartWidget
     #[On('member-measurement-updated')]
     public function refreshChart(): void
     {
-        Log::info('Refreshing chart for member: ' . $this->record->id);
         if ($this->record) {
             Cache::forget("member_weight_progress_{$this->record->id}");
         }
@@ -61,7 +59,6 @@ class MemberProgressChart extends ChartWidget
                     [
                         'label' => 'Health Score',
                         'data' => $measurements->map(fn ($m) => BmiHelper::calculateHealthScore($m->bmi))->toArray(),
-                        'bmiData' => $measurements->pluck('bmi')->toArray(),
                         'borderColor' => '#10b981',
                         'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                         'tension' => 0.4,
