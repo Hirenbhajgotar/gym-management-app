@@ -20,43 +20,52 @@ class MeasurementsRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\DatePicker::make('measured_at')
-                    ->label('Measured Date')
-                    ->native(false)
-                    ->closeOnDateSelection(true)
-                    ->required()
-                    ->default(now())
-                    ->maxDate(now())
-                    ->columnSpanFull(),
+            ->schema(self::getMeasurementsFormSchema());
+    }
 
-                Forms\Components\TextInput::make('weight')
-                    ->label('Weight (kg)')
-                    ->numeric()
-                    ->required()
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        self::updateBmi($get, $set);
-                    }),
+    public static function getMeasurementsFormSchema(): array
+    {
+        return [
+            Forms\Components\DatePicker::make('measured_at')
+                ->label('Measured Date')
+                ->native(false)
+                ->closeOnDateSelection(true)
+                ->required()
+                ->default(now())
+                ->maxDate(now())
+                ->columnSpanFull(),
 
-                Forms\Components\TextInput::make('height')
-                    ->label('Height (cm)')
-                    ->numeric()
-                    ->required()
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        self::updateBmi($get, $set);
-                    }),
+            Forms\Components\TextInput::make('weight')
+                ->label('Weight (kg)')
+                ->suffix('kg')
+                ->numeric()
+                ->required()
+                ->minValue(0)
+                ->live(onBlur: true)
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    self::updateBmi($get, $set);
+                }),
 
-                Forms\Components\TextInput::make('bmi')
-                    ->label('BMI')
-                    ->disabled()
-                    ->dehydrated(false) // We calculate this in the model
-                    ->suffix(fn ($state) => self::getBmiStatus($state)),
+            Forms\Components\TextInput::make('height')
+                ->label('Height (cm)')
+                ->suffix('cm')
+                ->numeric()
+                ->required()
+                ->minValue(0)
+                ->live(onBlur: true)
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    self::updateBmi($get, $set);
+                }),
 
-                Forms\Components\Textarea::make('notes')
-                    ->columnSpanFull(),
-            ]);
+            Forms\Components\TextInput::make('bmi')
+                ->label('BMI')
+                ->disabled()
+                ->dehydrated(false) // We calculate this in the model
+                ->suffix(fn ($state) => self::getBmiStatus($state)),
+
+            Forms\Components\Textarea::make('notes')
+                ->columnSpanFull(),
+        ];
     }
 
     public static function updateBmi(callable $get, callable $set)

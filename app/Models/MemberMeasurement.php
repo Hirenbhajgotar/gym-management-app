@@ -55,17 +55,4 @@ class MemberMeasurement extends Model
             }
         );
     }
-
-    public function bmi(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                if ($this->height && $this->weight) {
-                    return BmiHelper::calculateBmi($this->weight, $this->height);
-                }
-
-                return null;
-            }
-        );
-    }
 }

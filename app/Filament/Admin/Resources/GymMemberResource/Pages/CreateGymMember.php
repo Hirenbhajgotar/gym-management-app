@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Helpers\BmiHelper;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
 use App\Models\Trainer;
@@ -28,6 +29,8 @@ class CreateGymMember extends CreateRecord
 
     protected $paymentData = [];
 
+    protected $measurementData = [];
+
     public function form(Form $form): Form
     {
         return parent::form($form)
@@ -44,6 +47,12 @@ class CreateGymMember extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // Store measurement data
+        $this->measurementData = [
+            'weight' => $data['weight'] ?? null,
+            'height' => $data['height'] ?? null,
+        ];
+
         // Store payment data for use in afterCreate
         $this->paymentData = [
             'gym_id' => $data['gym_id'] ?? null,
@@ -58,7 +67,7 @@ class CreateGymMember extends CreateRecord
             'notes' => $data['notes'] ?? null,
         ];
 
-        // Remove payment-related fields from the GymMember data
+        // Remove payment-related fields and measurement fields from the GymMember data
         unset(
             $data['membership_plan_id'],
             $data['amount'],
@@ -68,7 +77,9 @@ class CreateGymMember extends CreateRecord
             $data['membership_end'],
             $data['status'],
             $data['payment_date'],
-            $data['notes']
+            $data['notes'],
+            $data['weight'],
+            $data['height']
         );
 
         return $data;
@@ -78,6 +89,16 @@ class CreateGymMember extends CreateRecord
     {
         /** @var \App\Models\GymMember $member */
         $member = $this->record;
+
+        // Create measurement if provided
+        if (! empty($this->measurementData['weight']) || ! empty($this->measurementData['height'])) {
+            $member->measurements()->create([
+                'weight' => $this->measurementData['weight'],
+                'height' => $this->measurementData['height'],
+                'bmi' => BmiHelper::calculateBmi($this->measurementData['weight'], $this->measurementData['height']),
+                'measured_at' => now(),
+            ]);
+        }
 
         // Create the payment if payment data is provided
         if (! empty($this->paymentData['membership_plan_id'])) {
