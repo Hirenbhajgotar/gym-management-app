@@ -114,14 +114,8 @@ class UserResource extends Resource
                                 ->default(true)
                                 ->live() // Ensure the state is updated reactively
                                 ->afterStateUpdated(function (string $context, User $record, $state) {
-                                    $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
-
-                                    if ($context === 'edit' && $isGymOwner) {
-                                        if ($state === true) {
-                                            self::sentAccountActivateNotification($record);
-                                        } else {
-                                            self::sentAccountDeactivateNotification($record);
-                                        }
+                                    if ($context === 'edit') {
+                                        self::handleAccountStatusChange($record, $state);
                                     }
                                 })
                                 ->columnSpanFull(),
@@ -235,15 +229,7 @@ class UserResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active')
                     ->afterStateUpdated(function ($record, $state) {
-                        $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
-
-                        if ($isGymOwner) {
-                            if ($state === true) {
-                                self::sentAccountActivateNotification($record);
-                            } else {
-                                self::sentAccountDeactivateNotification($record);
-                            }
-                        }
+                        self::handleAccountStatusChange($record, $state);
                     }),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
@@ -431,7 +417,7 @@ class UserResource extends Resource
         ];
     }
 
-    public static function sentAccountActivateNotification(User $user): void
+    private static function sentAccountActivateNotification(User $user): void
     {
         if ($user) {
             try {
@@ -452,7 +438,7 @@ class UserResource extends Resource
         }
     }
 
-    public static function sentAccountDeactivateNotification(User $user): void
+    private static function sentAccountDeactivateNotification(User $user): void
     {
         if ($user) {
             try {
@@ -469,6 +455,19 @@ class UserResource extends Resource
                     ->title('Failed to send notification')
                     ->body($e->getMessage())
                     ->send();
+            }
+        }
+    }
+
+    private static function handleAccountStatusChange(User $user, bool $isActive): void
+    {
+        $isGymOwner = $user->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
+
+        if ($isGymOwner) {
+            if ($isActive) {
+                self::sentAccountActivateNotification($user);
+            } else {
+                self::sentAccountDeactivateNotification($user);
             }
         }
     }
