@@ -51,8 +51,8 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
         $mail->line('If you have any questions, feel free to contact our support team.');
 
         // Attach Invoice if payment exists and invoice file is available
-        if ($this->payment && $this->payment->invoice_path && Storage::exists($this->payment->invoice_path)) {
-            $mail->attach(Storage::path($this->payment->invoice_path), [
+        if ($this->payment && $this->payment->invoice_path && Storage::disk('local')->exists($this->payment->invoice_path)) {
+            $mail->attach(Storage::disk('local')->path($this->payment->invoice_path), [
                 'as' => 'Invoice-' . $this->payment->invoice_number . '.pdf',
                 'mime' => 'application/pdf',
             ]);
