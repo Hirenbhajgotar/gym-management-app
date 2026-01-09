@@ -116,8 +116,12 @@ class UserResource extends Resource
                                 ->afterStateUpdated(function (string $context, User $record, $state) {
                                     $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
 
-                                    if ($context === 'edit' && $state === true && $isGymOwner) {
-                                        self::sentAccountActivateNotification($record);
+                                    if ($context === 'edit' && $isGymOwner) {
+                                        if ($state === true) {
+                                            self::sentAccountActivateNotification($record);
+                                        } else {
+                                            self::sentAccountDeactivateNotification($record);
+                                        }
                                     }
                                 })
                                 ->columnSpanFull(),
@@ -233,8 +237,12 @@ class UserResource extends Resource
                     ->afterStateUpdated(function ($record, $state) {
                         $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
 
-                        if ($state === true && $isGymOwner) {
-                            self::sentAccountActivateNotification($record);
+                        if ($isGymOwner) {
+                            if ($state === true) {
+                                self::sentAccountActivateNotification($record);
+                            } else {
+                                self::sentAccountDeactivateNotification($record);
+                            }
                         }
                     }),
                 Tables\Columns\TextColumn::make('email_verified_at')
@@ -431,6 +439,27 @@ class UserResource extends Resource
                 \Filament\Notifications\Notification::make()
                     ->success()
                     ->title('Account Activated')
+                    ->body('User has been notified.')
+                    ->send();
+            } catch (\Exception $e) {
+                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Failed to send notification')
+                    ->body($e->getMessage())
+                    ->send();
+            }
+        }
+    }
+
+    public static function sentAccountDeactivateNotification(User $user): void
+    {
+        if ($user) {
+            try {
+                $user->notify(new \App\Notifications\AccountDeactivatedNotification($user));
+                \Filament\Notifications\Notification::make()
+                    ->warning()
+                    ->title('Account Deactivated')
                     ->body('User has been notified.')
                     ->send();
             } catch (\Exception $e) {
