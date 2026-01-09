@@ -12,6 +12,7 @@ use App\Services\RolesAndPermissionsService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CreateUser extends CreateRecord
 {
@@ -21,9 +22,9 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Store plain password temporarily for notification
-        if (isset($data['password'])) {
-            $this->plainPassword = $data['password'];
+        // If password is not provided, generate a random one
+        if (empty($data['password'])) {
+            $data['password'] = Str::password(12);
         }
 
         // Extract Gym Data
@@ -125,10 +126,13 @@ class CreateUser extends CreateRecord
 
     protected function sendWelcomeNotification(User $user): void
     {
-        // Send welcome email with credentials
+        // Generate password reset token
+        $token = \Illuminate\Support\Facades\Password::broker()->createToken($user);
+
+        // Send welcome email with password reset link
         $user->notify(new \App\Notifications\GymOwnerWelcomeNotification(
             $user,
-            $this->plainPassword
+            $token
         ));
     }
 
@@ -165,7 +169,4 @@ class CreateUser extends CreateRecord
             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         }
     }
-
-    /** @var string|null */
-    private $plainPassword;
 }

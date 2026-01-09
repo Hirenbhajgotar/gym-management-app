@@ -16,7 +16,7 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
 
     public function __construct(
         public User $user,
-        public ?string $password = null,
+        public ?string $token = null,
         public ?Payment $payment = null
     ) {}
 
@@ -32,18 +32,23 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
             ->greeting("Hello {$this->user->name}!")
             ->line('Welcome to our Gym Management System. We are excited to have you on board.');
 
-        if ($this->password) {
+        if ($this->token) {
+            $resetUrl = \Illuminate\Support\Facades\URL::signedRoute('filament.admin.auth.password-reset.reset', [
+                'token' => $this->token,
+                'email' => $this->user->email,
+            ]);
+
             $mail->line('Your account has been created by an administrator.')
-                ->line('Here are your login credentials:')
-                ->line("Email: {$this->user->email}")
-                ->line("Password: {$this->password}")
-                ->line('Please login and change your password immediately.');
+                ->line('Please set your password to access your account.')
+                ->action('Set Password', $resetUrl)
+                ->line('This password set link will expire in 60 minutes.')
+                ->line('If you did not request this, no further action is required.');
         } else {
-            $mail->line('Thank you for registering your business with us.');
+            $mail->line('Your account is currently under review.')
+                ->line('You will be able to login once your account is reviewed and active.');
         }
 
-        $mail->action('Login to Dashboard', url('/admin/login'))
-            ->line('If you have any questions, feel free to contact our support team.');
+        $mail->line('If you have any questions, feel free to contact our support team.');
 
         // Attach Invoice if payment exists and invoice file is available
         if ($this->payment && $this->payment->invoice_path && Storage::exists($this->payment->invoice_path)) {

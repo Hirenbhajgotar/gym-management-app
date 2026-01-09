@@ -17,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
@@ -104,13 +105,21 @@ class UserResource extends Resource
                                 ->revealable()
                                 ->maxLength(255)
                                 ->dehydrated(fn ($state) => filled($state))
-                                ->required(fn (string $context): bool => $context === 'create')
+                                ->required(false)
                                 ->helperText(fn (string $context): string => $context === 'create'
-                                    ? 'User will receive this password in their welcome email'
+                                    ? 'Leave empty to auto-generate and send a password setup link'
                                     : 'Leave empty to keep current password'),
                             Forms\Components\Toggle::make('is_active')
                                 ->label('Active')
                                 ->default(true)
+                                ->live() // Ensure the state is updated reactively
+                                ->afterStateUpdated(function (string $context, User $record, $state) {
+                                    $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
+
+                                    if ($context === 'edit' && $state === true && $isGymOwner) {
+                                        self::sentAccountActivateNotification($record);
+                                    }
+                                })
                                 ->columnSpanFull(),
 
                             Forms\Components\Section::make('Plan Assignment')->schema([
@@ -219,7 +228,15 @@ class UserResource extends Resource
                     ->dateTime()
                     ->formatStateUsing(fn ($state): ?string => $state?->format('M j, Y') ?? null)
                     ->placeholder('N/A'),
-                Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Active')
+                    ->afterStateUpdated(function ($record, $state) {
+                        $isGymOwner = $record->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
+
+                        if ($state === true && $isGymOwner) {
+                            self::sentAccountActivateNotification($record);
+                        }
+                    }),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable()
@@ -404,5 +421,26 @@ class UserResource extends Resource
             'create' => CreateUser::route('/create'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function sentAccountActivateNotification(User $user): void
+    {
+        if ($user) {
+            try {
+                $user->notify(new \App\Notifications\AccountActivatedNotification($user));
+                \Filament\Notifications\Notification::make()
+                    ->success()
+                    ->title('Account Activated')
+                    ->body('User has been notified.')
+                    ->send();
+            } catch (\Exception $e) {
+                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Failed to send notification')
+                    ->body($e->getMessage())
+                    ->send();
+            }
+        }
     }
 }
