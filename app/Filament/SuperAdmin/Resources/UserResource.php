@@ -463,12 +463,14 @@ class UserResource extends Resource
     {
         $isGymOwner = $user->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
 
-        if ($isGymOwner) {
-            if ($isActive) {
-                self::sendAccountActivateNotification($user);
-            } else {
-                self::sendAccountDeactivateNotification($user);
-            }
+        if (! $isGymOwner) {
+            return;
+        }
+
+        if ($isActive) {
+            self::sendAccountActivateNotification($user);
+        } else {
+            self::sendAccountDeactivateNotification($user);
         }
     }
 }
