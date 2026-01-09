@@ -724,7 +724,7 @@
                                                                 <svg class="w-3.5 h-3.5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" stroke="url(#gradient-{{ $loop->parent->index }}-{{ $loop->index }})" />
                                                                     <defs>
-                                                                        <linearGradient id="gradient-{{ $loop->parent->index }}-{{ $loop->index }}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                                        <linearGradient id="gradient-enterprise-{{ $loop->parent->index }}-{{ $loop->index }}" x1="0%" y1="0%" x2="100%" y2="0%">
                                                                             <stop offset="0%" style="stop-color:#a855f7" />
                                                                             <stop offset="100%" style="stop-color:#06b6d4" />
                                                                         </linearGradient>
