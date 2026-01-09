@@ -1,4 +1,4 @@
-@props(['size' => 'md'])
+@props(['size' => 'md', 'triggerClass' => 'inline-block'])
 
 @php
     $maxWidth = [
@@ -12,7 +12,7 @@
 
 <div x-data="{ open: false }">
     <!-- Trigger -->
-    <div @click="open = true" class="inline-block">
+    <div @click="open = true" class="{{ $triggerClass }}">
         {{ $trigger }}
     </div>
 
