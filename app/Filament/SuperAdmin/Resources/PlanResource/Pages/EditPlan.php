@@ -17,6 +17,6 @@ class EditPlan extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return PlanResource::getUrl("index");
+        return PlanResource::getUrl('index');
     }
 }

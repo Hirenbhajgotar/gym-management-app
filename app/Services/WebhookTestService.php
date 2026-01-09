@@ -256,14 +256,14 @@ class WebhookTestService
             $logFile = "webhooks/tenant_{$config->tenant_id}/simulations.log";
             $existingLogs = [];
 
-            if (Storage::exists($logFile)) {
-                $existingLogs = json_decode(Storage::get($logFile), true) ?? [];
+            if (Storage::disk('local')->exists($logFile)) {
+                $existingLogs = json_decode(Storage::disk('local')->get($logFile), true) ?? [];
             }
 
             $existingLogs[] = $result;
             $existingLogs = array_slice($existingLogs, -100); // Keep last 100
 
-            Storage::put($logFile, json_encode($existingLogs, JSON_PRETTY_PRINT));
+            Storage::disk('local')->put($logFile, json_encode($existingLogs, JSON_PRETTY_PRINT));
         } catch (\Exception $e) {
             Log::error('Failed to store simulation result', [
                 'platform' => $platform,
@@ -285,8 +285,8 @@ class WebhookTestService
             $config = TenantSocialConfig::find($configId);
             if ($config) {
                 $logFile = "webhooks/tenant_{$config->tenant_id}/simulations.log";
-                if (Storage::exists($logFile)) {
-                    $fileLogs = json_decode(Storage::get($logFile), true) ?? [];
+                if (Storage::disk('local')->exists($logFile)) {
+                    $fileLogs = json_decode(Storage::disk('local')->get($logFile), true) ?? [];
                     $simulations = array_merge($simulations, $fileLogs);
                 }
             }

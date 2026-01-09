@@ -3,6 +3,7 @@
 namespace App\Livewire\Frontend;
 
 use App\Models\Plan;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -13,13 +14,19 @@ class HomeController extends Component
     #[Layout('frontend.layouts.app_new')]
     public function render()
     {
-        $plans = Plan::with(['features'])
-            ->active()
-            ->orderBy('price_monthly')
-            ->get();
+        $allPlans = Cache::flexible('all_plans_for_home', [now()->addDay(), now()->addWeek()], function () {
+            return Plan::with(['features'])
+                ->active()
+                ->orderBy('price_monthly')
+                ->get();
+        });
+
+        $plans = $allPlans->where('is_enterprise', false);
+        $enterprisePlans = $allPlans->where('is_enterprise', true);
 
         return view('livewire.frontend.home-controller', [
             'plans' => $plans,
+            'enterprisePlans' => $enterprisePlans,
         ]);
     }
 

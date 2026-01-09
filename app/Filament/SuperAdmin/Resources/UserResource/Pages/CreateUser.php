@@ -12,6 +12,7 @@ use App\Services\RolesAndPermissionsService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CreateUser extends CreateRecord
 {
@@ -21,9 +22,9 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Store plain password temporarily for notification
-        if (isset($data['password'])) {
-            $this->plainPassword = $data['password'];
+        // If password is not provided, generate a random one
+        if (empty($data['password'])) {
+            $data['password'] = Str::password(12);
         }
 
         // Extract Gym Data
@@ -64,7 +65,7 @@ class CreateUser extends CreateRecord
             DB::commit();
 
             // Send welcome notification
-            // $this->sendWelcomeNotification($user);
+            $this->sendWelcomeNotification($user);
 
             // Notify SuperAdmins about new gym owner
             $this->notifySuperAdmins($user);
@@ -125,11 +126,13 @@ class CreateUser extends CreateRecord
 
     protected function sendWelcomeNotification(User $user): void
     {
-        // Send welcome email with credentials
-        $user->notify(new \App\Notifications\UserActionNotification(
-            'created',
+        // Generate password reset token
+        $token = \Illuminate\Support\Facades\Password::broker()->createToken($user);
+
+        // Send welcome email with password reset link
+        $user->notify(new \App\Notifications\GymOwnerWelcomeNotification(
             $user,
-            "Your gym management account has been created.\n\nLogin Credentials:\nEmail: {$user->email}\nPassword: {$this->plainPassword}\n\nPlease login and change your password."
+            $token
         ));
     }
 
@@ -166,7 +169,4 @@ class CreateUser extends CreateRecord
             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         }
     }
-
-    /** @var string|null */
-    private $plainPassword;
 }

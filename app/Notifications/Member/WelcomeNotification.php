@@ -52,8 +52,8 @@ class WelcomeNotification extends Notification implements HasGymContext
 
         // Attach invoice if exists on the latest payment
         $latestPayment = $this->member->latestPayment;
-        if ($latestPayment && $latestPayment->invoice_path && \Illuminate\Support\Facades\Storage::exists($latestPayment->invoice_path)) {
-            $mail->attach(\Illuminate\Support\Facades\Storage::path($latestPayment->invoice_path), [
+        if ($latestPayment && $latestPayment->invoice_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($latestPayment->invoice_path)) {
+            $mail->attach(\Illuminate\Support\Facades\Storage::disk('local')->path($latestPayment->invoice_path), [
                 'as' => $latestPayment->invoice_number . '.pdf',
                 'mime' => 'application/pdf',
             ]);
