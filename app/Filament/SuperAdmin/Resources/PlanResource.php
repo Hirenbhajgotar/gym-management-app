@@ -95,6 +95,10 @@ class PlanResource extends Resource
                                 )
                                 ->hint("Preview available below")
                                 ->live(onBlur: true),
+                            Forms\Components\Toggle::make("is_enterprise")
+                                ->label("Enterprise Plan")
+                                ->helperText("Check this for enterprise pricing (Contact Us)")
+                                ->reactive(),
                         ])
                         ->columns(2),
                     Forms\Components\Tabs\Tab::make("Pricing")
@@ -186,6 +190,7 @@ class PlanResource extends Resource
                 ) {
                     if (
                         $get("is_active") &&
+                        !$get("is_enterprise") &&
                         !$get("price_monthly") &&
                         !$get("price_yearly")
                     ) {
@@ -194,7 +199,7 @@ class PlanResource extends Resource
                             ->warning()
                             ->title("Price Required")
                             ->body(
-                                "At least one price (monthly or yearly) is required for an active plan.",
+                                "At least one price (monthly or yearly) is required for an active plan (unless Enterprise).",
                             )
                             ->send();
                     }
@@ -220,6 +225,7 @@ class PlanResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make("currency"),
                 Tables\Columns\ToggleColumn::make("is_active"),
+                Tables\Columns\ToggleColumn::make("is_enterprise"),
                 Tables\Columns\TextColumn::make("trial_days")
                     ->numeric()
                     ->sortable(),

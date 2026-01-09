@@ -59,12 +59,14 @@ class Plan extends Model
         'is_active',
         'trial_days',
         'badge',
+        'is_enterprise',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'is_enterprise' => 'boolean',
             'price_monthly' => 'decimal:2',
             'price_yearly' => 'decimal:2',
             'currency' => Currency::class,

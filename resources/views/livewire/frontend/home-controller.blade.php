@@ -621,10 +621,10 @@
                 <p class="text-xl text-gray-300">Choose the perfect plan for your gym business</p>
             </div>
 
-            <div class="grid md:grid-cols-3 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <div class="flex flex-wrap justify-center gap-8 max-w-7xl mx-auto">
                 @foreach ($plans as $index => $plan)
                     <div
-                        class="group bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border {{ !empty($plan->badge) ? 'border-purple-500/50' : 'border-gray-700/50' }} rounded-2xl p-8 hover:border-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-400 hover:shadow-2xl hover:shadow-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-500/20 hover:transform hover:scale-105 transition-all duration-500 relative">
+                        class="relative w-full md:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)] min-w-[300px] group bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border {{ !empty($plan->badge) ? 'border-purple-500/50' : 'border-gray-700/50' }} rounded-2xl p-8 hover:border-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-400 hover:shadow-2xl hover:shadow-{{ !empty($plan->badge) ? 'purple' : 'cyan' }}-500/20 hover:-translate-y-2 transition-all duration-500 flex flex-col">
                         @if (!empty($plan->badge))
                             <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                                 <span
@@ -655,7 +655,7 @@
                             </div>
                         @endif
 
-                        <div class="mb-8">
+                        <div class="mb-8 flex-grow">
                             <p class="text-gray-300 mb-4 group-hover:text-gray-200 transition-colors">{{ $plan->brief_description }}</p>
                             <ul class="space-y-3 text-sm">
                                 @foreach ($plan->features as $feature)
@@ -671,16 +671,115 @@
                             </ul>
                         </div>
 
-                        <button wire:click="selectPlan({{ $plan->id }})"
-                            class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50' : 'border-2 border-gray-600 hover:border-cyan-400 hover:bg-cyan-400/10 text-white' }} rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
-                            <span wire:loading.remove wire:target="selectPlan({{ $plan->id }})">
-                                {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
-                            </span>
-                            <x-loading-icon target="selectPlan({{ $plan->id }})" variant="text" name="Loading" />
-                        </button>
+                        <div class="mt-auto">
+                            <button wire:click="selectPlan({{ $plan->id }})"
+                                class="w-full py-3 {{ !empty($plan->badge) ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50' : 'border-2 border-gray-600 hover:border-cyan-400 hover:bg-cyan-400/10 text-white' }} rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+                                <span wire:loading.remove wire:target="selectPlan({{ $plan->id }})">
+                                    {{ $plan->hasTrial() ? 'Start Free Trial' : ($plan->isFree() ? 'Get Started' : 'Choose Plan') }}
+                                </span>
+                                <x-loading-icon target="selectPlan({{ $plan->id }})" variant="text" name="Loading" />
+                            </button>
+                        </div>
                     </div>
                 @endforeach
             </div>
+
+            <!-- Enterprise Pricing Section -->
+            @if(isset($enterprisePlans) && $enterprisePlans->count() > 0)
+                <div class="mt-16 lg:mt-24 animate-fade-in px-4">
+                    @foreach($enterprisePlans as $enterprisePlan)
+                        <div class="relative max-w-7xl mx-auto rounded-[2.5rem] p-[2px] bg-gradient-to-r from-purple-500/50 via-cyan-500/50 to-purple-500/50 group hover:scale-[1.01] transition-all duration-500 shadow-2xl shadow-purple-900/20">
+                            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-cyan-500/20 to-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            
+                            <div class="relative bg-gray-900/95 backdrop-blur-xl rounded-[2.4rem] overflow-hidden">
+                                <!-- Background Ambient Glow -->
+                                <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+                                <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+                                <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+
+                                <div class="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center gap-10 lg:gap-16 p-8 md:p-12 lg:p-16">
+                                    
+                                    <!-- Left Content -->
+                                    <div class="flex-1 flex flex-col justify-center text-center lg:text-left">
+                                        <div class="inline-flex items-center gap-3 mb-6 justify-center lg:justify-start">
+                                            <span class="px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 shadow-sm">
+                                                {{ $enterprisePlan->badge ?? 'ENTERPRISE' }}
+                                            </span>
+                                        </div>
+
+                                        <h3 class="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
+                                            {{ $enterprisePlan->name }}
+                                        </h3>
+                                        
+                                        <div class="prose prose-lg prose-invert text-gray-400 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                                            {!! $enterprisePlan->description ?? $enterprisePlan->brief_description !!}
+                                        </div>
+                                        
+                                        @if($enterprisePlan->features->count() > 0)
+                                            <div class="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-left">
+                                                @foreach($enterprisePlan->features as $feature)
+                                                    <div class="flex items-center gap-3 group/feature p-2 rounded-lg hover:bg-white/5 transition-colors duration-300">
+                                                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 p-[1px]">
+                                                            <div class="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
+                                                                <svg class="w-3.5 h-3.5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" stroke="url(#gradient-{{ $loop->parent->index }}-{{ $loop->index }})" />
+                                                                    <defs>
+                                                                        <linearGradient id="gradient-{{ $loop->parent->index }}-{{ $loop->index }}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                                            <stop offset="0%" style="stop-color:#a855f7" />
+                                                                            <stop offset="100%" style="stop-color:#06b6d4" />
+                                                                        </linearGradient>
+                                                                    </defs>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                        <span class="text-gray-300 font-medium group-hover/feature:text-white transition-colors">{!! $feature->brief_description !!}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <!-- Right CTA Card -->
+                                    <div class="flex-shrink-0 w-full lg:w-[26rem]">
+                                        <div class="h-full bg-gradient-to-b from-gray-800/80 to-gray-900/80 backdrop-blur-md rounded-3xl border border-gray-700/50 p-8 flex flex-col items-center justify-center text-center shadow-xl relative overflow-hidden group/card">
+                                            <!-- Hover effect for card -->
+                                            <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-cyan-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"></div>
+
+                                            <p class="text-gray-400 font-medium mb-3 relative z-10">Tailored for large chains</p>
+                                            <div class="text-4xl font-bold text-white mb-8 tracking-tight relative z-10">Custom Pricing</div>
+                                            
+                                            <a href="#contact" class="relative w-full group/btn overflow-hidden rounded-xl">
+                                                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-600 to-cyan-600 transition-all duration-300 group-hover/btn:scale-105 group-hover/btn:brightness-110"></div>
+                                                <div class="relative px-8 py-4 flex items-center justify-center gap-3 text-white font-bold text-lg">
+                                                    <span>{{ $enterprisePlan->badge == 'Call Us' ? 'Call Now' : 'Contact Sales' }}</span>
+                                                    <svg class="w-5 h-5 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                                    </svg>
+                                                </div>
+                                            </a>
+                                            
+                                            <div class="mt-6 flex items-center justify-center gap-6 text-sm text-gray-500 relative z-10">
+                                                <div class="flex items-center gap-1.5">
+                                                    <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Priority Support
+                                                </div>
+                                                <div class="flex items-center gap-1.5">
+                                                    <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                    Custom Setup
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </section>
 
