@@ -722,7 +722,7 @@
                                                         <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 p-[1px]">
                                                             <div class="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
                                                                 <svg class="w-3.5 h-3.5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" stroke="url(#gradient-{{ $loop->parent->index }}-{{ $loop->index }})" />
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" stroke="url(#gradient-enterprise-{{ $loop->parent->index }}-{{ $loop->index }})" />
                                                                     <defs>
                                                                         <linearGradient id="gradient-enterprise-{{ $loop->parent->index }}-{{ $loop->index }}" x1="0%" y1="0%" x2="100%" y2="0%">
                                                                             <stop offset="0%" style="stop-color:#a855f7" />
