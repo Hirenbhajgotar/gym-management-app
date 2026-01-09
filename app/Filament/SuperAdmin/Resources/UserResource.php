@@ -417,7 +417,7 @@ class UserResource extends Resource
         ];
     }
 
-    private static function sentAccountActivateNotification(User $user): void
+    private static function sendAccountActivateNotification(User $user): void
     {
         if ($user) {
             try {
@@ -438,7 +438,7 @@ class UserResource extends Resource
         }
     }
 
-    private static function sentAccountDeactivateNotification(User $user): void
+    private static function sendAccountDeactivateNotification(User $user): void
     {
         if ($user) {
             try {
@@ -465,9 +465,9 @@ class UserResource extends Resource
 
         if ($isGymOwner) {
             if ($isActive) {
-                self::sentAccountActivateNotification($user);
+                self::sendAccountActivateNotification($user);
             } else {
-                self::sentAccountDeactivateNotification($user);
+                self::sendAccountDeactivateNotification($user);
             }
         }
     }
