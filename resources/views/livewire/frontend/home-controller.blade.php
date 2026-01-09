@@ -19,14 +19,14 @@
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
                         <button wire:click="startFreeTrial" wire:loading.attr="disabled"
-                            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
+                            class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                             <span wire:loading.remove wire:target="startFreeTrial">Start a Free Trial</span>
                             <span wire:loading wire:target="startFreeTrial">Starting...</span>
                         </button>
-                        <x-frontend.modal size="xl">
+                        <x-frontend.modal size="xl" triggerClass="w-full sm:w-auto inline-block">
                             <x-slot:trigger>
                                 <button
-                                    class="px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold cursor-pointer">
+                                    class="w-full sm:w-auto px-8 py-4 border border-white/20 rounded-xl hover:bg-white/10 transition-all duration-300 text-lg font-semibold cursor-pointer">
                                     Watch Demo
                                 </button>
                             </x-slot:trigger>
