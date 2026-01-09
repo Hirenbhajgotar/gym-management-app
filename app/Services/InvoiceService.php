@@ -55,7 +55,7 @@ class InvoiceService
 
     private function invoiceExists(Payment|MemberPayment $payment): bool
     {
-        return $payment->invoice_path && Storage::exists($payment->invoice_path);
+        return $payment->invoice_path && Storage::disk('local')->exists($payment->invoice_path);
     }
 
     private function ensureInvoiceNumber(Payment|MemberPayment $payment): void
@@ -105,7 +105,7 @@ class InvoiceService
 
     private function ensureInvoiceExists(Payment|MemberPayment $payment): void
     {
-        if (! $payment->invoice_path || ! Storage::exists($payment->invoice_path)) {
+        if (! $payment->invoice_path || ! Storage::disk('local')->exists($payment->invoice_path)) {
             if ($payment instanceof MemberPayment) {
                 $this->generateMemberInvoice($payment);
             } else {
