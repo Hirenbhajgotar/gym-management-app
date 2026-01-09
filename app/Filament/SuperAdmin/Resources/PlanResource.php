@@ -224,12 +224,21 @@ class PlanResource extends Resource
                     ->money(fn($record) => $record->currency->value)
                     ->sortable(),
                 Tables\Columns\TextColumn::make("currency"),
-                Tables\Columns\ToggleColumn::make("is_active"),
-                Tables\Columns\ToggleColumn::make("is_enterprise"),
+                Tables\Columns\ToggleColumn::make("is_active")
+                    ->afterStateUpdated(function () {
+                        cache()->forget('all_plans_for_home');
+                    }),
+                Tables\Columns\ToggleColumn::make("is_enterprise")
+                    ->afterStateUpdated(function () {
+                        cache()->forget('all_plans_for_home');
+                    }),
                 Tables\Columns\TextColumn::make("trial_days")
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextInputColumn::make("badge"),
+                Tables\Columns\TextInputColumn::make("badge")
+                    ->afterStateUpdated(function () {
+                        cache()->forget('all_plans_for_home');
+                    }),
                 Tables\Columns\TextColumn::make("created_at")
                     ->dateTime()
                     ->sortable()
@@ -242,11 +251,17 @@ class PlanResource extends Resource
             ->filters([Tables\Filters\TernaryFilter::make("is_active")])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function () {
+                        cache()->forget('all_plans_for_home');
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->after(function () {
+                            cache()->forget('all_plans_for_home');
+                        }),
                 ]),
             ]);
     }
