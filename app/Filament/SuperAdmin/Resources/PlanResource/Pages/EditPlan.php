@@ -12,20 +12,11 @@ class EditPlan extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\DeleteAction::make()->after(function () {
-                cache()->forget('all_plans_for_home');
-            }),
-        ];
-    }
-
-    protected function afterSave(): void
-    {
-        cache()->forget('all_plans_for_home');
+        return [Actions\DeleteAction::make()];
     }
 
     protected function getRedirectUrl(): string
     {
-        return PlanResource::getUrl("index");
+        return PlanResource::getUrl('index');
     }
 }

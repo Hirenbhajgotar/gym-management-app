@@ -14,9 +14,6 @@ class MemberMeasurementObserver
     public function created(MemberMeasurement $memberMeasurement): void
     {
         $this->clearChartCache($memberMeasurement);
-
-        // Notification removed to prevent duplication with Filament actions
-
     }
 
     /**
@@ -25,9 +22,6 @@ class MemberMeasurementObserver
     public function updated(MemberMeasurement $memberMeasurement): void
     {
         $this->clearChartCache($memberMeasurement);
-
-        // Notification removed to prevent duplication with Filament actions
-
     }
 
     /**
@@ -36,9 +30,6 @@ class MemberMeasurementObserver
     public function deleted(MemberMeasurement $memberMeasurement): void
     {
         $this->clearChartCache($memberMeasurement);
-
-        // Notification removed to prevent duplication with Filament actions
-
     }
 
     /**
@@ -47,9 +38,6 @@ class MemberMeasurementObserver
     public function restored(MemberMeasurement $memberMeasurement): void
     {
         $this->clearChartCache($memberMeasurement);
-
-        // Notification removed to prevent duplication with Filament actions
-
     }
 
     /**
@@ -58,9 +46,6 @@ class MemberMeasurementObserver
     public function forceDeleted(MemberMeasurement $memberMeasurement): void
     {
         $this->clearChartCache($memberMeasurement);
-
-        // Notification removed to prevent duplication with Filament actions
-
     }
 
     /**

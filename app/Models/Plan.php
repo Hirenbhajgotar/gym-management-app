@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Currency;
+use App\Observers\PlanObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +48,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @mixin \Eloquent
  * @mixin IdeHelperPlan
  */
+#[ObservedBy([PlanObserver::class])]
 class Plan extends Model
 {
     protected $fillable = [
