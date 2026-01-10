@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
+use App\Observers\ErrorReportObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\User|null $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport autoReported()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport frequent()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport highPriority()
@@ -53,9 +56,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserId($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperErrorReport
  */
+#[ObservedBy([ErrorReportObserver::class])]
 class ErrorReport extends Model
 {
     use HasFactory;
@@ -124,13 +129,14 @@ class ErrorReport extends Model
     {
         return $query->where('occurred_at', '>', now()->subDay());
     }
+
     public function toMarkdown(): string
     {
         $markdown = "### Error: {$this->error_message}\n\n";
         $markdown .= "**Type:** {$this->error_type}\n";
-        $markdown .= "**Status:** " . ($this->status?->value ?? 'N/A') . "\n";
-        $markdown .= "**Priority:** " . ($this->priority?->value ?? 'N/A') . "\n";
-        $markdown .= "**Occurred:** " . ($this->occurred_at?->toDateTimeString() ?? 'N/A') . "\n\n";
+        $markdown .= '**Status:** ' . ($this->status?->value ?? 'N/A') . "\n";
+        $markdown .= '**Priority:** ' . ($this->priority?->value ?? 'N/A') . "\n";
+        $markdown .= '**Occurred:** ' . ($this->occurred_at?->toDateTimeString() ?? 'N/A') . "\n\n";
 
         if ($this->user) {
             $markdown .= "**User:** {$this->user->name} ({$this->user->email})\n\n";

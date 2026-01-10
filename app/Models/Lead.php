@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Observers\LeadObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -72,6 +74,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @mixin \Eloquent
  * @mixin IdeHelperLead
  */
+#[ObservedBy([LeadObserver::class])]
 class Lead extends Model implements Sortable
 {
     use HasFactory, SortableTrait;

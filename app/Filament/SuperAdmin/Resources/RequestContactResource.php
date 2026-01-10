@@ -15,6 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class RequestContactResource extends Resource
 {
@@ -85,9 +86,11 @@ class RequestContactResource extends Resource
      */
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getBadgeData()['count'];
+        return Cache::flexible('request_contact_navigation_badge_count_' . auth()->id(), [now()->addHours(6), now()->addWeek()], function () {
+            $count = self::getBadgeData()['count'];
 
-        return $count > 0 ? (string) $count : null;
+            return $count > 0 ? (string) $count : null;
+        });
     }
 
     /**
