@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
 
@@ -20,10 +21,8 @@ class ParserHelper
      *
      * @throws InvalidArgumentException
      */
-    public static function formatPhoneNumberWithCountryCode(
-        string|Stringable $phone,
-        $defaultCountryCode = null,
-    ): string {
+    public static function formatPhoneNumberWithCountryCode(string|Stringable $phone, $defaultCountryCode = null): string
+    {
         $phone = (string) $phone;
 
         // 1. Strip everything that is not a digit or a leading "+"
@@ -61,5 +60,10 @@ class ParserHelper
         }
 
         return "{$months} " . ($months === 1 ? 'Month' : 'Months');
+    }
+
+    public static function clearCache(string $key): void
+    {
+        Cache::forget($key);
     }
 }

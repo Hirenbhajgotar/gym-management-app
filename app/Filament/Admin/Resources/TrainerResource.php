@@ -17,6 +17,7 @@ use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
@@ -38,10 +39,12 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $modelClass = static::$model;
-        $query = $modelClass::query();
+        return Cache::flexible('trainer_navigation_badge_count_' . Auth::id(), [now()->addHour(6), now()->addWeek()], function () {
+            $modelClass = static::$model;
+            $query = $modelClass::query();
 
-        return $query->count();
+            return $query->count();
+        });
     }
 
     // public static function getEloquentQuery(): Builder

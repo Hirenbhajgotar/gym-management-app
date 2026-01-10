@@ -19,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
@@ -32,10 +33,12 @@ class LeadResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $modelClass = static::$model;
-        $query = $modelClass::query()->where('status', LeadStatus::NEW);
+        return Cache::flexible('lead_navigation_badge_count_' . auth()->id(), [now()->addHours(6), now()->addWeek()], function () {
+            $modelClass = static::$model;
+            $query = $modelClass::query()->where('status', LeadStatus::NEW);
 
-        return $query->count();
+            return $query->count();
+        });
     }
 
     public static function form(Form $form): Form

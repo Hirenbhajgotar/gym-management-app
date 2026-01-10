@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
+use App\Helpers\ParserHelper;
 use App\Models\Plan;
-use Illuminate\Support\Facades\Cache;
 
 class PlanObserver
 {
@@ -49,6 +49,11 @@ class PlanObserver
 
     protected function clearCache(): void
     {
-        Cache::forget('all_plans_for_home');
+        ParserHelper::clearCache('all_plans_for_home');
+        ParserHelper::clearCache('profile_all_plans');
+
+        if (auth()->check()) {
+            ParserHelper::clearCache('plan_navigation_badge_count_' . auth()->id());
+        }
     }
 }
