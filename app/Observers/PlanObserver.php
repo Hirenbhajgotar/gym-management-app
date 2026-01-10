@@ -50,6 +50,7 @@ class PlanObserver
     protected function clearCache(): void
     {
         ParserHelper::clearCache('all_plans_for_home');
+        ParserHelper::clearCache('profile_all_plans');
 
         if (auth()->check()) {
             ParserHelper::clearCache('plan_navigation_badge_count_' . auth()->id());
