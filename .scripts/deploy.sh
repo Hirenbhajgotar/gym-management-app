@@ -31,8 +31,10 @@ php artisan db:seed --class=PermissionDescriptionSeeder
 
 # Restart queue workers after deployment
 echo "Restarting queue workers..."
-# sudo supervisorctl restart laravel-worker:* || true
-php artisan queue:restart
+# php artisan queue:restart
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl restart laravel-worker:* || true
 
 # Clearing Cache
 echo "Clearing Cache..."
