@@ -24,6 +24,14 @@ npm run build
 echo "Running database migrations..."
 php artisan migrate --force
 
+# Clearing Cache
+echo "Clearing Cache..."
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan filament:clear
+
 # Running database seeder for roles and permissions
 echo "Running database seeder for roles and permissions..."
 php artisan db:seed --class=RolesAndPermissionsSeeder
@@ -35,11 +43,6 @@ echo "Restarting queue workers..."
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl restart laravel-worker:* || true
-
-# Clearing Cache
-echo "Clearing Cache..."
-php artisan optimize:clear
-php artisan filament:clear
 
 # Recreate cache
 echo "Recreating cache..."
