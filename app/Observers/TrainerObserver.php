@@ -12,7 +12,7 @@ class TrainerObserver
      */
     public function created(Trainer $trainer): void
     {
-        $this->clearCache();
+        $this->clearCache($trainer);
     }
 
     /**
@@ -20,7 +20,7 @@ class TrainerObserver
      */
     public function updated(Trainer $trainer): void
     {
-        $this->clearCache();
+        $this->clearCache($trainer);
     }
 
     /**
@@ -28,7 +28,7 @@ class TrainerObserver
      */
     public function deleted(Trainer $trainer): void
     {
-        $this->clearCache();
+        $this->clearCache($trainer);
     }
 
     /**
@@ -36,7 +36,7 @@ class TrainerObserver
      */
     public function restored(Trainer $trainer): void
     {
-        $this->clearCache();
+        $this->clearCache($trainer);
     }
 
     /**
@@ -44,13 +44,11 @@ class TrainerObserver
      */
     public function forceDeleted(Trainer $trainer): void
     {
-        $this->clearCache();
+        $this->clearCache($trainer);
     }
 
-    private function clearCache(): void
+    private function clearCache(Trainer $trainer): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('trainer_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(Trainer::NAVIGATION_BADGE_CACHE_KEY . $trainer->gym_id);
     }
 }

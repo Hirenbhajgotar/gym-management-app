@@ -65,6 +65,8 @@ class ErrorReport extends Model
 {
     use HasFactory;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'error_report_navigation_badge_count';
+
     protected $fillable = [
         'user_id',
         'error_type',

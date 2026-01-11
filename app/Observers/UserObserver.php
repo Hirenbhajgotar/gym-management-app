@@ -18,7 +18,7 @@ class UserObserver
      */
     public function created(User $user): void
     {
-        $this->clearCache();
+        $this->clearCache($user);
     }
 
     /**
@@ -26,7 +26,7 @@ class UserObserver
      */
     public function updated(User $user): void
     {
-        $this->clearCache();
+        $this->clearCache($user);
     }
 
     /**
@@ -34,7 +34,7 @@ class UserObserver
      */
     public function deleted(User $user): void
     {
-        $this->clearCache();
+        $this->clearCache($user);
     }
 
     /**
@@ -42,7 +42,7 @@ class UserObserver
      */
     public function restored(User $user): void
     {
-        $this->clearCache();
+        $this->clearCache($user);
     }
 
     /**
@@ -62,7 +62,7 @@ class UserObserver
      */
     public function forceDeleting(User $user): void
     {
-        $this->clearCache();
+        $this->clearCache($user);
 
         // Only cascade delete if user is a gym_owner
         if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {
@@ -208,10 +208,9 @@ class UserObserver
         }
     }
 
-    private function clearCache(): void
+    private function clearCache(User $user): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('users_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(User::NAVIGATION_BADGE_CACHE_KEY);
+        ParserHelper::clearCache(User::ALL_SUPER_ADMINS_CACHE_KEY);
     }
 }

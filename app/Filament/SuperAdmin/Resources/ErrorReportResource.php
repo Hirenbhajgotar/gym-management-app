@@ -186,7 +186,7 @@ class ErrorReportResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible('error_report_navigation_badge_count_' . auth()->id(), [now()->addHours(6), now()->addWeek()], function () {
+        return Cache::flexible(ErrorReport::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
             $count = self::getBadgeData()['count'];
 
             return $count > 0 ? (string) $count : null;

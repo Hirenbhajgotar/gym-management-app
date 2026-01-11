@@ -79,6 +79,10 @@ class Lead extends Model implements Sortable
 {
     use HasFactory, SortableTrait;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'lead_navigation_badge_count_';
+
+    public const DASHBOARD_CRM_STATS_WIDGET = 'dashboard_crm_stats_widget_';
+
     protected $fillable = [
         'gym_id',
         'membership_plan_id',

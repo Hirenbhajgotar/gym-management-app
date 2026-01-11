@@ -64,6 +64,8 @@ class Trainer extends Model
     /** @use HasFactory<\Database\Factories\TrainerFactory> */
     use HasFactory;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'trainer_navigation_badge_count_';
+
     protected $fillable = [
         'gym_id',
         'name',

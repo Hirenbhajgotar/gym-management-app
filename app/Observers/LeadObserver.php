@@ -12,7 +12,7 @@ class LeadObserver
      */
     public function created(Lead $lead): void
     {
-        $this->clearCache();
+        $this->clearCache($lead);
     }
 
     /**
@@ -20,7 +20,7 @@ class LeadObserver
      */
     public function updated(Lead $lead): void
     {
-        $this->clearCache();
+        $this->clearCache($lead);
     }
 
     /**
@@ -28,7 +28,7 @@ class LeadObserver
      */
     public function deleted(Lead $lead): void
     {
-        $this->clearCache();
+        $this->clearCache($lead);
     }
 
     /**
@@ -36,7 +36,7 @@ class LeadObserver
      */
     public function restored(Lead $lead): void
     {
-        $this->clearCache();
+        $this->clearCache($lead);
     }
 
     /**
@@ -44,13 +44,12 @@ class LeadObserver
      */
     public function forceDeleted(Lead $lead): void
     {
-        $this->clearCache();
+        $this->clearCache($lead);
     }
 
-    private function clearCache(): void
+    private function clearCache(Lead $lead): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('lead_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(Lead::NAVIGATION_BADGE_CACHE_KEY . $lead->gym_id);
+        ParserHelper::clearCache(Lead::DASHBOARD_CRM_STATS_WIDGET . $lead->gym_id);
     }
 }

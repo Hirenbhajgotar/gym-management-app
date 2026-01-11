@@ -34,6 +34,8 @@ class RequestContact extends Model
 {
     use HasFactory;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'request_contact_navigation_badge_count';
+
     protected $fillable = [
         'name',
         'email',

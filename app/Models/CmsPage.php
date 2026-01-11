@@ -12,6 +12,10 @@ class CmsPage extends Model
 {
     use HasFactory;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'cms_page_navigation_badge_count';
+
+    public const CMS_PAGE_CACHE_KEY = 'cms_page_';
+
     protected $fillable = [
         'title',
         'slug',

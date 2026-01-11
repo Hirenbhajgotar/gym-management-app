@@ -124,7 +124,7 @@ class CmsPageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible('cms_page_navigation_badge_count_' . auth()->id(), [now()->addHours(6), now()->addWeek()], function () {
+        return Cache::flexible(CmsPage::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
             return static::getModel()::where('is_published', true)->count();
         });
     }

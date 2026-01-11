@@ -71,7 +71,7 @@ class AddressForm extends Field
                 ->schema([
                     Forms\Components\Select::make('country_id')
                         ->label('Country')
-                        ->options(fn () => \Illuminate\Support\Facades\Cache::flexible('countries_list', [604800, 1209600], function () {
+                        ->options(fn () => \Illuminate\Support\Facades\Cache::flexible(Country::COUNTRIES_LIST_CACHE_KEY, [now()->addDays(7), now()->addDays(14)], function () {
                             return Country::active()->orderBy('name')->pluck('name', 'id');
                         }))
                         ->default($indiaId) // Set India as default
@@ -90,7 +90,7 @@ class AddressForm extends Field
                                 return [];
                             }
 
-                            return \Illuminate\Support\Facades\Cache::flexible('states_of_' . $countryId, [604800, 1209600], function () use ($countryId) {
+                            return \Illuminate\Support\Facades\Cache::flexible(State::STATES_OF_COUNTRY_CACHE_KEY . $countryId, [now()->addDays(7), now()->addDays(14)], function () use ($countryId) {
                                 return State::where('country_id', $countryId)
                                     ->active()
                                     ->orderBy('name', 'asc')
@@ -110,7 +110,7 @@ class AddressForm extends Field
                                 return [];
                             }
 
-                            return \Illuminate\Support\Facades\Cache::flexible('cities_of_' . $stateId, [604800, 1209600], function () use ($stateId) {
+                            return \Illuminate\Support\Facades\Cache::flexible(City::CITIES_OF_STATE_CACHE_KEY . $stateId, [now()->addDays(7), now()->addDays(14)], function () use ($stateId) {
                                 return City::where('state_id', $stateId)
                                     ->active()
                                     ->orderBy('name', 'asc')

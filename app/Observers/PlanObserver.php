@@ -12,7 +12,7 @@ class PlanObserver
      */
     public function created(Plan $plan): void
     {
-        $this->clearCache();
+        $this->clearCache($plan);
     }
 
     /**
@@ -20,7 +20,7 @@ class PlanObserver
      */
     public function updated(Plan $plan): void
     {
-        $this->clearCache();
+        $this->clearCache($plan);
     }
 
     /**
@@ -28,7 +28,7 @@ class PlanObserver
      */
     public function deleted(Plan $plan): void
     {
-        $this->clearCache();
+        $this->clearCache($plan);
     }
 
     /**
@@ -36,7 +36,7 @@ class PlanObserver
      */
     public function restored(Plan $plan): void
     {
-        $this->clearCache();
+        $this->clearCache($plan);
     }
 
     /**
@@ -44,16 +44,13 @@ class PlanObserver
      */
     public function forceDeleted(Plan $plan): void
     {
-        $this->clearCache();
+        $this->clearCache($plan);
     }
 
-    protected function clearCache(): void
+    protected function clearCache(Plan $plan): void
     {
-        ParserHelper::clearCache('all_plans_for_home');
-        ParserHelper::clearCache('profile_all_plans');
-
-        if (auth()->check()) {
-            ParserHelper::clearCache('plan_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(Plan::ALL_PLANS_FOR_HOME_CACHE_KEY);
+        ParserHelper::clearCache(Plan::PROFILE_ALL_PLANS_CACHE_KEY);
+        ParserHelper::clearCache(Plan::NAVIGATION_BADGE_CACHE_KEY);
     }
 }

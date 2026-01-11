@@ -81,6 +81,10 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'users_navigation_badge_count';
+
+    public const ALL_SUPER_ADMINS_CACHE_KEY = 'all_super_admins';
+
     /**
      * The attributes that are mass assignable.
      *

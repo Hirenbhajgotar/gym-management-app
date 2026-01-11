@@ -47,16 +47,12 @@ class GymMemberResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(
-            'gym_member_navigation_badge_count_' . auth()->id(),
-            [now()->addHours(6), now()->addWeek()],
-            function () {
-                $modelClass = static::$model;
-                $query = $modelClass::query();
+        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
+            $modelClass = static::$model;
+            $query = $modelClass::query();
 
-                return $query->count();
-            },
-        );
+            return $query->count();
+        });
     }
 
     // Restrict to admins or gym owners with gyms
