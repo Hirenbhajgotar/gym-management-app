@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Models\Payment;
 use App\Models\Plan;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
@@ -32,7 +33,7 @@ class ProfileController extends Component
 
         // dd($subscription->wasTrial(), $user->hasUsedTrial());
 
-        $allPlans = Cache::flexible('profile_all_plans', [now()->addDay(), now()->addWeek()], function () {
+        $allPlans = Cache::flexible(Plan::PROFILE_ALL_PLANS_CACHE_KEY, [now()->addDay(), now()->addWeek()], function () {
             return Plan::with(['features'])
                 ->where('is_active', true)
                 ->where('is_enterprise', false)
@@ -40,7 +41,7 @@ class ProfileController extends Component
                 ->get();
         });
 
-        $latestPayments = Cache::flexible('profile_latest_payments', [now()->addDay(), now()->addWeek()], function () {
+        $latestPayments = Cache::flexible(Payment::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . auth()->id(), [now()->addDay(), now()->addWeek()], function () {
             return auth()->user()->payments()->latest()->take(5)->get();
         });
 

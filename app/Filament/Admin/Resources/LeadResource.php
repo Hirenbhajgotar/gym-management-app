@@ -33,7 +33,7 @@ class LeadResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible('lead_navigation_badge_count_' . auth()->id(), [now()->addHours(6), now()->addWeek()], function () {
+        return Cache::flexible(Lead::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
             $modelClass = static::$model;
             $query = $modelClass::query()->where('status', LeadStatus::NEW);
 

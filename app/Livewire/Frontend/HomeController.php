@@ -14,7 +14,7 @@ class HomeController extends Component
     #[Layout('frontend.layouts.app_new')]
     public function render()
     {
-        $allPlans = Cache::flexible('all_plans_for_home', [now()->addDay(), now()->addWeek()], function () {
+        $allPlans = Cache::flexible(Plan::ALL_PLANS_FOR_HOME_CACHE_KEY, [now()->addDay(), now()->addWeek()], function () {
             return Plan::with(['features'])
                 ->active()
                 ->orderBy('price_monthly')

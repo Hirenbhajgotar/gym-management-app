@@ -12,7 +12,7 @@ class RequestContactObserver
      */
     public function created(RequestContact $requestContact): void
     {
-        $this->clearCache();
+        $this->clearCache($requestContact);
     }
 
     /**
@@ -20,7 +20,7 @@ class RequestContactObserver
      */
     public function updated(RequestContact $requestContact): void
     {
-        $this->clearCache();
+        $this->clearCache($requestContact);
     }
 
     /**
@@ -28,7 +28,7 @@ class RequestContactObserver
      */
     public function deleted(RequestContact $requestContact): void
     {
-        $this->clearCache();
+        $this->clearCache($requestContact);
     }
 
     /**
@@ -36,7 +36,7 @@ class RequestContactObserver
      */
     public function restored(RequestContact $requestContact): void
     {
-        $this->clearCache();
+        $this->clearCache($requestContact);
     }
 
     /**
@@ -44,13 +44,11 @@ class RequestContactObserver
      */
     public function forceDeleted(RequestContact $requestContact): void
     {
-        $this->clearCache();
+        $this->clearCache($requestContact);
     }
 
-    private function clearCache(): void
+    private function clearCache(RequestContact $requestContact): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('request_contact_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(RequestContact::NAVIGATION_BADGE_CACHE_KEY);
     }
 }

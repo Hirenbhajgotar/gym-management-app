@@ -12,7 +12,7 @@ class ErrorReportObserver
      */
     public function created(ErrorReport $errorReport): void
     {
-        $this->clearCache();
+        $this->clearCache($errorReport);
     }
 
     /**
@@ -20,7 +20,7 @@ class ErrorReportObserver
      */
     public function updated(ErrorReport $errorReport): void
     {
-        $this->clearCache();
+        $this->clearCache($errorReport);
     }
 
     /**
@@ -28,7 +28,7 @@ class ErrorReportObserver
      */
     public function deleted(ErrorReport $errorReport): void
     {
-        $this->clearCache();
+        $this->clearCache($errorReport);
     }
 
     /**
@@ -36,7 +36,7 @@ class ErrorReportObserver
      */
     public function restored(ErrorReport $errorReport): void
     {
-        $this->clearCache();
+        $this->clearCache($errorReport);
     }
 
     /**
@@ -44,13 +44,11 @@ class ErrorReportObserver
      */
     public function forceDeleted(ErrorReport $errorReport): void
     {
-        $this->clearCache();
+        $this->clearCache($errorReport);
     }
 
-    private function clearCache(): void
+    private function clearCache(ErrorReport $errorReport): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('error_report_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(ErrorReport::NAVIGATION_BADGE_CACHE_KEY);
     }
 }

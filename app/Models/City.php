@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\CityObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\State|null $state
+ *
  * @method static Builder<static>|City active()
  * @method static \Database\Factories\CityFactory factory($count = null, $state = [])
  * @method static Builder<static>|City inactive()
@@ -29,12 +32,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static Builder<static>|City whereStateId($value)
  * @method static Builder<static>|City whereStatus($value)
  * @method static Builder<static>|City whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperCity
  */
+#[ObservedBy([CityObserver::class])]
 class City extends Model
 {
     use HasFactory;
+
+    public const CITIES_OF_STATE_CACHE_KEY = 'cities_of_';
 
     protected $fillable = [
         'state_id',

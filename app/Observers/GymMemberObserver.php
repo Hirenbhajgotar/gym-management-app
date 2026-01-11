@@ -13,7 +13,7 @@ class GymMemberObserver
      */
     public function created(GymMember $gymMember): void
     {
-        $this->clearCache();
+        $this->clearCache($gymMember);
 
         if (! $gymMember->profile_photo) {
             $profile_photo = AvatarService::generate($gymMember->name, background: 'random');
@@ -27,7 +27,7 @@ class GymMemberObserver
      */
     public function updated(GymMember $gymMember): void
     {
-        $this->clearCache();
+        $this->clearCache($gymMember);
     }
 
     /**
@@ -35,7 +35,7 @@ class GymMemberObserver
      */
     public function deleted(GymMember $gymMember): void
     {
-        $this->clearCache();
+        $this->clearCache($gymMember);
     }
 
     /**
@@ -43,7 +43,7 @@ class GymMemberObserver
      */
     public function restored(GymMember $gymMember): void
     {
-        $this->clearCache();
+        $this->clearCache($gymMember);
     }
 
     /**
@@ -51,13 +51,12 @@ class GymMemberObserver
      */
     public function forceDeleted(GymMember $gymMember): void
     {
-        $this->clearCache();
+        $this->clearCache($gymMember);
     }
 
-    private function clearCache(): void
+    private function clearCache(GymMember $gymMember): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('gym_member_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(GymMember::NAVIGATION_BADGE_CACHE_KEY . $gymMember->gym_id);
+        ParserHelper::clearCache(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $gymMember->id);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\GymMemberResource\Widgets;
 
 use App\Helpers\BmiHelper;
+use App\Models\GymMember;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -23,7 +24,7 @@ class MemberProgressChart extends ChartWidget
     public function refreshChart(): void
     {
         if ($this->record) {
-            Cache::forget("member_weight_progress_{$this->record->id}");
+            Cache::forget(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $this->record->id);
         }
 
         $this->updateChartData();
@@ -42,7 +43,7 @@ class MemberProgressChart extends ChartWidget
 
         // Cache key based on member ID and latest measurement update
         // We use flexible cache: fresh for 1 hour, stale allowed for 1 week
-        return Cache::flexible("member_weight_progress_{$record->id}", [3600, 604800], function () use ($record) {
+        return Cache::flexible(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $record->id, [3600, 604800], function () use ($record) {
             $measurements = $record->measurements()
                 ->orderBy('measured_at')
                 ->get();

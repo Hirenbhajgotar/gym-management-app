@@ -21,7 +21,7 @@ class CmsPageController extends Component
     {
         $slug = $this->slug;
 
-        $page = Cache::flexible('cms_page_' . $slug, [86400, 172800], function () use ($slug) {
+        $page = Cache::flexible(CmsPage::CMS_PAGE_CACHE_KEY . $slug, [86400, 172800], function () use ($slug) {
             return CmsPage::where('slug', $slug)
                 ->where('is_published', true)
                 ->firstOrFail();

@@ -12,7 +12,7 @@ class CmsPageObserver
      */
     public function created(CmsPage $cmsPage): void
     {
-        $this->clearCache();
+        $this->clearCache($cmsPage);
     }
 
     /**
@@ -20,7 +20,7 @@ class CmsPageObserver
      */
     public function updated(CmsPage $cmsPage): void
     {
-        $this->clearCache();
+        $this->clearCache($cmsPage);
     }
 
     /**
@@ -28,7 +28,7 @@ class CmsPageObserver
      */
     public function deleted(CmsPage $cmsPage): void
     {
-        $this->clearCache();
+        $this->clearCache($cmsPage);
     }
 
     /**
@@ -36,7 +36,7 @@ class CmsPageObserver
      */
     public function restored(CmsPage $cmsPage): void
     {
-        $this->clearCache();
+        $this->clearCache($cmsPage);
     }
 
     /**
@@ -44,13 +44,12 @@ class CmsPageObserver
      */
     public function forceDeleted(CmsPage $cmsPage): void
     {
-        $this->clearCache();
+        $this->clearCache($cmsPage);
     }
 
-    private function clearCache(): void
+    private function clearCache(CmsPage $cmsPage): void
     {
-        if (auth()->check()) {
-            ParserHelper::clearCache('cms_page_navigation_badge_count_' . auth()->id());
-        }
+        ParserHelper::clearCache(CmsPage::NAVIGATION_BADGE_CACHE_KEY);
+        ParserHelper::clearCache(CmsPage::CMS_PAGE_CACHE_KEY . $cmsPage->slug);
     }
 }

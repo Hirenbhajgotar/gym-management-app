@@ -3,7 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\BusinessType;
+use App\Models\City;
+use App\Models\Country;
 use App\Models\Plan;
+use App\Models\State;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -85,8 +88,8 @@ class GymOwnerRegister extends Component
     #[Computed]
     public function countries()
     {
-        return Cache::flexible('countries', [604800, 1209600], function () {
-            return \App\Models\Country::where('name', 'like', '%')->orderBy('name')->pluck('name', 'id');
+        return Cache::flexible(Country::COUNTRIES_LIST_CACHE_KEY, [now()->addDays(7), now()->addDays(14)], function () {
+            return Country::active()->orderBy('name')->pluck('name', 'id');
         });
     }
 
@@ -97,8 +100,8 @@ class GymOwnerRegister extends Component
             return [];
         }
 
-        return Cache::flexible('states_' . $this->address['country_id'], [604800, 1209600], function () {
-            return \App\Models\State::where('country_id', $this->address['country_id'])
+        return Cache::flexible(State::STATES_OF_COUNTRY_CACHE_KEY . $this->address['country_id'], [now()->addDays(7), now()->addDays(14)], function () {
+            return State::where('country_id', $this->address['country_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');
@@ -112,8 +115,8 @@ class GymOwnerRegister extends Component
             return [];
         }
 
-        return Cache::flexible('cities_' . $this->address['state_id'], [604800, 1209600], function () {
-            return \App\Models\City::where('state_id', $this->address['state_id'])
+        return Cache::flexible(City::CITIES_OF_STATE_CACHE_KEY . $this->address['state_id'], [now()->addDays(7), now()->addDays(14)], function () {
+            return City::where('state_id', $this->address['state_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');
