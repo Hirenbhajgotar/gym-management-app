@@ -13,7 +13,7 @@ class CRMStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . Filament::getTenant()->id, [10, 20], function () {
+        return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . Filament::getTenant()->id, [now()->addHour(), now()->addHours(24)], function () {
             return [
                 Stat::make('New Leads', Lead::where('status', 'new')->count())
                     ->description('Total new leads')
