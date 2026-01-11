@@ -50,5 +50,6 @@ class LeadObserver
     private function clearCache(Lead $lead): void
     {
         ParserHelper::clearCache(Lead::NAVIGATION_BADGE_CACHE_KEY . $lead->gym_id);
+        ParserHelper::clearCache(Lead::DASHBOARD_CRM_STATS_WIDGET . $lead->gym_id);
     }
 }
