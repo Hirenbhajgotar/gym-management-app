@@ -383,9 +383,8 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
     }
 
-    public function getProductionFromNumber(
-        ?NotificationSetting $settings,
-    ): ?string {
+    public function getProductionFromNumber(?NotificationSetting $settings): ?string
+    {
         if (! $settings) {
             $settings = NotificationSetting::where(
                 'gym_id',
@@ -397,10 +396,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             throw new Exception('No Twilio settings found');
         }
 
-        if (
-            $settings->verification_status !==
-            NotificationVerificationStatusEnum::VERIFIED
-        ) {
+        if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
             throw new Exception('Twilio account not verified');
         }
 

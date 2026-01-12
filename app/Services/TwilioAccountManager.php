@@ -448,9 +448,8 @@ class TwilioAccountManager
      * In sandbox mode: Uses free-form message body
      * In production mode: Uses approved WhatsApp template
      */
-    public function sendTestWhatsAppMessage(
-        NotificationSetting $settings,
-    ): array {
+    public function sendTestWhatsAppMessage(NotificationSetting $settings): array
+    {
         try {
             if (
                 empty($settings->twilio_account_sid) ||
@@ -470,9 +469,7 @@ class TwilioAccountManager
             // Get from number based on sandbox or production
             $fromNumber = $this->useSandbox
                 ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
-                : app(TwilioWhatsAppService::class)->getProductionFromNumber(
-                    $settings,
-                );
+                : app(TwilioWhatsAppService::class)->getProductionFromNumber($settings);
 
             // Get gym name for personalized message
             $gym = \App\Models\Gym::find($settings->gym_id);
@@ -508,19 +505,13 @@ class TwilioAccountManager
             } else {
                 // Production: Use approved template (required for business-initiated messages)
                 // First, try to get template from database
-                $templateManager = new \App\Services\WhatsAppTemplateManager(
-                    $settings->gym_id,
-                );
-                $template = $templateManager->getTemplate(
-                    'whatsapp_integration_active_message',
-                );
+                $templateManager = new WhatsAppTemplateManager($settings->gym_id);
+                $template = $templateManager->getTemplate('whatsapp_integration_active_message');
 
                 // Fallback to config if not in database
                 $templateSid = $template
                     ? $template->template_sid
-                    : config(
-                        'services.twilio.whatsapp_integration_active_template_sid',
-                    );
+                    : config('services.twilio.whatsapp_integration_active_template_sid');
 
                 if (! $templateSid) {
                     // No template available - return helpful error
