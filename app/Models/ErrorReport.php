@@ -67,6 +67,14 @@ class ErrorReport extends Model
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'error_report_navigation_badge_count';
 
+    public const ERROR_REPORT_ALL_COUNT_CACHE_KEY = 'error_reports_all_count';
+
+    public const ERROR_REPORT_PENDING_COUNT_CACHE_KEY = 'error_reports_pending_count';
+
+    public const ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY = 'error_reports_investigating_count';
+
+    public const ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY = 'error_reports_resolved_count';
+
     protected $fillable = [
         'user_id',
         'error_type',
