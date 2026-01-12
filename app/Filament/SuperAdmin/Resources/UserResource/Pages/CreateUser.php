@@ -11,6 +11,7 @@ use App\Notifications\UserActionNotification;
 use App\Services\RolesAndPermissionsService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -41,16 +42,14 @@ class CreateUser extends CreateRecord
         return $data;
     }
 
-    protected function afterCreate(): void
+    protected function handleRecordCreation(array $data): Model
     {
-        /** @var User $user */
-        $user = $this->record;
+        return DB::transaction(function () use ($data) {
+            $user = parent::handleRecordCreation($data);
 
-        // Get the role from form data
-        $role = $this->data['role'] ?? DefaultRole::GYM_OWNER->value;
-
-        try {
-            DB::beginTransaction();
+            // Get the role from form data
+            // Note: $data here is the mutated data, but 'role' key should persist if it was present
+            $role = $data['role'] ?? DefaultRole::GYM_OWNER->value;
 
             // If gym_owner, create gym and associate
             if ($role === DefaultRole::GYM_OWNER->value) {
@@ -62,27 +61,33 @@ class CreateUser extends CreateRecord
                 $user->markEmailAsVerified();
             }
 
-            DB::commit();
+            return $user;
+        });
+    }
 
+    protected function afterCreate(): void
+    {
+        /** @var User $user */
+        $user = $this->record;
+
+        try {
             // Send welcome notification
             $this->sendWelcomeNotification($user);
 
             // Notify SuperAdmins about new gym owner
-            $this->notifySuperAdmins($user);
+            // $this->notifySuperAdmins($user);
 
             // Store feedback cache
             FeedbackHelper::storeFeedbackCache($user?->id, 15);
 
         } catch (\Exception $e) {
-            DB::rollBack();
-
+            // Notifications failing shouldn't rollback the user creation,
+            // but we'll log it and notify admin in UI
             Notification::make()
                 ->danger()
-                ->title('Error Creating Gym Owner')
+                ->title('Error Sending Notifications')
                 ->body($e->getMessage())
                 ->send();
-
-            throw $e;
         }
     }
 
@@ -102,16 +107,10 @@ class CreateUser extends CreateRecord
         }
 
         // Create default roles and permissions for the gym
-        app(
-            RolesAndPermissionsService::class,
-        )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+        app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
         // Assign the gym to the user with proper role
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(
-            $gym,
-            $user,
-            DefaultRole::GYM_OWNER,
-        );
+        app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
         // Associate user with gym through pivot table
         $gym->users()->attach($user->id, [
@@ -144,26 +143,37 @@ class CreateUser extends CreateRecord
         $admins->each(fn (User $admin) => $admin->notify(new UserActionNotification('created', $user, $details)));
     }
 
-    /**
-     * Grant all available permissions to the gym owner.
-     * This ensures they have full access to all resources including Manager, Receptionist, Membership, etc.
-     */
     protected function grantAllPermissionsToGymOwner(User $user, Gym $gym): void
     {
         // Set the permission team context to the gym
         setPermissionsTeamId($gym->id);
 
         // Get the gym_owner role for this specific gym
-        $gymOwnerRole = \Spatie\Permission\Models\Role::where('name', DefaultRole::GYM_OWNER->value)
+        $gymOwnerRoleId = \Spatie\Permission\Models\Role::where('name', DefaultRole::GYM_OWNER->value)
             ->where('gym_id', $gym->id)
-            ->first();
+            ->value('id');
 
-        if ($gymOwnerRole) {
-            // Get ALL permissions available in the system
-            $allPermissions = \App\Models\Permission::all();
+        if ($gymOwnerRoleId) {
+            // Get ALL permission IDs efficiently
+            $allPermissionIds = \App\Models\Permission::pluck('id');
 
-            // Assign all permissions to the gym_owner role
-            $gymOwnerRole->syncPermissions($allPermissions);
+            $insertData = [];
+            foreach ($allPermissionIds as $permId) {
+                $insertData[] = [
+                    'permission_id' => $permId,
+                    'role_id' => $gymOwnerRoleId,
+                ];
+            }
+
+            // Clear existing permissions first (though likely empty for new gym)
+            DB::table('role_has_permissions')->where('role_id', $gymOwnerRoleId)->delete();
+
+            // Bulk insert
+            if (! empty($insertData)) {
+                foreach (array_chunk($insertData, 1000) as $chunk) {
+                    DB::table('role_has_permissions')->insert($chunk);
+                }
+            }
 
             // Clear permission cache to ensure changes take effect immediately
             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
