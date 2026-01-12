@@ -506,12 +506,12 @@ class TwilioAccountManager
                 // Production: Use approved template (required for business-initiated messages)
                 // First, try to get template from database
                 $templateManager = new WhatsAppTemplateManager($settings->gym_id);
-                $template = $templateManager->getTemplate('whatsapp_integration_active_message');
+                $template = $templateManager->getTemplate('whatsapp_integration_active_v2_template');
 
                 // Fallback to config if not in database
                 $templateSid = $template
                     ? $template->template_sid
-                    : config('services.twilio.whatsapp_integration_active_template_sid');
+                    : config('services.twilio.whatsapp_integration_active_v2_template_sid');
 
                 if (! $templateSid) {
                     // No template available - return helpful error
