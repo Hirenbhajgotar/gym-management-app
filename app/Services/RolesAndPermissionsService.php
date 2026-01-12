@@ -40,23 +40,48 @@ class RolesAndPermissionsService
         // Use bulk insert to minimize DB queries
         Role::insert($roleData);
 
+        // Fetch the created role IDs mapped by name
+        $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+            ->where('gym_id', $tenant->id)
+            ->pluck('id', 'name');
+
+        $permissionInsertData = [];
+
         // Now assign permissions to each role using PermissionSetting or Fallback
         foreach ($roles as $role) {
+            if (! isset($createdRoles[$role->value])) {
+                continue;
+            }
+
             // Set the role context for the trait logic
             $this->setDefaultRole($role->value);
 
             // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
-            $permissionsToAssign = $this->getDefaultPermissions();
+            $permissionsToAssign = $this->getDefaultPermissions($role->value);
 
             if (! empty($permissionsToAssign)) {
-                $roleModel = Role::where('name', $role->value)
-                    ->where('gym_id', $tenant->id)
-                    ->first();
+                // Fetch IDs for these permission names efficiently
+                $permissionIds = \App\Models\Permission::whereIn('name', $permissionsToAssign)->pluck('id');
+                $roleId = $createdRoles[$role->value];
 
-                if ($roleModel) {
-                    $roleModel->syncPermissions($permissionsToAssign);
+                foreach ($permissionIds as $permissionId) {
+                    $permissionInsertData[] = [
+                        'permission_id' => $permissionId,
+                        'role_id' => $roleId,
+                    ];
                 }
             }
+        }
+
+        if (! empty($permissionInsertData)) {
+            // Bulk insert all permissions
+            // Optimize chunk size if necessary, but for valid roles this is safe enough
+            foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
+                \Illuminate\Support\Facades\DB::table('role_has_permissions')->insert($chunk);
+            }
+
+            // Forget cache only once at the end
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
     }
 

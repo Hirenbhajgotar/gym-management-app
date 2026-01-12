@@ -3,6 +3,8 @@
 use App\Enums\DefaultRole;
 
 return [
+    DefaultRole::GYM_OWNER->value => [],
+
     DefaultRole::MANAGER->value => [
         'user', 'trainer', 'receptionist', 'gym_member', 'gym', 'membership_plan', 'attendance', 'payment', 'lead',
     ],
