@@ -148,6 +148,16 @@ class ErrorReportResource extends Resource
                             // Use a single query for bulk updates to avoid N+1 performance issues.
                             static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED]);
 
+                            // Manually clear caches since bulk update doesn't trigger model observers.
+                            $keys = [
+                                ErrorReport::NAVIGATION_BADGE_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY,
+                            ];
+                            \App\Helpers\ParserHelper::clearCache($keys);
+
                             Notification::make()
                                 ->title('Marked as resolved')
                                 ->success()
