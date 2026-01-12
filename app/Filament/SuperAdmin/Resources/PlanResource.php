@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class PlanResource extends Resource
@@ -29,11 +30,9 @@ class PlanResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return cache()->remember(
-            'plan_navigation_badge_count_' . auth()->id(),
-            now()->addMinutes(15),
-            fn () => static::getModel()::count(),
-        );
+        return Cache::flexible(Plan::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
+            return static::getModel()::count();
+        });
     }
 
     public static function form(Form $form): Form

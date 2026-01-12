@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Observers\LeadObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -72,9 +74,14 @@ use Spatie\EloquentSortable\SortableTrait;
  * @mixin \Eloquent
  * @mixin IdeHelperLead
  */
+#[ObservedBy([LeadObserver::class])]
 class Lead extends Model implements Sortable
 {
     use HasFactory, SortableTrait;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'lead_navigation_badge_count_';
+
+    public const DASHBOARD_CRM_STATS_WIDGET = 'dashboard_crm_stats_widget_';
 
     protected $fillable = [
         'gym_id',

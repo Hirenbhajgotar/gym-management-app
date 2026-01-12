@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class CmsPageResource extends Resource
@@ -123,6 +124,8 @@ class CmsPageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('is_published', true)->count();
+        return Cache::flexible(CmsPage::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
+            return static::getModel()::where('is_published', true)->count();
+        });
     }
 }

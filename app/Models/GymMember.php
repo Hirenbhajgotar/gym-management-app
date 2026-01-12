@@ -89,6 +89,10 @@ class GymMember extends Model
 {
     use HasFactory, LogsActivity, Notifiable;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'gym_member_navigation_badge_count_';
+
+    public const MEMBER_WEIGHT_PROGRESS_CACHE_KEY = 'member_weight_progress_';
+
     protected $fillable = [
         'gym_id',
         'name',

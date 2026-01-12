@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\RequestContactObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,9 +29,12 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact contacted()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact recent()
  */
+#[ObservedBy([RequestContactObserver::class])]
 class RequestContact extends Model
 {
     use HasFactory;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'request_contact_navigation_badge_count';
 
     protected $fillable = [
         'name',

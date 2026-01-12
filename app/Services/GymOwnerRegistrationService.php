@@ -315,7 +315,7 @@ class GymOwnerRegistrationService
      */
     protected function sendNotifications(User $user, Gym $gym, string $subscriptionStatus, ?Payment $payment = null): void
     {
-        $superAdmins = \Illuminate\Support\Facades\Cache::flexible('super-admins-to-send-notifications', [86400, 604800], function () {
+        $superAdmins = \Illuminate\Support\Facades\Cache::flexible(User::ALL_SUPER_ADMINS_CACHE_KEY, [86400, 604800], function () {
             return User::role('super_admin')->get();
         });
 

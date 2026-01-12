@@ -134,9 +134,8 @@ class RequestDemo extends Component
         }
     }
 
-    protected function sendAdminNotifications(
-        RequestContact $requestContact,
-    ): void {
+    protected function sendAdminNotifications(RequestContact $requestContact): void
+    {
         try {
             $adminEmail = config('app.contact_email');
             $adminPhone = config('app.contact_phone');
@@ -182,10 +181,8 @@ class RequestDemo extends Component
         }
     }
 
-    protected function sendWhatsAppNotification(
-        RequestContact $requestContact,
-        string $adminPhone,
-    ): void {
+    protected function sendWhatsAppNotification(RequestContact $requestContact, string $adminPhone): void
+    {
         try {
             // Format WhatsApp message
             $message = "🔔 *New Demo Request*\n\n";

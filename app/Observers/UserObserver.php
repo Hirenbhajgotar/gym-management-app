@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Enums\DefaultRole;
+use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,38 @@ use Illuminate\Support\Facades\Log;
 
 class UserObserver
 {
+    /**
+     * Handle the User "created" event.
+     */
+    public function created(User $user): void
+    {
+        $this->clearCache($user);
+    }
+
+    /**
+     * Handle the User "updated" event.
+     */
+    public function updated(User $user): void
+    {
+        $this->clearCache($user);
+    }
+
+    /**
+     * Handle the User "deleted" event.
+     */
+    public function deleted(User $user): void
+    {
+        $this->clearCache($user);
+    }
+
+    /**
+     * Handle the User "restored" event.
+     */
+    public function restored(User $user): void
+    {
+        $this->clearCache($user);
+    }
+
     /**
      * Handle the User "deleting" event.
      *
@@ -29,6 +62,8 @@ class UserObserver
      */
     public function forceDeleting(User $user): void
     {
+        $this->clearCache($user);
+
         // Only cascade delete if user is a gym_owner
         if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {
             return;
@@ -173,11 +208,9 @@ class UserObserver
         }
     }
 
-    /**
-     * Handle the User "deleted" event.
-     */
-    public function deleted(User $user): void
+    private function clearCache(User $user): void
     {
-        //
+        ParserHelper::clearCache(User::NAVIGATION_BADGE_CACHE_KEY);
+        ParserHelper::clearCache(User::ALL_SUPER_ADMINS_CACHE_KEY);
     }
 }

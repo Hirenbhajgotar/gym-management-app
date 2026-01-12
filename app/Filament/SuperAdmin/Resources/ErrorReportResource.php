@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ErrorReportResource extends Resource
 {
@@ -140,7 +141,7 @@ class ErrorReportResource extends Resource
             ->action(function (ErrorReport $record, $livewire) {
                 // Use json_encode to safely escape the string for JavaScript
                 $jsString = json_encode($record->toMarkdown());
-                
+
                 $livewire->js("
                     window.navigator.clipboard.writeText({$jsString});
                     new FilamentNotification()
@@ -185,9 +186,11 @@ class ErrorReportResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getBadgeData()['count'];
+        return Cache::flexible(ErrorReport::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
+            $count = self::getBadgeData()['count'];
 
-        return $count > 0 ? (string) $count : null;
+            return $count > 0 ? (string) $count : null;
+        });
     }
 
     public static function getNavigationBadgeColor(): ?string

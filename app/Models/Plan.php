@@ -51,6 +51,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[ObservedBy([PlanObserver::class])]
 class Plan extends Model
 {
+    public const NAVIGATION_BADGE_CACHE_KEY = 'plan_navigation_badge_count';
+
+    public const ALL_PLANS_FOR_HOME_CACHE_KEY = 'all_plans_for_home';
+
+    public const PROFILE_ALL_PLANS_CACHE_KEY = 'profile_all_plans';
+
     protected $fillable = [
         'name',
         'slug',

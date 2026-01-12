@@ -31,6 +31,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
@@ -46,10 +47,12 @@ class GymMemberResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $modelClass = static::$model;
-        $query = $modelClass::query();
+        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
+            $modelClass = static::$model;
+            $query = $modelClass::query();
 
-        return $query->count();
+            return $query->count();
+        });
     }
 
     // Restrict to admins or gym owners with gyms

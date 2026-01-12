@@ -8,6 +8,7 @@ use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
@@ -17,6 +18,7 @@ use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
@@ -38,10 +40,12 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $modelClass = static::$model;
-        $query = $modelClass::query();
+        return Cache::flexible(Trainer::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
+            $modelClass = static::$model;
+            $query = $modelClass::query();
 
-        return $query->count();
+            return $query->count();
+        });
     }
 
     // public static function getEloquentQuery(): Builder

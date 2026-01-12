@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\CountryObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\State> $states
  * @property-read int|null $states_count
+ *
  * @method static Builder<static>|Country active()
  * @method static \Database\Factories\CountryFactory factory($count = null, $state = [])
  * @method static Builder<static>|Country inactive()
@@ -28,12 +31,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Country whereName($value)
  * @method static Builder<static>|Country whereStatus($value)
  * @method static Builder<static>|Country whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperCountry
  */
+#[ObservedBy([CountryObserver::class])]
 class Country extends Model
 {
     use HasFactory;
+
+    public const COUNTRIES_LIST_CACHE_KEY = 'countries_list';
 
     protected $fillable = [
         'name',

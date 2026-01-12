@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
+use App\Observers\PaymentObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -63,9 +65,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @mixin \Eloquent
  * @mixin IdeHelperPayment
  */
+#[ObservedBy([PaymentObserver::class])]
 class Payment extends Model
 {
     use HasFactory, LogsActivity;
+
+    public const PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY = 'profile_latest_payments_of_auth_user_';
 
     protected $fillable = [
         'user_id',
