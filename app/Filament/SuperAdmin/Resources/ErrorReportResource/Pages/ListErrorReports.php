@@ -23,19 +23,24 @@ class ListErrorReports extends ListRecords
 
     public function getTabs(): array
     {
-        return [
+        $tabs = [
             'all' => Tab::make('All')
                 ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::count())),
-            'pending' => Tab::make('Pending')
-                ->modifyQueryUsing(fn (Builder $query) => $query->pending())
-                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::pending()->count())),
-            'investigating' => Tab::make('Investigating')
-                ->modifyQueryUsing(fn (Builder $query) => $query->investigating())
-                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::investigating()->count())),
-            'resolved' => Tab::make('Resolved')
-                ->modifyQueryUsing(fn (Builder $query) => $query->resolved())
-                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::resolved()->count())),
         ];
+
+        $statusTabs = [
+            'pending' => ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY,
+            'investigating' => ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY,
+            'resolved' => ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY,
+        ];
+
+        foreach ($statusTabs as $status => $cacheKey) {
+            $tabs[$status] = Tab::make(ucfirst($status))
+                ->modifyQueryUsing(fn (Builder $query) => $query->{$status}())
+                ->badge(Cache::flexible($cacheKey, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::{$status}()->count()));
+        }
+
+        return $tabs;
     }
 
     public function getDefaultActiveTab(): string|int|null

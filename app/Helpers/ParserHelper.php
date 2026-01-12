@@ -62,8 +62,14 @@ class ParserHelper
         return "{$months} " . ($months === 1 ? 'Month' : 'Months');
     }
 
-    public static function clearCache(string $key): void
+    public static function clearCache(string|array $key): void
     {
-        Cache::forget($key);
+        if (is_array($key)) {
+            foreach ($key as $cacheKey) {
+                Cache::forget($cacheKey);
+            }
+        } else {
+            Cache::forget($key);
+        }
     }
 }
