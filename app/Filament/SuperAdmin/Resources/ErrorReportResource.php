@@ -156,7 +156,7 @@ class ErrorReportResource extends Resource
                                 ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY,
                                 ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY,
                             ];
-                            array_walk($keys, [\App\Helpers\ParserHelper::class, 'clearCache']);
+                            \App\Helpers\ParserHelper::clearCache($keys);
 
                             Notification::make()
                                 ->title('Marked as resolved')
