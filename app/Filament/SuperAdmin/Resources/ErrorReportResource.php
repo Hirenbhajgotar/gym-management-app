@@ -8,8 +8,10 @@ use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 use App\Models\ErrorReport;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -116,9 +118,24 @@ class ErrorReportResource extends Resource
                     ]),
             ])
             ->actions([
-                self::getCopyToMarkdownAction(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ActionGroup::make([
+                    self::getCopyToMarkdownAction(),
+                    Tables\Actions\Action::make('markResolved')
+                        ->label('Mark as Resolved')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn (ErrorReport $record) => $record->status !== ErrorStatus::RESOLVED)
+                        ->action(function (ErrorReport $record) {
+                            $record->update(['status' => ErrorStatus::RESOLVED]);
+
+                            Notification::make()
+                                ->title('Marked as resolved')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -126,7 +143,26 @@ class ErrorReportResource extends Resource
                     Tables\Actions\BulkAction::make('markResolved')
                         ->label('Mark as Resolved')
                         ->icon('heroicon-m-check-circle')
-                        ->action(fn (Collection $records) => static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED->value]))
+                        ->color('success')
+                        ->action(function (Collection $records) {
+                            // Use a single query for bulk updates to avoid N+1 performance issues.
+                            static::getModel()::whereIn('id', $records->pluck('id'))->update(['status' => ErrorStatus::RESOLVED]);
+
+                            // Manually clear caches since bulk update doesn't trigger model observers.
+                            $keys = [
+                                ErrorReport::NAVIGATION_BADGE_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY,
+                                ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY,
+                            ];
+                            array_walk($keys, [\App\Helpers\ParserHelper::class, 'clearCache']);
+
+                            Notification::make()
+                                ->title('Marked as resolved')
+                                ->success()
+                                ->send();
+                        })
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
