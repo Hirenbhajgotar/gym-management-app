@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Models\Gym;
+use App\Models\Permission;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -61,7 +63,7 @@ class RolesAndPermissionsService
 
             if (! empty($permissionsToAssign)) {
                 // Fetch IDs for these permission names efficiently
-                $permissionIds = \App\Models\Permission::whereIn('name', $permissionsToAssign)->pluck('id');
+                $permissionIds = Permission::whereIn('name', $permissionsToAssign)->pluck('id');
                 $roleId = $createdRoles[$role->value];
 
                 foreach ($permissionIds as $permissionId) {
@@ -77,7 +79,7 @@ class RolesAndPermissionsService
             // Bulk insert all permissions
             // Optimize chunk size if necessary, but for valid roles this is safe enough
             foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
-                \Illuminate\Support\Facades\DB::table('role_has_permissions')->insert($chunk);
+                DB::table('role_has_permissions')->insert($chunk);
             }
 
             // Forget cache only once at the end
