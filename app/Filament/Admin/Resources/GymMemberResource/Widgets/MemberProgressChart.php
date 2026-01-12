@@ -43,7 +43,7 @@ class MemberProgressChart extends ChartWidget
 
         // Cache key based on member ID and latest measurement update
         // We use flexible cache: fresh for 1 hour, stale allowed for 1 week
-        return Cache::flexible(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $record->id, [3600, 604800], function () use ($record) {
+        return Cache::flexible(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $record->id, [now()->addHour(), now()->addWeek()], function () use ($record) {
             $measurements = $record->measurements()
                 ->orderBy('measured_at')
                 ->get();
