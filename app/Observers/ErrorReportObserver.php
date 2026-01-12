@@ -50,5 +50,9 @@ class ErrorReportObserver
     private function clearCache(ErrorReport $errorReport): void
     {
         ParserHelper::clearCache(ErrorReport::NAVIGATION_BADGE_CACHE_KEY);
+        ParserHelper::clearCache(ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY);
+        ParserHelper::clearCache(ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY);
+        ParserHelper::clearCache(ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY);
+        ParserHelper::clearCache(ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY);
     }
 }
