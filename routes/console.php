@@ -53,3 +53,6 @@ Schedule::command('leads:cleanup-old')->dailyAt('02:00');
 
 // Send birthday notifications daily at 7 AM
 Schedule::command('notification:send-birthday-notifications')->dailyAt('07:00');
+
+// Clean resolved error reports daily at 1 AM
+Schedule::command('errors:clean-resolved')->dailyAt('01:00');
