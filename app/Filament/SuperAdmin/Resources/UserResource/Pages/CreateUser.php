@@ -157,13 +157,10 @@ class CreateUser extends CreateRecord
             // Get ALL permission IDs efficiently
             $allPermissionIds = \App\Models\Permission::pluck('id');
 
-            $insertData = [];
-            foreach ($allPermissionIds as $permId) {
-                $insertData[] = [
-                    'permission_id' => $permId,
-                    'role_id' => $gymOwnerRoleId,
-                ];
-            }
+            $insertData = $allPermissionIds->map(fn ($permId) => [
+                'permission_id' => $permId,
+                'role_id' => $gymOwnerRoleId,
+            ])->all();
 
             // Clear existing permissions first (though likely empty for new gym)
             DB::table('role_has_permissions')->where('role_id', $gymOwnerRoleId)->delete();
