@@ -2,7 +2,6 @@
 
 namespace App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 
-use App\Enums\ErrorStatus;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use App\Models\ErrorReport;
 use Filament\Actions;
@@ -31,8 +30,8 @@ class ListErrorReports extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->pending())
                 ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_PENDING_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::pending()->count())),
             'investigating' => Tab::make('Investigating')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', ErrorStatus::INVESTIGATING))
-                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::where('status', ErrorStatus::INVESTIGATING)->count())),
+                ->modifyQueryUsing(fn (Builder $query) => $query->investigating())
+                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::investigating()->count())),
             'resolved' => Tab::make('Resolved')
                 ->modifyQueryUsing(fn (Builder $query) => $query->resolved())
                 ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::resolved()->count())),

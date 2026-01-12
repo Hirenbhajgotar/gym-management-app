@@ -7,6 +7,7 @@ use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Observers\ErrorReportObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -105,37 +106,50 @@ class ErrorReport extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function scopePending($query)
+    #[Scope]
+    protected function pending($query)
     {
         return $query->where('status', ErrorStatus::PENDING->value);
     }
 
-    public function scopeResolved($query)
+    #[Scope]
+    protected function resolved($query)
     {
         return $query->where('status', ErrorStatus::RESOLVED->value);
     }
 
-    public function scopeHighPriority($query)
+    #[Scope]
+    protected function investigating($query)
+    {
+        return $query->where('status', ErrorStatus::INVESTIGATING->value);
+    }
+
+    #[Scope]
+    protected function highPriority($query)
     {
         return $query->whereIn('priority', [ErrorPriority::HIGH->value, ErrorPriority::CRITICAL->value]);
     }
 
-    public function scopeAutoReported($query)
+    #[Scope]
+    protected function autoReported($query)
     {
         return $query->where('error_type', 'auto_reported');
     }
 
-    public function scopeUserReported($query)
+    #[Scope]
+    protected function userReported($query)
     {
         return $query->where('error_type', 'user_reported');
     }
 
-    public function scopeFrequent($query)
+    #[Scope]
+    protected function frequent($query)
     {
         return $query->where('duplicate_count', '>', 5);
     }
 
-    public function scopeRecent($query)
+    #[Scope]
+    protected function recent($query)
     {
         return $query->where('occurred_at', '>', now()->subDay());
     }
