@@ -109,25 +109,25 @@ class ErrorReport extends Model
     #[Scope]
     protected function pending($query)
     {
-        return $query->where('status', ErrorStatus::PENDING->value);
+        return $query->where('status', ErrorStatus::PENDING);
     }
 
     #[Scope]
     protected function resolved($query)
     {
-        return $query->where('status', ErrorStatus::RESOLVED->value);
+        return $query->where('status', ErrorStatus::RESOLVED);
     }
 
     #[Scope]
     protected function investigating($query)
     {
-        return $query->where('status', ErrorStatus::INVESTIGATING->value);
+        return $query->where('status', ErrorStatus::INVESTIGATING);
     }
 
     #[Scope]
     protected function highPriority($query)
     {
-        return $query->whereIn('priority', [ErrorPriority::HIGH->value, ErrorPriority::CRITICAL->value]);
+        return $query->whereIn('priority', [ErrorPriority::HIGH, ErrorPriority::CRITICAL]);
     }
 
     #[Scope]
