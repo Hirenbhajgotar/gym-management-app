@@ -79,31 +79,13 @@ return [
         'master_token' => env('TWILIO_AUTH_TOKEN'),
         // 'api_key' => env('TWILIO_API_KEY'),
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
-        'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+14155238886'),
-        'whatsapp_integration_active_template_sid' => env(
-            'TWILIO_WHATSAPP_INTEGRATION_ACTIVE_TEMPLATE_SID',
-            'HX5f991f2aceffa348f1d3b37df86c5c09',
-        ),
-        'demo_request_template_sid' => env(
-            'TWILIO_DEMO_REQUEST_TEMPLATE_SID',
-            'HX3ae293398edf997d889fa8edc06a7ebb',
-        ),
-        'birthday_greeting_template_sid' => env(
-            'TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID',
-            'HXcda1c2b35387313592234ddd828ec017',
-        ),
-        'membership_expiry_template_sid' => env(
-            'TWILIO_MEMBERSHIP_EXPIRY_TEMPLATE_SID',
-            'HXd00036c65cc7bd610832b215d3ea7b4a',
-        ),
-        'lead_followup_reminder_template_sid' => env(
-            'TWILIO_LEAD_FOLLOWUP_REMINDER_TEMPLATE_SID',
-            'HX838a55fee59de39be51107c3db2fea9a',
-        ),
-        'pending_lead_reminder_template_sid' => env(
-            'TWILIO_PENDING_LEAD_REMINDER_TEMPLATE_SID',
-            'HX72ed8ed0e2bae8a24b3d23029e866bac',
-        ),
+        'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
+        'whatsapp_integration_active_v2_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V2_TEMPLATE_SID', 'HXbd5c59ec4d174045bfd07f6dea3d3535'),
+        'demo_request_template_sid' => env('TWILIO_DEMO_REQUEST_TEMPLATE_SID', 'HX3ae293398edf997d889fa8edc06a7ebb'),
+        'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID', 'HXcda1c2b35387313592234ddd828ec017'),
+        'membership_expiry_template_sid' => env('TWILIO_MEMBERSHIP_EXPIRY_TEMPLATE_SID', 'HXd00036c65cc7bd610832b215d3ea7b4a'),
+        'lead_followup_reminder_template_sid' => env('TWILIO_LEAD_FOLLOWUP_REMINDER_TEMPLATE_SID', 'HX838a55fee59de39be51107c3db2fea9a'),
+        'pending_lead_reminder_template_sid' => env('TWILIO_PENDING_LEAD_REMINDER_TEMPLATE_SID', 'HX72ed8ed0e2bae8a24b3d23029e866bac'),
         'low_whatsapp_message_balance_template_sid' => env('LOW_WHATSAPP_MESSAGE_BALANCE_TEMPLATE_SID', 'HXd7f4c8d666c309c57ee24d2353afd1b3'),
     ],
 

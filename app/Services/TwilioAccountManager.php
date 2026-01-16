@@ -448,39 +448,30 @@ class TwilioAccountManager
      * In sandbox mode: Uses free-form message body
      * In production mode: Uses approved WhatsApp template
      */
-    public function sendTestWhatsAppMessage(
-        NotificationSetting $settings,
-    ): array {
+    /**
+     * Send test WhatsApp message to verify setup
+     *
+     * In sandbox mode: Uses free-form message body
+     * In production mode: Uses approved WhatsApp template
+     */
+    public function sendTestWhatsAppMessage(NotificationSetting $settings): array
+    {
         try {
-            if (
-                empty($settings->twilio_account_sid) ||
-                empty($settings->twilio_auth_token)
-            ) {
+            if (empty($settings->twilio_account_sid) || empty($settings->twilio_auth_token)) {
                 return [
                     'success' => false,
                     'error' => 'Twilio credentials are not configured.',
                 ];
             }
 
-            $client = $this->makeClient(
-                $settings->twilio_account_sid,
-                $settings->twilio_auth_token,
-            );
-
-            // Get from number based on sandbox or production
-            $fromNumber = $this->useSandbox
-                ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
-                : app(TwilioWhatsAppService::class)->getProductionFromNumber(
-                    $settings,
-                );
+            // Initialize the service with 'system' tenant ID to send from Admin/Master account
+            // This ensures we use the Master account's templates and credentials
+            $whatsAppService = new TwilioWhatsAppService('system');
 
             // Get gym name for personalized message
             $gym = \App\Models\Gym::find($settings->gym_id);
             $gymName = $gym ? $gym->name : 'Your Gym';
-
-            $messageParams = [
-                'from' => 'whatsapp:' . $fromNumber,
-            ];
+            $to = $settings->whatsapp_business_number;
 
             // In sandbox mode, we can send free-form messages
             // In production mode, we MUST use approved templates
@@ -488,39 +479,20 @@ class TwilioAccountManager
                 // Sandbox: Use free-form message body
                 $messageBody = "🎉 *WhatsApp Integration Active!*\n\n";
                 $messageBody .= "Hello from {$gymName}! 👋\n\n";
-                $messageBody .=
-                    "Your WhatsApp Business integration is now successfully set up and ready to use.\n\n";
+                $messageBody .= "Your WhatsApp Business integration is now successfully set up and ready to use.\n\n";
                 $messageBody .= "*What's Next?*\n";
-                $messageBody .=
-                    "✅ Members will receive booking confirmations\n";
-                $messageBody .=
-                    "✅ Payment reminders will be sent automatically\n";
-                $messageBody .=
-                    "✅ Class updates will reach members instantly\n";
-                $messageBody .=
-                    "✅ Birthday greetings will be sent on special days\n\n";
-                $messageBody .=
-                    "This is a test message to confirm everything is working perfectly.\n\n";
-                $messageBody .=
-                    '_Sent at: ' . now()->format('M d, Y H:i A') . '_';
+                $messageBody .= "✅ Members will receive booking confirmations\n";
+                $messageBody .= "✅ Payment reminders will be sent automatically\n";
+                $messageBody .= "✅ Class updates will reach members instantly\n";
+                $messageBody .= "✅ Birthday greetings will be sent on special days\n\n";
+                $messageBody .= "This is a test message to confirm everything is working perfectly.\n\n";
+                $messageBody .= '_Sent at: ' . now()->format('M d, Y H:i A') . '_';
 
-                $messageParams['body'] = $messageBody;
+                $result = $whatsAppService->sendMessage($to, $messageBody);
             } else {
                 // Production: Use approved template (required for business-initiated messages)
-                // First, try to get template from database
-                $templateManager = new \App\Services\WhatsAppTemplateManager(
-                    $settings->gym_id,
-                );
-                $template = $templateManager->getTemplate(
-                    'whatsapp_integration_active_message',
-                );
-
-                // Fallback to config if not in database
-                $templateSid = $template
-                    ? $template->template_sid
-                    : config(
-                        'services.twilio.whatsapp_integration_active_template_sid',
-                    );
+                // Since we are sending from System, we use the System's template from config
+                $templateSid = config('services.twilio.whatsapp_integration_active_v2_template_sid');
 
                 if (! $templateSid) {
                     // No template available - return helpful error
@@ -535,65 +507,50 @@ class TwilioAccountManager
                 }
 
                 // Use template with variables
-                $messageParams['contentSid'] = $templateSid;
-                $messageParams['contentVariables'] = json_encode([
-                    '1' => $gymName, // Variable 1: Gym name
-                    '2' => now()->format('M d, Y H:i A'), // Variable 2: Timestamp
-                ]);
+                // Variable 1: Gym name
+                $variables = ['1' => $gymName];
 
-                Log::info('Using WhatsApp template for test message', [
+                Log::info('Using WhatsApp template for test message from System', [
                     'gym_id' => $settings->gym_id,
                     'template_sid' => $templateSid,
-                    'source' => $template ? 'database' : 'config',
+                    'source' => 'config',
+                ]);
+
+                // Use sendMessage with template data to support System sending
+                $result = $whatsAppService->sendMessage($to, '', [
+                    'template_sid' => $templateSid,
+                    'template_variables' => $variables,
                 ]);
             }
 
-            // Send test message to gym owner
-            $message = $client->messages->create(
-                'whatsapp:' . $settings->whatsapp_business_number,
-                $messageParams,
-            );
-
-            Log::info('Test WhatsApp message sent successfully', [
-                'gym_id' => $settings->gym_id,
-                'message_id' => $message->sid,
-                'to' => $settings->whatsapp_business_number,
-                'status' => $message->status,
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                'uses_template' => ! $this->useSandbox,
-            ]);
-
-            return [
-                'success' => true,
-                'message_id' => $message->sid,
-                'status' => $message->status,
-                'to' => $settings->whatsapp_business_number,
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-            ];
-        } catch (RestException $e) {
-            Log::error('Twilio WhatsApp test message error', [
-                'gym_id' => $settings->gym_id ?? null,
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-            ]);
-
-            // Provide helpful error message for common production mode issues
-            $errorMessage = $e->getMessage();
-            if (
-                ! $this->useSandbox &&
-                strpos($errorMessage, 'template') !== false
-            ) {
-                $errorMessage .=
-                    " - Business-initiated messages require approved templates. Please create a 'welcome_message' template or use sandbox mode.";
+            if ($result['success']) {
+                Log::info('Test WhatsApp message sent successfully', [
+                    'gym_id' => $settings->gym_id,
+                    'message_id' => $result['message_id'] ?? null,
+                    'to' => $to,
+                    'status' => $result['status'] ?? 'unknown',
+                    'mode' => $this->useSandbox ? 'sandbox' : 'production',
+                    'from_system' => true,
+                ]);
+            } else {
+                Log::error('Twilio WhatsApp test message error', [
+                    'gym_id' => $settings->gym_id ?? null,
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'mode' => $this->useSandbox ? 'sandbox' : 'production',
+                ]);
             }
 
+            // Normalize response to match expected format
             return [
-                'success' => false,
-                'error' => $errorMessage,
-                'code' => $e->getCode(),
+                'success' => $result['success'],
+                'message_id' => $result['message_id'] ?? null,
+                'status' => $result['status'] ?? null,
+                'to' => $to,
                 'mode' => $this->useSandbox ? 'sandbox' : 'production',
+                'error' => $result['error'] ?? null,
+                'requires_template' => isset($result['requires_template']) ? $result['requires_template'] : false,
             ];
+
         } catch (\Exception $e) {
             Log::error('Unexpected error sending test WhatsApp message', [
                 'gym_id' => $settings->gym_id ?? null,
