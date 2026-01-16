@@ -34,6 +34,8 @@ class SuperAdminPanelProvider extends PanelProvider
                 'blue' => Color::Blue,
                 'violet' => Color::Violet,
             ])
+            ->brandLogo(asset('fluxfitness-logo.svg'))
+            ->brandLogoHeight('3rem')
             ->login()
             ->authGuard('web')
             ->authPasswordBroker('users')
