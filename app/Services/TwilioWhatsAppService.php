@@ -243,6 +243,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             Log::info('System WhatsApp message sent successfully', [
                 'message_id' => $twilioMessage->sid,
                 'to' => $to,
+                'from' => $fromNumber,
                 'status' => $twilioMessage->status,
                 'mode' => $this->useSandbox ? 'sandbox' : 'production',
                 'uses_template' => ! $this->useSandbox,
@@ -383,9 +384,8 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
     }
 
-    public function getProductionFromNumber(
-        ?NotificationSetting $settings,
-    ): ?string {
+    public function getProductionFromNumber(?NotificationSetting $settings): ?string
+    {
         if (! $settings) {
             $settings = NotificationSetting::where(
                 'gym_id',
@@ -397,10 +397,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             throw new Exception('No Twilio settings found');
         }
 
-        if (
-            $settings->verification_status !==
-            NotificationVerificationStatusEnum::VERIFIED
-        ) {
+        if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
             throw new Exception('Twilio account not verified');
         }
 

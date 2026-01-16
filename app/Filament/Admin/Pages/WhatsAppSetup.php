@@ -516,52 +516,63 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             return;
         }
 
-        $accountManager = app(TwilioAccountManager::class);
-        $result = $accountManager->sendTestWhatsAppMessage($this->settings);
+        try {
+            $accountManager = app(TwilioAccountManager::class);
+            $result = $accountManager->sendTestWhatsAppMessage($this->settings);
 
-        if ($result['success']) {
-            // Only increment rate limiter on successful sends
-            RateLimiter::hit($rateLimitKey, 86400); // 24 hours = 86400 seconds
+            if ($result['success']) {
+                // Only increment rate limiter on successful sends
+                RateLimiter::hit($rateLimitKey, 86400); // 24 hours = 86400 seconds
 
-            $messageId = $result['message_id'] ?? 'N/A';
-            $remaining = $dailyLimit - RateLimiter::attempts($rateLimitKey);
+                $messageId = $result['message_id'] ?? 'N/A';
+                $remaining = $dailyLimit - RateLimiter::attempts($rateLimitKey);
 
-            Notification::make()
-                ->title('✅ Test Message Sent!')
-                ->body(
-                    "A test message has been sent to your WhatsApp number ({$this->settings->whatsapp_business_number}). Please check your WhatsApp to confirm receipt.",
-                )
-                ->success()
-                ->duration(6000)
-                ->send();
+                Notification::make()
+                    ->title('✅ Test Message Sent!')
+                    ->body(
+                        "A test message has been sent to your WhatsApp number ({$this->settings->whatsapp_business_number}). Please check your WhatsApp to confirm receipt.",
+                    )
+                    ->success()
+                    ->duration(6000)
+                    ->send();
 
-            \Illuminate\Support\Facades\Log::info(
-                'Manual test message sent from WhatsApp Setup page',
-                [
-                    'gym_id' => $this->settings->gym_id,
-                    'user_id' => $userId,
-                    'message_id' => $messageId,
-                    'to' => $this->settings->whatsapp_business_number,
-                    'remaining_today' => $remaining,
-                ],
+                \Illuminate\Support\Facades\Log::info(
+                    'Manual test message sent from WhatsApp Setup page',
+                    [
+                        'gym_id' => $this->settings->gym_id,
+                        'user_id' => $userId,
+                        'message_id' => $messageId,
+                        'to' => $this->settings->whatsapp_business_number,
+                        'remaining_today' => $remaining,
+                    ],
+                );
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to send test message. Please try again or contact support.');
+            }
+        } catch (\Exception $e) {
+            // Report the error using ErrorReportService
+            $errorReport = resolve(\App\Services\ErrorReportService::class)->reportException(
+                exception: $e,
+                userDescription: 'WhatsApp Test Message Failed from WhatsApp Setup Page',
+                reportType: 'whatsapp_integration_error'
             );
-        } else {
+
             Notification::make()
                 ->title('❌ Test Message Failed')
                 ->body(
-                    $result['error'] ??
-                        'Failed to send test message. Please try again or contact support.',
+                    'An error occurred while sending the test message. The error has been logged for review.'
                 )
                 ->danger()
                 ->duration(7000)
                 ->send();
 
             \Illuminate\Support\Facades\Log::error(
-                'Manual test message failed from WhatsApp Setup page',
+                'Manual test message failed from WhatsApp Setup page (Exception Caught)',
                 [
-                    'gym_id' => $this->settings->gym_id,
+                    'gym_id' => $this->settings->gym_id ?? null,
                     'user_id' => Auth::id(),
-                    'error' => $result['error'] ?? 'Unknown error',
+                    'error_report_id' => $errorReport->id,
+                    'exception_message' => $e->getMessage(),
                 ],
             );
         }
