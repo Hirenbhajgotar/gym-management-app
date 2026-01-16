@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Models\Gym;
 use App\Models\Lead;
+use App\Rules\ValidEmailDomain;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
@@ -47,7 +48,7 @@ class LeadResource extends Resource
             Section::make('Lead Details')->schema([
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
-                    TextInput::make('email')->email()->required(),
+                    TextInput::make('email')->email()->rule(new ValidEmailDomain())->required(),
                     PhoneInput::make('phone')
                         ->required()
                         ->defaultCountry('IN')

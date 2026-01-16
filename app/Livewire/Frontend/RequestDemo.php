@@ -5,6 +5,7 @@ namespace App\Livewire\Frontend;
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
 use App\Services\TwilioWhatsAppService;
+use App\Rules\ValidEmailDomain;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -34,7 +35,7 @@ class RequestDemo extends Component
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', 'max:255', new ValidEmailDomain()],
             'phone' => ['required', 'phone:US,IN,PK'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'gym_size' => ['nullable', 'integer', 'min:1', 'max:100000'],
