@@ -243,6 +243,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             Log::info('System WhatsApp message sent successfully', [
                 'message_id' => $twilioMessage->sid,
                 'to' => $to,
+                'from' => $fromNumber,
                 'status' => $twilioMessage->status,
                 'mode' => $this->useSandbox ? 'sandbox' : 'production',
                 'uses_template' => ! $this->useSandbox,

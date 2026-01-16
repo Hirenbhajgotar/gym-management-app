@@ -79,7 +79,7 @@ return [
         'master_token' => env('TWILIO_AUTH_TOKEN'),
         // 'api_key' => env('TWILIO_API_KEY'),
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
-        'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+14155238886'),
+        'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
         'whatsapp_integration_active_v2_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V2_TEMPLATE_SID', 'HXbd5c59ec4d174045bfd07f6dea3d3535'),
         'demo_request_template_sid' => env('TWILIO_DEMO_REQUEST_TEMPLATE_SID', 'HX3ae293398edf997d889fa8edc06a7ebb'),
         'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID', 'HXcda1c2b35387313592234ddd828ec017'),
