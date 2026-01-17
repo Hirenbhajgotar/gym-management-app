@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Enums\SubscriptionStatus;
 use App\Observers\UserObserver;
@@ -76,7 +76,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @mixin IdeHelperUser
  */
 #[ObservedBy([UserObserver::class])]
-class User extends Authenticatable implements FilamentUser, HasName, HasTenants
+class User extends Authenticatable implements FilamentUser, HasName, HasTenants, MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, Notifiable, SoftDeletes;

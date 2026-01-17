@@ -102,6 +102,9 @@ class GymOwnerRegistrationService
 
             $this->sendNotifications($user, $gym, $subscriptionResult['status'], $payment);
 
+            // Fire registered event to trigger email verification
+            event(new \Illuminate\Auth\Events\Registered($user));
+
             return [
                 'user' => $user,
                 'gym' => $gym,

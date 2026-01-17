@@ -24,7 +24,7 @@ Route::get('/request-demo', RequestDemo::class)->name('request-demo');
 
 Route::get('/profile', ProfileController::class)
     ->name('profile')
-    ->middleware('auth');
+    ->middleware(['auth', 'verified']);
 
 Route::get('/thank-you', function () {
     if (! session()->has('success')) {
