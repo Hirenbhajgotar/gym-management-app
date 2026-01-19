@@ -54,6 +54,29 @@
                 <div
                     class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl">
                     {{ $this->form }}
+
+                    {{-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <flux:select wire:model="error_category" label="Error Category" required>
+                             @foreach(\App\Enums\ErrorCategory::cases() as $category)
+                                <option value="{{ $category->value }}">{{ $category->getLabel() }}</option>
+                             @endforeach
+                        </flux:select>
+
+                        <flux:select wire:model="priority" label="Priority Level" required>
+                             @foreach(\App\Enums\ErrorPriority::cases() as $priority)
+                                <option value="{{ $priority->value }}">{{ $priority->getDescriptiveLabel() }}</option>
+                             @endforeach
+                        </flux:select>
+                    </div>
+
+                    <flux:textarea 
+                        wire:model="description" 
+                        label="What were you trying to do?" 
+                        placeholder="Please provide a detailed description of: 1. What you were trying to accomplish, 2. The steps you took before the error occurred, 3. Any additional context that might help us reproduce the issue"
+                        required
+                        rows="6"
+                    /> --}}
+                    <div class="text-xs text-gray-500">The more details you provide, the faster we can resolve the issue</div>
                 </div>
 
                 <!-- Additional help text -->

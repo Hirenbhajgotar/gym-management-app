@@ -12,10 +12,10 @@ use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRela
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
-use App\Rules\ValidEmailDomain;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\User;
+use App\Rules\ValidEmailDomain;
 use Carbon\Carbon;
 use Closure;
 use Filament\Facades\Filament;
@@ -48,7 +48,13 @@ class GymMemberResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
+        $tenant = Filament::getTenant();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addHours(6), now()->addWeek()], function () {
             $modelClass = static::$model;
             $query = $modelClass::query();
 
@@ -66,9 +72,9 @@ class GymMemberResource extends Resource
             return false;
         }
 
-        if (filament()->getId() === 'admin') {
+        if (filament()?->getId() === 'admin') {
             return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } elseif (filament()->getId() === 'staff') {
+        } elseif (filament()?->getId() === 'staff') {
             return true;
         }
 
@@ -533,7 +539,7 @@ class GymMemberResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->unique(GymMember::class, 'email', ignoreRecord: true)
-                ->rules(['email:rfc', new ValidEmailDomain()])
+                ->rules(['email:rfc', new ValidEmailDomain])
                 ->validationMessages([
                     'email' => 'Please enter a valid email address.',
                     'email.rfc' => 'The email format is invalid.',

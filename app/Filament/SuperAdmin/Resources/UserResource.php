@@ -3,7 +3,6 @@
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\SubscriptionStatus;
-use App\Rules\ValidEmailDomain;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
@@ -11,6 +10,7 @@ use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Rules\ValidEmailDomain;
 use App\Services\SubscriptionService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -85,7 +85,7 @@ class UserResource extends Resource
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('email')
                                 ->email()
-                                ->rule(new ValidEmailDomain())
+                                ->rule(new ValidEmailDomain)
                                 ->required()
                                 ->unique(ignoreRecord: true)
                                 ->maxLength(255),

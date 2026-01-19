@@ -34,7 +34,13 @@ class LeadResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(Lead::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
+        $tenant = Filament::getTenant();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        return Cache::flexible(Lead::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addHours(6), now()->addWeek()], function () {
             $modelClass = static::$model;
             $query = $modelClass::query()->where('status', LeadStatus::NEW);
 
@@ -48,7 +54,9 @@ class LeadResource extends Resource
             Section::make('Lead Details')->schema([
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
-                    TextInput::make('email')->email()->rule(new ValidEmailDomain())->required(),
+                    TextInput::make('email')->email()
+                        ->rule(new ValidEmailDomain)
+                        ->required(),
                     PhoneInput::make('phone')
                         ->required()
                         ->defaultCountry('IN')
@@ -125,7 +133,6 @@ class LeadResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(
                     LeadStatus::class,
@@ -171,7 +178,7 @@ class LeadResource extends Resource
                         ->description('Configure membership settings')
                         ->schema([
                             Forms\Components\Hidden::make('gym_id')
-                                ->default(fn () => Filament::getTenant()->id ?? null),
+                                ->default(fn () => Filament::getTenant()?->id ?? null),
 
                             Forms\Components\Select::make('trainer_id')
                                 ->label('Assign Trainer')

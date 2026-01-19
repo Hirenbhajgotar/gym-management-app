@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\DefaultRole;
+use App\Enums\UserStatus;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -154,6 +155,7 @@ class GymOwnerRegistrationService
             'email' => $registrationData['email'],
             'phone' => $registrationData['phone'],
             'password' => $registrationData['password'],
+            'status' => UserStatus::UNDER_REVIEW,
         ]);
     }
 

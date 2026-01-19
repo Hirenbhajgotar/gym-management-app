@@ -21,7 +21,7 @@ class UpdateSpatiePermissionCacheOnTenantSwitch
      */
     public function handle(EventsTenantSet $event): void
     {
-        $tenantId = $event->getTenant()->getKey();
+        $tenantId = $event->getTenant()?->getKey();
 
         $permissionRegistrar = app(PermissionRegistrar::class);
 

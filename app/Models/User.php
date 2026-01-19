@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-
 use App\Enums\SubscriptionStatus;
+use App\Enums\UserStatus;
 use App\Observers\UserObserver;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,7 +30,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $name
  * @property string $email
  * @property string|null $phone
- * @property bool|null $is_active
+ * @property UserStatus $status
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property string $password
@@ -96,6 +98,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
         'password',
         'phone',
         'is_active',
+        'status',
         'email_verified_at',
         'profile_photo',
     ];
@@ -118,6 +121,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'status' => UserStatus::class,
         ];
     }
 
@@ -272,5 +276,25 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Backward compatibility for is_active column
+     */
+    protected function isActive(): Attribute
+    {
+        // return $this->status === UserStatus::ACTIVE;
+        return Attribute::make(
+            get: fn () => $this->status === UserStatus::ACTIVE,
+        );
+    }
+
+    /**
+     * Scope for active users (backward compatibility)
+     */
+    #[Scope]
+    protected function active($query)
+    {
+        return $query->where('status', UserStatus::ACTIVE);
     }
 }

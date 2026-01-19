@@ -50,7 +50,7 @@ class WhatsAppChannel
                 $gymId = $notifiable->gym_id;
             } elseif (method_exists($notifiable, 'gym') && is_object($notifiable) && property_exists($notifiable, 'gym')) {
                 if ($notifiable->gym) {
-                    $gymId = $notifiable->gym->id;
+                    $gymId = $notifiable?->gym?->id;
                 }
             }
         }
@@ -59,7 +59,7 @@ class WhatsAppChannel
         if (! $gymId && $notifiable instanceof User) {
             try {
                 $tenant = $this->getGym();
-                $gymId = $tenant->id;
+                $gymId = $tenant?->id;
             } catch (\Exception $e) {
                 // No tenant set, check if user has exactly one gym
                 if ($notifiable->gyms()->count() === 1) {
