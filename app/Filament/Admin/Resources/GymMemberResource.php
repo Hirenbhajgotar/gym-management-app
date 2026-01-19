@@ -12,6 +12,7 @@ use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRela
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
+use App\Rules\ValidEmailDomain;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\User;
@@ -532,7 +533,7 @@ class GymMemberResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->unique(GymMember::class, 'email', ignoreRecord: true)
-                ->rules(['email:rfc'])
+                ->rules(['email:rfc', new ValidEmailDomain()])
                 ->validationMessages([
                     'email' => 'Please enter a valid email address.',
                     'email.rfc' => 'The email format is invalid.',

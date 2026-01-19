@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Rules\ValidEmailDomain;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Livewire\Attributes\Computed;
@@ -171,7 +172,7 @@ class GymOwnerRegister extends Component
                 $this->validate(
                     [
                         'name' => 'required|string|max:50',
-                        'email' => 'required|email|max:255|unique:users,email',
+                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain()],
                         'phone' => 'required|phone:IN',
                         'password' => [
                             'required',

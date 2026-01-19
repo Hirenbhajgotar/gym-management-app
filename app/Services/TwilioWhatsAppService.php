@@ -63,35 +63,23 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         );
     }
 
-    public function sendMessage(
-        string $to,
-        string $message,
-        ?array $templateData = null,
-    ): array {
+    public function sendMessage(string $to, string $message, ?array $templateData = null): array
+    {
         try {
             // For system tenant (super-admin), bypass tenant-specific checks
             if ($this->isSystemTenant()) {
                 return $this->sendSystemMessage($to, $message, $templateData);
             }
 
-            $settings = NotificationSetting::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
+            $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
 
             if (! $settings) {
                 throw new Exception('No Twilio settings found for this gym');
             }
 
             // Fix: Compare with enum value instead of string
-            if (
-                $settings->verification_status !==
-                NotificationVerificationStatusEnum::VERIFIED
-            ) {
-                throw new Exception(
-                    'Twilio account not verified for this gym. Status: ' .
-                        $settings->verification_status->value,
-                );
+            if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
+                throw new Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
             }
 
             // Check if Twilio account is active
@@ -104,14 +92,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             //
 
             // Check WhatsApp message balance
-            $balance = GymWhatsAppBalance::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
+            $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
             if (! $balance || ! $balance->canSendMessage()) {
-                throw new Exception(
-                    'Insufficient WhatsApp message balance. Please purchase more messages.',
-                );
+                throw new Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
             }
 
             $client = $this->getClient();
@@ -186,11 +169,8 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
      * In sandbox mode: Uses free-form message body
      * In production mode: Uses approved WhatsApp template
      */
-    private function sendSystemMessage(
-        string $to,
-        string $message,
-        ?array $templateData = null,
-    ): array {
+    private function sendSystemMessage(string $to, string $message, ?array $templateData = null): array
+    {
         try {
 
             /**
@@ -247,6 +227,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'status' => $twilioMessage->status,
                 'mode' => $this->useSandbox ? 'sandbox' : 'production',
                 'uses_template' => ! $this->useSandbox,
+                'messageParams' => $messageParams,
             ]);
 
             return [

@@ -45,6 +45,8 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
                 'danger' => Color::Red,
             ])
+            ->brandLogo(asset('fluxfitness-logo.svg'))
+            ->brandLogoHeight('3rem')
             ->spa()
             ->spaUrlExceptions(fn (): array => [
                 // Allow all files in the import/templates directory
