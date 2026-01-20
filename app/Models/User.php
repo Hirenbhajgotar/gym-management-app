@@ -158,7 +158,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
 
     private function hasActiveTenant(): bool
     {
-        return $this->gyms->isNotEmpty() && $this->is_active;
+        return $this->gyms->isNotEmpty() && $this->status === UserStatus::ACTIVE;
     }
 
     /**
@@ -166,7 +166,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
      */
     private function hasActiveRole(array $roles): bool
     {
-        return $this->hasAnyRole($roles) && $this->is_active;
+        return $this->hasAnyRole($roles) && $this->status === UserStatus::ACTIVE;
     }
 
     public function getTenants(Panel $panel): array|Collection
@@ -283,7 +283,6 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
      */
     protected function isActive(): Attribute
     {
-        // return $this->status === UserStatus::ACTIVE;
         return Attribute::make(
             get: fn () => $this->status === UserStatus::ACTIVE,
         );

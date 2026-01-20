@@ -40,12 +40,10 @@
                                     <p class="text-white">{{ $user->phone ?? 'Not provided' }}</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                    <span
-                                        class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                        bg-{{ $user->status->getColor() }}-100 text-{{ $user->status->getColor() }}-800">
+                                    <label class="text-sm font-medium text-gray-400 mb-1">Status: </label>
+                                    <x-badge color="{{ $user->status->getColor() }}">
                                         {{ $user->status->getLabel() }}
-                                    </span>
+                                    </x-badge>
                                 </div>
                                 @if($user->status === \App\Enums\UserStatus::UNDER_REVIEW)
                                     <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
