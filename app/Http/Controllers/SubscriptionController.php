@@ -400,7 +400,8 @@ class SubscriptionController extends Controller
 
             return redirect()
                 ->route('thank-you')
-                ->with('success', $successMessage);
+                ->with('success', $successMessage)
+                ->with('email', $result['user']->email);
         } catch (\Exception $e) {
             Log::error('Gym owner payment verification failed', [
                 'error' => $e->getMessage(),

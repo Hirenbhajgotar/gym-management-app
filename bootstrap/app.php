@@ -59,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Determine if this should be auto-reported based on severity
                 $shouldAutoReport = $errorReportService->shouldAutoReport($e);
                 Log::info(
-                    'Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'),
+                    'Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no') . ' Error: ' . $e->getMessage() . ' File: ' . $e->getFile() . ':' . $e->getLine(),
                 );
 
                 if ($shouldAutoReport) {

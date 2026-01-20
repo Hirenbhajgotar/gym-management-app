@@ -33,37 +33,36 @@ class ErrorReportModal extends Component implements HasForms
 
     public ?array $exceptionData = null;
 
-    public ?array $data = [];
+    // Form properties
+    public $error_category;
+
+    public $priority;
+
+    public $description;
 
     public function mount()
     {
-        // Initialize form data with proper structure
-        $this->data = [
-            'error_category' => ErrorCategory::OTHER->value,
-            'priority' => ErrorPriority::MEDIUM->value,
-            'description' => '',
-        ];
-
-        $this->form->fill($this->data);
+        $this->resetForm();
     }
 
     #[On('open-error-report-modal')]
     public function openModal($data)
     {
         $this->errorMessage = $data['errorMessage'];
-
         $this->exceptionId = $data['exceptionId'];
-
         $this->isOpen = true;
 
-        // Reset and fill form data
-        $this->data = [
-            'error_category' => ErrorCategory::OTHER->value,
-            'priority' => ErrorPriority::MEDIUM->value,
-            'description' => '',
-        ];
+        // Set defaults
+        $this->error_category = ErrorCategory::OTHER->value;
+        $this->priority = ErrorPriority::MEDIUM->value;
+        $this->description = '';
 
-        $this->form->fill($this->data);
+        // Manually fill the form if needed, though public props should auto-bind
+        $this->form->fill([
+            'error_category' => $this->error_category,
+            'priority' => $this->priority,
+            'description' => $this->description,
+        ]);
 
         $this->dispatch('open-modal', id: 'error-report-modal');
     }
@@ -80,8 +79,23 @@ class ErrorReportModal extends Component implements HasForms
         $this->errorMessage = '';
         $this->exceptionData = null;
         $this->exceptionId = null;
-        $this->data = [];
-        $this->form->fill([]);
+
+        $this->error_category = ErrorCategory::OTHER->value;
+        $this->priority = ErrorPriority::MEDIUM->value;
+        $this->description = '';
+
+        if ($this->form) {
+            $this->form->fill([]);
+        }
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'error_category' => 'required|string',
+            'priority' => 'required|string',
+            'description' => 'required|string|min:10',
+        ];
     }
 
     public function form(Form $form): Form
@@ -151,9 +165,9 @@ class ErrorReportModal extends Component implements HasForms
         $errorReportService = app(ErrorReportService::class);
 
         $errorReportService->manuallyReportException(
-            userDescription: $this->data['description'],
-            priority: $this->data['priority'] ?? ErrorPriority::MEDIUM->value,
-            errorCategory: $this->data['error_category'],
+            userDescription: $this->description,
+            priority: $this->priority,
+            errorCategory: $this->error_category,
             exceptionId: $this->exceptionId,
         );
 

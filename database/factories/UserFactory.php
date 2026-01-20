@@ -19,7 +19,8 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'password' => Hash::make('password'),
-            'is_active' => true,
+            'status' => \App\Enums\UserStatus::ACTIVE,
+            'is_active' => true, // Explicitly keeping it true as well, though observer would sync it.
         ];
     }
 

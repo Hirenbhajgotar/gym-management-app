@@ -101,7 +101,7 @@ class TrainerResource extends Resource
 
                     Forms\Components\TextInput::make('email')
                         ->email()
-                        ->rule(new ValidEmailDomain())
+                        ->rule(new ValidEmailDomain)
                         ->required()
                         ->unique(Trainer::class, 'email', ignoreRecord: true)
                         ->placeholder('trainer@example.com')
