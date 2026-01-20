@@ -18,6 +18,8 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\HtmlString;
+use libphonenumber\PhoneNumberType;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 /**
  * @property Form $form
@@ -319,12 +321,26 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->color('info')
             ->size('xl')
             ->outlined()
+            ->form([
+                PhoneInput::make('test_phone_number')
+                    ->defaultCountry('IN')
+                    ->initialCountry('IN')
+                    ->label('Recipient Phone Number')
+                    ->required()
+                    ->validateFor(
+                        country: ['IN', 'PK', 'BD', 'US'],
+                        type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                        lenient: true,
+                    )
+                    ->placeholder('1234567890')
+                    ->helperText('Enter the phone number to receive the test message, including country code.'),
+            ])
             ->requiresConfirmation()
             ->modalHeading('Send Test Message')
             ->modalDescription(
                 'This will send a test WhatsApp message to verify your integration is working.',
             )
-            ->action(fn () => $this->sendTestMessage());
+            ->action(fn (array $data) => $this->sendTestMessage($data));
     }
 
     public function save(): void
@@ -472,7 +488,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         }
     }
 
-    public function sendTestMessage(): void
+    public function sendTestMessage(array $data = []): void
     {
         if (! $this->settings) {
             Notification::make()
@@ -518,7 +534,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
         try {
             $accountManager = app(TwilioAccountManager::class);
-            $result = $accountManager->sendTestWhatsAppMessage($this->settings);
+            $testNumber = $data['test_phone_number'] ?? null;
+            $result = $accountManager->sendTestWhatsAppMessage($this->settings, $testNumber);
 
             if ($result['success']) {
                 // Only increment rate limiter on successful sends

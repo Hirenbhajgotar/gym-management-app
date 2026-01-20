@@ -454,7 +454,7 @@ class TwilioAccountManager
      * In sandbox mode: Uses free-form message body
      * In production mode: Uses approved WhatsApp template
      */
-    public function sendTestWhatsAppMessage(NotificationSetting $settings): array
+    public function sendTestWhatsAppMessage(NotificationSetting $settings, ?string $to = null): array
     {
         try {
             if (empty($settings->twilio_account_sid) || empty($settings->twilio_auth_token)) {
@@ -464,14 +464,15 @@ class TwilioAccountManager
                 ];
             }
 
-            // Initialize the service with 'system' tenant ID to send from Admin/Master account
-            // This ensures we use the Master account's templates and credentials
-            $whatsAppService = new TwilioWhatsAppService('system');
+            // Initialize the service with the Gym's ID to send from the Gym's account
+            $whatsAppService = new TwilioWhatsAppService((string) $settings->gym_id);
 
             // Get gym name for personalized message
             $gym = \App\Models\Gym::find($settings->gym_id);
             $gymName = $gym ? $gym->name : 'Your Gym';
-            $to = $settings->whatsapp_business_number;
+            
+            // Use provided number or fallback to the registered business number
+            $recipientNumber = $to ?? $settings->whatsapp_business_number;
 
             // In sandbox mode, we can send free-form messages
             // In production mode, we MUST use approved templates
@@ -488,10 +489,12 @@ class TwilioAccountManager
                 $messageBody .= "This is a test message to confirm everything is working perfectly.\n\n";
                 $messageBody .= '_Sent at: ' . now()->format('M d, Y H:i A') . '_';
 
-                $result = $whatsAppService->sendMessage($to, $messageBody);
+                $result = $whatsAppService->sendMessage($recipientNumber, $messageBody);
             } else {
                 // Production: Use approved template (required for business-initiated messages)
-                // Since we are sending from System, we use the System's template from config
+                // Since we are sending from the Gym's account, we use the System's template ID from config
+                // assuming the gym has access to this template or a similar one. 
+                // Note: In a real scenario, the template must exist in the Gym's Twilio subaccount or match exactly.
                 $templateSid = config('services.twilio.whatsapp_integration_active_v5_template_sid');
 
                 if (! $templateSid) {
@@ -510,14 +513,14 @@ class TwilioAccountManager
                 // Variable 1: Gym name
                 $variables = ['1' => $gymName];
 
-                Log::info('Using WhatsApp template for test message from System', [
+                Log::info('Using WhatsApp template for test message', [
                     'gym_id' => $settings->gym_id,
                     'template_sid' => $templateSid,
-                    'source' => 'config',
+                    'recipient' => $recipientNumber,
                 ]);
 
-                // Use sendMessage with template data to support System sending
-                $result = $whatsAppService->sendMessage($to, '', [
+                // Use sendMessage with template data
+                $result = $whatsAppService->sendMessage($recipientNumber, '', [
                     'template_sid' => $templateSid,
                     'template_variables' => $variables,
                 ]);
@@ -527,10 +530,9 @@ class TwilioAccountManager
                 Log::info('Test WhatsApp message sent successfully', [
                     'gym_id' => $settings->gym_id,
                     'message_id' => $result['message_id'] ?? null,
-                    'to' => $to,
+                    'to' => $recipientNumber,
                     'status' => $result['status'] ?? 'unknown',
                     'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                    'from_system' => true,
                 ]);
             } else {
                 Log::error('Twilio WhatsApp test message error', [
@@ -545,7 +547,7 @@ class TwilioAccountManager
                 'success' => $result['success'],
                 'message_id' => $result['message_id'] ?? null,
                 'status' => $result['status'] ?? null,
-                'to' => $to,
+                'to' => $recipientNumber,
                 'mode' => $this->useSandbox ? 'sandbox' : 'production',
                 'error' => $result['error'] ?? null,
                 'requires_template' => isset($result['requires_template']) ? $result['requires_template'] : false,
