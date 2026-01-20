@@ -327,13 +327,13 @@ class GymOwnerRegistrationService
 
             foreach ($superAdmins as $superAdmin) {
                 try {
-                    // $superAdmin->notify(
-                    //     new \App\Notifications\UserActionNotification(
-                    //         'created',
-                    //         $user,
-                    //         "Gym: {$gym->name}",
-                    //     ),
-                    // );
+                    $superAdmin->notify(
+                        new \App\Notifications\UserActionNotification(
+                            'created',
+                            $user,
+                            "Gym: {$gym->name}",
+                        ),
+                    );
 
                     \Filament\Notifications\Notification::make()
                         ->title('New Business Added - ' . $gym->name)
