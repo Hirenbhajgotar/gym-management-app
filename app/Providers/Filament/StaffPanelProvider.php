@@ -37,6 +37,8 @@ class StaffPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->brandLogo(asset('fluxfitness-logo.svg'))
+            ->brandLogoHeight('3rem')
             ->spa()
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([

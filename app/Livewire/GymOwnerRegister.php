@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\State;
+use App\Rules\ValidEmailDomain;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -171,7 +172,7 @@ class GymOwnerRegister extends Component
                 $this->validate(
                     [
                         'name' => 'required|string|max:50',
-                        'email' => 'required|email|max:255|unique:users,email',
+                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain],
                         'phone' => 'required|phone:IN',
                         'password' => [
                             'required',

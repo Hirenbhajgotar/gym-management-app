@@ -40,13 +40,32 @@
                                     <p class="text-white">{{ $user->phone ?? 'Not provided' }}</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                    <span
-                                        class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                        {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $user->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
+                                    <label class="text-sm font-medium text-gray-400 mb-1">Status: </label>
+                                    <x-badge color="{{ $user->status->getColor() }}">
+                                        {{ $user->status->getLabel() }}
+                                    </x-badge>
                                 </div>
+                                @if($user->status === \App\Enums\UserStatus::UNDER_REVIEW)
+                                    <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                        <div class="flex">
+                                            <div class="flex-shrink-0">
+                                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-3">
+                                                <h3 class="text-sm font-medium text-yellow-400">Account Under Review</h3>
+                                                <div class="mt-2 text-sm text-yellow-200">
+                                                    <p>Your account is currently under review by our administrators. You will be notified once your account is activated.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @elseif($user->status === \App\Enums\UserStatus::INACTIVE)
+                                    <div class="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                        <p class="text-sm text-red-400">Your account is currently inactive. Please contact support.</p>
+                                    </div>
+                                @endif
                             </div>
 
                             <!-- Dashboard Button -->
@@ -90,7 +109,7 @@
                                 }
                             @endphp
 
-                            @if ($dashboardUrl !== '#')
+                            @if ($dashboardUrl !== '#' && $user->status === \App\Enums\UserStatus::ACTIVE)
                                 <div class="pt-4 border-t border-white/10">
                                     <a href="{{ $dashboardUrl }}"
                                         class="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 text-sm font-medium group mb-3">

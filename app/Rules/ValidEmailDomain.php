@@ -10,14 +10,25 @@ class ValidEmailDomain implements ValidationRule
     /**
      * Run the validation rule.
      *
-     * @param  \Closure(string, ?string=): \Illuminate\Translation\PotentiallyTranslatedString  $fail
+     * @param  \Closure(string): \Illuminate\Translation\PotentiallyTranslatedString  $fail
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $domain = substr(strrchr($value, '@'), 1);
+        if (! is_string($value)) {
+            return;
+        }
 
-        if (! $domain || ! checkdnsrr($domain, 'MX')) {
-            $fail('The :attribute domain is invalid.');
+        // Extract domain
+        $parts = explode('@', $value);
+        if (count($parts) !== 2) {
+            return; // Let 'email' rule handle invalid format
+        }
+
+        $domain = $parts[1];
+
+        // Check for valid MX records
+        if (! checkdnsrr($domain, 'MX')) {
+            $fail('The :attribute domain does not appear to be valid. Please check for typos.');
         }
     }
 }

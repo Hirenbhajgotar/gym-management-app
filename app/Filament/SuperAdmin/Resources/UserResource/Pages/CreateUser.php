@@ -56,9 +56,11 @@ class CreateUser extends CreateRecord
                 $this->setupGymOwner($user);
             }
 
-            // Mark email as verified for SuperAdmin-created users
+            // If email_verified_at was NOT set by the admin (meaning it's null),
+            // we fire the Registered event to send the verification email.
+            // If it WAS set, the model already has it saved, so we don't need to do anything.
             if (! $user->hasVerifiedEmail()) {
-                $user->markEmailAsVerified();
+                event(new \Illuminate\Auth\Events\Registered($user));
             }
 
             return $user;

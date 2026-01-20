@@ -492,7 +492,7 @@ class TwilioAccountManager
             } else {
                 // Production: Use approved template (required for business-initiated messages)
                 // Since we are sending from System, we use the System's template from config
-                $templateSid = config('services.twilio.whatsapp_integration_active_v2_template_sid');
+                $templateSid = config('services.twilio.whatsapp_integration_active_v5_template_sid');
 
                 if (! $templateSid) {
                     // No template available - return helpful error

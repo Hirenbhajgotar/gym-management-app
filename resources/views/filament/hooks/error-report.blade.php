@@ -1,1 +1,1 @@
-<livewire:filament.error-report-modal />
+<livewire:error-report-modal />

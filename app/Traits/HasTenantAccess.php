@@ -27,5 +27,6 @@ trait HasTenantAccess
     protected function getGymId(): int|string
     {
         return $this->getGym()->id;
+
     }
 }

@@ -58,7 +58,7 @@ class FollowUpsRelationManager extends RelationManager
 
         return [
             Forms\Components\Hidden::make('gym_id')
-                ->default($currentGym->id),
+                ->default($currentGym?->id ?? null),
 
             Section::make('Follow-Up Details')
                 ->icon('heroicon-o-calendar')

@@ -116,7 +116,6 @@ class GymMember extends Model
         'membership_start' => 'date',
         'membership_end' => 'date',
         'age' => 'integer',
-        'is_active' => 'boolean',
         'latest_payment_at' => 'date',
         'payment_status' => PaymentStatus::class,
     ];

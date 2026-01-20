@@ -7,6 +7,7 @@ use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
 use App\Forms\Components\AddressForm;
 use App\Models\User;
+use App\Rules\ValidEmailDomain;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
@@ -192,6 +193,7 @@ abstract class BaseEmployeeResource extends Resource
                             Forms\Components\TextInput::make('email')
                                 ->label('Email Address')
                                 ->email()
+                                ->rule(new ValidEmailDomain)
                                 ->required()
                                 ->unique(User::class, 'email', ignoreRecord: true)
                                 ->maxLength(100)

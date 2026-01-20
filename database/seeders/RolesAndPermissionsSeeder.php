@@ -25,7 +25,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $gyms = Gym::all();
 
         if ($gyms->isEmpty()) {
-            $this->command->warn('⚠️ No gyms found. Creating default gym...');
+            if (isset($this->command)) {
+                $this->command->warn('⚠️ No gyms found. Creating default gym...');
+            }
             $gym = Gym::create([
                 'name' => 'Default gym',
                 'slug' => 'default-gym',
@@ -228,9 +230,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 $gymManagerPermissions,
             );
         }
-        $this->command->info(
-            '✅ Tenant-specific roles and permissions have been seeded successfully!',
-        );
+        if (isset($this->command)) {
+            $this->command->info(
+                '✅ Tenant-specific roles and permissions have been seeded successfully!',
+            );
+        }
 
         // Display summary
         $this->displaySummary($gyms);
@@ -414,6 +418,10 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function displaySummary($gyms)
     {
+        if (! isset($this->command)) {
+            return;
+        }
+
         $this->command->info('📊 Summary:');
 
         foreach ($gyms as $gym) {

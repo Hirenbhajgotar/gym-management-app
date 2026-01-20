@@ -6,6 +6,7 @@ use App\Enums\Currency;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
 use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
+use App\Rules\ValidEmailDomain;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Facades\Filament;
@@ -100,6 +101,7 @@ class TrainerResource extends Resource
 
                     Forms\Components\TextInput::make('email')
                         ->email()
+                        ->rule(new ValidEmailDomain)
                         ->required()
                         ->unique(Trainer::class, 'email', ignoreRecord: true)
                         ->placeholder('trainer@example.com')

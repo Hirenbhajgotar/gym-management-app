@@ -3,6 +3,7 @@
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\SubscriptionStatus;
+use App\Enums\UserStatus;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
@@ -10,14 +11,15 @@ use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Rules\ValidEmailDomain;
 use App\Services\SubscriptionService;
 use Filament\Forms;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
@@ -84,6 +86,7 @@ class UserResource extends Resource
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('email')
                                 ->email()
+                                ->rule(new ValidEmailDomain)
                                 ->required()
                                 ->unique(ignoreRecord: true)
                                 ->maxLength(255),
@@ -109,16 +112,12 @@ class UserResource extends Resource
                                 ->helperText(fn (string $context): string => $context === 'create'
                                     ? 'Leave empty to auto-generate and send a password setup link'
                                     : 'Leave empty to keep current password'),
-                            Forms\Components\Toggle::make('is_active')
-                                ->label('Active')
-                                ->default(true)
-                                ->live() // Ensure the state is updated reactively
-                                ->afterStateUpdated(function (string $context, User $record, $state) {
-                                    if ($context === 'edit') {
-                                        self::handleAccountStatusChange($record, $state);
-                                    }
-                                })
-                                ->columnSpanFull(),
+
+                            ToggleButtons::make('status')
+                                ->label('Status')
+                                ->options(UserStatus::class)
+                                ->inline()
+                                ->required(),
 
                             Forms\Components\Section::make('Plan Assignment')->schema([
                                 Forms\Components\Grid::make(2)->schema([
@@ -228,11 +227,10 @@ class UserResource extends Resource
                     ->dateTime()
                     ->formatStateUsing(fn ($state): ?string => $state?->format('M j, Y') ?? null)
                     ->placeholder('N/A'),
-                Tables\Columns\ToggleColumn::make('is_active')
-                    ->label('Active')
-                    ->afterStateUpdated(function ($record, $state) {
-                        self::handleAccountStatusChange($record, $state);
-                    }),
+
+                Tables\Columns\SelectColumn::make('status')
+                    ->options(UserStatus::class),
+
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable()
@@ -417,62 +415,5 @@ class UserResource extends Resource
             'create' => CreateUser::route('/create'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
-    }
-
-    private static function sendAccountActivateNotification(User $user): void
-    {
-        if ($user) {
-            try {
-                $user->notify(new \App\Notifications\AccountActivatedNotification($user));
-                \Filament\Notifications\Notification::make()
-                    ->success()
-                    ->title('Account Activated')
-                    ->body('User has been notified.')
-                    ->send();
-            } catch (\Exception $e) {
-                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                \Filament\Notifications\Notification::make()
-                    ->danger()
-                    ->title('Failed to send notification')
-                    ->body($e->getMessage())
-                    ->send();
-            }
-        }
-    }
-
-    private static function sendAccountDeactivateNotification(User $user): void
-    {
-        if ($user) {
-            try {
-                $user->notify(new \App\Notifications\AccountDeactivatedNotification($user));
-                \Filament\Notifications\Notification::make()
-                    ->warning()
-                    ->title('Account Deactivated')
-                    ->body('User has been notified.')
-                    ->send();
-            } catch (\Exception $e) {
-                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                \Filament\Notifications\Notification::make()
-                    ->danger()
-                    ->title('Failed to send notification')
-                    ->body($e->getMessage())
-                    ->send();
-            }
-        }
-    }
-
-    private static function handleAccountStatusChange(User $user, bool $isActive): void
-    {
-        $isGymOwner = $user->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
-
-        if (! $isGymOwner) {
-            return;
-        }
-
-        if ($isActive) {
-            self::sendAccountActivateNotification($user);
-        } else {
-            self::sendAccountDeactivateNotification($user);
-        }
     }
 }
