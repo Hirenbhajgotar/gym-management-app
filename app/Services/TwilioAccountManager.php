@@ -93,8 +93,13 @@ class TwilioAccountManager
 
             // Create Twilio Subaccount
             $subaccount = $this->masterClient->api->v2010->accounts->create([
-                'friendlyName' => "Gym: {$gymName} - Owner: {$gymOwnerName}",
+                // 'friendlyName' => "Gym: {$gymName} - Owner: {$gymOwnerName}",
+                'friendlyName' => "Gym_{$tenantId}_{$gymName}",
             ]);
+
+            $subaccountClient = new Client($subaccount->sid, $subaccount->authToken);
+
+            $waba = $subaccountClient->messaging->v1->services->create("Gym_{$tenantId}_WABA");
 
             // Store account details in database
             $accountData = [

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NotificationAccountStatusEnum;
 use App\Enums\NotificationVerificationStatusEnum;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -75,6 +76,9 @@ class NotificationSetting extends Model
         'verification_status',
         'verified_at',
         'twilio_metadata',
+        'waba_sid',
+        'whatsapp_sender_sid',
+        'phone_number_sid',
     ];
 
     protected $casts = [
@@ -110,5 +114,45 @@ class NotificationSetting extends Model
     public function isAccountVerified(): bool
     {
         return $this->verification_status === NotificationVerificationStatusEnum::VERIFIED;
+    }
+
+    protected function twilioAccountSid(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => encrypt($value),
+            get: fn ($value) => decrypt($value),
+        );
+    }
+
+    protected function twilioAuthToken(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => encrypt($value),
+            get: fn ($value) => decrypt($value),
+        );
+    }
+
+    protected function wabaSid(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => encrypt($value),
+            get: fn ($value) => decrypt($value),
+        );
+    }
+
+    protected function whatsappSenderSid(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => encrypt($value),
+            get: fn ($value) => decrypt($value),
+        );
+    }
+
+    protected function phoneNumberSid(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => encrypt($value),
+            get: fn ($value) => decrypt($value),
+        );
     }
 }
