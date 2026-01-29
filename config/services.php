@@ -77,6 +77,7 @@ return [
     'twilio' => [
         'master_sid' => env('TWILIO_ACCOUNT_SID'),
         'master_token' => env('TWILIO_AUTH_TOKEN'),
+        'waba_id' => env('TWILIO_WABA_ID', '1452995289594243'),
         // 'api_key' => env('TWILIO_API_KEY'),
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),

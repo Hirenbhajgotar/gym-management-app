@@ -79,6 +79,7 @@ class NotificationSetting extends Model
         'waba_sid',
         'whatsapp_sender_sid',
         'phone_number_sid',
+        'verification_sid',
     ];
 
     protected $casts = [
@@ -119,40 +120,47 @@ class NotificationSetting extends Model
     protected function twilioAccountSid(): Attribute
     {
         return Attribute::make(
-            set: fn ($value) => encrypt($value),
-            get: fn ($value) => decrypt($value),
+            set: fn ($value) => $value ? encrypt($value) : null,
+            get: fn ($value) => $value ? decrypt($value) : null,
         );
     }
 
     protected function twilioAuthToken(): Attribute
     {
         return Attribute::make(
-            set: fn ($value) => encrypt($value),
-            get: fn ($value) => decrypt($value),
+            set: fn ($value) => $value ? encrypt($value) : null,
+            get: fn ($value) => $value ? decrypt($value) : null,
         );
     }
 
     protected function wabaSid(): Attribute
     {
         return Attribute::make(
-            set: fn ($value) => encrypt($value),
-            get: fn ($value) => decrypt($value),
+            set: fn ($value) => $value ? encrypt($value) : null,
+            get: fn ($value) => $value ? decrypt($value) : null,
         );
     }
 
     protected function whatsappSenderSid(): Attribute
     {
         return Attribute::make(
-            set: fn ($value) => encrypt($value),
-            get: fn ($value) => decrypt($value),
+            set: fn ($value) => $value ? encrypt($value) : null,
+            get: fn ($value) => $value ? decrypt($value) : null,
         );
     }
 
     protected function phoneNumberSid(): Attribute
     {
         return Attribute::make(
-            set: fn ($value) => encrypt($value),
-            get: fn ($value) => decrypt($value),
+            set: fn ($value) => $value ? encrypt($value) : null,
+            get: fn ($value) => $value ? decrypt($value) : null,
+        );
+    }
+
+    protected function metaVerificationLink(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => config('app.meta_verification_link') . $this->waba_sid,
         );
     }
 }
