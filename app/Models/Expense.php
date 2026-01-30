@@ -1,0 +1,380 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\Currency;
+use App\Enums\DefaultRole;
+use App\Enums\ExpensePaymentMethod;
+use App\Enums\ExpenseStatus;
+use App\Enums\RecurringFrequency;
+use App\Observers\ExpenseObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Number;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property int|null $expense_category_id
+ * @property int $user_id
+ * @property int|null $approved_by_id
+ * @property string $title
+ * @property string|null $description
+ * @property numeric $amount
+ * @property string $currency
+ * @property \Illuminate\Support\Carbon $expense_date
+ * @property ExpensePaymentMethod $payment_method
+ * @property ExpenseStatus $status
+ * @property string|null $vendor_name
+ * @property string|null $vendor_contact
+ * @property string|null $reference_number
+ * @property array|null $attachments
+ * @property array|null $metadata
+ * @property bool $is_recurring
+ * @property RecurringFrequency|null $recurring_frequency
+ * @property \Illuminate\Support\Carbon|null $next_due_date
+ * @property \Illuminate\Support\Carbon|null $submitted_at
+ * @property \Illuminate\Support\Carbon|null $approved_at
+ * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property string|null $rejection_reason
+ * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\User|null $approvedBy
+ */
+#[ObservedBy([ExpenseObserver::class])]
+class Expense extends Model
+{
+    use HasFactory, LogsActivity;
+
+    protected $fillable = [
+        'gym_id',
+        'expense_category_id',
+        'user_id',
+        'approved_by_id',
+        'title',
+        'description',
+        'amount',
+        'currency',
+        'expense_date',
+        'payment_method',
+        'status',
+        'vendor_name',
+        'vendor_contact',
+        'reference_number',
+        'attachments',
+        'metadata',
+        'is_recurring',
+        'recurring_frequency',
+        'next_due_date',
+        'submitted_at',
+        'approved_at',
+        'rejected_at',
+        'rejection_reason',
+        'paid_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'expense_date' => 'date',
+            'payment_method' => ExpensePaymentMethod::class,
+            'status' => ExpenseStatus::class,
+            'attachments' => 'array',
+            'metadata' => 'array',
+            'is_recurring' => 'boolean',
+            'recurring_frequency' => RecurringFrequency::class,
+            'next_due_date' => 'date',
+            'submitted_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
+            'paid_at' => 'datetime',
+        ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('expense')
+            ->logOnly([
+                'title',
+                'amount',
+                'status',
+                'expense_category_id',
+                'approved_by_id',
+                'rejection_reason',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        $amount = Number::currency($this->amount, in: $this->currency);
+
+        return match ($eventName) {
+            'created' => "Expense '{$this->title}' of {$amount} was created",
+            'updated' => "Expense '{$this->title}' of {$amount} was updated",
+            'deleted' => "Expense '{$this->title}' of {$amount} was deleted",
+            default => "Expense '{$this->title}' was {$eventName}",
+        };
+    }
+
+    // ========================================
+    // Relationships
+    // ========================================
+
+    public function gym(): BelongsTo
+    {
+        return $this->belongsTo(Gym::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
+    // ========================================
+    // Scopes
+    // ========================================
+
+    #[Scope]
+    public function draft(Builder $query): void
+    {
+        $query->where('status', ExpenseStatus::DRAFT);
+    }
+
+    #[Scope]
+    public function pending(Builder $query): void
+    {
+        $query->where('status', ExpenseStatus::PENDING);
+    }
+
+    #[Scope]
+    public function approved(Builder $query): void
+    {
+        $query->where('status', ExpenseStatus::APPROVED);
+    }
+
+    #[Scope]
+    public function rejected(Builder $query): void
+    {
+        $query->where('status', ExpenseStatus::REJECTED);
+    }
+
+    #[Scope]
+    public function paid(Builder $query): void
+    {
+        $query->where('status', ExpenseStatus::PAID);
+    }
+
+    #[Scope]
+    public function forGym(Builder $query, int $gymId): void
+    {
+        $query->where('gym_id', $gymId);
+    }
+
+    #[Scope]
+    public function forUser(Builder $query, int $userId): void
+    {
+        $query->where('user_id', $userId);
+    }
+
+    #[Scope]
+    public function recurring(Builder $query): void
+    {
+        $query->where('is_recurring', true);
+    }
+
+    #[Scope]
+    public function dueSoon(Builder $query, int $days = 7): void
+    {
+        $query->recurring()
+            ->whereNotNull('next_due_date')
+            ->whereBetween('next_due_date', [now(), now()->addDays($days)]);
+    }
+
+    #[Scope]
+    public function inPeriod(Builder $query, $startDate, $endDate): void
+    {
+        $query->whereBetween('expense_date', [$startDate, $endDate]);
+    }
+
+    // ========================================
+    // Status Helpers
+    // ========================================
+
+    public function isDraft(): bool
+    {
+        return $this->status === ExpenseStatus::DRAFT;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === ExpenseStatus::PENDING;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === ExpenseStatus::APPROVED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === ExpenseStatus::REJECTED;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === ExpenseStatus::PAID;
+    }
+
+    public function canEdit(): bool
+    {
+        return $this->status->canEdit();
+    }
+
+    public function canSubmit(): bool
+    {
+        return $this->status === ExpenseStatus::DRAFT;
+    }
+
+    public function canApprove(): bool
+    {
+        return $this->status === ExpenseStatus::PENDING;
+    }
+
+    // ========================================
+    // Actions
+    // ========================================
+
+    /**
+     * Submit expense for approval
+     */
+    public function submit(): bool
+    {
+        if (! $this->canSubmit()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => ExpenseStatus::PENDING,
+            'submitted_at' => now(),
+        ]);
+    }
+
+    /**
+     * Approve the expense
+     */
+    public function approve(User $approver): bool
+    {
+        if (! $this->canApprove()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => ExpenseStatus::APPROVED,
+            'approved_by_id' => $approver->id,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
+     * Reject the expense
+     */
+    public function reject(User $rejector, string $reason): bool
+    {
+        if (! $this->canApprove()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => ExpenseStatus::REJECTED,
+            'approved_by_id' => $rejector->id,
+            'rejected_at' => now(),
+            'rejection_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Mark expense as paid
+     */
+    public function markAsPaid(): bool
+    {
+        if ($this->status !== ExpenseStatus::APPROVED) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => ExpenseStatus::PAID,
+            'paid_at' => now(),
+        ]);
+    }
+
+    /**
+     * Cancel the expense
+     */
+    public function cancel(): bool
+    {
+        if ($this->status->isFinalized()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => ExpenseStatus::CANCELLED,
+        ]);
+    }
+
+    // ========================================
+    // Accessors
+    // ========================================
+
+    protected function formattedAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Number::currency($this->amount, in: $this->currency),
+        );
+    }
+
+    /**
+     * Check if the creator should have auto-approval
+     */
+    public function shouldAutoApprove(): bool
+    {
+        // Gym owners get auto-approval
+        return $this->user->hasRole(DefaultRole::GYM_OWNER->value);
+    }
+
+    /**
+     * Update next due date for recurring expense
+     */
+    public function updateNextDueDate(): void
+    {
+        if ($this->is_recurring && $this->recurring_frequency) {
+            $this->update([
+                'next_due_date' => $this->recurring_frequency->getNextDueDate($this->expense_date),
+            ]);
+        }
+    }
+}

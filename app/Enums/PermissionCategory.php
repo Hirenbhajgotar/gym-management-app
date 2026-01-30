@@ -28,6 +28,9 @@ enum PermissionCategory: string implements HasIcon, HasLabel
     case MANAGER = 'manager';
     case PAYMENT = 'payment';
     case LEAD = 'lead';
+    case EXPENSE = 'expense';
+    case EXPENSE_CATEGORY = 'expense_category';
+    case EXPENSE_BUDGET = 'expense_budget';
 
     public function getLabel(): string
     {
@@ -53,6 +56,9 @@ enum PermissionCategory: string implements HasIcon, HasLabel
             self::MANAGER => 'Manager',
             self::PAYMENT => 'Payment',
             self::LEAD => 'Lead',
+            self::EXPENSE => 'Expense Management',
+            self::EXPENSE_CATEGORY => 'Expense Categories',
+            self::EXPENSE_BUDGET => 'Expense Budgets',
         };
     }
 
@@ -79,6 +85,9 @@ enum PermissionCategory: string implements HasIcon, HasLabel
             self::GENERAL => 'heroicon-o-light-bulb',
             self::PAYMENT => 'heroicon-o-credit-card',
             self::LEAD => 'heroicon-o-user',
+            self::EXPENSE => 'phosphor-money',
+            self::EXPENSE_CATEGORY => 'phosphor-folder-open',
+            self::EXPENSE_BUDGET => 'phosphor-chart-pie-slice',
         };
     }
 }
