@@ -61,9 +61,24 @@ class SyncPermissionsCommand extends Command
         // Step 4: Sync other tenant roles (manager, receptionist, trainer)
         $otherRolesStats = $this->syncOtherTenantRoles($gymId, $dryRun, $force);
 
-        // Clear permission cache
+        // Clear permission cache for affected gyms
         if (!$dryRun) {
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $registrar = app(PermissionRegistrar::class);
+            
+            if ($gymId) {
+                // Clear cache for specific gym only
+                if (method_exists($registrar, 'forgetCachedPermissionsForGym')) {
+                    $registrar->forgetCachedPermissionsForGym($gymId);
+                } else {
+                    setPermissionsTeamId($gymId);
+                    $registrar->forgetCachedPermissions();
+                }
+                $this->info("   🗑️ Cleared permission cache for gym #{$gymId}");
+            } else {
+                // Clear base cache (super_admin uses this)
+                $registrar->forgetCachedPermissions();
+                $this->info('   🗑️ Cleared global permission cache');
+            }
         }
 
         $this->newLine();

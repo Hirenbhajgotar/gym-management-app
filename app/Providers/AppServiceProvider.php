@@ -12,10 +12,12 @@ use App\Observers\ExpenseObserver;
 use App\Observers\GymObserver;
 use App\Observers\SubscriptionObserver;
 use Filament\Events\TenantSet;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
+
+use App\Permissions\TeamPermissionRegistrar;
+use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,7 +34,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Model::automaticallyEagerLoadRelationships();
+        // Replace Spatie's registrar with per-gym scoped version
+        // This loads only current gym's permissions (~500) instead of all (35k+)
+        $this->app->singleton(PermissionRegistrar::class, function ($app) {
+            return new TeamPermissionRegistrar($app['cache']);
+        });
 
         Gym::observe(GymObserver::class);
         Subscription::observe(SubscriptionObserver::class);

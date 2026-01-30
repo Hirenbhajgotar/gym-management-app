@@ -4,7 +4,6 @@ namespace App\Listeners;
 
 use Filament\Events\TenantSet as EventsTenantSet;
 use Illuminate\Support\Facades\Session;
-use Spatie\Permission\PermissionRegistrar;
 
 class UpdateSpatiePermissionCacheOnTenantSwitch
 {
@@ -18,20 +17,22 @@ class UpdateSpatiePermissionCacheOnTenantSwitch
 
     /**
      * Handle the event.
+     *
+     * When switching tenants, set the new team context.
+     * The custom TeamPermissionRegistrar automatically uses per-gym cache keys,
+     * so we don't need to clear the global cache anymore.
      */
     public function handle(EventsTenantSet $event): void
     {
         $tenantId = $event->getTenant()?->getKey();
 
-        $permissionRegistrar = app(PermissionRegistrar::class);
-
         if ($tenantId) {
             setPermissionsTeamId($tenantId);
-
             Session::put('permission_team_id', $tenantId);
         }
 
-        // Clear the permission cache to apply the new tenant's permissions immediately.
-        $permissionRegistrar->forgetCachedPermissions();
+        // Note: No need to call forgetCachedPermissions() here.
+        // The TeamPermissionRegistrar uses per-gym cache keys (e.g., "spatie.permission.cache.gym.123"),
+        // so each gym's permissions are cached separately and loaded correctly.
     }
 }
