@@ -147,6 +147,24 @@ class Gym extends Model
         return $this->hasMany(Lead::class);
     }
 
+    /** @return HasMany<\App\Models\ExpenseCategory, self> */
+    public function expenseCategories(): HasMany
+    {
+        return $this->hasMany(ExpenseCategory::class);
+    }
+
+    /** @return HasMany<\App\Models\Expense, self> */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    /** @return HasMany<\App\Models\ExpenseBudget, self> */
+    public function expenseBudgets(): HasMany
+    {
+        return $this->hasMany(ExpenseBudget::class);
+    }
+
     public static function getCurrentTenantUsers()
     {
         /**

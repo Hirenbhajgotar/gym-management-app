@@ -38,6 +38,10 @@ class PermissionDescriptionSeeder extends Seeder
                 // 'subscription',
                 // 'invoice',
                 // 'report',
+
+                'expense' => 'Expense',
+                'expense_category' => 'Expense Category',
+                'expense_budget' => 'Expense Budget',
             ];
 
             // Define Filament v3 standard permissions
@@ -55,6 +59,7 @@ class PermissionDescriptionSeeder extends Seeder
                 'reorder',     // Reorder records
                 'export',
                 'import',
+                'approve', // For expense approval workflow
             ];
 
             foreach ($resources as $resourceKey => $resource) {

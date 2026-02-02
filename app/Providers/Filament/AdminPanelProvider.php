@@ -69,6 +69,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
                 NavigationGroup::make()
+                    ->label('Expense Management')
+                    ->icon('phosphor-invoice'),
+                NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-wrench-screwdriver'),
             ])

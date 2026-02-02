@@ -43,6 +43,13 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="flex flex-wrap items-center gap-3 mt-4">
+                {{ ($this->verifyNumberAction)(['size' => 'xl']) }}
+                {{ ($this->checkMessageAction)(['size' => 'lg']) }}
+                {{ ($this->resendCodeAction)(['size' => 'lg']) }}
+                {{ ($this->resetAction)(['size' => 'md']) }}
+            </div>
         @elseif ($viewState === 'active')
             <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                 <div class="flex items-start gap-3">
@@ -72,14 +79,7 @@
 
             {{-- Action Buttons --}}
             <div class="mt-6 flex flex-wrap items-center gap-3">
-                @if ($viewState === 'create')
-                    {{ ($this->createAccountAction)(['size' => 'xl']) }}
-                @elseif ($viewState === 'verify')
-                    <div class="flex flex-wrap items-center gap-3">
-                        {{ ($this->verifyNumberAction)(['size' => 'xl']) }}
-                        {{ ($this->resendCodeAction)(['size' => 'xl']) }}
-                    </div>
-                @elseif ($viewState === 'active')
+                @if ($viewState === 'active')
                     {{ ($this->testMessageAction)(['size' => 'xl']) }}
                 @endif
             </div>
