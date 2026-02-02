@@ -35,20 +35,28 @@
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($budgets as $budget)
                     @php
-                        $colorClasses = match($budget['color']) {
-                            'success' => 'bg-success-500',
-                            'info' => 'bg-info-500',
-                            'warning' => 'bg-warning-500',
-                            'danger' => 'bg-danger-500',
-                            default => 'bg-gray-500',
+                        $bgColor = match($budget['color']) {
+                            'success' => 'rgb(34 197 94)',   // green-500
+                            'info' => 'rgb(59 130 246)',     // blue-500
+                            'warning' => 'rgb(245 158 11)',  // amber-500
+                            'danger' => 'rgb(239 68 68)',    // red-500
+                            default => 'rgb(107 114 128)',   // gray-500
                         };
                         
-                        $textColorClasses = match($budget['color']) {
-                            'success' => 'text-success-600',
-                            'info' => 'text-info-600',
-                            'warning' => 'text-warning-600',
-                            'danger' => 'text-danger-600',
-                            default => 'text-gray-600',
+                        $textColor = match($budget['color']) {
+                            'success' => 'rgb(22 163 74)',    // green-600
+                            'info' => 'rgb(37 99 235)',       // blue-600
+                            'warning' => 'rgb(217 119 6)',    // amber-600
+                            'danger' => 'rgb(220 38 38)',     // red-600
+                            default => 'rgb(75 85 99)',       // gray-600
+                        };
+                        
+                        $badgeBgColor = match($budget['color']) {
+                            'success' => 'rgb(240 253 244)',  // green-50
+                            'info' => 'rgb(239 246 255)',     // blue-50
+                            'warning' => 'rgb(255 251 235)',  // amber-50
+                            'danger' => 'rgb(254 242 242)',   // red-50
+                            default => 'rgb(249 250 251)',    // gray-50
                         };
                     @endphp
                     
@@ -62,7 +70,10 @@
                                     {{ $budget['category'] }} • {{ $budget['period'] }}
                                 </p>
                             </div>
-                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium {{ $textColorClasses }} bg-{{ $budget['color'] }}-50 dark:bg-{{ $budget['color'] }}-900/20">
+                            <span 
+                                class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                style="color: {{ $textColor }}; background-color: {{ $badgeBgColor }}"
+                            >
                                 {{ $budget['percentage'] }}%
                             </span>
                         </div>
@@ -78,8 +89,8 @@
                             </div>
                             <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
                                 <div 
-                                    class="h-full {{ $colorClasses }} transition-all duration-300"
-                                    style="width: {{ min($budget['percentage'], 100) }}%"
+                                    class="h-full transition-all duration-300"
+                                    style="width: {{ min($budget['percentage'], 100) }}%; background-color: {{ $bgColor }}"
                                 ></div>
                             </div>
                         </div>

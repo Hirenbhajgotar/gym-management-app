@@ -75,18 +75,17 @@
                             </div>
                             <div class="w-full h-2 bg-gray-200 rounded-full dark:bg-gray-700">
                                 @php
-                                    $colorClass = match($category['color']) {
-                                        'success' => 'bg-success-500',
-                                        'warning' => 'bg-warning-500',
-                                        'danger' => 'bg-danger-500',
-                                        'info' => 'bg-info-500',
-                                        'primary' => 'bg-primary-500',
-                                        default => 'bg-gray-500',
+                                    $colorClasses = match($category['color']) {
+                                        'success' => '#22c55e',  // green-500
+                                        'info' => '#3b82f6',     // blue-500
+                                        'warning' => '#eab308',  // yellow-500
+                                        'danger' => '#ef4444',   // red-500
+                                        default => '#6b7280',    // gray-500
                                     };
                                 @endphp
                                 <div 
-                                    class="h-full {{ $colorClass }} rounded-full transition-all"
-                                    style="width: {{ $category['percentage'] }}%"
+                                    class="h-full rounded-full transition-all"
+                                    style="width: {{ $category['percentage'] }}%; background-color: {{ $colorClasses }};"
                                 ></div>
                             </div>
                         </div>
