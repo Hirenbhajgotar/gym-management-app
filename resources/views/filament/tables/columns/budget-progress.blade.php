@@ -5,11 +5,11 @@
     $color = $getRecord()->getStatusColor();
     
     $colorClasses = match($color) {
-        'success' => 'bg-success-500',
-        'info' => 'bg-info-500',
-        'warning' => 'bg-warning-500',
-        'danger' => 'bg-danger-500',
-        default => 'bg-gray-500',
+        'success' => '#22c55e',  // green-500
+        'info' => '#3b82f6',     // blue-500
+        'warning' => '#eab308',  // yellow-500
+        'danger' => '#ef4444',   // red-500
+        default => '#6b7280',    // gray-500
     };
 @endphp
 
@@ -24,8 +24,8 @@
     </div>
     <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
         <div 
-            class="h-full {{ $colorClasses }} transition-all duration-300"
-            style="width: {{ min($percentage, 100) }}%"
+            class="h-full transition-all duration-300"
+            style="width: {{ min($percentage, 100) }}%; background-color: {{ $colorClasses }};"
         ></div>
     </div>
     @if($percentage > 100)
