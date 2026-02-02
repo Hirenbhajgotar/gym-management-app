@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Exports\LeadReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadConversionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadFunnelChart;
@@ -158,7 +159,10 @@ class LeadReports extends Page implements HasForms
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    // TODO: Implement export
+                    $gymId = $this->getGymId();
+                    $filename = 'lead-report-' . now()->format('Y-m-d') . '.xlsx';
+
+                    return (new LeadReportExport($gymId, $this->filters))->download($filename);
                 }),
 
             Action::make('refresh')
