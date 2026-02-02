@@ -1,0 +1,237 @@
+<?php
+
+namespace App\Filament\Admin\Clusters\Reports\Pages;
+
+use App\Enums\LeadStatus;
+use App\Enums\PaymentStatus;
+use App\Filament\Admin\Clusters\Reports;
+use App\Models\Attendances;
+use App\Models\GymMember;
+use App\Models\Lead;
+use App\Models\MemberPayment;
+use App\Models\Trainer;
+use App\Traits\HasReportFilters;
+use Filament\Pages\Page;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+
+class ReportsDashboard extends Page
+{
+    use HasReportFilters;
+
+    protected static ?string $navigationIcon = 'phosphor-chart-line';
+
+    protected static ?string $navigationLabel = 'Dashboard';
+
+    protected static ?string $title = 'Reports Dashboard';
+
+    protected static ?int $navigationSort = 0;
+
+    protected static ?string $cluster = Reports::class;
+
+    protected static string $view = 'filament.clusters.reports.pages.reports-dashboard';
+
+    /**
+     * Get member overview stats.
+     */
+    public function getMemberStats(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = "reports:member_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+            $totalMembers = GymMember::where('gym_id', $gymId)->count();
+            $activeMembers = GymMember::where('gym_id', $gymId)->membershipActive()->count();
+            $expiredMembers = GymMember::where('gym_id', $gymId)->membershipExpired()->count();
+
+            // New members this month vs last month
+            $newThisMonth = GymMember::where('gym_id', $gymId)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+
+            $newLastMonth = GymMember::where('gym_id', $gymId)
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->subMonth()->year)
+                ->count();
+
+            $growthRate = $this->calculatePercentageChange($newThisMonth, $newLastMonth);
+
+            return [
+                'total' => $totalMembers,
+                'active' => $activeMembers,
+                'expired' => $expiredMembers,
+                'new_this_month' => $newThisMonth,
+                'growth_rate' => $growthRate,
+                'growth_color' => $this->getTrendColor($growthRate),
+            ];
+        });
+    }
+
+    /**
+     * Get revenue overview stats.
+     */
+    public function getRevenueStats(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = "reports:revenue_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+            // MTD Revenue
+            $mtdRevenue = MemberPayment::where('gym_id', $gymId)
+                ->where('status', PaymentStatus::COMPLETED)
+                ->whereMonth('payment_date', now()->month)
+                ->whereYear('payment_date', now()->year)
+                ->sum('amount');
+
+            // Last month's total revenue
+            $lastMonthRevenue = MemberPayment::where('gym_id', $gymId)
+                ->where('status', PaymentStatus::COMPLETED)
+                ->whereMonth('payment_date', now()->subMonth()->month)
+                ->whereYear('payment_date', now()->subMonth()->year)
+                ->sum('amount');
+
+            // YTD Revenue
+            $ytdRevenue = MemberPayment::where('gym_id', $gymId)
+                ->where('status', PaymentStatus::COMPLETED)
+                ->whereYear('payment_date', now()->year)
+                ->sum('amount');
+
+            $revenueChange = $this->calculatePercentageChange($mtdRevenue, $lastMonthRevenue);
+
+            // Today's collection
+            $todayCollection = MemberPayment::where('gym_id', $gymId)
+                ->where('status', PaymentStatus::COMPLETED)
+                ->whereDate('payment_date', today())
+                ->sum('amount');
+
+            return [
+                'mtd' => $mtdRevenue,
+                'ytd' => $ytdRevenue,
+                'last_month' => $lastMonthRevenue,
+                'today' => $todayCollection,
+                'change_rate' => $revenueChange,
+                'change_color' => $this->getTrendColor($revenueChange),
+            ];
+        });
+    }
+
+    /**
+     * Get lead pipeline stats.
+     */
+    public function getLeadStats(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = "reports:lead_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+            $totalLeads = Lead::where('gym_id', $gymId)->count();
+            $newLeads = Lead::where('gym_id', $gymId)->where('status', LeadStatus::NEW)->count();
+            $activeLeads = Lead::where('gym_id', $gymId)
+                ->whereNotIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
+                ->count();
+
+            // Conversion rate (this month)
+            $convertedThisMonth = Lead::where('gym_id', $gymId)
+                ->where('status', LeadStatus::CONVERTED)
+                ->whereMonth('updated_at', now()->month)
+                ->whereYear('updated_at', now()->year)
+                ->count();
+
+            $totalThisMonth = Lead::where('gym_id', $gymId)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+
+            $conversionRate = $totalThisMonth > 0
+                ? round(($convertedThisMonth / $totalThisMonth) * 100, 1)
+                : 0;
+
+            return [
+                'total' => $totalLeads,
+                'new' => $newLeads,
+                'active' => $activeLeads,
+                'converted_this_month' => $convertedThisMonth,
+                'conversion_rate' => $conversionRate,
+            ];
+        });
+    }
+
+    /**
+     * Get trainer utilization stats.
+     */
+    public function getTrainerStats(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = "reports:trainer_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
+            $totalTrainers = Trainer::where('gym_id', $gymId)->count();
+
+            $averageClients = $totalTrainers > 0
+                ? round(GymMember::where('gym_id', $gymId)->whereNotNull('trainer_id')->count() / $totalTrainers, 1)
+                : 0;
+
+            $trainersWithClients = Trainer::where('gym_id', $gymId)
+                ->whereHas('members')
+                ->count();
+
+            $utilizationRate = $totalTrainers > 0
+                ? round(($trainersWithClients / $totalTrainers) * 100, 1)
+                : 0;
+
+            return [
+                'total' => $totalTrainers,
+                'average_clients' => $averageClients,
+                'with_clients' => $trainersWithClients,
+                'utilization_rate' => $utilizationRate,
+            ];
+        });
+    }
+
+    /**
+     * Get attendance stats for today.
+     */
+    public function getAttendanceStats(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = "reports:attendance_stats:gym:{$gymId}:" . today()->format('Y-m-d');
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(30)], function () use ($gymId) {
+            // Today's check-ins
+            $todayCheckIns = Attendances::where('gym_id', $gymId)
+                ->whereDate('check_in_time', today())
+                ->count();
+
+            // Currently checked in
+            $currentlyIn = Attendances::where('gym_id', $gymId)
+                ->whereDate('check_in_time', today())
+                ->where('status', 'checked_in')
+                ->count();
+
+            // This week's average
+            $weekStart = now()->startOfWeek();
+            $daysInWeek = now()->diffInDays($weekStart) + 1;
+            $weeklyTotal = Attendances::where('gym_id', $gymId)
+                ->whereBetween('check_in_time', [$weekStart, now()])
+                ->count();
+
+            $weeklyAverage = $daysInWeek > 0 ? round($weeklyTotal / $daysInWeek, 0) : 0;
+
+            // Peak hour (most common check-in hour today)
+            $peakHour = Attendances::where('gym_id', $gymId)
+                ->whereDate('check_in_time', today())
+                ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
+                ->groupBy('hour')
+                ->orderByDesc('count')
+                ->first();
+
+            return [
+                'today' => $todayCheckIns,
+                'currently_in' => $currentlyIn,
+                'weekly_average' => $weeklyAverage,
+                'peak_hour' => $peakHour?->hour ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
+            ];
+        });
+    }
+}

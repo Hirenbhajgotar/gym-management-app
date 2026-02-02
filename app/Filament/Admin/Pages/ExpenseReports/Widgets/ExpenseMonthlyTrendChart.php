@@ -16,7 +16,7 @@ class ExpenseMonthlyTrendChart extends ChartWidget
 
     protected static ?string $pollingInterval = null;
 
-    protected int|string|array $columnSpan = 1;
+    protected int|string|array $columnSpan = 'full';
 
     #[Reactive]
     public ?array $filters = [];
@@ -87,7 +87,7 @@ class ExpenseMonthlyTrendChart extends ChartWidget
 
     protected function getOptions(): RawJs
     {
-        return RawJs::make(<<<JS
+        return RawJs::make(<<<'JS'
             {
                 responsive: true,
                 maintainAspectRatio: true,
