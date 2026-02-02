@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Pages\ExpenseReports\Widgets;
 use App\Enums\ExpenseStatus;
 use App\Models\Expense;
 use Filament\Facades\Filament;
+use Filament\Support\RawJs;
 use Filament\Widgets\ChartWidget;
 use Livewire\Attributes\Reactive;
 
@@ -75,32 +76,34 @@ class ExpenseCategoryChart extends ChartWidget
         return 'doughnut';
     }
 
-    protected function getOptions(): array
+    protected function getOptions(): RawJs
     {
-        return [
-            'responsive' => true,
-            'maintainAspectRatio' => true,
-            'plugins' => [
-                'legend' => [
-                    'position' => 'bottom',
-                    'labels' => [
-                        'usePointStyle' => true,
-                        'padding' => 15,
-                    ],
-                ],
-                'tooltip' => [
-                    'callbacks' => [
-                        'label' => "function(context) {
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return context.label + ': ₹' + value.toLocaleString('en-IN') + ' (' + percentage + '%)';
-                        }",
-                    ],
-                ],
-            ],
-            'cutout' => '60%',
-        ];
+        return RawJs::make(<<<'JS'
+            {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': ₹' + value.toLocaleString('en-IN') + ' (' + percentage + '%)';
+                            },
+                        },
+                    },
+                },
+                cutout: '60%',
+            }
+        JS);
     }
 
     private function getColorHex(string $color): string

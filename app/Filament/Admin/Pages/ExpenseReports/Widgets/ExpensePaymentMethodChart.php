@@ -6,6 +6,7 @@ use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Models\Expense;
 use Filament\Facades\Filament;
+use Filament\Support\RawJs;
 use Filament\Widgets\ChartWidget;
 use Livewire\Attributes\Reactive;
 
@@ -85,33 +86,35 @@ class ExpensePaymentMethodChart extends ChartWidget
         return 'bar';
     }
 
-    protected function getOptions(): array
+    protected function getOptions(): RawJs
     {
-        return [
-            'responsive' => true,
-            'maintainAspectRatio' => true,
-            'indexAxis' => 'y',
-            'plugins' => [
-                'legend' => [
-                    'display' => false,
-                ],
-                'tooltip' => [
-                    'callbacks' => [
-                        'label' => "function(context) {
-                            return '₹' + context.parsed.x.toLocaleString('en-IN');
-                        }",
-                    ],
-                ],
-            ],
-            'scales' => [
-                'x' => [
-                    'beginAtZero' => true,
-                    'title' => ['display' => true, 'text' => 'Amount (₹)'],
-                ],
-                'y' => [
-                    'grid' => ['display' => false],
-                ],
-            ],
-        ];
+        return RawJs::make(<<<JS
+            {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                return '₹' + context.parsed.x.toLocaleString('en-IN');
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Amount (₹)' },
+                    },
+                    y: {
+                        grid: { display: false },
+                    },
+                },
+            }
+        JS);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\ExpenseStatus;
 use App\Models\Expense;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Filament\Support\RawJs;
 use Filament\Widgets\ChartWidget;
 use Livewire\Attributes\Reactive;
 
@@ -84,48 +85,50 @@ class ExpenseMonthlyTrendChart extends ChartWidget
         return 'line';
     }
 
-    protected function getOptions(): array
+    protected function getOptions(): RawJs
     {
-        return [
-            'responsive' => true,
-            'maintainAspectRatio' => true,
-            'interaction' => [
-                'mode' => 'index',
-                'intersect' => false,
-            ],
-            'plugins' => [
-                'legend' => [
-                    'position' => 'top',
-                ],
-                'tooltip' => [
-                    'callbacks' => [
-                        'label' => "function(context) {
-                            if (context.dataset.label.includes('Total')) {
-                                return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN');
-                            }
-                            return context.dataset.label + ': ' + context.parsed.y;
-                        }",
-                    ],
-                ],
-            ],
-            'scales' => [
-                'y' => [
-                    'type' => 'linear',
-                    'display' => true,
-                    'position' => 'left',
-                    'beginAtZero' => true,
-                    'grid' => ['color' => 'rgba(99, 102, 241, 0.1)'],
-                    'title' => ['display' => true, 'text' => 'Amount (₹)'],
-                ],
-                'y1' => [
-                    'type' => 'linear',
-                    'display' => true,
-                    'position' => 'right',
-                    'beginAtZero' => true,
-                    'grid' => ['drawOnChartArea' => false],
-                    'title' => ['display' => true, 'text' => 'Count'],
-                ],
-            ],
-        ];
+        return RawJs::make(<<<JS
+            {
+                responsive: true,
+                maintainAspectRatio: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                if (context.dataset.label.includes('Total')) {
+                                    return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN');
+                                }
+                                return context.dataset.label + ': ' + context.parsed.y;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        grid: { color: 'rgba(99, 102, 241, 0.1)' },
+                        title: { display: true, text: 'Amount (₹)' },
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Count' },
+                    },
+                },
+            }
+        JS);
     }
 }
