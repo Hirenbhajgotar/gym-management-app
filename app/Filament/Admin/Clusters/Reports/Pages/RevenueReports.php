@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Enums\PaymentStatus;
+use App\Exports\RevenueReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\PaymentMethodChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueByPlanChart;
@@ -183,7 +184,10 @@ class RevenueReports extends Page implements HasForms
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    // TODO: Implement export
+                    /** @var \App\Models\Gym $gym */
+                    $gym = Filament::getTenant();
+
+                    return new RevenueReportExport($gym?->id, $this->filters);
                 }),
 
             Action::make('refresh')
