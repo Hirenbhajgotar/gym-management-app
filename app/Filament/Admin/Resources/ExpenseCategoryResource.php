@@ -16,8 +16,6 @@ class ExpenseCategoryResource extends Resource
 {
     protected static ?string $model = ExpenseCategory::class;
 
-    protected static ?string $navigationIcon = 'phosphor-folder-open';
-
     protected static ?string $navigationLabel = 'Expense Categories';
 
     protected static ?string $navigationGroup = 'Expense Management';
@@ -121,8 +119,9 @@ class ExpenseCategoryResource extends Resource
                     ->weight('bold')
                     ->description(fn ($record) => $record->parent?->name),
 
-                Tables\Columns\BadgeColumn::make('is_system')
+                Tables\Columns\TextColumn::make('is_system')
                     ->label('Type')
+                    ->badge()
                     ->formatStateUsing(fn ($state) => $state ? 'System Default' : 'Custom')
                     ->color(fn ($state) => $state ? 'info' : 'success')
                     ->icon(fn ($state) => $state ? 'phosphor-lock-simple' : 'phosphor-user'),

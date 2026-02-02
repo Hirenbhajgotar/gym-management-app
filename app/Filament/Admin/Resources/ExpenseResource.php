@@ -24,7 +24,7 @@ class ExpenseResource extends Resource
 {
     protected static ?string $model = Expense::class;
 
-    protected static ?string $navigationIcon = 'phosphor-money';
+    // protected static ?string $navigationIcon = 'phosphor-money';
 
     protected static ?string $navigationLabel = 'Expenses';
 

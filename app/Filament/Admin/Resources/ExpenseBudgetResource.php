@@ -18,8 +18,6 @@ class ExpenseBudgetResource extends Resource
 {
     protected static ?string $model = ExpenseBudget::class;
 
-    protected static ?string $navigationIcon = 'phosphor-chart-pie-slice';
-
     protected static ?string $navigationLabel = 'Budgets';
 
     protected static ?string $navigationGroup = 'Expense Management';

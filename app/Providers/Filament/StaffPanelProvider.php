@@ -52,6 +52,12 @@ class StaffPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
+                NavigationGroup::make()
+                    ->label('Expense Management')
+                    ->icon('phosphor-invoice'),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-o-wrench-screwdriver'),
             ])
             ->resources([
                 MembershipPlanResource::class,
