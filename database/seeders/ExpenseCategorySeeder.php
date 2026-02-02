@@ -3,13 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\ExpenseCategory;
-use App\Models\Gym;
 use Illuminate\Database\Seeder;
 
 class ExpenseCategorySeeder extends Seeder
 {
     /**
-     * Default expense categories with icons and colors
+     * Default expense categories with icons and colors.
+     * These are seeded as system-wide defaults (gym_id = NULL, is_system = true)
      */
     protected array $defaultCategories = [
         [
@@ -127,19 +127,17 @@ class ExpenseCategorySeeder extends Seeder
 
     /**
      * Run the database seeds.
+     * Seeds system-wide default categories (gym_id = NULL)
      */
     public function run(): void
     {
-        // Seed categories for all existing gyms
-        Gym::all()->each(function (Gym $gym) {
-            $this->seedCategoriesForGym($gym);
-        });
+        $this->seedSystemDefaults();
     }
 
     /**
-     * Seed categories for a specific gym
+     * Seed system-wide default categories
      */
-    public function seedCategoriesForGym(Gym $gym): void
+    public function seedSystemDefaults(): void
     {
         $order = 0;
 
@@ -149,7 +147,7 @@ class ExpenseCategorySeeder extends Seeder
 
             $category = ExpenseCategory::firstOrCreate(
                 [
-                    'gym_id' => $gym->id,
+                    'gym_id' => null,
                     'name' => $categoryData['name'],
                     'parent_id' => null,
                 ],
@@ -157,15 +155,21 @@ class ExpenseCategorySeeder extends Seeder
                     ...$categoryData,
                     'order' => $order++,
                     'is_active' => true,
+                    'is_system' => true,
                 ]
             );
+
+            // Ensure is_system is set for existing records
+            if (! $category->is_system) {
+                $category->update(['is_system' => true]);
+            }
 
             // Create child categories
             $childOrder = 0;
             foreach ($children as $childData) {
-                ExpenseCategory::firstOrCreate(
+                $child = ExpenseCategory::firstOrCreate(
                     [
-                        'gym_id' => $gym->id,
+                        'gym_id' => null,
                         'name' => $childData['name'],
                         'parent_id' => $category->id,
                     ],
@@ -174,9 +178,22 @@ class ExpenseCategorySeeder extends Seeder
                         'description' => null,
                         'order' => $childOrder++,
                         'is_active' => true,
+                        'is_system' => true,
                     ]
                 );
+
+                if (! $child->is_system) {
+                    $child->update(['is_system' => true]);
+                }
             }
         }
+    }
+
+    /**
+     * Get the default categories array (useful for migrations)
+     */
+    public function getDefaultCategories(): array
+    {
+        return $this->defaultCategories;
     }
 }

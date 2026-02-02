@@ -43,6 +43,7 @@ class ExpenseCategory extends Model implements Sortable
         'icon',
         'color',
         'is_active',
+        'is_system',
         'order',
     ];
 
@@ -50,6 +51,7 @@ class ExpenseCategory extends Model implements Sortable
     {
         return [
             'is_active' => 'boolean',
+            'is_system' => 'boolean',
             'order' => 'integer',
         ];
     }
@@ -129,6 +131,37 @@ class ExpenseCategory extends Model implements Sortable
         return $query->where('gym_id', $gymId);
     }
 
+    /**
+     * Scope to get only system default categories (gym_id IS NULL)
+     */
+    #[Scope]
+    protected function systemDefault($query)
+    {
+        return $query->whereNull('gym_id')->where('is_system', true);
+    }
+
+    /**
+     * Scope to get categories available for a gym (system defaults + gym-specific)
+     * This is the main scope to use when fetching categories for display
+     */
+    #[Scope]
+    protected function availableForGym($query, int $gymId)
+    {
+        return $query->where(function ($q) use ($gymId) {
+            $q->whereNull('gym_id')  // System defaults
+              ->orWhere('gym_id', $gymId);  // Gym-specific
+        });
+    }
+
+    /**
+     * Scope to get gym-specific custom categories only (excludes system defaults)
+     */
+    #[Scope]
+    protected function customForGym($query, int $gymId)
+    {
+        return $query->where('gym_id', $gymId)->where('is_system', false);
+    }
+
     // ========================================
     // Accessors & Helpers
     // ========================================
@@ -141,6 +174,14 @@ class ExpenseCategory extends Model implements Sortable
         return Attribute::make(
             get: fn () => $this->parent ? $this->parent->full_path . ' > ' . $this->name : $this->name,
         );
+    }
+
+    /**
+     * Check if category is a system default
+     */
+    public function isSystemDefault(): bool
+    {
+        return $this->is_system && is_null($this->gym_id);
     }
 
     /**
@@ -161,9 +202,14 @@ class ExpenseCategory extends Model implements Sortable
 
     /**
      * Build sorting query with gym scope for multi-tenancy
+     * System defaults are sorted globally, gym-specific are sorted per-gym
      */
     public function buildSortQuery()
     {
+        if ($this->isSystemDefault()) {
+            return static::query()->whereNull('gym_id');
+        }
+
         return static::query()->where('gym_id', $this->gym_id);
     }
 }

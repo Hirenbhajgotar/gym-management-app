@@ -34,27 +34,30 @@ class ExpenseCategoryResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Category Details')
                     ->icon('phosphor-folder-open')
-                    ->description('Create or edit expense category')
+                    ->description('Create a custom expense category for your gym')
                     ->schema([
                         Forms\Components\Hidden::make('gym_id')
                             ->default($gym->id),
 
+                        Forms\Components\Hidden::make('is_system')
+                            ->default(false),
+
                         Forms\Components\Select::make('parent_id')
                             ->label('Parent Category')
-                            ->relationship(
-                                'parent',
-                                'name',
-                                fn ($query) => $query->where('gym_id', $gym->id)->whereNull('parent_id')
-                            )
+                            ->options(fn () => ExpenseCategory::query()
+                                ->availableForGym($gym->id)
+                                ->whereNull('parent_id')
+                                ->active()
+                                ->orderBy('order')
+                                ->pluck('name', 'id'))
                             ->searchable()
-                            ->preload()
                             ->placeholder('None (Root Category)')
                             ->helperText('Leave empty for root category'),
 
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('e.g., Utilities, Equipment')
+                            ->placeholder('e.g., Custom Category')
                             ->autofocus(),
 
                         Forms\Components\Textarea::make('description')
@@ -117,6 +120,12 @@ class ExpenseCategoryResource extends Resource
                     ->weight('bold')
                     ->description(fn ($record) => $record->parent?->name),
 
+                Tables\Columns\BadgeColumn::make('is_system')
+                    ->label('Type')
+                    ->formatStateUsing(fn ($state) => $state ? 'System Default' : 'Custom')
+                    ->color(fn ($state) => $state ? 'info' : 'success')
+                    ->icon(fn ($state) => $state ? 'phosphor-lock-simple' : 'phosphor-user'),
+
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
                     ->placeholder('—')
@@ -145,7 +154,8 @@ class ExpenseCategoryResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active')
                     ->onColor('success')
-                    ->offColor('danger'),
+                    ->offColor('danger')
+                    ->disabled(fn ($record) => $record->is_system),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
@@ -161,12 +171,18 @@ class ExpenseCategoryResource extends Resource
                     ->placeholder('All categories'),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->icon('phosphor-eye')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->is_system),
                 Tables\Actions\EditAction::make()
                     ->icon('phosphor-pencil')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->visible(fn ($record) => ! $record->is_system),
                 Tables\Actions\DeleteAction::make()
                     ->icon('phosphor-trash')
                     ->color('danger')
+                    ->visible(fn ($record) => ! $record->is_system)
                     ->before(function (ExpenseCategory $record, Tables\Actions\DeleteAction $action) {
                         if ($record->expenses()->exists()) {
                             $action->cancel();
@@ -180,10 +196,18 @@ class ExpenseCategoryResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function ($records, Tables\Actions\DeleteBulkAction $action) {
+                            // Filter out system defaults from bulk delete
+                            $customRecords = $records->reject(fn ($record) => $record->is_system);
+                            if ($customRecords->isEmpty()) {
+                                $action->cancel();
+                                $action->failureNotificationTitle('Cannot delete system default categories');
+                            }
+                        }),
                 ]),
             ])
-            ->defaultSort('order')
+            ->defaultSort('is_system', 'desc')
             ->reorderable('order')
             ->striped();
     }
@@ -209,7 +233,18 @@ class ExpenseCategoryResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return (string) static::getModel()::where('gym_id', $gym?->id)->count();
+        return (string) static::getModel()::availableForGym($gym?->id ?? 0)->count();
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        /** @var \App\Models\Gym $gym */
+        $gym = Filament::getTenant();
+
+        return parent::getEloquentQuery()
+            ->availableForGym($gym?->id ?? 0)
+            ->orderByDesc('is_system')
+            ->orderBy('order');
     }
 
     public static function getGloballySearchableAttributes(): array

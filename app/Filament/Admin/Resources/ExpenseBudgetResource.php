@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\Currency;
 use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
 use App\Models\ExpenseBudget;
+use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -48,11 +49,17 @@ class ExpenseBudgetResource extends Resource
 
                         Forms\Components\Select::make('expense_category_id')
                             ->label('Category (Optional)')
-                            ->relationship(
-                                'category',
-                                'name',
-                                fn ($query) => $query->where('gym_id', $gym->id)->active()->whereNull('parent_id')
-                            )
+                            ->options(fn () => ExpenseCategory::query()
+                                ->availableForGym($gym->id)
+                                ->active()
+                                ->orderByDesc('is_system')
+                                ->orderBy('order')
+                                ->get()
+                                ->mapWithKeys(fn ($cat) => [
+                                    $cat->id => $cat->is_system
+                                        ? "★ {$cat->name}"
+                                        : $cat->name,
+                                ]))
                             ->searchable()
                             ->preload()
                             ->placeholder('All Categories')

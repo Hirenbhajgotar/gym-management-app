@@ -62,13 +62,18 @@ class ExpenseResource extends Resource
 
                         Forms\Components\Select::make('expense_category_id')
                             ->label('Category')
-                            ->relationship(
-                                'category',
-                                'name',
-                                fn ($query) => $query->where('gym_id', $gym->id)->active()
-                            )
+                            ->options(fn () => ExpenseCategory::query()
+                                ->availableForGym($gym->id)
+                                ->active()
+                                ->orderByDesc('is_system')
+                                ->orderBy('order')
+                                ->get()
+                                ->mapWithKeys(fn ($cat) => [
+                                    $cat->id => $cat->is_system
+                                        ? "★ {$cat->name}"
+                                        : $cat->name
+                                ]))
                             ->searchable()
-                            ->preload()
                             ->required()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
@@ -76,12 +81,15 @@ class ExpenseResource extends Resource
                                     ->maxLength(255),
                                 Forms\Components\Hidden::make('gym_id')
                                     ->default($gym->id),
+                                Forms\Components\Hidden::make('is_system')
+                                    ->default(false),
                             ])
                             ->createOptionUsing(function (array $data) use ($gym) {
                                 return ExpenseCategory::create([
                                     'gym_id' => $gym->id,
                                     'name' => $data['name'],
                                     'is_active' => true,
+                                    'is_system' => false,
                                 ])->id;
                             }),
 
