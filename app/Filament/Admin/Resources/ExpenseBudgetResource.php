@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class ExpenseBudgetResource extends Resource
 {
@@ -239,15 +240,17 @@ class ExpenseBudgetResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        // Count budgets that have exceeded threshold
-        $exceededCount = static::getModel()::where('gym_id', $gym?->id)
-            ->active()
-            ->current()
-            ->get()
-            ->filter(fn ($budget) => $budget->isThresholdExceeded())
-            ->count();
+        return Cache::flexible(ExpenseBudget::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
+            // Count budgets that have exceeded threshold
+            $exceededCount = static::getModel()::where('gym_id', $gym?->id)
+                ->active()
+                ->current()
+                ->get()
+                ->filter(fn ($budget) => $budget->isThresholdExceeded())
+                ->count();
 
-        return $exceededCount > 0 ? (string) $exceededCount : null;
+            return $exceededCount > 0 ? (string) $exceededCount : null;
+        });
     }
 
     public static function getNavigationBadgeColor(): ?string

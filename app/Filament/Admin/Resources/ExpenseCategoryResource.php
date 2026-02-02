@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class ExpenseCategoryResource extends Resource
 {
@@ -234,7 +235,9 @@ class ExpenseCategoryResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return (string) static::getModel()::availableForGym($gym?->id ?? 0)->count();
+        return Cache::flexible(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
+            return (string) static::getModel()::customForGym($gym?->id ?? 0)->count();
+        });
     }
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder

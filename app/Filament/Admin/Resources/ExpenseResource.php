@@ -17,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
 class ExpenseResource extends Resource
@@ -71,7 +72,7 @@ class ExpenseResource extends Resource
                                 ->mapWithKeys(fn ($cat) => [
                                     $cat->id => $cat->is_system
                                         ? "★ {$cat->name}"
-                                        : $cat->name
+                                        : $cat->name,
                                 ]))
                             ->searchable()
                             ->required()
@@ -409,9 +410,11 @@ class ExpenseResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return (string) static::getModel()::where('gym_id', $gym?->id)
-            ->where('status', ExpenseStatus::PENDING)
-            ->count() ?: null;
+        return Cache::flexible(Expense::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
+            return (string) static::getModel()::where('gym_id', $gym?->id)
+                ->where('status', ExpenseStatus::PENDING)
+                ->count() ?: null;
+        });
     }
 
     public static function getNavigationBadgeColor(): ?string

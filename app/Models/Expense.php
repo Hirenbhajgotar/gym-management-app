@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\Currency;
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
@@ -56,6 +55,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Expense extends Model
 {
     use HasFactory, LogsActivity;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'expense_navigation_badge_count_';
 
     protected $fillable = [
         'gym_id',

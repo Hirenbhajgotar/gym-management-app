@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\ExpenseBudgetObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -31,9 +33,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\ExpenseCategory|null $category
  */
+#[ObservedBy([ExpenseBudgetObserver::class])]
 class ExpenseBudget extends Model
 {
     use HasFactory, LogsActivity;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'expense_budget_navigation_badge_';
 
     protected $fillable = [
         'gym_id',

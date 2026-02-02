@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\ExpenseCategoryObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,9 +33,12 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Expense> $expenses
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ExpenseBudget> $budgets
  */
+#[ObservedBy([ExpenseCategoryObserver::class])]
 class ExpenseCategory extends Model implements Sortable
 {
     use HasFactory, LogsActivity, SortableTrait;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'expense_category_navigation_badge_count_';
 
     protected $fillable = [
         'gym_id',
@@ -149,7 +154,7 @@ class ExpenseCategory extends Model implements Sortable
     {
         return $query->where(function ($q) use ($gymId) {
             $q->whereNull('gym_id')  // System defaults
-              ->orWhere('gym_id', $gymId);  // Gym-specific
+                ->orWhere('gym_id', $gymId);  // Gym-specific
         });
     }
 

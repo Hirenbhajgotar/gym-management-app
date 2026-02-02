@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Enums\ExpenseStatus;
+use App\Helpers\ParserHelper;
 use App\Models\Expense;
 
 class ExpenseObserver
@@ -34,6 +35,8 @@ class ExpenseObserver
         if ($expense->is_recurring && $expense->recurring_frequency && ! $expense->next_due_date) {
             $expense->updateNextDueDate();
         }
+
+        $this->clearCache($expense);
     }
 
     /**
@@ -45,5 +48,36 @@ class ExpenseObserver
         if ($expense->wasChanged('status') && $expense->isApproved() && $expense->is_recurring) {
             $expense->updateNextDueDate();
         }
+
+        $this->clearCache($expense);
+    }
+
+    /**
+     * Handle the Expense "deleted" event.
+     */
+    public function deleted(Expense $expense): void
+    {
+        $this->clearCache($expense);
+    }
+
+    /**
+     * Handle the Expense "restored" event.
+     */
+    public function restored(Expense $expense): void
+    {
+        $this->clearCache($expense);
+    }
+
+    /**
+     * Handle the Expense "force deleted" event.
+     */
+    public function forceDeleted(Expense $expense): void
+    {
+        $this->clearCache($expense);
+    }
+
+    private function clearCache(Expense $expense): void
+    {
+        ParserHelper::clearCache(Expense::NAVIGATION_BADGE_CACHE_KEY . $expense->gym_id);
     }
 }
