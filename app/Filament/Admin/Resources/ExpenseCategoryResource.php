@@ -131,8 +131,9 @@ class ExpenseCategoryResource extends Resource
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\BadgeColumn::make('color')
+                Tables\Columns\TextColumn::make('color')
                     ->label('Color')
+                    ->badge()
                     ->formatStateUsing(fn ($state) => ucfirst($state ?? 'gray'))
                     ->color(fn ($state) => $state ?? 'gray'),
 
