@@ -226,7 +226,10 @@ class MemberReports extends Page implements HasForms
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    // TODO: Implement export
+                    return (new \App\Exports\MemberReportExport(
+                        gymId: Filament::getTenant()?->id,
+                        filters: $this->filters
+                    ))->download('member-report-' . now()->format('Y-m-d') . '.xlsx');
                 }),
 
             Action::make('refresh')
