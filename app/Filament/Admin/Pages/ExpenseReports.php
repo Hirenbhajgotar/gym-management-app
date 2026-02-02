@@ -4,6 +4,9 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
+use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
+use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseMonthlyTrendChart;
+use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpensePaymentMethodChart;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use Filament\Actions\Action;
@@ -199,5 +202,19 @@ class ExpenseReports extends Page implements HasForms
     public static function getNavigationBadge(): ?string
     {
         return null;
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            ExpenseCategoryChart::make(['filters' => $this->filters]),
+            ExpensePaymentMethodChart::make(['filters' => $this->filters]),
+            ExpenseMonthlyTrendChart::make(['filters' => $this->filters]),
+        ];
+    }
+
+    public function getFooterWidgetsColumns(): int|array
+    {
+        return 2;
     }
 }
