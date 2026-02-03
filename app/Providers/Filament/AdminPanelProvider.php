@@ -36,14 +36,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            // ->registration()
             ->passwordReset()
             ->emailVerification()
-            // ->profile(isSimple: false)
             ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
+                'success' => Color::Green,
                 'danger' => Color::Red,
+                'info' => Color::Blue,
+                'warning' => Color::Yellow,
             ])
             ->brandLogo(asset('fluxfitness-logo.svg'))
             ->brandLogoHeight('3rem')
@@ -77,7 +78,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
-            // ->unsavedChangesAlerts()
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
