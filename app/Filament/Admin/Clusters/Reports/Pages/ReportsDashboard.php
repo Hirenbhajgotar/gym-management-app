@@ -12,6 +12,7 @@ use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\MemberPayment;
 use App\Models\Trainer;
+use App\Services\InsightsService;
 use App\Traits\HasReportFilters;
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
@@ -277,5 +278,21 @@ class ReportsDashboard extends Page
     public function getFooterWidgetsColumns(): int|array
     {
         return 1;
+    }
+
+    /**
+     * Get AI-powered daily insights.
+     */
+    public function getInsights(): \Illuminate\Support\Collection
+    {
+        $gymId = $this->getGymId();
+        // Cache for 2 hours
+        $cacheKey = "reports:insights:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addHours(2), now()->addHours(4)], function () use ($gymId) {
+            $service = app(InsightsService::class);
+
+            return $service->getDailyInsights($gymId);
+        });
     }
 }

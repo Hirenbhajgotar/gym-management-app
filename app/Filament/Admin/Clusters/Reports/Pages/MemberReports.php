@@ -218,6 +218,26 @@ class MemberReports extends Page implements HasForms
         return $colors[($planId ?? 0) % count($colors)];
     }
 
+    /**
+     * Get churn risk statistics.
+     */
+    public function getChurnStats(): array
+    {
+        $gymId = $this->getGymId();
+        // Cache for 1 hour as this is heavy calculation
+        $cacheKey = "reports:churn_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
+            $service = new \App\Services\ChurnRiskService();
+            $stats = $service->getChurnStats($gymId);
+            $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5); // Top 5 high risk
+
+            return array_merge($stats, [
+                'top_at_risk' => $atRiskMembers,
+            ]);
+        });
+    }
+
     protected function getHeaderActions(): array
     {
         return [

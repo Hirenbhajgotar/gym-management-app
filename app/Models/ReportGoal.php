@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\PaymentStatus;
+use App\Models\Attendances;
+use App\Models\GymMember;
+use App\Models\Lead;
+use App\Models\MemberPayment;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 #[ObservedBy([ReportGoalObserver::class])]
 class ReportGoal extends Model
@@ -94,8 +100,95 @@ class ReportGoal extends Model
     }
 
     // =========================================================================
+    // ACCESSORS
+    // =========================================================================
+
+    protected function currentValue(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->calculateCurrentValue(),
+        );
+    }
+
+    protected function progress(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->calculateProgress($this->current_value),
+        );
+    }
+
+    protected function daysLeft(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => (int) ceil(now()->floatDiffInDays($this->period_end, false)),
+        );
+    }
+
+    // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    /**
+     * Calculate current value for a specific metric type.
+     */
+    public function calculateCurrentValue(): float|int
+    {
+        return match ($this->metric_type) {
+            'revenue' => MemberPayment::where('gym_id', $this->gym_id)
+                ->where('status', PaymentStatus::COMPLETED)
+                ->whereBetween('payment_date', [$this->period_start, $this->period_end])
+                ->sum('amount'),
+
+            'members' => GymMember::where('gym_id', $this->gym_id)
+                ->whereBetween('created_at', [$this->period_start, $this->period_end->endOfDay()])
+                ->count(),
+
+            'leads' => Lead::where('gym_id', $this->gym_id)
+                ->whereBetween('created_at', [$this->period_start, $this->period_end->endOfDay()])
+                ->count(),
+
+            'conversions' => Lead::where('gym_id', $this->gym_id)
+                ->where('status', 'converted')
+                ->whereBetween('updated_at', [$this->period_start, $this->period_end->endOfDay()])
+                ->count(),
+
+            'attendance' => Attendances::where('gym_id', $this->gym_id)
+                ->whereBetween('check_in_time', [$this->period_start, $this->period_end->endOfDay()])
+                ->count(),
+
+            'retention' => $this->calculateRetentionRate(),
+
+            default => 0,
+        };
+    }
+
+    /**
+     * Calculate retention rate for the goal period.
+     */
+    protected function calculateRetentionRate(): float
+    {
+        $activeAtStart = GymMember::where('gym_id', $this->gym_id)
+            ->where('membership_start', '<=', $this->period_start)
+            ->where(function ($q) {
+                $q->where('membership_end', '>=', $this->period_start)
+                    ->orWhereNull('membership_end');
+            })
+            ->count();
+
+        if ($activeAtStart === 0) {
+            return 0;
+        }
+
+        $stillActive = GymMember::where('gym_id', $this->gym_id)
+            ->where('membership_start', '<=', $this->period_start)
+            ->where(function ($q) {
+                $q->where('membership_end', '>=', $this->period_end)
+                    ->orWhereNull('membership_end');
+            })
+            ->count();
+
+        return round(($stillActive / $activeAtStart) * 100, 1);
+    }
 
     /**
      * Calculate progress percentage based on current value.

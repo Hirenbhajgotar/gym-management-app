@@ -151,6 +151,26 @@ class LeadReports extends Page implements HasForms
         });
     }
 
+    /**
+     * Get lead scoring statistics.
+     */
+    public function getLeadScoringStats(): array
+    {
+        $gymId = $this->getGymId();
+        // Cache for 30 minutes
+        $cacheKey = "reports:lead_scoring_stats:gym:{$gymId}";
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(1)], function () use ($gymId) {
+            $service = new \App\Services\LeadScoringService();
+            $stats = $service->getLeadStats($gymId);
+            $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);
+
+            return array_merge($stats, [
+                'top_leads' => $hotLeads,
+            ]);
+        });
+    }
+
     protected function getHeaderActions(): array
     {
         return [

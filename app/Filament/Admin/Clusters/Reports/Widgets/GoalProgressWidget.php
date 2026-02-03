@@ -35,12 +35,7 @@ class GoalProgressWidget extends Widget
                 ->current()
                 ->get();
 
-            return $goals->map(function (ReportGoal $goal) use ($gym) {
-                $currentValue = $this->getCurrentValue($gym->id, $goal);
-                $progress = $goal->calculateProgress($currentValue);
-                $status = $goal->getProgressStatus($progress);
-                $color = $goal->getProgressColor($progress);
-
+            return $goals->map(function (ReportGoal $goal) {
                 return [
                     'id' => $goal->id,
                     'metric_type' => $goal->metric_type,
@@ -48,78 +43,16 @@ class GoalProgressWidget extends Widget
                     'period' => $goal->period,
                     'period_label' => ReportGoal::getPeriodTypes()[$goal->period] ?? $goal->period,
                     'target' => $goal->target_value,
-                    'current' => $currentValue,
-                    'progress' => $progress,
-                    'status' => $status,
-                    'color' => $color,
+                    'current' => $goal->current_value,
+                    'progress' => $goal->progress,
+                    'status' => $goal->getProgressStatus($goal->progress),
+                    'color' => $goal->getProgressColor($goal->progress),
                     'period_start' => $goal->period_start->format('M d'),
                     'period_end' => $goal->period_end->format('M d, Y'),
-                    'remaining' => max(0, $goal->target_value - $currentValue),
-                    'days_left' => (int) ceil(now()->floatDiffInDays($goal->period_end, false)),
+                    'remaining' => max(0, $goal->target_value - $goal->current_value),
+                    'days_left' => $goal->days_left,
                 ];
             })->toArray();
         });
-    }
-
-    /**
-     * Get current value for a specific metric type.
-     */
-    protected function getCurrentValue(int $gymId, ReportGoal $goal): float|int
-    {
-        return match ($goal->metric_type) {
-            'revenue' => MemberPayment::where('gym_id', $gymId)
-                ->where('status', PaymentStatus::COMPLETED)
-                ->whereBetween('payment_date', [$goal->period_start, $goal->period_end])
-                ->sum('amount'),
-
-            'members' => GymMember::where('gym_id', $gymId)
-                ->whereBetween('created_at', [$goal->period_start, $goal->period_end->endOfDay()])
-                ->count(),
-
-            'leads' => Lead::where('gym_id', $gymId)
-                ->whereBetween('created_at', [$goal->period_start, $goal->period_end->endOfDay()])
-                ->count(),
-
-            'conversions' => Lead::where('gym_id', $gymId)
-                ->where('status', 'converted')
-                ->whereBetween('updated_at', [$goal->period_start, $goal->period_end->endOfDay()])
-                ->count(),
-
-            'attendance' => Attendances::where('gym_id', $gymId)
-                ->whereBetween('check_in_time', [$goal->period_start, $goal->period_end->endOfDay()])
-                ->count(),
-
-            'retention' => $this->calculateRetentionRate($gymId, $goal),
-
-            default => 0,
-        };
-    }
-
-    /**
-     * Calculate retention rate for the goal period.
-     */
-    protected function calculateRetentionRate(int $gymId, ReportGoal $goal): float
-    {
-        $activeAtStart = GymMember::where('gym_id', $gymId)
-            ->where('membership_start', '<=', $goal->period_start)
-            ->where(function ($q) use ($goal) {
-                $q->where('membership_end', '>=', $goal->period_start)
-                    ->orWhereNull('membership_end');
-            })
-            ->count();
-
-        if ($activeAtStart === 0) {
-            return 0;
-        }
-
-        $stillActive = GymMember::where('gym_id', $gymId)
-            ->where('membership_start', '<=', $goal->period_start)
-            ->where(function ($q) use ($goal) {
-                $q->where('membership_end', '>=', $goal->period_end)
-                    ->orWhereNull('membership_end');
-            })
-            ->count();
-
-        return round(($stillActive / $activeAtStart) * 100, 1);
     }
 }

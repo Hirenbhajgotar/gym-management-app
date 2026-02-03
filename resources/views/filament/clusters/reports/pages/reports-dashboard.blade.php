@@ -1,5 +1,39 @@
 <x-filament-panels::page>
     <div class="grid gap-6">
+        {{-- AI Insights --}}
+        @php $insights = $this->getInsights(); @endphp
+        @if($insights->isNotEmpty())
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                @foreach($insights as $insight)
+                    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex items-start gap-4">
+                            <div @class([
+                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                                'bg-danger-50 text-danger-600 dark:bg-danger-900/20 dark:text-danger-400' => $insight['color'] === 'danger',
+                                'bg-warning-50 text-warning-600 dark:bg-warning-900/20 dark:text-warning-400' => $insight['color'] === 'warning',
+                                'bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400' => $insight['color'] === 'success',
+                                'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' => $insight['color'] === 'primary',
+                            ])>
+                                @svg($insight['icon'], 'h-6 w-6')
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $insight['title'] }}</h3>
+                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ $insight['message'] }}</p>
+                                @if(isset($insight['action_url']))
+                                    <div class="mt-3">
+                                        <a href="{{ $insight['action_url'] }}" 
+                                           class="text-xs font-medium text-primary-600 hover:text-primary-500 hover:underline dark:text-primary-400">
+                                            {{ $insight['action_label'] }} &rarr;
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
         {{-- Quick Stats Cards --}}
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             {{-- Members Card --}}

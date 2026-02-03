@@ -7,6 +7,7 @@ use App\Exports\RevenueReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\PaymentMethodChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueByPlanChart;
+use App\Filament\Admin\Clusters\Reports\Widgets\RevenueForecastChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueTrendChart;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
@@ -201,6 +202,7 @@ class RevenueReports extends Page implements HasForms
     protected function getFooterWidgets(): array
     {
         return [
+            RevenueForecastChart::class,
             RevenueTrendChart::make(['filters' => $this->filters]),
             RevenueByPlanChart::make(['filters' => $this->filters]),
             PaymentMethodChart::make(['filters' => $this->filters]),
