@@ -64,6 +64,9 @@ class AdminPanelProvider extends PanelProvider
             ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('CRM')
+                    ->icon('phosphor-funnel'),
+                NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
                 NavigationGroup::make()

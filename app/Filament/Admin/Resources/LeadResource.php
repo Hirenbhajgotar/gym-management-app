@@ -28,8 +28,6 @@ class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    protected static ?string $navigationIcon = 'phosphor-circles-three-plus';
-
     protected static ?string $navigationGroup = 'CRM';
 
     public static function getNavigationBadge(): ?string
