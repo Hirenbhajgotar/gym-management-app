@@ -7,7 +7,7 @@
 
         {{-- Summary Stats --}}
         @php $stats = $this->getSummaryStats(); @endphp
-        <div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-8">
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             <x-filament::section class="text-center">
                 <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_check_ins']) }}</div>
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Total Check-ins</div>
