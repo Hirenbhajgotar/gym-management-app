@@ -99,7 +99,7 @@
                                 <div>
                                     <div class="font-medium text-gray-900 dark:text-white">{{ $lead->name }}</div>
                                     <div class="text-xs text-gray-500">
-                                        {{ $lead->source?->label() ?? 'Unknown' }} • {{ $lead->status?->label() ?? 'New' }}
+                                        {{ $lead->source?->getLabel() ?? 'Unknown' }} • {{ $lead->status?->getLabel() ?? 'New' }}
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-4">
@@ -112,7 +112,7 @@
                                         </div>
                                     </div>
                                     
-                                    <x-filament::button size="xs" color="gray" href="{{ \App\Filament\Admin\Resources\LeadResource::getUrl('view', ['record' => $lead->id]) }}">
+                                    <x-filament::button size="xs" color="gray" tag="a" href="{{ \App\Filament\Admin\Resources\LeadResource::getUrl('view', ['record' => $lead->id]) }}">
                                         View
                                     </x-filament::button>
                                 </div>

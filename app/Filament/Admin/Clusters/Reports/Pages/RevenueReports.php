@@ -12,6 +12,9 @@ use App\Filament\Admin\Clusters\Reports\Widgets\RevenueTrendChart;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
+use App\Models\Expense;
+use App\Enums\ExpenseStatus;
+use Carbon\CarbonPeriod;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -173,6 +176,92 @@ class RevenueReports extends Page implements HasForms
                 'monthly_change' => $monthlyChange,
                 'monthly_change_color' => $this->getTrendColor($monthlyChange),
                 'today_collection' => $todayCollection,
+            ];
+        });
+    }
+
+    /**
+     * Get P&L Data.
+     */
+    public function getPnLData(): array
+    {
+        $gymId = $this->getGymId();
+        // Include start/end date in cache key to invalidate when filters change
+        $cacheKey = $this->getReportCacheKey('pnl_data_v2', $this->filters);
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () use ($gymId) {
+            $startDate = $this->filters['start_date'] ? \Carbon\Carbon::parse($this->filters['start_date']) : now()->startOfYear();
+            $endDate = $this->filters['end_date'] ? \Carbon\Carbon::parse($this->filters['end_date']) : now();
+            
+            // Create monthly periods between start and end date
+            $period = CarbonPeriod::create($startDate, '1 month', $endDate);
+            $data = [];
+
+            foreach ($period as $date) {
+                $startOfMonth = $date->copy()->startOfMonth();
+                $endOfMonth = $date->copy()->endOfMonth();
+                
+                // Adjust for query range if the month is partial (start/end of range)
+                // Although strictly for P&L "Monthly Breakdown" usually implies the whole month's context,
+                // let's stick to the filter range for strictness or whole month for general P&L?
+                // Usually P&L is done by whole accounting periods (months). 
+                // Let's use the intersection of the month and the selected range to be precise, 
+                // OR just use the whole month if the user selected a range converting multiple months. 
+                // Let's look at the existing logic. It uses `startOfMonth` and `endOfMonth`. 
+                // Let's stick to full months for the breakdown rows to be cleaner, 
+                // BUT we should respect the outer bounds if possible. 
+                // Actually, existing `getFilteredPaymentsQuery` uses precise dates.
+                // For a P&L table, showing "January" usually means the whole January. 
+                // Let's use the whole month for the breakdown rows to ensure "Expenses for January" are all captured 
+                // even if user selected Jan 5 to Jan 25. 
+                // However, strictly complying with filters is safer for "Custom Range". 
+                // Let's use the strict range intersection for now to be consistent with other reports.
+                
+                $queryStart = $startOfMonth->max($startDate);
+                $queryEnd = $endOfMonth->min($endDate);
+                
+                if ($queryStart > $queryEnd) continue;
+
+                $label = $startOfMonth->format('M Y');
+
+                // Revenue
+                $revenue = MemberPayment::where('gym_id', $gymId)
+                    ->where('status', PaymentStatus::COMPLETED)
+                    ->whereBetween('payment_date', [$queryStart, $queryEnd])
+                    ->sum('amount');
+
+                // Expenses (Approved or Paid)
+                $expenses = Expense::where('gym_id', $gymId)
+                    ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+                    ->whereBetween('expense_date', [$queryStart, $queryEnd])
+                    ->sum('amount');
+
+                $netProfit = $revenue - $expenses;
+                $margin = $revenue > 0 ? round(($netProfit / $revenue) * 100, 1) : 0;
+
+                $data[] = [
+                    'label' => $label,
+                    'revenue' => $revenue,
+                    'expenses' => $expenses,
+                    'net_profit' => $netProfit,
+                    'margin' => $margin,
+                ];
+            }
+
+            // Calculate totals
+            $totalRevenue = collect($data)->sum('revenue');
+            $totalExpenses = collect($data)->sum('expenses');
+            $totalNetProfit = $totalRevenue - $totalExpenses;
+            $overallMargin = $totalRevenue > 0 ? round(($totalNetProfit / $totalRevenue) * 100, 1) : 0;
+
+            return [
+                'breakdown' => $data,
+                'totals' => [
+                    'revenue' => $totalRevenue,
+                    'expenses' => $totalExpenses,
+                    'net_profit' => $totalNetProfit,
+                    'margin' => $overallMargin,
+                ],
             ];
         });
     }
