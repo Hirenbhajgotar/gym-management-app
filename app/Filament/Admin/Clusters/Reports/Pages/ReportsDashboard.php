@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Clusters\Reports\Pages;
 use App\Enums\LeadStatus;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
+use App\Filament\Admin\Clusters\Reports\Widgets\CohortRetentionChart;
+use App\Filament\Admin\Clusters\Reports\Widgets\GoalProgressWidget;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Lead;
@@ -32,7 +34,7 @@ class ReportsDashboard extends Page
     protected static string $view = 'filament.clusters.reports.pages.reports-dashboard';
 
     /**
-     * Get member overview stats.
+     * Get member overview stats with sparkline data.
      */
     public function getMemberStats(): array
     {
@@ -57,6 +59,9 @@ class ReportsDashboard extends Page
 
             $growthRate = $this->calculatePercentageChange($newThisMonth, $newLastMonth);
 
+            // Sparkline data for last 30 days
+            $sparkline = $this->getSparklineData('gym_members', 'created_at', 'count', null, 30);
+
             return [
                 'total' => $totalMembers,
                 'active' => $activeMembers,
@@ -64,12 +69,13 @@ class ReportsDashboard extends Page
                 'new_this_month' => $newThisMonth,
                 'growth_rate' => $growthRate,
                 'growth_color' => $this->getTrendColor($growthRate),
+                'sparkline' => $sparkline,
             ];
         });
     }
 
     /**
-     * Get revenue overview stats.
+     * Get revenue overview stats with sparkline data.
      */
     public function getRevenueStats(): array
     {
@@ -105,6 +111,16 @@ class ReportsDashboard extends Page
                 ->whereDate('payment_date', today())
                 ->sum('amount');
 
+            // Sparkline data for last 30 days
+            $sparkline = $this->getSparklineData(
+                'member_payments',
+                'payment_date',
+                'sum',
+                'amount',
+                30,
+                ['status' => PaymentStatus::COMPLETED->value]
+            );
+
             return [
                 'mtd' => $mtdRevenue,
                 'ytd' => $ytdRevenue,
@@ -112,12 +128,13 @@ class ReportsDashboard extends Page
                 'today' => $todayCollection,
                 'change_rate' => $revenueChange,
                 'change_color' => $this->getTrendColor($revenueChange),
+                'sparkline' => $sparkline,
             ];
         });
     }
 
     /**
-     * Get lead pipeline stats.
+     * Get lead pipeline stats with sparkline data.
      */
     public function getLeadStats(): array
     {
@@ -147,12 +164,16 @@ class ReportsDashboard extends Page
                 ? round(($convertedThisMonth / $totalThisMonth) * 100, 1)
                 : 0;
 
+            // Sparkline data for last 30 days
+            $sparkline = $this->getSparklineData('leads', 'created_at', 'count', null, 30);
+
             return [
                 'total' => $totalLeads,
                 'new' => $newLeads,
                 'active' => $activeLeads,
                 'converted_this_month' => $convertedThisMonth,
                 'conversion_rate' => $conversionRate,
+                'sparkline' => $sparkline,
             ];
         });
     }
@@ -190,7 +211,7 @@ class ReportsDashboard extends Page
     }
 
     /**
-     * Get attendance stats for today.
+     * Get attendance stats for today with sparkline data.
      */
     public function getAttendanceStats(): array
     {
@@ -226,12 +247,35 @@ class ReportsDashboard extends Page
                 ->orderByDesc('count')
                 ->first();
 
+            // Sparkline data for last 30 days
+            $sparkline = $this->getSparklineData('attendances', 'check_in_time', 'count', null, 30);
+
             return [
                 'today' => $todayCheckIns,
                 'currently_in' => $currentlyIn,
                 'weekly_average' => $weeklyAverage,
                 'peak_hour' => $peakHour?->hour ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
+                'sparkline' => $sparkline,
             ];
         });
+    }
+
+    /**
+     * Get footer widgets for the dashboard.
+     */
+    protected function getFooterWidgets(): array
+    {
+        return [
+            GoalProgressWidget::class,
+            CohortRetentionChart::class,
+        ];
+    }
+
+    /**
+     * Get footer widgets column count.
+     */
+    public function getFooterWidgetsColumns(): int|array
+    {
+        return 1;
     }
 }

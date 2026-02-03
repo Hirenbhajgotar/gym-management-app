@@ -2,8 +2,11 @@
 
 namespace App\Traits;
 
+use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Trait for report pages with common caching and filtering functionality.
@@ -110,5 +113,205 @@ trait HasReportFilters
         }
 
         return 'heroicon-m-minus';
+    }
+
+    // =========================================================================
+    // COMPARATIVE ANALYTICS METHODS (Phase 1)
+    // =========================================================================
+
+    /**
+     * Get comparison data for current period vs previous period.
+     *
+     * @param  string  $startDate  Start of current period
+     * @param  string  $endDate  End of current period
+     * @return array{previous_start: string, previous_end: string, days_in_period: int}
+     */
+    protected function getComparisonPeriod(string $startDate, string $endDate): array
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        $daysInPeriod = $start->diffInDays($end) + 1;
+
+        // Calculate equivalent previous period
+        $previousEnd = $start->copy()->subDay();
+        $previousStart = $previousEnd->copy()->subDays($daysInPeriod - 1);
+
+        return [
+            'previous_start' => $previousStart->format('Y-m-d'),
+            'previous_end' => $previousEnd->format('Y-m-d'),
+            'days_in_period' => $daysInPeriod,
+        ];
+    }
+
+    /**
+     * Get Year-over-Year comparison dates.
+     */
+    protected function getYoYPeriod(string $startDate, string $endDate): array
+    {
+        return [
+            'previous_start' => Carbon::parse($startDate)->subYear()->format('Y-m-d'),
+            'previous_end' => Carbon::parse($endDate)->subYear()->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * Get Month-over-Month comparison dates.
+     */
+    protected function getMoMPeriod(string $startDate, string $endDate): array
+    {
+        return [
+            'previous_start' => Carbon::parse($startDate)->subMonth()->format('Y-m-d'),
+            'previous_end' => Carbon::parse($endDate)->subMonth()->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * Calculate comparison metrics between current and previous values.
+     *
+     * @param  float|int  $currentValue  Current period value
+     * @param  float|int  $previousValue  Previous period value
+     * @param  bool  $higherIsBetter  Whether higher values are positive (default: true)
+     */
+    protected function calculateComparisonMetrics(
+        float|int $currentValue,
+        float|int $previousValue,
+        bool $higherIsBetter = true
+    ): array {
+        $change = $currentValue - $previousValue;
+        $percentChange = $this->calculatePercentageChange($currentValue, $previousValue);
+
+        // Determine if the change is positive based on context
+        $isPositive = $higherIsBetter ? $change >= 0 : $change <= 0;
+
+        return [
+            'current' => $currentValue,
+            'previous' => $previousValue,
+            'change' => $change,
+            'percent_change' => $percentChange,
+            'is_positive' => $isPositive,
+            'color' => $isPositive ? 'success' : 'danger',
+            'icon' => $this->getTrendIcon($change),
+            'formatted_change' => ($change >= 0 ? '+' : '') . number_format($change, 0),
+            'formatted_percent' => ($percentChange >= 0 ? '+' : '') . $percentChange . '%',
+        ];
+    }
+
+    /**
+     * Get cohort data for member retention analysis.
+     *
+     * @param  int  $months  Number of months to analyze
+     * @return Collection<int, array{cohort: string, initial: int, retained: array<int, int>}>
+     */
+    protected function getMemberCohortData(int $months = 6): Collection
+    {
+        $gymId = $this->getGymId();
+
+        return Cache::flexible(
+            "report:cohort:gym:{$gymId}:months:{$months}",
+            [now()->addHours(1), now()->addHours(2)],
+            function () use ($gymId, $months) {
+                $cohorts = collect();
+
+                for ($i = $months - 1; $i >= 0; $i--) {
+                    $cohortMonth = now()->subMonths($i)->startOfMonth();
+                    $cohortLabel = $cohortMonth->format('M Y');
+
+                    // Get members who joined in this cohort month
+                    $cohortMembers = DB::table('gym_members')
+                        ->where('gym_id', $gymId)
+                        ->whereYear('created_at', $cohortMonth->year)
+                        ->whereMonth('created_at', $cohortMonth->month)
+                        ->pluck('id');
+
+                    $initialCount = $cohortMembers->count();
+
+                    if ($initialCount === 0) {
+                        continue;
+                    }
+
+                    // Track retention for each subsequent month
+                    $retained = [];
+                    for ($m = 0; $m <= $i; $m++) {
+                        $checkMonth = $cohortMonth->copy()->addMonths($m);
+
+                        // Count how many from this cohort were still active
+                        $retainedCount = DB::table('gym_members')
+                            ->whereIn('id', $cohortMembers)
+                            ->where(function ($query) use ($checkMonth) {
+                                $query->where('membership_end', '>=', $checkMonth->endOfMonth())
+                                    ->orWhereNull('membership_end');
+                            })
+                            ->count();
+
+                        $retained[$m] = $initialCount > 0
+                            ? round(($retainedCount / $initialCount) * 100, 1)
+                            : 0;
+                    }
+
+                    $cohorts->push([
+                        'cohort' => $cohortLabel,
+                        'initial' => $initialCount,
+                        'retained' => $retained,
+                    ]);
+                }
+
+                return $cohorts;
+            }
+        );
+    }
+
+    /**
+     * Get sparkline data for the last N days.
+     *
+     * @param  string  $table  Table name
+     * @param  string  $dateColumn  Date column name
+     * @param  string  $aggregation  Aggregation type: 'count' or 'sum'
+     * @param  string|null  $sumColumn  Column to sum (required if aggregation is 'sum')
+     * @param  int  $days  Number of days
+     * @param  array  $conditions  Additional where conditions
+     */
+    protected function getSparklineData(
+        string $table,
+        string $dateColumn,
+        string $aggregation = 'count',
+        ?string $sumColumn = null,
+        int $days = 30,
+        array $conditions = []
+    ): array {
+        $gymId = $this->getGymId();
+        $startDate = now()->subDays($days - 1)->startOfDay();
+
+        $query = DB::table($table)
+            ->where('gym_id', $gymId)
+            ->where($dateColumn, '>=', $startDate);
+
+        foreach ($conditions as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        if ($aggregation === 'sum' && $sumColumn) {
+            $data = $query
+                ->selectRaw("DATE($dateColumn) as date, SUM($sumColumn) as value")
+                ->groupBy('date')
+                ->orderBy('date')
+                ->pluck('value', 'date')
+                ->toArray();
+        } else {
+            $data = $query
+                ->selectRaw("DATE($dateColumn) as date, COUNT(*) as value")
+                ->groupBy('date')
+                ->orderBy('date')
+                ->pluck('value', 'date')
+                ->toArray();
+        }
+
+        // Fill in missing dates with 0
+        $result = [];
+        for ($i = 0; $i < $days; $i++) {
+            $date = now()->subDays($days - 1 - $i)->format('Y-m-d');
+            $result[] = $data[$date] ?? 0;
+        }
+
+        return $result;
     }
 }
