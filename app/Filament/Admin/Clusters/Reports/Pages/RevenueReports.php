@@ -266,6 +266,77 @@ class RevenueReports extends Page implements HasForms
         });
     }
 
+    /**
+     * Get Revenue Breakdown by Plan.
+     */
+    public function getRevenueBreakdown(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = $this->getReportCacheKey('revenue_breakdown', $this->filters);
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () {
+            // Use collection grouping for simplicity and relation handling
+            // This retrieves all relevant payments - ensure memory limit is not hit for large datasets
+            // For very large datasets, a DB::table query would be better.
+            return $this->getFilteredPaymentsQuery()
+                ->clone()
+                ->where('status', PaymentStatus::COMPLETED)
+                ->with('membershipPlan')
+                ->get()
+                ->groupBy(fn ($payment) => $payment->membershipPlan?->name ?? 'Other')
+                ->map(function ($payments, $planName) {
+                    $amount = $payments->sum('amount');
+                    $count = $payments->count();
+
+                    return [
+                        'name' => $planName,
+                        'amount' => $amount,
+                        'transactions' => $count,
+                        'avg_amount' => $count > 0 ? $amount / $count : 0,
+                    ];
+                })
+                ->sortByDesc('amount')
+                ->values()
+                ->toArray();
+        });
+    }
+
+    /**
+     * Get Expense Breakdown by Category.
+     */
+    public function getExpenseBreakdown(): array
+    {
+        $gymId = $this->getGymId();
+        $cacheKey = $this->getReportCacheKey('expense_breakdown', $this->filters);
+
+        return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () use ($gymId) {
+            $startDate = $this->filters['start_date'];
+            $endDate = $this->filters['end_date'];
+
+            return Expense::where('gym_id', $gymId)
+                ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+                ->when($startDate, fn ($q) => $q->whereDate('expense_date', '>=', $startDate))
+                ->when($endDate, fn ($q) => $q->whereDate('expense_date', '<=', $endDate))
+                ->with('category')
+                ->get()
+                ->groupBy(fn ($expense) => $expense->category?->name ?? 'Uncategorized')
+                ->map(function ($expenses, $categoryName) {
+                    $amount = $expenses->sum('amount');
+                    $count = $expenses->count();
+
+                    return [
+                        'name' => $categoryName,
+                        'amount' => $amount,
+                        'change_rate' => 0, // Placeholder for valid change calculation if needed
+                        'budget_variance' => 0, // Placeholder
+                    ];
+                })
+                ->sortByDesc('amount')
+                ->values()
+                ->toArray();
+        });
+    }
+
     protected function getHeaderActions(): array
     {
         return array_merge([
