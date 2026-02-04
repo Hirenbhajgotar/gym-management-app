@@ -39,8 +39,6 @@ class ExpenseReportsCluster extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.expense-reports';
 
-    public ?array $filters = [];
-
     public function mount(): void
     {
         $this->filters = [
@@ -215,7 +213,7 @@ class ExpenseReportsCluster extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('export')
                 ->label('Export to Excel')
                 ->icon('phosphor-download')
@@ -229,7 +227,7 @@ class ExpenseReportsCluster extends Page implements HasForms
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 
     public function exportToExcel()

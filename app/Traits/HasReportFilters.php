@@ -16,9 +16,19 @@ trait HasReportFilters
     /**
      * Get the current tenant (gym) ID.
      */
+    public ?int $manualGymId = null;
+
+    /**
+     * Report filters.
+     */
+    public array $filters = [];
+
+    /**
+     * Get the current tenant (gym) ID.
+     */
     protected function getGymId(): ?int
     {
-        return Filament::getTenant()?->id;
+        return $this->manualGymId ?? Filament::getTenant()?->id;
     }
 
     /**
@@ -313,5 +323,98 @@ trait HasReportFilters
         }
 
         return $result;
+    }
+
+    /**
+     * Get common actions for saving/loading filters.
+     */
+    public function getFilterActions(): array
+    {
+        return [
+            \Filament\Actions\ActionGroup::make([
+                \Filament\Actions\Action::make('save_filter')
+                    ->label('Save Current View')
+                    ->icon('phosphor-floppy-disk')
+                    ->form([
+                        \Filament\Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->label('Filter Name'),
+                        \Filament\Forms\Components\Checkbox::make('is_default')
+                            ->label('Set as Default'),
+                    ])
+                    ->action(function (array $data) {
+                        \App\Models\SavedReportFilter::create([
+                            'gym_id' => $this->getGymId(),
+                            'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                            'report_type' => static::class,
+                            'name' => $data['name'],
+                            'filters' => $this->filters,
+                            'is_default' => $data['is_default'],
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Filter Saved')
+                            ->success()
+                            ->send();
+                    }),
+
+                \Filament\Actions\Action::make('load_filter')
+                    ->label('Load Saved View')
+                    ->icon('phosphor-folder-open')
+                    ->form([
+                        \Filament\Forms\Components\Select::make('filter_id')
+                            ->label('Select Saved View')
+                            ->options(function () {
+                                return \App\Models\SavedReportFilter::where('gym_id', $this->getGymId())
+                                    ->where('report_type', static::class)
+                                    ->pluck('name', 'id');
+                            })
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $savedFilter = \App\Models\SavedReportFilter::find($data['filter_id']);
+                        if ($savedFilter) {
+                            $this->filters = $savedFilter->filters;
+                            $this->dispatch('$refresh');
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Filter Loaded')
+                                ->success()
+                                ->send();
+                        }
+                    }),
+            ])
+                ->label('Saved Views')
+                ->icon('phosphor-bookmark')
+                ->color('gray'),
+        ];
+    }
+
+    /**
+     * Get actions for exporting reports.
+     */
+    public function getExportActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('export_pdf')
+                ->label('Export PDF')
+                ->icon('phosphor-file-pdf')
+                ->color('danger')
+                ->action(function () {
+                    $report = new \App\Models\ScheduledReport;
+                    $report->report_type = static::class;
+                    $report->gym_id = $this->getGymId();
+                    $report->name = static::$title ?? static::$navigationLabel ?? 'Report';
+                    $report->filters = $this->filters ?? [];
+                    $report->setRelation('gym', \App\Models\Gym::find($this->getGymId()));
+
+                    $pdfContent = (new \App\Services\ReportPdfGenerator)->generate($report);
+
+                    return response()->streamDownload(
+                        fn () => print ($pdfContent),
+                        \Illuminate\Support\Str::slug(static::$title ?? static::$navigationLabel ?? 'Report') . '-' . now()->format('Y-m-d') . '.pdf'
+                    );
+                }),
+        ];
     }
 }

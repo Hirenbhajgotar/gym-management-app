@@ -14,6 +14,7 @@ use App\Models\MemberPayment;
 use App\Models\Trainer;
 use App\Services\InsightsService;
 use App\Traits\HasReportFilters;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -294,5 +295,16 @@ class ReportsDashboard extends Page
 
             return $service->getDailyInsights($gymId);
         });
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return array_merge([
+            Action::make('refresh')
+                ->label('Refresh')
+                ->icon('phosphor-arrows-clockwise')
+                ->color('gray')
+                ->action(fn () => $this->dispatch('$refresh')),
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 }

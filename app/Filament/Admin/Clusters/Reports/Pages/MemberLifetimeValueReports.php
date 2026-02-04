@@ -7,7 +7,6 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
@@ -41,9 +40,9 @@ class MemberLifetimeValueReports extends Page
             $totalRevenue = MemberPayment::where('gym_id', $gymId)
                 ->where('status', 'completed')
                 ->sum('amount');
-            
+
             $totalMembersEver = GymMember::where('gym_id', $gymId)->count();
-            
+
             $altv = $totalMembersEver > 0 ? round($totalRevenue / $totalMembersEver, 2) : 0;
 
             // 2. Average Revenue Per User (ARPU) - Monthly
@@ -52,25 +51,25 @@ class MemberLifetimeValueReports extends Page
                 ->where('status', 'completed')
                 ->whereMonth('payment_date', now()->subMonth()->month)
                 ->sum('amount');
-            
+
             $activeMembers = GymMember::where('gym_id', $gymId)
                 ->membershipActive()
                 ->count();
-            
+
             $arpu = $activeMembers > 0 ? round($lastMonthRevenue / $activeMembers, 2) : 0;
 
             // 3. Average Customer Lifespan (ACL) in months
             // 1 / Churn Rate
             // Using simplified churn rate from ChurnService logic or existing data
             // Assuming 5% average churn for fallback calculation
-            $churnRate = 0.05; 
+            $churnRate = 0.05;
             $lifespanMonths = $churnRate > 0 ? round(1 / $churnRate) : 0;
 
             // 4. LTV by Plan Type (Top 3)
             // Need to join with memberships table logic
             // Simplified logic: Group members by plan type and sum their payments?
             // This is complex without a direct 'plan_id' on payments, assuming we can get it via member relationship
-            
+
             return [
                 'altv' => $altv,
                 'arpu' => $arpu,
@@ -82,12 +81,12 @@ class MemberLifetimeValueReports extends Page
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('refresh')
                 ->label('Refresh')
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 }

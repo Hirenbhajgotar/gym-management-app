@@ -18,7 +18,7 @@ class MemberGrowthChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    public ?array $filters = [];
+    // public ?array $filters = [];
 
     protected function getData(): array
     {

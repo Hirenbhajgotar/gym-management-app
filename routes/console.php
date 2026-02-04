@@ -51,3 +51,26 @@ Schedule::command('leads:cleanup-old')->dailyAt('02:00');
 
 // Send birthday notifications daily at 7 AM
 Schedule::command('notification:send-birthday-notifications')->dailyAt('07:00');
+
+// Process Scheduled Reports
+Schedule::call(function () {
+    $currentHeight = now()->format('H:i:00');
+
+    // Find active reports scheduled for now
+    $reports = \App\Models\ScheduledReport::where('is_active', true)
+        ->where('scheduled_time', $currentHeight)
+        ->get();
+
+    foreach ($reports as $report) {
+        $shouldRun = match ($report->frequency) {
+            'daily' => true,
+            'weekly' => now()->isMonday(),
+            'monthly' => now()->day === 1,
+            default => false,
+        };
+
+        if ($shouldRun) {
+            \App\Jobs\ScheduledReportJob::dispatch($report);
+        }
+    }
+})->everyTenMinutes();

@@ -37,8 +37,6 @@ class LeadReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.lead-reports';
 
-    public ?array $filters = [];
-
     public function mount(): void
     {
         $this->filters = [
@@ -161,7 +159,7 @@ class LeadReports extends Page implements HasForms
         $cacheKey = "reports:lead_scoring_stats:gym:{$gymId}";
 
         return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(1)], function () use ($gymId) {
-            $service = new \App\Services\LeadScoringService();
+            $service = new \App\Services\LeadScoringService;
             $stats = $service->getLeadStats($gymId);
             $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);
 
@@ -173,7 +171,7 @@ class LeadReports extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('export')
                 ->label('Export to Excel')
                 ->icon('phosphor-download')
@@ -190,7 +188,7 @@ class LeadReports extends Page implements HasForms
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 
     protected function getFooterWidgets(): array

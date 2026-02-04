@@ -38,8 +38,6 @@ class MemberReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.member-reports';
 
-    public ?array $filters = [];
-
     public function mount(): void
     {
         $this->filters = [
@@ -215,7 +213,9 @@ class MemberReports extends Page implements HasForms
             'rgb(20, 184, 166)',   // teal
         ];
 
-        return $colors[($planId ?? 0) % count($colors)];
+        $numericPlanId = (int) ($planId ?? 0);
+
+        return $colors[$numericPlanId % count($colors)];
     }
 
     /**
@@ -224,13 +224,12 @@ class MemberReports extends Page implements HasForms
     public function getChurnStats(): array
     {
         $gymId = $this->getGymId();
-        // Cache for 1 hour as this is heavy calculation
         $cacheKey = "reports:churn_stats:gym:{$gymId}";
 
         return Cache::flexible($cacheKey, [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
-            $service = new \App\Services\ChurnRiskService();
+            $service = new \App\Services\ChurnRiskService;
             $stats = $service->getChurnStats($gymId);
-            $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5); // Top 5 high risk
+            $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5);
 
             return array_merge($stats, [
                 'top_at_risk' => $atRiskMembers,
@@ -240,7 +239,7 @@ class MemberReports extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('export')
                 ->label('Export to Excel')
                 ->icon('phosphor-download')
@@ -257,7 +256,7 @@ class MemberReports extends Page implements HasForms
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 
     protected function getFooterWidgets(): array

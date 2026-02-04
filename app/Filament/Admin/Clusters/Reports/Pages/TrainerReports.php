@@ -104,13 +104,13 @@ class TrainerReports extends Page
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('refresh')
                 ->label('Refresh')
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 
     protected function getFooterWidgets(): array

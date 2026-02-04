@@ -33,8 +33,6 @@ class AttendanceReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.attendance-reports';
 
-    public ?array $filters = [];
-
     public function mount(): void
     {
         $this->filters = [
@@ -175,13 +173,13 @@ class AttendanceReports extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_merge([
             Action::make('refresh')
                 ->label('Refresh')
                 ->icon('phosphor-arrows-clockwise')
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
-        ];
+        ], $this->getFilterActions(), $this->getExportActions());
     }
 
     protected function getFooterWidgets(): array
