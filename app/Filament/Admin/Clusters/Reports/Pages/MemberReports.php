@@ -161,15 +161,30 @@ class MemberReports extends Page implements HasForms
         return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () {
             $query = $this->getFilteredMembersQuery();
 
-            return $query->clone()
+            $data = $query->clone()
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
                 ->groupBy('month')
                 ->orderBy('month')
-                ->get()
-                ->map(fn ($item) => [
+                ->get();
+
+            $previousCount = 0;
+            
+            return $data->map(function ($item) use (&$previousCount) {
+                $growthRate = 0;
+                if ($previousCount > 0) {
+                    $growthRate = (($item->count - $previousCount) / $previousCount) * 100;
+                }
+                
+                $currentCount = $item->count;
+                $previousCount = $currentCount;
+
+                return [
                     'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
                     'count' => $item->count,
-                ]);
+                    'growth_rate' => round($growthRate, 1),
+                    'retention_rate' => 100, // Placeholder as we don't have historical retention strictly per month in this query
+                ];
+            });
         });
     }
 
@@ -191,6 +206,7 @@ class MemberReports extends Page implements HasForms
                     return [
                         'name' => $plan?->name ?? 'No Plan',
                         'count' => $members->count(),
+                        'revenue' => $members->count() * ($plan?->price ?? 0),
                         'color' => $this->getPlanColor($planId),
                     ];
                 })

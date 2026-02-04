@@ -121,19 +121,71 @@ class ChurnRiskService
     /**
      * Get aggregate churn statistics.
      */
+    /**
+     * Get aggregate churn statistics.
+     */
     public function getChurnStats(int $gymId): array
     {
-        // Get aggregate churn statistics
-        $atRiskCount = $this->getAtRiskMembers($gymId)->count();
-        $totalActive = GymMember::where('gym_id', $gymId)->membershipActive()->count();
+        // Get all active members with necessary relationships
+        $members = GymMember::where('gym_id', $gymId)
+            ->membershipActive()
+            ->with(['lastAttendance', 'membershipPlan', 'latestPayment'])
+            ->get();
 
-        $churnRatePrediction = $totalActive > 0
-            ? round(($atRiskCount / $totalActive) * 100, 1)
+        $stats = [
+            'total_at_risk' => 0,
+            'high_risk' => 0,
+            'high_risk_value' => 0,
+            'high_risk_avg_days' => 0,
+            'medium_risk' => 0,
+            'medium_risk_value' => 0,
+            'medium_risk_avg_days' => 0,
+            'low_risk' => 0,
+            'low_risk_value' => 0,
+            'low_risk_avg_days' => 0,
+        ];
+
+        $highRiskDaysSum = 0;
+        $mediumRiskDaysSum = 0;
+        $lowRiskDaysSum = 0;
+
+        foreach ($members as $member) {
+            $score = $this->calculateRiskScore($member);
+            $daysSinceVisit = $member->lastAttendance 
+                ? $member->lastAttendance->check_in_time->diffInDays(now())
+                : $member->created_at->diffInDays(now());
+            
+            // Get membership value (monthly equivalent or plan price)
+            $value = $member->membershipPlan?->price ?? 0;
+
+            if ($score >= 65) {
+                $stats['high_risk']++;
+                $stats['high_risk_value'] += $value;
+                $highRiskDaysSum += $daysSinceVisit;
+            } elseif ($score >= 30) {
+                $stats['medium_risk']++;
+                $stats['medium_risk_value'] += $value;
+                $mediumRiskDaysSum += $daysSinceVisit;
+            } else {
+                $stats['low_risk']++;
+                $stats['low_risk_value'] += $value;
+                $lowRiskDaysSum += $daysSinceVisit;
+            }
+        }
+
+        $stats['total_at_risk'] = $stats['high_risk'] + $stats['medium_risk'] + $stats['low_risk'];
+
+        // Calculate averages
+        $stats['high_risk_avg_days'] = $stats['high_risk'] > 0 ? round($highRiskDaysSum / $stats['high_risk']) : 0;
+        $stats['medium_risk_avg_days'] = $stats['medium_risk'] > 0 ? round($mediumRiskDaysSum / $stats['medium_risk']) : 0;
+        $stats['low_risk_avg_days'] = $stats['low_risk'] > 0 ? round($lowRiskDaysSum / $stats['low_risk']) : 0;
+
+        // Total members analyzed is the denominator for percentages
+        $stats['at_risk_count'] = $members->count(); 
+        $stats['predicted_churn_rate'] = $members->count() > 0 
+            ? round(($stats['high_risk'] / $members->count()) * 100, 1) 
             : 0;
 
-        return [
-            'at_risk_count' => $atRiskCount,
-            'predicted_churn_rate' => $churnRatePrediction,
-        ];
+        return $stats;
     }
 }

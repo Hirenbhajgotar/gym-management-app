@@ -74,6 +74,7 @@ class ReportPdfGenerator
                 'chart_data' => $this->getChartData($page, ['member_growth', 'plan_distribution', 'churn_analysis']),
                 'monthly_trends' => $this->getMonthlyTrends($page, 'members'),
             ];
+
             $viewName = 'pdf.reports.member';
         } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class) {
             $data = [

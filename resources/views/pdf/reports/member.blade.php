@@ -61,7 +61,6 @@
                         <th class="text-right">Members</th>
                         <th class="text-right">Percentage</th>
                         <th class="text-right">Revenue</th>
-                        <th class="text-right">Avg Duration</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,7 +71,6 @@
                             <td class="text-right">{{ number_format($plan['count'] ?? 0) }}</td>
                             <td class="text-right">{{ $totalMembers > 0 ? number_format(($plan['count'] ?? 0) / $totalMembers * 100, 1) : 0 }}%</td>
                             <td class="text-right text-success">INR {{ number_format($plan['revenue'] ?? 0) }}</td>
-                            <td class="text-right">{{ $plan['avg_duration'] ?? 0 }} days</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -98,21 +96,21 @@
                     <tr>
                         <td class="text-danger">High Risk</td>
                         <td class="text-right">{{ number_format($data['churnStats']['high_risk'] ?? 0) }}</td>
-                        <td class="text-right">{{ $data['churnStats']['total_at_risk'] > 0 ? number_format(($data['churnStats']['high_risk'] ?? 0) / $data['churnStats']['total_at_risk'] * 100, 1) : 0 }}%</td>
+                        <td class="text-right">{{ ($data['churnStats']['at_risk_count'] ?? 0) > 0 ? number_format(($data['churnStats']['high_risk'] ?? 0) / ($data['churnStats']['at_risk_count'] ?? 0) * 100, 1) : 0 }}%</td>
                         <td class="text-right">{{ $data['churnStats']['high_risk_avg_days'] ?? 0 }}</td>
                         <td class="text-right text-danger">INR {{ number_format($data['churnStats']['high_risk_value'] ?? 0) }}</td>
                     </tr>
                     <tr>
                         <td class="text-warning" style="color: #f59e0b;">Medium Risk</td>
                         <td class="text-right">{{ number_format($data['churnStats']['medium_risk'] ?? 0) }}</td>
-                        <td class="text-right">{{ $data['churnStats']['total_at_risk'] > 0 ? number_format(($data['churnStats']['medium_risk'] ?? 0) / $data['churnStats']['total_at_risk'] * 100, 1) : 0 }}%</td>
+                        <td class="text-right">{{ ($data['churnStats']['at_risk_count'] ?? 0) > 0 ? number_format(($data['churnStats']['medium_risk'] ?? 0) / ($data['churnStats']['at_risk_count'] ?? 0) * 100, 1) : 0 }}%</td>
                         <td class="text-right">{{ $data['churnStats']['medium_risk_avg_days'] ?? 0 }}</td>
                         <td class="text-right text-warning">INR {{ number_format($data['churnStats']['medium_risk_value'] ?? 0) }}</td>
                     </tr>
                     <tr>
                         <td class="text-success">Low Risk</td>
                         <td class="text-right">{{ number_format($data['churnStats']['low_risk'] ?? 0) }}</td>
-                        <td class="text-right">{{ $data['churnStats']['total_at_risk'] > 0 ? number_format(($data['churnStats']['low_risk'] ?? 0) / $data['churnStats']['total_at_risk'] * 100, 1) : 0 }}%</td>
+                        <td class="text-right">{{ ($data['churnStats']['at_risk_count'] ?? 0) > 0 ? number_format(($data['churnStats']['low_risk'] ?? 0) / ($data['churnStats']['at_risk_count'] ?? 0) * 100, 1) : 0 }}%</td>
                         <td class="text-right">{{ $data['churnStats']['low_risk_avg_days'] ?? 0 }}</td>
                         <td class="text-right text-success">INR {{ number_format($data['churnStats']['low_risk_value'] ?? 0) }}</td>
                     </tr>
@@ -135,7 +133,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($data['churnStats']['top_at_risk'] as $member)
+                    @forelse($data['churnStats']['top_at_risk'] as $member)
                         <tr>
                             <td>{{ $member['name'] ?? '' }}</td>
                             <td class="text-danger">{{ $member['risk_score'] ?? 0 }}/100</td>
@@ -143,7 +141,11 @@
                             <td class="text-right">INR {{ number_format($member['membership_value'] ?? 0) }}</td>
                             <td class="text-right">{{ $member['plan_name'] ?? '' }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center">No data available</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
