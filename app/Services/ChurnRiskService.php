@@ -180,8 +180,8 @@ class ChurnRiskService
         $stats['medium_risk_avg_days'] = $stats['medium_risk'] > 0 ? round($mediumRiskDaysSum / $stats['medium_risk']) : 0;
         $stats['low_risk_avg_days'] = $stats['low_risk'] > 0 ? round($lowRiskDaysSum / $stats['low_risk']) : 0;
 
-        // Total members analyzed is the denominator for percentages
-        $stats['at_risk_count'] = $members->count(); 
+        // At-risk count is only high-risk members (score >= 65)
+        $stats['at_risk_count'] = $stats['high_risk']; 
         $stats['predicted_churn_rate'] = $members->count() > 0 
             ? round(($stats['high_risk'] / $members->count()) * 100, 1) 
             : 0;
