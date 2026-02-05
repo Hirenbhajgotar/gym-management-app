@@ -125,4 +125,101 @@ class TrainerReports extends Page
     {
         return 2;
     }
+
+    /**
+     * Get client distribution data for PDF charts.
+     */
+    public function getClientDistributionData(): array
+    {
+        $gymId = $this->getGymId();
+
+        return Trainer::where('gym_id', $gymId)
+            ->withCount(['members' => fn ($q) => $q->membershipActive()])
+            ->orderByDesc('members_count')
+            ->limit(10)
+            ->get()
+            ->map(fn ($trainer) => [
+                'name' => $trainer->name,
+                'clients' => $trainer->members_count,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Get performance metrics data for PDF charts.
+     */
+    public function getPerformanceMetricsData(): array
+    {
+        $gymId = $this->getGymId();
+
+        $trainers = Trainer::where('gym_id', $gymId)
+            ->withCount(['members' => fn ($q) => $q->membershipActive()])
+            ->get();
+
+        $totalTrainers = $trainers->count();
+        $activeTrainers = $trainers->where('is_available', true)->count();
+        $trainersWithClients = $trainers->filter(fn ($t) => $t->members_count > 0)->count();
+
+        return [
+            [
+                'metric' => 'Total Trainers',
+                'value' => $totalTrainers,
+            ],
+            [
+                'metric' => 'Active Trainers',
+                'value' => $activeTrainers,
+            ],
+            [
+                'metric' => 'Trainers with Clients',
+                'value' => $trainersWithClients,
+            ],
+            [
+                'metric' => 'Utilization Rate',
+                'value' => $totalTrainers > 0 ? round(($trainersWithClients / $totalTrainers) * 100, 1) : 0,
+            ],
+        ];
+    }
+
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $gymId = $this->getGymId();
+
+        // Get trainer count over time (last 12 months)
+        $monthlyData = [];
+        $previousValue = null;
+
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $count = Trainer::where('gym_id', $gymId)
+                ->whereDate('created_at', '<=', $date->endOfMonth())
+                ->count();
+
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($count - $previousValue) / $previousValue) * 100, 1);
+                
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $monthlyData[] = [
+                'month' => $date->format('M Y'),
+                'value' => $count,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $count;
+        }
+
+        return $monthlyData;
+    }
 }

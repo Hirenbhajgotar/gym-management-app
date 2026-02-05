@@ -79,6 +79,57 @@ class MemberLifetimeValueReports extends Page
         });
     }
 
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $gymId = $this->getGymId();
+
+        // Get monthly revenue trends for LTV calculation
+        $monthlyData = [];
+        $previousValue = null;
+
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthRevenue = MemberPayment::where('gym_id', $gymId)
+                ->where('status', 'completed')
+                ->whereMonth('payment_date', $date->month)
+                ->whereYear('payment_date', $date->year)
+                ->sum('amount');
+
+            $memberCount = GymMember::where('gym_id', $gymId)
+                ->whereDate('created_at', '<=', $date->endOfMonth())
+                ->count();
+
+            $avgLtv = $memberCount > 0 ? round($monthRevenue / $memberCount, 2) : 0;
+
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($avgLtv - $previousValue) / $previousValue) * 100, 1);
+                
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $monthlyData[] = [
+                'month' => $date->format('M Y'),
+                'value' => $avgLtv,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $avgLtv;
+        }
+
+        return $monthlyData;
+    }
+
     protected function getHeaderActions(): array
     {
         return array_merge([

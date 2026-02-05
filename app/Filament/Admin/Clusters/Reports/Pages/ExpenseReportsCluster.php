@@ -41,13 +41,15 @@ class ExpenseReportsCluster extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->filters = [
-            'start_date' => now()->startOfYear()->format('Y-m-d'),
-            'end_date' => now()->format('Y-m-d'),
-            'status' => null,
-            'category_id' => null,
-            'payment_method' => null,
-        ];
+        if (empty($this->filters)) {
+            $this->filters = [
+                'start_date' => now()->startOfYear()->format('Y-m-d'),
+                'end_date' => now()->format('Y-m-d'),
+                'status' => null,
+                'category_id' => null,
+                'payment_method' => null,
+            ];
+        }
     }
 
     public function form(Form $form): Form
@@ -259,5 +261,116 @@ class ExpenseReportsCluster extends Page implements HasForms
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get category breakdown for PDF charts.
+     */
+    public function getCategoryBreakdown(): Collection
+    {
+        return $this->categoryBreakdown;
+    }
+
+    /**
+     * Get budget variance data for PDF charts.
+     */
+    public function getBudgetVarianceData(): array
+    {
+        $gymId = $this->getGymId();
+        $categories = ExpenseCategory::where('gym_id', $gymId)->active()->get();
+
+        $data = [];
+        foreach ($categories as $category) {
+            $actualSpent = $this->getFilteredExpensesQuery()
+                ->clone()
+                ->where('expense_category_id', $category->id)
+                ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+                ->sum('amount');
+
+            if ($actualSpent > 0 || $category->budget_limit > 0) {
+                $data[] = [
+                    'category' => $category->name,
+                    'budget' => $category->budget_limit ?? 0,
+                    'actual' => $actualSpent,
+                    'variance' => ($category->budget_limit ?? 0) - $actualSpent,
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get cost trends data for PDF charts.
+     */
+    public function getCostTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        return Expense::where('gym_id', $gymId)
+            ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+            ->whereBetween('expense_date', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as count")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                    'total' => $item->total,
+                    'count' => $item->count,
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $monthlyData = Expense::where('gym_id', $gymId)
+            ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+            ->whereBetween('expense_date', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $trends = [];
+        $previousValue = null;
+
+        foreach ($monthlyData as $item) {
+            $currentValue = $item->total;
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
+                
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $trends[] = [
+                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'value' => $currentValue,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $currentValue;
+        }
+
+        return $trends;
     }
 }

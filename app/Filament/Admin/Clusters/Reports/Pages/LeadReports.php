@@ -39,12 +39,14 @@ class LeadReports extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->filters = [
-            'start_date' => now()->subMonths(6)->format('Y-m-d'),
-            'end_date' => now()->format('Y-m-d'),
-            'source' => null,
-            'status' => null,
-        ];
+        if (empty($this->filters)) {
+            $this->filters = [
+                'start_date' => now()->subMonths(6)->format('Y-m-d'),
+                'end_date' => now()->format('Y-m-d'),
+                'source' => null,
+                'status' => null,
+            ];
+        }
     }
 
     public function form(Form $form): Form
@@ -203,5 +205,150 @@ class LeadReports extends Page implements HasForms
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get lead funnel data for PDF charts.
+     */
+    public function getLeadFunnelData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $statuses = [
+            LeadStatus::NEW->value => 'New',
+            LeadStatus::CONTACTED->value => 'Contacted',
+            LeadStatus::CONVERTED->value => 'Converted',
+            LeadStatus::LOST->value => 'Lost',
+        ];
+
+        $data = [];
+        foreach ($statuses as $statusValue => $label) {
+            $count = Lead::where('gym_id', $gymId)
+                ->where('status', $statusValue)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->count();
+
+            if ($count > 0) {
+                $data[] = [
+                    'status' => $label,
+                    'count' => $count,
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get conversion rates data for PDF charts.
+     */
+    public function getConversionRatesData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $newLeads = Lead::where('gym_id', $gymId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('count', 'month');
+
+        $conversions = Lead::where('gym_id', $gymId)
+            ->where('status', LeadStatus::CONVERTED)
+            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(updated_at, '%Y-%m') as month, COUNT(*) as count")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('count', 'month');
+
+        $allMonths = $newLeads->keys()->merge($conversions->keys())->unique()->sort();
+
+        $data = [];
+        foreach ($allMonths as $month) {
+            $data[] = [
+                'month' => \Carbon\Carbon::parse($month . '-01')->format('M Y'),
+                'new_leads' => $newLeads->get($month, 0),
+                'converted' => $conversions->get($month, 0),
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get lead sources data for PDF charts.
+     */
+    public function getLeadSourcesData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        return Lead::where('gym_id', $gymId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('source, COUNT(*) as count')
+            ->groupBy('source')
+            ->orderByDesc('count')
+            ->get()
+            ->map(function ($item) {
+                $source = $item->source;
+
+                return [
+                    'name' => $source?->getLabel() ?? ucfirst(str_replace('_', ' ', $item->source ?? 'Unknown')),
+                    'count' => $item->count,
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $monthlyLeads = Lead::where('gym_id', $gymId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $trends = [];
+        $previousValue = null;
+
+        foreach ($monthlyLeads as $item) {
+            $currentValue = $item->total;
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
+
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $trends[] = [
+                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'value' => $currentValue,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $currentValue;
+        }
+
+        return $trends;
     }
 }

@@ -82,6 +82,7 @@ class ReportPdfGenerator
                 'chart_data' => $this->getChartData($page, ['lead_funnel', 'conversion_rates', 'lead_sources']),
                 'monthly_trends' => $this->getMonthlyTrends($page, 'leads'),
             ];
+
             $viewName = 'pdf.reports.generic';
         } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports::class) {
             $data = [
@@ -173,38 +174,103 @@ class ReportPdfGenerator
                         }
                     }
                     break;
+                case 'lead_funnel':
+                    if (method_exists($page, 'getLeadFunnelData')) {
+                        $chartData['lead_funnel'] = $page->getLeadFunnelData();
+                    } else {
+                        $chartData['lead_funnel'] = [];
+                    }
+                    break;
+                case 'conversion_rates':
+                    if (method_exists($page, 'getConversionRatesData')) {
+                        $chartData['conversion_rates'] = $page->getConversionRatesData();
+                    } else {
+                        $chartData['conversion_rates'] = [];
+                    }
+                    break;
+                case 'lead_sources':
+                    if (method_exists($page, 'getLeadSourcesData')) {
+                        $chartData['lead_sources'] = $page->getLeadSourcesData();
+                    } else {
+                        $chartData['lead_sources'] = [];
+                    }
+                    break;
+                case 'daily_patterns':
+                    if (method_exists($page, 'getDailyPatternsData')) {
+                        $chartData['daily_patterns'] = $page->getDailyPatternsData();
+                    } else {
+                        $chartData['daily_patterns'] = [];
+                    }
+                    break;
+                case 'weekly_trends':
+                    if (method_exists($page, 'getWeeklyTrendsData')) {
+                        $chartData['weekly_trends'] = $page->getWeeklyTrendsData();
+                    } else {
+                        $chartData['weekly_trends'] = [];
+                    }
+                    break;
                 case 'trainer_utilization':
                     if (method_exists($page, 'getTrainerDistribution')) {
-                        $distribution = $page->getTrainerDistribution()->toArray();
-                        $chartData['trainer_utilization'] = $distribution;
+                        $distribution = $page->getTrainerDistribution();
+                        $chartData['trainer_utilization'] = is_array($distribution) ? $distribution : $distribution->toArray();
+                    } else {
+                        $chartData['trainer_utilization'] = [];
+                    }
+                    break;
+                case 'client_distribution':
+                    if (method_exists($page, 'getClientDistributionData')) {
+                        $chartData['client_distribution'] = $page->getClientDistributionData();
+                    } else {
+                        $chartData['client_distribution'] = [];
+                    }
+                    break;
+                case 'performance_metrics':
+                    if (method_exists($page, 'getPerformanceMetricsData')) {
+                        $chartData['performance_metrics'] = $page->getPerformanceMetricsData();
+                    } else {
+                        $chartData['performance_metrics'] = [];
+                    }
+                    break;
+                case 'budget_variance':
+                    if (method_exists($page, 'getBudgetVarianceData')) {
+                        $chartData['budget_variance'] = $page->getBudgetVarianceData();
+                    } else {
+                        $chartData['budget_variance'] = [];
+                    }
+                    break;
+                case 'cost_trends':
+                    if (method_exists($page, 'getCostTrendsData')) {
+                        $chartData['cost_trends'] = $page->getCostTrendsData();
+                    } else {
+                        $chartData['cost_trends'] = [];
                     }
                     break;
                 case 'equipment_usage':
-                    $chartData['equipment_usage'] = [
-                        ['equipment' => 'Treadmill', 'usage_hours' => 120, 'utilization' => 75],
-                        ['equipment' => 'Bench Press', 'usage_hours' => 80, 'utilization' => 60],
-                        ['equipment' => 'Dumbbells', 'usage_hours' => 150, 'utilization' => 85],
-                    ];
+                    if (method_exists($page, 'getEquipmentUsageData')) {
+                        $chartData['equipment_usage'] = $page->getEquipmentUsageData();
+                    } else {
+                        $chartData['equipment_usage'] = [];
+                    }
                     break;
                 case 'ltv_trends':
-                    $chartData['ltv_trends'] = [
-                        ['month' => 'Jan', 'ltv' => 15000, 'members' => 120],
-                        ['month' => 'Feb', 'ltv' => 16500, 'members' => 125],
-                        ['month' => 'Mar', 'ltv' => 18000, 'members' => 130],
-                    ];
+                    if (method_exists($page, 'getLtvTrendsData')) {
+                        $chartData['ltv_trends'] = $page->getLtvTrendsData();
+                    } else {
+                        $chartData['ltv_trends'] = [];
+                    }
                     break;
                 case 'expense_categories':
-                    $chartData['expense_categories'] = [
-                        ['category' => 'Salaries', 'amount' => 150000, 'percentage' => 45],
-                        ['category' => 'Rent', 'amount' => 80000, 'percentage' => 24],
-                        ['category' => 'Equipment', 'amount' => 50000, 'percentage' => 15],
-                        ['category' => 'Marketing', 'amount' => 30000, 'percentage' => 9],
-                        ['category' => 'Utilities', 'amount' => 24000, 'percentage' => 7],
-                    ];
+                    if (method_exists($page, 'getCategoryBreakdown')) {
+                        $chartData['expense_categories'] = $page->getCategoryBreakdown()->toArray();
+                    } elseif (property_exists($page, 'categoryBreakdown')) {
+                        $chartData['expense_categories'] = $page->categoryBreakdown->toArray();
+                    } else {
+                        $chartData['expense_categories'] = [];
+                    }
                     break;
                 default:
-                    // Add generic placeholder data for other chart types
-                    $chartData[$chartType] = $this->getPlaceholderChartData($chartType);
+                    // Return empty array for unknown chart types
+                    $chartData[$chartType] = [];
                     break;
             }
         }
@@ -213,60 +279,16 @@ class ReportPdfGenerator
     }
 
     /**
-     * Get monthly trends data
+     * Get monthly trends data from the actual page data
      */
     private function getMonthlyTrends($page, string $reportType): array
     {
-        $trends = [];
-        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-        foreach ($months as $index => $month) {
-            $value = rand(1000, 5000);
-            $changePercent = $index > 0 ? (($value - 3000) / 3000) * 100 : 0;
-            $trend = $changePercent > 5 ? 'Up' : ($changePercent < -5 ? 'Down' : 'Stable');
-
-            $trends[] = [
-                'month' => $month,
-                'value' => $value,
-                'change_percent' => round($changePercent, 1),
-                'trend' => $trend,
-            ];
+        // Check if page has a method to provide monthly trends
+        if (method_exists($page, 'getMonthlyTrendsData')) {
+            return $page->getMonthlyTrendsData();
         }
 
-        return $trends;
-    }
-
-    /**
-     * Get placeholder chart data for various chart types
-     */
-    private function getPlaceholderChartData(string $chartType): array
-    {
-        $placeholderData = [];
-
-        switch ($chartType) {
-            case 'lead_funnel':
-                $placeholderData = [
-                    ['stage' => 'New Leads', 'count' => 100, 'conversion_rate' => 100, 'dropoff_rate' => 0],
-                    ['stage' => 'Contacted', 'count' => 75, 'conversion_rate' => 75, 'dropoff_rate' => 25],
-                    ['stage' => 'Qualified', 'count' => 50, 'conversion_rate' => 50, 'dropoff_rate' => 33],
-                    ['stage' => 'Converted', 'count' => 30, 'conversion_rate' => 30, 'dropoff_rate' => 40],
-                ];
-                break;
-            case 'daily_patterns':
-                $placeholderData = [
-                    ['day' => 'Monday', 'checkins' => 120, 'peak_hour' => '6 PM', 'avg_duration' => 45],
-                    ['day' => 'Tuesday', 'checkins' => 100, 'peak_hour' => '7 AM', 'avg_duration' => 50],
-                    ['day' => 'Wednesday', 'checkins' => 115, 'peak_hour' => '6 PM', 'avg_duration' => 48],
-                ];
-                break;
-            default:
-                $placeholderData = [
-                    ['metric' => 'Sample', 'value' => 100],
-                    ['metric' => 'Data', 'value' => 200],
-                ];
-                break;
-        }
-
-        return $placeholderData;
+        // Return empty array if no data available
+        return [];
     }
 }

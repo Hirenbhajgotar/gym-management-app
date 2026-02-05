@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Widgets\Stats;
+namespace App\Filament\Admin\Widgets;
 
 use App\Enums\ExpenseStatus;
 use App\Helpers\Number as HelpersNumber;

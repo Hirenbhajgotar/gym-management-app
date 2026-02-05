@@ -103,6 +103,53 @@ class EquipmentUsageReports extends Page implements HasForms
         return $days > 0 ? round($total / $days) : 0;
     }
 
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $monthlyData = Attendances::where('gym_id', $gymId)
+            ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
+            ->selectRaw("DATE_FORMAT(check_in_time, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $trends = [];
+        $previousValue = null;
+
+        foreach ($monthlyData as $item) {
+            $currentValue = $item->total;
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
+                
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $trends[] = [
+                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'value' => $currentValue,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $currentValue;
+        }
+
+        return $trends;
+    }
+
     protected function getHeaderActions(): array
     {
         return array_merge([

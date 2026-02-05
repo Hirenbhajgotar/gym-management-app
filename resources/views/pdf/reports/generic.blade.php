@@ -34,26 +34,6 @@
     </div>
     @endif
 
-    <div class="section">
-        <div class="section-title">Generated Information</div>
-        <table>
-            <tr>
-                <th>Report Type</th>
-                <td>{{ $report->report_type }}</td>
-            </tr>
-            <tr>
-                <th>Generated On</th>
-                <td>{{ $date }}</td>
-            </tr>
-            @if(isset($data['stats']['start_date']))
-            <tr>
-                <th>Report Period</th>
-                <td>{{ \Carbon\Carbon::parse($data['stats']['start_date'] ?? 'N/A')->format('M j, Y') }} - {{ \Carbon\Carbon::parse($data['stats']['end_date'] ?? 'N/A')->format('M j, Y') }}</td>
-            </tr>
-            @endif
-        </table>
-    </div>
-
     {{-- Chart Data Tables for PDF --}}
     @if(isset($data['chart_data']) && !empty($data['chart_data']))
     <div class="section">

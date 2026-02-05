@@ -35,10 +35,12 @@ class AttendanceReports extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->filters = [
-            'start_date' => now()->subMonth()->format('Y-m-d'),
-            'end_date' => now()->format('Y-m-d'),
-        ];
+        if (empty($this->filters)) {
+            $this->filters = [
+                'start_date' => now()->subMonth()->format('Y-m-d'),
+                'end_date' => now()->format('Y-m-d'),
+            ];
+        }
     }
 
     public function form(Form $form): Form
@@ -117,8 +119,6 @@ class AttendanceReports extends Page implements HasForms
                 ->orderByDesc('count')
                 ->first();
 
-            $dayNames = ['', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
             // Average session duration (check-in to check-out)
             $avgDuration = Attendances::where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
@@ -133,7 +133,7 @@ class AttendanceReports extends Page implements HasForms
                 'today_check_ins' => $todayCheckIns,
                 'currently_in' => $currentlyIn,
                 'peak_hour' => $peakHour?->hour !== null ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
-                'peak_day' => $peakDay?->day ? $dayNames[$peakDay->day] : 'N/A',
+                'peak_day' => $peakDay?->day ? Carbon::now()->dayOfWeek($peakDay->day - 1)->format('l') : 'N/A',
                 'avg_duration_minutes' => round($avgDuration ?? 0),
             ];
         });
@@ -156,10 +156,18 @@ class AttendanceReports extends Page implements HasForms
                 ->pluck('count', 'hour')
                 ->toArray();
 
+            // Get actual operating hours from the data (or use 0-23 for full day)
+            $minHour = $distribution ? min(array_keys($distribution)) : 0;
+            $maxHour = $distribution ? max(array_keys($distribution)) : 23;
+
+            // Expand range slightly to show context
+            $startHour = max(0, $minHour - 1);
+            $endHour = min(23, $maxHour + 1);
+
             $hours = [];
             $counts = [];
 
-            for ($h = 5; $h <= 22; $h++) { // 5 AM to 10 PM typical gym hours
+            for ($h = $startHour; $h <= $endHour; $h++) {
                 $hours[] = Carbon::createFromTime($h)->format('g A');
                 $counts[] = $distribution[$h] ?? 0;
             }
@@ -193,5 +201,102 @@ class AttendanceReports extends Page implements HasForms
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get daily patterns data for PDF charts.
+     */
+    public function getDailyPatternsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonth()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        return Attendances::where('gym_id', $gymId)
+            ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
+            ->selectRaw('DATE(check_in_time) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'date' => Carbon::parse($item->date)->format('M d'),
+                    'count' => $item->count,
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get weekly trends data for PDF charts.
+     */
+    public function getWeeklyTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonth()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $weeklyData = Attendances::where('gym_id', $gymId)
+            ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
+            ->selectRaw('DAYOFWEEK(check_in_time) as day, COUNT(*) as count')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        return $weeklyData->map(function ($item) use ($dayNames) {
+            return [
+                'day' => $dayNames[$item->day - 1] ?? 'Unknown',
+                'count' => $item->count,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get monthly trends data for PDF.
+     */
+    public function getMonthlyTrendsData(): array
+    {
+        $startDate = $this->filters['start_date'] ?? now()->subMonth()->format('Y-m-d');
+        $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
+        $gymId = $this->getGymId();
+
+        $monthlyData = Attendances::where('gym_id', $gymId)
+            ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
+            ->selectRaw("DATE_FORMAT(check_in_time, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $trends = [];
+        $previousValue = null;
+
+        foreach ($monthlyData as $item) {
+            $currentValue = $item->total;
+            $changePercent = 0;
+            $trend = 'Stable';
+
+            if ($previousValue !== null && $previousValue > 0) {
+                $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
+                
+                if ($changePercent > 5) {
+                    $trend = 'Up';
+                } elseif ($changePercent < -5) {
+                    $trend = 'Down';
+                }
+            }
+
+            $trends[] = [
+                'month' => Carbon::parse($item->month . '-01')->format('M Y'),
+                'value' => $currentValue,
+                'change_percent' => $changePercent,
+                'trend' => $trend,
+            ];
+
+            $previousValue = $currentValue;
+        }
+
+        return $trends;
     }
 }
