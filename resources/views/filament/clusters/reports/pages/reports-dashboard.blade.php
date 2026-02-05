@@ -62,6 +62,27 @@
                 <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     {{ $memberStats['new_this_month'] }} new this month · {{ $memberStats['expired'] }} expired
                 </div>
+                
+                {{-- Threshold Alert --}}
+                @if(isset($memberStats['alert']))
+                    <div class="mt-2">
+                        <span @class([
+                            'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium',
+                            'bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400' => $memberStats['alert']['type'] === 'danger',
+                            'bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400' => $memberStats['alert']['type'] === 'warning',
+                        ])>
+                            <x-heroicon-m-exclamation-triangle class="h-3 w-3" />
+                            {{ $memberStats['alert']['message'] }}
+                        </span>
+                    </div>
+                @endif
+                
+                {{-- Sparkline --}}
+                @if(isset($memberStats['sparkline']))
+                    <div class="mt-3">
+                        <x-sparkline :data="$memberStats['sparkline']" color="primary" />
+                    </div>
+                @endif
             </x-filament::section>
 
             {{-- Revenue Card --}}
@@ -90,6 +111,13 @@
                 <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     Today: ₹{{ number_format($revenueStats['today'], 0) }} · YTD: ₹{{ number_format($revenueStats['ytd'], 0) }}
                 </div>
+                
+                {{-- Sparkline --}}
+                @if(isset($revenueStats['sparkline']))
+                    <div class="mt-3">
+                        <x-sparkline :data="$revenueStats['sparkline']" color="success" />
+                    </div>
+                @endif
             </x-filament::section>
 
             {{-- Leads Card --}}
@@ -112,6 +140,13 @@
                 <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     {{ $leadStats['new'] }} new · {{ $leadStats['converted_this_month'] }} converted this month
                 </div>
+                
+                {{-- Sparkline --}}
+                @if(isset($leadStats['sparkline']))
+                    <div class="mt-3">
+                        <x-sparkline :data="$leadStats['sparkline']" color="warning" />
+                    </div>
+                @endif
             </x-filament::section>
 
             {{-- Trainers Card --}}
@@ -156,6 +191,13 @@
                 <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     Avg {{ $attendanceStats['weekly_average'] }}/day · Peak: {{ $attendanceStats['peak_hour'] }}
                 </div>
+                
+                {{-- Sparkline --}}
+                @if(isset($attendanceStats['sparkline']))
+                    <div class="mt-3">
+                        <x-sparkline :data="$attendanceStats['sparkline']" color="purple" />
+                    </div>
+                @endif
             </x-filament::section>
         </div>
 

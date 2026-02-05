@@ -72,6 +72,7 @@ class ReportsDashboard extends Page
                 'growth_rate' => $growthRate,
                 'growth_color' => $this->getTrendColor($growthRate),
                 'sparkline' => $sparkline,
+                'alert' => $this->checkMemberThreshold($growthRate, $totalMembers),
             ];
         });
     }
@@ -268,6 +269,8 @@ class ReportsDashboard extends Page
     protected function getFooterWidgets(): array
     {
         return [
+            \App\Filament\Admin\Clusters\Reports\Widgets\RealtimeAttendanceWidget::class,
+            \App\Filament\Admin\Clusters\Reports\Widgets\GymHealthScoreWidget::class,
             GoalProgressWidget::class,
             CohortRetentionChart::class,
         ];
@@ -306,5 +309,86 @@ class ReportsDashboard extends Page
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
         ], $this->getFilterActions(), $this->getExportActions());
+    }
+
+    /**
+     * Check member growth threshold.
+     */
+    protected function checkMemberThreshold(float $growthRate, int $totalMembers): ?array
+    {
+        if ($growthRate < -10) {
+            return [
+                'type' => 'danger',
+                'message' => 'Member growth declined by more than 10%',
+            ];
+        }
+
+        if ($totalMembers < 10) {
+            return [
+                'type' => 'warning',
+                'message' => 'Low member count - Focus on lead conversion',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check revenue threshold.
+     */
+    protected function checkRevenueThreshold(float $changeRate, float $mtd): ?array
+    {
+        if ($changeRate < -15) {
+            return [
+                'type' => 'danger',
+                'message' => 'Revenue dropped by more than 15%',
+            ];
+        }
+
+        if ($mtd < 10000) {
+            return [
+                'type' => 'warning',
+                'message' => 'MTD revenue below target',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check lead conversion threshold.
+     */
+    protected function checkLeadThreshold(float $conversionRate): ?array
+    {
+        if ($conversionRate < 10) {
+            return [
+                'type' => 'danger',
+                'message' => 'Conversion rate below 10% - Review lead quality',
+            ];
+        }
+
+        if ($conversionRate < 20) {
+            return [
+                'type' => 'warning',
+                'message' => 'Conversion rate could be improved',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check attendance threshold.
+     */
+    protected function checkAttendanceThreshold(float $weeklyAverage): ?array
+    {
+        if ($weeklyAverage < 20) {
+            return [
+                'type' => 'warning',
+                'message' => 'Low average attendance - Engage members',
+            ];
+        }
+
+        return null;
     }
 }
