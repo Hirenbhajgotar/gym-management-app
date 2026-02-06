@@ -11,9 +11,16 @@ class MemberPlanDistributionChart extends ChartWidget
 {
     protected static ?string $heading = 'Members by Membership Plan';
 
-    protected static ?string $pollingInterval = '300s';
-
     public ?array $filters = [];
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {
@@ -23,7 +30,7 @@ class MemberPlanDistributionChart extends ChartWidget
 
         $cacheKey = "widget:member_plan_dist:gym:{$gymId}:" . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
             $distribution = GymMember::where('gym_id', $gymId)
                 ->with('membershipPlan')
                 ->get()

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class ReportCacheService
 {
@@ -18,6 +17,11 @@ class ReportCacheService
             "reports:member_growth:gym:{$gymId}:*",
             "reports:member_plan_distribution:gym:{$gymId}:*",
             "reports:churn_stats:gym:{$gymId}",
+            // Widget caches
+            "widget:member_growth:gym:{$gymId}:*",
+            "widget:member_status:gym:{$gymId}:*",
+            "widget:member_plan_dist:gym:{$gymId}:*",
+            "widget:member_demographics:gym:{$gymId}:*",
         ];
 
         $this->clearCachePatterns($patterns);
@@ -141,7 +145,7 @@ class ReportCacheService
     public function invalidateCohortData(int $gymId): void
     {
         $patterns = [
-            "report:cohort:gym:{$gymId}:*",
+            "reports:cohort:gym:{$gymId}:*",
         ];
 
         $this->clearCachePatterns($patterns);
@@ -171,9 +175,11 @@ class ReportCacheService
      */
     protected function clearCachePatterns(array $patterns): void
     {
+        $redisPrefix = config('database.redis.options.prefix', '');
+
+        // $keys = Cache::getRedis()->keys('widget:member_growth:gym:39:*');
         foreach ($patterns as $pattern) {
             // Check if this is a pattern (contains wildcard) or exact key
-            Log::info('Pattern: ' . $pattern);
             if (str_contains($pattern, '*')) {
                 // Pattern matching - use Redis KEYS
                 if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
@@ -190,13 +196,14 @@ class ReportCacheService
 
                     $allKeys = array_merge($keys, $flexibleKeys);
 
-                    Log::info('All keys: ' . json_encode($allKeys));
-
                     if (! empty($allKeys)) {
                         foreach ($allKeys as $key) {
                             // Remove the prefix to get the cache key
-                            $cacheKey = str_replace($fullPrefix, '', $key);
+                            $cacheKey = str_replace($redisPrefix . $fullPrefix, '', $key);
+
                             Cache::forget($cacheKey);
+
+                            Cache::forget('illuminate:cache:flexible:created:' . $cacheKey);
                         }
                     }
                 }
@@ -216,9 +223,9 @@ class ReportCacheService
      */
     protected function getCachePrefix(): string
     {
-        $redisPrefix = config('database.redis.options.prefix', '');
+        // $redisPrefix = config('database.redis.options.prefix', '');
         $cachePrefix = config('cache.prefix', '');
 
-        return $redisPrefix . $cachePrefix;
+        return $cachePrefix;
     }
 }

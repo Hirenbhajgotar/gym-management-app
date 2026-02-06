@@ -48,6 +48,6 @@ class AttendanceObserver
         $this->reportCacheService->invalidateInsights($attendance->gym_id);
 
         // Broadcast the event
-        broadcast(new AttendanceStatsUpdated($attendance->gym_id))->toOthers();
+        broadcast(new AttendanceStatsUpdated($attendance->gym_id));
     }
 }

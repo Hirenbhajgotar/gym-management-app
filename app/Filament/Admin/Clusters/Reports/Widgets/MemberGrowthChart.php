@@ -14,11 +14,16 @@ class MemberGrowthChart extends ChartWidget
 
     protected static ?string $heading = 'Member Growth Over Time';
 
-    protected static ?string $pollingInterval = '300s';
-
     protected int|string|array $columnSpan = 'full';
 
-    // public ?array $filters = [];
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {
@@ -28,12 +33,13 @@ class MemberGrowthChart extends ChartWidget
 
         $cacheKey = "widget:member_growth:gym:{$gymId}:" . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
             $startDate = $this->filters['start_date'] ?? now()->subYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
             $data = GymMember::where('gym_id', $gymId)
-                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
                 ->groupBy('month')
                 ->orderBy('month')

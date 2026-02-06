@@ -11,11 +11,18 @@ class MemberDemographicsChart extends ChartWidget
 {
     protected static ?string $heading = 'Member Age Distribution';
 
-    protected static ?string $pollingInterval = '300s';
-
     protected int|string|array $columnSpan = 'full';
 
     public ?array $filters = [];
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {

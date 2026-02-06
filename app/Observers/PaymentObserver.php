@@ -65,7 +65,7 @@ class PaymentObserver
             $this->reportCacheService->invalidateInsights($gymId);
             
             // Broadcast real-time event
-            broadcast(new RevenueStatsUpdated($gymId))->toOthers();
+            broadcast(new RevenueStatsUpdated($gymId));
         }
     }
 }

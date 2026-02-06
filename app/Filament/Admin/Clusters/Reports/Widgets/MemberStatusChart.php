@@ -11,9 +11,16 @@ class MemberStatusChart extends ChartWidget
 {
     protected static ?string $heading = 'Membership Status Distribution';
 
-    protected static ?string $pollingInterval = '300s';
-
     public ?array $filters = [];
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {
@@ -23,7 +30,7 @@ class MemberStatusChart extends ChartWidget
 
         $cacheKey = "widget:member_status:gym:{$gymId}:" . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
             $active = GymMember::where('gym_id', $gymId)->membershipActive()->count();
             $expired = GymMember::where('gym_id', $gymId)->membershipExpired()->count();
             $expiringSoon = GymMember::where('gym_id', $gymId)

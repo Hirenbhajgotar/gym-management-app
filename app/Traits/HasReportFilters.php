@@ -39,7 +39,7 @@ trait HasReportFilters
         $gymId = $this->getGymId();
         $filterHash = md5(json_encode($filters));
 
-        return "report:{$reportType}:gym:{$gymId}:filters:{$filterHash}";
+        return "reports:{$reportType}:gym:{$gymId}:{$filterHash}";
     }
 
     /**
@@ -217,7 +217,7 @@ trait HasReportFilters
         $gymId = $this->getGymId();
 
         return Cache::flexible(
-            "report:cohort:gym:{$gymId}:months:{$months}",
+            "reports:cohort:gym:{$gymId}:months:{$months}",
             [now()->addHours(1), now()->addHours(2)],
             function () use ($gymId, $months) {
                 $cohorts = collect();

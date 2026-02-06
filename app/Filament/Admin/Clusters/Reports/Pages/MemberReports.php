@@ -44,10 +44,28 @@ class MemberReports extends Page implements HasForms
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
-            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'handleMemberStatsUpdate',
         ];
+    }
+
+    /**
+     * Handle real-time member stats update - clears cache and refreshes data.
+     */
+    public function handleMemberStatsUpdate(): void
+    {
+        // Clear cached data to ensure fresh data is loaded
+        $this->clearReportCache('member_summary');
+        $this->clearReportCache('member_growth');
+        $this->clearReportCache('member_plan_distribution');
+
+        // Also clear the churn stats cache
+        $gymId = $this->getGymId();
+        Cache::forget("reports:churn_stats:gym:{$gymId}");
+
+        // Dispatch refresh to widgets
+        $this->dispatch('refresh-widgets');
     }
 
     public function mount(): void
@@ -180,13 +198,13 @@ class MemberReports extends Page implements HasForms
                 ->get();
 
             $previousCount = 0;
-            
+
             return $data->map(function ($item) use (&$previousCount) {
                 $growthRate = 0;
                 if ($previousCount > 0) {
                     $growthRate = (($item->count - $previousCount) / $previousCount) * 100;
                 }
-                
+
                 $currentCount = $item->count;
                 $previousCount = $currentCount;
 

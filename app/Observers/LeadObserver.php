@@ -67,6 +67,6 @@ class LeadObserver
         Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $lead->gym_id);
         
         // Broadcast real-time event
-        broadcast(new LeadStatsUpdated($lead->gym_id))->toOthers();
+        broadcast(new LeadStatsUpdated($lead->gym_id));
     }
 }
