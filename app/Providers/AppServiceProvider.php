@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
+use App\Models\Attendances;
 use App\Models\Expense;
 use App\Models\Gym;
 use App\Models\ReportGoal;
 use App\Models\Subscription;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
+use App\Observers\AttendanceObserver;
 use App\Observers\ExpenseObserver;
 use App\Observers\GymObserver;
 use App\Observers\ReportGoalObserver;
@@ -46,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
         Subscription::observe(SubscriptionObserver::class);
         Expense::observe(ExpenseObserver::class);
         ReportGoal::observe(ReportGoalObserver::class);
+        Attendances::observe(AttendanceObserver::class);
 
         FacadesEvent::listen(
             TenantSet::class,

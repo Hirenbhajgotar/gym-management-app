@@ -2,18 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Observers\ReportGoalObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Enums\PaymentStatus;
-use App\Models\Attendances;
-use App\Models\GymMember;
-use App\Models\Lead;
-use App\Models\MemberPayment;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 #[ObservedBy([ReportGoalObserver::class])]
 class ReportGoal extends Model

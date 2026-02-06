@@ -37,6 +37,18 @@ class LeadReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.lead-reports';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         if (empty($this->filters)) {

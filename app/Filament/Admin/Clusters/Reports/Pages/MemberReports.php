@@ -38,6 +38,18 @@ class MemberReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.member-reports';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         $this->filters = [

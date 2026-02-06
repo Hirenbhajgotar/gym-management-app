@@ -42,6 +42,18 @@ class RevenueReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.revenue-reports';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         $this->filters = [

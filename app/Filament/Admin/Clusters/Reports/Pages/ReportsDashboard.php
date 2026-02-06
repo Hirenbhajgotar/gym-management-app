@@ -36,6 +36,22 @@ class ReportsDashboard extends Page
     protected static string $view = 'filament.clusters.reports.pages.reports-dashboard';
 
     /**
+     * Get Livewire listeners for real-time updates via Echo.
+     * Note: Event names must be prefixed with a dot (.) when using broadcastAs()
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => '$refresh',
+        ];
+    }
+
+    /**
      * Get member overview stats with sparkline data.
      */
     public function getMemberStats(): array

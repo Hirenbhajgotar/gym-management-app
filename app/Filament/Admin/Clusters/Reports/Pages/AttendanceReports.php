@@ -33,6 +33,18 @@ class AttendanceReports extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.attendance-reports';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         if (empty($this->filters)) {

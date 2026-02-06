@@ -29,6 +29,18 @@ class TrainerReports extends Page
     protected static string $view = 'filament.clusters.reports.pages.trainer-reports';
 
     /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+        
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
+
+    /**
      * Get summary statistics.
      */
     public function getSummaryStats(): array
