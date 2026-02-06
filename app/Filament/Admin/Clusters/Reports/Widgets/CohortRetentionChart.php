@@ -15,6 +15,15 @@ class CohortRetentionChart extends Widget
 
     public int $months = 6;
 
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function getCohortData(): array
     {
         return $this->getMemberCohortData($this->months)->toArray();

@@ -12,6 +12,18 @@ class GymHealthScoreWidget extends Widget
 
     protected int | string | array $columnSpan = 'full';
 
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function getHealthData(): array
     {
         $gymId = Filament::getTenant()->id;

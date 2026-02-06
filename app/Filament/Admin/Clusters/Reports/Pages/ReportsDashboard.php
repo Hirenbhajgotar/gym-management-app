@@ -42,7 +42,7 @@ class ReportsDashboard extends Page
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
             "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',

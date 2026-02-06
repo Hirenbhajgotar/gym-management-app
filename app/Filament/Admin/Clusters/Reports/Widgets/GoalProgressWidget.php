@@ -2,11 +2,6 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Enums\PaymentStatus;
-use App\Models\Attendances;
-use App\Models\GymMember;
-use App\Models\Lead;
-use App\Models\MemberPayment;
 use App\Models\ReportGoal;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
@@ -17,6 +12,18 @@ class GoalProgressWidget extends Widget
     protected static string $view = 'filament.clusters.reports.widgets.goal-progress-widget';
 
     protected int|string|array $columnSpan = 'full';
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => '$refresh',
+        ];
+    }
 
     public function getActiveGoals(): array
     {

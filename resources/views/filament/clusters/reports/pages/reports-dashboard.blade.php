@@ -254,36 +254,4 @@
                 </span>
             </button>
         </div>
-    </div>
 </x-filament-panels::page>
-
-@script
-<script>
-// Initialize Laravel Echo for real-time updates
-if (window.Echo) {
-    const gymId = '{{ \Filament\Facades\Filament::getTenant()->id }}';
-    
-    Echo.private(`reports.${gymId}`)
-        .listen('.MemberStatsUpdated', (e) => {
-            console.log('✅ Member stats updated:', e);
-            $wire.$refresh();
-        })
-        .listen('.RevenueStatsUpdated', (e) => {
-            console.log('✅ Revenue stats updated:', e);
-            $wire.$refresh();
-        })
-        .listen('.LeadStatsUpdated', (e) => {
-            console.log('✅ Lead stats updated:', e);
-            $wire.$refresh();
-        })
-        .listen('.AttendanceStatsUpdated', (e) => {
-            console.log('✅ Attendance stats updated:', e);
-            $wire.$refresh();
-        });
-        
-    console.log(`🔌 Echo subscribed to: reports.${gymId}`);
-} else {
-    console.warn('⚠️ Laravel Echo not initialized');
-}
-</script>
-@endscript

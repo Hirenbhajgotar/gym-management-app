@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ReportCacheService
 {
@@ -20,6 +21,10 @@ class ReportCacheService
         ];
 
         $this->clearCachePatterns($patterns);
+
+        // Also invalidate related caches
+        $this->invalidateGymHealthScore($gymId);
+        $this->invalidateCohortData($gymId);
     }
 
     /**
@@ -35,6 +40,9 @@ class ReportCacheService
         ];
 
         $this->clearCachePatterns($patterns);
+
+        // Revenue affects gym health score
+        $this->invalidateGymHealthScore($gymId);
     }
 
     /**
@@ -49,6 +57,9 @@ class ReportCacheService
         ];
 
         $this->clearCachePatterns($patterns);
+
+        // Attendance affects gym health score
+        $this->invalidateGymHealthScore($gymId);
     }
 
     /**
@@ -56,14 +67,14 @@ class ReportCacheService
      */
     public function invalidateLeadReports(int $gymId): void
     {
-        // Use exact cache keys that match what's used in the report pages
-        $keys = [
+        $patterns = [
             "reports:lead_stats:gym:{$gymId}",
         ];
 
-        foreach ($keys as $key) {
-            Cache::forget($key);
-        }
+        $this->clearCachePatterns($patterns);
+
+        // Leads affect gym health score (conversion rate)
+        $this->invalidateGymHealthScore($gymId);
     }
 
     /**
@@ -117,6 +128,26 @@ class ReportCacheService
     }
 
     /**
+     * Invalidate gym health score cache.
+     */
+    public function invalidateGymHealthScore(int $gymId): void
+    {
+        Cache::forget("gym:health_score:{$gymId}");
+    }
+
+    /**
+     * Invalidate cohort retention data cache.
+     */
+    public function invalidateCohortData(int $gymId): void
+    {
+        $patterns = [
+            "report:cohort:gym:{$gymId}:*",
+        ];
+
+        $this->clearCachePatterns($patterns);
+    }
+
+    /**
      * Invalidate all report caches for a gym.
      */
     public function invalidateAllReports(int $gymId): void
@@ -129,37 +160,65 @@ class ReportCacheService
         $this->invalidateExpenseReports($gymId);
         $this->invalidateEquipmentReports($gymId);
         $this->invalidateInsights($gymId);
+        $this->invalidateGymHealthScore($gymId);
+        $this->invalidateCohortData($gymId);
     }
 
     /**
      * Clear cache keys matching patterns.
+     * For pattern matching (keys ending with *), uses Redis KEYS command.
+     * For exact keys, uses Cache::forget directly.
      */
     protected function clearCachePatterns(array $patterns): void
     {
         foreach ($patterns as $pattern) {
-            // For Redis, we can use the key pattern
-            if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
-                $keys = Cache::getRedis()->keys($this->getCachePrefix() . $pattern);
+            // Check if this is a pattern (contains wildcard) or exact key
+            Log::info('Pattern: ' . $pattern);
+            if (str_contains($pattern, '*')) {
+                // Pattern matching - use Redis KEYS
+                if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
+                    $redis = \Illuminate\Support\Facades\Redis::connection('cache');
+                    $fullPrefix = $this->getCachePrefix();
 
-                if (! empty($keys)) {
-                    foreach ($keys as $key) {
-                        // Remove the prefix before forgetting
-                        $keyWithoutPrefix = str_replace($this->getCachePrefix(), '', $key);
-                        Cache::forget($keyWithoutPrefix);
+                    // Search for keys matching the pattern
+                    $fullPattern = $fullPrefix . $pattern;
+                    $keys = $redis->keys($fullPattern);
+
+                    // Also search for flexible cache metadata keys
+                    $flexiblePattern = $fullPrefix . 'illuminate:cache:flexible:created:' . str_replace('*', '', $pattern) . '*';
+                    $flexibleKeys = $redis->keys($flexiblePattern);
+
+                    $allKeys = array_merge($keys, $flexibleKeys);
+
+                    Log::info('All keys: ' . json_encode($allKeys));
+
+                    if (! empty($allKeys)) {
+                        foreach ($allKeys as $key) {
+                            // Remove the prefix to get the cache key
+                            $cacheKey = str_replace($fullPrefix, '', $key);
+                            Cache::forget($cacheKey);
+                        }
                     }
                 }
             } else {
-                // For other cache drivers, just forget the exact key
+                // Exact key - just forget it directly
                 Cache::forget($pattern);
+                // Also forget the flexible cache metadata key
+                Cache::forget('illuminate:cache:flexible:created:' . $pattern);
             }
         }
     }
 
     /**
      * Get the cache key prefix from config.
+     *
+     * Redis keys in Laravel are formatted as: {database.redis.options.prefix}{cache.prefix}{key}
      */
     protected function getCachePrefix(): string
     {
-        return config('cache.prefix') ? config('cache.prefix') . ':' : '';
+        $redisPrefix = config('database.redis.options.prefix', '');
+        $cachePrefix = config('cache.prefix', '');
+
+        return $redisPrefix . $cachePrefix;
     }
 }

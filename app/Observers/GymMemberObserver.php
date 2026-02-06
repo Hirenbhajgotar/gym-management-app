@@ -5,14 +5,17 @@ namespace App\Observers;
 use App\Events\Reports\MemberStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Models\ReportGoal;
 use App\Services\AvatarService;
 use App\Services\ReportCacheService;
+use Illuminate\Support\Facades\Cache;
 
 class GymMemberObserver
 {
     public function __construct(
         protected ReportCacheService $reportCacheService
     ) {}
+
     /**
      * Handle the GymMember "created" event.
      */
@@ -63,11 +66,14 @@ class GymMemberObserver
     {
         ParserHelper::clearCache(GymMember::NAVIGATION_BADGE_CACHE_KEY . $gymMember->gym_id);
         ParserHelper::clearCache(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $gymMember->id);
-        
+
         // Invalidate report caches
         $this->reportCacheService->invalidateMemberReports($gymMember->gym_id);
         $this->reportCacheService->invalidateInsights($gymMember->gym_id);
-        
+
+        // Invalidate GoalProgressWidget cache (for members goal tracking)
+        Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $gymMember->gym_id);
+
         // Broadcast real-time event
         broadcast(new MemberStatsUpdated($gymMember->gym_id))->toOthers();
     }
