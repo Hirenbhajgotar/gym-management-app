@@ -19,6 +19,8 @@ class RecentExpensesWidget extends BaseWidget
 
     protected static ?string $heading = 'Recent Expenses';
 
+    protected static ?string $pollingInterval = null;
+
     protected function getListeners(): array
     {
         $gymId = Filament::getTenant()?->id;

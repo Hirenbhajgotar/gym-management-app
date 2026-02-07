@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Cache;
 
 class CRMStatsWidget extends BaseWidget
 {
+    protected static ?string $pollingInterval = null;
+
     protected function getListeners(): array
     {
         $gymId = Filament::getTenant()?->id;

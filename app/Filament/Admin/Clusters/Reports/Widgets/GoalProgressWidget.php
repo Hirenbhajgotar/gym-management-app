@@ -13,6 +13,8 @@ class GoalProgressWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected static ?string $pollingInterval = null;
+
     protected function getListeners(): array
     {
         $gymId = Filament::getTenant()->id;

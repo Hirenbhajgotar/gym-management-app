@@ -13,6 +13,8 @@ class MemberDemographicsChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected static ?string $pollingInterval = null;
+
     public ?array $filters = [];
 
     protected function getListeners(): array

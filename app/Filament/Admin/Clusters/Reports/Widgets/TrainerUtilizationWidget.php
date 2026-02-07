@@ -12,7 +12,7 @@ class TrainerUtilizationWidget extends ChartWidget
 {
     protected static ?string $heading = 'Trainer Utilization Overview';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     /**
      * Get Livewire listeners for real-time updates via Echo.

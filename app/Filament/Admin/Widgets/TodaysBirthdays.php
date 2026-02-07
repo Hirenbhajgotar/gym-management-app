@@ -16,6 +16,8 @@ class TodaysBirthdays extends BaseWidget
 
     protected static ?int $sort = 5;
 
+    protected static ?string $pollingInterval = null;
+
     protected function getListeners(): array
     {
         $gymId = Filament::getTenant()?->id;

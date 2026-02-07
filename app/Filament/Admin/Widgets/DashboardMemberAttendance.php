@@ -7,7 +7,7 @@ use App\Models\GymMember;
 
 class DashboardMemberAttendance extends BaseAttendanceStats
 {
-    protected static ?string $pollingInterval = '900s'; // Refresh every 60 seconds
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 6;
 

@@ -21,6 +21,8 @@ class PendingExpenseApprovalsWidget extends BaseWidget
 
     protected static ?string $heading = 'Pending Expense Approvals';
 
+    protected static ?string $pollingInterval = null;
+
     public static function canView(): bool
     {
         /** @var \App\Models\User $user */

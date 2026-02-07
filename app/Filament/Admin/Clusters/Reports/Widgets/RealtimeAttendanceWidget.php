@@ -10,43 +10,47 @@ class RealtimeAttendanceWidget extends Widget
 {
     protected static string $view = 'filament.clusters.reports.widgets.realtime-attendance-widget';
 
+    protected static ?string $pollingInterval = null;
+
     public int $currentlyIn = 0;
+
     public int $todayTotal = 0;
+
     public int $peakToday = 0;
-    
+
     public function mount(): void
     {
         $this->loadAttendanceData();
     }
-    
+
     public function refreshAttendance(): void
     {
         $this->loadAttendanceData();
     }
-    
+
     protected function loadAttendanceData(): void
     {
         $gymId = Filament::getTenant()->id;
-        
+
         // Current check-ins (not checked out)
         $this->currentlyIn = Attendances::where('gym_id', $gymId)
             ->whereNull('check_out_time')
             ->whereDate('check_in_time', today())
             ->count();
-            
+
         // Total today
         $this->todayTotal = Attendances::where('gym_id', $gymId)
             ->whereDate('check_in_time', today())
             ->count();
-            
+
         // Peak today (highest concurrent check-ins in any hour)
         $this->peakToday = $this->calculatePeakToday($gymId);
     }
-    
+
     protected function calculatePeakToday(int $gymId): int
     {
         $hours = [];
-        
+
         // Group by hour and count
         for ($hour = 0; $hour < 24; $hour++) {
             $count = Attendances::where('gym_id', $gymId)
@@ -58,13 +62,13 @@ class RealtimeAttendanceWidget extends Widget
                         ->orWhereTime('check_out_time', '>', sprintf('%02d:00:00', $hour));
                 })
                 ->count();
-            
+
             $hours[] = $count;
         }
-        
+
         return max($hours) ?: 0;
     }
-    
+
     public function getChannelName(): string
     {
         return 'attendance.' . Filament::getTenant()->id;

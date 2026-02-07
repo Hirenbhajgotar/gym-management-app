@@ -13,6 +13,8 @@ class CohortRetentionChart extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected static ?string $pollingInterval = null;
+
     public int $months = 6;
 
     protected function getListeners(): array

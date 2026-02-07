@@ -10,7 +10,9 @@ class GymHealthScoreWidget extends Widget
 {
     protected static string $view = 'filament.clusters.reports.widgets.gym-health-score-widget';
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
+
+    protected static ?string $pollingInterval = null;
 
     protected function getListeners(): array
     {
@@ -28,7 +30,7 @@ class GymHealthScoreWidget extends Widget
     {
         $gymId = Filament::getTenant()->id;
         $service = app(GymHealthScoreService::class);
-        
+
         return $service->calculateHealthScore($gymId);
     }
 }

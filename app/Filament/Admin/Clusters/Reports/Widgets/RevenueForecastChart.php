@@ -16,6 +16,8 @@ class RevenueForecastChart extends ChartWidget
 
     protected static ?string $maxHeight = '300px';
 
+    protected static ?string $pollingInterval = null;
+
     /**
      * Get Livewire listeners for real-time updates via Echo.
      */

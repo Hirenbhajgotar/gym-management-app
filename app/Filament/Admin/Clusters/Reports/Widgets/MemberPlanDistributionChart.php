@@ -13,6 +13,8 @@ class MemberPlanDistributionChart extends ChartWidget
 
     public ?array $filters = [];
 
+    protected static ?string $pollingInterval = null;
+
     protected function getListeners(): array
     {
         $gymId = Filament::getTenant()?->id;

@@ -11,7 +11,7 @@ class AttendanceTrendChart extends ChartWidget
 {
     protected static ?string $heading = 'Daily Attendance Trend';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     public ?array $filters = [];
 

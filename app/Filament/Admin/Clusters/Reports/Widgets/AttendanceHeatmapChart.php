@@ -11,7 +11,7 @@ class AttendanceHeatmapChart extends ChartWidget
 {
     protected static ?string $heading = 'Check-ins by Day of Week';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     public ?array $filters = [];
 

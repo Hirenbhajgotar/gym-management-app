@@ -11,7 +11,7 @@ class TrainerClientChart extends ChartWidget
 {
     protected static ?string $heading = 'Clients per Trainer';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     /**
      * Get Livewire listeners for real-time updates via Echo.
