@@ -36,6 +36,7 @@ class TrainerReports extends Page
         $gymId = $this->getGymId();
         
         return [
+            "echo-private:reports.{$gymId},.TrainerStatsUpdated" => '$refresh',
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
         ];
     }

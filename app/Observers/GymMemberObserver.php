@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Events\Reports\MemberStatsUpdated;
+use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Models\ReportGoal;
@@ -36,6 +37,11 @@ class GymMemberObserver
     public function updated(GymMember $gymMember): void
     {
         $this->clearCache($gymMember);
+
+        // Check if trainer_id was changed (member assigned/unassigned to trainer)
+        if ($gymMember->isDirty('trainer_id') || $gymMember->wasChanged('trainer_id')) {
+            $this->handleTrainerAssignmentChange($gymMember);
+        }
     }
 
     /**
@@ -76,5 +82,17 @@ class GymMemberObserver
 
         // Broadcast real-time event (no toOthers() so current user also receives update)
         broadcast(new MemberStatsUpdated($gymMember->gym_id));
+    }
+
+    /**
+     * Handle trainer assignment changes for a member.
+     */
+    private function handleTrainerAssignmentChange(GymMember $gymMember): void
+    {
+        // Invalidate trainer report caches
+        $this->reportCacheService->invalidateTrainerReports($gymMember->gym_id);
+
+        // Broadcast trainer stats updated event
+        broadcast(new TrainerStatsUpdated($gymMember->gym_id));
     }
 }

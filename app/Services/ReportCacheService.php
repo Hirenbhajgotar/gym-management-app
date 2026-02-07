@@ -101,8 +101,13 @@ class ReportCacheService
     {
         $patterns = [
             "reports:trainer_stats:gym:{$gymId}",
+            "reports:trainer_summary:gym:{$gymId}",
             "reports:trainer_summary:gym:{$gymId}:*",
             "reports:trainer_performance:gym:{$gymId}:*",
+            "reports:trainer_distribution:gym:{$gymId}",
+            // Widget caches
+            "widget:trainer_clients:gym:{$gymId}",
+            "widget:trainer_utilization:gym:{$gymId}",
         ];
 
         $this->clearCachePatterns($patterns);

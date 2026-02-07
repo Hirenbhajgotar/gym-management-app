@@ -14,6 +14,21 @@ class TrainerUtilizationWidget extends ChartWidget
 
     protected static ?string $pollingInterval = '300s';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        /** @var \App\Models\Gym $gym */
+        $gym = Filament::getTenant();
+        $gymId = $gym?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.TrainerStatsUpdated" => '$refresh',
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
+
     protected function getData(): array
     {
         /** @var \App\Models\Gym $gym */
