@@ -39,6 +39,18 @@ class ExpenseReportsCluster extends Page implements HasForms
 
     protected static string $view = 'filament.clusters.reports.pages.expense-reports';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         if (empty($this->filters)) {
@@ -353,7 +365,7 @@ class ExpenseReportsCluster extends Page implements HasForms
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {

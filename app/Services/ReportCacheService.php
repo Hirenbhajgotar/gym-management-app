@@ -120,6 +120,10 @@ class ReportCacheService
     {
         $patterns = [
             "reports:expense_summary:gym:{$gymId}:*",
+            // Widget caches (used by ExpenseReports widgets)
+            "widget:expense_category:gym:{$gymId}:*",
+            "widget:expense_payment_method:gym:{$gymId}:*",
+            "widget:expense_monthly_trend:gym:{$gymId}:*",
         ];
 
         $this->clearCachePatterns($patterns);

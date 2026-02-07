@@ -35,6 +35,26 @@ class ExpenseReports extends Page implements HasForms
 
     public ?array $filters = [];
 
+    /**
+     * Get the current tenant (gym) ID.
+     */
+    protected function getGymId(): ?int
+    {
+        return Filament::getTenant()?->id;
+    }
+
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         $this->filters = [

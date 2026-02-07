@@ -21,6 +21,18 @@ class ExpenseMonthlyTrendChart extends ChartWidget
     #[Reactive]
     public ?array $filters = [];
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     protected function getData(): array
     {
         /** @var \App\Models\Gym $gym */

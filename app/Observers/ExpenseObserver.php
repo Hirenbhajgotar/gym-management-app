@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Enums\ExpenseStatus;
+use App\Events\Reports\ExpenseStatsUpdated;
 use App\Events\Reports\RevenueStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Expense;
@@ -94,8 +95,9 @@ class ExpenseObserver
             $this->reportCacheService->invalidateExpenseReports($gymId);
             $this->reportCacheService->invalidateInsights($gymId);
 
-            // Broadcast real-time event
+            // Broadcast real-time events
             broadcast(new RevenueStatsUpdated($gymId));
+            broadcast(new ExpenseStatsUpdated($gymId));
         }
     }
 }
