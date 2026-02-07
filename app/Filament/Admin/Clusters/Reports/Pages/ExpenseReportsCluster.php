@@ -213,7 +213,7 @@ class ExpenseReportsCluster extends Page implements HasForms
 
                 return [
                     'name' => $category?->name ?? 'Uncategorized',
-                    'color' => $category?->color ?? 'gray',
+                    'color' => $category?->cssColor,
                     'count' => $expenses->count(),
                     'total' => $expenses->sum('amount'),
                     'percentage' => $totalAmount > 0
