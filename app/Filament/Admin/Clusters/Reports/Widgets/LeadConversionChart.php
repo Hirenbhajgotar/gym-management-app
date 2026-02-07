@@ -12,11 +12,20 @@ class LeadConversionChart extends ChartWidget
 {
     protected static ?string $heading = 'Monthly Lead Conversion';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     protected int|string|array $columnSpan = 'full';
 
     public ?array $filters = [];
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {
@@ -32,7 +41,8 @@ class LeadConversionChart extends ChartWidget
 
             // Get monthly lead creation
             $newLeads = Lead::where('gym_id', $gymId)
-                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
                 ->groupBy('month')
                 ->orderBy('month')
@@ -41,7 +51,8 @@ class LeadConversionChart extends ChartWidget
             // Get monthly conversions (based on updated_at when status changed to converted)
             $conversions = Lead::where('gym_id', $gymId)
                 ->where('status', LeadStatus::CONVERTED)
-                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->whereDate('updated_at', '>=', $startDate)
+                ->whereDate('updated_at', '<=', $endDate)
                 ->selectRaw("DATE_FORMAT(updated_at, '%Y-%m') as month, COUNT(*) as count")
                 ->groupBy('month')
                 ->orderBy('month')

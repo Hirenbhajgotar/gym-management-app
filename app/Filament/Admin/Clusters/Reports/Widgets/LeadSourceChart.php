@@ -11,9 +11,18 @@ class LeadSourceChart extends ChartWidget
 {
     protected static ?string $heading = 'Leads by Source';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     public ?array $filters = [];
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {
