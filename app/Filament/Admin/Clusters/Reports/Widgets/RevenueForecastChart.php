@@ -16,6 +16,18 @@ class RevenueForecastChart extends ChartWidget
 
     protected static ?string $maxHeight = '300px';
 
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+        ];
+    }
+
     protected function getData(): array
     {
         /** @var \App\Models\Gym $gym */
@@ -53,7 +65,7 @@ class RevenueForecastChart extends ChartWidget
 
         // To make the line continuous, the last 'actual' point needs to be the start of 'forecast'
         // But for simplicity in a bar/line combo or just differentiation, we'll use color coding or separate datasets
-        
+
         return [
             'labels' => $labels,
             'datasets' => [

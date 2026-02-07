@@ -12,9 +12,21 @@ class RevenueByPlanChart extends ChartWidget
 {
     protected static ?string $heading = 'Revenue by Membership Plan';
 
-    protected static ?string $pollingInterval = '300s';
+    protected static ?string $pollingInterval = null;
 
     public ?array $filters = [];
+
+    /**
+     * Get Livewire listeners for real-time updates via Echo.
+     */
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getData(): array
     {

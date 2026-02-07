@@ -41,6 +41,13 @@ class ReportCacheService
             "reports:revenue_summary:gym:{$gymId}:*",
             "reports:revenue_trends:gym:{$gymId}:*",
             "reports:financial_summary:gym:{$gymId}:*",
+            "reports:pnl_data_v2:gym:{$gymId}:*",
+            "reports:revenue_breakdown:gym:{$gymId}:*",
+            "reports:expense_breakdown:gym:{$gymId}:*",
+            // Widget caches
+            "widget:revenue_trend:gym:{$gymId}:*",
+            "widget:revenue_by_plan:gym:{$gymId}:*",
+            "widget:payment_method:gym:{$gymId}:*",
         ];
 
         $this->clearCachePatterns($patterns);
