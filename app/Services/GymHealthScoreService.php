@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{GymMember, Lead, MemberPayment, Attendances};
 use App\Enums\PaymentStatus;
+use App\Services\ReportCacheService;
 use Illuminate\Support\Facades\Cache;
 
 class GymHealthScoreService
@@ -13,9 +14,9 @@ class GymHealthScoreService
      */
     public function calculateHealthScore(int $gymId): array
     {
-        $cacheKey = "gym:health_score:{$gymId}";
+        $cacheKey = ReportCacheService::GYM_HEALTH_SCORE . $gymId;
         
-        return Cache::flexible($cacheKey, [now()->addHours(1), now()->addHours(3)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $retentionScore = $this->calculateRetentionScore($gymId);
             $revenueScore = $this->calculateRevenueGrowthScore($gymId);
             $conversionScore = $this->calculateConversionScore($gymId);

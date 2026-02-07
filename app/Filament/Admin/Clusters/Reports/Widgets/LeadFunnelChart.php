@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\LeadStatus;
 use App\Models\Lead;
+use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -31,9 +32,9 @@ class LeadFunnelChart extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:lead_funnel:gym:{$gymId}:" . md5(json_encode($this->filters));
+        $cacheKey = ReportCacheService::WIDGET_LEAD_FUNNEL . $gymId . ':' . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 

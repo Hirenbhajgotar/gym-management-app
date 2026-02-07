@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Models\GymMember;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
@@ -33,9 +34,9 @@ class MemberGrowthChart extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:member_growth:gym:{$gymId}:" . md5(json_encode($this->filters));
+        $cacheKey = ReportCacheService::WIDGET_MEMBER_GROWTH . $gymId . ':' . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $startDate = $this->filters['start_date'] ?? now()->subYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 

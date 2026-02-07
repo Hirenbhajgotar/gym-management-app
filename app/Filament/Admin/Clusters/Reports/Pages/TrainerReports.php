@@ -7,6 +7,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
 use App\Models\GymMember;
 use App\Models\Trainer;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
@@ -47,9 +48,9 @@ class TrainerReports extends Page
     public function getSummaryStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:trainer_summary:gym:{$gymId}";
+        $cacheKey = ReportCacheService::TRAINER_SUMMARY . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalTrainers = Trainer::where('gym_id', $gymId)->count();
             $activeTrainers = Trainer::where('gym_id', $gymId)->where('is_available', true)->count();
 
@@ -99,9 +100,9 @@ class TrainerReports extends Page
     public function getTrainerDistribution(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:trainer_distribution:gym:{$gymId}";
+        $cacheKey = ReportCacheService::TRAINER_DISTRIBUTION . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             return Trainer::where('gym_id', $gymId)
                 ->withCount(['members' => fn ($q) => $q->membershipActive()])
                 ->orderByDesc('members_count')

@@ -13,6 +13,7 @@ use App\Models\Lead;
 use App\Models\MemberPayment;
 use App\Models\Trainer;
 use App\Services\InsightsService;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
@@ -57,9 +58,9 @@ class ReportsDashboard extends Page
     public function getMemberStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:member_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::MEMBER_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalMembers = GymMember::where('gym_id', $gymId)->count();
             $activeMembers = GymMember::where('gym_id', $gymId)->membershipActive()->count();
             $expiredMembers = GymMember::where('gym_id', $gymId)->membershipExpired()->count();
@@ -99,9 +100,9 @@ class ReportsDashboard extends Page
     public function getRevenueStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:revenue_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::REVENUE_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             // MTD Revenue
             $mtdRevenue = MemberPayment::where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
@@ -158,9 +159,9 @@ class ReportsDashboard extends Page
     public function getLeadStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:lead_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::LEAD_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalLeads = Lead::where('gym_id', $gymId)->count();
             $newLeads = Lead::where('gym_id', $gymId)->where('status', LeadStatus::NEW)->count();
             $activeLeads = Lead::where('gym_id', $gymId)
@@ -203,9 +204,9 @@ class ReportsDashboard extends Page
     public function getTrainerStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:trainer_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::TRAINER_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalTrainers = Trainer::where('gym_id', $gymId)->count();
 
             $averageClients = $totalTrainers > 0
@@ -235,7 +236,7 @@ class ReportsDashboard extends Page
     public function getAttendanceStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:attendance_stats:gym:{$gymId}:" . today()->format('Y-m-d');
+        $cacheKey = ReportCacheService::ATTENDANCE_STATS . $gymId . ':' . today()->format('Y-m-d');
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(30)], function () use ($gymId) {
             // Today's check-ins
@@ -301,15 +302,15 @@ class ReportsDashboard extends Page
     }
 
     /**
-     * Get AI-powered daily insights.
+     * Get actionable insights for the gym.
      */
     public function getInsights(): \Illuminate\Support\Collection
     {
         $gymId = $this->getGymId();
         // Cache for 2 hours
-        $cacheKey = "reports:insights:gym:{$gymId}";
+        $cacheKey = ReportCacheService::INSIGHTS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addHours(2), now()->addHours(4)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $service = app(InsightsService::class);
 
             return $service->getDailyInsights($gymId);

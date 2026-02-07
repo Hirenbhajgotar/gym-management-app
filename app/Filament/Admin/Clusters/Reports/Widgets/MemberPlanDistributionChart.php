@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Models\GymMember;
+use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -30,9 +31,9 @@ class MemberPlanDistributionChart extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:member_plan_dist:gym:{$gymId}:" . md5(json_encode($this->filters));
+        $cacheKey = ReportCacheService::WIDGET_MEMBER_PLAN_DIST . $gymId . ':' . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(2)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $distribution = GymMember::where('gym_id', $gymId)
                 ->with('membershipPlan')
                 ->get()

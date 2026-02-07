@@ -10,6 +10,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\LeadConversionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadFunnelChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadSourceChart;
 use App\Models\Lead;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -170,9 +171,9 @@ class LeadReports extends Page implements HasForms
     {
         $gymId = $this->getGymId();
         // Cache for 30 minutes
-        $cacheKey = "reports:lead_scoring_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::LEAD_SCORING_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(30), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $service = new \App\Services\LeadScoringService;
             $stats = $service->getLeadStats($gymId);
             $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);

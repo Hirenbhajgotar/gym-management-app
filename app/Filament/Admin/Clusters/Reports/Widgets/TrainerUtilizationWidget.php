@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Models\GymMember;
 use App\Models\Trainer;
+use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -35,9 +36,9 @@ class TrainerUtilizationWidget extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:trainer_utilization:gym:{$gymId}";
+        $cacheKey = ReportCacheService::WIDGET_TRAINER_UTILIZATION . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalTrainers = Trainer::where('gym_id', $gymId)->count();
             $trainersWithClients = Trainer::where('gym_id', $gymId)
                 ->whereHas('members', fn ($q) => $q->membershipActive())

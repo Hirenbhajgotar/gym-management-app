@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Models\Lead;
+use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -30,9 +31,9 @@ class LeadSourceChart extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:lead_source:gym:{$gymId}:" . md5(json_encode($this->filters));
+        $cacheKey = ReportCacheService::WIDGET_LEAD_SOURCE . $gymId . ':' . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 

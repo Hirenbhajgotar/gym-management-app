@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\PaymentStatus;
 use App\Models\MemberPayment;
+use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -36,9 +37,9 @@ class RevenueTrendChart extends ChartWidget
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
-        $cacheKey = "widget:revenue_trend:gym:{$gymId}:" . md5(json_encode($this->filters));
+        $cacheKey = ReportCacheService::WIDGET_REVENUE_TREND . $gymId . ':' . md5(json_encode($this->filters));
 
-        return Cache::flexible($cacheKey, [now()->addMinutes(15), now()->addHours(1)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 

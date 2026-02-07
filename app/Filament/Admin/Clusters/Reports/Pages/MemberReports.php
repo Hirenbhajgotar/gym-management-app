@@ -10,6 +10,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\MemberPlanDistributionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberStatusChart;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -62,7 +63,7 @@ class MemberReports extends Page implements HasForms
 
         // Also clear the churn stats cache
         $gymId = $this->getGymId();
-        Cache::forget("reports:churn_stats:gym:{$gymId}");
+        Cache::forget(ReportCacheService::CHURN_STATS . $gymId);
 
         // Dispatch refresh to widgets
         $this->dispatch('refresh-widgets');
@@ -270,9 +271,9 @@ class MemberReports extends Page implements HasForms
     public function getChurnStats(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:churn_stats:gym:{$gymId}";
+        $cacheKey = ReportCacheService::CHURN_STATS . $gymId;
 
-        return Cache::flexible($cacheKey, [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
+        return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $service = new \App\Services\ChurnRiskService;
             $stats = $service->getChurnStats($gymId);
             $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5);

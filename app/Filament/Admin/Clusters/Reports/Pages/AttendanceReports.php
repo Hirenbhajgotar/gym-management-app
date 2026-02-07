@@ -6,6 +6,7 @@ use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceHeatmapChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceTrendChart;
 use App\Models\Attendances;
+use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -152,12 +153,12 @@ class AttendanceReports extends Page implements HasForms
     }
 
     /**
-     * Get hourly distribution for today.
+     * Get hourly distribution of attendance for today.
      */
     public function getHourlyDistribution(): array
     {
         $gymId = $this->getGymId();
-        $cacheKey = "reports:hourly_distribution:gym:{$gymId}:" . today()->format('Y-m-d');
+        $cacheKey = ReportCacheService::HOURLY_DISTRIBUTION . $gymId . ':' . today()->format('Y-m-d');
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(15)], function () use ($gymId) {
             $distribution = Attendances::where('gym_id', $gymId)

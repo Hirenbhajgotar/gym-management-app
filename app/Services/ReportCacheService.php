@@ -4,24 +4,123 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Service to manage report and widget caching.
+ *
+ * Provides cache key constants and invalidation methods
+ * for all reports and widgets across the application.
+ */
 class ReportCacheService
 {
+    // Cache key prefixes for reports
+    public const MEMBER_STATS = 'reports:member_stats:gym:';
+
+    public const MEMBER_SUMMARY = 'reports:member_summary:gym:';
+
+    public const MEMBER_SUMMARY_WILDCARD = 'reports:member_summary:gym:';
+
+    public const MEMBER_GROWTH = 'reports:member_growth:gym:';
+
+    public const MEMBER_PLAN_DISTRIBUTION = 'reports:member_plan_distribution:gym:';
+
+    public const CHURN_STATS = 'reports:churn_stats:gym:';
+
+    public const REVENUE_STATS = 'reports:revenue_stats:gym:';
+
+    public const REVENUE_SUMMARY = 'reports:revenue_summary:gym:';
+
+    public const REVENUE_TRENDS = 'reports:revenue_trends:gym:';
+
+    public const FINANCIAL_SUMMARY = 'reports:financial_summary:gym:';
+
+    public const PNL_DATA_V2 = 'reports:pnl_data_v2:gym:';
+
+    public const REVENUE_BREAKDOWN = 'reports:revenue_breakdown:gym:';
+
+    public const EXPENSE_BREAKDOWN = 'reports:expense_breakdown:gym:';
+
+    public const ATTENDANCE_STATS = 'reports:attendance_stats:gym:';
+
+    public const ATTENDANCE_SUMMARY = 'reports:attendance_summary:gym:';
+
+    public const HOURLY_DISTRIBUTION = 'reports:hourly_distribution:gym:';
+
+    public const LEAD_STATS = 'reports:lead_stats:gym:';
+
+    public const LEAD_SUMMARY = 'reports:lead_summary:gym:';
+
+    public const LEAD_SCORING_STATS = 'reports:lead_scoring_stats:gym:';
+
+    public const TRAINER_STATS = 'reports:trainer_stats:gym:';
+
+    public const TRAINER_SUMMARY = 'reports:trainer_summary:gym:';
+
+    public const TRAINER_PERFORMANCE = 'reports:trainer_performance:gym:';
+
+    public const TRAINER_DISTRIBUTION = 'reports:trainer_distribution:gym:';
+
+    public const EXPENSE_SUMMARY = 'reports:expense_summary:gym:';
+
+    public const EQUIPMENT_USAGE = 'reports:equipment_usage:gym:';
+
+    public const INSIGHTS = 'reports:insights:gym:';
+
+    public const COHORT = 'reports:cohort:gym:';
+
+    // Cache key prefixes for widgets
+    public const WIDGET_MEMBER_GROWTH = 'widget:member_growth:gym:';
+
+    public const WIDGET_MEMBER_STATUS = 'widget:member_status:gym:';
+
+    public const WIDGET_MEMBER_PLAN_DIST = 'widget:member_plan_dist:gym:';
+
+    public const WIDGET_MEMBER_DEMOGRAPHICS = 'widget:member_demographics:gym:';
+
+    public const WIDGET_REVENUE_TREND = 'widget:revenue_trend:gym:';
+
+    public const WIDGET_REVENUE_BY_PLAN = 'widget:revenue_by_plan:gym:';
+
+    public const WIDGET_PAYMENT_METHOD = 'widget:payment_method:gym:';
+
+    public const WIDGET_LEAD_FUNNEL = 'widget:lead_funnel:gym:';
+
+    public const WIDGET_LEAD_SOURCE = 'widget:lead_source:gym:';
+
+    public const WIDGET_LEAD_CONVERSION = 'widget:lead_conversion:gym:';
+
+    public const WIDGET_TRAINER_CLIENTS = 'widget:trainer_clients:gym:';
+
+    public const WIDGET_TRAINER_UTILIZATION = 'widget:trainer_utilization:gym:';
+
+    public const WIDGET_EXPENSE_CATEGORY = 'widget:expense_category:gym:';
+
+    public const WIDGET_EXPENSE_PAYMENT_METHOD = 'widget:expense_payment_method:gym:';
+
+    public const WIDGET_EXPENSE_MONTHLY_TREND = 'widget:expense_monthly_trend:gym:';
+
+    // Cache key for gym health score
+    public const GYM_HEALTH_SCORE = 'gym:health_score:';
+
+    // Cache TTL constants (in seconds)
+    public const CACHE_STALE_SECONDS = 3600 * 2; // 2 hours
+
+    public const CACHE_EXPIRE_SECONDS = 86400 * 2; // 2 days
     /**
      * Invalidate all member-related report caches.
      */
     public function invalidateMemberReports(int $gymId): void
     {
         $patterns = [
-            "reports:member_stats:gym:{$gymId}",
-            "reports:member_summary:gym:{$gymId}:*",
-            "reports:member_growth:gym:{$gymId}:*",
-            "reports:member_plan_distribution:gym:{$gymId}:*",
-            "reports:churn_stats:gym:{$gymId}",
+            self::MEMBER_STATS . $gymId,
+            self::MEMBER_SUMMARY . $gymId . ':*',
+            self::MEMBER_GROWTH . $gymId . ':*',
+            self::MEMBER_PLAN_DISTRIBUTION . $gymId . ':*',
+            self::CHURN_STATS . $gymId,
             // Widget caches
-            "widget:member_growth:gym:{$gymId}:*",
-            "widget:member_status:gym:{$gymId}:*",
-            "widget:member_plan_dist:gym:{$gymId}:*",
-            "widget:member_demographics:gym:{$gymId}:*",
+            self::WIDGET_MEMBER_GROWTH . $gymId . ':*',
+            self::WIDGET_MEMBER_STATUS . $gymId . ':*',
+            self::WIDGET_MEMBER_PLAN_DIST . $gymId . ':*',
+            self::WIDGET_MEMBER_DEMOGRAPHICS . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -37,17 +136,17 @@ class ReportCacheService
     public function invalidateRevenueReports(int $gymId): void
     {
         $patterns = [
-            "reports:revenue_stats:gym:{$gymId}",
-            "reports:revenue_summary:gym:{$gymId}:*",
-            "reports:revenue_trends:gym:{$gymId}:*",
-            "reports:financial_summary:gym:{$gymId}:*",
-            "reports:pnl_data_v2:gym:{$gymId}:*",
-            "reports:revenue_breakdown:gym:{$gymId}:*",
-            "reports:expense_breakdown:gym:{$gymId}:*",
+            self::REVENUE_STATS . $gymId,
+            self::REVENUE_SUMMARY . $gymId . ':*',
+            self::REVENUE_TRENDS . $gymId . ':*',
+            self::FINANCIAL_SUMMARY . $gymId . ':*',
+            self::PNL_DATA_V2 . $gymId . ':*',
+            self::REVENUE_BREAKDOWN . $gymId . ':*',
+            self::EXPENSE_BREAKDOWN . $gymId . ':*',
             // Widget caches
-            "widget:revenue_trend:gym:{$gymId}:*",
-            "widget:revenue_by_plan:gym:{$gymId}:*",
-            "widget:payment_method:gym:{$gymId}:*",
+            self::WIDGET_REVENUE_TREND . $gymId . ':*',
+            self::WIDGET_REVENUE_BY_PLAN . $gymId . ':*',
+            self::WIDGET_PAYMENT_METHOD . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -62,9 +161,9 @@ class ReportCacheService
     public function invalidateAttendanceReports(int $gymId): void
     {
         $patterns = [
-            "reports:attendance_stats:gym:{$gymId}*",
-            "reports:attendance_summary:gym:{$gymId}:*",
-            "reports:hourly_distribution:gym:{$gymId}:*",
+            self::ATTENDANCE_STATS . $gymId . '*',
+            self::ATTENDANCE_SUMMARY . $gymId . ':*',
+            self::HOURLY_DISTRIBUTION . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -79,13 +178,13 @@ class ReportCacheService
     public function invalidateLeadReports(int $gymId): void
     {
         $patterns = [
-            "reports:lead_stats:gym:{$gymId}",
-            "reports:lead_summary:gym:{$gymId}:*",
-            "reports:lead_scoring_stats:gym:{$gymId}",
+            self::LEAD_STATS . $gymId,
+            self::LEAD_SUMMARY . $gymId . ':*',
+            self::LEAD_SCORING_STATS . $gymId,
             // Widget caches
-            "widget:lead_funnel:gym:{$gymId}:*",
-            "widget:lead_source:gym:{$gymId}:*",
-            "widget:lead_conversion:gym:{$gymId}:*",
+            self::WIDGET_LEAD_FUNNEL . $gymId . ':*',
+            self::WIDGET_LEAD_SOURCE . $gymId . ':*',
+            self::WIDGET_LEAD_CONVERSION . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -100,14 +199,14 @@ class ReportCacheService
     public function invalidateTrainerReports(int $gymId): void
     {
         $patterns = [
-            "reports:trainer_stats:gym:{$gymId}",
-            "reports:trainer_summary:gym:{$gymId}",
-            "reports:trainer_summary:gym:{$gymId}:*",
-            "reports:trainer_performance:gym:{$gymId}:*",
-            "reports:trainer_distribution:gym:{$gymId}",
+            self::TRAINER_STATS . $gymId,
+            self::TRAINER_SUMMARY . $gymId,
+            self::TRAINER_SUMMARY . $gymId . ':*',
+            self::TRAINER_PERFORMANCE . $gymId . ':*',
+            self::TRAINER_DISTRIBUTION . $gymId,
             // Widget caches
-            "widget:trainer_clients:gym:{$gymId}",
-            "widget:trainer_utilization:gym:{$gymId}",
+            self::WIDGET_TRAINER_CLIENTS . $gymId,
+            self::WIDGET_TRAINER_UTILIZATION . $gymId,
         ];
 
         $this->clearCachePatterns($patterns);
@@ -119,11 +218,11 @@ class ReportCacheService
     public function invalidateExpenseReports(int $gymId): void
     {
         $patterns = [
-            "reports:expense_summary:gym:{$gymId}:*",
+            self::EXPENSE_SUMMARY . $gymId . ':*',
             // Widget caches (used by ExpenseReports widgets)
-            "widget:expense_category:gym:{$gymId}:*",
-            "widget:expense_payment_method:gym:{$gymId}:*",
-            "widget:expense_monthly_trend:gym:{$gymId}:*",
+            self::WIDGET_EXPENSE_CATEGORY . $gymId . ':*',
+            self::WIDGET_EXPENSE_PAYMENT_METHOD . $gymId . ':*',
+            self::WIDGET_EXPENSE_MONTHLY_TREND . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -135,7 +234,7 @@ class ReportCacheService
     public function invalidateEquipmentReports(int $gymId): void
     {
         $patterns = [
-            "reports:equipment_usage:gym:{$gymId}:*",
+            self::EQUIPMENT_USAGE . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -147,7 +246,7 @@ class ReportCacheService
     public function invalidateInsights(int $gymId): void
     {
         $patterns = [
-            "reports:insights:gym:{$gymId}",
+            self::INSIGHTS . $gymId,
         ];
 
         $this->clearCachePatterns($patterns);
@@ -158,7 +257,7 @@ class ReportCacheService
      */
     public function invalidateGymHealthScore(int $gymId): void
     {
-        Cache::forget("gym:health_score:{$gymId}");
+        Cache::forget(self::GYM_HEALTH_SCORE . $gymId);
     }
 
     /**
@@ -167,7 +266,7 @@ class ReportCacheService
     public function invalidateCohortData(int $gymId): void
     {
         $patterns = [
-            "reports:cohort:gym:{$gymId}:*",
+            self::COHORT . $gymId . ':*',
         ];
 
         $this->clearCachePatterns($patterns);
@@ -249,5 +348,27 @@ class ReportCacheService
         $cachePrefix = config('cache.prefix', '');
 
         return $cachePrefix;
+    }
+
+    /**
+     * Forget a flexible cache key and its metadata.
+     */
+    protected function forgetFlexibleCache(string $key): void
+    {
+        Cache::forget($key);
+        Cache::forget('illuminate:cache:flexible:created:' . $key);
+    }
+
+    /**
+     * Get the cache TTL array for Cache::flexible().
+     *
+     * @return array{0: \DateTimeInterface, 1: \DateTimeInterface}
+     */
+    public static function getCacheTtl(): array
+    {
+        return [
+            now()->addSeconds(self::CACHE_STALE_SECONDS),
+            now()->addSeconds(self::CACHE_EXPIRE_SECONDS),
+        ];
     }
 }

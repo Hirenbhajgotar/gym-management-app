@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use Carbon\Carbon;
 use Filament\Facades\Filament;
+use App\Services\ReportCacheService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -217,8 +218,8 @@ trait HasReportFilters
         $gymId = $this->getGymId();
 
         return Cache::flexible(
-            "reports:cohort:gym:{$gymId}:months:{$months}",
-            [now()->addHours(1), now()->addHours(2)],
+            ReportCacheService::COHORT . $gymId . ':months:' . $months,
+            ReportCacheService::getCacheTtl(),
             function () use ($gymId, $months) {
                 $cohorts = collect();
 
