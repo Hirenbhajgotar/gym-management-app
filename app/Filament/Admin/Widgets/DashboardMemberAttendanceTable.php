@@ -18,9 +18,23 @@ class DashboardMemberAttendanceTable extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '900s';
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 7;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => 'refreshWidget',
+        ];
+    }
+
+    public function refreshWidget(): void
+    {
+        $this->resetTable();
+    }
 
     public function table(Table $table): Table
     {

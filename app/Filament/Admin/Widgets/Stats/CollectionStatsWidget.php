@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets\Stats;
 use App\Enums\PaymentStatus;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\MemberPayment;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -13,9 +14,18 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class CollectionStatsWidget extends BaseWidget
 {
-    protected static ?string $pollingInterval = '60s'; // auto-refresh every minute
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 1;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getStats(): array
     {

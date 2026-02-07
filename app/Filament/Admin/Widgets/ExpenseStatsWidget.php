@@ -14,9 +14,18 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ExpenseStatsWidget extends BaseWidget
 {
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 2;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getStats(): array
     {

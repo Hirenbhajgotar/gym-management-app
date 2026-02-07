@@ -80,7 +80,7 @@ class GymMemberObserver
         // Invalidate GoalProgressWidget cache (for members goal tracking)
         Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $gymMember->gym_id);
 
-        // Broadcast real-time event (no toOthers() so current user also receives update)
+        // Broadcast real-time event
         broadcast(new MemberStatsUpdated($gymMember->gym_id));
     }
 

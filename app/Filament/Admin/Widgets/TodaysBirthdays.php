@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -14,6 +15,20 @@ class TodaysBirthdays extends BaseWidget
     protected static ?string $heading = 'Today\'s Birthdays';
 
     protected static ?int $sort = 5;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'refreshWidget',
+        ];
+    }
+
+    public function refreshWidget(): void
+    {
+        $this->resetTable();
+    }
 
     public static function canView(): bool
     {

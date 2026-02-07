@@ -14,6 +14,7 @@ class LeadObserver
     public function __construct(
         protected ReportCacheService $reportCacheService
     ) {}
+
     /**
      * Handle the Lead "created" event.
      */
@@ -58,15 +59,15 @@ class LeadObserver
     {
         ParserHelper::clearCache(Lead::NAVIGATION_BADGE_CACHE_KEY . $lead->gym_id);
         ParserHelper::clearCache(Lead::DASHBOARD_CRM_STATS_WIDGET . $lead->gym_id);
-        
+
         // Invalidate report caches
         $this->reportCacheService->invalidateLeadReports($lead->gym_id);
         $this->reportCacheService->invalidateInsights($lead->gym_id);
-        
+
         // Invalidate GoalProgressWidget cache (for leads goal tracking)
         Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $lead->gym_id);
-        
-        // Broadcast real-time event
+
+        // Broadcast real-time event after transaction commits
         broadcast(new LeadStatsUpdated($lead->gym_id));
     }
 }

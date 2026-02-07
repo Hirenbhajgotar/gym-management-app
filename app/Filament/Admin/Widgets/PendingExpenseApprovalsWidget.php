@@ -32,6 +32,15 @@ class PendingExpenseApprovalsWidget extends BaseWidget
         ]);
     }
 
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function table(Table $table): Table
     {
         /** @var \App\Models\Gym $gym */

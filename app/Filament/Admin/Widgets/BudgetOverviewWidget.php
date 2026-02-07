@@ -17,6 +17,15 @@ class BudgetOverviewWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function getBudgets()
     {
         /** @var \App\Models\Gym $gym */

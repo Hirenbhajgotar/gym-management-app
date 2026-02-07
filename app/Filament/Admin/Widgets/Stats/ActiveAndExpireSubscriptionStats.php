@@ -5,14 +5,24 @@ namespace App\Filament\Admin\Widgets\Stats;
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class ActiveAndExpireSubscriptionStats extends BaseWidget
 {
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 2;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
+        ];
+    }
 
     protected function getStats(): array
     {

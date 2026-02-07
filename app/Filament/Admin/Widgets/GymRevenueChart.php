@@ -14,11 +14,20 @@ class GymRevenueChart extends ChartWidget
 
     protected static ?string $heading = 'Monthly Revenue (Past 12 Months)';
 
-    protected static ?string $pollingInterval = '900s';
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 4;
 
     // protected int|string|array $columnSpan = 'full';
+
+    protected function getListeners(): array
+    {
+        $gymId = $this->getGymId();
+
+        return [
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
+        ];
+    }
 
     public static function canView(): bool
     {

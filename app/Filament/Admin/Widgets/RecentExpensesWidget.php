@@ -19,6 +19,15 @@ class RecentExpensesWidget extends BaseWidget
 
     protected static ?string $heading = 'Recent Expenses';
 
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
+
     public function table(Table $table): Table
     {
         /** @var \App\Models\Gym $gym */
