@@ -5,9 +5,11 @@ namespace App\Filament\Admin\Widgets\Stats;
 use App\Enums\PaymentStatus;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\MemberPayment;
+use App\Services\DashboardCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Dashboard card that shows daily / weekly / monthly / yearly collections.
@@ -29,50 +31,59 @@ class CollectionStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Only successful payments are considered “collection”.
-        $query = MemberPayment::query()
-            ->where('status', PaymentStatus::COMPLETED);
+        $gymId = Filament::getTenant()?->id;
 
-        $today = $query->clone()->whereDate('payment_date', today())->sum('amount');
+        if (! $gymId) {
+            return [];
+        }
 
-        $thisWeek = $query->clone()
-            ->whereBetween('payment_date', [now()->startOfWeek(), now()->endOfWeek()])
-            ->sum('amount');
+        return Cache::flexible(DashboardCacheService::COLLECTION_STATS . $gymId, DashboardCacheService::getCacheTtl(), function () {
+            // Only successful payments are considered "collection".
+            $query = MemberPayment::query()
+                ->where('status', PaymentStatus::COMPLETED);
 
-        $thisMonth = $query->clone()
-            ->whereYear('payment_date', now()->year)
-            ->whereMonth('payment_date', now()->month)
-            ->sum('amount');
+            $today = $query->clone()->whereDate('payment_date', today())->sum('amount');
 
-        $thisYear = $query->clone()
-            ->whereYear('payment_date', now()->year)
-            ->sum('amount');
+            $thisWeek = $query->clone()
+                ->whereBetween('payment_date', [now()->startOfWeek(), now()->endOfWeek()])
+                ->sum('amount');
 
-        // --- Formatting helper -------------------------------------------------
-        $format = function ($value) {
-            return HelpersNumber::abbreviateCurrency($value);
-        };
+            $thisMonth = $query->clone()
+                ->whereYear('payment_date', now()->year)
+                ->whereMonth('payment_date', now()->month)
+                ->sum('amount');
 
-        return [
-            Stat::make('Today\'s Collection', $format($today))
-                ->icon('heroicon-o-banknotes')
-                ->description('Collection received today')
-                ->color('success'),
+            $thisYear = $query->clone()
+                ->whereYear('payment_date', now()->year)
+                ->sum('amount');
 
-            Stat::make('This Week\'s Collection', $format($thisWeek))
-                ->icon('heroicon-o-banknotes')
-                ->description('Collection received this week')
-                ->color('primary'),
+            // --- Formatting helper -------------------------------------------------
+            $format = function ($value) {
+                return HelpersNumber::abbreviateCurrency($value);
+            };
 
-            Stat::make('This Month\'s Collection', $format($thisMonth))
-                ->icon('heroicon-o-banknotes')
-                ->description('Collection received this month')
-                ->color('warning'),
+            return [
+                Stat::make('Today\'s Collection', $format($today))
+                    ->icon('heroicon-o-banknotes')
+                    ->description('Collection received today')
+                    ->color('success'),
 
-            Stat::make('This Year\'s Collection', $format($thisYear))
-                ->icon('heroicon-o-banknotes')
-                ->description('Collection received this year')
-                ->color('info'),
-        ];
+                Stat::make('This Week\'s Collection', $format($thisWeek))
+                    ->icon('heroicon-o-banknotes')
+                    ->description('Collection received this week')
+                    ->color('primary'),
+
+                Stat::make('This Month\'s Collection', $format($thisMonth))
+                    ->icon('heroicon-o-banknotes')
+                    ->description('Collection received this month')
+                    ->color('warning'),
+
+                Stat::make('This Year\'s Collection', $format($thisYear))
+                    ->icon('heroicon-o-banknotes')
+                    ->description('Collection received this year')
+                    ->color('info'),
+            ];
+        }
+        );
     }
 }

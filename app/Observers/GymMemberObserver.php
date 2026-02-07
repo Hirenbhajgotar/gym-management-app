@@ -8,13 +8,15 @@ use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Models\ReportGoal;
 use App\Services\AvatarService;
+use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
 use Illuminate\Support\Facades\Cache;
 
 class GymMemberObserver
 {
     public function __construct(
-        protected ReportCacheService $reportCacheService
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
     ) {}
 
     /**
@@ -79,6 +81,9 @@ class GymMemberObserver
 
         // Invalidate GoalProgressWidget cache (for members goal tracking)
         Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $gymMember->gym_id);
+
+        // Invalidate dashboard widget caches
+        $this->dashboardCacheService->invalidateMemberWidgets($gymMember->gym_id);
 
         // Broadcast real-time event
         broadcast(new MemberStatsUpdated($gymMember->gym_id));

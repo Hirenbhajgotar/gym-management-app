@@ -4,12 +4,14 @@ namespace App\Observers;
 
 use App\Events\Reports\RevenueStatsUpdated;
 use App\Models\MemberPayment;
+use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
 
 class MemberPaymentObserver
 {
     public function __construct(
-        protected ReportCacheService $reportCacheService
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
     ) {}
 
     /**
@@ -63,6 +65,9 @@ class MemberPaymentObserver
             // Invalidate report caches
             $this->reportCacheService->invalidateRevenueReports($gymId);
             $this->reportCacheService->invalidateInsights($gymId);
+
+            // Invalidate dashboard widget caches
+            $this->dashboardCacheService->invalidateRevenueWidgets($gymId);
 
             // Broadcast real-time event
             broadcast(new RevenueStatsUpdated($gymId));

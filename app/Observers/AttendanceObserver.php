@@ -4,12 +4,14 @@ namespace App\Observers;
 
 use App\Events\Reports\AttendanceStatsUpdated;
 use App\Models\Attendances;
+use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
 
 class AttendanceObserver
 {
     public function __construct(
-        protected ReportCacheService $reportCacheService
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
     ) {}
 
     /**
@@ -46,6 +48,9 @@ class AttendanceObserver
 
         // Also invalidate insights as they depend on attendance data
         $this->reportCacheService->invalidateInsights($attendance->gym_id);
+
+        // Invalidate dashboard widget caches
+        $this->dashboardCacheService->invalidateAttendanceWidgets($attendance->gym_id);
 
         // Broadcast the event
         broadcast(new AttendanceStatsUpdated($attendance->gym_id));

@@ -4,9 +4,11 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Models\Gym;
 use App\Models\MemberPayment;
+use App\Services\DashboardCacheService;
 use App\Traits\HasTenantAccess;
 use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
+use Illuminate\Support\Facades\Cache;
 
 class GymRevenueChart extends ChartWidget
 {
@@ -50,56 +52,68 @@ class GymRevenueChart extends ChartWidget
 
     protected function getData(): array
     {
-        // Define the start and end date for the past 12 months
-        $endDate = now();
-        $startDate = now()->subMonths(11)->startOfMonth();
         $tenantId = $this->getGymId();
-        // Base query for MemberPayment
-        $query = MemberPayment::query()
-            ->whereHas('member.gym', fn ($query) => $query->where('id', $tenantId));
 
-        // Apply gym filter if not "All Gyms"
-        $selectedGym = $this->filter;
-        // if ($selectedGym && $selectedGym !== 'all') {
-        //     $query->whereHas('member.gym', fn($query) => $query->where('id', $selectedGym));
-        // }
-
-        $payments = Trend::query($query)
-            ->dateColumn('payment_date')
-            ->between(
-                start: $startDate,
-                end: $endDate
-            )
-            ->perMonth()
-            ->sum('amount');
-
-        // Prepare data for the chart
-        $labels = [];
-        $data = array_fill(0, 12, 0); // Initialize array for 12 months with 0
-
-        // Generate labels for the past 12 months
-        for ($i = 11; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $labels[] = $month->format('M Y'); // e.g., "May 2024", "Jun 2024", ...
+        if (! $tenantId) {
+            return ['datasets' => [], 'labels' => []];
         }
 
-        // Map Trend data to the chart data
-        foreach ($payments as $index => $payment) {
-            $data[$index] = $payment->aggregate; // Trend package returns 'aggregate' for the sum
-        }
+        return Cache::flexible(
+            DashboardCacheService::REVENUE_CHART . $tenantId,
+            DashboardCacheService::getCacheTtl(),
+            function () use ($tenantId) {
+                // Define the start and end date for the past 12 months
+                $endDate = now();
+                $startDate = now()->subMonths(11)->startOfMonth();
 
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Revenue (₹)',
-                    'data' => $data,
-                    'borderColor' => 'rgba(75, 192, 192, 1)',
-                    'backgroundColor' => 'rgba(75, 192, 192, 0.2)',
-                    'fill' => true,
-                ],
-            ],
-            'labels' => $labels,
-        ];
+                // Base query for MemberPayment
+                $query = MemberPayment::query()
+                    ->whereHas('member.gym', fn ($query) => $query->where('id', $tenantId));
+
+                // Apply gym filter if not "All Gyms"
+                $selectedGym = $this->filter;
+                // if ($selectedGym && $selectedGym !== 'all') {
+                //     $query->whereHas('member.gym', fn($query) => $query->where('id', $selectedGym));
+                // }
+
+                $payments = Trend::query($query)
+                    ->dateColumn('payment_date')
+                    ->between(
+                        start: $startDate,
+                        end: $endDate
+                    )
+                    ->perMonth()
+                    ->sum('amount');
+
+                // Prepare data for the chart
+                $labels = [];
+                $data = array_fill(0, 12, 0); // Initialize array for 12 months with 0
+
+                // Generate labels for the past 12 months
+                for ($i = 11; $i >= 0; $i--) {
+                    $month = now()->subMonths($i);
+                    $labels[] = $month->format('M Y'); // e.g., "May 2024", "Jun 2024", ...
+                }
+
+                // Map Trend data to the chart data
+                foreach ($payments as $index => $payment) {
+                    $data[$index] = $payment->aggregate; // Trend package returns 'aggregate' for the sum
+                }
+
+                return [
+                    'datasets' => [
+                        [
+                            'label' => 'Revenue (₹)',
+                            'data' => $data,
+                            'borderColor' => 'rgba(75, 192, 192, 1)',
+                            'backgroundColor' => 'rgba(75, 192, 192, 0.2)',
+                            'fill' => true,
+                        ],
+                    ],
+                    'labels' => $labels,
+                ];
+            }
+        );
     }
 
     protected function getType(): string

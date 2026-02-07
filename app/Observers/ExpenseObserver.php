@@ -7,12 +7,14 @@ use App\Events\Reports\ExpenseStatsUpdated;
 use App\Events\Reports\RevenueStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Expense;
+use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
 
 class ExpenseObserver
 {
     public function __construct(
-        protected ReportCacheService $reportCacheService
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
     ) {}
 
     /**
@@ -94,6 +96,9 @@ class ExpenseObserver
             $this->reportCacheService->invalidateRevenueReports($gymId);
             $this->reportCacheService->invalidateExpenseReports($gymId);
             $this->reportCacheService->invalidateInsights($gymId);
+
+            // Invalidate dashboard widget caches
+            $this->dashboardCacheService->invalidateExpenseWidgets($gymId);
 
             // Broadcast real-time events
             broadcast(new RevenueStatsUpdated($gymId));
