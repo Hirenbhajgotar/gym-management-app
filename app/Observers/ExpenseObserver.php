@@ -3,11 +3,20 @@
 namespace App\Observers;
 
 use App\Enums\ExpenseStatus;
+use App\Events\Reports\ExpenseStatsUpdated;
+use App\Events\Reports\RevenueStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Expense;
+use App\Services\DashboardCacheService;
+use App\Services\ReportCacheService;
 
 class ExpenseObserver
 {
+    public function __construct(
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
+    ) {}
+
     /**
      * Handle the Expense "creating" event.
      */
@@ -78,6 +87,22 @@ class ExpenseObserver
 
     private function clearCache(Expense $expense): void
     {
-        ParserHelper::clearCache(Expense::NAVIGATION_BADGE_CACHE_KEY . $expense->gym_id);
+        $gymId = $expense->gym_id;
+
+        ParserHelper::clearCache(Expense::NAVIGATION_BADGE_CACHE_KEY . $gymId);
+
+        if ($gymId) {
+            // Invalidate revenue reports (expenses affect P&L)
+            $this->reportCacheService->invalidateRevenueReports($gymId);
+            $this->reportCacheService->invalidateExpenseReports($gymId);
+            $this->reportCacheService->invalidateInsights($gymId);
+
+            // Invalidate dashboard widget caches
+            $this->dashboardCacheService->invalidateExpenseWidgets($gymId);
+
+            // Broadcast real-time events
+            broadcast(new RevenueStatsUpdated($gymId));
+            broadcast(new ExpenseStatsUpdated($gymId));
+        }
     }
 }

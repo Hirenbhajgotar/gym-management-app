@@ -73,21 +73,11 @@
                                     ({{ $category['percentage'] }}%)
                                 </span>
                             </div>
-                            <div class="w-full h-2 bg-gray-200 rounded-full dark:bg-gray-700">
-                                @php
-                                    $colorClasses = match($category['color']) {
-                                        'success' => '#22c55e',  // green-500
-                                        'info' => '#3b82f6',     // blue-500
-                                        'warning' => '#eab308',  // yellow-500
-                                        'danger' => '#ef4444',   // red-500
-                                        default => '#6b7280',    // gray-500
-                                    };
-                                @endphp
-                                <div 
-                                    class="h-full rounded-full transition-all"
-                                    style="width: {{ $category['percentage'] }}%; background-color: {{ $colorClasses }};"
-                                ></div>
-                            </div>
+                            <x-progress-bar 
+                                    :progress="$category['percentage']" 
+                                    :color="$category['color']" 
+                                    height="h-2" 
+                                />
                         </div>
                     @endforeach
                 </div>

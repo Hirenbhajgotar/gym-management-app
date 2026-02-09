@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Enums\ExpenseStatus;
 use App\Models\Expense;
 use Filament\Facades\Filament;
 use Filament\Tables;
@@ -14,11 +13,22 @@ use Filament\Widgets\TableWidget as BaseWidget;
  */
 class RecentExpensesWidget extends BaseWidget
 {
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 6;
 
     protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Recent Expenses';
+
+    protected static ?string $pollingInterval = null;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
+    }
 
     public function table(Table $table): Table
     {

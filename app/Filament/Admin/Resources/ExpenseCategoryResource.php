@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\FilamentColor;
 use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
@@ -75,14 +76,7 @@ class ExpenseCategoryResource extends Resource
 
                                 Forms\Components\Select::make('color')
                                     ->label('Badge Color')
-                                    ->options([
-                                        'gray' => 'Gray',
-                                        'primary' => 'Primary',
-                                        'success' => 'Success (Green)',
-                                        'warning' => 'Warning (Yellow)',
-                                        'danger' => 'Danger (Red)',
-                                        'info' => 'Info (Blue)',
-                                    ])
+                                    ->options(FilamentColor::toSelectOptions())
                                     ->default('gray'),
                             ]),
 

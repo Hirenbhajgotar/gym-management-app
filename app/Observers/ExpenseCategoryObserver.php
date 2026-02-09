@@ -2,11 +2,17 @@
 
 namespace App\Observers;
 
+use App\Events\Reports\ExpenseStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\ExpenseCategory;
+use App\Services\ReportCacheService;
 
 class ExpenseCategoryObserver
 {
+    public function __construct(
+        protected ReportCacheService $reportCacheService
+    ) {}
+
     /**
      * Handle the ExpenseCategory "created" event.
      */
@@ -49,6 +55,16 @@ class ExpenseCategoryObserver
 
     private function clearCache(ExpenseCategory $expenseCategory): void
     {
-        ParserHelper::clearCache(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $expenseCategory->gym_id);
+        $gymId = $expenseCategory->gym_id;
+
+        ParserHelper::clearCache(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $gymId);
+
+        if ($gymId) {
+            // Invalidate expense reports cache
+            $this->reportCacheService->invalidateExpenseReports($gymId);
+
+            // Broadcast real-time update event
+            broadcast(new ExpenseStatsUpdated($gymId));
+        }
     }
 }

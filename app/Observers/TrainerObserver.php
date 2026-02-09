@@ -2,11 +2,17 @@
 
 namespace App\Observers;
 
+use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Trainer;
+use App\Services\ReportCacheService;
 
 class TrainerObserver
 {
+    public function __construct(
+        protected ReportCacheService $reportCacheService
+    ) {}
+
     /**
      * Handle the Trainer "created" event.
      */
@@ -50,5 +56,11 @@ class TrainerObserver
     private function clearCache(Trainer $trainer): void
     {
         ParserHelper::clearCache(Trainer::NAVIGATION_BADGE_CACHE_KEY . $trainer->gym_id);
+
+        // Invalidate trainer report caches
+        $this->reportCacheService->invalidateTrainerReports($trainer->gym_id);
+
+        // Broadcast real-time event
+        broadcast(new TrainerStatsUpdated($trainer->gym_id));
     }
 }

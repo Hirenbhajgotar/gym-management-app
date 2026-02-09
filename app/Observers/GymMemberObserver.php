@@ -2,12 +2,23 @@
 
 namespace App\Observers;
 
+use App\Events\Reports\MemberStatsUpdated;
+use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Models\ReportGoal;
 use App\Services\AvatarService;
+use App\Services\DashboardCacheService;
+use App\Services\ReportCacheService;
+use Illuminate\Support\Facades\Cache;
 
 class GymMemberObserver
 {
+    public function __construct(
+        protected ReportCacheService $reportCacheService,
+        protected DashboardCacheService $dashboardCacheService
+    ) {}
+
     /**
      * Handle the GymMember "created" event.
      */
@@ -28,6 +39,11 @@ class GymMemberObserver
     public function updated(GymMember $gymMember): void
     {
         $this->clearCache($gymMember);
+
+        // Check if trainer_id was changed (member assigned/unassigned to trainer)
+        if ($gymMember->isDirty('trainer_id') || $gymMember->wasChanged('trainer_id')) {
+            $this->handleTrainerAssignmentChange($gymMember);
+        }
     }
 
     /**
@@ -58,5 +74,30 @@ class GymMemberObserver
     {
         ParserHelper::clearCache(GymMember::NAVIGATION_BADGE_CACHE_KEY . $gymMember->gym_id);
         ParserHelper::clearCache(GymMember::MEMBER_WEIGHT_PROGRESS_CACHE_KEY . $gymMember->id);
+
+        // Invalidate report caches
+        $this->reportCacheService->invalidateMemberReports($gymMember->gym_id);
+        $this->reportCacheService->invalidateInsights($gymMember->gym_id);
+
+        // Invalidate GoalProgressWidget cache (for members goal tracking)
+        Cache::forget(ReportGoal::CACHE_KEY_PREFIX . $gymMember->gym_id);
+
+        // Invalidate dashboard widget caches
+        $this->dashboardCacheService->invalidateMemberWidgets($gymMember->gym_id);
+
+        // Broadcast real-time event
+        broadcast(new MemberStatsUpdated($gymMember->gym_id));
+    }
+
+    /**
+     * Handle trainer assignment changes for a member.
+     */
+    private function handleTrainerAssignmentChange(GymMember $gymMember): void
+    {
+        // Invalidate trainer report caches
+        $this->reportCacheService->invalidateTrainerReports($gymMember->gym_id);
+
+        // Broadcast trainer stats updated event
+        broadcast(new TrainerStatsUpdated($gymMember->gym_id));
     }
 }

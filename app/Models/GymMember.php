@@ -251,6 +251,11 @@ class GymMember extends Model
         return $this->morphMany(Attendances::class, 'attendanceable');
     }
 
+    public function lastAttendance(): MorphOne
+    {
+        return $this->morphOne(Attendances::class, 'attendanceable')->latestOfMany('check_in_time');
+    }
+
     public function currentAttendance(): ?Attendances
     {
         return $this->attendances()

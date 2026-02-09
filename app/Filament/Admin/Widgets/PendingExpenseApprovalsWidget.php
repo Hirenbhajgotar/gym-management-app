@@ -21,6 +21,8 @@ class PendingExpenseApprovalsWidget extends BaseWidget
 
     protected static ?string $heading = 'Pending Expense Approvals';
 
+    protected static ?string $pollingInterval = null;
+
     public static function canView(): bool
     {
         /** @var \App\Models\User $user */
@@ -30,6 +32,15 @@ class PendingExpenseApprovalsWidget extends BaseWidget
             DefaultRole::GYM_OWNER->value,
             DefaultRole::MANAGER->value,
         ]);
+    }
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
+        ];
     }
 
     public function table(Table $table): Table

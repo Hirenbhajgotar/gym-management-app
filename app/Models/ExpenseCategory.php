@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FilamentColor;
 use App\Observers\ExpenseCategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -165,6 +166,20 @@ class ExpenseCategory extends Model implements Sortable
     protected function customForGym($query, int $gymId)
     {
         return $query->where('gym_id', $gymId)->where('is_system', false);
+    }
+
+    // ========================================
+    // Color Helpers
+    // ========================================
+
+    /**
+     * Get this category's color as a CSS hex value.
+     */
+    public function cssColor(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => FilamentColor::toHex($this->color ?? 'gray'),
+        );
     }
 
     // ========================================

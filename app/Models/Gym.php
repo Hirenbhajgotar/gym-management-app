@@ -165,6 +165,18 @@ class Gym extends Model
         return $this->hasMany(ExpenseBudget::class);
     }
 
+    /** @return HasMany<\App\Models\ReportGoal, self> */
+    public function reportGoals(): HasMany
+    {
+        return $this->hasMany(ReportGoal::class);
+    }
+
+    /** @return HasMany<\App\Models\ScheduledReport, self> */
+    public function scheduledReports(): HasMany
+    {
+        return $this->hasMany(ScheduledReport::class);
+    }
+
     public static function getCurrentTenantUsers()
     {
         /**
