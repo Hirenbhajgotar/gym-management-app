@@ -46,14 +46,16 @@ enum FilamentColor: string implements HasColor, HasLabel
      */
     public function getLabel(): string
     {
-        return match ($this) {
-            self::GRAY => 'Gray',
-            self::PRIMARY => 'Primary',
-            self::SUCCESS => 'Success (Green)',
-            self::WARNING => 'Warning (Yellow)',
-            self::DANGER => 'Danger (Red)',
-            self::INFO => 'Info (Blue)',
-        };
+        return $this->value;
+
+        // return match ($this) {
+        //     self::GRAY => 'Gray',
+        //     self::PRIMARY => 'Primary',
+        //     self::SUCCESS => 'Success (Green)',
+        //     self::WARNING => 'Warning (Yellow)',
+        //     self::DANGER => 'Danger (Red)',
+        //     self::INFO => 'Info (Blue)',
+        // };
     }
 
     public function getColor(): string|array|null

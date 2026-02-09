@@ -44,7 +44,7 @@ class LeadReports extends Page implements HasForms
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
             "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
         ];
@@ -229,23 +229,19 @@ class LeadReports extends Page implements HasForms
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $statuses = [
-            LeadStatus::NEW->value => 'New',
-            LeadStatus::CONTACTED->value => 'Contacted',
-            LeadStatus::CONVERTED->value => 'Converted',
-            LeadStatus::LOST->value => 'Lost',
-        ];
+        $statusCounts = Lead::where('gym_id', $gymId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
         $data = [];
-        foreach ($statuses as $statusValue => $label) {
-            $count = Lead::where('gym_id', $gymId)
-                ->where('status', $statusValue)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
+        foreach (LeadStatus::cases() as $status) {
+            $count = $statusCounts->get($status->value, 0);
 
             if ($count > 0) {
                 $data[] = [
-                    'status' => $label,
+                    'status' => $status->getLabel(),
                     'count' => $count,
                 ];
             }

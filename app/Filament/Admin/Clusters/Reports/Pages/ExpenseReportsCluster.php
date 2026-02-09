@@ -291,13 +291,17 @@ class ExpenseReportsCluster extends Page implements HasForms
         $gymId = $this->getGymId();
         $categories = ExpenseCategory::where('gym_id', $gymId)->active()->get();
 
+        // Optimized: Single query to get all filtered expenses grouped by category
+        $expensesByCategory = $this->getFilteredExpensesQuery()
+            ->clone()
+            ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
+            ->selectRaw('expense_category_id, sum(amount) as total_amount')
+            ->groupBy('expense_category_id')
+            ->pluck('total_amount', 'expense_category_id');
+
         $data = [];
         foreach ($categories as $category) {
-            $actualSpent = $this->getFilteredExpensesQuery()
-                ->clone()
-                ->where('expense_category_id', $category->id)
-                ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
-                ->sum('amount');
+            $actualSpent = $expensesByCategory->get($category->id, 0);
 
             if ($actualSpent > 0 || $category->budget_limit > 0) {
                 $data[] = [
