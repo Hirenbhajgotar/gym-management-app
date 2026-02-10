@@ -1,0 +1,21 @@
+#!/bin/bash
+# docker-compose exec -T app ./vendor/bin/pint "$@"
+
+#!/usr/bin/env bash
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Change to project root
+cd "$PROJECT_ROOT" || exit 1
+
+# Check if docker-compose is running
+if ! docker-compose ps app | grep -q "Up"; then
+    echo "Error: Docker container 'app' is not running"
+    echo "Please start it with: docker-compose up -d"
+    exit 1
+fi
+
+# Run pint inside container
+docker-compose exec -T app ./vendor/bin/pint "$@"
