@@ -1,6 +1,7 @@
 @extends('pdf.layout')
 
 @section('content')
+    <!-- Member Overview Stats -->
     <div class="section">
         <div class="section-title">Member Overview</div>
         <table style="margin-bottom: 20px;">
@@ -19,8 +20,8 @@
         </table>
     </div>
 
-    {{-- Chart Data Tables for PDF --}}
-    <div class="section">
+    <!-- Detailed Analytics Tables -->
+    <div class="section page-break">
         <div class="section-title">Membership Analytics Data</div>
         
         {{-- Membership Growth Data --}}
@@ -152,4 +153,21 @@
         @endif
         @endif
     </div>
+
+    <!-- Chart Visualizations -->
+    @if(isset($chartImages) && !empty($chartImages))
+        @foreach($chartImages as $chartType => $chartImage)
+            @if($chartImage && in_array($chartType, ['member_growth', 'plan_distribution', 'churn_analysis']))
+                <div class="section no-break">
+                    <div class="section-title">{{ Str::title(str_replace('_', ' ', $chartType)) }}</div>
+                    <div class="section-content">
+                        <div class="chart-container">
+                            <div class="chart-title">{{ Str::title(str_replace('_', ' ', $chartType)) }}</div>
+                            <img src="{{ $chartImage }}" alt="{{ Str::title(str_replace('_', ' ', $chartType)) }}" class="chart-image">
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endforeach
+    @endif
 @endsection

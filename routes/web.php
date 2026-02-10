@@ -151,3 +151,8 @@ Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 require __DIR__ . '/auth.php';
 
 Route::get('/download-sample-excel/{type}', [ImportController::class, 'downloadSample'])->name('download.sample.excel');
+
+// Shared Reports Routes (public access)
+Route::prefix('shared-reports')->name('shared-reports.')->group(function () {
+    Route::get('/{token}', [App\Http\Controllers\SharedReportController::class, 'show'])->name('show');
+});
