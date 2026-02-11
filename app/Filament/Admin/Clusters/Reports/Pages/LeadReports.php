@@ -9,11 +9,11 @@ use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadConversionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadFunnelChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadSourceChart;
+use App\Interfaces\ShareableReport;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -21,7 +21,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class LeadReports extends Page implements HasForms
+class LeadReports extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -98,11 +98,8 @@ class LeadReports extends Page implements HasForms
      */
     public function getFilteredLeadsQuery()
     {
-        /** @var \App\Models\Gym $gym */
-        $gym = Filament::getTenant();
-
         return Lead::query()
-            ->where('gym_id', $gym?->id)
+            ->where('gym_id', $this->getGymId())
             ->when($this->filters['start_date'], fn ($q) => $q->whereDate('created_at', '>=', $this->filters['start_date']))
             ->when($this->filters['end_date'], fn ($q) => $q->whereDate('created_at', '<=', $this->filters['end_date']))
             ->when($this->filters['source'], fn ($q) => $q->where('source', $this->filters['source']))
@@ -359,5 +356,29 @@ class LeadReports extends Page implements HasForms
         }
 
         return $trends;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'chart_data' => [
+                'lead_funnel' => $this->getLeadFunnelData(),
+                'lead_sources' => $this->getLeadSourcesData(),
+                'conversion_rates' => $this->getConversionRatesData(),
+            ],
+            'monthly_trends' => $this->getMonthlyTrendsData(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Lead Report';
     }
 }

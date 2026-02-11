@@ -9,6 +9,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\CohortRetentionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\GoalProgressWidget;
 use App\Filament\Admin\Clusters\Reports\Widgets\GymHealthScoreWidget;
 use App\Filament\Admin\Clusters\Reports\Widgets\RealtimeAttendanceWidget;
+use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Lead;
@@ -22,7 +23,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-class ReportsDashboard extends Page
+class ReportsDashboard extends Page implements ShareableReport
 {
     use HasReportFilters;
 
@@ -409,5 +410,44 @@ class ReportsDashboard extends Page
         }
 
         return null;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        $memberStats = $this->getMemberStats();
+        $revenueStats = $this->getRevenueStats();
+        $leadStats = $this->getLeadStats();
+        $attendanceStats = $this->getAttendanceStats();
+
+        return [
+            'stats' => [
+                'total_members' => $memberStats['total'] ?? 0,
+                'revenue_this_month' => $revenueStats['mtd'] ?? 0,
+                'new_leads' => $leadStats['new'] ?? 0,
+                'check_ins_today' => $attendanceStats['today'] ?? 0,
+            ],
+            'memberStats' => $memberStats,
+            'revenueStats' => $revenueStats,
+            'leadStats' => $leadStats,
+            'attendanceStats' => $attendanceStats,
+            'insights' => $this->getInsights(),
+            'chart_data' => [
+                'active_members' => $memberStats['sparkline'] ?? [],
+                'revenue_trend' => $revenueStats['sparkline'] ?? [],
+                'lead_growth' => $leadStats['sparkline'] ?? [],
+                'attendance' => $attendanceStats['sparkline'] ?? [],
+            ],
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Dashboard Report';
     }
 }

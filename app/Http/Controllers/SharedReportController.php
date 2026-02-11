@@ -45,151 +45,24 @@ class SharedReportController extends Controller
         }
 
         // Prepare data for the view
-        $data = $this->getReportData($page, $reportClass);
+        $data = $this->getReportData($page);
+        $title = $page instanceof \App\Interfaces\ShareableReport ? $page->getSharedReportTitle() : 'Report';
 
         return view('shared-reports.show', [
             'link' => $link,
             'report' => $page,
             'data' => $data,
-            'title' => $this->getReportTitle($reportClass),
+            'title' => $title,
             'generatedAt' => now(),
         ]);
     }
 
-    private function getReportData($page, string $reportClass): array
+    private function getReportData($page): array
     {
-        $data = [];
-
-        switch ($reportClass) {
-            case \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class:
-                $memberStats = method_exists($page, 'getMemberStats') ? $page->getMemberStats() : [];
-                $revenueStats = method_exists($page, 'getRevenueStats') ? $page->getRevenueStats() : [];
-                $leadStats = method_exists($page, 'getLeadStats') ? $page->getLeadStats() : [];
-                $attendanceStats = method_exists($page, 'getAttendanceStats') ? $page->getAttendanceStats() : [];
-
-                $data = [
-                    'stats' => [
-                        'total_members' => $memberStats['total'] ?? 0,
-                        'revenue_this_month' => $revenueStats['mtd'] ?? 0,
-                        'new_leads' => $leadStats['new'] ?? 0,
-                        'check_ins_today' => $attendanceStats['today'] ?? 0,
-                    ],
-                    'memberStats' => $memberStats,
-                    'revenueStats' => $revenueStats,
-                    'leadStats' => $leadStats,
-                    'attendanceStats' => $attendanceStats,
-                    'insights' => method_exists($page, 'getInsights') ? $page->getInsights() : [],
-                    'chart_data' => [
-                        'active_members' => $memberStats['sparkline'] ?? [],
-                        'revenue_trend' => $revenueStats['sparkline'] ?? [],
-                        'lead_growth' => $leadStats['sparkline'] ?? [],
-                        'attendance' => $attendanceStats['sparkline'] ?? [],
-                    ],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                    'pnl' => method_exists($page, 'getPnLData') ? $page->getPnLData() : [],
-                    'revenue_breakdown' => method_exists($page, 'getRevenueBreakdown') ? $page->getRevenueBreakdown() : [],
-                    'expense_breakdown' => method_exists($page, 'getExpenseBreakdown') ? $page->getExpenseBreakdown() : [],
-                    'chart_data' => [
-                        'revenue_trends' => method_exists($page, 'getRevenueTrendsData') ? $page->getRevenueTrendsData() : [],
-                        'revenue_forecast' => method_exists($page, 'getRevenueForecastData') ? $page->getRevenueForecastData() : [],
-                        'revenue_by_plan' => method_exists($page, 'getRevenueBreakdown') ? $page->getRevenueBreakdown() : [],
-                    ],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                    'growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
-                    'planDistribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
-                    'churnStats' => method_exists($page, 'getChurnStats') ? $page->getChurnStats() : [],
-                    'chart_data' => [
-                        'member_growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
-                        'plan_distribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
-                    ],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                    'chart_data' => [
-                        'lead_funnel' => method_exists($page, 'getLeadFunnelData') ? $page->getLeadFunnelData() : [],
-                        'lead_sources' => method_exists($page, 'getLeadSourcesData') ? $page->getLeadSourcesData() : [],
-                        'conversion_rates' => method_exists($page, 'getConversionRatesData') ? $page->getConversionRatesData() : [],
-                    ],
-                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\TrainerReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                    'chart_data' => [
-                        'client_distribution' => method_exists($page, 'getClientDistributionData') ? $page->getClientDistributionData() : [],
-                    ],
-                    'performance_metrics' => method_exists($page, 'getPerformanceMetricsData') ? $page->getPerformanceMetricsData() : [],
-                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\EquipmentUsageReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getUsageStats') ? $page->getUsageStats() : [],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\MemberLifetimeValueReports::class:
-                $data = [
-                    'stats' => method_exists($page, 'getLtvStats') ? $page->getLtvStats() : [],
-                ];
-                break;
-
-            case \App\Filament\Admin\Clusters\Reports\Pages\ExpenseReportsCluster::class:
-                $data = [
-                    'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
-                    'chart_data' => [
-                        'category_breakdown' => method_exists($page, 'getCategoryBreakdown') ? $page->getCategoryBreakdown()->toArray() : [],
-                        'budget_variance' => method_exists($page, 'getBudgetVarianceData') ? $page->getBudgetVarianceData() : [],
-                        'cost_trends' => method_exists($page, 'getCostTrendsData') ? $page->getCostTrendsData() : [],
-                    ],
-                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
-                ];
-                break;
-
-            default:
-                $data = ['stats' => []];
-                break;
+        if ($page instanceof \App\Interfaces\ShareableReport) {
+            return $page->getSharedReportData();
         }
 
-        return $data;
-    }
-
-    private function getReportTitle(string $reportClass): string
-    {
-        $titles = [
-            \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class => 'Dashboard Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class => 'Revenue Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class => 'Member Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class => 'Lead Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports::class => 'Attendance Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\TrainerReports::class => 'Trainer Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\EquipmentUsageReports::class => 'Equipment Usage Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\MemberLifetimeValueReports::class => 'Member Lifetime Value Report',
-            \App\Filament\Admin\Clusters\Reports\Pages\ExpenseReportsCluster::class => 'Expense Report',
-        ];
-
-        return $titles[$reportClass] ?? 'Report';
+        return ['stats' => []];
     }
 }

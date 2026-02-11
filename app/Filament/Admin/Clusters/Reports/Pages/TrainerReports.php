@@ -6,6 +6,7 @@ use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
+use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
@@ -14,7 +15,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerReports extends Page
+class TrainerReports extends Page implements ShareableReport
 {
     use HasReportFilters;
 
@@ -149,6 +150,29 @@ class TrainerReports extends Page
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'chart_data' => [
+                'client_distribution' => $this->getClientDistributionData(),
+            ],
+            'performance_metrics' => $this->getPerformanceMetricsData(),
+            'monthly_trends' => $this->getMonthlyTrendsData(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Trainer Report';
     }
 
     /**

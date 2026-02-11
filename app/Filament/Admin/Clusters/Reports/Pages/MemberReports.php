@@ -8,6 +8,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\MemberDemographicsChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberGrowthChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberPlanDistributionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberStatusChart;
+use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Services\ReportCacheService;
@@ -22,7 +23,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class MemberReports extends Page implements HasForms
+class MemberReports extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -129,11 +130,11 @@ class MemberReports extends Page implements HasForms
 
         return GymMember::query()
             ->where('gym_id', $gym?->id)
-            ->when($this->filters['start_date'], fn ($q) => $q->whereDate('created_at', '>=', $this->filters['start_date']))
-            ->when($this->filters['end_date'], fn ($q) => $q->whereDate('created_at', '<=', $this->filters['end_date']))
-            ->when($this->filters['status'] === 'active', fn ($q) => $q->membershipActive())
-            ->when($this->filters['status'] === 'expired', fn ($q) => $q->membershipExpired())
-            ->when($this->filters['membership_plan_id'], fn ($q) => $q->where('gym_membership_plan_id', $this->filters['membership_plan_id']));
+            ->when($this->filters['start_date'] ?? null, fn ($q) => $q->whereDate('created_at', '>=', $this->filters['start_date']))
+            ->when($this->filters['end_date'] ?? null, fn ($q) => $q->whereDate('created_at', '<=', $this->filters['end_date']))
+            ->when(($this->filters['status'] ?? null) === 'active', fn ($q) => $q->membershipActive())
+            ->when(($this->filters['status'] ?? null) === 'expired', fn ($q) => $q->membershipExpired())
+            ->when($this->filters['membership_plan_id'] ?? null, fn ($q) => $q->where('gym_membership_plan_id', $this->filters['membership_plan_id']));
     }
 
     /**
@@ -319,5 +320,30 @@ class MemberReports extends Page implements HasForms
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'growth' => $this->getGrowthData()->toArray(),
+            'planDistribution' => $this->getPlanDistribution()->toArray(),
+            'churnStats' => $this->getChurnStats(),
+            'chart_data' => [
+                'member_growth' => $this->getGrowthData()->toArray(),
+                'plan_distribution' => $this->getPlanDistribution()->toArray(),
+            ],
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Member Report';
     }
 }
