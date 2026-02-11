@@ -34,12 +34,12 @@ class SharedReportController extends Controller
         }
 
         if (property_exists($page, 'filters')) {
-            $page->filters = $link->filters ?? [];
+            // $page->filters = $link->filters ?? [];
 
             if (method_exists($page, 'mount')) {
                 $page->mount();
                 if ($link->filters) {
-                    $page->filters = array_merge($page->filters, $link->filters);
+                    $page->filters = array_merge($page->filters ?? [], $link->filters ?? []);
                 }
             }
         }
