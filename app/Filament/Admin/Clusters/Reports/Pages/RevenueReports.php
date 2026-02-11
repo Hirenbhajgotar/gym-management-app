@@ -25,6 +25,8 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
+use App\Services\ForecastService;
+
 class RevenueReports extends Page implements HasForms
 {
     use HasReportFilters;
@@ -346,6 +348,54 @@ class RevenueReports extends Page implements HasForms
                 ->sortByDesc('amount')
                 ->values()
                 ->toArray();
+        });
+    }
+
+    /**
+     * Get Revenue Trends Data for PDF.
+     */
+    public function getRevenueTrendsData(): array
+    {
+        $pnlData = $this->getPnLData();
+        $breakdown = $pnlData['breakdown'] ?? [];
+
+        return collect($breakdown)->map(function ($item) {
+            return [
+                'label' => $item['label'],
+                'value' => $item['revenue'],
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get Expense Breakdown for PDF.
+     */
+    public function getCategoryBreakdown(): \Illuminate\Support\Collection
+    {
+        return collect($this->getExpenseBreakdown());
+    }
+
+    /**
+     * Get Revenue Forecast Data for PDF.
+     */
+    public function getRevenueForecastData(): array
+    {
+        $gymId = $this->getGymId();
+        
+        // Cache forecast data
+        return Cache::flexible("report_forecast_{$gymId}_revenue", [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
+            $service = app(ForecastService::class);
+            // Get 6 months forecast for better visualization in PDF
+            $chartData = $service->getChartData($gymId, 'revenue', 6);
+            
+            // Format for ChartToImageService
+            return collect($chartData)->map(function ($point) {
+                return [
+                    'label' => $point['date'],
+                    'value' => $point['value'],
+                    'type' => $point['type'], // 'actual' or 'forecast'
+                ];
+            })->toArray();
         });
     }
 

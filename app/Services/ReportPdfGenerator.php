@@ -72,6 +72,7 @@ class ReportPdfGenerator
                 'pnl' => $page->getPnLData(),
                 'revenue_breakdown' => $page->getRevenueBreakdown(),
                 'expense_breakdown' => $page->getExpenseBreakdown(),
+                'chart_data' => $this->getChartData($page, ['revenue_trends', 'revenue_breakdown', 'expense_categories', 'revenue_forecast']),
             ];
             $viewName = 'pdf.reports.financial';
         } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class) {
@@ -276,11 +277,27 @@ class ReportPdfGenerator
                     break;
                 case 'expense_categories':
                     if (method_exists($page, 'getCategoryBreakdown')) {
-                        $chartData['expense_categories'] = $page->getCategoryBreakdown()->toArray();
+                        $data = $page->getCategoryBreakdown();
+                        $chartData['expense_categories'] = is_array($data) ? $data : $data->toArray();
                     } elseif (property_exists($page, 'categoryBreakdown')) {
                         $chartData['expense_categories'] = $page->categoryBreakdown->toArray();
                     } else {
                         $chartData['expense_categories'] = [];
+                    }
+                    break;
+                case 'revenue_trends':
+                    if (method_exists($page, 'getRevenueTrendsData')) {
+                        $chartData['revenue_trends'] = $page->getRevenueTrendsData();
+                    }
+                    break;
+                case 'revenue_breakdown':
+                    if (method_exists($page, 'getRevenueBreakdown')) {
+                        $chartData['revenue_breakdown'] = $page->getRevenueBreakdown();
+                    }
+                    break;
+                case 'revenue_forecast':
+                    if (method_exists($page, 'getRevenueForecastData')) {
+                        $chartData['revenue_forecast'] = $page->getRevenueForecastData();
                     }
                     break;
                 default:
@@ -361,7 +378,10 @@ class ReportPdfGenerator
             'conversion_rates' => 'bar',
             'lead_sources' => 'doughnut',
             'equipment_usage' => 'bar',
+            'equipment_usage' => 'bar',
             'trainer_utilization' => 'bar',
+            'revenue_breakdown' => 'doughnut',
+            'revenue_forecast' => 'line',
         ];
 
         if (isset($typeMap[$chartType])) {
