@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
@@ -35,7 +36,7 @@ class TrainerReports extends Page
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
             "echo-private:reports.{$gymId},.TrainerStatsUpdated" => '$refresh',
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
@@ -119,6 +120,16 @@ class TrainerReports extends Page
     protected function getHeaderActions(): array
     {
         return array_merge([
+            Action::make('export')
+                ->label('Export to Excel')
+                ->icon('phosphor-download')
+                ->color('success')
+                ->action(function () {
+                    /** @var \App\Models\Gym $gym */
+                    $gym = \Filament\Facades\Filament::getTenant();
+
+                    return new TrainerReportExport($gym?->id, $this->filters);
+                }),
             Action::make('refresh')
                 ->label('Refresh')
                 ->icon('phosphor-arrows-clockwise')
@@ -216,7 +227,7 @@ class TrainerReports extends Page
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($count - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {
