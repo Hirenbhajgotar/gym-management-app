@@ -323,10 +323,13 @@ class ChartToImageService
             }
         }
 
-        $textBox = $image->text($text, $x, $y, function ($textDrawer) use ($size, $color, $align) {
-            $textDrawer->size($size);
-            $textDrawer->align($align);
-            $textDrawer->color($color);
+        $textBox = $image->text($text, $x, $y, function ($font) use ($size, $color, $align, $fontFile) {
+            if ($fontFile) {
+                $font->filename($fontFile);
+            }
+            $font->size($size);
+            $font->align($align);
+            $font->color($color);
         });
     }
 
