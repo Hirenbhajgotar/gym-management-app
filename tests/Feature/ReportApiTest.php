@@ -25,9 +25,8 @@ class ReportApiTest extends TestCase
         $this->gym = Gym::factory()->create();
         $this->user->gyms()->attach($this->gym->id, ['role' => 'admin']);
 
-        // Set current gym for user
-        $this->user->current_gym_id = $this->gym->id;
-        $this->user->save();
+        // Set current gym for user context
+        \Filament\Facades\Filament::setTenant($this->gym);
 
         Sanctum::actingAs($this->user, ['*']);
     }

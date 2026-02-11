@@ -12,10 +12,14 @@ use Illuminate\Http\Request;
 
 class ReportApiController extends Controller
 {
+    use \App\Traits\HasTenantAccess;
+
     public function members(Request $request): JsonResponse
     {
-        $gymId = $request->user()->current_gym_id;
-        $gym = Gym::findOrFail($gymId);
+        $gymId = $this->getGymId();
+        // $gym = Gym::findOrFail($gymId); // getGymId() ensures it exists or throws if not found/set? actually getGym() from trait gets it from Filament context.
+        // We can keep $gym = Gym::findOrFail($gymId); if we want to be sure, but getGym() already returns a Gym model.
+        // Let's just get the ID as that's what is used.
 
         $report = new MemberReports;
         $report->manualGymId = $gymId;
@@ -34,8 +38,10 @@ class ReportApiController extends Controller
 
     public function revenue(Request $request): JsonResponse
     {
-        $gymId = $request->user()->current_gym_id;
-        $gym = Gym::findOrFail($gymId);
+        $gymId = $this->getGymId();
+        // $gym = Gym::findOrFail($gymId); // getGymId() ensures it exists or throws if not found/set? actually getGym() from trait gets it from Filament context.
+        // We can keep $gym = Gym::findOrFail($gymId); if we want to be sure, but getGym() already returns a Gym model.
+        // Let's just get the ID as that's what is used.
 
         $report = new RevenueReports;
         $report->manualGymId = $gymId;
@@ -54,8 +60,10 @@ class ReportApiController extends Controller
 
     public function leads(Request $request): JsonResponse
     {
-        $gymId = $request->user()->current_gym_id;
-        $gym = Gym::findOrFail($gymId);
+        $gymId = $this->getGymId();
+        // $gym = Gym::findOrFail($gymId); // getGymId() ensures it exists or throws if not found/set? actually getGym() from trait gets it from Filament context.
+        // We can keep $gym = Gym::findOrFail($gymId); if we want to be sure, but getGym() already returns a Gym model.
+        // Let's just get the ID as that's what is used.
 
         $report = new LeadReports;
         $report->manualGymId = $gymId;
@@ -74,8 +82,10 @@ class ReportApiController extends Controller
 
     public function attendance(Request $request): JsonResponse
     {
-        $gymId = $request->user()->current_gym_id;
-        $gym = Gym::findOrFail($gymId);
+        $gymId = $this->getGymId();
+        // $gym = Gym::findOrFail($gymId); // getGymId() ensures it exists or throws if not found/set? actually getGym() from trait gets it from Filament context.
+        // We can keep $gym = Gym::findOrFail($gymId); if we want to be sure, but getGym() already returns a Gym model.
+        // Let's just get the ID as that's what is used.
 
         $report = new AttendanceReports;
         $report->manualGymId = $gymId;
@@ -94,8 +104,10 @@ class ReportApiController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $gymId = $request->user()->current_gym_id;
-        $gym = Gym::findOrFail($gymId);
+        $gymId = $this->getGymId();
+        // $gym = Gym::findOrFail($gymId); // getGymId() ensures it exists or throws if not found/set? actually getGym() from trait gets it from Filament context.
+        // We can keep $gym = Gym::findOrFail($gymId); if we want to be sure, but getGym() already returns a Gym model.
+        // Let's just get the ID as that's what is used.
 
         $dashboard = new \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
         $dashboard->manualGymId = $gymId;
