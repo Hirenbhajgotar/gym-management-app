@@ -288,7 +288,10 @@ class ChartToImageService
         }
 
         if (count($points) >= 3) {
-            $image->drawPolygon($points, function ($polygon) use ($color) {
+            $image->drawPolygon(function ($polygon) use ($points, $color) {
+                foreach ($points as $point) {
+                    $polygon->point((int) $point['x'], (int) $point['y']);
+                }
                 $polygon->background($color);
             });
         }
@@ -320,7 +323,7 @@ class ChartToImageService
             }
         }
 
-        $textBox = $image->text($text, $x, $y, function ($textDrawer) use ($size, $color, $align, $fontFile) {
+        $textBox = $image->text($text, $x, $y, function ($textDrawer) use ($size, $color, $align) {
             $textDrawer->size($size);
             $textDrawer->align($align);
             $textDrawer->color($color);
@@ -357,7 +360,7 @@ class ChartToImageService
                     $values[] = is_numeric($item['converted']) ? $item['converted'] : 0;
                 } else {
                     foreach ($item as $key => $val) {
-                        if (is_numeric($val) && !in_array($key, ['month', 'label', 'name', 'risk_level', 'hour', 'date', 'period'])) {
+                        if (is_numeric($val) && ! in_array($key, ['month', 'label', 'name', 'risk_level', 'hour', 'date', 'period'])) {
                             $values[] = (float) $val;
                             break;
                         }

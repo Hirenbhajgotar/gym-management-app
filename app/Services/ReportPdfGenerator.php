@@ -359,7 +359,7 @@ class ReportPdfGenerator
             'attendance_patterns' => 'line',
             'lead_funnel' => 'bar',
             'conversion_rates' => 'bar',
-            'lead_sources' => 'bar',
+            'lead_sources' => 'doughnut',
             'equipment_usage' => 'bar',
             'trainer_utilization' => 'bar',
         ];
