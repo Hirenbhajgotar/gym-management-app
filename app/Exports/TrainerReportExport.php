@@ -19,14 +19,11 @@ class TrainerReportExport implements FromQuery, Responsable, ShouldAutoSize, Wit
 
     protected ?int $gymId;
 
-    protected array $filters;
-
     private string $fileName = 'trainer-report.xlsx';
 
-    public function __construct(?int $gymId = null, array $filters = [])
+    public function __construct(?int $gymId = null)
     {
         $this->gymId = $gymId;
-        $this->filters = $filters;
     }
 
     public function query(): Builder
