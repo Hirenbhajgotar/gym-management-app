@@ -18,7 +18,7 @@
         .header { 
             background: linear-gradient(135deg, {{ $brandColors['primary'] ?? '#2563eb' }} 0%, {{ $brandColors['secondary'] ?? '#10b981' }} 100%);
             color: white;
-            padding: 10px 0;
+            /* padding: 10px 0; */
             position: relative;
             overflow: hidden;
         }
@@ -48,7 +48,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 5px;
+            /* margin-bottom: 5px; */
         }
         
         .logo-img {

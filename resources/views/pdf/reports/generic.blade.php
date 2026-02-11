@@ -16,34 +16,6 @@
             @endforeach
         </table>
     </div>
-        {{-- <div class="section-title">Report Summary</div>
-        <div class="section-content">
-            <div class="stats-grid">
-                @foreach($data['stats'] ?? [] as $key => $value)
-                    @if(is_numeric($value))
-                        @php
-                            // Determine color based on metric type
-                            $colorKey = 'primary';
-                            $lowerKey = strtolower($key);
-                            if (str_contains($lowerKey, 'revenue') || str_contains($lowerKey, 'income') || str_contains($lowerKey, 'profit')) {
-                                $colorKey = 'success';
-                            } elseif (str_contains($lowerKey, 'expense') || str_contains($lowerKey, 'cost')) {
-                                $colorKey = 'danger';
-                            } elseif (str_contains($lowerKey, 'pending') || str_contains($lowerKey, 'at_risk')) {
-                                $colorKey = 'warning';
-                            } elseif (str_contains($lowerKey, 'active') || str_contains($lowerKey, 'new')) {
-                                $colorKey = 'info';
-                            }
-                        @endphp
-                        <div class="stat-card" style="border-left-color: {{ $brandColors[$colorKey] ?? '#2563eb' }};">
-                            <div class="stat-value">{{ is_numeric($value) && $value > 100 ? number_format($value, 2) : number_format($value) }}</div>
-                            <div class="stat-label">{{ ucfirst(str_replace('_', ' ', $key)) }}</div>
-                        </div>
-                    @endif
-                @endforeach
-            </div>
-        </div> --}}
-    </div>
     @endif
 
     <!-- Detailed Breakdown Table -->
