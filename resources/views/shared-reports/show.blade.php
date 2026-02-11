@@ -41,6 +41,19 @@
                             <p class="text-sm font-medium text-orange-600">{{ $link->expires_at->format('M j, Y') }}</p>
                         </div>
                     @endif
+                    <div x-data>
+                        <button 
+                            @click="$clipboard.copy('{{ url()->current() }}')"
+                            type="button"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                            Copy Link
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,10 +117,7 @@
                     @break
 
                 @default
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Report Data</h3>
-                        <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">{{ json_encode($data, JSON_PRETTY_PRINT) }}</pre>
-                    </div>
+                    @include('shared-reports.generic')
             @endswitch
         </div>
     </div>
