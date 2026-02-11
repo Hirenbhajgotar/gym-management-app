@@ -242,16 +242,4 @@
                 </a>
             </div>
         </x-filament::section>
-
-        {{-- Last Updated Info --}}
-        <div class="text-center text-xs text-gray-400 dark:text-gray-500">
-            Data is cached for optimal performance. Stats refresh automatically every 15 minutes.
-            <button wire:click="$refresh" wire:loading.attr="disabled" class="ml-2 text-primary-500 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
-                <span wire:loading.remove>Refresh Now</span>
-                <span wire:loading.flex class="inline-flex items-center gap-1">
-                    <x-filament::loading-indicator class="h-3 w-3" />
-                    Refreshing...
-                </span>
-            </button>
-        </div>
 </x-filament-panels::page>

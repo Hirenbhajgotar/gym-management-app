@@ -7,6 +7,8 @@ use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\CohortRetentionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\GoalProgressWidget;
+use App\Filament\Admin\Clusters\Reports\Widgets\GymHealthScoreWidget;
+use App\Filament\Admin\Clusters\Reports\Widgets\RealtimeAttendanceWidget;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Lead;
@@ -286,8 +288,8 @@ class ReportsDashboard extends Page
     protected function getFooterWidgets(): array
     {
         return [
-            \App\Filament\Admin\Clusters\Reports\Widgets\RealtimeAttendanceWidget::class,
-            \App\Filament\Admin\Clusters\Reports\Widgets\GymHealthScoreWidget::class,
+            RealtimeAttendanceWidget::class,
+            GymHealthScoreWidget::class,
             GoalProgressWidget::class,
             CohortRetentionChart::class,
         ];
