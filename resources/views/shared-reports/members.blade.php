@@ -87,13 +87,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('growthChart').getContext('2d');
+            const rawData = @json($data['growth'] ?? []);
+            
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: @json($data['growth']['labels'] ?? []),
+                    labels: rawData.map(item => item.month),
                     datasets: [{
                         label: 'Members',
-                        data: @json($data['growth']['data'] ?? []),
+                        data: rawData.map(item => item.count),
                         borderColor: 'rgb(99, 102, 241)',
                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
                         tension: 0.1
@@ -126,12 +128,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('planChart').getContext('2d');
+            const rawData = @json($data['planDistribution'] ?? []);
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: @json(array_keys($data['planDistribution'] ?? [])),
+                    labels: rawData.map(item => item.name),
                     datasets: [{
-                        data: @json(array_values($data['planDistribution'] ?? [])),
+                        data: rawData.map(item => item.count),
                         backgroundColor: [
                             'rgb(99, 102, 241)',
                             'rgb(34, 197, 94)',

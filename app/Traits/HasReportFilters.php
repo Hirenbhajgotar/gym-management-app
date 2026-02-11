@@ -2,10 +2,12 @@
 
 namespace App\Traits;
 
+use App\Models\ShareableReportLink;
 use App\Services\ReportCacheService;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -438,9 +440,9 @@ trait HasReportFilters
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $shareableLink = \App\Models\ShareableReportLink::create([
+                    $shareableLink = ShareableReportLink::create([
                         'gym_id' => $this->getGymId(),
-                        'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                        'user_id' => Auth::id(),
                         'report_type' => static::class,
                         'filters' => $this->filters ?? [],
                         'expires_at' => $data['expires_in'] > 0

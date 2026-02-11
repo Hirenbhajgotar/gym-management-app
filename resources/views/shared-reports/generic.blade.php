@@ -35,18 +35,34 @@
         </div>
         <div class="p-6">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            @if(isset($data['monthly_trends'][0]['trend']))
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($data['monthly_trends'] as $trend)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $trend['month'] ?? 'Unknown' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($trend['count'] ?? 0) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ number_format($trend['count'] ?? $trend['value'] ?? $trend['total'] ?? $trend['amount'] ?? 0) }}
+                                </td>
+                                @if(isset($trend['trend']))
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {{ $trend['trend'] === 'Up' ? 'bg-green-100 text-green-800' : ($trend['trend'] === 'Down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800') }}">
+                                            {{ $trend['trend'] }}
+                                        </span>
+                                        <span class="text-xs text-gray-500 ml-1">
+                                            ({{ $trend['change_percent'] > 0 ? '+' : '' }}{{ $trend['change_percent'] }}%)
+                                        </span>
+                                    </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
@@ -58,71 +74,102 @@
 
 <!-- Chart Data -->
 @if(isset($data['chart_data']) && !empty($data['chart_data']))
-    @foreach($data['chart_data'] as $chartType => $chartData)
-        @if(!empty($chartData))
-            <div class="bg-white rounded-lg shadow mb-8">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">{{ Str::title(str_replace('_', ' ', $chartType)) }}</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        @foreach($data['chart_data'] as $chartType => $chartData)
+            @if(!empty($chartData))
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">{{ Str::title(str_replace('_', ' ', $chartType)) }}</h3>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="{{ $chartType }}Chart" style="max-height: 300px;"></canvas>
+                    </div>
                 </div>
-                <div class="p-6">
-                    <canvas id="{{ $chartType }}Chart" width="400" height="200"></canvas>
-                </div>
-            </div>
 
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const ctx = document.getElementById('{{ $chartType }}Chart').getContext('2d');
-                    
-                    // Determine chart type based on data structure
-                    let chartType = 'bar';
-                    let chartData = @json($chartData);
-                    
-                    // If data has labels and values structure, use appropriate chart
-                    if (chartData.length > 0 && typeof chartData[0] === 'object') {
-                        const keys = Object.keys(chartData[0]);
-                        if (keys.includes('label') || keys.includes('name') || keys.includes('risk_level')) {
-                            chartType = 'doughnut';
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const ctx = document.getElementById('{{ $chartType }}Chart').getContext('2d');
+                        
+                        // Determine chart type based on data structure
+                        let chartData = @json($chartData);
+                        let chartType = 'bar';
+                        let isSparkline = false;
+
+                        // Check if data is simple array of numbers (Sparkline/Trend)
+                        if (chartData.length > 0 && typeof chartData[0] === 'number') {
+                            chartType = 'line';
+                            isSparkline = true;
+                        } 
+                        // Check if data has objects with labels
+                        else if (chartData.length > 0 && typeof chartData[0] === 'object') {
+                            const keys = Object.keys(chartData[0]);
+                            if (keys.includes('label') || keys.includes('name') || keys.includes('risk_level') || keys.includes('category')) {
+                                chartType = '{{ str_contains($chartType, 'distribution') || str_contains($chartType, 'source') ? 'doughnut' : 'bar' }}';
+                            }
                         }
-                    }
-                    
-                    new Chart(ctx, {
-                        type: chartType,
-                        data: {
-                            labels: chartData.map(item => item.label || item.name || item.risk_level || item.month || 'Unknown'),
-                            datasets: [{
-                                label: '{{ Str::title(str_replace('_', ' ', $chartType)) }}',
-                                data: chartData.map(item => item.count || item.value || item.amount || 0),
-                                backgroundColor: [
-                                    'rgb(99, 102, 241)',
-                                    'rgb(34, 197, 94)',
-                                    'rgb(251, 146, 60)',
-                                    'rgb(239, 68, 68)',
-                                    'rgb(168, 85, 247)',
-                                    'rgb(59, 130, 246)',
-                                    'rgb(16, 185, 129)',
-                                ],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
+                        
+                        // Smart key detection for labels and values
+                        const getLabel = (item, index) => isSparkline ? `Day ${index + 1}` : (item.label || item.name || item.status || item.month || item.category || 'Unknown');
+                        const getValue = (item) => isSparkline ? item : (item.value || item.count || item.amount || item.total || item.clients || item.revenue || 0);
+                        
+                        // Color palette
+                        const colors = [
+                            'rgba(99, 102, 241, 0.7)',   // Indigo
+                            'rgba(34, 197, 94, 0.7)',    // Green
+                            'rgba(249, 115, 22, 0.7)',   // Orange
+                            'rgba(239, 68, 68, 0.7)',    // Red
+                            'rgba(168, 85, 247, 0.7)',   // Purple
+                            'rgba(59, 130, 246, 0.7)',   // Blue
+                            'rgba(236, 72, 153, 0.7)',   // Pink
+                            'rgba(20, 184, 166, 0.7)',   // Teal
+                        ];
+                        
+                        const options = {
                             responsive: true,
-                            scales: chartType === 'bar' ? {
-                                y: {
-                                    beginAtZero: true
-                                }
-                            } : {},
+                            maintainAspectRatio: false,
                             plugins: {
                                 legend: {
-                                    display: chartType === 'doughnut',
+                                    display: chartType === 'doughnut' || chartType === 'pie',
                                     position: 'bottom'
                                 }
                             }
+                        };
+
+                        if (isSparkline) {
+                            options.scales = {
+                                x: { display: true, grid: { display: false } }, // Show axis but hide grid for cleaner look
+                                y: { beginAtZero: true }
+                            };
+                            options.elements = {
+                                point: { radius: 0, hitRadius: 10 }, // Hide points for sparkline look
+                                line: { tension: 0.4 } // Smooth curves
+                            };
+                        } else if (chartType === 'bar' || chartType === 'line') {
+                            options.scales = {
+                                y: { beginAtZero: true }
+                            };
                         }
+
+                        new Chart(ctx, {
+                            type: chartType,
+                            data: {
+                                labels: chartData.map(getLabel),
+                                datasets: [{
+                                    label: '{{ Str::title(str_replace('_', ' ', $chartType)) }}',
+                                    data: chartData.map(getValue),
+                                    backgroundColor: isSparkline ? 'rgba(99, 102, 241, 0.1)' : colors.slice(0, chartData.length),
+                                    borderColor: isSparkline ? 'rgba(99, 102, 241, 1)' : colors.map(c => c.replace('0.7', '1')).slice(0, chartData.length),
+                                    borderWidth: isSparkline ? 2 : 1,
+                                    fill: isSparkline
+                                }]
+                            },
+                            options: options
+                        });
                     });
-                });
-            </script>
-        @endif
-    @endforeach
+                </script>
+            @endif
+        @endforeach
+    </div>
 @endif
 
 <!-- Raw Data Display (for debugging or additional info) -->
@@ -134,7 +181,14 @@
         <div class="p-6">
             <div class="space-y-4">
                 @foreach($data as $key => $value)
-                    @if($key !== 'stats' && $key !== 'chart_data' && $key !== 'monthly_trends')
+                    @if(!in_array($key, [
+                        'stats', 'chart_data', 'monthly_trends', 
+                        'memberStats', 'revenueStats', 'leadStats', 'attendanceStats', 'insights',
+                        'pnl', 'revenue_breakdown', 'expense_breakdown', 
+                        'growth', 'planDistribution', 'churnStats',
+                        'performance_metrics', 'usageStats', 'ltvStats',
+                        'report', 'link', 'title', 'generatedAt' // generic view parameters if passed
+                    ]))
                         @if(is_array($value))
                             <div>
                                 <h4 class="font-medium text-gray-900 mb-2">{{ Str::title(str_replace('_', ' ', $key)) }}</h4>

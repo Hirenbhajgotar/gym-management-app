@@ -62,12 +62,29 @@ class SharedReportController extends Controller
 
         switch ($reportClass) {
             case \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class:
+                $memberStats = method_exists($page, 'getMemberStats') ? $page->getMemberStats() : [];
+                $revenueStats = method_exists($page, 'getRevenueStats') ? $page->getRevenueStats() : [];
+                $leadStats = method_exists($page, 'getLeadStats') ? $page->getLeadStats() : [];
+                $attendanceStats = method_exists($page, 'getAttendanceStats') ? $page->getAttendanceStats() : [];
+
                 $data = [
-                    'memberStats' => method_exists($page, 'getMemberStats') ? $page->getMemberStats() : [],
-                    'revenueStats' => method_exists($page, 'getRevenueStats') ? $page->getRevenueStats() : [],
-                    'leadStats' => method_exists($page, 'getLeadStats') ? $page->getLeadStats() : [],
-                    'attendanceStats' => method_exists($page, 'getAttendanceStats') ? $page->getAttendanceStats() : [],
+                    'stats' => [
+                        'total_members' => $memberStats['total'] ?? 0,
+                        'revenue_this_month' => $revenueStats['mtd'] ?? 0,
+                        'new_leads' => $leadStats['new'] ?? 0,
+                        'check_ins_today' => $attendanceStats['today'] ?? 0,
+                    ],
+                    'memberStats' => $memberStats,
+                    'revenueStats' => $revenueStats,
+                    'leadStats' => $leadStats,
+                    'attendanceStats' => $attendanceStats,
                     'insights' => method_exists($page, 'getInsights') ? $page->getInsights() : [],
+                    'chart_data' => [
+                        'active_members' => $memberStats['sparkline'] ?? [],
+                        'revenue_trend' => $revenueStats['sparkline'] ?? [],
+                        'lead_growth' => $leadStats['sparkline'] ?? [],
+                        'attendance' => $attendanceStats['sparkline'] ?? [],
+                    ],
                 ];
                 break;
 
@@ -77,6 +94,11 @@ class SharedReportController extends Controller
                     'pnl' => method_exists($page, 'getPnLData') ? $page->getPnLData() : [],
                     'revenue_breakdown' => method_exists($page, 'getRevenueBreakdown') ? $page->getRevenueBreakdown() : [],
                     'expense_breakdown' => method_exists($page, 'getExpenseBreakdown') ? $page->getExpenseBreakdown() : [],
+                    'chart_data' => [
+                        'revenue_trends' => method_exists($page, 'getRevenueTrendsData') ? $page->getRevenueTrendsData() : [],
+                        'revenue_forecast' => method_exists($page, 'getRevenueForecastData') ? $page->getRevenueForecastData() : [],
+                        'revenue_by_plan' => method_exists($page, 'getRevenueBreakdown') ? $page->getRevenueBreakdown() : [],
+                    ],
                 ];
                 break;
 
@@ -86,12 +108,22 @@ class SharedReportController extends Controller
                     'growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
                     'planDistribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
                     'churnStats' => method_exists($page, 'getChurnStats') ? $page->getChurnStats() : [],
+                    'chart_data' => [
+                        'member_growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
+                        'plan_distribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
+                    ],
                 ];
                 break;
 
             case \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class:
                 $data = [
                     'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
+                    'chart_data' => [
+                        'lead_funnel' => method_exists($page, 'getLeadFunnelData') ? $page->getLeadFunnelData() : [],
+                        'lead_sources' => method_exists($page, 'getLeadSourcesData') ? $page->getLeadSourcesData() : [],
+                        'conversion_rates' => method_exists($page, 'getConversionRatesData') ? $page->getConversionRatesData() : [],
+                    ],
+                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
                 ];
                 break;
 
@@ -104,6 +136,11 @@ class SharedReportController extends Controller
             case \App\Filament\Admin\Clusters\Reports\Pages\TrainerReports::class:
                 $data = [
                     'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
+                    'chart_data' => [
+                        'client_distribution' => method_exists($page, 'getClientDistributionData') ? $page->getClientDistributionData() : [],
+                    ],
+                    'performance_metrics' => method_exists($page, 'getPerformanceMetricsData') ? $page->getPerformanceMetricsData() : [],
+                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
                 ];
                 break;
 
@@ -122,6 +159,12 @@ class SharedReportController extends Controller
             case \App\Filament\Admin\Clusters\Reports\Pages\ExpenseReportsCluster::class:
                 $data = [
                     'stats' => method_exists($page, 'getSummaryStats') ? $page->getSummaryStats() : [],
+                    'chart_data' => [
+                        'category_breakdown' => method_exists($page, 'getCategoryBreakdown') ? $page->getCategoryBreakdown()->toArray() : [],
+                        'budget_variance' => method_exists($page, 'getBudgetVarianceData') ? $page->getBudgetVarianceData() : [],
+                        'cost_trends' => method_exists($page, 'getCostTrendsData') ? $page->getCostTrendsData() : [],
+                    ],
+                    'monthly_trends' => method_exists($page, 'getMonthlyTrendsData') ? $page->getMonthlyTrendsData() : [],
                 ];
                 break;
 
