@@ -42,7 +42,9 @@ class LeadResource extends Resource
             $modelClass = static::$model;
             $query = $modelClass::query()->where('status', LeadStatus::NEW);
 
-            return $query->count();
+            $count = $query->count();
+
+            return $count > 0 ? $count : null;
         });
     }
 

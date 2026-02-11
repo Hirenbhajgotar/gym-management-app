@@ -58,7 +58,9 @@ class GymMemberResource extends Resource
             $modelClass = static::$model;
             $query = $modelClass::query();
 
-            return $query->count();
+            $count = $query->count();
+
+            return $count > 0 ? $count : null;
         });
     }
 

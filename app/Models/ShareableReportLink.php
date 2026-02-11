@@ -39,10 +39,17 @@ class ShareableReportLink extends Model
         });
     }
 
-    public static function generateUniqueToken(): string
+    public static function generateUniqueToken(int $maxRetries = 10): string
     {
+        $count = 0;
+
         do {
+            if ($count >= $maxRetries) {
+                throw new \RuntimeException('Failed to generate a unique token after ' . $maxRetries . ' attempts.');
+            }
+
             $token = Str::random(64);
+            $count++;
         } while (self::where('token', $token)->exists());
 
         return $token;
