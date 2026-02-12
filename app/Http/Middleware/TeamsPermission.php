@@ -7,7 +7,6 @@ use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
-use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 class TeamsPermission
@@ -43,15 +42,13 @@ class TeamsPermission
         $user = auth()->user();
 
         if ($tenantId) {
-            $permissionRegistrar = app(PermissionRegistrar::class);
-
             Session::put('permission_team_id', $tenantId);
 
+            // Set the team context - cache key now includes gym_id automatically
             setPermissionsTeamId($tenantId);
 
-            $permissionRegistrar->forgetCachedPermissions();
-
-            // Clear cached permissions for the current user
+            // Only clear the user's cached permissions (lightweight operation)
+            // The registrar's getCacheKey() now includes gym_id, so correct cache is used
             if ($user) {
                 $user->forgetCachedPermissions();
                 // Reload user's roles to ensure role checks use the updated team context

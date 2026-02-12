@@ -16,8 +16,6 @@ class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
 
-
-
     // public function filtersForm(Form $form): Form
     // {
     //     // Generate month-year options (last 12 months)

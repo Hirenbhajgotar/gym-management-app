@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Jobs\SendMembershipExpiryNotificationJob;
 use App\Models\GymMember;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -17,9 +18,23 @@ class MembershipExpiryAlerts extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '900s';
+    protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 3;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'refreshWidget',
+        ];
+    }
+
+    public function refreshWidget(): void
+    {
+        $this->resetTable();
+    }
 
     public static function canView(): bool
     {

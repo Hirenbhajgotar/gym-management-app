@@ -30,7 +30,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'phosphor-columns';
+    protected static ?string $navigationIcon = null;
 
     protected static ?string $navigationGroup = 'CRM';
 

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Models\GymMember;
 use App\Models\MemberPayment;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -14,11 +15,26 @@ class RecentActivity extends BaseWidget
 {
     protected static ?string $heading = 'Recent Activity';
 
-    protected static ?string $pollingInterval = '900s';
+    protected static ?string $pollingInterval = null;
 
     protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 1000;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'refreshWidget',
+            "echo-private:reports.{$gymId},.RevenueStatsUpdated" => 'refreshWidget',
+        ];
+    }
+
+    public function refreshWidget(): void
+    {
+        $this->resetTable();
+    }
 
     public static function canView(): bool
     {

@@ -2,29 +2,43 @@
     "mcpServers": {
         "context7": {
             "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp"]
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ]
         },
         "firecrawl-mcp": {
             "command": "npx",
-            "args": ["-y", "firecrawl-mcp"],
+            "args": [
+                "-y",
+                "firecrawl-mcp"
+            ],
             "env": {
                 "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
             }
         },
         "laravel-boost": {
-            "command": "docker-compose",
-            "args": ["exec", "-T", "app", "php", "artisan", "boost:mcp"]
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
         },
         "github": {
             "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-github"],
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
             "env": {
                 "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
             }
         },
         "chrome-devtools": {
             "command": "npx",
-            "args": ["chrome-devtools-mcp@latest"]
+            "args": [
+                "chrome-devtools-mcp@latest"
+            ]
         }
     }
 }

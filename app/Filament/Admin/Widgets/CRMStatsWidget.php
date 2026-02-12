@@ -11,6 +11,17 @@ use Illuminate\Support\Facades\Cache;
 
 class CRMStatsWidget extends BaseWidget
 {
+    protected static ?string $pollingInterval = null;
+
+    protected function getListeners(): array
+    {
+        $gymId = Filament::getTenant()?->id;
+
+        return [
+            "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
+        ];
+    }
+
     protected function getStats(): array
     {
         return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . Filament::getTenant()->id, [now()->addHour(), now()->addHours(24)], function () {

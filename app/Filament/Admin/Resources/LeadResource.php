@@ -28,8 +28,6 @@ class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    protected static ?string $navigationIcon = 'phosphor-circles-three-plus';
-
     protected static ?string $navigationGroup = 'CRM';
 
     public static function getNavigationBadge(): ?string
@@ -44,7 +42,9 @@ class LeadResource extends Resource
             $modelClass = static::$model;
             $query = $modelClass::query()->where('status', LeadStatus::NEW);
 
-            return $query->count();
+            $count = $query->count();
+
+            return $count > 0 ? $count : null;
         });
     }
 

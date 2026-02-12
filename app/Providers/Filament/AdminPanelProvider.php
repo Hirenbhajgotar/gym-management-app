@@ -36,14 +36,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            // ->registration()
             ->passwordReset()
             ->emailVerification()
-            // ->profile(isSimple: false)
             ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
+                'success' => Color::Green,
                 'danger' => Color::Red,
+                'info' => Color::Blue,
+                'warning' => Color::Yellow,
             ])
             ->brandLogo(asset('fluxfitness-logo.svg'))
             ->brandLogoHeight('3rem')
@@ -63,18 +64,23 @@ class AdminPanelProvider extends PanelProvider
             ->tenantProfile(EditGymProfile::class)
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('CRM')
+                    ->icon('phosphor-funnel'),
+                NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
                 NavigationGroup::make()
+                    ->label('Expense Management')
+                    ->icon('phosphor-invoice'),
+                NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-wrench-screwdriver'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
-            // ->unsavedChangesAlerts()
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')

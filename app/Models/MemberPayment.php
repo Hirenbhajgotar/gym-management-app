@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
+use App\Observers\MemberPaymentObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -55,6 +57,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @mixin \Eloquent
  * @mixin IdeHelperMemberPayment
  */
+#[ObservedBy([MemberPaymentObserver::class])]
 class MemberPayment extends Model
 {
     use HasFactory, LogsActivity;
