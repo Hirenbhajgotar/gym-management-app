@@ -184,3 +184,12 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
         ]);
     })->name('api.social-config.toggle');
 });
+
+// Reports API Routes for BI Tools
+Route::prefix('reports')->middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::get('/members', [App\Http\Controllers\ReportApiController::class, 'members'])->name('api.reports.members');
+    Route::get('/revenue', [App\Http\Controllers\ReportApiController::class, 'revenue'])->name('api.reports.revenue');
+    Route::get('/leads', [App\Http\Controllers\ReportApiController::class, 'leads'])->name('api.reports.leads');
+    Route::get('/attendance', [App\Http\Controllers\ReportApiController::class, 'attendance'])->name('api.reports.attendance');
+    Route::get('/dashboard', [App\Http\Controllers\ReportApiController::class, 'dashboard'])->name('api.reports.dashboard');
+});

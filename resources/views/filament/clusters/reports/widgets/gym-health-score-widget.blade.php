@@ -89,12 +89,9 @@
                                 {{ $breakdown[$metric['key']] }}
                             </span>
                         </div>
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div 
-                                class="h-full bg-{{ $scoreColor }}-500 transition-all duration-500"
-                                style="width: {{ $breakdown[$metric['key']] }}%"
-                            ></div>
-                        </div>
+                        <x-progress-bar color="{{ $scoreColor }}" :progress="$breakdown[$metric['key']]" > 
+                            {{ $breakdown[$metric['key']] }}%
+                        </x-progress-bar>
                     </div>
                 @endforeach
             </div>

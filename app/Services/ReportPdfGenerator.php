@@ -4,9 +4,18 @@ namespace App\Services;
 
 use App\Models\ScheduledReport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ReportPdfGenerator
 {
+    protected ChartToImageService $chartToImageService;
+
+    public function __construct(ChartToImageService $chartToImageService)
+    {
+        $this->chartToImageService = $chartToImageService;
+    }
+
     public function generate(ScheduledReport $report): string
     {
         $reportClass = $report->report_type;
@@ -63,6 +72,7 @@ class ReportPdfGenerator
                 'pnl' => $page->getPnLData(),
                 'revenue_breakdown' => $page->getRevenueBreakdown(),
                 'expense_breakdown' => $page->getExpenseBreakdown(),
+                'chart_data' => $this->getChartData($page, ['revenue_trends', 'revenue_breakdown', 'expense_categories', 'revenue_forecast']),
             ];
             $viewName = 'pdf.reports.financial';
         } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class) {
@@ -121,6 +131,9 @@ class ReportPdfGenerator
             $viewName = 'pdf.reports.generic';
         }
 
+        // Process charts to images for PDF
+        $chartImages = $this->processChartsToImages($data, $reportClass);
+
         // Create PDF
         $pdf = Pdf::loadView($viewName, [
             'report' => $report,
@@ -128,6 +141,9 @@ class ReportPdfGenerator
             'gym' => $report->gym,
             'date' => now()->format('F j, Y'),
             'title' => $title,
+            'chartImages' => $chartImages,
+            'gymLogo' => $this->getGymLogoBase64($report->gym),
+            'brandColors' => $this->getGymBrandColors($report->gym),
         ]);
 
         return $pdf->output();
@@ -261,11 +277,27 @@ class ReportPdfGenerator
                     break;
                 case 'expense_categories':
                     if (method_exists($page, 'getCategoryBreakdown')) {
-                        $chartData['expense_categories'] = $page->getCategoryBreakdown()->toArray();
+                        $data = $page->getCategoryBreakdown();
+                        $chartData['expense_categories'] = is_array($data) ? $data : $data->toArray();
                     } elseif (property_exists($page, 'categoryBreakdown')) {
                         $chartData['expense_categories'] = $page->categoryBreakdown->toArray();
                     } else {
                         $chartData['expense_categories'] = [];
+                    }
+                    break;
+                case 'revenue_trends':
+                    if (method_exists($page, 'getRevenueTrendsData')) {
+                        $chartData['revenue_trends'] = $page->getRevenueTrendsData();
+                    }
+                    break;
+                case 'revenue_breakdown':
+                    if (method_exists($page, 'getRevenueBreakdown')) {
+                        $chartData['revenue_breakdown'] = $page->getRevenueBreakdown();
+                    }
+                    break;
+                case 'revenue_forecast':
+                    if (method_exists($page, 'getRevenueForecastData')) {
+                        $chartData['revenue_forecast'] = $page->getRevenueForecastData();
                     }
                     break;
                 default:
@@ -290,5 +322,154 @@ class ReportPdfGenerator
 
         // Return empty array if no data available
         return [];
+    }
+
+    /**
+     * Process chart data to base64 images for PDF inclusion.
+     */
+    protected function processChartsToImages(array $data, string $reportClass): array
+    {
+        $chartImages = [];
+
+        if (! isset($data['chart_data'])) {
+            return $chartImages;
+        }
+
+        foreach ($data['chart_data'] as $chartType => $chartData) {
+            if (empty($chartData)) {
+                continue;
+            }
+
+            try {
+                // Determine chart type based on data structure
+                $renderType = $this->determineChartRenderType($chartType, $chartData);
+
+                // Generate chart image
+                $chartImages[$chartType] = $this->chartToImageService->convertChartToBase64(
+                    $chartData,
+                    $renderType,
+                    800, // width
+                    400  // height
+                );
+            } catch (\Exception $e) {
+                // Log error but continue processing other charts
+                Log::warning("Failed to generate chart image for {$chartType}: " . $e->getMessage());
+                $chartImages[$chartType] = null;
+            }
+        }
+
+        return $chartImages;
+    }
+
+    /**
+     * Determine the best chart render type based on data structure.
+     */
+    protected function determineChartRenderType(string $chartType, array $chartData): string
+    {
+        // Specific chart type mappings
+        $typeMap = [
+            'plan_distribution' => 'doughnut',
+            'expense_categories' => 'doughnut',
+            'churn_analysis' => 'doughnut',
+            'member_growth' => 'line',
+            'revenue_trends' => 'line',
+            'attendance_patterns' => 'line',
+            'lead_funnel' => 'bar',
+            'conversion_rates' => 'bar',
+            'lead_sources' => 'doughnut',
+            'equipment_usage' => 'bar',
+            'equipment_usage' => 'bar',
+            'trainer_utilization' => 'bar',
+            'revenue_breakdown' => 'doughnut',
+            'revenue_forecast' => 'line',
+        ];
+
+        if (isset($typeMap[$chartType])) {
+            return $typeMap[$chartType];
+        }
+
+        // Auto-detect based on data structure
+        if (count($chartData) <= 8 && $this->isCategoricalData($chartData)) {
+            return 'doughnut';
+        }
+
+        if ($this->isTimeSeriesData($chartData)) {
+            return 'line';
+        }
+
+        return 'bar';
+    }
+
+    /**
+     * Check if data is categorical (good for pie/doughnut charts).
+     */
+    protected function isCategoricalData(array $chartData): bool
+    {
+        if (empty($chartData)) {
+            return false;
+        }
+
+        $firstItem = $chartData[0];
+
+        return isset($firstItem['label']) || isset($firstItem['name']) || isset($firstItem['risk_level']);
+    }
+
+    /**
+     * Check if data is time series (good for line charts).
+     */
+    protected function isTimeSeriesData(array $chartData): bool
+    {
+        if (empty($chartData)) {
+            return false;
+        }
+
+        $firstItem = $chartData[0];
+
+        return isset($firstItem['month']) || isset($firstItem['date']) || isset($firstItem['period']);
+    }
+
+    /**
+     * Get gym logo as base64 encoded string for PDF.
+     */
+    protected function getGymLogoBase64($gym): ?string
+    {
+        if (! $gym || ! $gym->logo) {
+            return null;
+        }
+
+        try {
+            $logoPath = Storage::disk('public')->path($gym->logo);
+            if (! file_exists($logoPath)) {
+                return null;
+            }
+
+            $imageData = file_get_contents($logoPath);
+
+            return 'data:image/' . pathinfo($gym->logo, PATHINFO_EXTENSION) . ';base64,' . base64_encode($imageData);
+        } catch (\Exception $e) {
+            Log::warning('Failed to load gym logo: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Get gym brand colors for PDF theming.
+     */
+    protected function getGymBrandColors($gym): array
+    {
+        // Default brand colors
+        $defaultColors = [
+            'primary' => '#2563eb',
+            'secondary' => '#10b981',
+            'accent' => '#f59e0b',
+            'danger' => '#ef4444',
+            'success' => '#22c55e',
+            'warning' => '#f59e0b',
+            'info' => '#3b82f6',
+        ];
+
+        // In the future, this could be customized per gym
+        return $defaultColors;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Clusters\Reports\Pages;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceHeatmapChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceTrendChart;
+use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
@@ -17,7 +18,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class AttendanceReports extends Page implements HasForms
+class AttendanceReports extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -40,7 +41,7 @@ class AttendanceReports extends Page implements HasForms
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
             "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => '$refresh',
         ];
@@ -217,6 +218,24 @@ class AttendanceReports extends Page implements HasForms
     }
 
     /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Attendance Report';
+    }
+
+    /**
      * Get daily patterns data for PDF charts.
      */
     public function getDailyPatternsData(): array
@@ -292,7 +311,7 @@ class AttendanceReports extends Page implements HasForms
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {

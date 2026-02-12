@@ -2,9 +2,11 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
+use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
@@ -13,7 +15,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerReports extends Page
+class TrainerReports extends Page implements ShareableReport
 {
     use HasReportFilters;
 
@@ -35,7 +37,7 @@ class TrainerReports extends Page
     protected function getListeners(): array
     {
         $gymId = $this->getGymId();
-        
+
         return [
             "echo-private:reports.{$gymId},.TrainerStatsUpdated" => '$refresh',
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => '$refresh',
@@ -119,6 +121,16 @@ class TrainerReports extends Page
     protected function getHeaderActions(): array
     {
         return array_merge([
+            Action::make('export')
+                ->label('Export to Excel')
+                ->icon('phosphor-download')
+                ->color('success')
+                ->action(function () {
+                    /** @var \App\Models\Gym $gym */
+                    $gym = \Filament\Facades\Filament::getTenant();
+
+                    return new TrainerReportExport($gym?->id, $this->filters);
+                }),
             Action::make('refresh')
                 ->label('Refresh')
                 ->icon('phosphor-arrows-clockwise')
@@ -138,6 +150,29 @@ class TrainerReports extends Page
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'chart_data' => [
+                'client_distribution' => $this->getClientDistributionData(),
+            ],
+            'performance_metrics' => $this->getPerformanceMetricsData(),
+            'monthly_trends' => $this->getMonthlyTrendsData(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Trainer Report';
     }
 
     /**
@@ -216,7 +251,7 @@ class TrainerReports extends Page
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($count - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {

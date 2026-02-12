@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
+use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
@@ -13,7 +14,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class EquipmentUsageReports extends Page implements HasForms
+class EquipmentUsageReports extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -129,7 +130,7 @@ class EquipmentUsageReports extends Page implements HasForms
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {
@@ -159,5 +160,23 @@ class EquipmentUsageReports extends Page implements HasForms
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
         ], $this->getFilterActions(), $this->getExportActions());
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getUsageStats(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Equipment Usage Report';
     }
 }

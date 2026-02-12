@@ -2,10 +2,12 @@
 
 namespace App\Traits;
 
+use App\Models\ShareableReportLink;
+use App\Services\ReportCacheService;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
-use App\Services\ReportCacheService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -409,12 +411,62 @@ trait HasReportFilters
                     $report->filters = $this->filters ?? [];
                     $report->setRelation('gym', \App\Models\Gym::find($this->getGymId()));
 
-                    $pdfContent = (new \App\Services\ReportPdfGenerator)->generate($report);
+                    $pdfContent = app(\App\Services\ReportPdfGenerator::class)->generate($report);
 
                     return response()->streamDownload(
                         fn () => print ($pdfContent),
                         \Illuminate\Support\Str::slug(static::$title ?? static::$navigationLabel ?? 'Report') . '-' . now()->format('Y-m-d') . '.pdf'
                     );
+                }),
+
+            \Filament\Actions\Action::make('share_report')
+                ->label('Share Report')
+                ->icon('phosphor-share-network')
+                ->color('primary')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('name')
+                        ->label('Share Name (Optional)')
+                        ->placeholder('e.g., Monthly Report for Investors'),
+                    \Filament\Forms\Components\Select::make('expires_in')
+                        ->label('Link Expires In')
+                        ->options([
+                            '7' => '7 Days',
+                            '30' => '30 Days',
+                            '90' => '90 Days',
+                            '365' => '1 Year',
+                            '0' => 'Never',
+                        ])
+                        ->default('30')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $shareableLink = ShareableReportLink::create([
+                        'gym_id' => $this->getGymId(),
+                        'user_id' => Auth::id(),
+                        'report_type' => static::class,
+                        'filters' => $this->filters ?? [],
+                        'expires_at' => $data['expires_in'] > 0
+                            ? now()->addDays((int) $data['expires_in'])
+                            : null,
+                    ]);
+
+                    $shareUrl = $shareableLink->getShareableUrl();
+
+                    // Copy to clipboard notification
+                    \Filament\Notifications\Notification::make()
+                        ->title('Report Shared Successfully')
+                        ->body('Shareable link created and copied to clipboard!')
+                        ->success()
+                        ->actions([
+                            \Filament\Notifications\Actions\Action::make('view_link')
+                                ->label('View Link')
+                                ->url($shareUrl)
+                                ->openUrlInNewTab(),
+                        ])
+                        ->send();
+
+                    // Copy to clipboard using JavaScript
+                    $this->dispatch('copy-to-clipboard', text: $shareUrl);
                 }),
         ];
     }

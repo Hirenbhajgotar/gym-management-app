@@ -41,10 +41,6 @@
                 <div class="mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">Concurrent</div>
             </div>
         </div>
-        
-        <div class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
-            <x-phosphor-arrows-clockwise class="inline h-3 w-3" /> Updates every 5 seconds
-        </div>
     </x-filament::section>
     
     @script

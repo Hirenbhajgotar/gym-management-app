@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
+use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Traits\HasReportFilters;
@@ -10,7 +11,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class MemberLifetimeValueReports extends Page
+class MemberLifetimeValueReports extends Page implements ShareableReport
 {
     use HasReportFilters;
 
@@ -109,7 +110,7 @@ class MemberLifetimeValueReports extends Page
 
             if ($previousValue !== null && $previousValue > 0) {
                 $changePercent = round((($avgLtv - $previousValue) / $previousValue) * 100, 1);
-                
+
                 if ($changePercent > 5) {
                     $trend = 'Up';
                 } elseif ($changePercent < -5) {
@@ -139,5 +140,23 @@ class MemberLifetimeValueReports extends Page
                 ->color('gray')
                 ->action(fn () => $this->dispatch('$refresh')),
         ], $this->getFilterActions(), $this->getExportActions());
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getLtvStats(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Member Lifetime Value Report';
     }
 }

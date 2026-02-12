@@ -1,6 +1,7 @@
 @extends('pdf.layout')
 
 @section('content')
+    <!-- Executive Summary with KPI Cards -->
     <div class="section">
         <div class="section-title">Executive Summary</div>
         <table style="margin-bottom: 20px;">
@@ -197,4 +198,21 @@
         </div>
         @endif
     </div>
+
+    <!-- Chart Visualizations -->
+    @if(isset($chartImages) && !empty($chartImages))
+        @foreach($chartImages as $chartType => $chartImage)
+            @if($chartImage && in_array($chartType, ['membership_trends', 'revenue_trends', 'lead_funnel', 'attendance_patterns']))
+                <div class="section no-break">
+                    <div class="section-title">{{ Str::title(str_replace('_', ' ', $chartType)) }}</div>
+                    <div class="section-content">
+                        <div class="chart-container">
+                            <div class="chart-title">{{ Str::title(str_replace('_', ' ', $chartType)) }}</div>
+                            <img src="{{ $chartImage }}" alt="{{ Str::title(str_replace('_', ' ', $chartType)) }}" class="chart-image">
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endforeach
+    @endif
 @endsection

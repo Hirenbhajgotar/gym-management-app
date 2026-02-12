@@ -10,10 +10,12 @@ use App\Filament\Admin\Clusters\Reports\Widgets\PaymentMethodChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueByPlanChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueForecastChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueTrendChart;
+use App\Interfaces\ShareableReport;
 use App\Models\Expense;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
+use App\Services\ForecastService;
 use App\Traits\HasReportFilters;
 use Carbon\CarbonPeriod;
 use Filament\Actions\Action;
@@ -25,7 +27,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class RevenueReports extends Page implements HasForms
+class RevenueReports extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -107,11 +109,8 @@ class RevenueReports extends Page implements HasForms
      */
     public function getFilteredPaymentsQuery()
     {
-        /** @var \App\Models\Gym $gym */
-        $gym = Filament::getTenant();
-
         return MemberPayment::query()
-            ->where('gym_id', $gym?->id)
+            ->where('gym_id', $this->getGymId())
             ->when($this->filters['start_date'], fn ($q) => $q->whereDate('payment_date', '>=', $this->filters['start_date']))
             ->when($this->filters['end_date'], fn ($q) => $q->whereDate('payment_date', '<=', $this->filters['end_date']))
             ->when($this->filters['status'], fn ($q) => $q->where('status', $this->filters['status']))
@@ -349,6 +348,54 @@ class RevenueReports extends Page implements HasForms
         });
     }
 
+    /**
+     * Get Revenue Trends Data for PDF.
+     */
+    public function getRevenueTrendsData(): array
+    {
+        $pnlData = $this->getPnLData();
+        $breakdown = $pnlData['breakdown'] ?? [];
+
+        return collect($breakdown)->map(function ($item) {
+            return [
+                'label' => $item['label'],
+                'value' => $item['revenue'],
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get Expense Breakdown for PDF.
+     */
+    public function getCategoryBreakdown(): \Illuminate\Support\Collection
+    {
+        return collect($this->getExpenseBreakdown());
+    }
+
+    /**
+     * Get Revenue Forecast Data for PDF.
+     */
+    public function getRevenueForecastData(): array
+    {
+        $gymId = $this->getGymId();
+
+        // Cache forecast data
+        return Cache::flexible("report_forecast_{$gymId}_revenue", [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
+            $service = app(ForecastService::class);
+            // Get 6 months forecast for better visualization in PDF
+            $chartData = $service->getChartData($gymId, 'revenue', 6);
+
+            // Format for ChartToImageService
+            return collect($chartData)->map(function ($point) {
+                return [
+                    'label' => $point['date'],
+                    'value' => $point['value'],
+                    'type' => $point['type'], // 'actual' or 'forecast'
+                ];
+            })->toArray();
+        });
+    }
+
     protected function getHeaderActions(): array
     {
         return array_merge([
@@ -384,5 +431,31 @@ class RevenueReports extends Page implements HasForms
     public function getFooterWidgetsColumns(): int|array
     {
         return 2;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'pnl' => $this->getPnLData(),
+            'revenue_breakdown' => $this->getRevenueBreakdown(),
+            'expense_breakdown' => $this->getExpenseBreakdown(),
+            'chart_data' => [
+                'revenue_trends' => $this->getRevenueTrendsData(),
+                'revenue_forecast' => $this->getRevenueForecastData(),
+                'revenue_by_plan' => $this->getRevenueBreakdown(),
+            ],
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Revenue Report';
     }
 }

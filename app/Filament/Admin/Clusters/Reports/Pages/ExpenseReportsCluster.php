@@ -8,6 +8,7 @@ use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseMonthlyTrendChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpensePaymentMethodChart;
+use App\Interfaces\ShareableReport;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Traits\HasReportFilters;
@@ -22,7 +23,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ExpenseReportsCluster extends Page implements HasForms
+class ExpenseReportsCluster extends Page implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -110,11 +111,8 @@ class ExpenseReportsCluster extends Page implements HasForms
      */
     public function getFilteredExpensesQuery()
     {
-        /** @var \App\Models\Gym $gym */
-        $gym = Filament::getTenant();
-
         return Expense::query()
-            ->where('gym_id', $gym?->id)
+            ->where('gym_id', $this->getGymId())
             ->when($this->filters['start_date'], fn ($q) => $q->whereDate('expense_date', '>=', $this->filters['start_date']))
             ->when($this->filters['end_date'], fn ($q) => $q->whereDate('expense_date', '<=', $this->filters['end_date']))
             ->when($this->filters['status'], fn ($q) => $q->whereIn('status', $this->filters['status']))
@@ -247,7 +245,7 @@ class ExpenseReportsCluster extends Page implements HasForms
     public function exportToExcel()
     {
         /** @var \App\Models\Gym $gym */
-        $gym = Filament::getTenant();
+        $gym = \App\Models\Gym::find($this->getGymId());
 
         $filename = 'expense-report-' . $gym->slug . '-' . now()->format('Y-m-d') . '.xlsx';
 
@@ -388,5 +386,29 @@ class ExpenseReportsCluster extends Page implements HasForms
         }
 
         return $trends;
+    }
+
+    /**
+     * Get shared report data.
+     */
+    public function getSharedReportData(): array
+    {
+        return [
+            'stats' => $this->getSummaryStats(),
+            'chart_data' => [
+                'category_breakdown' => $this->getCategoryBreakdown()->toArray(),
+                'budget_variance' => $this->getBudgetVarianceData(),
+                'cost_trends' => $this->getCostTrendsData(),
+            ],
+            'monthly_trends' => $this->getMonthlyTrendsData(),
+        ];
+    }
+
+    /**
+     * Get shared report title.
+     */
+    public function getSharedReportTitle(): string
+    {
+        return 'Expense Report';
     }
 }

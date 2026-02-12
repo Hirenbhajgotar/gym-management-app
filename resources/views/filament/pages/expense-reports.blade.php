@@ -4,7 +4,7 @@
     </x-filament::section>
 
     {{-- Summary Cards --}}
-    <div class="grid gap-4 md:grid-cols-4 mb-6">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         <x-filament::section>
             <div class="text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Total Expenses</p>
