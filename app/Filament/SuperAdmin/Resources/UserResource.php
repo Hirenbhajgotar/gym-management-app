@@ -21,7 +21,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use libphonenumber\PhoneNumberType;
 use Spatie\Permission\Middleware\PermissionMiddleware;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class UserResource extends Resource
 {
@@ -90,6 +92,16 @@ class UserResource extends Resource
                                 ->required()
                                 ->unique(ignoreRecord: true)
                                 ->maxLength(255),
+                            PhoneInput::make('phone')
+                                ->defaultCountry('IN')
+                                ->initialCountry('IN')
+                                ->label('Phone Number')
+                                ->required()
+                                ->validateFor(
+                                    country: ['IN', 'PK', 'BD', 'US'],
+                                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                                    lenient: true,
+                                ),
                             Forms\Components\Select::make('role')
                                 ->label('Role')
                                 ->options([
