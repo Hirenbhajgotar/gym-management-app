@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
-use App\Enums\NotificationVerificationStatusEnum;
-use App\Models\GymWhatsAppBalance;
-use App\Models\NotificationSetting;
+use App\Interfaces\WhatsAppServiceInterface;
+use App\Models\WhatsAppAccount;
+use App\Models\WhatsAppBroadcast;
+use App\Models\WhatsAppBroadcastRecipient;
+use App\Models\WhatsAppMessageCredit;
+use App\Models\WhatsAppTemplate;
+use App\Models\WhatsAppUsageLog;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
@@ -16,7 +20,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     private ?Client $client;
 
-    private bool $useSandbox = true; // Set to true for testing
+    private bool $useSandbox = true;
 
     public function __construct(string $tenantId, ?Client $client = null)
     {
@@ -25,9 +29,6 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         $this->useSandbox = config('services.twilio.use_sandbox', true);
     }
 
-    /**
-     * Check if this is a system tenant (super-admin, no tenant association)
-     */
     private function isSystemTenant(): bool
     {
         return $this->tenantId === config('app.system_tenant_id', 'system') ||
@@ -40,7 +41,6 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             return $this->client;
         }
 
-        // For system tenant or testing, use master account credentials
         if ($this->useSandbox || $this->isSystemTenant()) {
             return new Client(
                 config('services.twilio.master_sid'),
@@ -48,394 +48,265 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             );
         }
 
-        $settings = NotificationSetting::where(
-            'gym_id',
-            $this->tenantId,
-        )->first();
+        $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
 
-        if (! $settings) {
-            throw new Exception('No Twilio settings found');
+        if (! $account) {
+            throw new Exception('No WhatsApp account found for this gym');
         }
 
         return new Client(
-            $settings->twilio_account_sid,
-            $settings->twilio_auth_token,
+            $account->twilio_account_sid,
+            $account->getRawOriginal('twilio_auth_token'),
         );
     }
 
-    public function sendMessage(string $to, string $message, ?array $templateData = null): array
-    {
-        try {
-            // For system tenant (super-admin), bypass tenant-specific checks
-            if ($this->isSystemTenant()) {
-                return $this->sendSystemMessage($to, $message, $templateData);
-            }
-
-            $settings = NotificationSetting::where('gym_id', $this->tenantId)->first();
-
-            if (! $settings) {
-                throw new Exception('No Twilio settings found for this gym');
-            }
-
-            // Fix: Compare with enum value instead of string
-            if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
-                throw new Exception('Twilio account not verified for this gym. Status: ' . $settings->verification_status->value);
-            }
-
-            // Check if Twilio account is active
-            // if ($settings->status !== NotificationVerificationStatusEnum::ACTIVE) {
-            //     throw new Exception(
-            //         "Twilio account not active for this gym. Status: " .
-            //             $settings->status->value,
-            //     );
-            // }
-            //
-
-            // Check WhatsApp message balance
-            $balance = GymWhatsAppBalance::where('gym_id', $this->tenantId)->first();
-            if (! $balance || ! $balance->canSendMessage()) {
-                throw new Exception('Insufficient WhatsApp message balance. Please purchase more messages.');
-            }
-
-            $client = $this->getClient();
-
-            // Get from number based on sandbox or production
-            $fromNumber = $this->useSandbox
-                ? config('services.twilio.sandbox_number') // e.g., '+14155238886'
-                : $this->getProductionFromNumber($settings);
-
-            $messageParams = [
-                'from' => "whatsapp:$fromNumber",
-            ];
-
-            if ($this->useSandbox) {
-                $messageParams['body'] = $message ? $message : 'Test Message!';
-            } else {
-                if ($templateData && isset($templateData['template_sid'])) {
-                    $messageParams['contentSid'] =
-                        $templateData['template_sid'];
-                    $messageParams['contentVariables'] = json_encode(
-                        $templateData['template_variables'] ?? [],
-                    );
-                } else {
-                    // No template available - return helpful error
-                    return [
-                        'success' => false,
-                        'error' => "No approved WhatsApp template found for demo requests. Please:\n" .
-                            "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
-                            "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
-                            '3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.',
-                        'requires_template' => true,
-                        'mode' => 'production',
-                    ];
-                }
-            }
-
-            $twilioMessage = $client->messages->create(
-                "whatsapp:$to",
-                $messageParams,
-            );
-
-            // Increment messages used counter after successful sending
-            $balance->increment('messages_used');
-
-            return [
-                'success' => true,
-                'message_id' => $twilioMessage->sid,
-                'status' => $twilioMessage->status,
-                'from' => $fromNumber,
-                'data' => $twilioMessage->toArray(),
-            ];
-        } catch (RestException $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'data' => null,
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'data' => null,
-            ];
-        }
-    }
-
-    /**
-     * Send message for system tenant (super-admin) without tenant checks
-     * This is used for users who don't belong to any tenant (e.g., super-admin)
-     *
-     * In sandbox mode: Uses free-form message body
-     * In production mode: Uses approved WhatsApp template
-     */
-    private function sendSystemMessage(string $to, string $message, ?array $templateData = null): array
-    {
-        try {
-
-            /**
-             * @var \Twilio\Rest\Client $client
-             */
-            $client = $this->getClient();
-
-            // Get from number based on sandbox or production
-            $fromNumber = $this->useSandbox
-                ? config('services.twilio.sandbox_number')
-                : config('services.twilio.sandbox_number'); // System tenant typically uses sandbox
-
-            $messageParams = [
-                'from' => 'whatsapp:' . $fromNumber,
-            ];
-
-            // In sandbox mode, we can send free-form messages
-            // In production mode, we MUST use approved templates
-            if ($this->useSandbox) {
-                // Sandbox: Use free-form message body
-                $messageParams['body'] = $message ? $message : 'Test Message!';
-            } else {
-                // Production: Use approved template (required for business-initiated messages)
-                // Check if template data provided or get from config
-                if ($templateData && isset($templateData['template_sid'])) {
-                    $messageParams['contentSid'] =
-                        $templateData['template_sid'];
-                    $messageParams['contentVariables'] = json_encode(
-                        $templateData['template_variables'] ?? [],
-                    );
-                } else {
-                    // No template available - return helpful error
-                    return [
-                        'success' => false,
-                        'error' => "No approved WhatsApp template found for demo requests. Please:\n" .
-                            "1. Create and approve a 'demo_request' template in Twilio console, OR\n" .
-                            "2. Set TWILIO_DEMO_REQUEST_TEMPLATE_SID in your .env file, OR\n" .
-                            '3. Use sandbox mode (TWILIO_USE_SANDBOX=true) for testing.',
-                        'requires_template' => true,
-                        'mode' => 'production',
-                    ];
-                }
-            }
-
-            $twilioMessage = $client->messages->create(
-                "whatsapp:$to",
-                $messageParams,
-            );
-
-            Log::info('System WhatsApp message sent successfully', [
-                'message_id' => $twilioMessage->sid,
-                'to' => $to,
-                'from' => $fromNumber,
-                'status' => $twilioMessage->status,
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                'uses_template' => ! $this->useSandbox,
-                'messageParams' => $messageParams,
-            ]);
-
-            return [
-                'success' => true,
-                'message_id' => $twilioMessage->sid,
-                'status' => $twilioMessage->status,
-                'from' => $fromNumber,
-                'system_message' => true,
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                'data' => $twilioMessage->toArray(),
-            ];
-        } catch (RestException $e) {
-            Log::error('System WhatsApp message error', [
-                'to' => $to,
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-            ]);
-
-            // Provide helpful error message for common production mode issues
-            $errorMessage = $e->getMessage();
-            if (
-                ! $this->useSandbox &&
-                strpos($errorMessage, 'template') !== false
-            ) {
-                $errorMessage .=
-                    " - Business-initiated messages require approved templates. Please create a 'demo_request' template or use sandbox mode.";
-            }
-
-            return [
-                'success' => false,
-                'error' => $errorMessage,
-                'code' => $e->getCode(),
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                'data' => null,
-            ];
-        } catch (Exception $e) {
-            Log::error('Unexpected system WhatsApp message error', [
-                'to' => $to,
-                'error' => $e->getMessage(),
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-            ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'mode' => $this->useSandbox ? 'sandbox' : 'production',
-                'data' => null,
-            ];
-        }
-    }
-
-    /**
-     * Send a WhatsApp message using an approved template
-     */
     public function sendTemplateMessage(
         string $to,
-        string $templateSid,
-        array $variables = [],
+        string $templateName,
+        array $variables = []
     ): array {
         try {
-            // System tenant cannot use templates (requires verified business account)
-            if ($this->isSystemTenant()) {
-                throw new Exception(
-                    'Template messages are not available for system tenant. Use regular messages instead.',
-                );
-            }
+            $template = WhatsAppTemplate::where('gym_id', $this->tenantId)
+                ->where('name', $templateName)
+                ->where('status', 'approved')
+                ->first();
 
-            $settings = NotificationSetting::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
-
-            if (! $settings) {
-                throw new Exception('No Twilio settings found for this gym');
-            }
-
-            if (
-                $settings->verification_status !==
-                NotificationVerificationStatusEnum::VERIFIED
-            ) {
-                throw new Exception(
-                    'Twilio account not verified for this gym. Status: ' .
-                        $settings->verification_status->value,
-                );
-            }
-
-            // Check WhatsApp message balance
-            $balance = GymWhatsAppBalance::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
-            if (! $balance || ! $balance->canSendMessage()) {
-                throw new Exception(
-                    'Insufficient WhatsApp message balance. Please purchase more messages.',
-                );
-            }
-
-            $client = $this->getClient();
-
-            // Get from number (production only, templates don't work in sandbox)
-            $fromNumber = $this->getProductionFromNumber($settings);
-
-            // Send message with template
-            $twilioMessage = $client->messages->create("whatsapp:$to", [
-                'from' => "whatsapp:$fromNumber",
-                'contentSid' => $templateSid,
-                'contentVariables' => json_encode($variables),
-            ]);
-
-            // Increment messages used counter after successful sending
-            $balance->increment('messages_used');
-
-            return [
-                'success' => true,
-                'message_id' => $twilioMessage->sid,
-                'status' => $twilioMessage->status,
-                'from' => $fromNumber,
-                'template_sid' => $templateSid,
-                'data' => $twilioMessage->toArray(),
-            ];
-        } catch (RestException $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'data' => null,
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'data' => null,
-            ];
-        }
-    }
-
-    public function getProductionFromNumber(?NotificationSetting $settings): ?string
-    {
-        if (! $settings) {
-            $settings = NotificationSetting::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
-        }
-
-        if (! $settings) {
-            throw new Exception('No Twilio settings found');
-        }
-
-        if ($settings->verification_status !== NotificationVerificationStatusEnum::VERIFIED) {
-            throw new Exception('Twilio account not verified');
-        }
-
-        return $settings->whatsapp_business_number;
-    }
-
-    public function getAccountBalance(): array
-    {
-        try {
-            // System tenant uses master account
-            if ($this->isSystemTenant()) {
-                /**
-                 * @var \Twilio\Rest\Client $client
-                 */
-                $client = $this->getClient();
-                $accountSid = config('services.twilio.master_sid');
-
-                $account = $client->api->v2010->accounts($accountSid)->fetch();
-
+            if (! $template) {
                 return [
-                    'success' => true,
-                    'balance' => $account->balance ?? 'Trial Account - No Balance Info',
-                    'status' => $account->status,
-                    'system_account' => true,
+                    'success' => false,
+                    'error' => "Template '{$templateName}' not found or not approved. Only approved templates can be used.",
                 ];
             }
 
-            $settings = NotificationSetting::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
-
-            if (! $settings) {
-                throw new Exception('No Twilio account found');
+            if (! $template->validateVariables($variables)) {
+                return [
+                    'success' => false,
+                    'error' => 'Invalid variables provided for template',
+                ];
             }
 
-            /**
-             * @var \Twilio\Rest\Client $client
-             */
+            $this->checkAndDeductCredits(1);
+
             $client = $this->getClient();
 
-            $accountSid = $this->useSandbox
-                ? config('services.twilio.master_sid')
-                : $settings->twilio_account_sid;
+            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $phoneNumber = $account?->phoneNumber?->phone_number;
 
-            $account = $client->api->v2010->accounts($accountSid)->fetch();
+            if (! $phoneNumber) {
+                return [
+                    'success' => false,
+                    'error' => 'No phone number configured for this gym',
+                ];
+            }
+
+            $twilioMessage = $client->messages->create("whatsapp:$to", [
+                'from' => "whatsapp:$phoneNumber",
+                'contentSid' => $template->twilio_template_sid,
+                'contentVariables' => json_encode($variables),
+            ]);
+
+            $this->deductCredits(1);
+            $this->logUsage($to, $template, $twilioMessage);
+
+            $template->incrementUsage();
 
             return [
                 'success' => true,
-                'balance' => $account->balance ?? 'Trial Account - No Balance Info',
-                'status' => $account->status,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+            ];
+        } catch (RestException $e) {
+            Log::error('Twilio WhatsApp message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
             ];
         } catch (Exception $e) {
+            Log::error('WhatsApp message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    public function sendBroadcast(int $broadcastId): array
+    {
+        $results = [
+            'total' => 0,
+            'sent' => 0,
+            'failed' => 0,
+        ];
+
+        try {
+            $broadcast = WhatsAppBroadcast::with(['template', 'recipients'])
+                ->where('gym_id', $this->tenantId)
+                ->findOrFail($broadcastId);
+
+            $broadcast->markAsSending();
+
+            $recipients = $broadcast->recipients()->where('status', 'pending')->get();
+            $results['total'] = $recipients->count();
+
+            foreach ($recipients as $recipient) {
+                try {
+                    $variables = $this->prepareVariables($broadcast, $recipient);
+
+                    $result = $this->sendTemplateMessage(
+                        $recipient->phone_number,
+                        $broadcast->template->name,
+                        $variables
+                    );
+
+                    if ($result['success']) {
+                        $recipient->markAsSent($result['message_id']);
+                        $broadcast->incrementSentCount();
+                        $results['sent']++;
+                    } else {
+                        $recipient->markAsFailed($result['error']);
+                        $broadcast->incrementFailedCount();
+                        $results['failed']++;
+                    }
+                } catch (Exception $e) {
+                    $recipient->markAsFailed($e->getMessage());
+                    $broadcast->incrementFailedCount();
+                    $results['failed']++;
+                }
+
+                usleep(50000);
+            }
+
+            $broadcast->markAsCompleted();
+
+            Log::info('Broadcast completed', [
+                'broadcast_id' => $broadcastId,
+                'results' => $results,
+            ]);
+
+            return $results;
+        } catch (Exception $e) {
+            Log::error('Broadcast error', [
+                'broadcast_id' => $broadcastId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $results;
+        }
+    }
+
+    protected function prepareVariables(
+        \App\Models\WhatsAppBroadcast $broadcast,
+        WhatsAppBroadcastRecipient $recipient
+    ): array {
+        $variables = [];
+        $templateVariables = $broadcast->template->variables ?? [];
+        $providedVariables = $broadcast->message_variables ?? [];
+
+        foreach ($templateVariables as $index => $variable) {
+            $key = (string) ($index + 1);
+            $variableName = $variable['name'] ?? '';
+
+            if (isset($providedVariables[$variableName])) {
+                $variables[$key] = $providedVariables[$variableName];
+            } elseif (isset($providedVariables[$key])) {
+                $variables[$key] = $providedVariables[$key];
+            } else {
+                $variables[$key] = $variable['example'] ?? '';
+            }
+        }
+
+        $variables['1'] = $recipient->member_name;
+
+        return $variables;
+    }
+
+    protected function checkAndDeductCredits(int $count = 1): void
+    {
+        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+
+        if (! $credit || ! $credit->canSendMessage($count)) {
+            throw new Exception('Insufficient message credits. Please purchase more credits.');
+        }
+
+        if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
+            $credit->useWelcomeCredit();
+        } else {
+            $credit->deductCredits($count);
+        }
+    }
+
+    protected function deductCredits(int $count = 1): void
+    {
+        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+
+        if ($credit) {
+            $credit->deductCredits($count);
+        }
+    }
+
+    protected function logUsage(
+        string $recipient,
+        WhatsAppTemplate $template,
+        $twilioMessage
+    ): void {
+        WhatsAppUsageLog::create([
+            'gym_id' => $this->tenantId,
+            'whatsapp_template_id' => $template->id,
+            'twilio_message_sid' => $twilioMessage->sid,
+            'recipient' => $recipient,
+            'credits_used' => 1,
+            'twilio_cost' => 0.15,
+            'status' => 'sent',
+            'sent_at' => now(),
+        ]);
+    }
+
+    public function getCreditBalance(): array
+    {
+        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+
+        if (! $credit) {
+            return [
+                'total_credits' => 0,
+                'used_credits' => 0,
+                'remaining_credits' => 0,
+                'welcome_credits_remaining' => 0,
+                'can_send' => false,
+            ];
+        }
+
+        return [
+            'total_credits' => $credit->total_credits,
+            'used_credits' => $credit->used_credits,
+            'remaining_credits' => $credit->remaining_credits,
+            'welcome_credits_remaining' => $credit->getWelcomeCreditsRemaining(),
+            'can_send' => $credit->canSendMessage(),
+            'usage_percentage' => $credit->getUsagePercentage(),
+        ];
+    }
+
+    public function getMonthlyUsage(int $year, int $month): array
+    {
+        $logs = WhatsAppUsageLog::where('gym_id', $this->tenantId)
+            ->whereYear('sent_at', $year)
+            ->whereMonth('sent_at', $month)
+            ->get();
+
+        return [
+            'total_messages' => $logs->count(),
+            'delivered' => $logs->where('status', 'delivered')->count(),
+            'failed' => $logs->where('status', 'failed')->count(),
+            'total_cost' => $logs->sum('twilio_cost'),
+        ];
     }
 }

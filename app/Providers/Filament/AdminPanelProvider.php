@@ -76,6 +76,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Expense Management')
                     ->icon('phosphor-invoice'),
                 NavigationGroup::make()
+                    ->label('Communication')
+                    ->icon('heroicon-o-chat-bubble-left-right'),
+                NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-wrench-screwdriver'),
             ])
@@ -84,6 +87,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
+            ->discoverPages(in: app_path('Filament/Tenant/Pages'), for: 'App\\Filament\\Tenant\\Pages')
             ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->pages([
                 \App\Filament\Admin\Pages\Dashboard::class,

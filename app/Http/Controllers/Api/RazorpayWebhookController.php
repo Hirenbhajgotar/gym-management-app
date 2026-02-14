@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Payment;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
+use App\Services\WhatsAppBillingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ class RazorpayWebhookController
 {
     public function __construct(
         protected RazorpayService $razorpayService,
-        protected GymOwnerRegistrationService $gymOwnerRegistrationService
+        protected GymOwnerRegistrationService $gymOwnerRegistrationService,
+        protected WhatsAppBillingService $whatsAppBillingService
     ) {}
 
     /**
@@ -111,6 +113,11 @@ class RazorpayWebhookController
         if ($payment->payment_type === 'gym_owner_registration') {
             $this->processGymOwnerRegistration($payment);
         }
+
+        // Handle WhatsApp package purchases
+        if ($payment->payment_type === 'whatsapp_package') {
+            $this->processWhatsAppPackagePayment($payment);
+        }
     }
 
     /**
@@ -187,6 +194,77 @@ class RazorpayWebhookController
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to process gym owner registration via webhook', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Process WhatsApp package purchase from webhook
+     */
+    protected function processWhatsAppPackagePayment(Payment $payment): void
+    {
+        try {
+            $metadata = $payment->metadata ?? [];
+
+            $packageId = $metadata['package_id'] ?? null;
+            $gymId = $payment->gym_id;
+
+            if (! $packageId || ! $gymId) {
+                Log::error('Missing package_id or gym_id in WhatsApp package payment', [
+                    'payment_id' => $payment->id,
+                    'package_id' => $packageId,
+                    'gym_id' => $gymId,
+                    'metadata' => $metadata,
+                ]);
+
+                return;
+            }
+
+            // Check if already processed (idempotency)
+            $existingTransaction = \App\Models\WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+                ->where('type', 'purchase')
+                ->first();
+
+            if ($existingTransaction) {
+                Log::info('WhatsApp package already processed, skipping', [
+                    'payment_id' => $payment->id,
+                    'transaction_id' => $existingTransaction->id,
+                ]);
+
+                return;
+            }
+
+            // Process the package purchase via WhatsAppBillingService
+            $result = $this->whatsAppBillingService->purchasePackage(
+                $gymId,
+                $packageId,
+                $payment->razorpay_payment_id,
+                $payment->user_id
+            );
+
+            if ($result['success']) {
+                Log::info('WhatsApp package purchased via webhook', [
+                    'payment_id' => $payment->id,
+                    'gym_id' => $gymId,
+                    'package_id' => $packageId,
+                    'package_name' => $result['package_name'] ?? null,
+                    'message_count' => $result['message_count'] ?? null,
+                    'total_credits' => $result['total_credits'] ?? null,
+                    'remaining_credits' => $result['remaining_credits'] ?? null,
+                ]);
+            } else {
+                Log::error('Failed to process WhatsApp package purchase', [
+                    'payment_id' => $payment->id,
+                    'gym_id' => $gymId,
+                    'package_id' => $packageId,
+                    'error' => $result['error'] ?? 'Unknown error',
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to process WhatsApp package payment via webhook', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

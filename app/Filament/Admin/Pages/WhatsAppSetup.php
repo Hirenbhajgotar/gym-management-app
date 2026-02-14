@@ -2,11 +2,14 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Enums\NotificationVerificationStatusEnum;
-use App\Models\NotificationSetting;
+use App\Models\WhatsAppAccount;
+use App\Models\WhatsAppMessageCredit;
+use App\Models\WhatsAppPhoneNumber;
+use App\Models\WhatsAppTemplate;
 use App\Services\TwilioAccountManager;
+use App\Services\WhatsAppBillingService;
+use App\Services\WhatsAppTemplateService;
 use App\Traits\HasTenantAccess;
-use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
@@ -16,16 +19,10 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\HtmlString; // Added Cache facade
-use libphonenumber\PhoneNumberType;
+use Illuminate\Support\HtmlString;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-/**
- * @property Form $form
- */
 class WhatsAppSetup extends Page implements HasActions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
@@ -38,67 +35,101 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     protected static string $view = 'filament.admin.pages.whats-app-setup';
 
-    /** @var \App\Models\User */
-    public $user;
-
     public ?array $data = [];
 
-    public ?NotificationSetting $settings = null;
+    public ?WhatsAppAccount $whatsappAccount = null;
 
-    public ?array $accountStatus = null;
+    public ?WhatsAppPhoneNumber $phoneNumber = null;
 
-    // 'loading', 'onboarding', 'create', 'verify', 'active', 'error'
+    public ?WhatsAppMessageCredit $creditBalance = null;
+
     public string $viewState = 'loading';
 
-    // Onboarding State Management
-    public ?string $setupOption = null; // 'twilio', 'migrate'
+    public int $setupStep = 1;
 
-    public int $twilioStep = 1; // 1: Search, 2: Confirm & Buy
+    public int $totalSteps = 9;
 
     public array $availableNumbers = [];
 
-    public ?string $selectedNumberForPurchase = null;
+    public ?string $selectedNumber = null;
 
     public bool $isSearching = false;
 
+    public array $businessProfile = [];
+
+    public array $defaultTemplatesStatus = [];
+
+    public bool $welcomeCreditsClaimed = false;
+
     public function mount(): void
     {
-        $this->loadSettings();
+        $this->loadWhatsAppData();
         $this->determineViewState();
-
-        // Try to restore wizard state
-        $this->restoreState();
-
-        // If no restored data, initialize defaults
-        if (empty($this->data)) {
-            $this->initializeFormData();
-        }
+        $this->initializeFormData();
     }
 
-    private function loadSettings(): void
+    private function loadWhatsAppData(): void
     {
-        $this->settings = NotificationSetting::where(
-            'gym_id',
-            $this->getGymId(),
-        )->first();
+        $gymId = $this->getGymId();
+
+        $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
+        $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
     }
 
     private function determineViewState(): void
     {
-        if (
-            ! $this->settings ||
-            ! $this->settings->twilio_account_sid ||
-            ! $this->settings->whatsapp_business_number ||
-            ! $this->settings->whatsapp_sender_sid
-        ) {
+        if (! $this->whatsappAccount) {
             $this->viewState = 'onboarding';
-        } elseif ($this->settings->verification_status === NotificationVerificationStatusEnum::PENDING) {
-            $this->viewState = 'verify';
-        } elseif ($this->settings->verification_status === NotificationVerificationStatusEnum::VERIFIED) {
-            $this->viewState = 'active';
-        } else {
-            $this->viewState = 'error';
+            $this->setupStep = 1;
+
+            return;
         }
+
+        if ($this->whatsappAccount->status === 'pending') {
+            $this->viewState = 'setup';
+            $this->setupStep = $this->determineSetupStep();
+
+            return;
+        }
+
+        if ($this->whatsappAccount->status === 'active' && $this->phoneNumber) {
+            $this->viewState = 'active';
+
+            return;
+        }
+
+        $this->viewState = 'error';
+    }
+
+    private function determineSetupStep(): int
+    {
+        if (! $this->whatsappAccount->waba_id) {
+            return 3;
+        }
+
+        if (! $this->phoneNumber) {
+            return 4;
+        }
+
+        if (! $this->whatsappAccount->messaging_service_sid) {
+            return 6;
+        }
+
+        $defaultTemplates = WhatsAppTemplate::where('gym_id', $this->getGymId())
+            ->where('is_default', true)
+            ->count();
+
+        if ($defaultTemplates === 0) {
+            return 7;
+        }
+
+        if (! $this->welcomeCreditsClaimed) {
+            return 9;
+        }
+
+        return 10;
     }
 
     private function initializeFormData(): void
@@ -107,550 +138,579 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $user = Auth::user();
 
         $this->data = [
-            'gym_name' => $this->settings?->gym_name ?? $gym?->name,
-            'whatsapp_number' => $this->settings?->whatsapp_business_number ?? null,
-            'owner_email' => $this->settings?->owner_email ?? $user?->email,
-            'verification_code' => null,
-            // Search defaults
+            'gym_name' => $gym?->name ?? '',
+            'owner_email' => $user?->email ?? '',
+            'business_description' => '',
             'search_country' => 'US',
-            'search_type' => 'local',
         ];
 
-        $this->form->fill($this->data);
+        $this->businessProfile = [
+            'business_name' => $gym?->name ?? '',
+            'business_email' => $user?->email ?? '',
+            'business_description' => $gym?->description ?? '',
+        ];
     }
 
     public function form(Form $form): Form
     {
         return $form
-            ->schema([
-                // Option Selection (Step 0)
-                Forms\Components\Section::make('Setup WhatsApp Business')
-                    ->description('Choose how you want to set up your WhatsApp Business account.')
-                    ->schema([
-                        Forms\Components\Actions::make([
-                            Forms\Components\Actions\Action::make('select_twilio')
-                                ->label('Setup with New Number')
-                                // ->description('Purchase a new number. We handle the technical details.')
-                                ->icon('heroicon-o-plus-circle')
-                                ->color(fn () => $this->setupOption === 'twilio' ? 'primary' : 'gray')
-                                ->action(fn () => $this->selectOption('twilio')),
-
-                            Forms\Components\Actions\Action::make('select_migrate')
-                                ->label('Migrate Existing API')
-                                // ->description('Use your existing WhatsApp Business API setup.')
-                                ->icon('heroicon-o-arrow-path-rounded-square')
-                                ->color(fn () => $this->setupOption === 'migrate' ? 'primary' : 'gray')
-                                ->action(fn () => $this->selectOption('migrate')),
-                        ])->alignCenter()->columnSpanFull(),
-
-                        // Migrate Placeholder
-                        Forms\Components\Placeholder::make('migrate_info')
-                            ->hidden(fn () => $this->setupOption !== 'migrate')
-                            ->content(new HtmlString('
-                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
-                                    <h3 class="text-lg font-medium text-yellow-800">Coming Soon</h3>
-                                    <p class="text-yellow-700">The ability to migrate existing WhatsApp API accounts is currently under development. Please choose "Setup with New Number" or check back later.</p>
-                                </div>
-                            ')),
-
-                        // Twilio Flow Container
-                        Forms\Components\Group::make()
-                            ->hidden(fn () => $this->setupOption !== 'twilio')
-                            ->schema([
-                                // Step 1: Search
-                                Forms\Components\Fieldset::make('Find a Number')
-                                    ->hidden(fn () => $this->twilioStep !== 1)
-                                    ->schema([
-                                        Forms\Components\Select::make('search_country')
-                                            ->label('Country')
-                                            ->options([
-                                                'US' => 'United States',
-                                                'GB' => 'United Kingdom',
-                                                'CA' => 'Canada',
-                                                'IN' => 'India', // Note: Twilio IN numbers are regulated
-                                                'AU' => 'Australia',
-                                            ])
-                                            ->default('US')
-                                            ->required()
-                                            ->live(), // Trigger update hook
-
-                                        Forms\Components\Actions::make([
-                                            Forms\Components\Actions\Action::make('search_numbers')
-                                                ->label('Find Available Number')
-                                                ->action(fn () => $this->searchNumbers()),
-                                        ]),
-                                    ]),
-
-                                // Step 2: Confirm
-                                Forms\Components\Fieldset::make('Confirm Purchase')
-                                    ->hidden(fn () => $this->twilioStep !== 2)
-                                    ->schema([
-                                        Forms\Components\Placeholder::make('confirm_details')
-                                            ->content(fn () => new HtmlString("
-                                                <div class='text-sm'>
-                                                    <p class='mb-2'>You are about to purchase the phone number: <strong>{$this->selectedNumberForPurchase}</strong></p>
-                                                    <p class='mb-2'>By proceeding, we will:</p>
-                                                    <ul class='list-disc list-inside ml-4 mb-4 text-gray-600'>
-                                                        <li>Purchase this number from Twilio</li>
-                                                        <li>Create a whatsapp business account for your gym</li>
-                                                        <li>Configure message services</li>
-                                                    </ul>
-                                                    <p class='text-xs text-gray-500'>* Standard Twilio rates apply for the platform.</p>
-                                                </div>
-                                            ")),
-
-                                        Forms\Components\TextInput::make('gym_name')
-                                            ->live(debounce: 500) // Trigger update hook
-                                            ->label('Business Name')
-                                            ->helperText('This name will be used for your WhatsApp profile.')
-                                            ->required(),
-
-                                        Forms\Components\Actions::make([
-                                            Forms\Components\Actions\Action::make('back_step_search')
-                                                ->label('Back')
-                                                ->color('gray')
-                                                ->action(fn () => $this->twilioStep = 1),
-
-                                            Forms\Components\Actions\Action::make('purchase_confirm')
-                                                ->label('Confirm & Setup')
-                                                ->color('primary')
-                                                ->requiresConfirmation()
-                                                ->action(fn () => $this->purchaseAndSetup()),
-                                        ])->alignRight(),
-                                    ]),
-                            ]),
-                    ])
-                    ->visible(fn () => $this->viewState === 'onboarding'),
-
-                // Active Status Section (Existing)
-                Forms\Components\Section::make('Account Status')
-                    ->description('Your WhatsApp integration is active')
-                    ->schema([
-                        Forms\Components\Placeholder::make('active_info')
-                            ->name('active_info_placeholder') // Added unique name
-                            ->label('')
-                            ->content(
-                                new HtmlString('
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                                    <div class="flex items-center gap-2">
-                                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                        </svg>
-                                        <p class="text-sm font-medium text-green-700">WhatsApp Business integration is active and ready to use!</p>
-                                    </div>
-                                </div>
-                            '),
-                            ),
-
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\Placeholder::make('status_display')
-                                ->label('Status')
-                                ->content(
-                                    fn () => new HtmlString('
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                            ✓ Verified
-                                        </span>
-                                    '),
-                                ),
-
-                            Forms\Components\Placeholder::make('number_display')
-                                ->label('WhatsApp Number')
-                                ->content(
-                                    fn () => $this->settings
-                                        ?->whatsapp_business_number ?? 'N/A',
-                                ),
-
-                            Forms\Components\Placeholder::make(
-                                'account_created',
-                            )
-                                ->label('Account Created')
-                                ->content(
-                                    fn () => $this->settings?->created_at?->format(
-                                        'M d, Y g:i A',
-                                    ) ?? 'N/A',
-                                ),
-
-                            Forms\Components\Placeholder::make('verified_at')
-                                ->label('Verified At')
-                                ->content(
-                                    fn () => $this->settings?->verified_at?->format(
-                                        'M d, Y g:i A',
-                                    ) ?? 'N/A',
-                                ),
-                        ]),
-                    ])
-                    ->visible(fn () => $this->viewState === 'active'),
-            ])
+            ->schema($this->getFormSchema())
             ->statePath('data');
     }
 
-    public function selectOption(string $option): void
+    protected function getFormSchema(): array
     {
-        $this->setupOption = $option;
-        $this->saveState();
+        return match ($this->viewState) {
+            'onboarding' => $this->getOnboardingSchema(),
+            'setup' => $this->getSetupSchema(),
+            'active' => $this->getActiveSchema(),
+            'error' => $this->getErrorSchema(),
+            default => [],
+        };
+    }
+
+    private function getOnboardingSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('Welcome to WhatsApp Business')
+                ->description('Set up your dedicated WhatsApp Business account to communicate with your members.')
+                ->schema([
+                    Forms\Components\Placeholder::make('intro')
+                        ->content(new HtmlString('
+                            <div class="text-center py-8">
+                                <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Get Started with WhatsApp Business</h3>
+                                <p class="text-gray-500 mb-6">We\'ll create a dedicated WhatsApp Business account for your gym. Each gym gets its own isolated account for complete privacy and control.</p>
+                            </div>
+                        ')),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('start_setup')
+                            ->label('Start Setup')
+                            ->color('primary')
+                            ->icon('heroicon-o-rocket-launch')
+                            ->action(fn () => $this->startSetup()),
+                    ])->alignCenter(),
+                ]),
+        ];
+    }
+
+    private function getSetupSchema(): array
+    {
+        return [
+            Forms\Components\Wizard::make('setupWizard')
+                ->steps([
+                    Forms\Components\Wizard\Step::make('Create Account')
+                        ->label('1. Create Account')
+                        ->schema([
+                            Forms\Components\Placeholder::make('step1_info')
+                                ->content(new HtmlString('
+                                    <div class="mb-4">
+                                        <h3 class="font-medium">Creating your dedicated WhatsApp Business account...</h3>
+                                        <p class="text-sm text-gray-500">This will create a subaccount under our master Twilio account.</p>
+                                    </div>
+                                ')),
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('createAccount')
+                                    ->label('Create Subaccount')
+                                    ->color('primary')
+                                    ->action(fn () => $this->createSubaccount())
+                                    ->disabled($this->whatsappAccount !== null),
+                            ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make('Business Profile')
+                        ->label('2. Business Profile')
+                        ->schema([
+                            Forms\Components\TextInput::make('business_name')
+                                ->label('Business Name')
+                                ->required()
+                                ->default($this->getGym()?->name),
+
+                            Forms\Components\TextInput::make('business_email')
+                                ->label('Business Email')
+                                ->email()
+                                ->required()
+                                ->default(Auth::user()?->email),
+
+                            Forms\Components\Textarea::make('business_description')
+                                ->label('Business Description')
+                                ->rows(3)
+                                ->placeholder('Describe your gym business...'),
+
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('saveProfile')
+                                    ->label('Save & Continue')
+                                    ->color('primary')
+                                    ->action(fn () => $this->saveBusinessProfile()),
+                            ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make('WABA Setup')
+                        ->label('3. WhatsApp Business')
+                        ->schema([
+                            Forms\Components\Placeholder::make('waba_info')
+                                ->content(new HtmlString('
+                                    <div class="mb-4">
+                                        <h3 class="font-medium">Creating WhatsApp Business Account (WABA)</h3>
+                                        <p class="text-sm text-gray-500">This is required to send WhatsApp messages to your members.</p>
+                                    </div>
+                                ')),
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('createWaba')
+                                    ->label('Create WABA')
+                                    ->color('primary')
+                                    ->action(fn () => $this->createWaba())
+                                    ->disabled($this->whatsappAccount?->waba_id !== null),
+                            ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make('Phone Number')
+                        ->label('4. Phone Number')
+                        ->schema([
+                            Forms\Components\Select::make('search_country')
+                                ->label('Country')
+                                ->options([
+                                    'US' => 'United States',
+                                    'GB' => 'United Kingdom',
+                                    'CA' => 'Canada',
+                                    'IN' => 'India',
+                                    'AU' => 'Australia',
+                                ])
+                                ->default('US')
+                                ->required(),
+
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('searchNumbers')
+                                    ->label('Search Numbers')
+                                    ->action(fn () => $this->searchNumbers())
+                                    ->disabled($this->isSearching),
+                            ]),
+
+                            Forms\Components\Placeholder::make('numbers_list')
+                                ->hidden(fn () => empty($this->availableNumbers))
+                                ->content(new HtmlString('
+                                    <div class="mt-4">
+                                        <h4 class="font-medium mb-2">Available Numbers</h4>
+                                        <div class="space-y-2">
+                                            @foreach($availableNumbers as $number)
+                                                <div class="flex items-center justify-between p-3 border rounded-lg">
+                                                    <div>
+                                                        <span class="font-medium">{{ $number["phoneNumber"] }}</span>
+                                                        <span class="text-sm text-gray-500 ml-2">{{ $number["locality"] ?? "" }}</span>
+                                                    </div>
+                                                    <button wire:click="selectNumber(\'{{ $number["phoneNumber"] }}\')" class="text-primary-600 hover:text-primary-700">
+                                                        Select
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                ')),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make('Templates')
+                        ->label('5. Default Templates')
+                        ->schema([
+                            Forms\Components\Placeholder::make('templates_info')
+                                ->content(new HtmlString('
+                                    <div class="mb-4">
+                                        <h3 class="font-medium">Setting up default message templates</h3>
+                                        <p class="text-sm text-gray-500">We\'ll create 8 utility templates for common gym communications. These will be submitted for Meta approval.</p>
+                                    </div>
+                                ')),
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('createTemplates')
+                                    ->label('Create & Submit Templates')
+                                    ->color('primary')
+                                    ->action(fn () => $this->createDefaultTemplates()),
+                            ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make('Welcome Credits')
+                        ->label('6. Welcome Credits')
+                        ->schema([
+                            Forms\Components\Placeholder::make('welcome_info')
+                                ->content(new HtmlString('
+                                    <div class="text-center py-6">
+                                        <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                            <span class="text-2xl">🎁</span>
+                                        </div>
+                                        <h3 class="font-medium text-lg mb-2">50 Free Welcome Credits!</h3>
+                                        <p class="text-gray-500">Claim your 50 free WhatsApp message credits to get started.</p>
+                                    </div>
+                                ')),
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('claimWelcome')
+                                    ->label('Claim Welcome Credits')
+                                    ->color('success')
+                                    ->action(fn () => $this->claimWelcomeCredits())
+                                    ->disabled($this->welcomeCreditsClaimed),
+                            ]),
+                        ]),
+                ])
+                ->skippable(false),
+        ];
+    }
+
+    private function getActiveSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('WhatsApp Business Status')
+                ->description('Your WhatsApp Business integration is active.')
+                ->schema([
+                    Forms\Components\Grid::make(2)->schema([
+                        Forms\Components\Placeholder::make('status')
+                            ->label('Account Status')
+                            ->content(new HtmlString('
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    ✓ Active
+                                </span>
+                            ')),
+
+                        Forms\Components\Placeholder::make('phone_number')
+                            ->label('WhatsApp Number')
+                            ->content($this->phoneNumber?->phone_number ?? 'N/A'),
+
+                        Forms\Components\Placeholder::make('account_created')
+                            ->label('Account Created')
+                            ->content($this->whatsappAccount?->created_at?->format('M d, Y g:i A') ?? 'N/A'),
+
+                        Forms\Components\Placeholder::make('credits')
+                            ->label('Message Credits')
+                            ->content(new HtmlString('
+                                <div class="text-sm">
+                                    <span class="font-medium">{{ $creditBalance?->remaining_credits ?? 0 }}</span>
+                                    <span class="text-gray-500"> remaining</span>
+                                </div>
+                            ')),
+                    ]),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('testMessage')
+                            ->label('Send Test Message')
+                            ->color('info')
+                            ->form([
+                                PhoneInput::make('test_phone')
+                                    ->label('Phone Number')
+                                    ->required(),
+                            ])
+                            ->action(fn (array $data) => $this->sendTestMessage($data)),
+
+                        Forms\Components\Actions\Action::make('viewTemplates')
+                            ->label('Manage Templates')
+                            ->url(route('filament.admin.resources.whatsapp-templates.index')),
+                    ]),
+                ]),
+        ];
+    }
+
+    private function getErrorSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('Setup Incomplete')
+                ->description('There was an issue with your WhatsApp setup.')
+                ->schema([
+                    Forms\Components\Placeholder::make('error_message')
+                        ->content(new HtmlString('
+                            <div class="text-center py-8">
+                                <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Setup Incomplete</h3>
+                                <p class="text-gray-500 mb-4">Please contact support or try setting up again.</p>
+                            </div>
+                        ')),
+                ]),
+        ];
+    }
+
+    public function startSetup(): void
+    {
+        $this->viewState = 'setup';
+        $this->setupStep = 1;
+    }
+
+    public function createSubaccount(): void
+    {
+        try {
+            $gymId = $this->getGymId();
+            $gym = $this->getGym();
+            $user = Auth::user();
+
+            $result = app(TwilioAccountManager::class)->createSubaccount(
+                $gymId,
+                $gym?->name ?? 'Unknown Gym',
+                $user?->email ?? 'admin@example.com'
+            );
+
+            if ($result['success']) {
+                $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+                $this->setupStep = 2;
+
+                Notification::make()
+                    ->title('Account Created')
+                    ->body('Your WhatsApp Business subaccount has been created.')
+                    ->success()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title('Failed to Create Account')
+                    ->body($result['error'] ?? 'Unknown error')
+                    ->danger()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to create subaccount', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function saveBusinessProfile(): void
+    {
+        $data = $this->form->getState();
+
+        if ($this->whatsappAccount) {
+            $this->whatsappAccount->update([
+                'business_name' => $data['business_name'],
+                'business_email' => $data['business_email'],
+                'business_description' => $data['business_description'] ?? '',
+            ]);
+
+            $this->setupStep = 3;
+
+            Notification::make()
+                ->title('Profile Saved')
+                ->success()
+                ->send();
+        }
+    }
+
+    public function createWaba(): void
+    {
+        try {
+            $gymId = $this->getGymId();
+            $gym = $this->getGym();
+
+            $result = app(TwilioAccountManager::class)->createWaba(
+                $gymId,
+                [
+                    'business_name' => $this->whatsappAccount?->business_name ?? $gym?->name,
+                    'business_email' => $this->whatsappAccount?->business_email ?? Auth::user()?->email,
+                    'business_description' => $this->whatsappAccount?->business_description ?? '',
+                ]
+            );
+
+            if ($result['success']) {
+                $this->whatsappAccount->refresh();
+                $this->setupStep = 4;
+
+                Notification::make()
+                    ->title('WABA Created')
+                    ->body('Your WhatsApp Business Account has been created.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to create WABA');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to create WABA', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Error Creating WABA')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public function searchNumbers(): void
     {
-        $data = $this->form->getState();
-        $country = $data['search_country'] ?? 'US';
-
         try {
-            $manager = app(TwilioAccountManager::class);
-            // Fetch only 1 number
-            $numbers = $manager->searchAvailablePhoneNumbers($country, 'local', 1);
+            $data = $this->form->getState();
+            $country = $data['search_country'] ?? 'US';
+
+            $numbers = app(TwilioAccountManager::class)->searchNumbers($country, 'local', 5);
 
             if (empty($numbers)) {
-                Notification::make()->title('No numbers found for this country.')->warning()->send();
+                Notification::make()
+                    ->title('No Numbers Found')
+                    ->body('No available phone numbers in this country.')
+                    ->warning()
+                    ->send();
             } else {
-                // Auto-select the first number
                 $this->availableNumbers = $numbers;
-                $this->selectedNumberForPurchase = $numbers[0]['phoneNumber'];
 
-                // Advance to next step
-                $this->twilioStep = 2;
-
-                Notification::make()->title('Number Found!')->body("Found available number: {$this->selectedNumberForPurchase}")->success()->send();
-
-                $this->saveState();
+                Notification::make()
+                    ->title('Numbers Found')
+                    ->body('Found ' . count($numbers) . ' available numbers.')
+                    ->success()
+                    ->send();
             }
         } catch (\Exception $e) {
-            Notification::make()->title('Error searching numbers')->body($e->getMessage())->danger()->send();
+            Notification::make()
+                ->title('Search Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
         }
     }
 
-    public function purchaseAndSetup(): void
+    public function selectNumber(string $phoneNumber): void
     {
-        $data = $this->form->getState();
-
-        if (empty($this->selectedNumberForPurchase)) {
-            Notification::make()->title('Please select a number first.')->warning()->send();
-
-            return;
-        }
-
-        try {
-            $manager = app(TwilioAccountManager::class);
-
-            $result = $manager->setupAccountWithPurchasedNumber(
-                tenantId: $this->getGymId(),
-                gymOwnerName: Auth::user()->name,
-                gymName: $data['gym_name'],
-                phoneNumber: $this->selectedNumberForPurchase,
-                email: Auth::user()->email
-            );
-
-            if ($result['success']) {
-                $this->clearState(); // Setup complete, clear wizard cache
-                Notification::make()->title('Setup Complete!')->body('Your number has been purchased and account setup.')->success()->send();
-                $this->refresh();
-            } else {
-                Notification::make()->title('Setup Failed')->body($result['error'])->danger()->send();
-            }
-
-        } catch (\Exception $e) {
-            Notification::make()->title('Setup Error')->body($e->getMessage())->danger()->send();
-        }
+        $this->selectedNumber = $phoneNumber;
+        $this->purchaseNumber();
     }
 
-    public function verifyNumberAction(): Action
-    {
-        return Action::make('verifyNumber')
-            ->label('Verify Code')
-            ->color('success')
-            ->form([
-                Forms\Components\TextInput::make('code')
-                    ->label('Verification Code')
-                    ->placeholder('123456')
-                    ->required()
-                    ->numeric(),
-            ])
-            ->action(fn (array $data) => $this->verifyCode($data));
-    }
-
-    public function resendCodeAction(): Action
-    {
-        return Action::make('resendCode')
-            ->label('Resend Code')
-            ->color('gray')
-            ->action(fn () => $this->resendCode());
-    }
-
-    public function checkMessageAction(): Action
-    {
-        return Action::make('checkMessage')
-            ->label('Check for Code')
-            ->color('info')
-            ->action(fn () => $this->checkIncomingMessage());
-    }
-
-    public function resetAction(): Action
-    {
-        return Action::make('reset')
-            ->label('Reset & Start Over')
-            ->color('danger')
-            ->requiresConfirmation()
-            ->action(function () {
-                // Optional: Clear settings or just state?
-                // For now, just clear state to force re-evaluation or let user manage manually
-                // If we want to truly reset, we might need to clear the specific fields in DB
-                // But deleting settings is risky.
-                // Let's just clear the verification status to allow retry if stuck
-                if ($this->settings) {
-                    $this->settings->update([
-                        'verification_status' => null, // Clear status to force onboarding check
-                        'whatsapp_business_number' => null, // Clear number to restart search
-                        // keep sid/token as they are account level
-                    ]);
-                    $this->refresh();
-                }
-            });
-    }
-
-    public function verifyCode(array $data): void
+    public function purchaseNumber(): void
     {
         try {
-            $manager = app(TwilioAccountManager::class);
-            $result = $manager->completeWhatsAppVerification($this->getGymId(), $data['code']);
+            if (! $this->selectedNumber) {
+                Notification::make()
+                    ->title('Select Number')
+                    ->body('Please select a phone number first.')
+                    ->warning()
+                    ->send();
 
-            if ($result['success']) {
-                Notification::make()->title('Verified!')->success()->send();
-                $this->refresh();
-            } else {
-                Notification::make()->title('Verification Failed')->body($result['error'])->danger()->send();
-            }
-        } catch (\Exception $e) {
-            Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
-        }
-    }
-
-    public function resendCode(): void
-    {
-        try {
-            if (! $this->settings || ! $this->settings->twilio_account_sid) {
-                throw new \Exception('Twilio account not set up.');
-            }
-
-            $manager = app(TwilioAccountManager::class);
-            $result = $manager->startWhatsAppVerification(
-                $this->settings->twilio_account_sid,
-                $this->settings->twilio_auth_token,
-                $this->settings->whatsapp_business_number
-            );
-
-            if ($result['success']) {
-                Notification::make()->title('Code Resent')->success()->send();
-            } else {
-                Notification::make()->title('Failed to resend')->body($result['error'])->danger()->send();
-            }
-        } catch (\Exception $e) {
-            Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
-        }
-    }
-
-    public function checkIncomingMessage(): void
-    {
-        try {
-            if (! $this->settings || ! $this->settings->whatsapp_business_number) {
                 return;
             }
 
-            $manager = app(TwilioAccountManager::class);
-            $messageBody = $manager->fetchLatestIncomingMessage($this->getGymId(), $this->settings->whatsapp_business_number);
-            Log::info('Message Body: ' . $messageBody);
-
-            if ($messageBody) {
-                // Try to extract 6-digit code
-                preg_match('/\b\d{6}\b/', $messageBody, $matches);
-                $code = $matches[0] ?? null;
-
-                if ($code) {
-                    Notification::make()
-                        ->title('Code Found: ' . $code)
-                        ->body("Latest Message: {$messageBody}")
-                        ->success()
-                        ->persistent()
-                        ->actions([
-                            \Filament\Notifications\Actions\Action::make('fill_code')
-                                ->button()
-                                ->label('Fill Code')
-                                ->action(function () use ($code) {
-                                    // Dispatch event or just show it (auto-filling via action in valid component context is tricky)
-                                    // For now, simpler to just show it clearly.
-                                    // But since we are in a page component, we can pre-fill a property?
-                                    // No, the verify action is a modal form.
-                                    // So we just tell them the code.
-                                    // Actually, we could verify it directly!
-                                    $this->verifyCode(['code' => $code]);
-                                }),
-                        ])
-                        ->send();
-                } else {
-                    Notification::make()
-                        ->title('Message Received')
-                        ->body($messageBody)
-                        ->info()
-                        ->send();
-                }
-            } else {
-                Notification::make()->title('No messages yet')->body('Wait a moment and try again.')->warning()->send();
-            }
-
-        } catch (\Exception $e) {
-            Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
-        }
-    }
-
-    public function testMessageAction(): Action
-    {
-        return Action::make('testMessage')
-            ->label('Send Test Message')
-            ->icon('heroicon-o-paper-airplane')
-            ->color('info')
-            ->size('xl')
-            ->outlined()
-            ->form([
-                PhoneInput::make('test_phone_number')
-                    ->defaultCountry('IN')
-                    ->initialCountry('IN')
-                    ->label('Recipient Phone Number')
-                    ->required()
-                    ->validateFor(
-                        country: ['IN', 'PK', 'BD', 'US'],
-                        type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
-                        lenient: true,
-                    )
-                    ->placeholder('1234567890')
-                    ->helperText('Enter the phone number to receive the test message, including country code.'),
-            ])
-            ->requiresConfirmation()
-            ->modalHeading('Send Test Message')
-            ->modalDescription(
-                'This will send a test WhatsApp message to verify your integration is working.',
-            )
-            ->action(fn (array $data) => $this->sendTestMessage($data));
-    }
-
-    public function sendTestMessage(array $data = []): void
-    {
-        if (! $this->settings) {
-            Notification::make()
-                ->title('Error')
-                ->body('No account settings found')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        $userId = Auth::id();
-        $rateLimitKey = "whatsapp-test-message:{$userId}:{$this->settings->gym_id}";
-        $dailyLimit = 3;
-
-        // Check if user has reached the daily limit
-        if (RateLimiter::tooManyAttempts($rateLimitKey, $dailyLimit)) {
-            $availableIn = RateLimiter::availableIn($rateLimitKey);
-            $hours = floor($availableIn / 3600);
-            $minutes = floor(($availableIn % 3600) / 60);
-
-            Notification::make()
-                ->title('⚠️ Daily Limit Reached')
-                ->body(
-                    "You have reached the daily limit of {$dailyLimit} test messages. Please try again in {$hours}h {$minutes}m.",
-                )
-                ->warning()
-                ->duration(7000)
-                ->send();
-
-            return;
-        }
-
-        try {
-            $accountManager = app(TwilioAccountManager::class);
-            $testNumber = $data['test_phone_number'] ?? null;
-            $result = $accountManager->sendTestWhatsAppMessage($this->settings, $testNumber);
-
-            if ($result['success']) {
-                // Only increment rate limiter on successful sends
-                RateLimiter::hit($rateLimitKey, 86400); // 24 hours = 86400 seconds
-
-                Notification::make()
-                    ->title('✅ Test Message Sent!')
-                    ->body(
-                        'A test message has been sent to your WhatsApp number. Please check your WhatsApp to confirm receipt.',
-                    )
-                    ->success()
-                    ->duration(6000)
-                    ->send();
-
-            } else {
-                throw new \Exception($result['error'] ?? 'Failed to send test message. Please try again or contact support.');
-            }
-        } catch (\Exception $e) {
-            // Report the error using ErrorReportService
-            $errorReport = resolve(\App\Services\ErrorReportService::class)->reportException(
-                exception: $e,
-                userDescription: 'WhatsApp Test Message Failed from WhatsApp Setup Page',
-                reportType: 'whatsapp_integration_error'
+            $result = app(TwilioAccountManager::class)->purchaseNumber(
+                $this->getGymId(),
+                $this->selectedNumber
             );
 
+            if ($result['success']) {
+                $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
+                $this->availableNumbers = [];
+                $this->selectedNumber = null;
+                $this->setupStep = 5;
+
+                Notification::make()
+                    ->title('Number Purchased')
+                    ->body('Your WhatsApp phone number has been purchased.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to purchase number');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to purchase number', ['error' => $e->getMessage()]);
+
             Notification::make()
-                ->title('❌ Test Message Failed')
-                ->body(
-                    'An error occurred while sending the test message. The error has been logged for review.'
-                )
+                ->title('Purchase Failed')
+                ->body($e->getMessage())
                 ->danger()
-                ->duration(7000)
+                ->send();
+        }
+    }
+
+    public function createDefaultTemplates(): void
+    {
+        try {
+            app(WhatsAppTemplateService::class)->createDefaultTemplates($this->getGymId());
+
+            $this->setupStep = 6;
+
+            Notification::make()
+                ->title('Templates Created')
+                ->body('8 default templates have been created and submitted for approval.')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Log::error('Failed to create default templates', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Template Creation Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function claimWelcomeCredits(): void
+    {
+        try {
+            app(WhatsAppBillingService::class)->addWelcomeCredits($this->getGymId());
+
+            $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $this->getGymId())->first();
+            $this->welcomeCreditsClaimed = true;
+
+            if ($this->whatsappAccount) {
+                $this->whatsappAccount->update(['status' => 'active']);
+                $this->whatsappAccount->refresh();
+            }
+
+            $this->viewState = 'active';
+
+            Notification::make()
+                ->title('Welcome Credits Claimed!')
+                ->body('You now have 50 free WhatsApp message credits.')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Log::error('Failed to claim welcome credits', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function sendTestMessage(array $data): void
+    {
+        try {
+            $phoneNumber = $data['test_phone'] ?? null;
+
+            if (! $phoneNumber) {
+                throw new \Exception('Phone number is required');
+            }
+
+            $result = app(TwilioWhatsAppService::class)->sendTemplateMessage(
+                $phoneNumber,
+                'welcome_message',
+                [
+                    '1' => $this->getGym()?->name ?? 'Gym',
+                    '2' => Auth::user()?->name ?? 'User',
+                    '3' => 'Premium',
+                    '4' => now()->addDays(30)->format('F j, Y'),
+                ]
+            );
+
+            if ($result['success']) {
+                Notification::make()
+                    ->title('Test Message Sent!')
+                    ->body('Check your WhatsApp for the test message.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to send');
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Failed to Send')
+                ->body($e->getMessage())
+                ->danger()
                 ->send();
         }
     }
 
     public function refresh(): void
     {
-        $this->loadSettings();
+        $this->loadWhatsAppData();
         $this->determineViewState();
-        $this->initializeFormData();
-    }
-
-    public function updated(string $propertyName): void
-    {
-        $this->saveState();
-    }
-
-    protected function saveState(): void
-    {
-        $key = 'whatsapp_setup_state:' . Auth::id() . ':' . $this->getGymId();
-
-        Cache::put($key, [
-            'data' => $this->data,
-            'setupOption' => $this->setupOption,
-            'twilioStep' => $this->twilioStep,
-            'availableNumbers' => $this->availableNumbers,
-            'selectedNumberForPurchase' => $this->selectedNumberForPurchase,
-        ], 21600); // 6 hours
-    }
-
-    protected function restoreState(): void
-    {
-        $key = 'whatsapp_setup_state:' . Auth::id() . ':' . $this->getGymId();
-
-        if (Cache::has($key)) {
-            $state = Cache::get($key);
-
-            $this->data = $state['data'] ?? [];
-            $this->setupOption = $state['setupOption'] ?? null;
-            $this->twilioStep = $state['twilioStep'] ?? 1;
-            $this->availableNumbers = $state['availableNumbers'] ?? [];
-            $this->selectedNumberForPurchase = $state['selectedNumberForPurchase'] ?? null;
-
-            // Re-hydrate form
-            $this->form->fill($this->data);
-        }
-    }
-
-    protected function clearState(): void
-    {
-        $key = 'whatsapp_setup_state:' . Auth::id() . ':' . $this->getGymId();
-        Cache::forget($key);
     }
 }
