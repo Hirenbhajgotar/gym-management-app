@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class WhatsAppPackageResource extends Resource
 {
@@ -26,7 +27,11 @@ class WhatsAppPackageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('is_active', true)->count();
+        return Cache::flexible(WhatsAppPackage::NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(10), now()->addHour()], function () {
+            $count = static::getModel()::where('is_active', true)->count();
+
+            return $count > 0 ? (string) $count : null;
+        });
     }
 
     public static function form(Form $form): Form

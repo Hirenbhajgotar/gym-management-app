@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class WhatsAppAccountResource extends Resource
 {
@@ -38,7 +39,11 @@ class WhatsAppAccountResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::count();
+        return Cache::flexible(WhatsAppAccount::NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(30), now()->addHour()], function () {
+            $count = static::getModel()::count();
+
+            return $count > 0 ? (string) $count : null;
+        });
     }
 
     public static function table(Table $table): Table

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Observers\WhatsAppAccountObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,8 +42,11 @@ use Illuminate\Support\Facades\Crypt;
  * @mixin \Eloquent
  * @mixin IdeHelperWhatsAppAccount
  */
+#[ObservedBy([WhatsAppAccountObserver::class])]
 class WhatsAppAccount extends Model
 {
+    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_account_navigation_badge';
+
     protected $table = 'whatsapp_accounts';
 
     protected $fillable = [

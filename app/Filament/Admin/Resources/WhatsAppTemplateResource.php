@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
 class WhatsAppTemplateResource extends Resource
@@ -38,7 +39,11 @@ class WhatsAppTemplateResource extends Resource
             return null;
         }
 
-        return (string) static::getModel()::where('gym_id', $tenant->id)->count();
+        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addMinutes(30), now()->addHour()], function () use ($tenant) {
+            $count = static::getModel()::where('gym_id', $tenant->id)->count();
+
+            return $count > 0 ? (string) $count : null;
+        });
     }
 
     public static function getEloquentQuery(): Builder

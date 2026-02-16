@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
+use App\Observers\WhatsAppTemplateObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -43,8 +45,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @mixin \Eloquent
  * @mixin IdeHelperWhatsAppTemplate
  */
+#[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
+    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
+
     protected $table = 'whatsapp_templates';
 
     protected $fillable = [
