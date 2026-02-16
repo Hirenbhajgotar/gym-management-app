@@ -67,6 +67,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label('CRM')
                     ->icon('phosphor-funnel'),
                 NavigationGroup::make()
+                    ->label('WhatsApp')
+                    ->icon('phosphor-messenger-logo'),
+                NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
                 NavigationGroup::make()
@@ -75,9 +78,6 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Expense Management')
                     ->icon('phosphor-invoice'),
-                NavigationGroup::make()
-                    ->label('Communication')
-                    ->icon('heroicon-o-chat-bubble-left-right'),
                 NavigationGroup::make()
                     ->label('Settings')
                     ->icon('heroicon-o-wrench-screwdriver'),

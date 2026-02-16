@@ -24,9 +24,11 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
-    protected static ?string $navigationLabel = 'WhatsApp';
+    protected static ?string $navigationLabel = 'Dashboard';
 
-    protected static ?string $navigationGroup = 'Communication';
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationGroup = 'WhatsApp';
 
     protected static string $view = 'filament.tenant.pages.whatsapp-dashboard';
 

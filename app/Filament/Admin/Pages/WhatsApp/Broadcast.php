@@ -26,11 +26,13 @@ class Broadcast extends Page implements HasActions, HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-paper-airplane';
 
-    protected static ?string $navigationLabel = 'Broadcast';
+    protected static ?string $navigationLabel = 'Bulk SMS';
 
-    protected static ?string $navigationGroup = 'Communication';
+    protected static ?string $navigationGroup = 'WhatsApp';
 
     protected static string $view = 'filament.tenant.pages.whatsapp-broadcast';
+
+    protected static ?int $navigationSort = 4;
 
     public array $data = [];
 

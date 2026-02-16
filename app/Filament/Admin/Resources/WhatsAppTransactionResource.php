@@ -22,7 +22,7 @@ class WhatsAppTransactionResource extends Resource
 
     protected static ?string $modelLabel = 'Credit Transaction';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     public static function canCreate(): bool
     {
