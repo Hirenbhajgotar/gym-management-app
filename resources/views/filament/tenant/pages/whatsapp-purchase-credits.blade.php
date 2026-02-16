@@ -533,9 +533,15 @@
                 </a> --}}
                 
                 @if($this->canClaimWelcomeCredits())
-                    <button wire:click="claimWelcomeCredits" class="wa-btn-outline">
-                        <x-heroicon-m-gift style="width: 20px; height: 20px;" />
-                        Claim Free Credits
+                    <button wire:click="claimWelcomeCredits" wire:loading.attr="disabled" class="wa-btn-outline">
+                        <span wire:target="claimWelcomeCredits" wire:loading.remove>
+                            <x-heroicon-m-gift style="width: 20px; height: 20px;" />
+                        </span>
+                        <span wire:target="claimWelcomeCredits" wire:loading class="animate-spin">
+                            <x-heroicon-m-arrow-path style="width: 20px; height: 20px;" />
+                        </span>
+                        <span wire:target="claimWelcomeCredits" wire:loading>Claiming...</span>
+                        <span wire:target="claimWelcomeCredits" wire:loading.remove>Claim Free Credits</span>
                     </button>
                 @endif
             </div>

@@ -156,6 +156,9 @@ class PurchaseCredits extends Page implements HasActions
                 ->send();
 
             $this->loadData();
+
+            redirect()->to(route('filament.admin.pages.whatsapp-dashboard', ['tenant' => $this->getTenantSlug()]));
+
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Failed to Claim Credits')
