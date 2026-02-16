@@ -19,6 +19,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Log;
 
 class ViewLead extends ViewRecord
 {
@@ -189,7 +190,7 @@ class ViewLead extends ViewRecord
                         $conversionService = app(LeadConversionService::class);
                         $gymMember = $conversionService->convert($record, [
                             'membership_plan_id' => $data['membership_plan_id'],
-                            'conversion_date' => $data['conversion_date'],
+                            'conversion_date' => $data['conversion_date'] ?? now(),
                             'notes' => $data['notes'],
                         ]);
 
@@ -204,9 +205,11 @@ class ViewLead extends ViewRecord
 
                         return redirect()->route('filament.admin.resources.gym-members.edit', ['tenant' => $record->gym->slug, 'record' => $gymMember->id]);
                     } catch (Exception $e) {
+                        Log::error($e->getMessage());
+
                         Notification::make()
                             ->title('Conversion failed!')
-                            ->body($e->getMessage())
+                            ->body('Something went wrong while converting the lead. Please try again later.')
                             ->danger()
                             ->send();
                     }
