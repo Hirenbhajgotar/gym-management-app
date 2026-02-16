@@ -25,7 +25,7 @@ class PurchaseCredits extends Page implements HasActions
 
     protected static string $view = 'filament.tenant.pages.whatsapp-purchase-credits';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     public ?WhatsAppMessageCredit $creditBalance = null;
 

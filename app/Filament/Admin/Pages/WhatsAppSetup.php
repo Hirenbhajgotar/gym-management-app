@@ -29,11 +29,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
 
-    protected static ?string $navigationLabel = 'WhatsApp Setup';
+    protected static ?string $navigationLabel = 'Setup';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'WhatsApp';
 
     protected static string $view = 'filament.admin.pages.whats-app-setup';
+
+    protected static ?int $navigationSort = 2;
 
     public ?array $data = [];
 

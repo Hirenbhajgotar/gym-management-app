@@ -32,7 +32,7 @@ class Broadcast extends Page implements HasActions, HasForms
 
     protected static string $view = 'filament.tenant.pages.whatsapp-broadcast';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     public array $data = [];
 

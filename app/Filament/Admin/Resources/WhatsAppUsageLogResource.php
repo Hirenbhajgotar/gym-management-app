@@ -22,7 +22,7 @@ class WhatsAppUsageLogResource extends Resource
 
     protected static ?string $modelLabel = 'Message Log';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     public static function canCreate(): bool
     {
