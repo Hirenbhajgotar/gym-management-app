@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Interfaces\WhatsAppServiceInterface;
 use App\Models\NotificationLog;
 use App\Models\NotificationSetting;
 use App\Models\NotificationTemplate;
@@ -82,7 +83,7 @@ class NotificationService
             'channel' => 'whatsapp',
             'status' => $result['success'] ? 'sent' : 'failed',
             'message' => $message,
-            'response_data' => $result['data'],
+            'response_data' => $result['data'] ?? null,
             'external_id' => $result['message_id'] ?? null,
             'sent_at' => $result['success'] ? now() : null,
         ]);

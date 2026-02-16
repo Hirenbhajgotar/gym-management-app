@@ -6,6 +6,7 @@ use App\Enums\NotificationAccountStatusEnum;
 use App\Enums\NotificationVerificationStatusEnum;
 use App\Models\Gym;
 use App\Models\NotificationSetting;
+use App\Models\WhatsAppTemplate;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -898,6 +899,66 @@ class TwilioAccountManager
             Log::error('Failed to fetch incoming messages: ' . $e->getMessage());
 
             return null;
+        }
+    }
+
+    /**
+     * Submit a WhatsApp template for Meta approval via WhatsAppTemplateService.
+     *
+     * Wrapper for ISV operations — delegates to the dedicated template service.
+     */
+    public function submitTemplate(WhatsAppTemplate $template): array
+    {
+        $templateService = app(WhatsAppTemplateService::class);
+
+        return $templateService->submitForVerification($template);
+    }
+
+    /**
+     * Assign an incoming phone number to a WABA (Messaging Service) for WhatsApp enablement.
+     *
+     * This adds the phone number to the Messaging Service so it can be used for WhatsApp messaging.
+     */
+    public function assignNumberToWABA(string $accountSid, string $authToken, string $phoneNumberSid, string $messagingServiceSid): array
+    {
+        try {
+            $client = $this->makeClient($accountSid, $authToken);
+
+            $phoneNumber = $client->messaging->v1
+                ->services($messagingServiceSid)
+                ->phoneNumbers
+                ->create($phoneNumberSid);
+
+            Log::info('Phone number assigned to WABA', [
+                'phone_number_sid' => $phoneNumberSid,
+                'messaging_service_sid' => $messagingServiceSid,
+                'sender_sid' => $phoneNumber->sid,
+            ]);
+
+            return [
+                'success' => true,
+                'sid' => $phoneNumber->sid,
+                'phone_number' => $phoneNumber->phoneNumber ?? null,
+            ];
+        } catch (RestException $e) {
+            if ($e->getStatusCode() === 409) {
+                Log::info('Phone number already assigned to WABA', [
+                    'phone_number_sid' => $phoneNumberSid,
+                    'messaging_service_sid' => $messagingServiceSid,
+                ]);
+
+                return [
+                    'success' => true,
+                    'already_assigned' => true,
+                ];
+            }
+
+            Log::error('Failed to assign number to WABA', [
+                'error' => $e->getMessage(),
+                'phone_number_sid' => $phoneNumberSid,
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

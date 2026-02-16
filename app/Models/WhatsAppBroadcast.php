@@ -43,6 +43,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class WhatsAppBroadcast extends Model
 {
+    protected $table = 'whatsapp_broadcasts';
+
     protected $fillable = [
         'gym_id',
         'whatsapp_template_id',

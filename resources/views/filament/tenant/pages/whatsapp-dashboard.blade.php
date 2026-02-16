@@ -127,7 +127,7 @@
             </x-slot>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <a href="#" 
+                <a href="{{ route('filament.admin.resources.whats-app-templates.index', ['tenant' => $this->getTenantSlug()]) }}" 
                    class="group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg dark:hover:shadow-primary-900/10 transition-all duration-300">
                     <div class="flex items-start justify-between mb-4">
                         <div class="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl group-hover:bg-primary-600 group-hover:text-white transition-colors duration-300">
@@ -155,7 +155,7 @@
                     </div>
                 </a>
 
-                <button wire:click="mountAction('sendTestMessage')" 
+                {{-- <button wire:click="mountAction('sendTestMessage')" 
                         class="group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg dark:hover:shadow-primary-900/10 transition-all duration-300 text-left sm:col-span-2 md:col-span-1 lg:col-span-2">
                     <div class="flex items-center gap-4">
                         <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl group-hover:bg-gray-900 dark:group-hover:bg-gray-700 transition-colors duration-300">
@@ -167,7 +167,7 @@
                         </div>
                         <x-heroicon-m-arrow-right class="w-5 h-5 text-gray-400 group-hover:text-primary-500 group-hover:translate-x-1 transition-all duration-300" />
                     </div>
-                </button>
+                </button> --}}
             </div>
         </x-filament::section>
 

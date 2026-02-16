@@ -29,6 +29,107 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         $this->useSandbox = config('services.twilio.use_sandbox', true);
     }
 
+    public function sendMessage(string $to, string $message): array
+    {
+        // Detect template messages (format: "template:template_name|var1=val1|var2=val2")
+        if (str_starts_with($message, 'template:')) {
+            return $this->sendMessageAsTemplate($to, $message);
+        }
+
+        return $this->sendTextMessage($to, $message);
+    }
+
+    protected function sendTextMessage(string $to, string $message): array
+    {
+        try {
+            $this->checkAndDeductCredits(1);
+
+            $client = $this->getClient();
+
+            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $phoneNumber = $account?->phoneNumber?->phone_number;
+
+            if (! $phoneNumber) {
+                return [
+                    'success' => false,
+                    'error' => 'No phone number configured for this gym',
+                    'message_id' => null,
+                    'data' => null,
+                ];
+            }
+
+            $twilioMessage = $client->messages->create("whatsapp:$to", [
+                'from' => "whatsapp:$phoneNumber",
+                'body' => $message,
+            ]);
+
+            $this->deductCredits(1);
+
+            return [
+                'success' => true,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+                'data' => [
+                    'sid' => $twilioMessage->sid,
+                    'status' => $twilioMessage->status,
+                ],
+            ];
+        } catch (RestException $e) {
+            Log::error('Twilio WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        }
+    }
+
+    protected function sendMessageAsTemplate(string $to, string $message): array
+    {
+        // Parse format: "template:template_name|var1=val1|var2=val2"
+        $parts = explode('|', substr($message, strlen('template:')));
+        $templateName = trim($parts[0]);
+
+        $variables = [];
+        foreach (array_slice($parts, 1) as $index => $part) {
+            $keyValue = explode('=', $part, 2);
+            if (count($keyValue) === 2) {
+                $variables[trim($keyValue[0])] = trim($keyValue[1]);
+            } else {
+                // Positional variable (1-indexed for Twilio content variables)
+                $variables[(string) ($index + 1)] = trim($part);
+            }
+        }
+
+        $result = $this->sendTemplateMessage($to, $templateName, $variables);
+
+        // Normalize response to include 'data' key expected by NotificationService
+        $result['data'] = $result['success'] ? [
+            'sid' => $result['message_id'] ?? null,
+            'status' => $result['status'] ?? null,
+        ] : null;
+
+        return $result;
+    }
+
     private function isSystemTenant(): bool
     {
         return $this->tenantId === config('app.system_tenant_id', 'system') ||
@@ -204,10 +305,8 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         }
     }
 
-    protected function prepareVariables(
-        \App\Models\WhatsAppBroadcast $broadcast,
-        WhatsAppBroadcastRecipient $recipient
-    ): array {
+    protected function prepareVariables(WhatsAppBroadcast $broadcast, WhatsAppBroadcastRecipient $recipient): array
+    {
         $variables = [];
         $templateVariables = $broadcast->template->variables ?? [];
         $providedVariables = $broadcast->message_variables ?? [];

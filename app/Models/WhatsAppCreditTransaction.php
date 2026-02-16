@@ -39,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class WhatsAppCreditTransaction extends Model
 {
+    protected $table = 'whatsapp_credit_transactions';
+
     protected $fillable = [
         'gym_id',
         'whatsapp_message_credit_id',

@@ -74,6 +74,44 @@ class Broadcast extends Page implements HasActions, HasForms
     {
         return $form
             ->schema([
+                // Rate Limit Quota Display
+                Forms\Components\Section::make('Broadcast Quota')
+                    ->schema([
+                        Forms\Components\Placeholder::make('quota_info')
+                            ->label('')
+                            ->content(function () {
+                                $gymId = $this->getGymId();
+                                $todayCount = WhatsAppBroadcast::where('gym_id', $gymId)
+                                    ->whereDate('created_at', today())
+                                    ->count();
+                                $remaining = max(0, 2 - $todayCount);
+
+                                $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
+                                    ->latest()
+                                    ->first();
+
+                                $cooldownText = '';
+                                if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
+                                    $nextAllowed = $lastBroadcast->created_at->addHour();
+                                    $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
+                                    $cooldownText = "<div class='text-amber-600 dark:text-amber-400 text-xs mt-1'>⏱ Next broadcast available in {$minutesLeft} minute(s)</div>";
+                                }
+
+                                $statusColor = $remaining > 0 ? 'emerald' : 'red';
+
+                                return new HtmlString("
+                                    <div class='flex items-center gap-4'>
+                                        <div class='flex items-center gap-2'>
+                                            <span class='text-sm text-gray-600 dark:text-gray-400'>Today's Quota:</span>
+                                            <span class='font-bold text-{$statusColor}-600 dark:text-{$statusColor}-400'>{$remaining}/2 remaining</span>
+                                        </div>
+                                    </div>
+                                    {$cooldownText}
+                                ");
+                            }),
+                    ])
+                    ->compact(),
+
                 Forms\Components\Section::make('Select Template')
                     ->schema([
                         Forms\Components\Select::make('template_id')
@@ -199,6 +237,27 @@ class Broadcast extends Page implements HasActions, HasForms
             if ($this->targetCount === 0) {
                 throw new \Exception('No recipients found');
             }
+
+            // ── Rate Limiting ──────────────────────────────────
+            $gymId = $this->getGymId();
+            $todayCount = WhatsAppBroadcast::where('gym_id', $gymId)
+                ->whereDate('created_at', today())
+                ->count();
+
+            if ($todayCount >= 2) {
+                throw new \Exception('Daily broadcast limit reached. You can send a maximum of 2 broadcasts per day. Try again tomorrow.');
+            }
+
+            $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
+                ->latest()
+                ->first();
+
+            if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
+                $nextAllowed = $lastBroadcast->created_at->addHour();
+                $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
+                throw new \Exception("Please wait {$minutesLeft} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
+            }
+            // ── End Rate Limiting ──────────────────────────────
 
             $creditBalance = WhatsAppMessageCredit::where('gym_id', $this->getGymId())->first();
 

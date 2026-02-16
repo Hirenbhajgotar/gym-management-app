@@ -202,7 +202,7 @@ class ViewLead extends ViewRecord
                             ->success()
                             ->send();
 
-                        return redirect()->route('filament.admin.resources.gym-members.edit', $gymMember);
+                        return redirect()->route('filament.admin.resources.gym-members.edit', ['tenant' => $record->gym->slug, 'record' => $gymMember->id]);
                     } catch (Exception $e) {
                         Notification::make()
                             ->title('Conversion failed!')

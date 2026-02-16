@@ -37,6 +37,12 @@ Schedule::job(new CheckWhatsAppBalanceJob)->daily();
 // Sync WhatsApp templates to database daily at 3 AM
 Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
 
+// Process scheduled WhatsApp broadcasts every minute
+Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
+
+// Sync pending WhatsApp template statuses every 15 minutes
+Schedule::command('whatsapp:sync-template-statuses')->everyFifteenMinutes();
+
 // Auto checkout gym members and trainers attendance daily at 11 PM and 1 AM
 Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
