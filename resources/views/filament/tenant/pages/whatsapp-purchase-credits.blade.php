@@ -514,6 +514,22 @@
             .wa-steps {
                 grid-template-columns: 1fr;
             }
+
+            .wa-steps-flow {
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+
+            .wa-steps-flow .wa-step {
+                max-width: 100% !important;
+                padding: 0 0 24px 0 !important;
+            }
+
+            .wa-steps-flow .wa-flow-arrow {
+                transform: rotate(90deg);
+                padding: 0 !important;
+                margin: -8px 0;
+            }
         }
     </style>
 
@@ -623,26 +639,32 @@
         <div id="how-it-works">
             <div class="wa-section-title">
                 <h2>How It Works</h2>
-                <p>Get started in minutes with our simple 3-step process</p>
+                <p>Get started in minutes with our simple 4-step process</p>
             </div>
 
-            <div class="wa-steps">
-                <div class="wa-step">
+            <div class="wa-steps-flow" style="display: flex; align-items: flex-start; justify-content: center; gap: 0; margin-bottom: 80px; flex-wrap: wrap;">
+                <div class="wa-step" style="flex: 1; min-width: 200px; max-width: 280px; text-align: center; padding: 0 16px; position: relative;">
                     <div class="wa-step-number">1</div>
                     <h3>Setup</h3>
-                    <p>Simply <a href="{{ route('filament.admin.pages.whats-app-setup', ['tenant' => $this->getTenantSlug()]) }}" class="wa-link">connect your WhatsApp Business account</a> in just a few clicks. Verify your details, and you're all set to start messaging.</p>
+                    <p>Simply <a href="{{ route('filament.admin.pages.whats-app-setup', ['tenant' => $this->getTenantSlug()]) }}" class="wa-link">connect your WhatsApp Business account</a> in just a few clicks.</p>
                 </div>
-
-                <div class="wa-step">
+                
+                <div class="wa-step" style="flex: 1; min-width: 200px; max-width: 280px; text-align: center; padding: 0 16px; position: relative;">
                     <div class="wa-step-number">2</div>
+                    <h3>Create Template</h3>
+                    <p>Create WhatsApp message templates that comply with Meta's guidelines for approval.</p>
+                </div>
+                
+                <div class="wa-step" style="flex: 1; min-width: 200px; max-width: 280px; text-align: center; padding: 0 16px; position: relative;">
+                    <div class="wa-step-number">3</div>
                     <h3>Purchase Credits</h3>
                     <p>Select a package that fits your needs. Payment is secure and credits are added instantly.</p>
                 </div>
-
-                <div class="wa-step">
-                    <div class="wa-step-number">3</div>
+                
+                <div class="wa-step" style="flex: 1; min-width: 200px; max-width: 280px; text-align: center; padding: 0 16px; position: relative;">
+                    <div class="wa-step-number">4</div>
                     <h3>Send Messages</h3>
-                    <p>Start sending WhatsApp messages immediately. Track delivery and engagement in real-time.</p>
+                    <p>Start sending WhatsApp messages immediately using your approved templates.</p>
                 </div>
             </div>
         </div>
