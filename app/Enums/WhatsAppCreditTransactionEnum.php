@@ -2,9 +2,10 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum WhatsAppCreditTransactionEnum: string implements HasLabel
+enum WhatsAppCreditTransactionEnum: string implements HasColor, HasLabel
 {
     case PURCHASE = 'purchase';
     case USAGE = 'usage';
@@ -22,6 +23,18 @@ enum WhatsAppCreditTransactionEnum: string implements HasLabel
             self::REFUND => 'Refund',
             self::EXPIRED => 'Expired',
             self::BONUS => 'Bonus',
+        };
+    }
+
+    public function getColor(): string|array|null
+    {
+        return match ($this) {
+            self::PURCHASE => 'success',
+            self::USAGE => 'danger',
+            self::ADJUSTMENT => 'warning',
+            self::REFUND => 'info',
+            self::EXPIRED => 'gray',
+            self::BONUS => 'primary',
         };
     }
 }

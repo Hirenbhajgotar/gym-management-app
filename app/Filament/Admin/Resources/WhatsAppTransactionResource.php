@@ -6,6 +6,8 @@ use App\Enums\WhatsAppCreditTransactionEnum;
 use App\Models\WhatsAppCreditTransaction;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -42,14 +44,6 @@ class WhatsAppTransactionResource extends Resource
 
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
-                    ->colors([
-                        'success' => WhatsAppCreditTransactionEnum::PURCHASE->value,
-                        'danger' => WhatsAppCreditTransactionEnum::USAGE->value,
-                        'warning' => WhatsAppCreditTransactionEnum::ADJUSTMENT->value,
-                        'info' => WhatsAppCreditTransactionEnum::REFUND->value,
-                        'gray' => WhatsAppCreditTransactionEnum::EXPIRED->value,
-                        'primary' => WhatsAppCreditTransactionEnum::BONUS->value,
-                    ])
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('credits')
@@ -108,6 +102,59 @@ class WhatsAppTransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Transaction Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Date & Time')
+                            ->dateTime('M d, Y g:i A'),
+                        Infolists\Components\TextEntry::make('type')
+                            ->badge(),
+                    ])->columns(2),
+
+                Infolists\Components\Section::make('Credit Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('credits')
+                            ->label('Credits')
+                            ->formatStateUsing(fn ($record) => ($record->isPurchase() || $record->isRefund() || $record->isBonus() || $record->isAdjustment() ? '+' : '-') . $record->credits)
+                            ->color(fn ($record) => $record->isPurchase() || $record->isRefund() || $record->isBonus() ? 'success' : 'danger')
+                            ->weight('bold'),
+                        Infolists\Components\TextEntry::make('balance_before')
+                            ->label('Balance Before')
+                            ->numeric(),
+                        Infolists\Components\TextEntry::make('balance_after')
+                            ->label('Balance After')
+                            ->numeric()
+                            ->weight('bold'),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Payment Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('amount')
+                            ->label('Amount')
+                            ->money('INR')
+                            ->default('—'),
+                        Infolists\Components\TextEntry::make('payment_reference')
+                            ->label('Payment Reference')
+                            ->copyable()
+                            ->default('—'),
+                        Infolists\Components\TextEntry::make('package.name')
+                            ->label('Package')
+                            ->default('—'),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Description')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('description')
+                            ->default('—')
+                            ->limit(400),
+                    ]),
             ]);
     }
 
