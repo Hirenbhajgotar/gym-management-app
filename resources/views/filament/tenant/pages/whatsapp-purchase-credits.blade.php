@@ -625,10 +625,14 @@
                             @endif
                         </ul>
 
-                        <button 
+                        <button id="rzp-purchase-credits-button"
                             wire:click="selectPackage({{ $package['id'] }})"
                             class="wa-btn-select {{ $isPopular ? 'primary' : 'secondary' }}">
-                            Select {{ $package['name'] }}
+                            <x-loading-icon target="selectPackage({{ $package['id'] }})" variant="text" name="Loading" />
+
+                            <span wire:loading.remove wire:target="selectPackage({{ $package['id'] }})">
+                                Select {{ $package['name'] }}
+                            </span>
                         </button>
                     </div>
                 @endforeach
@@ -706,100 +710,55 @@
         @endif
     </div>
 
-    {{-- Payment Modal --}}
-    <x-filament::modal id="payment-modal" wire:model="showPaymentModal" width="2xl">
-        <x-slot name="heading">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(54, 226, 123, 0.1);">
-                    <x-heroicon-m-credit-card style="width: 24px; height: 24px; color: #36e27b;" />
-                </div>
-                <div>
-                    <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--gray-950);">Complete Your Purchase</h3>
-                    <p style="font-size: 0.875rem; color: #6b7280; margin: 4px 0 0 0;">Secure payment powered by Razorpay</p>
-                </div>
-            </div>
-        </x-slot>
-
-        @if($selectedPackageId && $razorpayOrder)
-            @php
-                $selectedPackage = collect($packages)->firstWhere('id', $selectedPackageId);
-            @endphp
-            
-            <div style="margin-bottom: 24px;">
-                <div class="wa-message-info">
-                    <div class="row">
-                        <span class="label">Package</span>
-                        <span class="value">{{ $selectedPackage['name'] ?? 'N/A' }}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Messages</span>
-                        <span class="value">{{ number_format($razorpayOrder['message_count'] ?? 0) }}</span>
-                    </div>
-                    <div class="row" style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 16px;">
-                        <span class="label" style="font-weight: 600; color: var(--gray-950);">Total Amount</span>
-                        <span class="value" style="font-size: 1.5rem; color: #36e27b;">₹{{ number_format($razorpayOrder['amount'] ?? 0, 2) }}</span>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px; background: #eff6ff; border-radius: 16px; padding: 16px; margin-top: 16px;">
-                    <x-heroicon-m-shield-check style="width: 24px; height: 24px; color: #3b82f6; flex-shrink: 0;" />
-                    <div>
-                        <h4 style="font-weight: 600; color: #1e3a8a; margin: 0 0 4px 0;">Secure Payment</h4>
-                        <p style="font-size: 0.875rem; color: #1e40af; margin: 0;">Your payment information is encrypted and secure. We never store your card details.</p>
-                    </div>
-                </div>
-            </div>
-
-            <x-slot name="footerActions">
-                <button
-                    wire:click="initiatePayment"
-                    class="wa-btn-primary"
-                    style="width: 100%;">
-                    <x-heroicon-m-lock-closed style="width: 20px; height: 20px;" />
-                    Proceed to Payment
-                </button>
-            </x-slot>
-        @else
-            <div style="padding: 40px; text-align: center;">
-                <p style="color: #6b7280;">Loading payment details...</p>
-            </div>
-        @endif
-    </x-filament::modal>
-
     {{-- Razorpay Script --}}
-    @if($razorpayOrder)
-        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-        <script>
-            document.addEventListener('livewire:init', () => {
-                Livewire.on('open-razorpay', (data) => {
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('open-razorpay', (data) => {
+                // Check if Razorpay is loaded
+                if (typeof Razorpay !== 'undefined') {
+                    const razorpayData = data[0];
                     const options = {
-                        key: data[0].key,
-                        amount: data[0].amount * 100,
+                        key: razorpayData.key,
+                        amount: razorpayData.amount * 100,
                         currency: 'INR',
                         name: 'WhatsApp Credits',
-                        description: data[0].package_name + ' - ' + data[0].message_count + ' messages',
-                        order_id: data[0].order_id,
-                        handler: function (response) {
-                            Livewire.dispatch('payment-success', {
-                                payment_id: response.razorpay_payment_id,
-                                order_id: response.razorpay_order_id,
-                                signature: response.razorpay_signature
-                            });
-                        },
+                        description: razorpayData.package_name + ' - ' + razorpayData.message_count + ' messages',
+                        order_id: razorpayData.order_id,
                         prefill: {
                             name: '{{ auth()->user()->name ?? "" }}',
                             email: '{{ auth()->user()->email ?? "" }}',
                         },
                         theme: {
                             color: '#36e27b'
-                        }
+                        },
+                        handler: function (response) {
+                            Livewire.dispatch('handle-payment-verify', {
+                                razorpayPaymentId: response.razorpay_payment_id,
+                                razorpaySignature: response.razorpay_signature,
+                                razorpayOrderId: response.razorpay_order_id
+                            });
+                        },
+                        modal: {
+                            ondismiss: function() {
+                                console.log('Payment modal closed by user');
+                            }
+                        },
+                        
                     };
-
+    
                     const rzp = new Razorpay(options);
                     rzp.open();
-                });
+                } else {
+                    console.error('Razorpay script not loaded');
+                }
             });
-        </script>
-    @endif
+
+            // Listen for payment verification completion
+            Livewire.on('payment-verified', () => {
+                console.log('Payment verification completed');
+            });
+        });
+    </script>
 
 </x-filament-panels::page>

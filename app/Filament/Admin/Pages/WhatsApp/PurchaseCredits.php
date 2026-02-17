@@ -12,6 +12,7 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 
 class PurchaseCredits extends Page implements HasActions
 {
@@ -37,6 +38,8 @@ class PurchaseCredits extends Page implements HasActions
 
     public ?int $selectedPackageId = null;
 
+    public bool $isProcessingPayment = false;
+
     public function mount(): void
     {
         $this->loadData();
@@ -58,6 +61,7 @@ class PurchaseCredits extends Page implements HasActions
     {
         $this->selectedPackageId = $packageId;
         $this->showPaymentModal = true;
+        $this->initiatePayment();
     }
 
     public function initiatePayment(): void
@@ -100,7 +104,13 @@ class PurchaseCredits extends Page implements HasActions
                 'message_count' => $package->message_count,
             ];
 
-            $this->js('window.location.reload()');
+            $this->dispatch('open-razorpay', [
+                'key' => $order['key'],
+                'amount' => $order['amount'] / 100,
+                'order_id' => $order['order_id'],
+                'package_name' => $package->name,
+                'message_count' => $package->message_count,
+            ]);
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Payment Init Failed')
@@ -110,8 +120,11 @@ class PurchaseCredits extends Page implements HasActions
         }
     }
 
-    public function handlePaymentSuccess(string $razorpayPaymentId, string $razorpaySignature): void
+    #[On('handle-payment-verify')]
+    public function handlePaymentVerify(string $razorpayPaymentId, string $razorpaySignature): void
     {
+        $this->isProcessingPayment = true;
+
         try {
             $razorpayService = new RazorpayService;
 
@@ -122,11 +135,27 @@ class PurchaseCredits extends Page implements HasActions
             );
 
             if ($payment && $payment->isCompleted()) {
-                Notification::make()
-                    ->title('Payment Successful!')
-                    ->body("You've received {$this->razorpayOrder['message_count']} message credits.")
-                    ->success()
-                    ->send();
+                $whatsAppBillingService = new WhatsAppBillingService($razorpayService);
+
+                $result = $whatsAppBillingService->purchasePackage(
+                    $this->getGymId(),
+                    $this->selectedPackageId,
+                    $razorpayPaymentId
+                );
+
+                if ($result['success']) {
+                    Notification::make()
+                        ->title('Payment Successful!')
+                        ->body("You've received {$result['message_count']} message credits.")
+                        ->success()
+                        ->send();
+                } else {
+                    Notification::make()
+                        ->title('Payment Verified')
+                        ->body('Failed to add credits. Please contact support.')
+                        ->warning()
+                        ->send();
+                }
 
                 $this->loadData();
                 $this->showPaymentModal = false;
@@ -139,7 +168,16 @@ class PurchaseCredits extends Page implements HasActions
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        } finally {
+            $this->isProcessingPayment = false;
         }
+    }
+
+    public function closePaymentModal(): void
+    {
+        $this->showPaymentModal = false;
+        $this->selectedPackageId = null;
+        $this->razorpayOrder = [];
     }
 
     public function claimWelcomeCredits(): void
