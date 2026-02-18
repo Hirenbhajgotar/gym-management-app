@@ -37,8 +37,8 @@
                         <!-- Message Bubble -->
                         @if(!empty($selectedTemplate))
                             <div class="relative z-10 self-start max-w-[90%] bg-white dark:bg-[#202c33] rounded-lg shadow-sm p-3 mb-2 rounded-tl-none">
-                                <div class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
-                                    {{ $selectedTemplate['body'] ?? '' }}
+                                <div class="text-sm text-gray-900 dark:text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {{ $selectedTemplate['formatted_body'] ?? '' }}
                                 </div>
                                 <div class="text-[10px] text-gray-500 dark:text-gray-400 text-right mt-1 flex justify-end items-center gap-1">
                                     {{ now()->format('H:i') }}
@@ -49,12 +49,26 @@
                             </div>
 
                             <!-- Variable Placeholders Instructions -->
-                            @if(!empty($selectedTemplate['variables']))
+                            @if(!empty($selectedTemplate['variable_placeholder']))
                                 <div class="relative z-10 mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700/50 rounded-md">
-                                    <p class="text-xs text-yellow-800 dark:text-yellow-200 font-medium mb-1">Detected Variables:</p>
-                                    <ul class="text-xs text-yellow-700 dark:text-yellow-300 list-disc list-inside">
-                                        @foreach($selectedTemplate['variables'] as $variable)
-                                            <li>{{ $variable['name'] ?? 'Variable' }}</li>
+                                    <p class="text-xs text-gray-800 dark:text-gray-600 font-medium mb-2">Detected Variables:</p>
+                                    <ul class="text-xs text-primary-700 dark:text-primary-300 space-y-2">
+                                        @foreach($selectedTemplate['variable_placeholder'] as $varName => $varData)
+                                            <li class="flex flex-col gap-1 p-2 bg-yellow-100/50 dark:bg-yellow-800/20 rounded">
+                                                <div class="flex items-center gap-2 text-[10px] text-primary-600 dark:text-primary-600 ml-1">
+                                                    @if(isset($varData['placeholder']) && !empty($varData['placeholder']))
+                                                        <span>Name: {{ $varData['placeholder'] }}</span>
+                                                        <span class="text-primary-600">|</span>
+                                                    @endif
+                                                    @if(isset($varData['example']) && !empty($varData['example']))
+                                                        <span>Example: <span class="italic">{{ $varData['example'] }}</span></span>
+                                                        <span class="text-primary-600">|</span>
+                                                    @endif
+                                                    @if(isset($varData['type']) && !empty($varData['type']))
+                                                        <span>Type: {{ ucfirst($varData['type']) }}</span>
+                                                    @endif
+                                                </div>
+                                            </li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -67,21 +81,6 @@
                                 </div>
                             </div>
                         @endif
-                    </div>
-                </div>
-
-                <!-- Tips Card -->
-                <div class="mt-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 p-4">
-                    <div class="flex gap-3">
-                        <div class="flex-shrink-0">
-                            <x-heroicon-o-light-bulb class="w-5 h-5 text-amber-500"/>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-900 dark:text-white">Pro Tip</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Using variables like <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-primary-600 dark:text-primary-400">@{{ name }}</code> makes your messages more personal and increases engagement rates.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

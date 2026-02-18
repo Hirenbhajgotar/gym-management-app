@@ -241,18 +241,87 @@ class WhatsAppTemplateResource extends Resource
                                 </div>
                             ')),
 
+                        // Dynamic Variable Placeholders
+                        Forms\Components\Section::make('Variable Placeholders')
+                            ->description('Map each dynamic placeholder to a descriptive label and example value to clarify the purpose of each variable during message composition.')
+                            ->schema([
+                                Forms\Components\Placeholder::make('variable_placeholder_info')
+                                    ->label('')
+                                    ->content(new HtmlString('
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                            Define descriptive names for each variable used in your template. This helps users understand what value to enter for each {{1}}, {{2}}, etc.
+                                        </div>
+                                    ')),
+                            ])
+                            ->schema(function (Forms\Get $get) {
+                                $body = $get('body') ?? '';
+                                preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
+                                $variableNumbers = array_unique($matches[1] ?? []);
+
+                                if (empty($variableNumbers)) {
+                                    return [];
+                                }
+
+                                $fields = [];
+                                $defaultData = [
+                                    '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text'],
+                                    '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text'],
+                                    '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text'],
+                                    '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number'],
+                                    '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text'],
+                                    '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text'],
+                                ];
+
+                                foreach ($variableNumbers as $num) {
+                                    $defaults = $defaultData[$num] ?? ['placeholder' => 'Variable ' . $num, 'name' => 'variable_' . $num, 'example' => 'Example ' . $num, 'type' => 'text'];
+
+                                    $fields[] = Forms\Components\Grid::make(4)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.variable')
+                                                ->label('{{' . $num . '}}')
+                                                ->readonly()
+                                                ->default('{{' . $num . '}}')
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.placeholder')
+                                                ->label('Placeholder')
+                                                ->placeholder($defaults['placeholder'])
+                                                ->live(debounce: 500)
+                                                ->helperText('Display name')
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.example')
+                                                ->label('Example')
+                                                ->placeholder($defaults['example'])
+                                                ->live(debounce: 500)
+                                                ->helperText('Sample value')
+                                                ->columnSpan(1),
+                                            Forms\Components\Select::make('variable_placeholder.' . $num . '.type')
+                                                ->label('Type')
+                                                ->options([
+                                                    'text' => 'Text',
+                                                    'number' => 'Number',
+                                                    'date' => 'Date',
+                                                    'currency' => 'Currency',
+                                                ])
+                                                ->default($defaults['type'])
+                                                ->live(debounce: 500)
+                                                ->columnSpan(1),
+                                        ]);
+                                }
+
+                                return $fields;
+                            })
+                            ->visible(fn (Forms\Get $get) => ! empty($get('body')) && preg_match_all('/\{\{(\d+)\}\}/', $get('body') ?? '', $matches) > 0),
+
                         // Live message preview
                         Forms\Components\Placeholder::make('message_preview')
                             ->label('📱 Message Preview')
                             ->content(function (Forms\Get $get) {
                                 $body = $get('body') ?? '';
-
                                 if (empty($body)) {
                                     return new HtmlString('<div class="text-gray-400 italic text-sm">Start typing your message to see a preview...</div>');
                                 }
 
-                                // Replace variables with sample values
-                                $sampleValues = [
+                                $defaultSampleValues = [
                                     '{{1}}' => 'John Doe',
                                     '{{2}}' => 'FitZone Gym',
                                     '{{3}}' => 'March 15, 2026',
@@ -260,8 +329,27 @@ class WhatsAppTemplateResource extends Resource
                                     '{{5}}' => '30 days',
                                     '{{6}}' => 'Premium',
                                 ];
+
+                                $variablePlaceholder = $get('variable_placeholder') ?? [];
+                                $sampleValues = [];
+
+                                foreach (range(1, 20) as $num) {
+                                    $key = '{{' . $num . '}}';
+                                    if (str_contains($body, $key)) {
+                                        if (isset($variablePlaceholder[$num]['example']) && ! empty($variablePlaceholder[$num]['example'])) {
+                                            $sampleValues[$key] = $variablePlaceholder[$num]['example'];
+                                        } elseif (isset($variablePlaceholder[$num]['placeholder']) && ! empty($variablePlaceholder[$num]['placeholder'])) {
+                                            $sampleValues[$key] = $variablePlaceholder[$num]['placeholder'];
+                                        } else {
+                                            $sampleValues[$key] = $defaultSampleValues[$key] ?? 'Variable ' . $num;
+                                        }
+                                    }
+                                }
+
                                 $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($body));
                                 $preview = nl2br($preview);
+
+                                $usedValues = array_values($sampleValues);
 
                                 return new HtmlString('
                                     <div class="max-w-sm">
@@ -270,7 +358,7 @@ class WhatsAppTemplateResource extends Resource
                                             <div class="text-[10px] text-gray-400 dark:text-gray-500 text-right mt-1">' . now()->format('g:i A') . ' ✓✓</div>
                                         </div>
                                         <div class="text-[10px] text-gray-400 mt-2 italic">
-                                            Preview with sample data: John Doe, FitZone Gym, March 15, 2026, ₹1,499
+                                            Preview with: ' . implode(', ', $usedValues) . '
                                         </div>
                                     </div>
                                 ');

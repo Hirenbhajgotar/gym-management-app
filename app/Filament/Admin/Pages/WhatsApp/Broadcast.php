@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\GymMember;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
@@ -57,8 +58,8 @@ class Broadcast extends Page implements HasActions, HasForms
     private function loadTemplates(): void
     {
         $this->templates = WhatsAppTemplate::where('gym_id', $this->getGymId())
-            ->where('status', 'approved')
-            ->where('is_active', true)
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
+            ->isActive()
             ->get()
             ->toArray();
     }
@@ -124,22 +125,6 @@ class Broadcast extends Page implements HasActions, HasForms
                             ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
                     ]),
 
-                Forms\Components\Section::make('Template Variables')
-                    ->visible(fn () => ! empty($this->selectedTemplate))
-                    ->schema([
-                        Forms\Components\Placeholder::make('template_body')
-                            ->label('Template Preview')
-                            ->content(new HtmlString('<pre class="whitespace-pre-wrap font-mono text-sm">' . ($this->selectedTemplate['body'] ?? '') . '</pre>')),
-
-                        Forms\Components\Grid::make(2)->schema(
-                            collect($this->selectedTemplate['variables'] ?? [])->map(function ($variable, $index) {
-                                return Forms\Components\TextInput::make('variables.' . $variable['name'])
-                                    ->label(($variable['example'] ?? 'Variable ' . ($index + 1)))
-                                    ->required();
-                            })->toArray()
-                        ),
-                    ]),
-
                 Forms\Components\Section::make('Recipients')
                     ->schema([
                         Forms\Components\Radio::make('target_filter')
@@ -202,7 +187,11 @@ class Broadcast extends Page implements HasActions, HasForms
 
         if ($templateId) {
             $template = WhatsAppTemplate::find($templateId);
-            $this->selectedTemplate = $template?->toArray() ?? [];
+            $templateArray = $template?->toArray() ?? [];
+
+            $templateArray['formatted_body'] = $template?->formatted_body ?? $template?->body;
+
+            $this->selectedTemplate = $templateArray;
             $this->targetCount = $this->getActiveMemberCount();
         } else {
             $this->selectedTemplate = [];

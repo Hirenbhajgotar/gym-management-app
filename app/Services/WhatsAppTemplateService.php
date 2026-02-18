@@ -165,6 +165,7 @@ class WhatsAppTemplateService
             'category' => $data['category'] ?? 'utility',
             'variables' => $variables,
             'variable_count' => count($variables),
+            'variable_placeholder' => $data['variable_placeholder'] ?? $this->generateDefaultPlaceholders($variables),
             'status' => 'draft',
             'is_default' => $data['is_default'] ?? false,
             'is_active' => true,
@@ -182,6 +183,10 @@ class WhatsAppTemplateService
         if (isset($data['body'])) {
             $data['variables'] = $this->extractVariables($data['body']);
             $data['variable_count'] = count($data['variables']);
+
+            if (! isset($data['variable_placeholder'])) {
+                $data['variable_placeholder'] = $this->generateDefaultPlaceholders($data['variables']);
+            }
         }
 
         $template->update($data);
@@ -360,5 +365,32 @@ class WhatsAppTemplateService
         }
 
         return $variables;
+    }
+
+    protected function generateDefaultPlaceholders(array $variables): array
+    {
+        $placeholders = [];
+        $defaultLabels = [
+            '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text'],
+            '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text'],
+            '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text'],
+            '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number'],
+            '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text'],
+            '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text'],
+        ];
+
+        foreach ($variables as $variable) {
+            if (preg_match('/variable_(\d+)/', $variable['name'], $matches)) {
+                $num = $matches[1];
+                $placeholders[$num] = $defaultLabels[$num] ?? [
+                    'placeholder' => 'Variable ' . $num,
+                    'name' => 'variable_' . $num,
+                    'example' => 'Example ' . $num,
+                    'type' => 'text',
+                ];
+            }
+        }
+
+        return $placeholders;
     }
 }

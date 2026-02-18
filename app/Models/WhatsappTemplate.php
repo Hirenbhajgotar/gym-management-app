@@ -6,6 +6,7 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Observers\WhatsAppTemplateObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $category
  * @property array|null $variables
  * @property int $variable_count
+ * @property array|null $variable_placeholder
  * @property string|null $twilio_template_sid
  * @property string|null $meta_template_id
  * @property string $status
@@ -64,6 +66,7 @@ class WhatsAppTemplate extends Model
         'category',
         'variables',
         'variable_count',
+        'variable_placeholder',
         'twilio_template_sid',
         'meta_template_id',
         'status',
@@ -79,6 +82,7 @@ class WhatsAppTemplate extends Model
         return [
             'variables' => 'array',
             'variable_count' => 'integer',
+            'variable_placeholder' => 'array',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             'usage_count' => 'integer',
@@ -94,6 +98,40 @@ class WhatsAppTemplate extends Model
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
+    }
+
+    // =========================
+    // Accessors
+    // =========================
+
+    protected function formattedBody(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $body = $this->body;
+                $placeholders = $this->variable_placeholder;
+
+                if (empty($placeholders)) {
+                    return $body;
+                }
+
+                $search = [];
+                $replace = [];
+
+                foreach ($placeholders as $key => $value) {
+                    $search[] = "{{{$key}}}";
+
+                    if (is_array($value)) {
+                        $replace[] = $value['example']
+                            ?? (isset($value['placeholder']) ? "{{{$value['placeholder']}}}" : "{{{$key}}}");
+                    } else {
+                        $replace[] = $value;
+                    }
+                }
+
+                return str_replace($search, $replace, $body);
+            },
+        );
     }
 
     // =========================
@@ -171,6 +209,20 @@ class WhatsAppTemplate extends Model
         }
 
         return collect($this->variables)->pluck('name')->toArray();
+    }
+
+    public function getVariablePlaceholder(?string $index): ?string
+    {
+        if (! $this->variable_placeholder || ! $index) {
+            return null;
+        }
+
+        return $this->variable_placeholder[$index] ?? null;
+    }
+
+    public function getVariablePlaceholders(): array
+    {
+        return $this->variable_placeholder ?? [];
     }
 
     public static function getDefaults(): Collection
