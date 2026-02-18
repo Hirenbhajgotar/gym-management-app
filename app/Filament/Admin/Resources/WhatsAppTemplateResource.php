@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -58,6 +59,73 @@ class WhatsAppTemplateResource extends Resource
     {
         return $form
             ->schema([
+                // ──────────────────────────────────────────
+                // Default Template Selection (only for create)
+                // ──────────────────────────────────────────
+                Forms\Components\Section::make('Start from Default Template')
+                    ->description('Choose a pre-built template and customize it for your gym')
+                    ->schema([
+                        Forms\Components\Select::make('_default_template')
+                            ->label('Select a Default Template')
+                            ->placeholder('Choose a template to get started...')
+                            ->options(static::getDefaultTemplateOptions())
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                if (empty($state)) {
+                                    return;
+                                }
+
+                                $templates = static::getDefaultTemplatesForForm();
+                                if (isset($templates[$state])) {
+                                    $template = $templates[$state];
+                                    $set('name', $template['name']);
+                                    $set('display_name', $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name'])));
+                                    $set('body', $template['body']);
+                                    $set('category', $template['category'] ?? 'utility');
+                                }
+                            }),
+
+                        Forms\Components\Placeholder::make('_template_preview')
+                            ->label('')
+                            ->content(function (Forms\Get $get) {
+                                $selected = $get('_default_template');
+                                if (empty($selected)) {
+                                    return new HtmlString('<div class="text-gray-400 text-sm">Select a template above to see a preview</div>');
+                                }
+
+                                $templates = static::getDefaultTemplatesForForm();
+                                $template = $templates[$selected] ?? null;
+
+                                if (! $template) {
+                                    return '';
+                                }
+
+                                $sampleValues = [
+                                    '{{1}}' => 'John Doe',
+                                    '{{2}}' => 'FitZone Gym',
+                                    '{{3}}' => 'March 15, 2026',
+                                    '{{4}}' => '₹1,499',
+                                    '{{5}}' => '30 days',
+                                    '{{6}}' => 'Premium Plan',
+                                ];
+                                $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($template['body']));
+                                $preview = nl2br($preview);
+
+                                return new HtmlString('
+                                    <div class="max-w-sm mt-2">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Preview:</div>
+                                        <div class="bg-[#e7fedd] dark:bg-emerald-900/40 rounded-lg rounded-tr-none p-3 shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
+                                            <div class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">' . $preview . '</div>
+                                        </div>
+                                    </div>
+                                ');
+                            })
+                            ->visible(fn (Forms\Get $get) => ! empty($get('_default_template'))),
+                    ])
+                    ->collapsed()
+                    ->visible(fn ($record) => $record === null), // Only show on create
+
                 // ──────────────────────────────────────────
                 // Category Selection & Guidance
                 // ──────────────────────────────────────────
@@ -306,13 +374,6 @@ class WhatsAppTemplateResource extends Resource
                     ->alignCenter()
                     ->color('gray'),
 
-                Tables\Columns\IconColumn::make('is_default')
-                    ->label('Default')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-star')
-                    ->falseIcon('heroicon-o-minus')
-                    ->trueColor('warning'),
-
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
@@ -343,154 +404,159 @@ class WhatsAppTemplateResource extends Resource
                     ->label('Active'),
             ])
             ->actions([
-                // Preview action (WhatsApp-style message preview)
-                Tables\Actions\Action::make('preview')
-                    ->label('Preview')
-                    ->icon('heroicon-o-eye')
-                    ->color('gray')
-                    ->modalHeading('📱 Template Preview')
-                    ->modalDescription(fn (WhatsAppTemplate $record) => $record->display_name)
-                    ->modalContent(function (WhatsAppTemplate $record) {
-                        $sampleValues = [
-                            '{{1}}' => 'John Doe',
-                            '{{2}}' => 'FitZone Gym',
-                            '{{3}}' => 'March 15, 2026',
-                            '{{4}}' => '₹1,499',
-                            '{{5}}' => '30 days',
-                            '{{6}}' => 'Premium Plan',
-                        ];
-                        $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($record->body));
-                        $preview = nl2br($preview);
+                ActionGroup::make([
+                    // Preview action (WhatsApp-style message preview)
+                    Tables\Actions\Action::make('preview')
+                        ->label('Preview')
+                        ->icon('heroicon-o-eye')
+                        ->color('gray')
+                        ->modalHeading('Template Preview')
+                        ->modalDescription(fn (WhatsAppTemplate $record) => $record->display_name)
+                        ->modalContent(function (WhatsAppTemplate $record) {
+                            $sampleValues = [
+                                '{{1}}' => 'John Doe',
+                                '{{2}}' => 'FitZone Gym',
+                                '{{3}}' => 'March 15, 2026',
+                                '{{4}}' => '₹1,499',
+                                '{{5}}' => '30 days',
+                                '{{6}}' => 'Premium Plan',
+                            ];
+                            $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($record->body));
+                            $preview = nl2br($preview);
 
-                        $statusColor = match ($record->status) {
-                            WhatsAppTemplateStatusEnum::APPROVED => 'emerald',
-                            WhatsAppTemplateStatusEnum::PENDING => 'amber',
-                            WhatsAppTemplateStatusEnum::REJECTED => 'red',
-                            default => 'gray',
-                        };
+                            $statusColor = match ($record->status) {
+                                WhatsAppTemplateStatusEnum::APPROVED => 'emerald',
+                                WhatsAppTemplateStatusEnum::PENDING => 'amber',
+                                WhatsAppTemplateStatusEnum::REJECTED => 'red',
+                                default => 'gray',
+                            };
 
-                        return new HtmlString('
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-3">
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-' . $statusColor . '-100 text-' . $statusColor . '-700 dark:bg-' . $statusColor . '-900/30 dark:text-' . $statusColor . '-400">'
-                                        . $record->status .
-                                    '</span>
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">'
-                                        . ucfirst($record->category) .
-                                    '</span>
-                                </div>
-
-                                <div class="bg-[#ece5dd] dark:bg-gray-800 rounded-xl p-6 flex justify-center">
-                                    <div class="max-w-xs w-full">
-                                        <div class="bg-[#e7fedd] dark:bg-emerald-900/40 rounded-lg rounded-tr-none p-3 shadow-sm">
-                                            <div class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">' . $preview . '</div>
-                                            <div class="text-[10px] text-gray-400 text-right mt-1">12:00 PM ✓✓</div>
+                            return new HtmlString('
+                                <div class="space-y-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="px-2 py-1 rounded text-xs font-medium bg-' . $statusColor . '-100 text-' . $statusColor . '-700 dark:bg-' . $statusColor . '-900/30 dark:text-' . $statusColor . '-400">'
+                                            . $record->status->getLabel() .
+                                        '</span>
+                                        <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">'
+                                            . ucfirst($record->category) .
+                                        '</span>
+                                    </div>
+    
+                                    <div class="bg-[#ece5dd] dark:bg-gray-800 rounded-xl p-6 flex justify-center">
+                                        <div class="max-w-xs w-full">
+                                            <div class="bg-[#e7fedd] dark:bg-emerald-900/40 rounded-lg rounded-tr-none p-3 shadow-sm">
+                                                <div class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">' . $preview . '</div>
+                                                <div class="text-[10px] text-gray-400 text-right mt-1">' . now()->format('h:i A') . ' ✓✓</div>
+                                            </div>
                                         </div>
                                     </div>
+    
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                                        <p><strong>Internal Name:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">' . e($record->name) . '</code></p>
+                                        <p><strong>Variables:</strong> ' . ($record->variable_count > 0 ? $record->variable_count . ' variables' : 'None') . '</p>
+                                        <p><strong>Times Used:</strong> ' . number_format($record->usage_count) . '</p>
+                                        <p class="italic text-gray-400">Sample values: John Doe, FitZone Gym, March 15, 2026, ₹1,499</p>
+                                    </div>
+                                    ' . ($record->rejection_reason ? '
+                                    <div class="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-3">
+                                        <div class="font-semibold text-red-600 dark:text-red-400 text-sm">Rejection Reason</div>
+                                        <div class="text-red-500 dark:text-red-400 text-sm mt-1">' . e($record->rejection_reason) . '</div>
+                                    </div>' : '') . '
                                 </div>
+                            ');
+                        })
+                        ->modalSubmitAction(false)
+                        ->modalCancelAction(false),
 
-                                <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                    <p><strong>Internal Name:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">' . e($record->name) . '</code></p>
-                                    <p><strong>Variables:</strong> ' . ($record->variable_count > 0 ? $record->variable_count . ' variables' : 'None') . '</p>
-                                    <p><strong>Times Used:</strong> ' . number_format($record->usage_count) . '</p>
-                                    <p class="italic text-gray-400">Sample values: John Doe, FitZone Gym, March 15, 2026, ₹1,499</p>
-                                </div>
-                                ' . ($record->rejection_reason ? '
-                                <div class="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-3">
-                                    <div class="font-semibold text-red-600 dark:text-red-400 text-sm">Rejection Reason</div>
-                                    <div class="text-red-500 dark:text-red-400 text-sm mt-1">' . e($record->rejection_reason) . '</div>
-                                </div>' : '') . '
-                            </div>
-                        ');
-                    })
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close'),
+                    // Submit for approval
+                    Tables\Actions\Action::make('submit')
+                        ->label('Submit for Approval')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('primary')
+                        ->requiresConfirmation()
+                        ->modalHeading('Submit Template for Meta Approval')
+                        ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT)
+                        ->action(function (WhatsAppTemplate $record) {
+                            $service = app(WhatsAppTemplateService::class);
+                            $result = $service->submitForVerification($record);
 
-                // Submit for approval
-                Tables\Actions\Action::make('submit')
-                    ->label('Submit for Approval')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('primary')
-                    ->requiresConfirmation()
-                    ->modalHeading('Submit Template for Meta Approval')
-                    ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
-                    ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT)
-                    ->action(function (WhatsAppTemplate $record) {
-                        $service = app(WhatsAppTemplateService::class);
-                        $result = $service->submitForVerification($record);
+                            if ($result['success']) {
+                                Notification::make()
+                                    ->success()
+                                    ->title('Template Submitted!')
+                                    ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Submission Failed')
+                                    ->body($result['error'] ?? 'Unknown error occurred.')
+                                    ->send();
+                            }
+                        }),
 
-                        if ($result['success']) {
+                    // Resubmit (for rejected templates)
+                    Tables\Actions\Action::make('resubmit')
+                        ->label('Resubmit')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Resubmit Template for Approval')
+                        ->modalDescription(fn (WhatsAppTemplate $record) => 'Previous rejection reason: "' . ($record->rejection_reason ?? 'Unknown') . '". Please ensure you\'ve fixed the issue before resubmitting.')
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED)
+                        ->action(function (WhatsAppTemplate $record) {
+                            // Reset status to draft, clear rejection, then resubmit
+                            $record->update([
+                                'status' => WhatsAppTemplateStatusEnum::DRAFT,
+                                'rejection_reason' => null,
+                            ]);
+
+                            $service = app(WhatsAppTemplateService::class);
+                            $result = $service->submitForVerification($record);
+
+                            if ($result['success']) {
+                                Notification::make()
+                                    ->success()
+                                    ->title('Template Resubmitted!')
+                                    ->body('Your template has been resubmitted for approval.')
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Resubmission Failed')
+                                    ->body($result['error'] ?? 'Unknown error occurred.')
+                                    ->send();
+                            }
+                        }),
+
+                    // Sync status
+                    Tables\Actions\Action::make('syncStatus')
+                        ->label('Sync Status')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('gray')
+                        ->visible(fn (WhatsAppTemplate $record) => ! empty($record->twilio_template_sid))
+                        ->requiresConfirmation()
+                        ->modalHeading('Sync Template Status')
+                        ->modalDescription('This will fetch the latest status from Meta/WhatsApp. Use this if your template is stuck in "pending" status.')
+                        ->action(function (WhatsAppTemplate $record) {
+                            $service = app(WhatsAppTemplateService::class);
+                            $service->syncTemplateStatus($record);
+                            $record->refresh();
+
                             Notification::make()
-                                ->success()
-                                ->title('Template Submitted!')
-                                ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
+                                ->info()
+                                ->title('Status Synced')
+                                ->body("Template status: {$record->status}")
                                 ->send();
-                        } else {
-                            Notification::make()
-                                ->danger()
-                                ->title('Submission Failed')
-                                ->body($result['error'] ?? 'Unknown error occurred.')
-                                ->send();
-                        }
-                    }),
+                        }),
 
-                // Resubmit (for rejected templates)
-                Tables\Actions\Action::make('resubmit')
-                    ->label('Resubmit')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading('Resubmit Template for Approval')
-                    ->modalDescription(fn (WhatsAppTemplate $record) => 'Previous rejection reason: "' . ($record->rejection_reason ?? 'Unknown') . '". Please ensure you\'ve fixed the issue before resubmitting.')
-                    ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED)
-                    ->action(function (WhatsAppTemplate $record) {
-                        // Reset status to draft, clear rejection, then resubmit
-                        $record->update([
-                            'status' => WhatsAppTemplateStatusEnum::DRAFT,
-                            'rejection_reason' => null,
-                        ]);
+                    Tables\Actions\EditAction::make()
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
 
-                        $service = app(WhatsAppTemplateService::class);
-                        $result = $service->submitForVerification($record);
-
-                        if ($result['success']) {
-                            Notification::make()
-                                ->success()
-                                ->title('Template Resubmitted!')
-                                ->body('Your template has been resubmitted for approval.')
-                                ->send();
-                        } else {
-                            Notification::make()
-                                ->danger()
-                                ->title('Resubmission Failed')
-                                ->body($result['error'] ?? 'Unknown error occurred.')
-                                ->send();
-                        }
-                    }),
-
-                // Sync status
-                Tables\Actions\Action::make('syncStatus')
-                    ->label('Sync Status')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('gray')
-                    ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::PENDING)
-                    ->action(function (WhatsAppTemplate $record) {
-                        $service = app(WhatsAppTemplateService::class);
-                        $service->syncTemplateStatus($record);
-                        $record->refresh();
-
-                        Notification::make()
-                            ->info()
-                            ->title('Status Synced')
-                            ->body("Template status: {$record->status}")
-                            ->send();
-                    }),
-
-                Tables\Actions\EditAction::make()
-                    ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
-
-                Tables\Actions\DeleteAction::make()
-                    ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && ! $record->isApproved()),
+                    Tables\Actions\DeleteAction::make()
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && ! $record->isApproved()),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -515,5 +581,33 @@ class WhatsAppTemplateResource extends Resource
             'create' => Pages\CreateWhatsAppTemplate::route('/create'),
             'edit' => Pages\EditWhatsAppTemplate::route('/{record}/edit'),
         ];
+    }
+
+    protected static function getDefaultTemplateOptions(): array
+    {
+        $templates = static::getDefaultTemplatesForForm();
+        $options = [];
+
+        foreach ($templates as $template) {
+            $options[$template['name']] = $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name']));
+        }
+
+        return $options;
+    }
+
+    public static function getDefaultTemplatesForForm(): array
+    {
+        $templates = WhatsAppTemplate::getDefaults()
+            ->mapWithKeys(fn ($template) => [
+                $template->name => [
+                    'name' => $template->name,
+                    'display_name' => $template->display_name,
+                    'body' => $template->body,
+                    'category' => $template->category,
+                ],
+            ])
+            ->toArray();
+
+        return $templates;
     }
 }

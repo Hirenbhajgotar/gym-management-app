@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Observers\WhatsAppTemplateObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -151,5 +152,10 @@ class WhatsAppTemplate extends Model
         }
 
         return collect($this->variables)->pluck('name')->toArray();
+    }
+
+    public static function getDefaults(): Collection
+    {
+        return self::where('is_default', true)->whereNull('gym_id')->get();
     }
 }

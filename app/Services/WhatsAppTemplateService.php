@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
@@ -194,8 +195,44 @@ class WhatsAppTemplateService
 
     public function submitForVerification(WhatsAppTemplate $template): array
     {
+        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+
+        if (! $whatsAppAccount) {
+            Log::error('WhatsApp account not found for gym', [
+                'template_id' => $template->id,
+                'gym_id' => $template->gym_id,
+            ]);
+
+            return ['success' => false, 'error' => 'WhatsApp account not configured for this gym'];
+        }
+
+        if (! $whatsAppAccount->isActive()) {
+            Log::error('WhatsApp account is not active', [
+                'template_id' => $template->id,
+                'whatsapp_account_id' => $whatsAppAccount->id,
+                'status' => $whatsAppAccount->status->value,
+            ]);
+
+            return ['success' => false, 'error' => 'WhatsApp account is not active'];
+        }
+
+        if (! $whatsAppAccount->isVerified()) {
+            Log::error('WhatsApp account is not verified', [
+                'template_id' => $template->id,
+                'whatsapp_account_id' => $whatsAppAccount->id,
+                'verification_status' => $whatsAppAccount->verification_status->value,
+            ]);
+
+            return ['success' => false, 'error' => 'WhatsApp account is not verified'];
+        }
+
+        $subaccountClient = new Client(
+            $whatsAppAccount->twilio_account_sid,
+            $whatsAppAccount->twilio_auth_token
+        );
+
         try {
-            $twilioTemplate = $this->masterClient->conversations->v1->configuration
+            $twilioTemplate = $subaccountClient->conversations->v1->configuration
                 ->templates
                 ->whatsappTemplates
                 ->create([
@@ -232,8 +269,19 @@ class WhatsAppTemplateService
             return;
         }
 
+        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+
+        if (! $whatsAppAccount || ! $whatsAppAccount->isActive()) {
+            return;
+        }
+
+        $subaccountClient = new Client(
+            $whatsAppAccount->twilio_account_sid,
+            $whatsAppAccount->twilio_auth_token
+        );
+
         try {
-            $twilioTemplate = $this->masterClient->conversations->v1->configuration
+            $twilioTemplate = $subaccountClient->conversations->v1->configuration
                 ->templates
                 ->whatsappTemplates($template->twilio_template_sid)
                 ->fetch();
