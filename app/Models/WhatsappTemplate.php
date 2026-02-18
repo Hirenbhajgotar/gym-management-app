@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Observers\WhatsAppTemplateObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +52,8 @@ class WhatsAppTemplate extends Model
 {
     const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
 
+    const SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY = 'super_admin_whatsapp_template_navigation_badge';
+
     protected $table = 'whatsapp_templates';
 
     protected $fillable = [
@@ -91,6 +94,22 @@ class WhatsAppTemplate extends Model
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
+    }
+
+    // =========================
+    // Scopes
+    // =========================
+
+    #[Scope]
+    protected function isDefault($query)
+    {
+        return $query->where('is_default', true);
+    }
+
+    #[Scope]
+    protected function isActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     // =========================
@@ -156,6 +175,6 @@ class WhatsAppTemplate extends Model
 
     public static function getDefaults(): Collection
     {
-        return self::where('is_default', true)->whereNull('gym_id')->get();
+        return self::whereNull('gym_id')->isDefault()->get();
     }
 }

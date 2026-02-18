@@ -49,6 +49,9 @@ class WhatsAppTemplateObserver
 
     private function clearCache(WhatsAppTemplate $whatsAppTemplate): void
     {
-        ParserHelper::clearCache([WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $whatsAppTemplate->gym_id]);
+        ParserHelper::clearCache([
+            WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $whatsAppTemplate->gym_id,
+            WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY,
+        ]);
     }
 }
