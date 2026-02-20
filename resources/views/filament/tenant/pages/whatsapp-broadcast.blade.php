@@ -4,7 +4,7 @@
         <div class="lg:col-span-2">
             <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 overflow-hidden">
                 <div class="p-6">
-                    <div class="mb-6">
+                    <div class="mb-5">
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <x-heroicon-o-paper-airplane class="w-5 h-5 text-primary-600 dark:text-primary-400"/>
                             Compose Broadcast

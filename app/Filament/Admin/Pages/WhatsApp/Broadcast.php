@@ -4,6 +4,8 @@ namespace App\Filament\Admin\Pages\WhatsApp;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\GymMember;
+use App\Models\MembershipPlan;
+use App\Models\Trainer;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
@@ -13,27 +15,37 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 
-class Broadcast extends Page implements HasActions, HasForms
+class Broadcast extends Page implements HasActions, HasForms, HasTable
 {
-    use InteractsWithActions, InteractsWithForms;
+    use InteractsWithActions, InteractsWithForms, InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-paper-airplane';
 
     protected static ?string $navigationLabel = 'Bulk SMS';
+
+    protected static ?string $title = 'Bulk SMS';
 
     protected static ?string $navigationGroup = 'WhatsApp';
 
     protected static string $view = 'filament.tenant.pages.whatsapp-broadcast';
 
     protected static ?int $navigationSort = 5;
+
+    public bool $filtersApplied = false;
 
     public array $data = [];
 
@@ -48,6 +60,19 @@ class Broadcast extends Page implements HasActions, HasForms
     public array $messagePreview = [];
 
     public ?int $scheduledHour = null;
+
+    public array $filters = [
+        'plans' => [],
+        'trainers' => [],
+        'membership_type' => [],
+        'payment_status' => [],
+    ];
+
+    public array $selectedMemberIds = [];
+
+    public array $availablePlans = [];
+
+    public array $availableTrainers = [];
 
     public function mount(): void
     {
@@ -66,11 +91,117 @@ class Broadcast extends Page implements HasActions, HasForms
 
     private function initializeForm(): void
     {
+        $this->loadFilters();
+
         $this->data = [
             'template_id' => '',
             'variables' => [],
-            'target_filter' => 'active',
+            'recipient_type' => 'all',
         ];
+
+        $this->targetCount = $this->getAllMemberCount();
+    }
+
+    private function loadFilters(): void
+    {
+        $gymId = $this->getGymId();
+
+        $this->availablePlans = MembershipPlan::where('gym_id', $gymId)
+            ->isActive()
+            ->get()
+            ->toArray();
+
+        $this->availableTrainers = Trainer::where('gym_id', $gymId)
+            ->get()
+            ->toArray();
+    }
+
+    private function getFilteredMembers(): Builder
+    {
+        $query = GymMember::query();
+
+        $data = $this->data;
+
+        if (! isset($data['filters']) || empty($data['filters'])) {
+            return $query;
+        }
+
+        $filters = $data['filters'];
+
+        if (isset($filters['membership_type']) && $filters['membership_type']) {
+            if ($filters['membership_type'] === 'active') {
+                $query->membershipActive();
+            }
+            if ($filters['membership_type'] === 'inactive') {
+                $query->membershipExpired();
+            }
+        }
+
+        if (isset($filters['plans']) && $filters['plans']) {
+            $query->where('gym_membership_plan_id', $filters['plans']);
+        }
+
+        if (isset($filters['payment_status']) && $filters['payment_status']) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (isset($filters['trainers']) && $filters['trainers']) {
+            $query->where('trainer_id', $filters['trainers']);
+        }
+
+        return $query;
+    }
+
+    private function getAllMemberCount(): int
+    {
+        return GymMember::where('gym_id', $this->getGymId())->count();
+    }
+
+    private function getFilteredMemberCount(): int
+    {
+        return $this->getFilteredMembers()->count();
+    }
+
+    public function updatedFilters(): void
+    {
+        $this->filtersApplied = true;
+        $this->targetCount = $this->getFilteredMemberCount();
+        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->data['filters'] = [
+            'plans' => null,
+            'trainers' => null,
+            'membership_type' => null,
+            'payment_status' => null,
+        ];
+
+        $this->filtersApplied = false;
+        $this->form->fill($this->data);
+        $this->resetTableSearch();
+        $this->resetTable();
+        $this->targetCount = $this->getAllMemberCount();
+        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+    }
+
+    public function updatedRecipientType(): void
+    {
+        $recipientType = $this->data['recipient_type'] ?? 'all';
+
+        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+        if ($recipientType === 'all') {
+            $this->clearFilters();
+            $this->targetCount = $this->getAllMemberCount();
+        } else {
+            $this->targetCount = $this->getFilteredMemberCount();
+        }
+    }
+
+    public function updatedSelectedMemberIds(): void
+    {
+        $this->targetCount = count($this->selectedMemberIds);
     }
 
     public function form(Form $form): Form
@@ -127,16 +258,83 @@ class Broadcast extends Page implements HasActions, HasForms
 
                 Forms\Components\Section::make('Recipients')
                     ->schema([
-                        Forms\Components\Radio::make('target_filter')
+                        Forms\Components\Radio::make('recipient_type')
                             ->label('Send to')
                             ->options([
-                                'active' => 'All Active Members (' . $this->getActiveMemberCount() . ')',
+                                'all' => 'All Members (' . $this->getAllMemberCount() . ')',
+                                'filtered' => 'Filter & Select Members',
                             ])
-                            ->default('active')
-                            ->live(),
+                            ->default('all')
+                            ->inline()
+                            ->inlineLabel(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->updatedRecipientType()),
+
+                        Forms\Components\Group::make()
+                            ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'filtered')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('filters.plans')
+                                            ->label('Membership Plan')
+                                            ->options(fn () => collect($this->availablePlans)->pluck('name', 'id'))
+                                            ->placeholder('All Plans')
+                                            ->live(),
+
+                                        Forms\Components\Select::make('filters.trainers')
+                                            ->label('Trainer')
+                                            ->options(fn () => collect($this->availableTrainers)->pluck('name', 'id'))
+                                            ->placeholder('All Trainers')
+                                            ->live(),
+                                    ]),
+
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('filters.membership_type')
+                                            ->label('Active / Inactive')
+                                            ->options([
+                                                'active' => 'Active (Membership Valid)',
+                                                'inactive' => 'Inactive (Membership Expired)',
+                                            ])
+                                            ->placeholder('All Members')
+                                            ->live(),
+
+                                        Forms\Components\Select::make('filters.payment_status')
+                                            ->label('Payment Status')
+                                            ->options([
+                                                'pending' => 'Pending',
+                                                'completed' => 'Completed',
+                                                'failed' => 'Failed',
+                                                'expired' => 'Expired',
+                                            ])
+                                            ->placeholder('All Payment Statuses')
+                                            ->live(),
+                                    ]),
+
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Actions::make([
+                                            Forms\Components\Actions\Action::make('clearFilters')
+                                                ->label('Clear Filters')
+                                                ->color('gray')
+                                                ->icon('heroicon-o-x-mark')
+                                                ->action(fn () => $this->clearFilters()),
+
+                                            Forms\Components\Actions\Action::make('updateFilters')
+                                                ->label('Apply Filters')
+                                                ->icon('heroicon-o-funnel')
+                                                ->action(fn () => $this->updatedFilters()),
+                                        ]),
+                                    ]),
+
+                                ViewField::make('results_table')
+                                    ->view('filament.tenant.pages.components.member-checklist')
+                                    ->visible(fn () => $this->filtersApplied),
+                            ]),
 
                         Forms\Components\Placeholder::make('target_count')
                             ->label('Estimated Recipients')
+                            ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'all')
                             ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> members')),
                     ]),
 
@@ -149,36 +347,70 @@ class Broadcast extends Page implements HasActions, HasForms
                                 'later' => 'Schedule for Later',
                             ])
                             ->default('now')
+                            ->inline()
+                            ->inlineLabel(false)
                             ->live(),
 
                         Forms\Components\DateTimePicker::make('scheduled_at')
                             ->label('Schedule Date & Time')
-                            ->visible(fn () => ($this->data['schedule_type'] ?? 'now') === 'later')
+                            ->visible(fn (callable $get) => $get('schedule_type') === 'later')
                             ->minDate(now())
-                            ->required(),
+                            ->required(fn (callable $get) => $get('schedule_type') === 'later'),
                     ]),
 
                 Forms\Components\Section::make('Confirm')
                     ->schema([
                         Forms\Components\Placeholder::make('credits_info')
                             ->label('Credits Required')
-                            ->content(new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
+                            ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
 
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('sendBroadcast')
                                 ->label('Send Broadcast')
-                                ->color('primary')
-                                ->requiresConfirmation()
-                                ->modalHeading('Confirm Broadcast')
-                                ->modalDescription(fn () => new HtmlString('
-                                    <p>This will send a message to <strong>' . number_format($this->targetCount) . '</strong> members.</p>
-                                    <p class="mt-2"><strong>' . number_format($this->targetCount) . '</strong> credits will be deducted.</p>
-                                '))
-                                ->action(fn () => $this->sendBroadcast()),
+                                ->action(function () {
+                                    $this->form->validate();
+                                    $this->sendBroadcast();
+                                }),
                         ]),
                     ]),
             ])
             ->statePath('data');
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query($this->getFilteredMembers())
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('phone')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('membership_type')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'premium' => 'warning',
+                        'vip' => 'success',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'active' => 'success',
+                        'expired' => 'danger',
+                        'pending' => 'warning',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Joined')
+                    ->date()
+                    ->sortable(),
+            ])
+            ->emptyStateHeading('No members found')
+            ->emptyStateDescription('Try adjusting your filters.');
     }
 
     private function updateTemplatePreview(): void
@@ -192,29 +424,15 @@ class Broadcast extends Page implements HasActions, HasForms
             $templateArray['formatted_body'] = $template?->formatted_body ?? $template?->body;
 
             $this->selectedTemplate = $templateArray;
-            $this->targetCount = $this->getActiveMemberCount();
         } else {
             $this->selectedTemplate = [];
             $this->targetCount = 0;
         }
     }
 
-    private function getActiveMemberCount(): int
-    {
-        return GymMember::where('gym_id', $this->getGymId())
-            // ->where('status', 'active')
-            ->count();
-    }
-
-    private function getActiveMembers(): \Illuminate\Database\Eloquent\Collection
-    {
-        return GymMember::where('gym_id', $this->getGymId())
-            // ->where('status', 'active')
-            ->get();
-    }
-
     private function sendBroadcast(): void
     {
+        dd($this->data);
         try {
             $templateId = $this->data['template_id'] ?? null;
             $variables = $this->data['variables'] ?? [];
@@ -226,7 +444,11 @@ class Broadcast extends Page implements HasActions, HasForms
             }
 
             if ($this->targetCount === 0) {
-                throw new \Exception('No recipients found');
+                throw new \Exception('No recipients found. Please select members or change recipient type.');
+            }
+
+            if (($this->data['recipient_type'] ?? 'all') === 'filtered' && empty($this->selectedMemberIds)) {
+                throw new \Exception('Please select at least one member from the filtered results.');
             }
 
             // ── Rate Limiting ──────────────────────────────────
@@ -264,14 +486,22 @@ class Broadcast extends Page implements HasActions, HasForms
                 'gym_id' => $this->getGymId(),
                 'whatsapp_template_id' => $templateId,
                 'title' => 'Broadcast: ' . $template->display_name,
-                'target_filters' => ['status' => 'active'],
+                'target_filters' => $this->data['recipient_type'] === 'filtered'
+                    ? $this->filters
+                    : ['type' => 'all'],
                 'target_count' => $this->targetCount,
                 'status' => $scheduleType === 'now' ? 'sending' : 'scheduled',
                 'scheduled_at' => $scheduleType === 'later' ? $scheduledAt : null,
                 'message_variables' => $variables,
             ]);
 
-            $members = $this->getActiveMembers();
+            $recipientType = $this->data['recipient_type'] ?? 'all';
+
+            if ($recipientType === 'all') {
+                $members = GymMember::where('gym_id', $this->getGymId())->get();
+            } else {
+                $members = GymMember::whereIn('id', $this->selectedMemberIds)->get();
+            }
 
             foreach ($members as $member) {
                 WhatsAppBroadcastRecipient::create([
