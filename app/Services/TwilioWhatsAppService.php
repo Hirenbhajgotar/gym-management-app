@@ -284,6 +284,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                     $results['failed']++;
                 }
 
+                // Add a small delay to avoid hitting Twilio rate limits (approx. 20 messages per second)
                 usleep(50000);
             }
 
