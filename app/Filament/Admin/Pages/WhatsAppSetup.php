@@ -15,11 +15,13 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
@@ -183,6 +185,19 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->statePath('data');
     }
 
+    protected function getWizardStepButtonLabel(int $step = 1): string
+    {
+        return match ($step) {
+            1 => $this->accountCreated ? 'Continue' : 'Create Account & Continue',
+            2 => $this->wabaCreated ? 'Continue' : 'Create WABA & Continue',
+            3 => $this->numberPurchased ? 'Continue' : 'Purchase Number & Continue',
+            4 => $this->templatesCreated ? 'Continue' : 'Create Templates & Continue',
+            5 => $this->welcomeCreditsClaimed ? 'Continue' : 'Claim Welcome Credits & Continue',
+            6 => 'Finish',
+            default => 'Next',
+        };
+    }
+
     protected function getFormSchema(): array
     {
         return match ($this->viewState) {
@@ -269,8 +284,14 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 $this->getTemplatesStep(),
                 $this->getWelcomeCreditsStep(),
             ])
-                ->skippable(true)
-                ->startOnStep($this->setupStep),
+                ->skippable(false)
+                ->startOnStep($this->setupStep)
+                ->nextAction(
+                    fn (Action $action) => $action->label($this->getWizardStepButtonLabel($this->setupStep))->icon('heroicon-o-arrow-right'),
+                )
+                ->previousAction(
+                    fn (Action $action) => $action->label('Back')->icon('heroicon-o-arrow-left'),
+                ),
         ];
     }
 
@@ -304,15 +325,22 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->rows(3)
                     ->placeholder('Describe your gym business...')
                     ->disabled($this->accountCreated),
-                Forms\Components\Actions::make([
-                    Forms\Components\Actions\Action::make('createAccount')
-                        ->label($this->accountCreated ? 'Account Created' : 'Create Account')
-                        ->color('primary')
-                        ->action('createSubaccount')
-                        ->disabled($this->accountCreated)
-                        ->icon($this->accountCreated ? 'heroicon-o-check-circle' : null),
-                ]),
-            ]);
+            ])
+            ->afterValidation(function () {
+                try {
+                    $this->createSubaccount();
+                } catch (\Exception $e) {
+                    Log::error('Failed to create subaccount', ['error' => $e->getMessage()]);
+
+                    Notification::make()
+                        ->title('Account Creation Failed')
+                        ->body('Unable to create your WhatsApp account. Please check your details and try again.')
+                        ->danger()
+                        ->send();
+
+                    throw new Halt;
+                }
+            });
     }
 
     private function getWabaSetupStep(): Forms\Components\Wizard\Step
@@ -329,7 +357,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ')),
                 Forms\Components\Actions::make([
                     Forms\Components\Actions\Action::make('createWaba')
-                        ->label($this->wabaCreated ? 'WABA Created' : ($this->useIndividualWaba ? 'Create Individual WABA' : 'Create Shared WABA'))
+                        ->label($this->wabaCreated ? 'WABA Created' : ($this->useIndividualWaba ? 'Create Individual WABA' : 'Create WABA'))
                         ->color('primary')
                         ->action('createWaba')
                         ->disabled($this->wabaCreated)
@@ -518,66 +546,49 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $this->viewState = 'setup';
         $this->setupStep = 1;
-        // $this->redirectRoute('filament.admin.pages.whats-app-setup');
     }
 
     public function retrySetup(): void
     {
         $this->loadWhatsAppData();
         $this->determineViewState();
-        $this->redirectRoute('filament.admin.pages.whats-app-setup');
+        // $this->redirectRoute('filament.admin.pages.whats-app-setup');
     }
 
     public function createSubaccount(): void
     {
-        try {
-            $gymId = $this->getGymId();
-            $gym = $this->getGym();
-            $user = Auth::user();
+        $gymId = $this->getGymId();
+        $gym = $this->getGym();
+        $user = Auth::user();
 
-            $data = $this->form->getState();
+        $data = $this->form->getState();
 
-            $result = app(TwilioAccountManager::class)->createSubaccount(
-                $gymId,
-                $data['business_name'] ?? $gym?->name ?? 'Unknown Gym',
-                $data['business_email'] ?? $user?->email ?? 'admin@example.com'
-            );
+        $result = app(TwilioAccountManager::class)->createSubaccount(
+            $gymId,
+            $data['business_name'] ?? $gym?->name ?? $user?->name . ' Gym',
+            $data['business_email'] ?? $user?->email,
+        );
 
-            if ($result['success']) {
-                $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
-
-                if ($this->whatsappAccount && isset($data['business_description'])) {
-                    $this->whatsappAccount->update([
-                        'business_description' => $data['business_description'],
-                    ]);
-                }
-
-                $this->accountCreated = true;
-                $this->setupStep = 2;
-
-                Notification::make()
-                    ->title('Account Created')
-                    ->body('Your WhatsApp Business account has been created successfully.')
-                    ->success()
-                    ->send();
-
-                $this->redirectRoute('filament.admin.pages.whats-app-setup');
-            } else {
-                Notification::make()
-                    ->title('Failed to Create Account')
-                    ->body($result['error'] ?? 'Unknown error')
-                    ->danger()
-                    ->send();
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to create subaccount', ['error' => $e->getMessage()]);
-
-            Notification::make()
-                ->title('Error')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+        if (! $result['success']) {
+            throw new \Exception($result['error'] ?? 'Failed to create account');
         }
+
+        $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+
+        if ($this->whatsappAccount && isset($data['business_description'])) {
+            $this->whatsappAccount->update([
+                'business_description' => $data['business_description'],
+            ]);
+        }
+
+        $this->accountCreated = true;
+        $this->setupStep = 2;
+
+        Notification::make()
+            ->title('Account Created')
+            ->body('Your WhatsApp Business account has been created successfully.')
+            ->success()
+            ->send();
     }
 
     public function saveBusinessProfile(): void
@@ -892,15 +903,5 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $this->loadWhatsAppData();
         $this->determineViewState();
-    }
-
-    public function getTenant()
-    {
-        return Filament::getTenant();
-    }
-
-    public function getTenantSlug()
-    {
-        return $this->getTenant()->slug;
     }
 }
