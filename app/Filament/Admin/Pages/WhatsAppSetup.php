@@ -13,6 +13,7 @@ use App\Services\WhatsAppTemplateService;
 use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -50,7 +51,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public int $setupStep = 1;
 
-    public int $totalSteps = 9;
+    public int $totalSteps = 6;
 
     public array $availableNumbers = [];
 
@@ -69,6 +70,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public bool $requiresEmbeddedSignup = false;
 
     public ?string $embeddedSignupUrl = null;
+
+    public bool $accountCreated = false;
+
+    public bool $profileSaved = false;
+
+    public bool $wabaCreated = false;
+
+    public bool $numberPurchased = false;
+
+    public bool $templatesCreated = false;
 
     public function mount(): void
     {
@@ -97,6 +108,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             return;
         }
 
+        $this->accountCreated = true;
+
         if ($this->whatsappAccount->status === 'pending') {
             $this->viewState = 'setup';
             $this->setupStep = $this->determineSetupStep();
@@ -116,34 +129,32 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function determineSetupStep(): int
     {
         if (! $this->whatsappAccount->waba_id) {
-            if ($this->useIndividualWaba && ! $this->whatsappAccount->isEmbeddedSignupComplete()) {
-                return 3;
-            }
+            return 2;
+        }
 
+        $this->wabaCreated = true;
+
+        if (! $this->phoneNumber) {
             return 3;
         }
 
-        if (! $this->phoneNumber) {
-            return 4;
-        }
-
-        if (! $this->whatsappAccount->messaging_service_sid) {
-            return 6;
-        }
+        $this->numberPurchased = true;
 
         $defaultTemplates = WhatsAppTemplate::where('gym_id', $this->getGymId())
             ->where('is_default', true)
             ->count();
 
         if ($defaultTemplates === 0) {
-            return 7;
+            return 4;
         }
+
+        $this->templatesCreated = true;
 
         if (! $this->welcomeCreditsClaimed) {
-            return 9;
+            return 5;
         }
 
-        return 10;
+        return 6;
     }
 
     private function initializeFormData(): void
@@ -186,19 +197,53 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getOnboardingSchema(): array
     {
         return [
-            Forms\Components\Section::make('Welcome to WhatsApp Business')
-                ->description('Set up your dedicated WhatsApp Business account to communicate with your members.')
+            Forms\Components\Section::make('WhatsApp Business Integration')
+                ->description('Connect your gym with members through WhatsApp')
                 ->schema([
-                    Forms\Components\Placeholder::make('intro')
+                    Forms\Components\Placeholder::make('')
                         ->content(new HtmlString('
-                            <div class="text-center py-8">
-                                <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                    </svg>
+                            <div class="space-y-6">
+                                <!-- Hero Section -->
+                                <div class="text-center py-6 border-b border-gray-200 dark:border-gray-700">
+                                    <div class="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                                        <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                        </svg>
+                                    </div>
+                                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Welcome to WhatsApp Business</h2>
+                                    <p class="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">Set up your dedicated WhatsApp Business account to engage with your gym members through automated notifications, reminders, and personalized messages.</p>
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">Get Started with WhatsApp Business</h3>
-                                <p class="text-gray-500 mb-6">We\'ll create a dedicated WhatsApp Business account for your gym. Each gym gets its own isolated account for complete privacy and control.</p>
+
+                                <!-- Features Grid -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+                                    <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                        <div class="w-10 h-10 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-3">
+                                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">Automated Notifications</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Membership reminders, payment alerts, and attendance notifications</p>
+                                    </div>
+                                    <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                        <div class="w-10 h-10 mx-auto bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3">
+                                            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">Class Reminders</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Send workout reminders and schedule updates instantly</p>
+                                    </div>
+                                    <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                        <div class="w-10 h-10 mx-auto bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-3">
+                                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">Member Engagement</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Birthday wishes, promotional offers, and personalized messages</p>
+                                    </div>
+                                </div>
                             </div>
                         ')),
 
@@ -206,8 +251,9 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         Forms\Components\Actions\Action::make('start_setup')
                             ->label('Start Setup')
                             ->color('primary')
+                            ->size('lg')
                             ->icon('heroicon-o-rocket-launch')
-                            ->action(fn () => $this->startSetup()),
+                            ->action('startSetup'),
                     ])->alignCenter(),
                 ]),
         ];
@@ -216,180 +262,181 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getSetupSchema(): array
     {
         return [
-            Forms\Components\Wizard::make('setupWizard')
-                ->steps([
-                    Forms\Components\Wizard\Step::make('Create Account')
-                        ->label('1. Create Account')
-                        ->schema([
-                            Forms\Components\Placeholder::make('step1_info')
-                                ->content(new HtmlString('
-                                    <div class="mb-4">
-                                        <h3 class="font-medium">Creating your dedicated WhatsApp Business account...</h3>
-                                        <p class="text-sm text-gray-500">This will create a subaccount under our master Twilio account.</p>
-                                    </div>
-                                ')),
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('createAccount')
-                                    ->label('Create Subaccount')
-                                    ->color('primary')
-                                    ->action(fn () => $this->createSubaccount())
-                                    ->disabled($this->whatsappAccount !== null),
-                            ]),
-                        ]),
-
-                    Forms\Components\Wizard\Step::make('Business Profile')
-                        ->label('2. Business Profile')
-                        ->schema([
-                            Forms\Components\TextInput::make('business_name')
-                                ->label('Business Name')
-                                ->required()
-                                ->default($this->getGym()?->name),
-
-                            Forms\Components\TextInput::make('business_email')
-                                ->label('Business Email')
-                                ->email()
-                                ->required()
-                                ->default(Auth::user()?->email),
-
-                            Forms\Components\Textarea::make('business_description')
-                                ->label('Business Description')
-                                ->rows(3)
-                                ->placeholder('Describe your gym business...'),
-
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('saveProfile')
-                                    ->label('Save & Continue')
-                                    ->color('primary')
-                                    ->action(fn () => $this->saveBusinessProfile()),
-                            ]),
-                        ]),
-
-                    Forms\Components\Wizard\Step::make('WABA Setup')
-                        ->label('3. WhatsApp Business')
-                        ->schema([
-                            Forms\Components\Placeholder::make('waba_info')
-                                ->content(new HtmlString('
-                                    <div class="mb-4">
-                                        <h3 class="font-medium">Creating WhatsApp Business Account (WABA)</h3>
-                                        <p class="text-sm text-gray-500">This is required to send WhatsApp messages to your members.</p>
-                                    </div>
-                                ')),
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('createWaba')
-                                    ->label($this->useIndividualWaba ? 'Create Individual WABA' : 'Create Shared WABA')
-                                    ->color('primary')
-                                    ->action(fn () => $this->createWaba())
-                                    ->disabled($this->whatsappAccount?->waba_id !== null),
-                            ]),
-                            Forms\Components\Placeholder::make('embedded_signup_info')
-                                ->hidden(! $this->requiresEmbeddedSignup)
-                                ->content(new HtmlString('
-                                    <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <h4 class="font-medium text-blue-800 mb-2">Complete WABA Setup</h4>
-                                        <p class="text-sm text-blue-700 mb-4">Click the button below to connect your WhatsApp Business Account through Facebook.</p>
-                                    </div>
-                                ')),
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('startEmbeddedSignup')
-                                    ->label('Connect via Facebook')
-                                    ->color('success')
-                                    ->icon('heroicon-o-arrow-path')
-                                    ->action(fn () => $this->startEmbeddedSignup())
-                                    ->hidden(! $this->requiresEmbeddedSignup),
-                                Forms\Components\Actions\Action::make('skipEmbeddedSignup')
-                                    ->label('Skip for Now')
-                                    ->color('gray')
-                                    ->action(fn () => $this->skipEmbeddedSignup())
-                                    ->hidden(! $this->requiresEmbeddedSignup),
-                            ]),
-                        ]),
-
-                    Forms\Components\Wizard\Step::make('Phone Number')
-                        ->label('4. Phone Number')
-                        ->schema([
-                            Forms\Components\Select::make('search_country')
-                                ->label('Country')
-                                ->options([
-                                    'US' => 'United States',
-                                    'GB' => 'United Kingdom',
-                                    'CA' => 'Canada',
-                                    'IN' => 'India',
-                                    'AU' => 'Australia',
-                                ])
-                                ->default('US')
-                                ->required(),
-
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('searchNumbers')
-                                    ->label('Search Numbers')
-                                    ->action(fn () => $this->searchNumbers())
-                                    ->disabled($this->isSearching),
-                            ]),
-
-                            Forms\Components\Placeholder::make('numbers_list')
-                                ->hidden(fn () => empty($this->availableNumbers))
-                                ->content(new HtmlString('
-                                    <div class="mt-4">
-                                        <h4 class="font-medium mb-2">Available Numbers</h4>
-                                        <div class="space-y-2">
-                                            @foreach($availableNumbers as $number)
-                                                <div class="flex items-center justify-between p-3 border rounded-lg">
-                                                    <div>
-                                                        <span class="font-medium">{{ $number["phoneNumber"] }}</span>
-                                                        <span class="text-sm text-gray-500 ml-2">{{ $number["locality"] ?? "" }}</span>
-                                                    </div>
-                                                    <button wire:click="selectNumber(\'{{ $number["phoneNumber"] }}\')" class="text-primary-600 hover:text-primary-700">
-                                                        Select
-                                                    </button>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                ')),
-                        ]),
-
-                    Forms\Components\Wizard\Step::make('Templates')
-                        ->label('5. Default Templates')
-                        ->schema([
-                            Forms\Components\Placeholder::make('templates_info')
-                                ->content(new HtmlString('
-                                    <div class="mb-4">
-                                        <h3 class="font-medium">Setting up default message templates</h3>
-                                        <p class="text-sm text-gray-500">We\'ll create 8 utility templates for common gym communications. These will be submitted for Meta approval.</p>
-                                    </div>
-                                ')),
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('createTemplates')
-                                    ->label('Create & Submit Templates')
-                                    ->color('primary')
-                                    ->action(fn () => $this->createDefaultTemplates()),
-                            ]),
-                        ]),
-
-                    Forms\Components\Wizard\Step::make('Welcome Credits')
-                        ->label('6. Welcome Credits')
-                        ->schema([
-                            Forms\Components\Placeholder::make('welcome_info')
-                                ->content(new HtmlString('
-                                    <div class="text-center py-6">
-                                        <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                                            <span class="text-2xl">🎁</span>
-                                        </div>
-                                        <h3 class="font-medium text-lg mb-2">50 Free Welcome Credits!</h3>
-                                        <p class="text-gray-500">Claim your 50 free WhatsApp message credits to get started.</p>
-                                    </div>
-                                ')),
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('claimWelcome')
-                                    ->label('Claim Welcome Credits')
-                                    ->color('success')
-                                    ->action(fn () => $this->claimWelcomeCredits())
-                                    ->disabled($this->welcomeCreditsClaimed),
-                            ]),
-                        ]),
-                ])
-                ->skippable(false),
+            Forms\Components\Wizard::make([
+                $this->getCreateAccountStep(),
+                $this->getWabaSetupStep(),
+                $this->getPhoneNumberStep(),
+                $this->getTemplatesStep(),
+                $this->getWelcomeCreditsStep(),
+            ])
+                ->skippable(true)
+                ->startOnStep($this->setupStep),
         ];
+    }
+
+    private function getCreateAccountStep(): Forms\Components\Wizard\Step
+    {
+        return Forms\Components\Wizard\Step::make('Create Account')
+            ->label('1. Create Account')
+            ->schema([
+                Forms\Components\Placeholder::make('step1_info')
+                    ->content(new HtmlString('
+                        <div class="mb-4">
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">Create Your WhatsApp Business Account</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Enter your business details to set up your dedicated WhatsApp messaging account.</p>
+                        </div>
+                    ')),
+                Forms\Components\Grid::make(2)->schema([
+                    Forms\Components\TextInput::make('business_name')
+                        ->label('Business Name')
+                        ->required()
+                        ->default($this->getGym()?->name)
+                        ->disabled($this->accountCreated),
+                    Forms\Components\TextInput::make('business_email')
+                        ->label('Business Email')
+                        ->email()
+                        ->required()
+                        ->default(Auth::user()?->email)
+                        ->disabled($this->accountCreated),
+                ]),
+                Forms\Components\Textarea::make('business_description')
+                    ->label('Business Description')
+                    ->rows(3)
+                    ->placeholder('Describe your gym business...')
+                    ->disabled($this->accountCreated),
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('createAccount')
+                        ->label($this->accountCreated ? 'Account Created' : 'Create Account')
+                        ->color('primary')
+                        ->action('createSubaccount')
+                        ->disabled($this->accountCreated)
+                        ->icon($this->accountCreated ? 'heroicon-o-check-circle' : null),
+                ]),
+            ]);
+    }
+
+    private function getWabaSetupStep(): Forms\Components\Wizard\Step
+    {
+        return Forms\Components\Wizard\Step::make('WABA Setup')
+            ->label('2. WhatsApp Business')
+            ->schema([
+                Forms\Components\Placeholder::make('waba_info')
+                    ->content(new HtmlString('
+                        <div class="mb-4">
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">Creating WhatsApp Business Account (WABA)</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">This is required to send WhatsApp messages to your members.</p>
+                        </div>
+                    ')),
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('createWaba')
+                        ->label($this->wabaCreated ? 'WABA Created' : ($this->useIndividualWaba ? 'Create Individual WABA' : 'Create Shared WABA'))
+                        ->color('primary')
+                        ->action('createWaba')
+                        ->disabled($this->wabaCreated)
+                        ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : null),
+                ]),
+                Forms\Components\Placeholder::make('embedded_signup_info')
+                    ->hidden(! $this->requiresEmbeddedSignup)
+                    ->content(new HtmlString('
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <h4 class="font-medium text-blue-800 dark:text-blue-200 mb-2">Complete WABA Setup</h4>
+                            <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">Click the button below to connect your WhatsApp Business Account through Facebook.</p>
+                        </div>
+                    ')),
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('startEmbeddedSignup')
+                        ->label('Connect via Facebook')
+                        ->color('success')
+                        ->icon('heroicon-o-arrow-path')
+                        ->action('startEmbeddedSignup')
+                        ->hidden(! $this->requiresEmbeddedSignup),
+                    Forms\Components\Actions\Action::make('skipEmbeddedSignup')
+                        ->label('Skip for Now')
+                        ->color('gray')
+                        ->action('skipEmbeddedSignup')
+                        ->hidden(! $this->requiresEmbeddedSignup),
+                ]),
+            ]);
+    }
+
+    private function getPhoneNumberStep(): Forms\Components\Wizard\Step
+    {
+        return Forms\Components\Wizard\Step::make('Phone Number')
+            ->label('3. Phone Number')
+            ->schema([
+                Forms\Components\Select::make('search_country')
+                    ->label('Country')
+                    ->options([
+                        'US' => 'United States',
+                        'GB' => 'United Kingdom',
+                        'CA' => 'Canada',
+                        'IN' => 'India',
+                        'AU' => 'Australia',
+                    ])
+                    ->default('US')
+                    ->required()
+                    ->disabled($this->numberPurchased),
+
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('searchNumbers')
+                        ->label('Search Numbers')
+                        ->action('searchNumbers')
+                        ->disabled($this->isSearching || $this->numberPurchased),
+                ]),
+
+                Forms\Components\Placeholder::make('numbers_list')
+                    ->hidden(empty($this->availableNumbers))
+                    ->content(new HtmlString(view('filament.admin.pages.whatsapp.partials.available-numbers', ['numbers' => $this->availableNumbers])->render())),
+            ]);
+    }
+
+    private function getTemplatesStep(): Forms\Components\Wizard\Step
+    {
+        return Forms\Components\Wizard\Step::make('Templates')
+            ->label('4. Default Templates')
+            ->schema([
+                Forms\Components\Placeholder::make('templates_info')
+                    ->content(new HtmlString('
+                        <div class="mb-4">
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">Setting up default message templates</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">We will create 8 utility templates for common gym communications. These will be submitted for Meta approval.</p>
+                        </div>
+                    ')),
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('createTemplates')
+                        ->label($this->templatesCreated ? 'Templates Created' : 'Create & Submit Templates')
+                        ->color('primary')
+                        ->action('createDefaultTemplates')
+                        ->disabled($this->templatesCreated)
+                        ->icon($this->templatesCreated ? 'heroicon-o-check-circle' : null),
+                ]),
+            ]);
+    }
+
+    private function getWelcomeCreditsStep(): Forms\Components\Wizard\Step
+    {
+        return Forms\Components\Wizard\Step::make('Welcome Credits')
+            ->label('5. Welcome Credits')
+            ->schema([
+                Forms\Components\Placeholder::make('welcome_info')
+                    ->content(new HtmlString('
+                        <div class="text-center py-6">
+                            <div class="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                                <span class="text-2xl">🎁</span>
+                            </div>
+                            <h3 class="font-medium text-lg text-gray-900 dark:text-gray-100 mb-2">50 Free Welcome Credits!</h3>
+                            <p class="text-gray-500 dark:text-gray-400">Claim your 50 free WhatsApp message credits to get started.</p>
+                        </div>
+                    ')),
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('claimWelcome')
+                        ->label($this->welcomeCreditsClaimed ? 'Credits Claimed' : 'Claim Welcome Credits')
+                        ->color('success')
+                        ->action('claimWelcomeCredits')
+                        ->disabled($this->welcomeCreditsClaimed)
+                        ->icon($this->welcomeCreditsClaimed ? 'heroicon-o-check-circle' : null),
+                ]),
+            ]);
     }
 
     private function getActiveSchema(): array
@@ -402,7 +449,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         Forms\Components\Placeholder::make('status')
                             ->label('Account Status')
                             ->content(new HtmlString('
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                                     ✓ Active
                                 </span>
                             ')),
@@ -417,12 +464,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
                         Forms\Components\Placeholder::make('credits')
                             ->label('Message Credits')
-                            ->content(new HtmlString('
-                                <div class="text-sm">
-                                    <span class="font-medium">{{ $creditBalance?->remaining_credits ?? 0 }}</span>
-                                    <span class="text-gray-500"> remaining</span>
-                                </div>
-                            ')),
+                            ->content(($this->creditBalance?->remaining_credits ?? 0) . ' remaining'),
                     ]),
 
                     Forms\Components\Actions::make([
@@ -434,11 +476,11 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                     ->label('Phone Number')
                                     ->required(),
                             ])
-                            ->action(fn (array $data) => $this->sendTestMessage($data)),
+                            ->action('sendTestMessage'),
 
                         Forms\Components\Actions\Action::make('viewTemplates')
                             ->label('Manage Templates')
-                            ->url(route('filament.admin.resources.whatsapp-templates.index')),
+                            ->url(route('filament.admin.resources.whats-app-templates.index', ['tenant' => $this->getTenantSlug()])),
                     ]),
                 ]),
         ];
@@ -453,15 +495,21 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     Forms\Components\Placeholder::make('error_message')
                         ->content(new HtmlString('
                             <div class="text-center py-8">
-                                <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">Setup Incomplete</h3>
-                                <p class="text-gray-500 mb-4">Please contact support or try setting up again.</p>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Setup Incomplete</h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-4">Please contact support or try setting up again.</p>
                             </div>
                         ')),
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('retry')
+                            ->label('Retry Setup')
+                            ->color('primary')
+                            ->action('retrySetup'),
+                    ])->alignCenter(),
                 ]),
         ];
     }
@@ -470,6 +518,14 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $this->viewState = 'setup';
         $this->setupStep = 1;
+        // $this->redirectRoute('filament.admin.pages.whats-app-setup');
+    }
+
+    public function retrySetup(): void
+    {
+        $this->loadWhatsAppData();
+        $this->determineViewState();
+        $this->redirectRoute('filament.admin.pages.whats-app-setup');
     }
 
     public function createSubaccount(): void
@@ -479,21 +535,33 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             $gym = $this->getGym();
             $user = Auth::user();
 
+            $data = $this->form->getState();
+
             $result = app(TwilioAccountManager::class)->createSubaccount(
                 $gymId,
-                $gym?->name ?? 'Unknown Gym',
-                $user?->email ?? 'admin@example.com'
+                $data['business_name'] ?? $gym?->name ?? 'Unknown Gym',
+                $data['business_email'] ?? $user?->email ?? 'admin@example.com'
             );
 
             if ($result['success']) {
                 $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+
+                if ($this->whatsappAccount && isset($data['business_description'])) {
+                    $this->whatsappAccount->update([
+                        'business_description' => $data['business_description'],
+                    ]);
+                }
+
+                $this->accountCreated = true;
                 $this->setupStep = 2;
 
                 Notification::make()
                     ->title('Account Created')
-                    ->body('Your WhatsApp Business subaccount has been created.')
+                    ->body('Your WhatsApp Business account has been created successfully.')
                     ->success()
                     ->send();
+
+                $this->redirectRoute('filament.admin.pages.whats-app-setup');
             } else {
                 Notification::make()
                     ->title('Failed to Create Account')
@@ -548,7 +616,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             );
 
             if ($result['success']) {
-                $this->whatsappAccount->refresh();
+                $this->whatsappAccount?->refresh();
 
                 if ($result['requires_embedded_signup'] ?? false) {
                     $this->requiresEmbeddedSignup = true;
@@ -560,13 +628,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         ->info()
                         ->send();
                 } else {
-                    $this->setupStep = 4;
+                    $this->wabaCreated = true;
+                    $this->setupStep = 3;
 
                     Notification::make()
                         ->title('WABA Created')
                         ->body('Your WhatsApp Business Account has been created.')
                         ->success()
                         ->send();
+
+                    $this->redirectRoute('filament.admin.pages.whats-app-setup');
                 }
             } else {
                 throw new \Exception($result['error'] ?? 'Failed to create WABA');
@@ -618,13 +689,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function skipEmbeddedSignup(): void
     {
         $this->requiresEmbeddedSignup = false;
-        $this->setupStep = 4;
+        $this->wabaCreated = true;
+        $this->setupStep = 3;
 
         Notification::make()
             ->title('Skipped')
             ->body('You can complete the WABA setup later.')
             ->warning()
             ->send();
+
+        $this->redirectRoute('filament.admin.pages.whats-app-setup');
     }
 
     public function searchNumbers(): void
@@ -633,7 +707,11 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             $data = $this->form->getState();
             $country = $data['search_country'] ?? 'US';
 
+            $this->isSearching = true;
+
             $numbers = app(TwilioAccountManager::class)->searchNumbers($country, 'local', 5);
+
+            $this->isSearching = false;
 
             if (empty($numbers)) {
                 Notification::make()
@@ -651,6 +729,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->send();
             }
         } catch (\Exception $e) {
+            $this->isSearching = false;
+
             Notification::make()
                 ->title('Search Failed')
                 ->body($e->getMessage())
@@ -687,13 +767,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
                 $this->availableNumbers = [];
                 $this->selectedNumber = null;
-                $this->setupStep = 5;
+                $this->numberPurchased = true;
+                $this->setupStep = 4;
 
                 Notification::make()
                     ->title('Number Purchased')
                     ->body('Your WhatsApp phone number has been purchased.')
                     ->success()
                     ->send();
+
+                // $this->redirectRoute('filament.admin.pages.whats-app-setup');
             } else {
                 throw new \Exception($result['error'] ?? 'Failed to purchase number');
             }
@@ -713,13 +796,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         try {
             app(WhatsAppTemplateService::class)->createDefaultTemplates($this->getGymId());
 
-            $this->setupStep = 6;
+            $this->templatesCreated = true;
+            $this->setupStep = 5;
 
             Notification::make()
                 ->title('Templates Created')
                 ->body('8 default templates have been created and submitted for approval.')
                 ->success()
                 ->send();
+
+            // $this->redirectRoute('filament.admin.pages.whats-app-setup');
         } catch (\Exception $e) {
             Log::error('Failed to create default templates', ['error' => $e->getMessage()]);
 
@@ -751,6 +837,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->body('You now have 50 free WhatsApp message credits.')
                 ->success()
                 ->send();
+
+            // $this->redirectRoute('filament.admin.pages.whats-app-setup');
         } catch (\Exception $e) {
             Log::error('Failed to claim welcome credits', ['error' => $e->getMessage()]);
 
@@ -771,7 +859,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 throw new \Exception('Phone number is required');
             }
 
-            $result = app(TwilioWhatsAppService::class)->sendTemplateMessage(
+            $result = app(\App\Services\TwilioWhatsAppService::class)->sendTemplateMessage(
                 $phoneNumber,
                 'welcome_message',
                 [
@@ -804,5 +892,15 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $this->loadWhatsAppData();
         $this->determineViewState();
+    }
+
+    public function getTenant()
+    {
+        return Filament::getTenant();
+    }
+
+    public function getTenantSlug()
+    {
+        return $this->getTenant()->slug;
     }
 }

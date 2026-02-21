@@ -137,7 +137,7 @@ class WhatsAppSetupTest extends TestCase
     // ========== SETUP STEP DETERMINATION TESTS ==========
 
     /** @test */
-    public function it_sets_step_3_when_waba_id_is_missing(): void
+    public function it_sets_step_2_when_waba_id_is_missing(): void
     {
         WhatsAppAccount::create([
             'gym_id' => $this->gym->id,
@@ -151,11 +151,11 @@ class WhatsAppSetupTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(WhatsAppSetup::class)
             ->assertSet('viewState', 'setup')
-            ->assertSet('setupStep', 3);
+            ->assertSet('setupStep', 2);
     }
 
     /** @test */
-    public function it_sets_step_4_when_phone_number_is_missing(): void
+    public function it_sets_step_3_when_phone_number_is_missing(): void
     {
         WhatsAppAccount::create([
             'gym_id' => $this->gym->id,
@@ -169,7 +169,7 @@ class WhatsAppSetupTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(WhatsAppSetup::class)
             ->assertSet('viewState', 'setup')
-            ->assertSet('setupStep', 4);
+            ->assertSet('setupStep', 3);
     }
 
     // ========== START SETUP ACTION TEST ==========
@@ -268,7 +268,7 @@ class WhatsAppSetupTest extends TestCase
         $component->set('data.business_description', 'Premium gym facility');
 
         $component->call('saveBusinessProfile')
-            ->assertSet('setupStep', 3);
+            ->assertSet('setupStep', 2);
 
         $account->refresh();
         $this->assertEquals('My Fitness Hub', $account->business_name);
@@ -300,7 +300,7 @@ class WhatsAppSetupTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(WhatsAppSetup::class)
             ->call('createWaba')
-            ->assertSet('setupStep', 4)
+            ->assertSet('setupStep', 3)
             ->assertNotified('WABA Created');
     }
 
@@ -423,7 +423,7 @@ class WhatsAppSetupTest extends TestCase
             ->call('selectNumber', '+14155551234')
             ->assertSet('availableNumbers', [])
             ->assertSet('selectedNumber', null)
-            ->assertSet('setupStep', 5)
+            ->assertSet('setupStep', 4)
             ->assertNotified('Number Purchased');
     }
 
@@ -470,7 +470,7 @@ class WhatsAppSetupTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(WhatsAppSetup::class)
             ->call('createDefaultTemplates')
-            ->assertSet('setupStep', 6)
+            ->assertSet('setupStep', 5)
             ->assertNotified('Templates Created');
     }
 
