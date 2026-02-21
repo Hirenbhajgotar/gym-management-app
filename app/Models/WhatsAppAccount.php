@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\WabaModeEnum;
+use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Observers\WhatsAppAccountObserver;
@@ -18,7 +20,14 @@ use Illuminate\Support\Facades\Crypt;
  * @property string $twilio_account_sid
  * @property string $twilio_auth_token
  * @property string|null $waba_id
+ * @property string|null $waba_name
+ * @property string|null $waba_status
+ * @property string|null $waba_mode
  * @property string|null $messaging_service_sid
+ * @property string|null $meta_business_portfolio_id
+ * @property string|null $meta_access_token
+ * @property bool $embedded_signup_completed
+ * @property string|null $embedded_signup_session_id
  * @property string $status
  * @property string $verification_status
  * @property string|null $business_name
@@ -54,7 +63,14 @@ class WhatsAppAccount extends Model
         'twilio_account_sid',
         'twilio_auth_token',
         'waba_id',
+        'waba_name',
+        'waba_status',
+        'waba_mode',
         'messaging_service_sid',
+        'meta_business_portfolio_id',
+        'meta_access_token',
+        'embedded_signup_completed',
+        'embedded_signup_session_id',
         'status',
         'verification_status',
         'business_name',
@@ -65,6 +81,7 @@ class WhatsAppAccount extends Model
 
     protected $hidden = [
         'twilio_auth_token',
+        'meta_access_token',
     ];
 
     protected function casts(): array
@@ -72,6 +89,9 @@ class WhatsAppAccount extends Model
         return [
             'status' => WhatsAppAccountStatusEnum::class,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::class,
+            'waba_status' => WabaStatusEnum::class,
+            'waba_mode' => WabaModeEnum::class,
+            'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
         ];
     }
@@ -113,6 +133,20 @@ class WhatsAppAccount extends Model
         );
     }
 
+    public function metaAccessToken(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (! $this->meta_access_token) {
+                    return null;
+                }
+
+                return Crypt::decrypt($this->meta_access_token);
+            },
+            set: fn ($value) => $value ? Crypt::encrypt($value) : null,
+        );
+    }
+
     // =========================
     // Helper Methods
     // =========================
@@ -135,5 +169,36 @@ class WhatsAppAccount extends Model
     public function getPhoneNumber(): ?WhatsAppPhoneNumber
     {
         return $this->phoneNumber()->first();
+    }
+
+    public function hasIndividualWaba(): bool
+    {
+        return $this->waba_mode === WabaModeEnum::INDIVIDUAL;
+    }
+
+    public function hasSharedWaba(): bool
+    {
+        return $this->waba_mode === WabaModeEnum::SHARED;
+    }
+
+    public function hasManualWaba(): bool
+    {
+        return $this->waba_mode === WabaModeEnum::MANUAL;
+    }
+
+    public function isEmbeddedSignupComplete(): bool
+    {
+        return $this->embedded_signup_completed === true;
+    }
+
+    public function isWabaActive(): bool
+    {
+        return $this->waba_status === WabaStatusEnum::ACTIVE;
+    }
+
+    public function isWabaRestricted(): bool
+    {
+        return $this->waba_status === WabaStatusEnum::RESTRICTED
+            || $this->waba_status === WabaStatusEnum::BANNED;
     }
 }

@@ -77,10 +77,28 @@ return [
     'twilio' => [
         'master_sid' => env('TWILIO_ACCOUNT_SID'),
         'master_token' => env('TWILIO_AUTH_TOKEN'),
-        'waba_id' => env('TWILIO_WABA_ID', '1452995289594243'),
-        // 'api_key' => env('TWILIO_API_KEY'),
+
+        // Shared WABA (for backward compatibility during migration)
+        'shared_waba_id' => env('TWILIO_WABA_ID'),
+
+        // Feature Flags
+        'use_individual_waba' => env('TWILIO_USE_INDIVIDUAL_WABA', false),
+        'embedded_signup_enabled' => env('TWILIO_EMBEDDED_SIGNUP_ENABLED', false),
+
+        // Meta/Facebook Integration for Embedded Signup
+        'meta' => [
+            'app_id' => env('META_APP_ID'),
+            'app_secret' => env('META_APP_SECRET'),
+            'api_version' => env('META_API_VERSION', 'v19.0'),
+            'redirect_uri' => env('META_REDIRECT_URI'),
+            'config_id' => env('META_CONFIG_ID'),
+        ],
+
+        // Sandbox Settings
         'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
+
+        // Pre-approved Template SIDs
         'whatsapp_integration_active_v5_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V5_TEMPLATE_SID', 'HX8285885c2d7330f26cb8c97a4b586d1a'),
         'demo_request_template_sid' => env('TWILIO_DEMO_REQUEST_TEMPLATE_SID', 'HX3ae293398edf997d889fa8edc06a7ebb'),
         'birthday_greeting_template_sid' => env('TWILIO_BIRTHDAY_GREETING_TEMPLATE_SID', 'HXcda1c2b35387313592234ddd828ec017'),

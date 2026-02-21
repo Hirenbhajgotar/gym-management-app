@@ -6,6 +6,7 @@ use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
+use App\Services\EmbeddedSignupService;
 use App\Services\TwilioAccountManager;
 use App\Services\WhatsAppBillingService;
 use App\Services\WhatsAppTemplateService;
@@ -63,8 +64,15 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public bool $welcomeCreditsClaimed = false;
 
+    public bool $useIndividualWaba = false;
+
+    public bool $requiresEmbeddedSignup = false;
+
+    public ?string $embeddedSignupUrl = null;
+
     public function mount(): void
     {
+        $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
         $this->loadWhatsAppData();
         $this->determineViewState();
         $this->initializeFormData();
@@ -108,6 +116,10 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function determineSetupStep(): int
     {
         if (! $this->whatsappAccount->waba_id) {
+            if ($this->useIndividualWaba && ! $this->whatsappAccount->isEmbeddedSignupComplete()) {
+                return 3;
+            }
+
             return 3;
         }
 
@@ -264,10 +276,31 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 ')),
                             Forms\Components\Actions::make([
                                 Forms\Components\Actions\Action::make('createWaba')
-                                    ->label('Create WABA')
+                                    ->label($this->useIndividualWaba ? 'Create Individual WABA' : 'Create Shared WABA')
                                     ->color('primary')
                                     ->action(fn () => $this->createWaba())
                                     ->disabled($this->whatsappAccount?->waba_id !== null),
+                            ]),
+                            Forms\Components\Placeholder::make('embedded_signup_info')
+                                ->hidden(! $this->requiresEmbeddedSignup)
+                                ->content(new HtmlString('
+                                    <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <h4 class="font-medium text-blue-800 mb-2">Complete WABA Setup</h4>
+                                        <p class="text-sm text-blue-700 mb-4">Click the button below to connect your WhatsApp Business Account through Facebook.</p>
+                                    </div>
+                                ')),
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('startEmbeddedSignup')
+                                    ->label('Connect via Facebook')
+                                    ->color('success')
+                                    ->icon('heroicon-o-arrow-path')
+                                    ->action(fn () => $this->startEmbeddedSignup())
+                                    ->hidden(! $this->requiresEmbeddedSignup),
+                                Forms\Components\Actions\Action::make('skipEmbeddedSignup')
+                                    ->label('Skip for Now')
+                                    ->color('gray')
+                                    ->action(fn () => $this->skipEmbeddedSignup())
+                                    ->hidden(! $this->requiresEmbeddedSignup),
                             ]),
                         ]),
 
@@ -516,13 +549,25 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
             if ($result['success']) {
                 $this->whatsappAccount->refresh();
-                $this->setupStep = 4;
 
-                Notification::make()
-                    ->title('WABA Created')
-                    ->body('Your WhatsApp Business Account has been created.')
-                    ->success()
-                    ->send();
+                if ($result['requires_embedded_signup'] ?? false) {
+                    $this->requiresEmbeddedSignup = true;
+                    $this->embeddedSignupUrl = app(EmbeddedSignupService::class)->getLoginUrl($gymId);
+
+                    Notification::make()
+                        ->title('WABA Setup Initiated')
+                        ->body('Please complete the Facebook login to connect your WhatsApp Business Account.')
+                        ->info()
+                        ->send();
+                } else {
+                    $this->setupStep = 4;
+
+                    Notification::make()
+                        ->title('WABA Created')
+                        ->body('Your WhatsApp Business Account has been created.')
+                        ->success()
+                        ->send();
+                }
             } else {
                 throw new \Exception($result['error'] ?? 'Failed to create WABA');
             }
@@ -535,6 +580,51 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->danger()
                 ->send();
         }
+    }
+
+    public function startEmbeddedSignup(): void
+    {
+        try {
+            $gym = $this->getGym();
+
+            if (! $gym) {
+                Notification::make()
+                    ->title('Error')
+                    ->body('No tenant found.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            Notification::make()
+                ->title('Redirecting to Facebook')
+                ->body('You will be redirected to complete the setup.')
+                ->info()
+                ->send();
+
+            $this->redirect(route('whatsapp.embedded-signup.redirect', ['tenant' => $gym->slug]));
+        } catch (\Exception $e) {
+            Log::error('Failed to start embedded signup', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function skipEmbeddedSignup(): void
+    {
+        $this->requiresEmbeddedSignup = false;
+        $this->setupStep = 4;
+
+        Notification::make()
+            ->title('Skipped')
+            ->body('You can complete the WABA setup later.')
+            ->warning()
+            ->send();
     }
 
     public function searchNumbers(): void
