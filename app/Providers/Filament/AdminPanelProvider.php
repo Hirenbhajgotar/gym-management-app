@@ -43,8 +43,18 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
                 'success' => Color::Green,
                 'danger' => Color::Red,
-                'info' => Color::Blue,
+                'info' => Color::Sky,
                 'warning' => Color::Yellow,
+                'blue' => Color::Blue,
+                'neutral' => Color::Neutral,
+                'orange' => Color::Orange,
+                'lime' => Color::Lime,
+                'teal' => Color::Teal,
+                'cyan' => Color::Cyan,
+                'rose' => Color::Rose,
+                'purple' => Color::Purple,
+                'pink' => Color::Pink,
+
             ])
             ->brandLogo(asset('fluxfitness-logo.svg'))
             ->brandLogoHeight('3rem')

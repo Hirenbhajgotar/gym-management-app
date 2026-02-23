@@ -30,7 +30,7 @@
         @elseif($viewState === 'active')
             <div class="space-y-6">
                 {{-- Active Status Banner --}}
-                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div class="bg-green-50 dark:bg-gray-800 border border-green-200 dark:border-green-700 rounded-lg p-4">
                     <div class="flex items-start gap-3">
                         <div class="flex-shrink-0">
                             <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -38,7 +38,7 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-sm font-semibold text-green-900 dark:text-green-100">
+                            <h3 class="text-sm font-semibold text-green-900 dark:text-green-400">
                                 WhatsApp Integration Active
                             </h3>
                             <p class="mt-1 text-sm text-green-700 dark:text-green-300">
@@ -56,7 +56,7 @@
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Account Status</p>
                                 <p class="mt-2 text-2xl font-semibold text-green-600 dark:text-green-400">Active</p>
                             </div>
-                            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                            <div class="p-3 bg-green-100 dark:bg-gray-700 rounded-full">
                                 <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -72,7 +72,7 @@
                                     {{ $phoneNumber?->phone_number ?? 'N/A' }}
                                 </p>
                             </div>
-                            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                            <div class="p-3 bg-purple-100 dark:bg-gray-700 rounded-full">
                                 <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
@@ -88,7 +88,7 @@
                                     {{ $creditBalance?->remaining_credits ?? 0 }}
                                 </p>
                             </div>
-                            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                            <div class="p-3 bg-blue-100 dark:bg-gray-700 rounded-full">
                                 <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>

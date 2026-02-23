@@ -122,13 +122,9 @@ class WhatsAppAccount extends Model
     public function twilioAuthToken(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                if (! $this->twilio_auth_token) {
-                    return null;
-                }
-
-                return Crypt::decrypt($this->twilio_auth_token);
-            },
+            get: fn (mixed $value, array $attributes) => (isset($attributes['twilio_auth_token']) && $attributes['twilio_auth_token'])
+                ? Crypt::decrypt($attributes['twilio_auth_token'])
+                : null,
             set: fn ($value) => $value ? Crypt::encrypt($value) : null,
         );
     }
@@ -136,13 +132,9 @@ class WhatsAppAccount extends Model
     public function metaAccessToken(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                if (! $this->meta_access_token) {
-                    return null;
-                }
-
-                return Crypt::decrypt($this->meta_access_token);
-            },
+            get: fn (mixed $value, array $attributes) => (isset($attributes['meta_access_token']) && $attributes['meta_access_token'])
+                ? Crypt::decrypt($attributes['meta_access_token'])
+                : null,
             set: fn ($value) => $value ? Crypt::encrypt($value) : null,
         );
     }
