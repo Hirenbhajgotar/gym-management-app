@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\WhatsAppServiceInterface;
+use App\Models\GymMember;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
@@ -62,8 +63,6 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'from' => "whatsapp:$phoneNumber",
                 'body' => $message,
             ]);
-
-            $this->deductCredits(1);
 
             return [
                 'success' => true,
@@ -206,7 +205,6 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'contentVariables' => json_encode($variables),
             ]);
 
-            $this->deductCredits(1);
             $this->logUsage($to, $template, $twilioMessage);
 
             $template->incrementUsage();
@@ -308,26 +306,19 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     protected function prepareVariables(WhatsAppBroadcast $broadcast, WhatsAppBroadcastRecipient $recipient): array
     {
-        $variables = [];
-        $templateVariables = $broadcast->template->variables ?? [];
-        $providedVariables = $broadcast->message_variables ?? [];
+        $template = $broadcast->template;
+        $customVariables = $broadcast->message_variables ?? [];
 
-        foreach ($templateVariables as $index => $variable) {
-            $key = (string) ($index + 1);
-            $variableName = $variable['name'] ?? '';
+        // Load the member with relationships needed for variable resolution
+        $member = GymMember::with(['gym', 'membershipPlan', 'trainer', 'latestPayment'])
+            ->find($recipient->member_id);
 
-            if (isset($providedVariables[$variableName])) {
-                $variables[$key] = $providedVariables[$variableName];
-            } elseif (isset($providedVariables[$key])) {
-                $variables[$key] = $providedVariables[$key];
-            } else {
-                $variables[$key] = $variable['example'] ?? '';
-            }
-        }
+        $resolver = app(WhatsAppVariableResolver::class);
 
-        $variables['1'] = $recipient->member_name;
-
-        return $variables;
+        return $resolver->resolve($template, [
+            'member' => $member,
+            'custom' => $customVariables,
+        ]);
     }
 
     protected function checkAndDeductCredits(int $count = 1): void
@@ -341,15 +332,6 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
             $credit->useWelcomeCredit();
         } else {
-            $credit->deductCredits($count);
-        }
-    }
-
-    protected function deductCredits(int $count = 1): void
-    {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
-
-        if ($credit) {
             $credit->deductCredits($count);
         }
     }

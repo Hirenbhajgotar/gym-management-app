@@ -225,6 +225,20 @@ class WhatsAppTemplate extends Model
         return $this->variable_placeholder ?? [];
     }
 
+    /**
+     * Validate that the provided variables satisfy the template's requirements.
+     *
+     * @param  array<string, string>  $variables  Variables keyed by 1-indexed string keys
+     */
+    public function validateVariables(array $variables): bool
+    {
+        if ($this->variable_count === 0) {
+            return true;
+        }
+
+        return count($variables) >= $this->variable_count;
+    }
+
     public static function getDefaults(): Collection
     {
         return self::whereNull('gym_id')->isDefault()->get();

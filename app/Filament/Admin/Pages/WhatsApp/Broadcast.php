@@ -11,6 +11,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Services\TwilioWhatsAppService;
+use App\Services\WhatsAppVariableResolver;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
@@ -256,6 +257,81 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                             ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
                     ]),
 
+                // Variable Inputs (only for custom source variables)
+                Forms\Components\Section::make('Message Variables')
+                    ->description('Some variables are auto-filled from member data. Only custom variables need your input.')
+                    ->schema(function () {
+                        $templateId = $this->data['template_id'] ?? null;
+
+                        if (! $templateId) {
+                            return [];
+                        }
+
+                        $template = WhatsAppTemplate::find($templateId);
+
+                        if (! $template) {
+                            return [];
+                        }
+
+                        $placeholders = $template->getVariablePlaceholders();
+
+                        if (empty($placeholders)) {
+                            return [];
+                        }
+
+                        $fields = [];
+                        $hasAutoResolved = false;
+                        $autoResolvedLabels = [];
+
+                        foreach ($placeholders as $key => $placeholder) {
+                            $source = $placeholder['source'] ?? 'custom';
+                            $label = $placeholder['placeholder'] ?? 'Variable ' . $key;
+
+                            if ($source !== 'custom') {
+                                $hasAutoResolved = true;
+                                $sources = WhatsAppVariableResolver::getAvailableDataSources();
+                                $sourceLabel = $sources[$source]['label'] ?? $source;
+                                $autoResolvedLabels[] = '{{' . $key . '}} ' . $label . ' — ' . $sourceLabel;
+
+                                continue;
+                            }
+
+                            $fields[] = Forms\Components\TextInput::make('variables.' . $key)
+                                ->label('{{' . $key . '}} — ' . $label)
+                                ->placeholder($placeholder['example'] ?? '')
+                                ->required()
+                                ->helperText('This value will be the same for all recipients.');
+                        }
+
+                        if ($hasAutoResolved) {
+                            $autoList = collect($autoResolvedLabels)
+                                ->map(fn ($item) => '<li>' . e($item) . '</li>')
+                                ->implode('');
+
+                            array_unshift($fields, Forms\Components\Placeholder::make('auto_resolved_info')
+                                ->label('')
+                                ->content(new HtmlString('
+                                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-xs space-y-1">
+                                        <div class="font-semibold text-emerald-700 dark:text-emerald-400">Auto-filled variables (from member data):</div>
+                                        <ul class="text-emerald-600 dark:text-emerald-400 space-y-0.5 list-disc list-inside">' . $autoList . '</ul>
+                                    </div>
+                                ')));
+                        }
+
+                        if (empty($fields)) {
+                            $fields[] = Forms\Components\Placeholder::make('all_auto_resolved')
+                                ->label('')
+                                ->content(new HtmlString('
+                                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                                        All variables in this template are auto-filled from member data. No manual input needed.
+                                    </div>
+                                '));
+                        }
+
+                        return $fields;
+                    })
+                    ->visible(fn () => ! empty($this->data['template_id']) && ! empty($this->selectedTemplate)),
+
                 Forms\Components\Section::make('Recipients')
                     ->schema([
                         Forms\Components\Radio::make('recipient_type')
@@ -432,7 +508,6 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
     private function sendBroadcast(): void
     {
-        dd($this->data);
         try {
             $templateId = $this->data['template_id'] ?? null;
             $variables = $this->data['variables'] ?? [];

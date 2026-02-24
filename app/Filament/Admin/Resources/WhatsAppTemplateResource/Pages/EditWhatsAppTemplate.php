@@ -91,18 +91,8 @@ class EditWhatsAppTemplate extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Recalculate variable count
-        preg_match_all('/\{\{\d+\}\}/', $data['body'] ?? '', $matches);
-        $data['variable_count'] = count(array_unique($matches[0] ?? []));
-
-        // Extract variables list
-        $variables = [];
-        foreach (array_unique($matches[0] ?? []) as $var) {
-            $variables[] = $var;
-        }
-        $data['variables'] = $variables;
-
-        return $data;
+        // Normalize: fill null/missing values, build variables array
+        return WhatsAppTemplateResource::normalizeTemplateData($data);
     }
 
     protected function getRedirectUrl(): string

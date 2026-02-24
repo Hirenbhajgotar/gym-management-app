@@ -20,7 +20,7 @@ class CreateWhatsAppTemplate extends CreateRecord
         $data['status'] = WhatsAppTemplateStatusEnum::DRAFT;
         $data['whatsapp_account_id'] = $tenant?->whatsappAccount?->id;
 
-        // Handle default template selection
+        // Handle default template selection — merge variable_placeholder from default
         if (! empty($data['_default_template'])) {
             $templates = WhatsAppTemplateResource::getDefaultTemplatesForForm();
             if (isset($templates[$data['_default_template']])) {
@@ -29,22 +29,31 @@ class CreateWhatsAppTemplate extends CreateRecord
                 $data['display_name'] = $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name']));
                 $data['body'] = $template['body'];
                 $data['category'] = $template['category'] ?? 'utility';
+
+                // Merge default template's variable_placeholder as a base,
+                // then let the form's values override where present
+                if (! empty($template['variable_placeholder'])) {
+                    $formPlaceholders = $data['variable_placeholder'] ?? [];
+                    $merged = $template['variable_placeholder'];
+
+                    foreach ($formPlaceholders as $num => $formValues) {
+                        foreach ($formValues as $key => $value) {
+                            if (! empty($value)) {
+                                $merged[$num][$key] = $value;
+                            }
+                        }
+                    }
+
+                    $data['variable_placeholder'] = $merged;
+                }
             }
         }
 
-        // Calculate variable count from body
-        preg_match_all('/\{\{\d+\}\}/', $data['body'] ?? '', $matches);
-        $data['variable_count'] = count(array_unique($matches[0] ?? []));
-
-        // Extract variables list
-        $variables = [];
-        foreach (array_unique($matches[0] ?? []) as $var) {
-            $variables[] = $var;
-        }
-        $data['variables'] = $variables;
-
         // Remove the temporary field
         unset($data['_default_template']);
+
+        // Normalize: fill null/missing values, build variables array
+        $data = WhatsAppTemplateResource::normalizeTemplateData($data);
 
         return $data;
     }

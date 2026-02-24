@@ -6,6 +6,7 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppTemplateService;
+use App\Services\WhatsAppVariableResolver;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -83,6 +84,11 @@ class WhatsAppTemplateResource extends Resource
                                     $set('display_name', $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name'])));
                                     $set('body', $template['body']);
                                     $set('category', $template['category'] ?? 'utility');
+
+                                    // Set variable_placeholder from the default template
+                                    if (! empty($template['variable_placeholder'])) {
+                                        $set('variable_placeholder', $template['variable_placeholder']);
+                                    }
                                 }
                             }),
 
@@ -231,11 +237,9 @@ class WhatsAppTemplateResource extends Resource
                             ->content(new HtmlString('
                                 <div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 p-3 text-xs space-y-2">
                                     <div class="font-semibold text-gray-600 dark:text-gray-300">💡 Variable Guide</div>
-                                    <div class="text-gray-500 dark:text-gray-400 grid grid-cols-2 gap-1">
-                                        <span><code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{1}}</code> — Member name</span>
-                                        <span><code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{2}}</code> — Gym name</span>
-                                        <span><code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{3}}</code> — Date / Amount</span>
-                                        <span><code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{4}}</code> — Additional info</span>
+                                    <div class="text-gray-500 dark:text-gray-400 space-y-1">
+                                        <p>Use <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{1}}</code>, <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">{{2}}</code>, etc. for dynamic values like member name, gym name, dates, and amounts.</p>
+                                        <p>Each variable is mapped to a <strong>data source</strong> below — the system auto-fills values when sending messages.</p>
                                     </div>
                                     <div class="text-gray-400 dark:text-gray-500 mt-1">Variables must be sequential: {{1}}, {{2}}, {{3}}. Don\'t skip numbers.</div>
                                 </div>
@@ -243,13 +247,13 @@ class WhatsAppTemplateResource extends Resource
 
                         // Dynamic Variable Placeholders
                         Forms\Components\Section::make('Variable Placeholders')
-                            ->description('Map each dynamic placeholder to a descriptive label and example value to clarify the purpose of each variable during message composition.')
+                            ->description('Map each variable to a data source. Auto-resolved sources (member name, gym, plan, etc.) are filled automatically when sending. Use "Custom Value" for variables you\'ll enter manually.')
                             ->schema([
                                 Forms\Components\Placeholder::make('variable_placeholder_info')
                                     ->label('')
                                     ->content(new HtmlString('
                                         <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                            Define descriptive names for each variable used in your template. This helps users understand what value to enter for each {{1}}, {{2}}, etc.
+                                            Select a <strong>Data Source</strong> for each variable. Sources like Member Name, Gym Name, and Plan are auto-filled from member data. Choose "Custom Value" for values you\'ll provide manually at send time.
                                         </div>
                                     ')),
                             ])
@@ -264,26 +268,45 @@ class WhatsAppTemplateResource extends Resource
 
                                 $fields = [];
                                 $defaultData = [
-                                    '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text'],
-                                    '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text'],
-                                    '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text'],
-                                    '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number'],
-                                    '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text'],
-                                    '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text'],
+                                    '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text', 'source' => 'member.name'],
+                                    '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text', 'source' => 'gym.name'],
+                                    '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text', 'source' => 'member.membership_end'],
+                                    '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number', 'source' => 'payment.formatted_amount'],
+                                    '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text', 'source' => 'custom'],
+                                    '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text', 'source' => 'plan.name'],
                                 ];
 
                                 foreach ($variableNumbers as $num) {
-                                    $defaults = $defaultData[$num] ?? ['placeholder' => 'Variable ' . $num, 'name' => 'variable_' . $num, 'example' => 'Example ' . $num, 'type' => 'text'];
+                                    $defaults = $defaultData[$num] ?? ['placeholder' => 'Variable ' . $num, 'name' => 'variable_' . $num, 'example' => 'Example ' . $num, 'type' => 'text', 'source' => 'custom'];
 
-                                    $fields[] = Forms\Components\Grid::make(4)
+                                    $fields[] = Forms\Components\Grid::make(5)
                                         ->schema([
                                             Forms\Components\TextInput::make('variable_placeholder.' . $num . '.variable')
                                                 ->label('{{' . $num . '}}')
                                                 ->readonly()
                                                 ->default('{{' . $num . '}}')
                                                 ->columnSpan(1),
+                                            Forms\Components\Select::make('variable_placeholder.' . $num . '.source')
+                                                ->label('Data Source')
+                                                ->options(WhatsAppVariableResolver::getGroupedSelectOptions())
+                                                ->default($defaults['source'])
+                                                ->searchable()
+                                                ->live()
+                                                ->afterStateUpdated(function ($state, Forms\Set $set) use ($num) {
+                                                    if (! $state) {
+                                                        return;
+                                                    }
+
+                                                    $sources = WhatsAppVariableResolver::getAvailableDataSources();
+                                                    if (isset($sources[$state])) {
+                                                        $set('variable_placeholder.' . $num . '.example', $sources[$state]['example']);
+                                                        $set('variable_placeholder.' . $num . '.placeholder', $sources[$state]['label']);
+                                                    }
+                                                })
+                                                ->helperText('Auto-fill source')
+                                                ->columnSpan(1),
                                             Forms\Components\TextInput::make('variable_placeholder.' . $num . '.placeholder')
-                                                ->label('Placeholder')
+                                                ->label('Label')
                                                 ->placeholder($defaults['placeholder'])
                                                 ->live(debounce: 500)
                                                 ->helperText('Display name')
@@ -382,11 +405,11 @@ class WhatsAppTemplateResource extends Resource
 
                                 return new HtmlString('
                                     <div class="rounded-lg border-2 border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4 space-y-3">
-                                        <div class="font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+                                        <div class="font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                             Meta Rejection Reason
                                         </div>
-                                        <div class="text-red-600 dark:text-red-400 text-sm">' . e($record->rejection_reason) . '</div>
+                                        <div class="text-red-600 dark:text-red-300 text-sm">' . e($record->rejection_reason) . '</div>
                                         <div class="text-gray-600 dark:text-gray-400 text-xs border-t border-red-200 dark:border-red-700 pt-2 space-y-1">
                                             <p><strong>What to do:</strong></p>
                                             <p>1. Review and fix the content based on the rejection reason above</p>
@@ -684,6 +707,79 @@ class WhatsAppTemplateResource extends Resource
         return $options;
     }
 
+    /**
+     * Normalize template data before saving, filling in null/missing values
+     * that Filament's default() and placeholder() don't submit.
+     *
+     * @param  array<string, mixed>  $data  Form data from create/edit
+     * @return array<string, mixed> Normalized data with variables and variable_placeholder fully populated
+     */
+    public static function normalizeTemplateData(array $data): array
+    {
+        $body = $data['body'] ?? '';
+        preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
+        $uniqueNumbers = array_unique($matches[1] ?? []);
+        sort($uniqueNumbers);
+
+        $data['variable_count'] = count($uniqueNumbers);
+
+        $defaultData = [
+            '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text', 'source' => 'member.name'],
+            '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text', 'source' => 'gym.name'],
+            '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text', 'source' => 'member.membership_end'],
+            '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number', 'source' => 'payment.formatted_amount'],
+            '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text', 'source' => 'custom'],
+            '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text', 'source' => 'plan.name'],
+        ];
+
+        $sources = WhatsAppVariableResolver::getAvailableDataSources();
+        $variablePlaceholder = $data['variable_placeholder'] ?? [];
+        $normalizedPlaceholder = [];
+        $variables = [];
+
+        foreach ($uniqueNumbers as $num) {
+            $existing = $variablePlaceholder[$num] ?? [];
+            $defaults = $defaultData[$num] ?? [
+                'placeholder' => 'Variable ' . $num,
+                'name' => 'variable_' . $num,
+                'example' => 'Example ' . $num,
+                'type' => 'text',
+                'source' => 'custom',
+            ];
+
+            // Resolve source label for placeholder fallback
+            $source = $existing['source'] ?? $defaults['source'];
+            $sourceLabel = isset($sources[$source]) ? $sources[$source]['label'] : null;
+            $sourceExample = isset($sources[$source]) ? $sources[$source]['example'] : null;
+
+            // Fill in every field — never store null
+            $placeholder = ! empty($existing['placeholder']) ? $existing['placeholder'] : ($sourceLabel ?? $defaults['placeholder']);
+            $example = ! empty($existing['example']) ? $existing['example'] : ($sourceExample ?? $defaults['example']);
+            $type = $existing['type'] ?? $defaults['type'];
+            $name = ! empty($existing['name']) ? $existing['name'] : $defaults['name'];
+
+            $normalizedPlaceholder[$num] = [
+                'variable' => '{{' . $num . '}}',
+                'source' => $source,
+                'placeholder' => $placeholder,
+                'example' => $example,
+                'type' => $type,
+                'name' => $name,
+            ];
+
+            $variables[] = [
+                'name' => $name,
+                'format' => $type,
+                'example' => $example,
+            ];
+        }
+
+        $data['variable_placeholder'] = $normalizedPlaceholder;
+        $data['variables'] = $variables;
+
+        return $data;
+    }
+
     public static function getDefaultTemplatesForForm(): array
     {
         $templates = WhatsAppTemplate::getDefaults()
@@ -693,6 +789,9 @@ class WhatsAppTemplateResource extends Resource
                     'display_name' => $template->display_name,
                     'body' => $template->body,
                     'category' => $template->category,
+                    'variable_placeholder' => $template->variable_placeholder,
+                    'variables' => $template->variables,
+                    'variable_count' => $template->variable_count,
                 ],
             ])
             ->toArray();

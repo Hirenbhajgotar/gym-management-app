@@ -93,6 +93,7 @@ class ListWhatsAppTemplates extends ListRecords
                 'category' => $template->category,
                 'variables' => json_encode($template->variables),
                 'variable_count' => $template->variable_count,
+                'variable_placeholder' => json_encode($template->variable_placeholder),
                 'status' => WhatsAppTemplateStatusEnum::DRAFT,
                 'is_default' => false,
                 'is_active' => true,

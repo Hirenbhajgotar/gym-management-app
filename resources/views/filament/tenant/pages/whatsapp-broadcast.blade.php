@@ -51,21 +51,28 @@
                             <!-- Variable Placeholders Instructions -->
                             @if(!empty($selectedTemplate['variable_placeholder']))
                                 <div class="relative z-10 mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700/50 rounded-md">
-                                    <p class="text-xs text-gray-800 dark:text-gray-600 font-medium mb-2">Detected Variables:</p>
-                                    <ul class="text-xs text-primary-700 dark:text-primary-300 space-y-2">
+                                    <p class="text-xs text-gray-800 dark:text-gray-600 font-medium mb-2">Template Variables:</p>
+                                    <ul class="text-xs space-y-2">
                                         @foreach($selectedTemplate['variable_placeholder'] as $varName => $varData)
-                                            <li class="flex flex-col gap-1 p-2 bg-yellow-100/50 dark:bg-yellow-800/20 rounded">
-                                                <div class="flex items-center gap-2 text-[10px] text-primary-600 dark:text-primary-600 ml-1">
-                                                    @if(isset($varData['placeholder']) && !empty($varData['placeholder']))
-                                                        <span>Name: {{ $varData['placeholder'] }}</span>
-                                                        <span class="text-primary-600">|</span>
+                                            @php
+                                                $source = $varData['source'] ?? 'custom';
+                                                $isAuto = $source !== 'custom';
+                                            @endphp
+                                            <li class="flex flex-col gap-1 p-2 rounded {{ $isAuto ? 'bg-emerald-100/50 dark:bg-emerald-800/20' : 'bg-yellow-100/50 dark:bg-yellow-800/20' }}">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="font-medium {{ $isAuto ? 'text-emerald-700 dark:text-emerald-400' : 'text-primary-700 dark:text-primary-300' }}">
+                                                        @{{{{ $varName }}}} {{ $varData['placeholder'] ?? 'Variable ' . $varName }}
+                                                    </span>
+                                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full {{ $isAuto ? 'bg-emerald-200 text-emerald-700 dark:bg-emerald-700/30 dark:text-emerald-400' : 'bg-amber-200 text-amber-700 dark:bg-amber-700/30 dark:text-amber-400' }}">
+                                                        {{ $isAuto ? 'Auto' : 'Manual' }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 ml-1">
+                                                    @if($isAuto)
+                                                        <span>Source: {{ $source }}</span>
                                                     @endif
                                                     @if(isset($varData['example']) && !empty($varData['example']))
-                                                        <span>Example: <span class="italic">{{ $varData['example'] }}</span></span>
-                                                        <span class="text-primary-600">|</span>
-                                                    @endif
-                                                    @if(isset($varData['type']) && !empty($varData['type']))
-                                                        <span>Type: {{ ucfirst($varData['type']) }}</span>
+                                                        <span>{{ $isAuto ? '|' : '' }} e.g. <span class="italic">{{ $varData['example'] }}</span></span>
                                                     @endif
                                                 </div>
                                             </li>
