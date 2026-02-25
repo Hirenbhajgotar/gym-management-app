@@ -224,6 +224,17 @@ class WhatsAppTemplateResource extends Resource
                             ->rows(6)
                             ->maxLength(1024)
                             ->live(debounce: 500)
+                            ->rules([
+                                fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                    $trimmed = trim((string) $value);
+                                    if (preg_match('/^\{\{\d+\}\}/', $trimmed)) {
+                                        $fail('The template body cannot start with a variable.');
+                                    }
+                                    if (preg_match('/\{\{\d+\}\}$/', $trimmed)) {
+                                        $fail('The template body cannot end with a variable.');
+                                    }
+                                },
+                            ])
                             ->placeholder('Hi {{1}}, your membership at {{2}} is due for renewal on {{3}}. Please renew to continue enjoying our services.')
                             ->helperText(fn (Forms\Get $get) => new HtmlString(
                                 '<span class="text-xs">'
