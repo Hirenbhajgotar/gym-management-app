@@ -204,6 +204,63 @@ class WhatsAppTemplateService
         }
     }
 
+    public function deleteFromTwilio(WhatsAppTemplate $template): bool
+    {
+        if (! $template->twilio_template_sid) {
+            return false;
+        }
+
+        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+
+        if (! $whatsAppAccount) {
+            return false;
+        }
+
+        if (! $whatsAppAccount->twilio_account_sid || ! $whatsAppAccount->twilio_auth_token) {
+            return false;
+        }
+
+        try {
+            $subaccountClient = new Client(
+                $whatsAppAccount->twilio_account_sid,
+                $whatsAppAccount->twilio_auth_token
+            );
+
+            $subaccountClient->conversations->v1->configuration
+                ->templates
+                ->whatsappTemplates($template->twilio_template_sid)
+                ->delete();
+
+            Log::info('Deleted Twilio WhatsApp template', [
+                'template_id' => $template->id,
+                'twilio_sid' => $template->twilio_template_sid,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to delete Twilio WhatsApp template', [
+                'template_id' => $template->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    public function softDeleteTemplate(WhatsAppTemplate $template): bool
+    {
+        Log::info('Soft deleting WhatsApp template', ['template_id' => $template->id]);
+
+        return $template->delete();
+    }
+
+    public function restoreTemplate(WhatsAppTemplate $template): bool
+    {
+        Log::info('Restoring WhatsApp template', ['template_id' => $template->id]);
+
+        return $template->restore();
+    }
+
     public function getApprovedTemplates(int $gymId): \Illuminate\Database\Eloquent\Collection
     {
         return WhatsAppTemplate::where('gym_id', $gymId)

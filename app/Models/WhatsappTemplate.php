@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -52,6 +53,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
+    use SoftDeletes;
+
     const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
 
     const SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY = 'super_admin_whatsapp_template_navigation_badge';

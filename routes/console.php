@@ -37,6 +37,9 @@ Schedule::job(new CheckWhatsAppBalanceJob)->daily();
 // Sync WhatsApp templates to database daily at 3 AM
 Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
 
+// Cleanup soft-deleted templates older than 15 days
+Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
+
 // Process scheduled WhatsApp broadcasts every minute
 Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
 

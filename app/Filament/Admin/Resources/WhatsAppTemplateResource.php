@@ -16,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
@@ -53,6 +54,9 @@ class WhatsAppTemplateResource extends Resource
         $tenant = Filament::getTenant();
 
         return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ])
             ->where('gym_id', $tenant?->id);
     }
 
@@ -525,6 +529,7 @@ class WhatsAppTemplateResource extends Resource
                     ->label('Default Templates'),
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 ActionGroup::make([
@@ -678,12 +683,16 @@ class WhatsAppTemplateResource extends Resource
                         ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
 
                     Tables\Actions\DeleteAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && ! $record->isApproved()),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
+
+                    Tables\Actions\RestoreAction::make()
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->trashed()),
                 ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
