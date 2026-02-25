@@ -95,7 +95,7 @@ return [
         ],
 
         // Sandbox Settings
-        'use_sandbox' => env('TWILIO_USE_SANDBOX', true),
+        'use_sandbox' => env('TWILIO_USE_SANDBOX', false),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
 
         // Pre-approved Template SIDs

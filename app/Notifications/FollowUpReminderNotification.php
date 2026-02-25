@@ -2,27 +2,17 @@
 
 namespace App\Notifications;
 
+use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\FollowUp;
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\User;
-use App\Notifications\Contracts\HasGymContext;
-use App\Services\NotificationChannelResolver;
-use App\Services\WhatsAppTemplateManager;
 use Exception;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class FollowUpReminderNotification extends Notification implements HasGymContext, ShouldQueue
+class FollowUpReminderNotification extends BaseTenantNotification
 {
-    use Queueable;
-
-    private readonly Gym $gym;
-
     private readonly Lead $lead;
 
     private readonly User $assignedStaff;
@@ -38,18 +28,9 @@ class FollowUpReminderNotification extends Notification implements HasGymContext
         $this->assignedStaff = $followUp->user;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function getNotificationType(): string
     {
-        // return ['mail', 'database'];
-        return NotificationChannelResolver::getChannelsForGym(
-            $this->gym,
-            'followup_reminders',
-        );
+        return NotificationType::FOLLOWUP_REMINDER->value;
     }
 
     /**
@@ -96,12 +77,15 @@ class FollowUpReminderNotification extends Notification implements HasGymContext
                 return null;
             }
 
-            [$fromNumber, $templateSid] = $config;
+            $template = $this->getWhatsAppTemplate('lead_followup_reminder_template');
+            if (! $template) {
+                return null;
+            }
 
             return [
                 'to' => $phoneNumber,
-                'from' => $fromNumber,
-                'template_sid' => $templateSid,
+                'from' => $config['from_number'],
+                'template_sid' => $template->twilio_template_sid,
                 'template_variables' => [
                     '1' => $this->lead->name,
                     '2' => $this->followUp->scheduled_date->format('M d, Y H:i'),
@@ -123,61 +107,12 @@ class FollowUpReminderNotification extends Notification implements HasGymContext
     {
         // Sandbox mode uses a fixed test number
         return [
-            'to' => '+919265098227', // Consider moving this to config if used frequently
+            'to' => config('services.twilio.sandbox_number', '+919265098227'),
             'body' => "Follow-up Reminder: {$this->lead->name}\n" .
             'Scheduled Date: ' . $this->followUp->scheduled_date->format('M d, Y H:i') . "\n" .
             'Type: ' . $this->followUp->type->getLabel() . "\n" .
             'Notes: ' . $this->followUp->notes,
         ];
-    }
-
-    /**
-     * @return array{string, string}|null Returns [fromNumber, templateSid] or null on failure
-     */
-    private function getGymWhatsAppConfig(): ?array
-    {
-        $notificationSetting = $this->gym?->notificationSetting;
-
-        if (! $notificationSetting) {
-            Log::error('Notification setting not found for gym', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->isAccountActive() || ! $notificationSetting->isAccountVerified()) {
-            Log::error('Notification account is not active or verified', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->whatsapp_business_number) {
-            Log::error('Notification business number not found for gym', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        $template = $this->getWhatsAppTemplate();
-        if (! $template) {
-            return null;
-        }
-
-        $templateSid = $template->template_sid ?? config('services.twilio.lead_followup_reminder_template_sid');
-
-        return [$notificationSetting->whatsapp_business_number, $templateSid];
-    }
-
-    private function getWhatsAppTemplate(): ?object
-    {
-        $templateManager = new WhatsAppTemplateManager($this->gym->id);
-        $template = $templateManager->getTemplate('lead_followup_reminder_template');
-
-        if (! $template) {
-            Log::error('lead_followup_reminder_template template not found', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        return $template;
     }
 
     private function getRecipientPhoneNumber(): ?string

@@ -24,7 +24,6 @@ use Illuminate\Support\Str;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
  * @property-read int|null $attendances_count
  * @property-read \App\Models\BusinessDetail|null $businessDetail
- * @property-read \App\Models\NotificationSetting|null $notificationSetting
  * @property-read \App\Models\User|null $owner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $gymMembers
  * @property-read int|null $gym_members_count
@@ -158,9 +157,9 @@ class Gym extends Model
         return $this->hasMany(GymSetting::class);
     }
 
-    public function notificationSetting(): HasOne
+    public function whatsAppAccount(): HasOne
     {
-        return $this->hasOne(NotificationSetting::class);
+        return $this->hasOne(WhatsAppAccount::class);
     }
 
     public function whatsAppTemplates(): HasMany

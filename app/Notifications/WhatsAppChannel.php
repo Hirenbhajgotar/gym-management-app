@@ -77,33 +77,42 @@ class WhatsAppChannel
                 'notification_type' => get_class($notification),
             ]);
 
-            throw new Exception(
-                'Unable to determine gym ID for WhatsApp notification. Notifiable: ' . get_class($notifiable) . ', Notification: ' . get_class($notification)
-            );
+            return null;
         }
 
-        // Initialize Twilio service
+        // Initialize Twilio service which inherently manages templating, credits, and sending
         $twilioService = new TwilioWhatsAppService($gymId);
 
-        // Check if this is a template message or plain text
-        $isTemplate = isset($message['template_sid']);
+        $result = [];
 
-        $result = $isTemplate
-            ? $twilioService->sendTemplateMessage(
-                $message['to'],
-                $message['template_sid'],
-                $message['template_variables'] ?? [],
-            )
-            : $twilioService->sendMessage($message['to'], $message['body']);
+        try {
+            // Check if this is a template message or plain text
+            $isTemplate = isset($message['template_sid']) || isset($message['template_name']);
 
-        if (! $result['success']) {
-            Log::error('WhatsApp notification failed', [
-                'error' => $result['error'] ?? 'Unknown error',
+            if ($isTemplate) {
+                $templateNameOrSid = $message['template_name'] ?? $message['template_sid'];
+                $result = $twilioService->sendTemplateMessage(
+                    $message['to'],
+                    $templateNameOrSid,
+                    $message['template_variables'] ?? [],
+                );
+            } else {
+                $result = $twilioService->sendMessage($message['to'], $message['body']);
+            }
+
+            if (! ($result['success'] ?? false)) {
+                Log::error('WhatsApp notification failed', [
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'notifiable_id' => $notifiable->id,
+                    'gym_id' => $gymId,
+                ]);
+            }
+        } catch (Exception $e) {
+            Log::error('WhatsApp notification encountered an exception', [
+                'error' => $e->getMessage(),
                 'notifiable_id' => $notifiable->id,
+                'gym_id' => $gymId,
             ]);
-
-            // Optionally throw exception to retry via queue
-            // throw new \Exception($result['error']);
         }
 
         return $result;

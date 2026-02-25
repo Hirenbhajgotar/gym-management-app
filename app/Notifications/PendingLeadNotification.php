@@ -2,25 +2,16 @@
 
 namespace App\Notifications;
 
+use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\User;
-use App\Notifications\Contracts\HasGymContext;
-use App\Services\NotificationChannelResolver;
 use Exception;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class PendingLeadNotification extends Notification implements HasGymContext, ShouldQueue
+class PendingLeadNotification extends BaseTenantNotification
 {
-    use Queueable;
-
-    private readonly Gym $gym;
-
     private readonly User $owner;
 
     /**
@@ -32,17 +23,9 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
         $this->owner = $this->gym->owner();
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function getNotificationType(): string
     {
-        return NotificationChannelResolver::getChannelsForGym(
-            $this->gym,
-            'lead_reminders_notifications',
-        );
+        return NotificationType::LEAD_REMINDER->value;
     }
 
     /**
@@ -89,12 +72,16 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
                 return null;
             }
 
-            [$templateSid] = $config;
+            $template = $this->getWhatsAppTemplate('pending_lead_reminder');
+            if (! $template) {
+                return null;
+            }
 
             // Use contentSid for production
             return [
                 'to' => $phoneNumber,
-                'template_sid' => $templateSid,
+                'from' => $config['from_number'],
+                'template_sid' => $template->twilio_template_sid ?? config('services.twilio.pending_lead_reminder_template_sid'),
                 'template_variables' => [
                     '1' => $this->lead->name,
                     '2' => $this->lead->email,
@@ -132,33 +119,9 @@ class PendingLeadNotification extends Notification implements HasGymContext, Sho
 
         // Sandbox mode uses a fixed test number
         return [
-            'to' => '+919265098227', // Consider moving this to config if used frequently
+            'to' => config('services.twilio.sandbox_number', '+919265098227'),
             'body' => $message,
         ];
-    }
-
-    /**
-     * @return array{string, string}|null Returns [fromNumber, templateSid] or null on failure
-     */
-    private function getGymWhatsAppConfig(): ?array
-    {
-        $notificationSetting = $this->gym?->notificationSetting;
-
-        if (! $notificationSetting) {
-            Log::error('Notification setting not found for gym', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->isAccountActive() || ! $notificationSetting->isAccountVerified()) {
-            Log::error('Notification account is not active or verified', ['gym_id' => $this->gym->id]);
-
-            return null;
-        }
-
-        $templateSid = config('services.twilio.pending_lead_reminder_template_sid');
-
-        return [$templateSid];
     }
 
     private function getRecipientPhoneNumber(): ?string

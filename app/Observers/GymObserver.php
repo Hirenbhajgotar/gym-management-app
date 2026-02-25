@@ -74,9 +74,9 @@ class GymObserver
             // 6. Delete gym settings
             $gym->settings()->delete();
 
-            // 7. Delete notification settings
-            if ($gym->notificationSetting) {
-                $gym->notificationSetting->delete();
+            // 7. Delete WhatsApp Account
+            if ($gym->whatsAppAccount) {
+                $gym->whatsAppAccount->delete();
             }
 
             // 8. Delete social configs
