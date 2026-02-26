@@ -70,7 +70,7 @@ class BirthdayNotification extends BaseTenantNotification
                 return null;
             }
 
-            $template = $this->getWhatsAppTemplate('birthday_greeting');
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
             if (! $template) {
                 return null;
             }
@@ -79,10 +79,7 @@ class BirthdayNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => [
-                    '1' => $this->member->name,
-                    '2' => $this->gym->name,
-                ],
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

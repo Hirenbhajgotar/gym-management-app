@@ -77,7 +77,7 @@ class FollowUpReminderNotification extends BaseTenantNotification
                 return null;
             }
 
-            $template = $this->getWhatsAppTemplate('lead_followup_reminder_template');
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
             if (! $template) {
                 return null;
             }
@@ -86,12 +86,14 @@ class FollowUpReminderNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => [
-                    '1' => $this->lead->name,
-                    '2' => $this->followUp->scheduled_date->format('M d, Y H:i'),
-                    '3' => $this->followUp->type->getLabel(),
-                    '4' => $this->followUp->notes,
-                ],
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, [
+                    'custom' => [
+                        '1' => $notifiable->name ?? 'Staff',
+                        '2' => $this->lead->name ?? '',
+                        '3' => $this->followUp->scheduled_date->format('M d, Y H:i'),
+                        '4' => $this->followUp->notes ?? '',
+                    ],
+                ]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

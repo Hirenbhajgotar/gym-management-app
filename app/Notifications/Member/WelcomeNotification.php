@@ -5,20 +5,15 @@ declare(strict_types=1);
 namespace App\Notifications\Member;
 
 use App\Helpers\ParserHelper;
-use App\Models\Gym;
 use App\Models\GymMember;
-use App\Notifications\Contracts\HasGymContext;
-use App\Services\NotificationChannelResolver;
+use App\Notifications\BaseTenantNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class WelcomeNotification extends Notification implements HasGymContext
+class WelcomeNotification extends BaseTenantNotification
 {
     use Queueable;
-
-    private readonly Gym $gym;
 
     public function __construct(
         public readonly GymMember $member
@@ -27,15 +22,9 @@ class WelcomeNotification extends Notification implements HasGymContext
         $this->onQueue('notifications');
     }
 
-    /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function getNotificationType(): string
     {
-        return NotificationChannelResolver::getChannelsForGym(
-            $this->gym,
-            'welcome'
-        );
+        return \App\Enums\NotificationType::WELCOME->value;
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -64,32 +53,65 @@ class WelcomeNotification extends Notification implements HasGymContext
 
     public function toWhatsApp(object $notifiable): ?array
     {
+        if (config('services.twilio.use_sandbox')) {
+            return $this->getSandboxWhatsAppPayload();
+        }
+
+        $phoneNumber = $this->getRecipientPhoneNumber();
+        if (! $phoneNumber) {
+            return null;
+        }
+
+        try {
+            $config = $this->getGymWhatsAppConfig();
+            if (! $config) {
+                return null;
+            }
+
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
+            if (! $template) {
+                return null;
+            }
+
+            return [
+                'to' => $phoneNumber,
+                'from' => $config['from_number'],
+                'template_sid' => $template->twilio_template_sid,
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to prepare WhatsApp message', [
+                'error' => $e->getMessage(),
+                'member_id' => $this->member->id,
+            ]);
+
+            return null;
+        }
+    }
+
+    private function getSandboxWhatsAppPayload(): array
+    {
+        $memberName = $this->member->name ?? 'Member';
+
+        return [
+            'to' => config('services.twilio.sandbox_number', '+919265098227'),
+            'body' => "Hello {$memberName},\n\nWelcome to {$this->gym->name}! 🎉\n\nWe are excited to have you on board.",
+        ];
+    }
+
+    private function getRecipientPhoneNumber(): ?string
+    {
         $phoneNumber = $this->member->phone;
 
         if (! $phoneNumber) {
-            Log::warning('Member has no phone number for WhatsApp notification', [
+            Log::warning('Member has no phone number for WhatsApp', [
                 'member_id' => $this->member->id,
-                'gym_id' => $this->gym->id,
             ]);
 
             return null;
         }
 
-        $formattedPhone = ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
-        $memberName = $this->member->name ?? 'Member';
-
-        return [
-            'to' => $formattedPhone,
-            'body' => <<<MESSAGE
-            Hello {$memberName},
-
-            Welcome to {$this->gym->name}! 🎉
-
-            We are excited to have you on board.
-
-            Thank you for joining us!
-            MESSAGE,
-        ];
+        return ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
     }
 
     /**

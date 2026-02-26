@@ -72,7 +72,7 @@ class PendingLeadNotification extends BaseTenantNotification
                 return null;
             }
 
-            $template = $this->getWhatsAppTemplate('pending_lead_reminder');
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
             if (! $template) {
                 return null;
             }
@@ -81,14 +81,15 @@ class PendingLeadNotification extends BaseTenantNotification
             return [
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
-                'template_sid' => $template->twilio_template_sid ?? config('services.twilio.pending_lead_reminder_template_sid'),
-                'template_variables' => [
-                    '1' => $this->lead->name,
-                    '2' => $this->lead->email,
-                    '3' => $this->lead->phone,
-                    '4' => $this->lead->status->getLabel(),
-                    '5' => $this->lead->created_at->format('M d, Y'),
-                ],
+                'template_sid' => $template->twilio_template_sid,
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, [
+                    'custom' => [
+                        '1' => $notifiable->name ?? 'Staff',
+                        '2' => $this->lead->name ?? '',
+                        '3' => $this->lead->phone ?? '',
+                        '4' => $this->lead->notes ?? $this->lead->status->getLabel() ?? '',
+                    ],
+                ]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

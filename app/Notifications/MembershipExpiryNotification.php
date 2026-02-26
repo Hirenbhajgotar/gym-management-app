@@ -77,7 +77,7 @@ class MembershipExpiryNotification extends BaseTenantNotification
                 return null;
             }
 
-            $template = $this->getWhatsAppTemplate('membership_expiry_template');
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
             if (! $template) {
                 return null;
             }
@@ -86,10 +86,7 @@ class MembershipExpiryNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => [
-                    '1' => $this->member->name,
-                    '2' => $this->expiresAt->format('D, M j'),
-                ],
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

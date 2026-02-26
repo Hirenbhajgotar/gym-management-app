@@ -207,6 +207,8 @@ class WhatsAppTemplateResource extends Resource
                             ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->where('gym_id', Filament::getTenant()?->id))
                             ->regex('/^[a-z][a-z0-9_]*$/')
                             ->placeholder('e.g., payment_reminder')
+                            ->disabled(fn (Forms\Get $get) => filled($get('_default_template')))
+                            ->dehydrated()
                             ->helperText('Lowercase, underscores only. e.g., "payment_reminder", "welcome_message". This is the internal name used by WhatsApp API.'),
 
                         Forms\Components\TextInput::make('display_name')
