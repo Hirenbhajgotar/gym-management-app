@@ -156,15 +156,21 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.feedback-popup')
             )
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.error-report')
             )
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.floating-feedback-button')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.floating-feedback-button')
             );
     }
 
