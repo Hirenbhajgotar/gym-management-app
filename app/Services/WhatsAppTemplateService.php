@@ -12,9 +12,9 @@ class WhatsAppTemplateService
 {
     private Client $masterClient;
 
-    private string $masterAccountSid;
+    private ?string $masterAccountSid;
 
-    private string $masterAuthToken;
+    private ?string $masterAuthToken;
 
     private bool $useSandbox = true;
 

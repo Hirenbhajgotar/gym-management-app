@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $selling_price_per_msg
  * @property int $welcome_credits_used
  * @property bool $welcome_credits_claimed
+ * @property bool $is_low_credit_notified
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -46,6 +47,7 @@ class WhatsAppMessageCredit extends Model
         'selling_price_per_msg',
         'welcome_credits_used',
         'welcome_credits_claimed',
+        'is_low_credit_notified',
         'last_used_at',
     ];
 
@@ -59,6 +61,7 @@ class WhatsAppMessageCredit extends Model
             'selling_price_per_msg' => 'decimal:4',
             'welcome_credits_used' => 'integer',
             'welcome_credits_claimed' => 'boolean',
+            'is_low_credit_notified' => 'boolean',
             'last_used_at' => 'datetime',
         ];
     }
@@ -144,5 +147,10 @@ class WhatsAppMessageCredit extends Model
         }
 
         return ($this->used_credits / $this->total_credits) * 100;
+    }
+
+    public function getBalance(): float
+    {
+        return $this->remaining_credits * $this->selling_price_per_msg;
     }
 }

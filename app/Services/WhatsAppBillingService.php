@@ -44,6 +44,10 @@ class WhatsAppBillingService
         $credit->increment('total_credits', $package->message_count);
         $credit->increment('remaining_credits', $package->message_count);
 
+        if ($credit->getBalance() > 5) {
+            $credit->update(['is_low_credit_notified' => false]);
+        }
+
         WhatsAppCreditTransaction::create([
             'gym_id' => $gymId,
             'whatsapp_message_credit_id' => $credit->id,
@@ -100,6 +104,7 @@ class WhatsAppBillingService
             'welcome_credits_used' => 0,
             'remaining_credits' => $balanceBefore + $welcomeCredits,
             'total_credits' => $credit->total_credits + $welcomeCredits,
+            'is_low_credit_notified' => false,
         ]);
 
         WhatsAppCreditTransaction::create([
@@ -165,6 +170,10 @@ class WhatsAppBillingService
         $credit->increment('total_credits', $credits);
         $credit->increment('remaining_credits', $credits);
 
+        if ($credit->getBalance() > 5) {
+            $credit->update(['is_low_credit_notified' => false]);
+        }
+
         WhatsAppCreditTransaction::create([
             'gym_id' => $gymId,
             'whatsapp_message_credit_id' => $credit->id,
@@ -196,6 +205,10 @@ class WhatsAppBillingService
         if ($credits >= 0) {
             $credit->increment('total_credits', $credits);
             $credit->increment('remaining_credits', $credits);
+
+            if ($credit->getBalance() > 5) {
+                $credit->update(['is_low_credit_notified' => false]);
+            }
         } else {
             $credit->decrement('total_credits', abs($credits));
             $credit->decrement('remaining_credits', abs($credits));

@@ -33,5 +33,8 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="DB_HOST" value="db"/>
         <env name="DB_HOST_MYSQL" value="db"/>
+        <env name="TWILIO_ACCOUNT_SID" value="test_sid"/>
+        <env name="TWILIO_AUTH_TOKEN" value="test_token"/>
+        <env name="TWILIO_WABA_ID" value="test_waba_id"/>
     </php>
 </phpunit>

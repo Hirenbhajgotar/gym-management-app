@@ -42,6 +42,9 @@ Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
 // Sync pending WhatsApp template statuses every 15 minutes
 Schedule::command('whatsapp:sync-template-statuses')->everyFifteenMinutes();
 
+// Check for gyms with low WhatsApp credits daily at 8 AM
+Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');
+
 // Auto checkout gym members and trainers attendance daily at 11 PM and 1 AM
 Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
