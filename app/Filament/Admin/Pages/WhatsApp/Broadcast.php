@@ -10,7 +10,6 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
-use App\Services\TwilioWhatsAppService;
 use App\Services\WhatsAppVariableResolver;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -572,27 +571,35 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
             $recipientType = $this->data['recipient_type'] ?? 'all';
 
-            if ($recipientType === 'all') {
-                $members = GymMember::where('gym_id', $this->getGymId())->get();
-            } else {
-                $members = GymMember::whereIn('id', $this->selectedMemberIds)->get();
+            $memberQuery = GymMember::where('gym_id', $this->getGymId());
+
+            if ($recipientType !== 'all') {
+                $memberQuery->whereIn('id', $this->selectedMemberIds);
             }
 
-            foreach ($members as $member) {
-                WhatsAppBroadcastRecipient::create([
-                    'whatsapp_broadcast_id' => $broadcast->id,
-                    'member_id' => $member->id,
-                    'phone_number' => $member->phone ?? '',
-                    'member_name' => $member->name ?? 'Member',
-                    'status' => 'pending',
-                ]);
-            }
+            $now = now();
+
+            $memberQuery->chunk(500, function ($members) use ($broadcast, $now) {
+                $recipients = [];
+                foreach ($members as $member) {
+                    $recipients[] = [
+                        'whatsapp_broadcast_id' => $broadcast->id,
+                        'member_id' => $member->id,
+                        'phone_number' => $member->phone ?? '',
+                        'member_name' => $member->name ?? 'Member',
+                        'status' => 'pending',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                WhatsAppBroadcastRecipient::insert($recipients);
+            });
+
+            DB::commit();
 
             if ($scheduleType === 'now') {
                 $this->processBroadcast($broadcast);
             }
-
-            DB::commit();
 
             Notification::make()
                 ->title($scheduleType === 'now' ? 'Broadcast Started!' : 'Broadcast Scheduled!')
@@ -618,8 +625,7 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
     private function processBroadcast(WhatsAppBroadcast $broadcast): void
     {
-        $service = new TwilioWhatsAppService((string) $this->getGymId());
-        $service->sendBroadcast($broadcast->id);
+        \App\Jobs\SendBroadcastJob::dispatch($broadcast->id, $this->getGymId());
     }
 
     public function refresh(): void

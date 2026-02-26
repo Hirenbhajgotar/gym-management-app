@@ -248,43 +248,45 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         ];
 
         try {
-            $broadcast = WhatsAppBroadcast::with(['template', 'recipients'])
+            $broadcast = WhatsAppBroadcast::with('template')
                 ->where('gym_id', $this->tenantId)
                 ->findOrFail($broadcastId);
 
             $broadcast->markAsSending();
 
-            $recipients = $broadcast->recipients()->where('status', 'pending')->get();
-            $results['total'] = $recipients->count();
+            $query = $broadcast->recipients()->where('status', 'pending');
+            $results['total'] = $query->count();
 
-            foreach ($recipients as $recipient) {
-                try {
-                    $variables = $this->prepareVariables($broadcast, $recipient);
+            $query->chunkById(100, function ($recipients) use ($broadcast, &$results) {
+                foreach ($recipients as $recipient) {
+                    try {
+                        $variables = $this->prepareVariables($broadcast, $recipient);
 
-                    $result = $this->sendTemplateMessage(
-                        $recipient->phone_number,
-                        $broadcast->template->name,
-                        $variables
-                    );
+                        $result = $this->sendTemplateMessage(
+                            $recipient->phone_number,
+                            $broadcast->template->name,
+                            $variables
+                        );
 
-                    if ($result['success']) {
-                        $recipient->markAsSent($result['message_id']);
-                        $broadcast->incrementSentCount();
-                        $results['sent']++;
-                    } else {
-                        $recipient->markAsFailed($result['error']);
+                        if ($result['success']) {
+                            $recipient->markAsSent($result['message_id']);
+                            $broadcast->incrementSentCount();
+                            $results['sent']++;
+                        } else {
+                            $recipient->markAsFailed($result['error']);
+                            $broadcast->incrementFailedCount();
+                            $results['failed']++;
+                        }
+                    } catch (Exception $e) {
+                        $recipient->markAsFailed($e->getMessage());
                         $broadcast->incrementFailedCount();
                         $results['failed']++;
                     }
-                } catch (Exception $e) {
-                    $recipient->markAsFailed($e->getMessage());
-                    $broadcast->incrementFailedCount();
-                    $results['failed']++;
-                }
 
-                // Add a small delay to avoid hitting Twilio rate limits (approx. 20 messages per second)
-                usleep(50000);
-            }
+                    // Add a small delay to avoid hitting Twilio rate limits (approx. 20 messages per second)
+                    usleep(50000);
+                }
+            });
 
             $broadcast->markAsCompleted();
 

@@ -29,8 +29,6 @@ class ProcessScheduledBroadcastsCommand extends Command
 
         foreach ($broadcasts as $broadcast) {
             try {
-                $broadcast->update(['status' => 'queued']);
-
                 SendBroadcastJob::dispatch($broadcast->id, $broadcast->gym_id);
 
                 $this->info("Queued broadcast #{$broadcast->id}: {$broadcast->title}");
