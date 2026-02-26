@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             PermissionDescriptionSeeder::class,
             CountryStateSeeder::class,
+            BusinessTypeSeeder::class,
         ]);
     }
 }

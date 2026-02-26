@@ -31,7 +31,9 @@ class PlanResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return Cache::flexible(Plan::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            return static::getModel()::count();
+            $count = static::getModel()::count();
+
+            return $count > 0 ? $count : null;
         });
     }
 
