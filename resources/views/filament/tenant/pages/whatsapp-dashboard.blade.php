@@ -1,4 +1,28 @@
 <x-filament-panels::page>
+    @unless($hasWhatsAppSetup)
+        <x-filament::section class="border-l-4 border-l-danger-500">
+            <div class="flex items-start gap-4">
+                <div class="p-2 bg-danger-100 dark:bg-danger-900/30 rounded-full">
+                    <x-heroicon-o-exclamation-triangle class="w-6 h-6 text-danger-600 dark:text-danger-500" />
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-medium text-gray-950 dark:text-white">WhatsApp Account Not Configured</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 mb-4">
+                        You need to set up your WhatsApp account before you can send messages or run campaigns. Complete the setup to connect and configure your WhatsApp Business API.
+                    </p>
+                    <x-filament::button
+                        tag="a"
+                        href="{{ route('filament.admin.pages.whats-app-setup', ['tenant' => $this->getTenantSlug()]) }}"
+                        color="success"
+                        icon="heroicon-m-cog-6-tooth"
+                    >
+                        Setup WhatsApp Account
+                    </x-filament::button>
+                </div>
+            </div>
+        </x-filament::section>
+    @endunless
+
     @if($creditBalance && $creditBalance->remaining_credits > 0)
         <x-filament::section>
             <div class="flex items-center justify-between mb-4">

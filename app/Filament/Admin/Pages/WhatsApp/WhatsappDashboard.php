@@ -42,6 +42,8 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
 
     public ?array $data = [];
 
+    public bool $hasWhatsAppSetup = false;
+
     public function mount(): void
     {
         $this->loadData();
@@ -52,6 +54,7 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
         $gymId = $this->getGymId();
 
         $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $this->hasWhatsAppSetup = $this->whatsappAccount?->isSetupComplete() ?? false;
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
 
         $this->usageStats = $this->getUsageStats();

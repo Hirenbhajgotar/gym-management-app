@@ -193,4 +193,12 @@ class WhatsAppAccount extends Model
         return $this->waba_status === WabaStatusEnum::RESTRICTED
             || $this->waba_status === WabaStatusEnum::BANNED;
     }
+
+    public function isSetupComplete(): bool
+    {
+        return $this->isActive()
+            && $this->twilio_account_sid
+            && $this->twilio_auth_token
+            && $this->messaging_service_sid;
+    }
 }
