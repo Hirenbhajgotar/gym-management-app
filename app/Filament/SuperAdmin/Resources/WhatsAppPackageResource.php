@@ -8,10 +8,13 @@ use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\ListWhatsApp
 use App\Models\WhatsAppPackage;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\HtmlString;
 
 class WhatsAppPackageResource extends Resource
 {
@@ -25,6 +28,12 @@ class WhatsAppPackageResource extends Resource
 
     protected static ?string $navigationLabel = 'Message Packages';
 
+    const MARGIN_PERCENTAGE = 0.010;
+
+    const TWILIO_COST_PER_MESSAGE = 1.53;
+
+    const TWILIO_NUMBER_COST = 136.41;
+
     public static function getNavigationBadge(): ?string
     {
         return Cache::flexible(WhatsAppPackage::NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(10), now()->addHour()], function () {
@@ -32,6 +41,44 @@ class WhatsAppPackageResource extends Resource
 
             return $count > 0 ? (string) $count : null;
         });
+    }
+
+    public static function updateSellingPrice(Get $get, Set $set): void
+    {
+        $msgCount = (int) $get('message_count');
+        $msgCost = (float) $get('twilio_msg_cost_per_unit');
+        $includesNumber = (bool) $get('includes_number');
+        $numberCost = (float) $get('twilio_number_cost');
+
+        $baseCost = ($msgCount * $msgCost) + ($includesNumber ? $numberCost : 0);
+
+        $margin = (float) $msgCount * self::MARGIN_PERCENTAGE;
+        $sellingPrice = $baseCost + $margin;
+        // We update the selling price to the base cost. You can add a default markup here if desired.
+        $set('selling_price', round($sellingPrice, 2));
+    }
+
+    public static function calculateCost(Get $get): string
+    {
+        $msgCount = (float) ($get('message_count') ?? 0);
+        $msgCost = (float) ($get('twilio_msg_cost_per_unit') ?? 0);
+        $includesNumber = (bool) $get('includes_number');
+        $numberCost = (float) ($get('twilio_number_cost') ?? 0);
+
+        return number_format(($msgCount * $msgCost) + ($includesNumber ? $numberCost : 0), 2, '.', '');
+    }
+
+    public static function calculateMargin(Get $get): string
+    {
+        return number_format((($get('message_count') ?? 0) * self::MARGIN_PERCENTAGE), 2, '.', '');
+    }
+
+    public static function calculateProfit(Get $get): string
+    {
+        $cost = (float) static::calculateCost($get);
+        $sellingPrice = (float) ($get('selling_price') ?? 0);
+
+        return number_format($sellingPrice - $cost, 2, '.', '');
     }
 
     public static function form(Form $form): Form
@@ -49,6 +96,8 @@ class WhatsAppPackageResource extends Resource
                         ->required()
                         ->numeric()
                         ->minValue(1)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Number of Messages')
                         ->columnSpan(1),
 
@@ -65,6 +114,9 @@ class WhatsAppPackageResource extends Resource
                         ->prefix('₹')
                         ->minValue(0)
                         ->step(0.01)
+                        ->live(onBlur: true)
+                        ->hint(fn (Get $get) => new HtmlString('Cost: ₹' . static::calculateCost($get) . ' + Margin: ₹' . static::calculateMargin($get) . ' | Profit: ₹' . static::calculateProfit($get)))
+                        ->hintColor(fn (Get $get) => static::calculateProfit($get) > 0 ? 'success' : 'danger')
                         ->label('Selling Price'),
 
                     Forms\Components\TextInput::make('twilio_number_cost')
@@ -73,6 +125,8 @@ class WhatsAppPackageResource extends Resource
                         ->default(0)
                         ->minValue(0)
                         ->step(0.01)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Twilio Number Cost'),
 
                     Forms\Components\TextInput::make('twilio_msg_cost_per_unit')
@@ -80,7 +134,20 @@ class WhatsAppPackageResource extends Resource
                         ->prefix('₹')
                         ->default(0.15)
                         ->step(0.0001)
-                        ->label('Twilio Cost Per Message'),
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
+                        ->label('Twilio Cost Per Message')
+                        ->suffixAction(
+                            Forms\Components\Actions\Action::make('fetch_pricing')
+                                ->icon('phosphor-currency-inr')
+                                ->tooltip('Fetching live pricing requires Twilio Pricing API. Assuming default rate.')
+                                ->action(function (Set $set) {
+                                    // Normally we would hit Twilio Pricing API here, e.g. /v1/Messaging/Countries/IN
+                                    // Since Pricing API isn't enabled by default without special setup,
+                                    // we set a safe default.
+                                    $set('twilio_msg_cost_per_unit', self::TWILIO_COST_PER_MESSAGE); // Default assumed cost for India (WhatsApp utility/marketing average)
+                                })
+                        ),
 
                     Forms\Components\TextInput::make('validity_days')
                         ->numeric()
@@ -106,6 +173,8 @@ class WhatsAppPackageResource extends Resource
 
                     Forms\Components\Toggle::make('includes_number')
                         ->default(false)
+                        ->live()
+                        ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Includes Dedicated Number'),
                 ])->columns(2),
 

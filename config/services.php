@@ -98,6 +98,10 @@ return [
         'use_sandbox' => env('TWILIO_USE_SANDBOX', false),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
 
+        'cost_per_message' => env('TWILIO_COST_PER_MESSAGE', 1.53),
+        'number_cost' => env('TWILIO_NUMBER_COST', 136.41),
+        'margin_percentage' => env('TWILIO_MARGIN_PERCENTAGE', 0.10),
+
         // Pre-approved Template SIDs
         'whatsapp_integration_active_v5_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V5_TEMPLATE_SID', 'HX8285885c2d7330f26cb8c97a4b586d1a'),
         'demo_request_template_sid' => env('TWILIO_DEMO_REQUEST_TEMPLATE_SID', 'HX3ae293398edf997d889fa8edc06a7ebb'),
