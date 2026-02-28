@@ -227,7 +227,7 @@ class GymMemberResource extends Resource
                 Tables\Columns\IconColumn::make('is_frozen')
                     ->label('Frozen')
                     ->boolean()
-                    ->trueIcon('heroicon-o-pause')
+                    ->trueIcon('phosphor-prohibit')
                     ->falseIcon('heroicon-o-play')
                     ->trueColor('warning')
                     ->falseColor('gray')
@@ -237,7 +237,7 @@ class GymMemberResource extends Resource
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
-                    ->visible(fn ($record) => $record->is_frozen),
+                    ->visible(fn ($record) => $record?->is_frozen ?? true),
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -323,6 +323,7 @@ class GymMemberResource extends Resource
                 Tables\Actions\Action::make('quick_measure')
                     ->label('Measure')
                     ->icon('heroicon-o-scale')
+                    ->tooltip('Add new measurement')
                     ->form([
                         Section::make('Create member measurement')
                             ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
@@ -342,15 +343,12 @@ class GymMemberResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\EditAction::make()
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary'),
-
                 Tables\Actions\Action::make('toggle_freeze')
                     ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
-                    ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'heroicon-o-pause')
-                    ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'warning')
+                    ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
+                    ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
                     ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
+                    ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Reason for freezing (optional)')
@@ -382,7 +380,12 @@ class GymMemberResource extends Resource
                         }
                     })
                     ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
-                    ->modalSubmitButtonLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+                    ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-o-pencil')
+                    ->color('primary'),
+
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')

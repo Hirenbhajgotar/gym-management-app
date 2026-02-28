@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('gym_members', function (Blueprint $table) {
-            $table->boolean('is_frozen')->default(false)->after('lead_id');
+            $table->boolean('is_frozen')->default(false)->after('user_id');
             $table->timestamp('frozen_at')->nullable()->after('is_frozen');
             $table->timestamp('frozen_until')->nullable()->after('frozen_at');
             $table->string('frozen_reason')->nullable()->after('frozen_until');
