@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail query()
@@ -46,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereSkills($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereUserId($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperEmployeeDetail
  */

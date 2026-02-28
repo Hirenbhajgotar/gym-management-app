@@ -6,7 +6,6 @@ use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class CheckMembershipExpiry extends Command
 {
@@ -35,7 +34,7 @@ class CheckMembershipExpiry extends Command
 
         // Update Gym Members
         $expiredMembersCount = 0;
-        
+
         GymMember::query()
             ->where('membership_end', '<', $today)
             ->where('payment_status', '!=', PaymentStatus::EXPIRED)
@@ -62,7 +61,7 @@ class CheckMembershipExpiry extends Command
             });
 
         $this->info("Updated {$expiredPaymentsCount} member payments to expired status.");
-        
+
         $this->info('Membership expiry check completed.');
     }
 }

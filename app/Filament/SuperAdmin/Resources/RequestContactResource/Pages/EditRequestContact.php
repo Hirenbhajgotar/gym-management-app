@@ -17,6 +17,6 @@ class EditRequestContact extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return RequestContactResource::getUrl("index");
+        return RequestContactResource::getUrl('index');
     }
 }

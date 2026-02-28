@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Notifications\MemberFrozenNotification;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Carbon\Carbon;
@@ -110,6 +111,11 @@ class GymMember extends Model
         'trainer_id',
         'user_id',
         'lead_id',
+        'is_frozen',
+        'frozen_at',
+        'frozen_until',
+        'frozen_reason',
+        'frozen_by',
     ];
 
     protected function casts(): array
@@ -121,6 +127,9 @@ class GymMember extends Model
             'age' => 'integer',
             'latest_payment_at' => 'date',
             'payment_status' => PaymentStatus::class,
+            'is_frozen' => 'boolean',
+            'frozen_at' => 'datetime',
+            'frozen_until' => 'datetime',
         ];
     }
 
@@ -195,6 +204,10 @@ class GymMember extends Model
         return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
     }
 
+    public function frozenBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'frozen_by');
+    }
     // =========================
     // Activity Log
     // =========================
@@ -266,6 +279,35 @@ class GymMember extends Model
         return $query->whereNotNull('trainer_id');
     }
 
+    /**
+     * Scope to get non-frozen members
+     */
+    #[Scope]
+    protected function notFrozen($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('is_frozen', false)
+                ->orWhere(function ($q2) {
+                    $q2->where('is_frozen', true)
+                        ->whereNotNull('frozen_until')
+                        ->where('frozen_until', '<', now());
+                });
+        });
+    }
+
+    /**
+     * Scope to get frozen members
+     */
+    #[Scope]
+    protected function frozen($query)
+    {
+        return $query->where('is_frozen', true)
+            ->where(function ($q) {
+                $q->whereNull('frozen_until')
+                    ->orWhere('frozen_until', '>=', now());
+            });
+    }
+
     // =========================
     // Helper methods
     // =========================
@@ -315,5 +357,102 @@ class GymMember extends Model
     public function isCurrentlyCheckedIn(): bool
     {
         return $this->currentAttendance() !== null;
+    }
+
+    // =========================
+    // Freeze Methods
+    // =========================
+
+    /**
+     * Check if member is currently frozen
+     */
+    public function isFrozen(): bool
+    {
+        if (! $this->is_frozen) {
+            return false;
+        }
+
+        // If frozen until is set and has passed, auto-unfreeze
+        if ($this->frozen_until && $this->frozen_until->isPast()) {
+            $this->unfreeze();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if member can access gym facilities
+     * Combines membership status, payment status, and freeze status
+     */
+    public function canAccessGym(): bool
+    {
+        // Check if membership is active
+        if (! $this->membership_end || $this->membership_end->isPast()) {
+            return false;
+        }
+
+        // Check if payment is completed
+        if ($this->payment_status !== PaymentStatus::COMPLETED) {
+            return false;
+        }
+
+        // Check if frozen
+        if ($this->isFrozen()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Freeze member (manual or date-based)
+     */
+    public function freeze(?string $reason = null, ?int $days = null, ?int $frozenById = null): bool
+    {
+        $this->is_frozen = true;
+        $this->frozen_at = now();
+        $this->frozen_reason = $reason;
+        $this->frozen_by = $frozenById;
+
+        if ($days !== null && $days > 0) {
+            $this->frozen_until = now()->addDays($days);
+        } else {
+            $this->frozen_until = null;
+        }
+
+        $this->save();
+
+        // Send email notification
+        $this->notify(new MemberFrozenNotification(
+            member: $this,
+            isFrozen: true,
+            reason: $reason,
+            frozenUntil: $this->frozen_until
+        ));
+
+        return true;
+    }
+
+    /**
+     * Unfreeze member
+     */
+    public function unfreeze(?int $unfrozenById = null): bool
+    {
+        $this->is_frozen = false;
+        $this->frozen_at = null;
+        $this->frozen_until = null;
+        $this->frozen_reason = null;
+        $this->frozen_by = $unfrozenById;
+        $this->save();
+
+        // Send email notification
+        $this->notify(new MemberFrozenNotification(
+            member: $this,
+            isFrozen: false
+        ));
+
+        return true;
     }
 }

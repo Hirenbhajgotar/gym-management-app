@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\ExpenseResource\Pages;
 
-use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\ExpenseResource;
 use Filament\Actions;
 use Filament\Infolists;

@@ -9,7 +9,6 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Pages\WhatsApp\Broadcast;
 use App\Models\Gym;
 use App\Models\GymMember;
-use App\Models\MembershipPlan;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WhatsAppMessageCredit;
