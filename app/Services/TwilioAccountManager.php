@@ -479,6 +479,254 @@ class TwilioAccountManager
     }
 
     // =========================
+    // Tenant Cleanup (Deletion)
+    // =========================
+
+    /**
+     * Clean up all Twilio resources for a tenant being permanently removed.
+     *
+     * Orchestrates the full cleanup sequence:
+     * 1. Remove phone numbers from messaging service
+     * 2. Deregister phone numbers from Meta/WhatsApp (handled by Twilio when sender is removed)
+     * 3. Release purchased phone numbers from Twilio
+     * 4. Delete the messaging service
+     * 5. Close the Twilio subaccount
+     */
+    public function cleanupTenantResources(int $gymId): array
+    {
+        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+
+        if (! $account || ! $account->twilio_account_sid) {
+            Log::info('No Twilio resources to clean up for gym', ['gym_id' => $gymId]);
+
+            return [
+                'success' => true,
+                'message' => 'No Twilio resources to clean up',
+                'cleaned' => [],
+            ];
+        }
+
+        $cleaned = [];
+        $errors = [];
+
+        Log::info('Starting Twilio resource cleanup for gym', [
+            'gym_id' => $gymId,
+            'twilio_account_sid' => $account->twilio_account_sid,
+            'waba_mode' => $account->waba_mode?->value,
+        ]);
+
+        // Step 1: Remove phone numbers from messaging service and release them
+        $phoneResult = $this->releasePhoneNumbers($account);
+        $cleaned['phone_numbers'] = $phoneResult;
+        if (! $phoneResult['success']) {
+            $errors[] = $phoneResult['error'];
+        }
+
+        // Step 2: Delete the messaging service
+        $serviceResult = $this->deleteMessagingService($account);
+        $cleaned['messaging_service'] = $serviceResult;
+        if (! $serviceResult['success']) {
+            $errors[] = $serviceResult['error'];
+        }
+
+        // Step 3: Close the Twilio subaccount
+        $accountResult = $this->closeSubaccount($account);
+        $cleaned['subaccount'] = $accountResult;
+        if (! $accountResult['success']) {
+            $errors[] = $accountResult['error'];
+        }
+
+        // Update local account status
+        $account->update([
+            'status' => WhatsAppAccountStatusEnum::SUSPENDED,
+        ]);
+
+        $success = empty($errors);
+
+        Log::info('Twilio resource cleanup completed', [
+            'gym_id' => $gymId,
+            'success' => $success,
+            'cleaned' => $cleaned,
+            'errors' => $errors,
+        ]);
+
+        return [
+            'success' => $success,
+            'message' => $success
+                ? 'All Twilio resources cleaned up successfully'
+                : 'Twilio cleanup completed with errors',
+            'cleaned' => $cleaned,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Release all purchased phone numbers for a WhatsApp account.
+     *
+     * This removes the phone number from the messaging service (which deregisters
+     * it from Meta/WhatsApp) and then releases the number from Twilio.
+     */
+    protected function releasePhoneNumbers(WhatsAppAccount $account): array
+    {
+        $phoneNumbers = $account->phoneNumber()->get();
+
+        if ($phoneNumbers->isEmpty()) {
+            return ['success' => true, 'message' => 'No phone numbers to release', 'released' => 0];
+        }
+
+        $released = 0;
+        $failed = 0;
+        $lastError = null;
+
+        try {
+            $subClient = $this->makeSubaccountClient($account);
+
+            foreach ($phoneNumbers as $phoneNumber) {
+                try {
+                    // Step 1: Remove from messaging service (deregisters from Meta/WhatsApp)
+                    if ($account->messaging_service_sid && $phoneNumber->phone_number_sid) {
+                        try {
+                            $subClient->messaging->v1
+                                ->services($account->messaging_service_sid)
+                                ->phoneNumbers($phoneNumber->phone_number_sid)
+                                ->delete();
+
+                            Log::info('Phone number removed from messaging service', [
+                                'phone_number' => $phoneNumber->phone_number,
+                                'messaging_service_sid' => $account->messaging_service_sid,
+                            ]);
+                        } catch (RestException $e) {
+                            // 20404 = resource not found, already removed
+                            if ($e->getStatusCode() !== 404) {
+                                Log::warning('Failed to remove phone from messaging service', [
+                                    'phone_number' => $phoneNumber->phone_number,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
+                    }
+
+                    // Step 2: Release the phone number from Twilio
+                    if ($phoneNumber->phone_number_sid) {
+                        try {
+                            $subClient->incomingPhoneNumbers($phoneNumber->phone_number_sid)->delete();
+
+                            Log::info('Phone number released from Twilio', [
+                                'phone_number' => $phoneNumber->phone_number,
+                                'phone_number_sid' => $phoneNumber->phone_number_sid,
+                            ]);
+                        } catch (RestException $e) {
+                            if ($e->getStatusCode() !== 404) {
+                                throw $e;
+                            }
+                        }
+                    }
+
+                    // Update local record
+                    $phoneNumber->update(['status' => 'released']);
+                    $released++;
+                } catch (\Exception $e) {
+                    $failed++;
+                    $lastError = $e->getMessage();
+
+                    Log::error('Failed to release phone number', [
+                        'phone_number' => $phoneNumber->phone_number,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'released' => $released,
+                'failed' => $phoneNumbers->count(),
+            ];
+        }
+
+        return [
+            'success' => $failed === 0,
+            'message' => "Released {$released} phone number(s), {$failed} failed",
+            'released' => $released,
+            'failed' => $failed,
+            'error' => $lastError,
+        ];
+    }
+
+    /**
+     * Delete the messaging service for a WhatsApp account.
+     */
+    protected function deleteMessagingService(WhatsAppAccount $account): array
+    {
+        if (! $account->messaging_service_sid) {
+            return ['success' => true, 'message' => 'No messaging service to delete'];
+        }
+
+        try {
+            $subClient = $this->makeSubaccountClient($account);
+
+            $subClient->messaging->v1
+                ->services($account->messaging_service_sid)
+                ->delete();
+
+            Log::info('Messaging service deleted', [
+                'messaging_service_sid' => $account->messaging_service_sid,
+                'gym_id' => $account->gym_id,
+            ]);
+
+            return ['success' => true, 'message' => 'Messaging service deleted'];
+        } catch (RestException $e) {
+            if ($e->getStatusCode() === 404) {
+                return ['success' => true, 'message' => 'Messaging service already deleted'];
+            }
+
+            Log::error('Failed to delete messaging service', [
+                'messaging_service_sid' => $account->messaging_service_sid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Close a Twilio subaccount.
+     *
+     * Closing a subaccount releases all resources associated with it.
+     * The account status is set to 'closed' and cannot be reopened.
+     */
+    protected function closeSubaccount(WhatsAppAccount $account): array
+    {
+        if (! $account->twilio_account_sid) {
+            return ['success' => true, 'message' => 'No subaccount to close'];
+        }
+
+        try {
+            $this->masterClient->api->v2010
+                ->accounts($account->twilio_account_sid)
+                ->update(['status' => 'closed']);
+
+            Log::info('Twilio subaccount closed', [
+                'account_sid' => $account->twilio_account_sid,
+                'gym_id' => $account->gym_id,
+            ]);
+
+            return ['success' => true, 'message' => 'Subaccount closed'];
+        } catch (RestException $e) {
+            if ($e->getStatusCode() === 404) {
+                return ['success' => true, 'message' => 'Subaccount already closed or not found'];
+            }
+
+            Log::error('Failed to close Twilio subaccount', [
+                'account_sid' => $account->twilio_account_sid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // =========================
     // Account Status
     // =========================
 
