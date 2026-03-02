@@ -19,6 +19,7 @@ use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Exceptions\Halt;
@@ -84,6 +85,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public bool $numberPurchased = false;
 
     public bool $templatesCreated = false;
+
+    public string $wabaConnectionMethod = 'create_new';
 
     public function mount(): void
     {
@@ -171,6 +174,10 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             'business_email' => $this->whatsappAccount?->business_email ?? $user?->email ?? '',
             'business_description' => $this->whatsappAccount?->business_description ?? '',
             'search_country' => 'US',
+            'waba_connection_method' => 'create_new',
+            'waba_id' => $this->whatsappAccount?->waba_id ?? '',
+            'manual_phone_number' => '',
+            'meta_access_token' => '',
         ];
 
         $this->businessProfile = [
@@ -353,42 +360,123 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
                         <div class="mb-4">
-                            <h3 class="font-medium text-gray-900 dark:text-gray-100">Creating WhatsApp Business Account (WABA)</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">This is required to send WhatsApp messages to your members.</p>
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">WhatsApp Business Account (WABA) Setup</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Connect an existing WABA or create a new one to send WhatsApp messages to your members.</p>
                         </div>
                     ')),
-                Forms\Components\Actions::make([
-                    Forms\Components\Actions\Action::make('createWaba')
-                        ->label($this->wabaCreated ? 'WABA Created' : ($this->useIndividualWaba ? 'Create Individual WABA' : 'Create WABA'))
-                        ->color('primary')
-                        ->action('createWaba')
-                        ->disabled($this->wabaCreated)
-                        ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : null),
-                ]),
-                Forms\Components\Placeholder::make('embedded_signup_info')
-                    ->hidden(! $this->requiresEmbeddedSignup)
-                    ->content(new HtmlString('
-                        <div class="mt-4 p-4 bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-blue-400 rounded-lg">
-                            <h4 class="font-medium text-blue-800 dark:text-blue-400 mb-2">Complete WABA Setup</h4>
-                            <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">Click the button below to connect your WhatsApp Business Account through Facebook.</p>
-                        </div>
-                    ')),
-                Forms\Components\Actions::make([
-                    Forms\Components\Actions\Action::make('startEmbeddedSignup')
-                        ->label('Connect via Facebook')
-                        ->color('success')
-                        ->icon('heroicon-o-arrow-path')
-                        ->action('startEmbeddedSignup')
-                        ->hidden(! $this->requiresEmbeddedSignup),
-                    Forms\Components\Actions\Action::make('skipEmbeddedSignup')
-                        ->label('Skip for Now')
-                        ->color('gray')
-                        ->action('skipEmbeddedSignup')
-                        ->hidden(! $this->requiresEmbeddedSignup),
-                ]),
+
+                Forms\Components\Radio::make('waba_connection_method')
+                    ->label('How would you like to set up your WABA?')
+                    ->options([
+                        'connect_existing' => 'Connect Existing WABA',
+                        'create_new' => 'Create New WABA',
+                    ])
+                    ->descriptions([
+                        'connect_existing' => 'I already have a WhatsApp Business Account from Meta Business Manager.',
+                        'create_new' => 'Create a new WhatsApp Business Account through our system.',
+                    ])
+                    ->default('create_new')
+                    ->live()
+                    ->inline()
+                    ->inlineLabel(false)
+                    ->disabled($this->wabaCreated),
+
+                // Connect Existing WABA Section
+                Forms\Components\Section::make('Connect Your Existing WABA')
+                    ->description('Enter your WhatsApp Business Account details from Meta Business Manager.')
+                    ->schema([
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\TextInput::make('waba_id')
+                                ->label('WABA ID')
+                                ->helperText('Your WhatsApp Business Account ID from Meta Business Manager')
+                                ->required()
+                                ->placeholder('123456789012345'),
+
+                            Forms\Components\TextInput::make('manual_phone_number')
+                                ->label('WhatsApp Phone Number')
+                                ->tel()
+                                ->helperText('The phone number associated with your WABA (e.g., +1234567890)')
+                                ->required()
+                                ->placeholder('+1234567890'),
+                        ]),
+
+                        Forms\Components\TextInput::make('meta_access_token')
+                            ->label('Meta Access Token (Optional)')
+                            ->helperText('Permanent access token from Meta Business Manager. Required for template management.')
+                            ->password()
+                            ->dehydrated(fn ($state) => filled($state)),
+
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('connectExistingWaba')
+                                ->label($this->wabaCreated ? 'WABA Connected' : 'Connect WABA')
+                                ->color('primary')
+                                ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : 'heroicon-o-link')
+                                ->action('connectExistingWaba')
+                                ->disabled($this->wabaCreated),
+                        ]),
+                    ])
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing')
+                    ->collapsed(false),
+
+                Forms\Components\Section::make('How to Find Your WABA Details')
+                    ->schema([
+                        Forms\Components\Placeholder::make('waba_instructions')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div class="prose prose-sm dark:prose-invert">
+                                    <ol>
+                                        <li>Go to <a href="https://business.facebook.com" target="_blank" class="text-primary-600">Meta Business Manager</a></li>
+                                        <li>Navigate to <strong>Business Settings</strong> &rarr; <strong>Accounts</strong> &rarr; <strong>WhatsApp Accounts</strong></li>
+                                        <li>Select your WhatsApp Business Account</li>
+                                        <li>Copy the <strong>WhatsApp Business Account ID</strong> (WABA ID)</li>
+                                        <li>Go to <strong>Phone Numbers</strong> to find your phone number</li>
+                                        <li>For the Access Token, go to <strong>System Users</strong> &rarr; Create a token with WhatsApp permissions</li>
+                                    </ol>
+                                </div>
+                            ')),
+                    ])
+                    ->collapsible()
+                    ->collapsed(true)
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing'),
+
+                // Create New WABA Section
+                Forms\Components\Section::make('Create a New WABA')
+                    ->description('We will create a WhatsApp Business Account for you through our system.')
+                    ->schema([
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('createWaba')
+                                ->label($this->wabaCreated ? 'WABA Created' : 'Create WABA')
+                                ->color('primary')
+                                ->action('createWaba')
+                                ->disabled($this->wabaCreated)
+                                ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : 'heroicon-o-plus-circle'),
+                        ]),
+                        Forms\Components\Placeholder::make('embedded_signup_info')
+                            ->hidden(! $this->requiresEmbeddedSignup)
+                            ->content(new HtmlString('
+                                <div class="mt-4 p-4 bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-blue-400 rounded-lg">
+                                    <h4 class="font-medium text-blue-800 dark:text-blue-400 mb-2">Complete WABA Setup</h4>
+                                    <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">Click the button below to connect your WhatsApp Business Account through Facebook.</p>
+                                </div>
+                            ')),
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('startEmbeddedSignup')
+                                ->label('Connect via Facebook')
+                                ->color('success')
+                                ->icon('heroicon-o-arrow-path')
+                                ->action('startEmbeddedSignup')
+                                ->hidden(! $this->requiresEmbeddedSignup),
+                            Forms\Components\Actions\Action::make('skipEmbeddedSignup')
+                                ->label('Skip for Now')
+                                ->color('gray')
+                                ->action('skipEmbeddedSignup')
+                                ->hidden(! $this->requiresEmbeddedSignup),
+                        ]),
+                    ])
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new'),
             ])
             ->afterValidation(function () {
-                $this->setupStep = 3; // moving to next step
+                $this->setupStep = 3;
             });
     }
 
@@ -687,6 +775,54 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
             Notification::make()
                 ->title('Error Creating WABA')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function connectExistingWaba(): void
+    {
+        try {
+            $wabaId = $this->data['waba_id'] ?? null;
+            $phoneNumber = $this->data['manual_phone_number'] ?? null;
+            $metaAccessToken = $this->data['meta_access_token'] ?? null;
+
+            if (! $wabaId || ! $phoneNumber) {
+                Notification::make()
+                    ->title('Missing Information')
+                    ->body('Please provide both WABA ID and Phone Number.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            $result = app(TwilioAccountManager::class)->connectManualWaba(
+                $this->getGymId(),
+                $wabaId,
+                $phoneNumber,
+                $metaAccessToken
+            );
+
+            if ($result['success']) {
+                $this->whatsappAccount?->refresh();
+                $this->wabaCreated = true;
+                $this->setupStep = 3;
+
+                Notification::make()
+                    ->title('WABA Connected')
+                    ->body('Your WhatsApp Business Account has been connected successfully.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to connect WABA');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to connect existing WABA', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Connection Failed')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();

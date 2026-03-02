@@ -110,12 +110,13 @@ class PlanSeeder extends Seeder
             $features = $planData['features'];
             unset($planData['features']);
 
-            $plan = Plan::create($planData);
+            $plan = Plan::updateOrCreate(['slug' => $planData['slug']], $planData);
 
             foreach ($features as $feature) {
-                PlanFeature::create([
+                PlanFeature::updateOrCreate([
                     'plan_id' => $plan->id,
                     'feature_name' => $feature['feature_name'],
+                ], [
                     'value' => $feature['value'],
                     'brief_description' => $feature['description'],
                 ]);

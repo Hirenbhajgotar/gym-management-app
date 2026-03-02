@@ -19,20 +19,21 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_KEY" value="base64:w86hgQsrZ0dSMeE9vXS4QsQz2xaj60pDfcAHO7DLzc4="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="gym_app_test"/>
-        <env name="DB_USERNAME" value="root"/>
-        <env name="DB_PASSWORD" value=""/>
+        <env name="DB_CONNECTION" value="mysql" force="true"/>
+        <env name="DB_DATABASE" value="gym_app_test" force="true"/>
+        <env name="DB_HOST" value="db" force="true"/>
+        <env name="DB_PORT" value="3306" force="true"/>
+        <env name="DB_USERNAME" value="root" force="true"/>
+        <env name="DB_PASSWORD" value="root" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="DB_HOST" value="db"/>
-        <env name="DB_HOST_MYSQL" value="db"/>
         <env name="TWILIO_ACCOUNT_SID" value="test_sid"/>
         <env name="TWILIO_AUTH_TOKEN" value="test_token"/>
         <env name="TWILIO_WABA_ID" value="test_waba_id"/>

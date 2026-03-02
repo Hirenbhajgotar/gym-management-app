@@ -105,9 +105,9 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         Livewire::actingAs($this->user)
@@ -406,9 +406,9 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         $mock = Mockery::mock(TwilioAccountManager::class);
@@ -582,9 +582,9 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -618,9 +618,9 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -653,9 +653,9 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         Livewire::actingAs($this->user)
@@ -696,13 +696,247 @@ class WhatsAppSetupTest extends TestCase
         WhatsAppPhoneNumber::create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
-            'formatted_number' => '(415) 555-1234',
-            'twilio_phone_number_sid' => 'PNtest123',
-            'verification_status' => 'verified',
+            'phone_number_sid' => 'PNtest123',
+            'country_code' => 'US',
+            'friendly_name' => '(415) 555-1234',
         ]);
 
         // Refresh should pick up the new account
         $component->call('refresh')
             ->assertSet('viewState', 'active');
+    }
+
+    // ========== CONNECT EXISTING WABA TESTS ==========
+
+    /** @test */
+    public function it_shows_waba_connection_method_options_on_step_2(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->assertSet('viewState', 'setup')
+            ->assertSet('setupStep', 2)
+            ->assertSee('How would you like to set up your WABA?')
+            ->assertSee('Connect Existing WABA')
+            ->assertSee('Create New WABA');
+    }
+
+    /** @test */
+    public function it_connects_existing_waba_successfully(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('connectManualWaba')
+            ->once()
+            ->with($this->gym->id, 'WABA999', '+15551234567', null)
+            ->andReturn([
+                'success' => true,
+                'waba_id' => 'WABA999',
+                'sender_sid' => 'SNtest123',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', 'WABA999');
+        $component->set('data.manual_phone_number', '+15551234567');
+
+        $component->call('connectExistingWaba')
+            ->assertSet('wabaCreated', true)
+            ->assertSet('setupStep', 3)
+            ->assertNotified('WABA Connected');
+    }
+
+    /** @test */
+    public function it_connects_existing_waba_with_access_token(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('connectManualWaba')
+            ->once()
+            ->with($this->gym->id, 'WABA999', '+15551234567', 'EAAtoken123')
+            ->andReturn([
+                'success' => true,
+                'waba_id' => 'WABA999',
+                'sender_sid' => 'SNtest123',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', 'WABA999');
+        $component->set('data.manual_phone_number', '+15551234567');
+        $component->set('data.meta_access_token', 'EAAtoken123');
+
+        $component->call('connectExistingWaba')
+            ->assertSet('wabaCreated', true)
+            ->assertSet('setupStep', 3)
+            ->assertNotified('WABA Connected');
+    }
+
+    /** @test */
+    public function it_shows_error_when_existing_waba_connection_fails(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('connectManualWaba')
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'error' => 'Invalid WABA ID',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', 'INVALID');
+        $component->set('data.manual_phone_number', '+15551234567');
+
+        $component->call('connectExistingWaba')
+            ->assertNotified('Connection Failed');
+    }
+
+    /** @test */
+    public function it_shows_error_when_waba_id_missing_on_connect(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', '');
+        $component->set('data.manual_phone_number', '+15551234567');
+
+        $component->call('connectExistingWaba')
+            ->assertNotified('Missing Information');
+    }
+
+    /** @test */
+    public function it_shows_error_when_phone_missing_on_connect(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', 'WABA999');
+        $component->set('data.manual_phone_number', '');
+
+        $component->call('connectExistingWaba')
+            ->assertNotified('Missing Information');
+    }
+
+    /** @test */
+    public function it_handles_exception_during_existing_waba_connection(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => null,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('connectManualWaba')
+            ->once()
+            ->andThrow(new \Exception('Network timeout'));
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class);
+
+        $component->set('data.waba_connection_method', 'connect_existing');
+        $component->set('data.waba_id', 'WABA999');
+        $component->set('data.manual_phone_number', '+15551234567');
+
+        $component->call('connectExistingWaba')
+            ->assertNotified('Connection Failed');
+    }
+
+    /** @test */
+    public function it_still_creates_new_waba_successfully_after_integration(): void
+    {
+        $account = WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('createWaba')
+            ->once()
+            ->andReturn(['success' => true]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->call('createWaba')
+            ->assertSet('setupStep', 3)
+            ->assertNotified('WABA Created');
     }
 }
