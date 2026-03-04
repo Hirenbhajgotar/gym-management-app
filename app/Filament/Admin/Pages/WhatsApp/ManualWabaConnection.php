@@ -33,6 +33,11 @@ class ManualWabaConnection extends Page implements HasActions, HasForms
 
     public ?array $data = [];
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // This will hide it from the menu
+    }
+
     public function mount(): void
     {
         $gymId = Filament::getTenant()?->id;

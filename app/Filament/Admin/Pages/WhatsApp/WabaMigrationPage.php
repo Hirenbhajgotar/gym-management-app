@@ -40,6 +40,11 @@ class WabaMigrationPage extends Page implements HasActions, HasForms, HasTable
 
     public array $migrationStats = [];
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // This will hide it from the menu
+    }
+
     public function mount(): void
     {
         $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
