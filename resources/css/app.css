@@ -9,6 +9,82 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+    --font-sans:
+        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
+
+    /* Filament Primary Color (Amber) */
+    --color-primary-50: 255, 251, 235;
+    --color-primary-100: 254, 243, 199;
+    --color-primary-200: 253, 230, 138;
+    --color-primary-300: 252, 211, 77;
+    --color-primary-400: 251, 191, 36;
+    --color-primary-500: 245, 158, 11;
+    --color-primary-600: 217, 119, 6;
+    --color-primary-700: 180, 83, 9;
+    --color-primary-800: 146, 64, 14;
+    --color-primary-900: 120, 53, 15;
+    --color-primary-950: 69, 26, 3;
+
+    /* Filament Success Color (Green) */
+    --color-success-50: 240, 253, 244;
+    --color-success-100: 220, 252, 231;
+    --color-success-200: 187, 247, 208;
+    --color-success-300: 134, 239, 172;
+    --color-success-400: 74, 222, 128;
+    --color-success-500: 34, 197, 94;
+    --color-success-600: 22, 163, 74;
+    --color-success-700: 21, 128, 61;
+    --color-success-800: 22, 101, 52;
+    --color-success-900: 20, 83, 45;
+    --color-success-950: 5, 46, 22;
+
+    /* Filament Danger Color (Red) */
+    --color-danger-50: 254, 242, 242;
+    --color-danger-100: 254, 226, 226;
+    --color-danger-200: 254, 202, 202;
+    --color-danger-300: 252, 165, 165;
+    --color-danger-400: 248, 113, 113;
+    --color-danger-500: 239, 68, 68;
+    --color-danger-600: 220, 38, 38;
+    --color-danger-700: 185, 28, 28;
+    --color-danger-800: 153, 27, 27;
+    --color-danger-900: 127, 29, 29;
+    --color-danger-950: 69, 10, 10;
+
+    /* Filament Warning Color (Yellow) */
+    --color-warning-50: 254, 252, 232;
+    --color-warning-100: 254, 249, 195;
+    --color-warning-200: 254, 240, 138;
+    --color-warning-300: 253, 224, 71;
+    --color-warning-400: 250, 204, 21;
+    --color-warning-500: 234, 179, 8;
+    --color-warning-600: 202, 138, 4;
+    --color-warning-700: 161, 98, 7;
+    --color-warning-800: 133, 77, 14;
+    --color-warning-900: 113, 63, 18;
+    --color-warning-950: 66, 32, 6;
+
+    /* Filament Info Color (Sky) */
+    --color-info-50: 240, 249, 255;
+    --color-info-100: 224, 242, 254;
+    --color-info-200: 186, 230, 253;
+    --color-info-300: 125, 211, 252;
+    --color-info-400: 56, 189, 248;
+    --color-info-500: 14, 165, 233;
+    --color-info-600: 2, 132, 199;
+    --color-info-700: 3, 105, 161;
+    --color-info-800: 7, 89, 133;
+    --color-info-900: 12, 74, 110;
+    --color-info-950: 8, 47, 73;
+
+    --color-accent: var(--color-neutral-800);
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+}
+
 /* @theme {
     --font-sans:
         "Instrument Sans", ui-sans-serif, system-ui, sans-serif,

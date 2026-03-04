@@ -939,4 +939,317 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('setupStep', 3)
             ->assertNotified('WABA Created');
     }
+
+    /** @test */
+    public function it_shows_phone_number_source_radio_on_step_3(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->assertFormFieldExists('phone_number_source')
+            ->set('data.phone_number_source', 'use_own_number')
+            ->assertSet('data.phone_number_source', 'use_own_number')
+            ->set('data.phone_number_source', 'purchase_twilio')
+            ->assertSet('data.phone_number_source', 'purchase_twilio');
+    }
+
+    /** @test */
+    public function it_registers_own_phone_number_and_triggers_otp(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('registerOwnNumber')
+            ->once()
+            ->with($this->gym->id, '+919876543210')
+            ->andReturn([
+                'success' => true,
+                'sender_sid' => 'SNtest123',
+                'status' => 'pending_verification',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('data.phone_number_source', 'use_own_number')
+            ->set('data.own_phone_number', '+919876543210')
+            ->call('registerOwnPhoneNumber')
+            ->assertSet('ownNumberRegistered', true)
+            ->assertSet('senderSid', 'SNtest123')
+            ->assertSet('numberPurchased', false)
+            ->assertNotified('Verification Code Sent');
+    }
+
+    /** @test */
+    public function it_handles_own_number_registration_failure(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('registerOwnNumber')
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'error' => 'Number already registered with WhatsApp',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('data.phone_number_source', 'use_own_number')
+            ->set('data.own_phone_number', '+919876543210')
+            ->call('registerOwnPhoneNumber')
+            ->assertSet('ownNumberRegistered', false)
+            ->assertNotified('Registration Failed');
+    }
+
+    /** @test */
+    public function it_handles_exception_during_own_number_registration(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('registerOwnNumber')
+            ->once()
+            ->andThrow(new \Exception('Twilio API timeout'));
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('data.phone_number_source', 'use_own_number')
+            ->set('data.own_phone_number', '+919876543210')
+            ->call('registerOwnPhoneNumber')
+            ->assertSet('ownNumberRegistered', false)
+            ->assertNotified('Registration Failed');
+    }
+
+    /** @test */
+    public function it_warns_when_registering_own_number_without_input(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('data.phone_number_source', 'use_own_number')
+            ->call('registerOwnPhoneNumber')
+            ->assertNotified('Phone Number Required')
+            ->assertSet('ownNumberRegistered', false)
+            ->assertSet('numberPurchased', false);
+    }
+
+    // ========== OTP VERIFICATION TESTS ==========
+
+    /** @test */
+    public function it_verifies_own_phone_number_otp_successfully(): void
+    {
+        $account = WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        WhatsAppPhoneNumber::create([
+            'whatsapp_account_id' => $account->id,
+            'phone_number' => '+919876543210',
+            'phone_number_sid' => 'SNtest123',
+            'country_code' => 'IN',
+            'status' => 'purchased',
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('verifyOwnNumber')
+            ->once()
+            ->with($this->gym->id, 'SNtest123', '123456')
+            ->andReturn([
+                'success' => true,
+                'message' => 'Phone number verified successfully.',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('senderSid', 'SNtest123')
+            ->set('ownNumberRegistered', true)
+            ->set('data.otp_code', '123456')
+            ->call('verifyOwnPhoneNumber')
+            ->assertSet('numberPurchased', true)
+            ->assertSet('setupStep', 4)
+            ->assertNotified('Number Verified');
+    }
+
+    /** @test */
+    public function it_handles_otp_verification_failure(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('verifyOwnNumber')
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'error' => 'Invalid verification code',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('senderSid', 'SNtest123')
+            ->set('ownNumberRegistered', true)
+            ->set('data.otp_code', '000000')
+            ->call('verifyOwnPhoneNumber')
+            ->assertSet('numberPurchased', false)
+            ->assertNotified('Verification Failed');
+    }
+
+    /** @test */
+    public function it_warns_when_verifying_without_otp_code(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('senderSid', 'SNtest123')
+            ->set('ownNumberRegistered', true)
+            ->call('verifyOwnPhoneNumber')
+            ->assertNotified('Code Required')
+            ->assertSet('numberPurchased', false);
+    }
+
+    // ========== RESEND OTP TESTS ==========
+
+    /** @test */
+    public function it_resends_otp_successfully(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('resendOwnNumberOtp')
+            ->once()
+            ->with($this->gym->id, 'SNtest123')
+            ->andReturn([
+                'success' => true,
+                'message' => 'Verification code has been resent.',
+            ]);
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('senderSid', 'SNtest123')
+            ->set('ownNumberRegistered', true)
+            ->call('resendOwnPhoneOtp')
+            ->assertNotified('Code Resent');
+    }
+
+    /** @test */
+    public function it_handles_resend_otp_failure(): void
+    {
+        WhatsAppAccount::create([
+            'gym_id' => $this->gym->id,
+            'twilio_account_sid' => 'ACtest123',
+            'twilio_auth_token' => 'test_token',
+            'waba_id' => 'WABA123',
+            'business_name' => 'FitZone',
+            'business_email' => 'fit@zone.com',
+            'status' => WhatsAppAccountStatusEnum::PENDING,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+        ]);
+
+        $mock = Mockery::mock(TwilioAccountManager::class);
+        $mock->shouldReceive('resendOwnNumberOtp')
+            ->once()
+            ->andThrow(new \Exception('Rate limit exceeded'));
+
+        $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
+
+        Livewire::actingAs($this->user)
+            ->test(WhatsAppSetup::class)
+            ->set('senderSid', 'SNtest123')
+            ->set('ownNumberRegistered', true)
+            ->call('resendOwnPhoneOtp')
+            ->assertNotified('Resend Failed');
+    }
 }

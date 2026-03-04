@@ -6,6 +6,7 @@ use App\Enums\WabaModeEnum;
 use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
@@ -474,6 +475,214 @@ class TwilioAccountManager
                 'success' => false,
                 'error' => $e->getMessage(),
                 'message' => 'Failed to purchase number',
+            ];
+        }
+    }
+
+    /**
+     * Register an external (BYOD) phone number as a WhatsApp sender.
+     *
+     * Creates the sender via Twilio Messaging v2 Channels API,
+     * associates it with the subaccount's Messaging Service,
+     * and triggers OTP verification.
+     *
+     * @return array{success: bool, sender_sid?: string, status?: string, message: string, error?: string}
+     */
+    public function registerOwnNumber(int $gymId, string $phoneNumber): array
+    {
+        try {
+            $account = $this->getAccountOrFail($gymId);
+            $subClient = $this->makeSubaccountClient($account);
+
+            if (! $account->waba_id) {
+                throw new \Exception('WABA ID is not configured. Please complete Step 2 first.');
+            }
+
+            if (! $account->messaging_service_sid) {
+                throw new \Exception('Messaging Service is not configured. Please complete Step 2 first.');
+            }
+
+            $sender = $subClient->messaging->v2->channels->senders->create(
+                'whatsapp:' . $phoneNumber,
+                [
+                    'configuration' => [
+                        'waba_id' => $account->waba_id,
+                    ],
+                ]
+            );
+
+            try {
+                $subClient->messaging->v1->services($account->messaging_service_sid)
+                    ->channelSenders
+                    ->create($sender->sid);
+            } catch (RestException $e) {
+                if ($e->getStatusCode() !== 409) {
+                    throw $e;
+                }
+            }
+
+            $subClient->messaging->v2->channels
+                ->senders($sender->sid)
+                ->verifications
+                ->create('sms');
+
+            WhatsAppPhoneNumber::updateOrCreate(
+                ['whatsapp_account_id' => $account->id],
+                [
+                    'phone_number' => $phoneNumber,
+                    'phone_number_sid' => $sender->sid,
+                    'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
+                    'status' => 'purchased',
+                ]
+            );
+
+            Log::info('BYOD number registered, OTP sent', [
+                'gym_id' => $gymId,
+                'phone_number' => $phoneNumber,
+                'sender_sid' => $sender->sid,
+            ]);
+
+            return [
+                'success' => true,
+                'sender_sid' => $sender->sid,
+                'status' => 'purchased',
+                'message' => 'Number registered. Please enter the OTP sent to your phone.',
+            ];
+        } catch (\Exception $e) {
+            Log::error('BYOD registration failed', [
+                'gym_id' => $gymId,
+                'phone_number' => $phoneNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to register phone number',
+            ];
+        }
+    }
+
+    /**
+     * Verify a BYOD phone number using the OTP code.
+     *
+     * @return array{success: bool, message: string, error?: string}
+     */
+    public function verifyOwnNumber(int $gymId, string $senderSid, string $otpCode): array
+    {
+        try {
+            $account = $this->getAccountOrFail($gymId);
+            $subClient = $this->makeSubaccountClient($account);
+
+            if (! $account->waba_id) {
+                throw new \Exception('WABA ID is not configured. Please complete Step 2 first.');
+            }
+
+            if (! $account->messaging_service_sid) {
+                throw new \Exception('Messaging Service is not configured. Please complete Step 2 first.');
+            }
+
+            $subClient->messaging->v2->channels
+                ->senders($senderSid)
+                ->verifications
+                ->update($otpCode);
+
+            WhatsAppPhoneNumber::where('whatsapp_account_id', $account->id)
+                ->where('phone_number_sid', $senderSid)
+                ->update(['status' => 'active']);
+
+            $account->update([
+                'status' => WhatsAppAccountStatusEnum::ACTIVE,
+                'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
+                'verified_at' => now(),
+            ]);
+
+            Log::info('BYOD number verified', [
+                'gym_id' => $gymId,
+                'sender_sid' => $senderSid,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Phone number verified successfully.',
+            ];
+        } catch (RestException $e) {
+            Log::error('BYOD OTP verification failed', [
+                'gym_id' => $gymId,
+                'sender_sid' => $senderSid,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            $message = $e->getCode() === 60022
+                ? 'Invalid or expired OTP code. Please try again.'
+                : 'Verification failed: ' . $e->getMessage();
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => $message,
+            ];
+        } catch (\Exception $e) {
+            Log::error('BYOD verification error', [
+                'gym_id' => $gymId,
+                'sender_sid' => $senderSid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Verification failed',
+            ];
+        }
+    }
+
+    /**
+     * Resend the OTP code for a BYOD phone number verification.
+     *
+     * @return array{success: bool, message: string, error?: string}
+     */
+    public function resendOwnNumberOtp(int $gymId, string $senderSid, string $channel = 'sms'): array
+    {
+        try {
+            $account = $this->getAccountOrFail($gymId);
+            $subClient = $this->makeSubaccountClient($account);
+
+            if (! $account->waba_id) {
+                throw new \Exception('WABA ID is not configured. Please complete Step 2 first.');
+            }
+
+            if (! $account->messaging_service_sid) {
+                throw new \Exception('Messaging Service is not configured. Please complete Step 2 first.');
+            }
+
+            $subClient->messaging->v2->channels
+                ->senders($senderSid)
+                ->verifications
+                ->create($channel);
+
+            Log::info('BYOD OTP resent', [
+                'gym_id' => $gymId,
+                'sender_sid' => $senderSid,
+                'channel' => $channel,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Verification code has been resent.',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to resend BYOD OTP', [
+                'gym_id' => $gymId,
+                'sender_sid' => $senderSid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to resend verification code',
             ];
         }
     }

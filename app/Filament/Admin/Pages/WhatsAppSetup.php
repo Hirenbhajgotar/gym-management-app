@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Enums\WhatsAppAccountStatusEnum;
+use App\Forms\Components\OtpInput;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPhoneNumber;
@@ -26,6 +27,8 @@ use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
+use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class WhatsAppSetup extends Page implements HasActions, HasForms
@@ -83,6 +86,12 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public bool $wabaCreated = false;
 
     public bool $numberPurchased = false;
+
+    public string $phoneNumberSource = 'use_own_number';
+
+    public string $senderSid = '';
+
+    public bool $ownNumberRegistered = false;
 
     public bool $templatesCreated = false;
 
@@ -178,6 +187,9 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             'waba_id' => $this->whatsappAccount?->waba_id ?? '',
             'manual_phone_number' => '',
             'meta_access_token' => '',
+            'phone_number_source' => 'use_own_number',
+            'own_phone_number' => '',
+            'otp_code' => '',
         ];
 
         $this->businessProfile = [
@@ -310,7 +322,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getCreateAccountStep(): Forms\Components\Wizard\Step
     {
         return Forms\Components\Wizard\Step::make('Create Account')
-            ->label('1. Create Account')
+            ->label('Create Account')
             ->schema([
                 Forms\Components\Placeholder::make('step1_info')
                     ->content(new HtmlString('
@@ -355,7 +367,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getWabaSetupStep(): Forms\Components\Wizard\Step
     {
         return Forms\Components\Wizard\Step::make('WABA Setup')
-            ->label('2. WhatsApp Business')
+            ->label('WhatsApp Business')
             ->schema([
                 Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
@@ -483,16 +495,140 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getPhoneNumberStep(): Forms\Components\Wizard\Step
     {
         return Forms\Components\Wizard\Step::make('Phone Number')
-            ->label('3. Phone Number')
+            ->label('Phone Number')
             ->schema([
                 Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
                         <div class="mb-4">
-                            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Get Your Dedicated WhatsApp Business Number</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">A dedicated phone number is required to send WhatsApp messages to your members. This number will be used as your official gym WhatsApp identity.</p>
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Get Your WhatsApp Business Number</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">A dedicated phone number is required to send WhatsApp messages to your members. Choose how you would like to get your number.</p>
                         </div>
                     ')),
 
+                Forms\Components\Radio::make('phone_number_source')
+                    ->label('How would you like to get your phone number?')
+                    ->options([
+                        'purchase_twilio' => 'Purchase a Number',
+                        'use_own_number' => 'Use My Own Phone Number',
+                    ])
+                    ->descriptions([
+                        'purchase_twilio' => 'Claim a dedicated WhatsApp number instantly — at no cost.',
+                        'use_own_number' => 'Register an existing phone number you own with your WhatsApp Business Account.',
+                    ])
+                    ->default('purchase_twilio')
+                    ->live()
+                    ->inline()
+                    ->inlineLabel(false)
+                    ->disabled($this->numberPurchased),
+
+                // Own Number Section
+                Forms\Components\Section::make('Register Your Own Number')
+                    ->description('Use an existing phone number for your WhatsApp Business Account.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('own_number_warning')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div class="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex-shrink-0 mt-0.5">
+                                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2">Important Requirements Before You Proceed</h4>
+                                            <p class="text-sm text-amber-700 dark:text-amber-400 mb-3">Your phone number must meet <strong>all</strong> of the following Meta requirements:</p>
+                                            <ul class="space-y-1.5 text-sm text-amber-700 dark:text-amber-400">
+                                                <li class="flex items-start gap-2">
+                                                    <span class="font-bold mt-0.5">&bull;</span>
+                                                    <span><strong>Not registered with WhatsApp Messenger</strong> &mdash; the number must not be an active personal WhatsApp account.</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span class="font-bold mt-0.5">&bull;</span>
+                                                    <span><strong>Not registered with WhatsApp Business App</strong> &mdash; the number must not be used in the standalone WhatsApp Business mobile application.</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span class="font-bold mt-0.5">&bull;</span>
+                                                    <span><strong>Not connected to any existing Meta WhatsApp API</strong> &mdash; the number must not already be registered with another WhatsApp Business API integration.</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span class="font-bold mt-0.5">&bull;</span>
+                                                    <span><strong>Compliant with Meta guidelines</strong> &mdash; the number must comply with all <a href="https://developers.facebook.com/docs/whatsapp/phone-numbers" target="_blank" class="underline font-medium">Meta&apos;s official phone number requirements</a>.</span>
+                                                </li>
+                                            </ul>
+                                            <p class="mt-3 text-xs text-amber-600 dark:text-amber-500">If your number is already registered with WhatsApp, you must delete that account first before registering it here.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ')),
+
+                        PhoneInput::make('own_phone_number')
+                            ->label('Your Phone Number')
+                            ->defaultCountry('IN')
+                            ->initialCountry('IN')
+                            ->required()
+                            ->validateFor(
+                                country: ['IN', 'PK', 'BD', 'US'],
+                                type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                                lenient: true,
+                            )
+                            ->placeholder('+91234567890')
+                            ->helperText('Enter the full phone number including country code (e.g., +1 for US, +91 for India).')
+                            ->disabled(fn () => $this->ownNumberRegistered || $this->numberPurchased),
+
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('registerOwnNumber')
+                                ->label('Register This Number')
+                                ->color('primary')
+                                ->icon('heroicon-o-device-phone-mobile')
+                                ->action('registerOwnPhoneNumber'),
+                        ])->visible(fn () => ! $this->ownNumberRegistered && ! $this->numberPurchased),
+
+                        // OTP Verification Section
+                        Forms\Components\Section::make('Verify Your Number')
+                            ->description('A verification code has been sent to your phone. Enter it below to complete registration.')
+                            ->schema([
+                                OtpInput::make('otp_code')
+                                    ->label('Verification Code')
+                                    ->length(6)
+                                    ->alphanumericMode()
+                                    ->required()
+                                    ->rules(['min:6', 'max:6'])
+                                    ->helperText('Check your phone for the SMS verification code from Twilio.'),
+
+                                Forms\Components\Actions::make([
+                                    Forms\Components\Actions\Action::make('verifyOtp')
+                                        ->label('Verify Code')
+                                        ->color('success')
+                                        ->icon('heroicon-o-check-badge')
+                                        ->action('verifyOwnPhoneNumber'),
+                                    Forms\Components\Actions\Action::make('resendOtp')
+                                        ->label('Resend Code')
+                                        ->color('gray')
+                                        ->icon('heroicon-o-arrow-path')
+                                        ->action('resendOwnPhoneOtp'),
+                                ]),
+                            ])
+                            ->visible(fn () => $this->ownNumberRegistered && ! $this->numberPurchased),
+
+                        // Success state after verification
+                        Forms\Components\Placeholder::make('own_number_success')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="text-sm font-medium text-green-800 dark:text-green-300">Your phone number has been verified and registered successfully.</span>
+                                    </div>
+                                </div>
+                            '))
+                            ->visible(fn () => $this->numberPurchased && $this->data['phone_number_source'] === 'use_own_number'),
+                    ])
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'use_own_number'),
+
+                // Purchase from Twilio Section
                 Forms\Components\Section::make('Why This Number Works for You')
                     ->description('Common questions about international WhatsApp numbers')
                     ->schema([
@@ -500,7 +636,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->content(fn () => new HtmlString(
                                 view('filament.admin.pages.whatsapp.partials.phone-number-info')->render()
                             )),
-                    ]),
+                    ])
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
 
                 Forms\Components\Select::make('search_country')
                     ->label('Select Country for Phone Number')
@@ -514,28 +651,30 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->default('US')
                     ->required()
                     ->disabled($this->numberPurchased)
-                    ->helperText('Choose the country where you want your WhatsApp number to be registered. US numbers are recommended for best availability and pricing.'),
+                    ->helperText('Choose the country where you want your WhatsApp number to be registered.')
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
 
                 Forms\Components\Actions::make([
                     Forms\Components\Actions\Action::make('searchNumbers')
                         ->label('Search Available Numbers')
                         ->action('searchNumbers')
                         ->disabled($this->isSearching || $this->numberPurchased),
-                ]),
+                ])->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
 
                 Forms\Components\Placeholder::make('numbers_list')
-                    ->hidden(fn () => ! $this->availableNumbersLoaded)
+                    ->hidden(fn () => ! $this->availableNumbersLoaded || ($this->data['phone_number_source'] ?? 'purchase_twilio') !== 'purchase_twilio')
                     ->content(fn () => new HtmlString(view('filament.admin.pages.whatsapp.partials.available-numbers', ['numbers' => $this->availableNumbers])->render())),
             ])
             ->afterValidation(function () {
                 $this->setupStep = 4;
-            });
+            })
+            ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new');
     }
 
     private function getTemplatesStep(): Forms\Components\Wizard\Step
     {
         return Forms\Components\Wizard\Step::make('Templates')
-            ->label('4. Default Templates')
+            ->label('Default Templates')
             ->schema([
                 Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
@@ -561,7 +700,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     private function getWelcomeCreditsStep(): Forms\Components\Wizard\Step
     {
         return Forms\Components\Wizard\Step::make('Welcome Credits')
-            ->label('5. Welcome Credits')
+            ->label('Welcome Credits')
             ->schema([
                 Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
@@ -963,6 +1102,131 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
             Notification::make()
                 ->title('Purchase Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function registerOwnPhoneNumber(): void
+    {
+        $this->form->validate([
+            'own_phone_number' => [
+                'required',
+                'string',
+                'regex:/^\+[1-9]\d{1,14}$/',
+            ],
+        ]);
+
+        $ownNumber = $this->data['own_phone_number'] ?? null;
+
+        // Validate phone number format (E.164: + followed by 1-15 digits)
+        if (! $ownNumber) {
+            Notification::make()
+                ->title('Phone Number Required')
+                ->body('Please enter your phone number before registering.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        try {
+            if (! $this->whatsappAccount) {
+                throw new \Exception('WhatsApp account not found. Please complete the previous steps first.');
+            }
+
+            $result = app(TwilioAccountManager::class)->registerOwnNumber($this->getGymId(), $ownNumber);
+
+            if ($result['success']) {
+                $this->senderSid = $result['sender_sid'];
+                $this->ownNumberRegistered = true;
+
+                Notification::make()
+                    ->title('Verification Code Sent')
+                    ->body('A verification code has been sent to your phone. Please enter it below.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to register phone number with Twilio.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to register own phone number', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Registration Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function verifyOwnPhoneNumber(): void
+    {
+        $otpCode = $this->data['otp_code'] ?? '';
+
+        if (empty($otpCode)) {
+            throw ValidationException::withMessages(['data.otp_code' => 'Please enter the OTP code.']);
+        }
+
+        if (strlen($otpCode) !== 6) {
+            throw ValidationException::withMessages(['data.otp_code' => 'OTP must be exactly 6 characters.']);
+        }
+
+        try {
+            if (! $this->whatsappAccount) {
+                throw new \Exception('WhatsApp account not found. Please complete the previous steps first.');
+            }
+
+            $result = app(TwilioAccountManager::class)->verifyOwnNumber($this->getGymId(), $this->senderSid, $otpCode);
+
+            if ($result['success']) {
+                $this->phoneNumber = $this->whatsappAccount->phoneNumber()->first();
+                $this->numberPurchased = true;
+                $this->setupStep = 4;
+
+                Notification::make()
+                    ->title('Number Verified')
+                    ->body('Your phone number has been verified and registered successfully.')
+                    ->success()
+                    ->send();
+            } else {
+                throw ValidationException::withMessages(['data.otp_code' => 'Verification failed. Please try again.']);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to verify own phone number', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Verification Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function resendOwnPhoneOtp(): void
+    {
+        try {
+            if (! $this->whatsappAccount) {
+                throw new \Exception('WhatsApp account not found. Please complete the previous steps first.');
+            }
+
+            $result = app(TwilioAccountManager::class)->resendOwnNumberOtp($this->getGymId(), $this->senderSid);
+
+            if ($result['success']) {
+                Notification::make()
+                    ->title('Code Resent')
+                    ->body('A new verification code has been sent to your phone.')
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to resend verification code.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to resend OTP', ['error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title('Resend Failed')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
