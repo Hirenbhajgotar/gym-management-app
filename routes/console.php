@@ -39,8 +39,8 @@ Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
 // Process scheduled WhatsApp broadcasts every minute
 Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
 
-// Sync pending WhatsApp template statuses every 15 minutes
-Schedule::command('whatsapp:sync-template-statuses')->everyFifteenMinutes();
+// Sync pending WhatsApp template statuses every 2 hours
+Schedule::command('whatsapp:sync-template-statuses')->everyTwoHours();
 
 // Check for gyms with low WhatsApp credits daily at 8 AM
 Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');

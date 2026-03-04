@@ -593,12 +593,12 @@
                                 <span class="label">Messages</span>
                                 <span class="value">{{ number_format($package['message_count']) }}</span>
                             </div>
-                            @if($package['message_count'] > 0)
+                            {{-- @if($package['message_count'] > 0)
                                 <div class="row">
                                     <span class="label">Per message</span>
                                     <span class="per-message">₹{{ number_format($package['selling_price'] / $package['message_count'], 2) }}</span>
                                 </div>
-                            @endif
+                            @endif --}}
                         </div>
 
                         <ul class="wa-features">
