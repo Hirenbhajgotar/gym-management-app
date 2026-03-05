@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogUserLogin;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
 use App\Models\Attendances;
 use App\Models\Expense;
@@ -19,6 +20,9 @@ use App\Observers\ReportGoalObserver;
 use App\Observers\SubscriptionObserver;
 use App\Permissions\TeamPermissionRegistrar;
 use Filament\Events\TenantSet;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
@@ -55,6 +59,20 @@ class AppServiceProvider extends ServiceProvider
         FacadesEvent::listen(
             TenantSet::class,
             UpdateSpatiePermissionCacheOnTenantSwitch::class
+        );
+
+        // Register login event listener
+        FacadesEvent::listen(
+            Login::class,
+            [LogUserLogin::class, 'handleLogin']
+        );
+        FacadesEvent::listen(
+            Logout::class,
+            [LogUserLogin::class, 'handleLogout']
+        );
+        FacadesEvent::listen(
+            Failed::class,
+            [LogUserLogin::class, 'handleFailed']
         );
 
         Notification::extend('whatsapp', function ($app) {
