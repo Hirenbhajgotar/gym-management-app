@@ -16,7 +16,7 @@ class LoginActivityStatsWidget extends BaseWidget
         return [
             Stat::make('Active Logins', $stats['active_sessions'])
                 ->icon('phosphor-lightning')
-                ->description('Currently loggedIns')
+                ->description('Currently logged in')
                 ->color('success'),
 
             Stat::make("Today's Logins", $stats['today_logins'])

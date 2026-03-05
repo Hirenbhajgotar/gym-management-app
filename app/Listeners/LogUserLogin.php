@@ -23,6 +23,7 @@ class LogUserLogin
 
     public function handleLogin(Login $event): void
     {
+        /** @var \App\Models\User|null $user */
         $user = $event->user;
 
         // Skip if user is null
@@ -42,8 +43,28 @@ class LogUserLogin
             return;
         }
 
-        // Get the primary gym from pivot (first one)
-        $gym = $user->gyms()->first();
+        $request = request();
+
+        // Try to get the active gym from Filament context or request
+        $gym = null;
+
+        try {
+            if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::isServing()) {
+                $gym = \Filament\Facades\Filament::getTenant();
+            }
+        } catch (\Throwable $th) {
+            // Ignore if tenant is not set yet
+        }
+
+        // Also check if passed in API request
+        if (! $gym && $request->has('gym_id')) {
+            $gym = $user->gyms()->where('gyms.id', $request->input('gym_id'))->first();
+        }
+
+        // Fallback to the primary gym from pivot (first one)
+        if (! $gym) {
+            $gym = $user->gyms()->first();
+        }
 
         // Skip if no gym association
         if (! $gym) {
@@ -53,9 +74,6 @@ class LogUserLogin
         // Mark any existing active sessions as logged out using the service
         $loginService = app(\App\Services\LoginActivityService::class);
         $loginService->markSessionAsLoggedOut($user->id);
-
-        // Get request details
-        $request = request();
         $ipAddress = $this->getIpAddress($request);
         $userAgent = $request->userAgent();
         $deviceType = $this->detectDeviceType($userAgent);
@@ -101,15 +119,6 @@ class LogUserLogin
      */
     protected function getIpAddress(Request $request): ?string
     {
-        // Check for forwarded IP (when behind proxy)
-        if ($request->hasHeader('X-Forwarded-For')) {
-            return explode(',', $request->header('X-Forwarded-For'))[0];
-        }
-
-        if ($request->hasHeader('X-Real-IP')) {
-            return $request->header('X-Real-IP');
-        }
-
         return $request->ip();
     }
 
@@ -165,5 +174,25 @@ class LogUserLogin
         }
 
         return false;
+    }
+
+    /**
+     * Handle the tenant set event to update the active session's gym.
+     */
+    public function handleTenantSet(\Filament\Events\TenantSet $event): void
+    {
+        $user = $event->getUser();
+        $tenant = $event->getTenant();
+
+        if (! $user || ! $tenant) {
+            return;
+        }
+
+        // Update the current session's gym_id to match the newly active tenant
+        UserLoginLog::where('user_id', $user->id)
+            ->where('is_current_session', true)
+            ->whereNull('logged_out_at')
+            ->latest('login_at')
+            ->update(['gym_id' => $tenant->id]);
     }
 }

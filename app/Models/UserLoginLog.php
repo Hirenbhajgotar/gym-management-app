@@ -56,11 +56,14 @@ class UserLoginLog extends Model
         'login_method',
     ];
 
-    protected $casts = [
-        'login_at' => 'datetime',
-        'logged_out_at' => 'datetime',
-        'is_current_session' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'login_at' => 'datetime',
+            'logged_out_at' => 'datetime',
+            'is_current_session' => 'boolean',
+        ];
+    }
 
     public function user(): BelongsTo
     {

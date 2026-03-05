@@ -62,16 +62,18 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Register login event listener
-        $loginListener = new LogUserLogin;
-        FacadesEvent::listen(Login::class, function ($event) use ($loginListener) {
-            $loginListener->handleLogin($event);
-        });
-        FacadesEvent::listen(Logout::class, function ($event) use ($loginListener) {
-            $loginListener->handleLogout($event);
-        });
-        FacadesEvent::listen(Failed::class, function ($event) use ($loginListener) {
-            $loginListener->handleFailed($event);
-        });
+        FacadesEvent::listen(
+            Login::class,
+            [LogUserLogin::class, 'handleLogin']
+        );
+        FacadesEvent::listen(
+            Logout::class,
+            [LogUserLogin::class, 'handleLogout']
+        );
+        FacadesEvent::listen(
+            Failed::class,
+            [LogUserLogin::class, 'handleFailed']
+        );
 
         Notification::extend('whatsapp', function ($app) {
             return new WhatsAppChannel;

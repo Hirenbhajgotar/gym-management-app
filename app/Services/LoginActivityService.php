@@ -201,28 +201,29 @@ class LoginActivityService
      */
     protected function getLoginCountsByRole(?Carbon $from, ?Carbon $to): array
     {
+        $query = UserLoginLog::query()
+            ->join('gym_user', function ($join) {
+                $join->on('user_login_logs.user_id', '=', 'gym_user.user_id')
+                    ->on('user_login_logs.gym_id', '=', 'gym_user.gym_id');
+            })
+            ->whereIn('gym_user.role', $this->staffRoles)
+            ->selectRaw('gym_user.role, COUNT(user_login_logs.id) as count')
+            ->groupBy('gym_user.role');
+
+        if ($from) {
+            $query->where('user_login_logs.login_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->where('user_login_logs.login_at', '<=', $to);
+        }
+
+        $countsByRole = $query->pluck('count', 'role');
+
+        // Ensure all staff roles are present in the results, even with a count of 0
         $results = [];
-
         foreach ($this->staffRoles as $role) {
-            $userIds = $this->getUserIdsByRoles([$role]);
-
-            if ($userIds->isEmpty()) {
-                $results[$role] = 0;
-
-                continue;
-            }
-
-            $count = UserLoginLog::whereIn('user_id', $userIds);
-
-            if ($from) {
-                $count->where('login_at', '>=', $from);
-            }
-
-            if ($to) {
-                $count->where('login_at', '<=', $to);
-            }
-
-            $results[$role] = $count->count();
+            $results[$role] = $countsByRole[$role] ?? 0;
         }
 
         return $results;
@@ -312,22 +313,6 @@ class LoginActivityService
      */
     public function getLoginHistoryWithDurations(int $limit = 50, ?array $filters = null): Collection
     {
-        return $this->getRecentLogins($limit, $filters)->map(function ($login) {
-            return [
-                'id' => $login->id,
-                'user_id' => $login->user_id,
-                'user' => $login->user,
-                'gym' => $login->gym,
-                'login_at' => $login->login_at,
-                'logged_out_at' => $login->logged_out_at,
-                'is_current_session' => $login->is_current_session,
-                'ip_address' => $login->ip_address,
-                'device_type' => $login->device_type,
-                'login_method' => $login->login_method,
-                'is_currently_logged_in' => $login->isCurrentlyLoggedIn(),
-                'session_duration' => $login->session_duration,
-                'duration_minutes' => $login->duration_minutes,
-            ];
-        });
+        return $this->getRecentLogins($limit, $filters);
     }
 }
