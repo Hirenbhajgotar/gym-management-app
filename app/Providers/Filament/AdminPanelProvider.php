@@ -57,7 +57,7 @@ class AdminPanelProvider extends PanelProvider
 
             ])
             ->brandLogo(asset('fluxfitness-logo.svg'))
-            ->brandLogoHeight('3rem')
+            ->brandLogoHeight('1.5rem')
             ->spa()
             ->spaUrlExceptions(fn (): array => [
                 // Allow all files in the import/templates directory
