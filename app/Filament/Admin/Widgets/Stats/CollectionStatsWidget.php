@@ -83,7 +83,18 @@ class CollectionStatsWidget extends BaseWidget
                     ->description('Collection received this year')
                     ->color('info'),
             ];
+        });
+    }
+
+    /**
+     * Ensure we always return at least a root tag to prevent Livewire errors.
+     */
+    public function render(): \Illuminate\Contracts\View\View
+    {
+        if (Filament::getTenant()?->id === null) {
+            return view()->make('filament-widgets::blank');
         }
-        );
+
+        return parent::render();
     }
 }
