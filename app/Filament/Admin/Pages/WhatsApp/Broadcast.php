@@ -531,8 +531,8 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                 ->whereDate('created_at', today())
                 ->count();
 
-            if ($todayCount >= 2) {
-                throw new \Exception('Daily broadcast limit reached. You can send a maximum of 2 broadcasts per day. Try again tomorrow.');
+            if ($todayCount >= config('app.whatsapp_broadcast_limit_per_day')) {
+                throw new \Exception('Daily broadcast limit reached. You can send a maximum of ' . config('app.whatsapp_broadcast_limit_per_day') . ' broadcasts per day. Try again tomorrow.');
             }
 
             $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)

@@ -31,7 +31,7 @@ class CheckLowWhatsAppCreditsCommand extends Command
 
         $count = 0;
         foreach ($credits as $credit) {
-            if ($credit->getBalance() <= 5.00) {
+            if ($credit->getBalance() <= config('app.low_whatsapp_message_balance_threshold')) {
                 SendLowWhatsAppCreditNotificationJob::dispatch($credit);
                 $count++;
             }

@@ -129,4 +129,6 @@ return [
     'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
     'backup_mail_to' => env('BACKUP_MAIL_TO', 'example@fluxfitness.com'),
     'meta_verification_link' => env('META_VERIFICATION_LINK', 'https://business.facebook.com/settings/verification/'),
+    'low_whatsapp_message_balance_threshold' => env('LOW_WHATSAPP_MESSAGE_BALANCE_THRESHOLD', 5),
+    'whatsapp_broadcast_limit_per_day' => env('WHATSAPP_BROADCAST_LIMIT_PER_DAY', 2),
 ];
