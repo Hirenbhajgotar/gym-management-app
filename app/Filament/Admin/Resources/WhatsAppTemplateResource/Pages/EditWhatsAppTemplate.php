@@ -95,6 +95,18 @@ class EditWhatsAppTemplate extends EditRecord
         return WhatsAppTemplateResource::normalizeTemplateData($data);
     }
 
+    /**
+     * Display a success notification after template update.
+     */
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->title('Template Updated')
+            ->body('The template has been successfully updated.')
+            ->success()
+            ->send();
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
