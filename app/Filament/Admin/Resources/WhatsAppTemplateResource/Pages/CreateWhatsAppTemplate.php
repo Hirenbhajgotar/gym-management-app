@@ -59,7 +59,7 @@ class CreateWhatsAppTemplate extends CreateRecord
     }
 
     /**
-     * Display a success notification after manager creation.
+     * Display a success notification after template creation.
      */
     protected function getCreatedNotification(): ?Notification
     {

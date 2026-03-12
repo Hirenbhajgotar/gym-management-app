@@ -126,7 +126,7 @@ class WhatsAppTemplateService
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post('https://content.twilio.com/v1/Content', [
                     'friendly_name' => $template->display_name,
-                    'language' => $template->language ?? 'en',
+                    'language' => 'en',
                     'types' => [
                         'twilio/text' => [
                             'body' => $template->body,
