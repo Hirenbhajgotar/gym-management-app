@@ -117,34 +117,19 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             $phoneNumber = config('services.twilio.sandbox_number', '+15557626186');
 
             if (! $phoneNumber) {
-                return [
-                    'success' => false,
-                    'error' => 'No phone number configured for this gym',
-                    'message_id' => null,
-                    'data' => null,
-                ];
+                throw new Exception('No phone number configured for this gym');
             }
 
             $contentSid = config('services.twilio.whatsapp_integration_active_v5_template_sid');
 
             if (! $contentSid) {
-                return [
-                    'success' => false,
-                    'error' => 'No template SID configured for this gym',
-                    'message_id' => null,
-                    'data' => null,
-                ];
+                throw new Exception('No template SID configured for this gym');
             }
 
             $gym = Gym::where('id', $this->tenantId)->first();
 
             if (! $gym) {
-                return [
-                    'success' => false,
-                    'error' => 'No gym found for this tenant ID',
-                    'message_id' => null,
-                    'data' => null,
-                ];
+                throw new Exception('No gym found for this tenant ID');
             }
 
             $twilioMessage = $client->messages->create("whatsapp:$to", [
