@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\WhatsAppServiceInterface;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
@@ -62,10 +63,86 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                 'body' => $message,
             ]);
 
-            Log::error('Twilio WhatsApp text message sent', [
+            Log::info('Twilio WhatsApp text message sent', [
                 'gym_id' => $this->tenantId,
                 'to' => $to,
                 'message' => $message,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+            ]);
+
+            return [
+                'success' => true,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+                'data' => [
+                    'sid' => $twilioMessage->sid,
+                    'status' => $twilioMessage->status,
+                ],
+            ];
+        } catch (RestException $e) {
+            Log::error('Twilio WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        }
+    }
+
+    public function sendTemplateTestMessage(string $to): array
+    {
+        try {
+            $client = $this->getClient();
+
+            // Use sandbox sender when in sandbox mode
+            $phoneNumber = config('services.twilio.sandbox_number', '+15557626186');
+
+            if (! $phoneNumber) {
+                throw new Exception('No phone number configured for this gym');
+            }
+
+            $contentSid = config('services.twilio.whatsapp_integration_active_v5_template_sid');
+
+            if (! $contentSid) {
+                throw new Exception('No template SID configured for this gym');
+            }
+
+            $gym = Gym::where('id', $this->tenantId)->first();
+
+            if (! $gym) {
+                throw new Exception('No gym found for this tenant ID');
+            }
+
+            $twilioMessage = $client->messages->create("whatsapp:$to", [
+                'from' => "whatsapp:$phoneNumber",
+                'contentSid' => $contentSid,
+                'contentVariables' => json_encode([
+                    1 => $gym->name,
+                ]),
+            ]);
+
+            Log::info('Twilio WhatsApp template message sent', [
+                'gym_id' => $this->tenantId,
+                'to' => $to,
                 'message_id' => $twilioMessage->sid,
                 'status' => $twilioMessage->status,
             ]);
