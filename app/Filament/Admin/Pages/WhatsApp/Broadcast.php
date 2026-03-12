@@ -649,7 +649,7 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
             }
 
             $service = new TwilioWhatsAppService((string) $this->getGymId());
-            $result = $service->sendTestMessage($testPhoneNumber, $testMessage);
+            $result = $service->sendTemplateTestMessage($testPhoneNumber);
 
             if ($result['success']) {
                 Notification::make()
