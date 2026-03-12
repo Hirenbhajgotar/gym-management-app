@@ -40,6 +40,73 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         return $this->sendTextMessage($to, $message);
     }
 
+    public function sendTestMessage(string $to, string $message): array
+    {
+        try {
+            $client = $this->getClient();
+
+            // Use sandbox sender when in sandbox mode
+            $phoneNumber = config('services.twilio.sandbox_number', '+15557626186');
+
+            if (! $phoneNumber) {
+                return [
+                    'success' => false,
+                    'error' => 'No phone number configured for this gym',
+                    'message_id' => null,
+                    'data' => null,
+                ];
+            }
+
+            $twilioMessage = $client->messages->create("whatsapp:$to", [
+                'from' => "whatsapp:$phoneNumber",
+                'body' => $message,
+            ]);
+
+            Log::error('Twilio WhatsApp text message sent', [
+                'gym_id' => $this->tenantId,
+                'to' => $to,
+                'message' => $message,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+            ]);
+
+            return [
+                'success' => true,
+                'message_id' => $twilioMessage->sid,
+                'status' => $twilioMessage->status,
+                'data' => [
+                    'sid' => $twilioMessage->sid,
+                    'status' => $twilioMessage->status,
+                ],
+            ];
+        } catch (RestException $e) {
+            Log::error('Twilio WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsApp text message error', [
+                'gym_id' => $this->tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message_id' => null,
+                'data' => null,
+            ];
+        }
+    }
+
     protected function sendTextMessage(string $to, string $message): array
     {
         try {

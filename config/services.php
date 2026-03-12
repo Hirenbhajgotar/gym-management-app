@@ -97,6 +97,7 @@ return [
         // Sandbox Settings
         'use_sandbox' => env('TWILIO_USE_SANDBOX', false),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
+        'sandbox_recipient_number' => env('TWILIO_SANDBOX_RECIPIENT_NUMBER'),
 
         'cost_per_message' => env('TWILIO_COST_PER_MESSAGE', 1.53),
         'number_cost' => env('TWILIO_NUMBER_COST', 136.41),

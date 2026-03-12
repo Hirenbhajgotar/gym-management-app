@@ -10,6 +10,7 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
+use App\Services\TwilioWhatsAppService;
 use App\Services\WhatsAppVariableResolver;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -432,7 +433,6 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                             ->minDate(now())
                             ->required(fn (callable $get) => $get('schedule_type') === 'later'),
                     ]),
-
                 Forms\Components\Section::make('Confirm')
                     ->schema([
                         Forms\Components\Placeholder::make('credits_info')
@@ -440,8 +440,17 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                             ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
 
                         Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('sendTestMessage')
+                                ->label('Send Message')
+                                ->color('info')
+                                ->icon('heroicon-o-phone')
+                                ->visible(fn () => config('services.twilio.use_sandbox'))
+                                ->action(function () {
+                                    $this->sendTestMessage();
+                                }),
                             Forms\Components\Actions\Action::make('sendBroadcast')
                                 ->label('Send Broadcast')
+                                ->visible(fn () => ! config('services.twilio.use_sandbox'))
                                 ->action(function () {
                                     $this->form->validate();
                                     $this->sendBroadcast();
@@ -617,6 +626,43 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
             Notification::make()
                 ->title('Broadcast Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    private function sendTestMessage(): void
+    {
+        try {
+            // Check if sandbox is enabled
+            if (! config('services.twilio.use_sandbox', false)) {
+                throw new \Exception('Sandbox mode is not enabled. Please enable it in services.php configuration.');
+            }
+
+            // Use hardcoded test number - send TO this number, FROM sandbox sender
+            $testPhoneNumber = config('services.twilio.sandbox_recipient_number');
+            $testMessage = 'This is a test message to demonstrate your broadcast ability to send message.';
+
+            if (! $testPhoneNumber) {
+                throw new \Exception('No test phone number configured for this gym');
+            }
+
+            $service = new TwilioWhatsAppService((string) $this->getGymId());
+            $result = $service->sendTestMessage($testPhoneNumber, $testMessage);
+
+            if ($result['success']) {
+                Notification::make()
+                    ->title('Test Message Sent!')
+                    ->body('Test message sent successfully to ' . $testPhoneNumber)
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception($result['error'] ?? 'Failed to send test message');
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Test Message Failed')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
