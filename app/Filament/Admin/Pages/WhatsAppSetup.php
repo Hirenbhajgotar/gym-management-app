@@ -324,7 +324,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         return Forms\Components\Wizard\Step::make('Create Account')
             ->label('Create Account')
             ->schema([
-                Forms\Components\Placeholder::make('step1_info')
+                Forms\Components\Placeholder::make('')
                     ->content(new HtmlString('
                         <div class="mb-4">
                             <h3 class="font-medium text-gray-900 dark:text-gray-100">Create Your WhatsApp Business Account</h3>
@@ -819,7 +819,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $gym = $this->getGym();
         $user = Auth::user();
 
-        $data = $this->form->getState();
+        $data = $this->data;
 
         $result = app(TwilioAccountManager::class)->createSubaccount(
             $gymId,
