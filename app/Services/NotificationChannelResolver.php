@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Gym;
 use App\Models\GymSetting;
 use App\Notifications\WhatsAppChannel;
@@ -13,33 +14,32 @@ class NotificationChannelResolver
      */
     public static function getChannelsForGym(
         Gym $gym,
-        string $notificationType = 'general',
+        NotificationType|string $notificationType = 'general',
     ): array {
         $settings = self::getSetting($gym->id);
+        $notificationTypeString = $notificationType instanceof NotificationType
+            ? $notificationType->value
+            : $notificationType;
 
-        $emailEnabled = $settings->get('email_notifications')->value ?? true;
+        $emailEnabled = (bool) ($settings->get('email_notifications')?->value ?? true);
 
-        $whatsappEnabled = $settings->get('whatsapp_notifications')?->value
-            ? true
-            : false;
+        // Check if WhatsApp notifications are globally enabled for the gym
+        $whatsappEnabled = (bool) ($settings->get('whatsapp_notifications')?->value ?? false);
 
-        $smsEnabled = $settings->get('sms_notifications')?->value
-            ? true
-            : false;
+        $smsEnabled = (bool) ($settings->get('sms_notifications')?->value ?? false);
 
-        $notificationTypeEnabled = $settings->get("{$notificationType}")?->value
-            ? true
-            : false;
+        // Check if specific notification type is enabled
+        $notificationTypeEnabled = (bool) ($settings->get($notificationTypeString)?->value ?? false);
 
-        // If the specific notification type is disabled, return empty array
-        if (! $notificationTypeEnabled) {
-            return ['mail'];
+        // If the specific notification type is disabled, return empty array for notifications completely
+        if (! $notificationTypeEnabled && $notificationTypeString !== 'general') {
+            return [];
         }
 
         $channels = [];
 
         // Add channels based on settings
-        if ($whatsappEnabled) {
+        if ($whatsappEnabled && self::isWhatsAppConfigured($gym)) {
             $channels[] = WhatsAppChannel::class;
         }
 
@@ -47,12 +47,39 @@ class NotificationChannelResolver
             $channels[] = 'sms';
         }
 
-        // Always include email as fallback if no other channels are enabled
-        if (empty($channels) || $emailEnabled) {
+        // Always include email as primary channel
+        if ($emailEnabled) {
             $channels[] = 'mail';
         }
 
         return $channels;
+    }
+
+    /**
+     * Check if WhatsApp is properly configured for the gym
+     */
+    public static function isWhatsAppConfigured(Gym $gym): bool
+    {
+        $whatsAppAccount = $gym->whatsAppAccount;
+
+        if (! $whatsAppAccount) {
+            return false;
+        }
+
+        return $whatsAppAccount->isActive()
+            && $whatsAppAccount->isVerified()
+            && $whatsAppAccount->hasPhoneNumber();
+    }
+
+    /**
+     * Check if a specific notification type is enabled for a gym
+     */
+    public static function isNotificationEnabled(Gym $gym, NotificationType|string $type): bool
+    {
+        $settings = self::getSetting($gym->id);
+        $typeString = $type instanceof NotificationType ? $type->value : $type;
+
+        return (bool) ($settings->get($typeString)?->value ?? false);
     }
 
     private static function getSetting(int $gymId)

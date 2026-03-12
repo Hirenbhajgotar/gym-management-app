@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Gym;
 use App\Services\GymSettingService;
+use App\Services\TwilioAccountManager;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 
@@ -74,9 +75,21 @@ class GymObserver
             // 6. Delete gym settings
             $gym->settings()->delete();
 
-            // 7. Delete notification settings
-            if ($gym->notificationSetting) {
-                $gym->notificationSetting->delete();
+            // 7. Clean up Twilio resources (subaccount, phone numbers, messaging service)
+            // and delete WhatsApp Account
+            if ($gym->whatsAppAccount) {
+                try {
+                    app(TwilioAccountManager::class)->cleanupTenantResources($gym->id);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Twilio cleanup failed during gym deletion, continuing with local cleanup', [
+                        'gym_id' => $gym->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // Delete phone numbers first (local records)
+                $gym->whatsAppAccount->phoneNumber()->delete();
+                $gym->whatsAppAccount->delete();
             }
 
             // 8. Delete social configs

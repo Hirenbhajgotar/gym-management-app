@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\NotificationSetting;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -20,22 +20,49 @@ class WhatsAppTemplateManager
         $this->useSandbox = config('services.twilio.use_sandbox', true);
     }
 
-    /**
-     * Check if this is a system tenant (super-admin, no tenant association)
-     */
     private function isSystemTenant(): bool
     {
-        return $this->tenantId === config('app.system_tenant_id', 'system') ||
-            $this->tenantId === 'system';
+        return $this->tenantId === config('app.system_tenant_id', 'system')
+            || $this->tenantId === 'system';
     }
 
-    /**
-     * Fetch all approved templates from Twilio
-     */
+    private function getAccount(): ?WhatsAppAccount
+    {
+        if ($this->isSystemTenant()) {
+            return null;
+        }
+
+        return WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+    }
+
+    private function getClient(): ?Client
+    {
+        if ($this->isSystemTenant()) {
+            return null;
+        }
+
+        $account = $this->getAccount();
+
+        if (! $account) {
+            return null;
+        }
+
+        if ($this->useSandbox) {
+            return new Client(
+                config('services.twilio.master_sid'),
+                config('services.twilio.master_token'),
+            );
+        }
+
+        return new Client(
+            $account->twilio_account_sid,
+            $account->twilio_auth_token,
+        );
+    }
+
     public function fetchTemplates(): array
     {
         try {
-            // System tenant doesn't have templates (requires verified business account)
             if ($this->isSystemTenant()) {
                 return [
                     'success' => false,
@@ -44,36 +71,22 @@ class WhatsAppTemplateManager
                 ];
             }
 
-            $settings = NotificationSetting::where(
-                'gym_id',
-                $this->tenantId,
-            )->first();
+            $client = $this->getClient();
 
-            if (! $settings) {
-                throw new \Exception('No Twilio settings found');
+            if (! $client) {
+                return [
+                    'success' => false,
+                    'error' => 'No WhatsApp account found',
+                    'templates' => [],
+                ];
             }
 
-            $client = new Client(
-                $settings->twilio_account_sid,
-                $settings->twilio_auth_token,
-            );
-
-            // Fetch all content templates
-            /**
-             * @var \Twilio\Rest\Content\V1\ContentInstance $contents
-             */
             $contents = $client->content->v1->contents->read();
 
             $templates = [];
             foreach ($contents as $content) {
-                // Only get approved templates
-                if (
-                    $content->approvalRequests &&
-                    isset($content->approvalRequests['whatsapp'])
-                ) {
-                    $whatsappStatus =
-                        $content->approvalRequests['whatsapp']['status'] ??
-                        null;
+                if ($content->approvalRequests && isset($content->approvalRequests['whatsapp'])) {
+                    $whatsappStatus = $content->approvalRequests['whatsapp']['status'] ?? null;
 
                     if ($whatsappStatus === 'approved') {
                         $templates[] = [
@@ -106,16 +119,11 @@ class WhatsAppTemplateManager
         }
     }
 
-    /**
-     * Get a specific template by name
-     */
     public function getTemplateByName(string $templateName): ?array
     {
         $cacheKey = "whatsapp_template:{$this->tenantId}:{$templateName}";
 
-        return Cache::remember($cacheKey, now()->addHours(24), function () use (
-            $templateName,
-        ) {
+        return Cache::remember($cacheKey, now()->addHours(24), function () use ($templateName) {
             $result = $this->fetchTemplates();
 
             if (! $result['success']) {
@@ -132,13 +140,9 @@ class WhatsAppTemplateManager
         });
     }
 
-    /**
-     * Sync templates to database for easy access
-     */
     public function syncTemplatesToDatabase(): array
     {
         try {
-            // System tenant doesn't support templates
             if ($this->isSystemTenant()) {
                 return [
                     'success' => false,
@@ -157,14 +161,14 @@ class WhatsAppTemplateManager
                 WhatsAppTemplate::updateOrCreate(
                     [
                         'gym_id' => $this->tenantId,
-                        'template_name' => $template['friendly_name'],
+                        'name' => $template['friendly_name'],
                     ],
                     [
-                        'template_sid' => $template['sid'],
+                        'twilio_template_sid' => $template['sid'],
                         'language' => $template['language'],
                         'variables' => $template['variables'],
                         'status' => 'approved',
-                        'synced_at' => now(),
+                        'is_active' => true,
                     ],
                 );
                 $synced++;
@@ -188,32 +192,25 @@ class WhatsAppTemplateManager
         }
     }
 
-    /**
-     * Get template from database (faster than API call)
-     */
     public function getTemplate(string $templateName): ?WhatsAppTemplate
     {
-        // System tenant doesn't have templates
         if ($this->isSystemTenant()) {
             return null;
         }
 
         return WhatsAppTemplate::where('gym_id', $this->tenantId)
-            ->where('template_name', $templateName)
+            ->where('name', $templateName)
             ->where('status', 'approved')
+            ->where('is_active', true)
             ->first();
     }
 
-    /**
-     * Clear template cache
-     */
     public function clearCache(?string $templateName = null): void
     {
         if ($templateName) {
             $cacheKey = "whatsapp_template:{$this->tenantId}:{$templateName}";
             Cache::forget($cacheKey);
         } else {
-            // Clear all templates for this tenant
             Cache::forget("whatsapp_templates:{$this->tenantId}");
         }
     }

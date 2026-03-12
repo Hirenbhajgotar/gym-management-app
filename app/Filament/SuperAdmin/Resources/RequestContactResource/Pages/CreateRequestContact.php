@@ -11,6 +11,6 @@ class CreateRequestContact extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return RequestContactResource::getUrl("index");
+        return RequestContactResource::getUrl('index');
     }
 }

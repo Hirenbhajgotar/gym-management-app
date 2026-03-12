@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<array-key, mixed>|null $default_permissions
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Database\Factories\PermissionSettingFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting newQuery()
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereRole($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperPermissionSetting
  */

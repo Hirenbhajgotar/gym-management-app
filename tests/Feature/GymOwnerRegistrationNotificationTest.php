@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Gym;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
@@ -17,7 +16,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         // Manually create necessary roles/permissions to avoid heavy seeder
@@ -29,7 +28,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
         // Arrange
         Notification::fake();
         Log::shouldReceive('info')->andReturnNull();
-        
+
         // We expect an error log for the failed notification
         Log::shouldReceive('error')
             ->once() // Expect at least one error log

@@ -2,42 +2,24 @@
 
 namespace App\Notifications;
 
+use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
-use App\Models\Gym;
-use App\Notifications\Contracts\HasGymContext;
-use App\Services\NotificationChannelResolver;
-use App\Services\WhatsAppTemplateManager;
+use App\Models\GymMember;
 use Exception;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class BirthdayNotification extends Notification implements HasGymContext, ShouldQueue
+class BirthdayNotification extends BaseTenantNotification
 {
-    use Queueable;
-
-    private readonly Gym $gym;
-
     public function __construct(
-        public $member,
+        public GymMember $member,
     ) {
         $this->gym = $member->gym;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function getNotificationType(): string
     {
-        // return ['mail'];
-        return NotificationChannelResolver::getChannelsForGym(
-            $this->gym,
-            'birthday_notifications',
-        );
+        return NotificationType::BIRTHDAY->value;
     }
 
     /**
@@ -88,16 +70,16 @@ class BirthdayNotification extends Notification implements HasGymContext, Should
                 return null;
             }
 
-            [$fromNumber, $templateSid] = $config;
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
+            if (! $template) {
+                return null;
+            }
 
             return [
                 'to' => $phoneNumber,
-                'from' => $fromNumber,
-                'template_sid' => $templateSid,
-                'template_variables' => [
-                    '1' => $this->member->name,
-                    '2' => $this->gym->name,
-                ],
+                'from' => $config['from_number'],
+                'template_sid' => $template->twilio_template_sid,
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
@@ -113,64 +95,12 @@ class BirthdayNotification extends Notification implements HasGymContext, Should
     {
         // Sandbox mode uses a fixed test number
         return [
-            'to' => '+919265098227', // Consider moving this to config if used frequently
+            'to' => config('services.twilio.sandbox_number', '+919265098227'),
             'body' => "Happy Birthday {$this->member->name},\n\n" .
                     "We at {$this->gym->name} wish you a very Happy Birthday! 🎉\n\n" .
                     "May you have a fantastic year ahead filled with health and fitness.\n\n" .
                     'Thank you for being a valued member!',
         ];
-    }
-
-    /**
-     * @return array{string, string}|null Returns [fromNumber, templateSid] or null on failure
-     */
-    private function getGymWhatsAppConfig(): ?array
-    {
-        $notificationSetting = $this->gym?->notificationSetting;
-
-        if (! $notificationSetting) {
-            Log::error('Notification setting not found for gym', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->isAccountActive() || ! $notificationSetting->isAccountVerified()) {
-            Log::error('Notification account is not active or verified', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->whatsapp_business_number) {
-            Log::error('Notification business number not found for gym', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        $template = $this->getWhatsAppTemplate();
-        if (! $template) {
-            return null;
-        }
-
-        $templateSid = $template->template_sid ?? config('services.twilio.birthday_greeting_template_sid');
-
-        return [$notificationSetting->whatsapp_business_number, $templateSid];
-    }
-
-    private function getWhatsAppTemplate(): ?object
-    {
-        $templateManager = new WhatsAppTemplateManager($this->member->gym_id);
-        $template = $templateManager->getTemplate('birthday_greeting');
-
-        if (! $template) {
-            Log::error('birthday_greeting template not found', [
-                'gym_id' => $this->member->gym_id,
-                'member_id' => $this->member->id,
-            ]);
-
-            return null;
-        }
-
-        return $template;
     }
 
     private function getRecipientPhoneNumber(): ?string

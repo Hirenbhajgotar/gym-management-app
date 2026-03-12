@@ -5,6 +5,7 @@
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Trainer;
@@ -37,6 +38,25 @@ class AttendanceService
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
+
+        // For gym members, check if they can access the gym
+        if ($userType === GymMember::class) {
+            $member = GymMember::find($userId);
+            if ($member && ! $member->canAccessGym()) {
+                $reason = '';
+                if ($member->isFrozen()) {
+                    $reason = 'Your membership is currently frozen.';
+                    if ($member->frozen_until) {
+                        $reason .= ' It will be unfrozen on ' . $member->frozen_until->format('F j, Y') . '.';
+                    }
+                } elseif ($member->membership_end?->isPast()) {
+                    $reason = 'Your membership has expired.';
+                } elseif ($member->payment_status !== PaymentStatus::COMPLETED) {
+                    $reason = 'Your payment is not completed.';
+                }
+                throw new \Exception('Cannot check in: ' . $reason);
+            }
+        }
 
         // Check if user is already checked in today
         $existingAttendance = Attendances::where('attendanceable_id', $userId)

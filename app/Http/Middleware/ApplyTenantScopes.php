@@ -8,7 +8,6 @@ use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
-use App\Models\NotificationSetting;
 use App\Models\Trainer;
 use Closure;
 use Filament\Facades\Filament;
@@ -50,10 +49,6 @@ class ApplyTenantScopes
         );
 
         FollowUp::addGlobalScope(
-            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
-        );
-
-        NotificationSetting::addGlobalScope(
             fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 

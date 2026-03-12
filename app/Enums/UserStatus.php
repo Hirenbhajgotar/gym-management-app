@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum UserStatus: int implements HasLabel, HasColor
+enum UserStatus: int implements HasColor, HasLabel
 {
     case INACTIVE = 0;
     case ACTIVE = 1;

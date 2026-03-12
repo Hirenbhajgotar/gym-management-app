@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\BusinessType|null $businessType
  * @property-read \App\Models\Gym|null $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail query()
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereWebsite($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereYearsInBusiness($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperBusinessDetail
  */

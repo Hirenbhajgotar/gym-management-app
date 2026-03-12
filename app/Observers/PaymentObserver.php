@@ -12,6 +12,7 @@ class PaymentObserver
     public function __construct(
         protected ReportCacheService $reportCacheService
     ) {}
+
     /**
      * Handle the Payment "created" event.
      */
@@ -55,15 +56,15 @@ class PaymentObserver
     private function clearCache(Payment $payment): void
     {
         ParserHelper::clearCache(Payment::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . $payment->user_id);
-        
+
         // Get gym_id from payment (assuming Payment has gym_id)
         $gymId = $payment->gym_id ?? $payment->member?->gym_id;
-        
+
         if ($gymId) {
             // Invalidate report caches
             $this->reportCacheService->invalidateRevenueReports($gymId);
             $this->reportCacheService->invalidateInsights($gymId);
-            
+
             // Broadcast real-time event
             broadcast(new RevenueStatsUpdated($gymId));
         }

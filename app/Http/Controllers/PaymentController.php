@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
-use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
-use App\Models\WhatsAppMessagePackage;
+use App\Models\WhatsAppCreditTransaction;
+use App\Models\WhatsAppPackage;
 use App\Services\RazorpayService;
+use App\Services\WhatsAppBillingService;
 use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,10 +24,13 @@ class PaymentController extends Controller
 
     protected \App\Services\InvoiceService $invoiceService;
 
+    protected WhatsAppBillingService $whatsAppBillingService;
+
     public function __construct(RazorpayService $razorpayService, \App\Services\InvoiceService $invoiceService)
     {
         $this->razorpayService = $razorpayService;
         $this->invoiceService = $invoiceService;
+        $this->whatsAppBillingService = new WhatsAppBillingService($razorpayService);
     }
 
     /**
@@ -35,12 +39,12 @@ class PaymentController extends Controller
     public function createOrder(Request $request): JsonResponse
     {
         $request->validate([
-            'package_id' => 'required|exists:whatsapp_message_packages,id',
+            'package_id' => 'required|exists:whatsapp_packages,id',
             'gym_id' => 'required|exists:gyms,id',
         ]);
 
         try {
-            $package = WhatsAppMessagePackage::findOrFail($request->package_id);
+            $package = WhatsAppPackage::findOrFail($request->package_id);
             $gym = Gym::findOrFail($request->gym_id);
 
             // Check if user has permission to purchase for this gym
@@ -185,6 +189,21 @@ class PaymentController extends Controller
                 }
             }
 
+            // Handle failed payments
+            if (($payload['event'] ?? null) === 'payment.failed') {
+                $paymentEntity = $payload['payment']['entity'] ?? null;
+                if ($paymentEntity) {
+                    $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
+                    if ($payment) {
+                        Log::warning('Payment failed via webhook', [
+                            'payment_id' => $payment->id,
+                            'razorpay_payment_id' => $paymentEntity['id'],
+                            'gym_id' => $payment->gym_id,
+                        ]);
+                    }
+                }
+            }
+
             return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', [
@@ -325,8 +344,20 @@ class PaymentController extends Controller
      */
     private function processWhatsAppPackagePurchase(Payment $payment): void
     {
-        // DB::transaction(function () use ($payment) {
-        // });
+        // Check if already processed to prevent double processing
+        $existingTransaction = WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+            ->where('gym_id', $payment->gym_id)
+            ->first();
+
+        if ($existingTransaction) {
+            Log::info('WhatsApp package purchase already processed', [
+                'payment_id' => $payment->id,
+                'transaction_id' => $existingTransaction->id,
+                'gym_id' => $payment->gym_id,
+            ]);
+
+            return;
+        }
 
         $packageId = $payment->metadata['package_id'] ?? null;
 
@@ -336,34 +367,50 @@ class PaymentController extends Controller
             return;
         }
 
-        $package = WhatsAppMessagePackage::find($packageId);
+        $package = WhatsAppPackage::find($packageId);
         if (! $package) {
             Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
 
             return;
         }
 
-        // Update or create WhatsApp balance
-        $balance = GymWhatsAppBalance::firstOrCreate(
-            ['gym_id' => $payment->gym_id],
-            [
-                'balance_messages' => 0,
-                'total_messages_purchased' => 0,
-                'messages_used' => 0,
-            ]
-        );
+        if (! $package->is_active) {
+            Log::warning('WhatsApp package is not active', ['package_id' => $packageId, 'payment_id' => $payment->id]);
 
-        $balance->increment('balance_messages', $package->message_count);
-        $balance->increment('total_messages_purchased', $package->message_count);
+            return;
+        }
 
-        Log::info('WhatsApp package purchase processed', [
-            'payment_id' => $payment->id,
-            'package_id' => $packageId,
-            'messages_added' => $package->message_count,
-            'gym_id' => $payment->gym_id,
-        ]);
+        try {
+            $result = $this->whatsAppBillingService->purchasePackage(
+                $payment->gym_id,
+                $packageId,
+                $payment->razorpay_payment_id
+            );
 
-        // Generate invoice
-        GenerateInvoiceJob::dispatch($payment);
+            if ($result['success']) {
+                Log::info('WhatsApp package purchase processed successfully', [
+                    'payment_id' => $payment->id,
+                    'package_id' => $packageId,
+                    'messages_added' => $result['message_count'],
+                    'gym_id' => $payment->gym_id,
+                ]);
+
+                GenerateInvoiceJob::dispatch($payment);
+            } else {
+                Log::error('Failed to process WhatsApp package purchase', [
+                    'payment_id' => $payment->id,
+                    'package_id' => $packageId,
+                    'gym_id' => $payment->gym_id,
+                    'error' => $result['error'] ?? 'Unknown error',
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception processing WhatsApp package purchase', [
+                'payment_id' => $payment->id,
+                'package_id' => $packageId,
+                'gym_id' => $payment->gym_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

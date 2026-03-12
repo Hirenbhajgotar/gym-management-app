@@ -26,10 +26,10 @@ class SyncWhatsAppTemplates extends Command
      */
     public function handle()
     {
-        // Get all gyms with Twilio settings
-        Gym::whereHas('notificationSetting', function ($query) {
-            $query->whereNotNull('twilio_account_sid')
-                ->whereNotNull('twilio_auth_token');
+        // Get all gyms with active and verified WhatsApp configurations
+        Gym::whereHas('whatsAppAccount', function ($query) {
+            $query->where('is_active', true)
+                ->where('is_verified', true);
         })->chunkById(100, function ($gyms) {
             foreach ($gyms as $gym) {
                 $this->info("Syncing templates for Gym ID: {$gym->id}, Name: {$gym->name}");

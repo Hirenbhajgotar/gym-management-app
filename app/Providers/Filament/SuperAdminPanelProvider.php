@@ -45,6 +45,10 @@ class SuperAdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('WhatsApp')
+                    ->icon('phosphor-chat-text'),
+
+                NavigationGroup::make()
                     ->label('Content Management')
                     ->icon('heroicon-o-document-text'),
 

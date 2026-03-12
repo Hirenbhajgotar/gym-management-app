@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Observers;
+
+use App\Helpers\ParserHelper;
+use App\Models\WhatsAppTemplate;
+
+class WhatsAppTemplateObserver
+{
+    /**
+     * Handle the WhatsAppTemplate "created" event.
+     */
+    public function created(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        $this->clearCache($whatsAppTemplate);
+    }
+
+    /**
+     * Handle the WhatsAppTemplate "updated" event.
+     */
+    public function updated(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        $this->clearCache($whatsAppTemplate);
+    }
+
+    /**
+     * Handle the WhatsAppTemplate "deleted" event.
+     */
+    public function deleted(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        $this->clearCache($whatsAppTemplate);
+    }
+
+    /**
+     * Handle the WhatsAppTemplate "restored" event.
+     */
+    public function restored(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        $this->clearCache($whatsAppTemplate);
+    }
+
+    /**
+     * Handle the WhatsAppTemplate "force deleted" event.
+     */
+    public function forceDeleted(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        $this->clearCache($whatsAppTemplate);
+    }
+
+    private function clearCache(WhatsAppTemplate $whatsAppTemplate): void
+    {
+        ParserHelper::clearCache([
+            WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $whatsAppTemplate->gym_id,
+            WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY,
+        ]);
+    }
+}

@@ -16,7 +16,7 @@ abstract class BasePolicy
      */
     protected static function getPermissionName(string $action): string
     {
-        return $action . "_" . static::$tableName;
+        return $action . '_' . static::$tableName;
     }
 
     /**
@@ -24,7 +24,7 @@ abstract class BasePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can(static::getPermissionName("view_any"));
+        return $user->can(static::getPermissionName('view_any'));
     }
 
     /**
@@ -32,7 +32,7 @@ abstract class BasePolicy
      */
     public function view(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("view"));
+        return $user->can(static::getPermissionName('view'));
     }
 
     /**
@@ -40,7 +40,7 @@ abstract class BasePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can(static::getPermissionName("create"));
+        return $user->can(static::getPermissionName('create'));
     }
 
     /**
@@ -48,7 +48,7 @@ abstract class BasePolicy
      */
     public function update(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("update"));
+        return $user->can(static::getPermissionName('update'));
     }
 
     /**
@@ -56,7 +56,7 @@ abstract class BasePolicy
      */
     public function delete(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("delete"));
+        return $user->can(static::getPermissionName('delete'));
     }
 
     /**
@@ -64,7 +64,7 @@ abstract class BasePolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can(static::getPermissionName("delete_any"));
+        return $user->can(static::getPermissionName('delete_any'));
     }
 
     /**
@@ -72,7 +72,7 @@ abstract class BasePolicy
      */
     public function forceDelete(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("force_delete"));
+        return $user->can(static::getPermissionName('force_delete'));
     }
 
     /**
@@ -80,7 +80,7 @@ abstract class BasePolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can(static::getPermissionName("force_delete_any"));
+        return $user->can(static::getPermissionName('force_delete_any'));
     }
 
     /**
@@ -88,7 +88,7 @@ abstract class BasePolicy
      */
     public function restore(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("restore"));
+        return $user->can(static::getPermissionName('restore'));
     }
 
     /**
@@ -96,7 +96,7 @@ abstract class BasePolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can(static::getPermissionName("restore_any"));
+        return $user->can(static::getPermissionName('restore_any'));
     }
 
     /**
@@ -104,7 +104,7 @@ abstract class BasePolicy
      */
     public function replicate(User $user, mixed $model): bool
     {
-        return $user->can(static::getPermissionName("replicate"));
+        return $user->can(static::getPermissionName('replicate'));
     }
 
     /**
@@ -112,6 +112,6 @@ abstract class BasePolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can(static::getPermissionName("reorder"));
+        return $user->can(static::getPermissionName('reorder'));
     }
 }

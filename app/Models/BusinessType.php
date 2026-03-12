@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool|null $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType newQuery()
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperBusinessType
  */

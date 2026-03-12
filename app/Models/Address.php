@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Country|null $country
  * @property-read mixed $full_address
  * @property-read \App\Models\State|null $state
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address onlyTrashed()
@@ -47,6 +48,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Address withoutTrashed()
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperAddress
  */

@@ -12,6 +12,10 @@ class ListLeads extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [
+            Actions\CreateAction::make()
+                ->icon('heroicon-o-plus')
+                ->label('Add Lead'),
+        ];
     }
 }

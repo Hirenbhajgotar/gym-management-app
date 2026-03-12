@@ -20,6 +20,8 @@ use App\Observers\ReportGoalObserver;
 use App\Observers\SubscriptionObserver;
 use App\Permissions\TeamPermissionRegistrar;
 use Filament\Events\TenantSet;
+use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentColor;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -43,6 +45,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        FilamentColor::register([
+            'primary' => Color::Amber,
+            'success' => Color::Green,
+            'danger' => Color::Red,
+            'info' => Color::Sky,
+            'warning' => Color::Yellow,
+            'blue' => Color::Blue,
+            'neutral' => Color::Neutral,
+            'orange' => Color::Orange,
+            'lime' => Color::Lime,
+            'teal' => Color::Teal,
+            'cyan' => Color::Cyan,
+            'rose' => Color::Rose,
+            'purple' => Color::Purple,
+            'pink' => Color::Pink,
+        ]);
         // Replace Spatie's registrar with per-gym scoped version
         // This loads only current gym's permissions (~500) instead of all (35k+)
         $this->app->singleton(PermissionRegistrar::class, function ($app) {

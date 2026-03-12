@@ -151,10 +151,10 @@ class ChurnRiskService
 
         foreach ($members as $member) {
             $score = $this->calculateRiskScore($member);
-            $daysSinceVisit = $member->lastAttendance 
+            $daysSinceVisit = $member->lastAttendance
                 ? $member->lastAttendance->check_in_time->diffInDays(now())
                 : $member->created_at->diffInDays(now());
-            
+
             // Get membership value (monthly equivalent or plan price)
             $value = $member->membershipPlan?->price ?? 0;
 
@@ -181,9 +181,9 @@ class ChurnRiskService
         $stats['low_risk_avg_days'] = $stats['low_risk'] > 0 ? round($lowRiskDaysSum / $stats['low_risk']) : 0;
 
         // At-risk count is only high-risk members (score >= 65)
-        $stats['at_risk_count'] = $stats['high_risk']; 
-        $stats['predicted_churn_rate'] = $members->count() > 0 
-            ? round(($stats['high_risk'] / $members->count()) * 100, 1) 
+        $stats['at_risk_count'] = $stats['high_risk'];
+        $stats['predicted_churn_rate'] = $members->count() > 0
+            ? round(($stats['high_risk'] / $members->count()) * 100, 1)
             : 0;
 
         return $stats;

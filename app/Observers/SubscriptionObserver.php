@@ -38,7 +38,7 @@ class SubscriptionObserver
     public function updated(Subscription $subscription): void
     {
         // Check if status changed
-        if ($subscription->wasChanged("status")) {
+        if ($subscription->wasChanged('status')) {
             $this->handleStatusChange($subscription);
         }
     }
@@ -58,7 +58,7 @@ class SubscriptionObserver
      */
     private function handleStatusChange(Subscription $subscription): void
     {
-        $oldStatus = $subscription->getOriginal("status");
+        $oldStatus = $subscription->getOriginal('status');
         $newStatus = $subscription->status;
 
         Log::info(
@@ -93,7 +93,7 @@ class SubscriptionObserver
      */
     private function handleReactivation(Subscription $subscription): void
     {
-        $oldStatus = $subscription->getOriginal("status");
+        $oldStatus = $subscription->getOriginal('status');
 
         // Only send reactivation notification if it was suspended
         if ($oldStatus === SubscriptionStatus::SUSPENDED) {

@@ -19,7 +19,9 @@ class AssignPlanTest extends TestCase
     use RefreshDatabase;
 
     protected User $superAdmin;
+
     protected User $gymOwner;
+
     protected Plan $plan;
 
     protected function setUp(): void

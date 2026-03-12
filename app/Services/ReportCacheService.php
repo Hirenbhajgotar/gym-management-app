@@ -105,6 +105,7 @@ class ReportCacheService
     public const CACHE_STALE_SECONDS = 3600 * 2; // 2 hours
 
     public const CACHE_EXPIRE_SECONDS = 86400 * 2; // 2 days
+
     /**
      * Invalidate all member-related report caches.
      */
