@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PermissionDescriptionSeeder::class,
             CountryStateSeeder::class,
             BusinessTypeSeeder::class,
+            WhatsAppDefaultTemplatesSeeder::class,
         ]);
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -115,33 +117,58 @@ class WhatsAppTemplateService
             return ['success' => false, 'error' => 'WhatsApp account is not verified'];
         }
 
-        $subaccountClient = new Client(
-            $whatsAppAccount->twilio_account_sid,
-            $whatsAppAccount->twilio_auth_token
-        );
+        $sid = $whatsAppAccount->twilio_account_sid;
+        $token = $whatsAppAccount->twilio_auth_token;
 
         try {
-            $twilioTemplate = $subaccountClient->conversations->v1->configuration
-                ->templates
-                ->whatsappTemplates
-                ->create([
-                    'friendlyName' => $template->display_name,
+            // Step 1: Create content template
+            $createResponse = Http::withBasicAuth($sid, $token)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('https://content.twilio.com/v1/Content', [
+                    'friendly_name' => $template->display_name,
                     'language' => 'en',
-                    'body' => $template->body,
-                    'category' => strtoupper($template->category),
+                    'types' => [
+                        'twilio/text' => [
+                            'body' => $template->body,
+                        ],
+                    ],
                 ]);
 
+            if ($createResponse->failed()) {
+                $error = $createResponse->json('message') ?? $createResponse->body();
+                Log::error('Twilio content create failed', ['error' => $error, 'template_id' => $template->id]);
+
+                return ['success' => false, 'error' => $error];
+            }
+
+            $contentSid = $createResponse->json('sid');
+
+            // Step 2: Submit for WhatsApp approval
+            $approvalResponse = Http::withBasicAuth($sid, $token)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post("https://content.twilio.com/v1/Content/{$contentSid}/ApprovalRequests/whatsapp", [
+                    'name' => $template->name, // lowercase_underscored
+                    'category' => strtoupper($template->category ?? 'UTILITY'),
+                ]);
+
+            if ($approvalResponse->failed()) {
+                $error = $approvalResponse->json('message') ?? $approvalResponse->body();
+                Log::error('Twilio approval submit failed', ['error' => $error, 'template_id' => $template->id]);
+
+                return ['success' => false, 'error' => $error];
+            }
+
             $template->update([
-                'twilio_template_sid' => $twilioTemplate->sid,
+                'twilio_template_sid' => $contentSid,
                 'status' => 'pending',
             ]);
 
             Log::info('Template submitted for verification', [
                 'template_id' => $template->id,
-                'twilio_sid' => $twilioTemplate->sid,
+                'twilio_sid' => $contentSid,
             ]);
 
-            return ['success' => true, 'status' => 'pending', 'sid' => $twilioTemplate->sid];
+            return ['success' => true, 'status' => 'pending', 'sid' => $contentSid];
         } catch (RestException $e) {
             Log::error('Failed to submit template for verification', [
                 'template_id' => $template->id,
@@ -164,16 +191,25 @@ class WhatsAppTemplateService
             return;
         }
 
-        $subaccountClient = new Client(
-            $whatsAppAccount->twilio_account_sid,
-            $whatsAppAccount->twilio_auth_token
-        );
+        $sid = $whatsAppAccount->twilio_account_sid;
+        $token = $whatsAppAccount->twilio_auth_token;
 
         try {
-            $twilioTemplate = $subaccountClient->conversations->v1->configuration
-                ->templates
-                ->whatsappTemplates($template->twilio_template_sid)
-                ->fetch();
+            $response = Http::withBasicAuth($sid, $token)
+                ->get("https://content.twilio.com/v1/Content/{$template->twilio_template_sid}/ApprovalRequests");
+
+            if ($response->failed()) {
+                Log::error('Failed to fetch template approval status', [
+                    'template_id' => $template->id,
+                    'error' => $response->json('message') ?? $response->body(),
+                ]);
+
+                return;
+            }
+
+            $data = $response->json();
+            $whatsapp = $data['whatsapp'] ?? null;
+            $rawStatus = strtoupper($whatsapp['status'] ?? '');
 
             $statusMap = [
                 'PENDING' => 'pending',
@@ -182,12 +218,12 @@ class WhatsAppTemplateService
                 'DISABLED' => 'disabled',
             ];
 
-            $newStatus = $statusMap[$twilioTemplate->status] ?? $template->status;
+            $newStatus = $statusMap[$rawStatus] ?? $template->status;
 
             $update = ['status' => $newStatus];
 
-            if ($twilioTemplate->status === 'REJECTED') {
-                $update['rejection_reason'] = $twilioTemplate->rejectionReason ?? 'No reason provided';
+            if ($rawStatus === WhatsAppTemplateStatusEnum::REJECTED->value) {
+                $update['rejection_reason'] = $whatsapp['rejection_reason'] ?? 'No reason provided';
             }
 
             $template->update($update);
@@ -226,9 +262,7 @@ class WhatsAppTemplateService
                 $whatsAppAccount->twilio_auth_token
             );
 
-            $subaccountClient->conversations->v1->configuration
-                ->templates
-                ->whatsappTemplates($template->twilio_template_sid)
+            $subaccountClient->content->v1->contents($template->twilio_template_sid)
                 ->delete();
 
             Log::info('Deleted Twilio WhatsApp template', [

@@ -58,9 +58,12 @@ class CreateWhatsAppTemplate extends CreateRecord
         return $data;
     }
 
-    protected function afterCreate(): void
+    /**
+     * Display a success notification after template creation.
+     */
+    protected function getCreatedNotification(): ?Notification
     {
-        Notification::make()
+        return Notification::make()
             ->success()
             ->title('Template Created!')
             ->body('Your template has been saved as a draft. Submit it for Meta approval when ready.')
