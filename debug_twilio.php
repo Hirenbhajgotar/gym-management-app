@@ -11,7 +11,7 @@ $kernel->bootstrap();
 $masterSid = 'AC17dc2ce9f8313cba7ca874023bc75c18';
 $masterToken = '8062a71bb72feef155551d5e6261585f';
 $wabaId = '1452995289594243';
-$number = 'whatsapp:+18392503849'; 
+$number = 'whatsapp:+18392503849';
 
 echo "Creating Main API Key...\n";
 $keyResponse = Http::withBasicAuth($masterSid, $masterToken)
@@ -24,8 +24,8 @@ $keyData = $keyResponse->json();
 $keySid = $keyData['sid'] ?? null;
 $keySecret = $keyData['secret'] ?? null;
 
-if (!$keySid) {
-    echo "Failed to create key: " . $keyResponse->body() . "\n";
+if (! $keySid) {
+    echo 'Failed to create key: ' . $keyResponse->body() . "\n";
     exit;
 }
 echo "Key Created: $keySid\n";
@@ -40,12 +40,12 @@ echo "TEST 6: API Key Auth (Master Key)...\n";
 $response = Http::withBasicAuth($keySid, $keySecret)
     ->asJson()
     ->post('https://messaging.twilio.com/v2/Channels/Senders', [
-         'sender_id' => $number,
-         'profile' => ['name' => 'ApiKeyTest'],
-         'configuration' => ['waba_id' => $wabaId],
+        'sender_id' => $number,
+        'profile' => ['name' => 'ApiKeyTest'],
+        'configuration' => ['waba_id' => $wabaId],
     ]);
-echo "Status: " . $response->status() . "\n";
-echo "Body: " . $response->body() . "\n";
+echo 'Status: ' . $response->status() . "\n";
+echo 'Body: ' . $response->body() . "\n";
 
 // Cleanup Key
 Http::withBasicAuth($masterSid, $masterToken)

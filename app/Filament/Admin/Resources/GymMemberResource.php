@@ -224,6 +224,20 @@ class GymMemberResource extends Resource
                     ->label('Payment Status')
                     ->badge(),
 
+                Tables\Columns\IconColumn::make('is_frozen')
+                    ->label('Frozen')
+                    ->boolean()
+                    ->trueIcon('phosphor-prohibit')
+                    ->falseIcon('heroicon-o-play')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('frozen_until')
+                    ->label('Frozen Until')
+                    ->date('M j, Y')
+                    ->placeholder('-')
+                    ->visible(fn ($record) => $record?->is_frozen ?? true),
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -273,11 +287,43 @@ class GymMemberResource extends Resource
                         });
                     })
                     ->label('Payment Status'),
+
+                Tables\Filters\SelectFilter::make('is_frozen')
+                    ->label('Freeze Status')
+                    ->options([
+                        'frozen' => 'Frozen',
+                        'not_frozen' => 'Not Frozen',
+                    ])
+                    ->query(function ($query, array $state) {
+                        $value = $state['value'];
+                        if (! $value) {
+                            return;
+                        }
+                        if ($value === 'frozen') {
+                            $query->where(function ($q) {
+                                $q->where('is_frozen', true)
+                                    ->where(function ($q2) {
+                                        $q2->whereNull('frozen_until')
+                                            ->orWhere('frozen_until', '>=', now());
+                                    });
+                            });
+                        } elseif ($value === 'not_frozen') {
+                            $query->where(function ($q) {
+                                $q->where('is_frozen', false)
+                                    ->orWhere(function ($q2) {
+                                        $q2->where('is_frozen', true)
+                                            ->whereNotNull('frozen_until')
+                                            ->where('frozen_until', '<', now());
+                                    });
+                            });
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('quick_measure')
                     ->label('Measure')
                     ->icon('heroicon-o-scale')
+                    ->tooltip('Add new measurement')
                     ->form([
                         Section::make('Create member measurement')
                             ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
@@ -296,6 +342,45 @@ class GymMemberResource extends Resource
                             ->success()
                             ->send();
                     }),
+
+                Tables\Actions\Action::make('toggle_freeze')
+                    ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
+                    ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
+                    ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
+                    ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
+                    ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Reason for freezing (optional)')
+                            ->placeholder('Enter reason for freezing membership'),
+                        Forms\Components\TextInput::make('days')
+                            ->label('Freeze for days (optional)')
+                            ->placeholder('Leave empty for manual unfreeze')
+                            ->numeric()
+                            ->minValue(1)
+                            ->helperText('Enter number of days or leave empty for manual unfreeze'),
+                    ])
+                    ->action(function (GymMember $record, array $data) {
+                        if ($record->is_frozen) {
+                            $record->unfreeze();
+                            \Filament\Notifications\Notification::make()
+                                ->title('Member Unfrozen')
+                                ->success()
+                                ->send();
+                        } else {
+                            $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
+                            $record->freeze(
+                                reason: $data['reason'] ?? null,
+                                days: $days
+                            );
+                            \Filament\Notifications\Notification::make()
+                                ->title('Member Frozen')
+                                ->success()
+                                ->send();
+                        }
+                    })
+                    ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
+                    ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
 
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')

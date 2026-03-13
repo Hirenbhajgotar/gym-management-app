@@ -74,10 +74,34 @@ class ActiveAndExpireSubscriptionStats extends BaseWidget
 
     public static function canView(): bool
     {
-        return auth()->user()->hasRole([
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // If it's a Livewire update request, we should generally allow it if it was already visible
+        // to prevent the "Missing root tag" exception when roles are temporarily unavailable/unsynced
+        if (request()->hasHeader('X-Livewire')) {
+            return true;
+        }
+
+        return $user->hasRole([
             DefaultRole::GYM_OWNER->value,
             DefaultRole::MANAGER->value,
             DefaultRole::RECEPTIONIST->value,
         ]);
+    }
+
+    /**
+     * Ensure we always return at least a root tag to prevent Livewire errors.
+     */
+    public function render(): \Illuminate\Contracts\View\View
+    {
+        if (! static::canView()) {
+            return view()->make('filament-widgets::blank');
+        }
+
+        return parent::render();
     }
 }

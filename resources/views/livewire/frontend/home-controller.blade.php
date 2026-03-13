@@ -67,7 +67,7 @@
                 <div class="relative animate-float">
                     <div class="relative z-10">
                         <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                            alt="Modern Gym Interior" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
+                            alt="Modern Gym Interior" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-2xl">
                         </div>
                     </div>
@@ -170,7 +170,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="CRM Dashboard"
+                                 alt="CRM Dashboard" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -188,7 +188,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="User Management"
+                                 alt="User Management" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
@@ -306,7 +306,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Attendance Analytics"
+                                 alt="Attendance Analytics" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -324,7 +324,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Analytics Dashboard"
+                                 alt="Analytics Dashboard" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>

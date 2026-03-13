@@ -2,27 +2,17 @@
 
 namespace App\Notifications;
 
+use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
-use App\Models\Gym;
 use App\Models\GymMember;
-use App\Notifications\Contracts\HasGymContext;
-use App\Services\NotificationChannelResolver;
-use App\Services\WhatsAppTemplateManager;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 
-class MembershipExpiryNotification extends Notification implements HasGymContext, ShouldQueue
+class MembershipExpiryNotification extends BaseTenantNotification
 {
-    use Queueable;
-
-    private readonly Gym $gym;
-
     public function __construct(
         public GymMember $member,
         public Carbon $expiresAt,
@@ -32,17 +22,9 @@ class MembershipExpiryNotification extends Notification implements HasGymContext
         $this->gym = $this->member->gym;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function getNotificationType(): string
     {
-        return NotificationChannelResolver::getChannelsForGym(
-            $this->member->gym,
-            'membership_expiry_notifications',
-        );
+        return NotificationType::MEMBERSHIP_EXPIRY->value;
     }
 
     /**
@@ -95,16 +77,16 @@ class MembershipExpiryNotification extends Notification implements HasGymContext
                 return null;
             }
 
-            [$fromNumber, $templateSid] = $config;
+            $template = $this->getWhatsAppTemplate($this->getNotificationType());
+            if (! $template) {
+                return null;
+            }
 
             return [
                 'to' => $phoneNumber,
-                'from' => $fromNumber,
-                'template_sid' => $templateSid,
-                'template_variables' => [
-                    '1' => $this->member->name,
-                    '2' => $this->expiresAt->format('D, M j'),
-                ],
+                'from' => $config['from_number'],
+                'template_sid' => $template->twilio_template_sid,
+                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
@@ -120,7 +102,7 @@ class MembershipExpiryNotification extends Notification implements HasGymContext
     {
         // Sandbox mode uses a fixed test number
         return [
-            'to' => '+919265098227', // Consider moving this to config if used frequently
+            'to' => config('services.twilio.sandbox_number', '+919265098227'),
             'body' => "Hey {$this->member->name},\n\n" .
                 "Your membership expires on {$this->expiresAt->format('D, M j')}, but your locker is still waiting for you. Renew your membership.",
         ];
@@ -139,58 +121,6 @@ class MembershipExpiryNotification extends Notification implements HasGymContext
         }
 
         return ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
-    }
-
-    /**
-     * @return array{string, string}|null Returns [fromNumber, templateSid] or null on failure
-     */
-    private function getGymWhatsAppConfig(): ?array
-    {
-        $notificationSetting = $this->gym->notificationSetting;
-
-        if (! $notificationSetting) {
-            Log::error('Notification setting not found for gym', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->isAccountActive() || ! $notificationSetting->isAccountVerified()) {
-            Log::error('Notification account is not active or verified', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        if (! $notificationSetting->whatsapp_business_number) {
-            Log::error('Notification business number not found for gym', ['gym_id' => $this->member->gym_id]);
-
-            return null;
-        }
-
-        $template = $this->getWhatsAppTemplate();
-        if (! $template) {
-            return null;
-        }
-
-        $templateSid = $template->template_sid ?? config('services.twilio.membership_expiry_template_sid');
-
-        return [$notificationSetting->whatsapp_business_number, $templateSid];
-    }
-
-    private function getWhatsAppTemplate(): ?object
-    {
-        $templateManager = new WhatsAppTemplateManager($this->member->gym_id);
-        $template = $templateManager->getTemplate('membership_expiry_template');
-
-        if (! $template) {
-            Log::error('membership_expiry_template template not found', [
-                'gym_id' => $this->member->gym_id,
-                'member_id' => $this->member->id,
-            ]);
-
-            return null;
-        }
-
-        return $template;
     }
 
     /**

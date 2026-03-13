@@ -7,8 +7,6 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\User;
-use Filament\Actions\CreateAction;
-use Filament\Actions\EditAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -86,7 +84,7 @@ class GymMemberPaymentUpdateTest extends TestCase
         $member->refresh();
 
         $this->assertEquals('completed', $member->payment_status->value);
-        // Note: The current implementation might not update start/end dates on edit, 
+        // Note: The current implementation might not update start/end dates on edit,
         // but the requirement is to update them.
         // So we assert what we WANT to happen.
         $this->assertEquals(now()->toDateString(), $member->membership_start->toDateString());

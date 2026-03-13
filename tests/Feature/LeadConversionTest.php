@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentStatus;
 use App\Models\Gym;
 use App\Models\Lead;
-use App\Models\LeadConversion;
 use App\Models\MembershipPlan;
 use App\Models\User;
 use App\Services\LeadConversionService;
-use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,7 +64,7 @@ class LeadConversionTest extends TestCase
             'amount' => 1000,
             'notes' => 'Payment notes for the receipt.',
         ]);
-        
+
         $lead->refresh();
         $this->assertEquals('converted', $lead->status->value);
     }

@@ -24,7 +24,6 @@ use Illuminate\Support\Str;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
  * @property-read int|null $attendances_count
  * @property-read \App\Models\BusinessDetail|null $businessDetail
- * @property-read \App\Models\NotificationSetting|null $notificationSetting
  * @property-read \App\Models\User|null $owner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $gymMembers
  * @property-read int|null $gym_members_count
@@ -63,6 +62,10 @@ class Gym extends Model
 
     protected $fillable = ['name', 'slug', 'logo'];
 
+    // =========================
+    // Relationships
+    // =========================
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'gym_user')
@@ -83,20 +86,6 @@ class Gym extends Model
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
-    }
-
-    public static function generateUniqueSlug(string $name): string
-    {
-        $baseSlug = Str::slug($name);
-        $slug = $baseSlug;
-        $counter = 1;
-
-        while (self::where('slug', $slug)->exists()) {
-            $slug = "{$baseSlug}-{$counter}";
-            $counter++;
-        }
-
-        return $slug;
     }
 
     /** @return HasMany<\App\Models\GymMember, self> */
@@ -125,21 +114,6 @@ class Gym extends Model
     public function socialConfigs(): HasMany
     {
         return $this->hasMany(TenantSocialConfig::class);
-    }
-
-    public function activeSocialConfigs()
-    {
-        return $this->socialConfigs()->active();
-    }
-
-    /**
-     * Get the gym owner user
-     */
-    public function owner()
-    {
-        return $this->users()
-            ->wherePivot('role', DefaultRole::GYM_OWNER->value)
-            ->first();
     }
 
     public function leads(): HasMany
@@ -177,6 +151,62 @@ class Gym extends Model
         return $this->hasMany(ScheduledReport::class);
     }
 
+    /** @return HasMany<\App\Models\GymSetting, self> */
+    public function settings(): HasMany
+    {
+        return $this->hasMany(GymSetting::class);
+    }
+
+    public function whatsAppAccount(): HasOne
+    {
+        return $this->hasOne(WhatsAppAccount::class);
+    }
+
+    public function whatsAppTemplates(): HasMany
+    {
+        return $this->hasMany(WhatsAppTemplate::class);
+    }
+
+    // =========================
+    // Helper Methods
+    // =========================
+
+    public static function generateUniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (self::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    public function activeSocialConfigs()
+    {
+        return $this->socialConfigs()->active();
+    }
+
+    /**
+     * Get the gym owner user
+     */
+    public function owner()
+    {
+        return $this->users()
+            ->wherePivot('role', DefaultRole::GYM_OWNER->value)
+            ->first();
+    }
+
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        $setting = $this->settings()->where('key', $key)->first();
+
+        return $setting ? $setting->value : $default;
+    }
+
     public static function getCurrentTenantUsers()
     {
         /**
@@ -189,24 +219,6 @@ class Gym extends Model
         }
 
         return User::query()->whereRaw('1 = 0'); // Return an empty query
-    }
-
-    /** @return HasMany<\App\Models\GymSetting, self> */
-    public function settings(): HasMany
-    {
-        return $this->hasMany(GymSetting::class);
-    }
-
-    public function notificationSetting(): HasOne
-    {
-        return $this->hasOne(NotificationSetting::class);
-    }
-
-    public function getSetting(string $key, mixed $default = null): mixed
-    {
-        $setting = $this->settings()->where('key', $key)->first();
-
-        return $setting ? $setting->value : $default;
     }
 
     /**
@@ -256,6 +268,10 @@ class Gym extends Model
     {
         return $this->subscription()?->getFeatureLimit($featureName) ?? null;
     }
+
+    // =========================
+    // Accessors
+    // =========================
 
     protected function ownerEmail(): Attribute
     {

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting query()
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereValue($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperGymSetting
  */

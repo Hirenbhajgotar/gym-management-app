@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? config('app.name') }} - Complete Gym Management System</title>
+    <meta name="description" content="{{ $metaDescription ?? 'Fluxfitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta name="keywords" content="{{ $metaKeywords ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ $title ?? config('app.name') }} - Complete Gym Management System">
+    <meta property="og:description" content="{{ $metaDescription ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta property="og:type" content="website">
     @stack('meta')
 
     <!-- Favicons -->

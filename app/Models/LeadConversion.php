@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\GymMember $gymMember
  * @property-read \App\Models\Lead $lead
  * @property-read \App\Models\MembershipPlan $membershipPlan
+ *
  * @method static \Database\Factories\LeadConversionFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeadConversion newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeadConversion newQuery()
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeadConversion whereMembershipPlanId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeadConversion whereNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeadConversion whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperLeadConversion
  */

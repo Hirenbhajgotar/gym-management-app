@@ -12,13 +12,13 @@ class CleanDeletedGymOwnersCommand extends Command
 {
     protected $signature = 'owners:clean-deleted {--dry-run : Show what would be cleaned without actually doing it}';
 
-    protected $description = 'Permanently delete gym owners that were soft-deleted more than 2 months ago, including all related data (gyms, subscriptions, payments, roles, permissions, notifications, leads, etc.)';
+    protected $description = 'Permanently delete gym owners that were soft-deleted more than 15 days ago, including all related data (gyms, Twilio subaccounts, phone numbers, subscriptions, payments, roles, permissions, notifications, leads, etc.)';
 
     public function handle(): int
     {
         $this->info('Starting cleanup of deleted gym owners...');
 
-        $cutoffDate = now()->subMonths(2);
+        $cutoffDate = now()->subDays(15);
 
         $deletedGymOwners = User::onlyTrashed()
             ->whereHas('gyms', function ($query) {
@@ -29,12 +29,12 @@ class CleanDeletedGymOwnersCommand extends Command
             ->get();
 
         if ($deletedGymOwners->isEmpty()) {
-            $this->info('No deleted gym owners found older than 2 months.');
+            $this->info('No deleted gym owners found older than 15 days.');
 
             return self::SUCCESS;
         }
 
-        $this->info("Found {$deletedGymOwners->count()} deleted gym owner(s) older than 2 months:");
+        $this->info("Found {$deletedGymOwners->count()} deleted gym owner(s) older than 15 days:");
 
         foreach ($deletedGymOwners as $owner) {
             $this->line("- User ID: {$owner->id}");

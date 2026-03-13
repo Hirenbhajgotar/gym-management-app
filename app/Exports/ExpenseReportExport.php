@@ -29,7 +29,7 @@ class ExpenseReportExport implements WithMultipleSheets
     }
 }
 
-class ExpenseDetailsSheet implements FromCollection, WithHeadings, WithMapping, WithTitle, ShouldAutoSize, WithStyles
+class ExpenseDetailsSheet implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles, WithTitle
 {
     public function __construct(
         protected Collection $expenses
@@ -91,7 +91,7 @@ class ExpenseDetailsSheet implements FromCollection, WithHeadings, WithMapping, 
     }
 }
 
-class CategorySummarySheet implements FromCollection, WithHeadings, WithTitle, ShouldAutoSize, WithStyles
+class CategorySummarySheet implements FromCollection, ShouldAutoSize, WithHeadings, WithStyles, WithTitle
 {
     public function __construct(
         protected Collection $categoryBreakdown

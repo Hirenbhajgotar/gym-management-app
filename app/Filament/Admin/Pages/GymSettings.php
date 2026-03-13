@@ -3,21 +3,15 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Models\GymSetting;
-use App\Models\GymWhatsAppBalance;
 use App\Models\Payment;
-use App\Models\WhatsAppMessagePackage;
-use App\Services\RazorpayService;
 use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * @property Form $form
@@ -76,7 +70,7 @@ class GymSettings extends Page implements HasActions, HasForms
             Forms\Components\Tabs::make('Settings')
                 ->tabs([
                     $this->getNotificationTab(),
-                    $this->getWhatsAppTab(),
+                    // $this->getWhatsAppTab(),
                     // $this->getMembershipTab(),
                     // $this->getAttendanceTab(),
                 ])
@@ -100,17 +94,33 @@ class GymSettings extends Page implements HasActions, HasForms
 
     private function getWhatsAppNotificationTab(): Forms\Components\Tabs\Tab
     {
+        $gym = $this->getGym();
+        $account = $gym->whatsAppAccount;
+        $whatsappConfigured = $account?->isActive() && $account?->isVerified();
+
         return Forms\Components\Tabs\Tab::make('whatsapp')
             ->label('WhatsApp Settings')
             ->icon('heroicon-o-device-phone-mobile')
             ->schema([
-                Forms\Components\Section::make('Notification Preferences')
-                    ->description('Configure whatsapp notifications.')
+                Forms\Components\Section::make('WhatsApp Configuration Status')
+                    ->schema([
+                        Forms\Components\ViewField::make('whatsapp_status')
+                            ->view('filament.forms.components.whatsapp-status-indicator')
+                            ->viewData([
+                                'configured' => $whatsappConfigured,
+                                'gym' => $gym,
+                            ]),
+                    ])
+                    ->columns(1),
+
+                Forms\Components\Section::make('Notification Master Switch')
+                    ->description('Enable or disable all WhatsApp notifications at once.')
                     ->schema([
                         Forms\Components\Toggle::make('whatsapp_notifications')
                             ->label('WhatsApp Notifications')
                             ->default(true)
                             ->live()
+                            ->disabled(! $whatsappConfigured)
                             ->afterStateUpdated(function (
                                 callable $set,
                                 $state,
@@ -128,7 +138,9 @@ class GymSettings extends Page implements HasActions, HasForms
                                 }
                             })
                             ->helperText(
-                                'Enable/disable WhatsApp notifications for all notification types',
+                                $whatsappConfigured
+                                ? 'Enable/disable WhatsApp notifications for all notification types'
+                                : 'Configure your WhatsApp account first to enable notifications',
                             ),
                     ])
                     ->columns(1),
@@ -276,225 +288,12 @@ class GymSettings extends Page implements HasActions, HasForms
             ]);
     }
 
-    private function getWhatsAppTab(): Forms\Components\Tabs\Tab
-    {
-        $gymId = $this->getGym()->id;
-        $balance = GymWhatsAppBalance::where('gym_id', $gymId)->first();
-
-        return Forms\Components\Tabs\Tab::make('whatsapp')
-            ->label('WhatsApp Messages')
-            ->icon('heroicon-o-chat-bubble-left-right')
-            ->schema([
-                Forms\Components\Section::make('Message Balance')
-                    ->description(
-                        'Current WhatsApp message balance and usage statistics.',
-                    )
-                    ->schema([
-                        Forms\Components\Placeholder::make('remaining_messages')
-                            ->label('Remaining Messages')
-                            ->content($balance?->balance_messages ?? 0),
-
-                        Forms\Components\Placeholder::make('total_purchased')
-                            ->label('Total Purchased')
-                            ->content($balance?->total_messages_purchased ?? 0),
-
-                        Forms\Components\Placeholder::make('messages_used')
-                            ->label('Messages Used')
-                            ->content($balance?->messages_used ?? 0),
-                    ])
-                    ->columns(3),
-
-                Forms\Components\Section::make('Purchase Message Packages')
-                    ->description('Buy additional WhatsApp message packages.')
-                    ->schema([
-                        Forms\Components\Select::make('message_package')
-                            ->label('Select Package')
-                            ->options(
-                                WhatsAppMessagePackage::active()
-                                    ->orderBy('sort_order')
-                                    ->get()
-                                    ->mapWithKeys(function ($package) {
-                                        $label =
-                                            $package->name .
-                                            ' (' .
-                                            $package->message_count .
-                                            ' messages - ₹' .
-                                            $package->price .
-                                            ')';
-
-                                        return [$package->id => $label];
-                                    }),
-                            )
-                            ->placeholder('Choose a package')
-                            ->helperText(
-                                'Select a message package to purchase',
-                            ),
-                    ])
-                    ->columns(1)
-                    ->headerActions([$this->getPurchaseAction()]),
-
-                Forms\Components\Section::make('Low Balance Alerts')
-                    ->description(
-                        'Configure alerts when message balance is low.',
-                    )
-                    ->schema([
-                        Forms\Components\TextInput::make(
-                            'low_balance_threshold',
-                        )
-                            ->label('Low Balance Threshold')
-                            ->numeric()
-                            ->default(100)
-                            ->helperText(
-                                'Send alert when remaining messages drop below this number',
-                            ),
-
-                        Forms\Components\Toggle::make(
-                            'enable_low_balance_alerts',
-                        )
-                            ->label('Enable Low Balance Alerts')
-                            ->default(true)
-                            ->helperText(
-                                'Receive notifications when message balance is low',
-                            ),
-                    ])
-                    ->columns(2),
-
-                Forms\Components\Section::make('Purchase History')
-                    ->description('Recent WhatsApp package purchases and invoices.')
-                    ->schema([
-                        Forms\Components\ViewField::make('whatsapp_invoices')
-                            ->view('filament.forms.components.whatsapp-invoice-table')
-                            ->viewData([
-                                'payments' => Payment::where('gym_id', $this->getGym()->id)
-                                    ->where('payment_type', 'whatsapp_package')
-                                    ->latest()
-                                    ->take(10)
-                                    ->get(),
-                            ])
-                            ->hiddenLabel(),
-                    ])
-                    ->columnSpanFull(),
-            ]);
-    }
-
-    public function save(): void
-    {
-        $data = $this->form->getState();
-        $gym = $this->getGym();
-
-        foreach ($data as $key => $value) {
-            $this->saveSetting($gym->id, $key, $value);
-        }
-
-        Notification::make()
-            ->title('Settings saved successfully!')
-            ->success()
-            ->send();
-    }
-
     private function saveSetting(int $gymId, string $key, $value): void
     {
         GymSetting::updateOrCreate(
             ['gym_id' => $gymId, 'key' => $key],
             ['value' => $value, 'type' => gettype($value)],
         );
-    }
-
-    public function getPurchaseAction(): Action
-    {
-        return Action::make('purchasePackage')
-            ->label('Purchase Messages')
-            ->icon('heroicon-o-shopping-cart')
-            ->color('success')
-            ->requiresConfirmation()
-            ->modalHeading('Confirm Purchase')
-            ->modalDescription(function () {
-                $packageId = $this->form->getState()['message_package'] ?? null;
-                if (! $packageId) {
-                    return 'Please select a package first.';
-                }
-
-                $package = WhatsAppMessagePackage::find($packageId);
-                if (! $package) {
-                    return 'Invalid package selected.';
-                }
-
-                return "Are you sure you want to purchase the {$package->name} package for ₹{$package->price}? This will add {$package->message_count} messages to your balance.";
-            })
-            ->modalSubmitActionLabel('Purchase')
-            ->action(function () {
-                $packageId = $this->form->getState()['message_package'] ?? null;
-
-                if (! $packageId) {
-                    Notification::make()
-                        ->title('No package selected')
-                        ->body('Please select a message package to purchase.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                $package = WhatsAppMessagePackage::find($packageId);
-                if (! $package) {
-                    Notification::make()
-                        ->title('Invalid package')
-                        ->body('The selected package is not available.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                $gymId = $this->getGym()->id;
-
-                // Create Razorpay order
-                try {
-                    $razorpayService = app(RazorpayService::class);
-
-                    $orderData = $razorpayService->createOrder([
-                        'amount' => $package->price,
-                        'currency' => 'INR',
-                        'receipt' => 'WAP-' .
-                            $package->id .
-                            '-' .
-                            $gymId .
-                            '-' .
-                            uniqid(),
-                        'gym_id' => $gymId,
-                        'user_id' => Auth::id(),
-                        'package_id' => $package->id,
-                        'payment_type' => 'whatsapp_package',
-                        'description' => "Purchase of {$package->name} - {$package->message_count} messages",
-                        'notes' => [
-                            'package_name' => $package->name,
-                            'plan_name' => $package->name,
-                            'message_count' => $package->message_count,
-                        ],
-                    ]);
-
-                    // Reset the form field
-                    $this->form->fill(['message_package' => null]);
-
-                    // Redirect to payment page with order data
-                    return redirect()->route('payments.checkout', [
-                        'order_id' => $orderData['order_id'],
-                        'amount' => $orderData['amount'],
-                        'key' => $orderData['key'],
-                        'package_name' => $package->name,
-                        'message_count' => $package->message_count,
-                        'tenantId' => $gymId,
-                    ]);
-                } catch (\Exception $e) {
-                    Notification::make()
-                        ->title('Payment Error')
-                        ->body('Failed to initiate payment. Please try again.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-            });
     }
 
     public function downloadInvoice(int $paymentId)
