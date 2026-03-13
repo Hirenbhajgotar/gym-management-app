@@ -90,7 +90,7 @@ return [
             'app_id' => env('META_APP_ID'),
             'app_secret' => env('META_APP_SECRET'),
             'api_version' => env('META_API_VERSION', 'v19.0'),
-            'redirect_uri' => env('META_REDIRECT_URI'),
+            'redirect_uri' => env('APP_URL') . env('META_REDIRECT_URI'),
             'config_id' => env('META_CONFIG_ID'),
         ],
 
