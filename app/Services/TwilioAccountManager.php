@@ -321,11 +321,13 @@ class TwilioAccountManager
             }
 
             // 4. Create local phone number record
+            // Note: senderSid is the Channel Sender SID (CN...), not IncomingPhoneNumber SID
+            // Since this is a manual/existing number, we may not have incoming phone number SID
             WhatsAppPhoneNumber::updateOrCreate(
                 ['whatsapp_account_id' => $account->id],
                 [
                     'phone_number' => $phoneNumber,
-                    'phone_number_sid' => $senderSid,
+                    'channel_sender_sid' => $senderSid,
                     'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
                     'status' => 'active', // Since it's existing, we assume it's active or will be handled via status cycles
                 ]
@@ -446,8 +448,8 @@ class TwilioAccountManager
             if (! empty($existingNumbers)) {
                 $existing = $existingNumbers[0];
 
-                // Register as WhatsApp Sender
-                $senderSid = $this->registerWhatsAppSender($subClient, $account, $existing->phoneNumber) ?? $existing->sid;
+                // Register as WhatsApp Sender - returns Channel Sender SID (CN...)
+                $channelSenderSid = $this->registerWhatsAppSender($subClient, $account, $existing->phoneNumber);
 
                 WhatsAppPhoneNumber::firstOrCreate(
                     [
@@ -455,7 +457,8 @@ class TwilioAccountManager
                         'phone_number' => $existing->phoneNumber,
                     ],
                     [
-                        'phone_number_sid' => $senderSid,
+                        'phone_number_sid' => $existing->sid, // IncomingPhoneNumber SID (PN...)
+                        'channel_sender_sid' => $channelSenderSid, // Channel Sender SID (CN...)
                         'country_code' => $existing->isoCountry ?? 'US',
                         'friendly_name' => $existing->friendlyName,
                         'locality' => $existing->locality,
@@ -488,13 +491,14 @@ class TwilioAccountManager
                 }
             }
 
-            // Register as WhatsApp Sender
-            $senderSid = $this->registerWhatsAppSender($subClient, $account, $incomingNumber->phoneNumber) ?? $incomingNumber->sid;
+            // Register as WhatsApp Sender - returns Channel Sender SID (CN...)
+            $channelSenderSid = $this->registerWhatsAppSender($subClient, $account, $incomingNumber->phoneNumber);
 
             WhatsAppPhoneNumber::create([
                 'whatsapp_account_id' => $account->id,
                 'phone_number' => $incomingNumber->phoneNumber,
-                'phone_number_sid' => $senderSid,
+                'phone_number_sid' => $incomingNumber->sid, // IncomingPhoneNumber SID (PN...)
+                'channel_sender_sid' => $channelSenderSid, // Channel Sender SID (CN...)
                 'country_code' => $incomingNumber->isoCountry ?? 'US',
                 'friendly_name' => $incomingNumber->friendlyName,
                 'locality' => $incomingNumber->locality,
@@ -581,11 +585,14 @@ class TwilioAccountManager
             //     ->verifications
             //     ->create('sms');
 
+            // Store Channel Sender SID separately - this is BYOD (Bring Your Own Number)
+            // so there's no IncomingPhoneNumber SID
             WhatsAppPhoneNumber::updateOrCreate(
                 ['whatsapp_account_id' => $account->id],
                 [
                     'phone_number' => $phoneNumber,
-                    'phone_number_sid' => $sender->sid,
+                    'channel_sender_sid' => $sender->sid, // Channel Sender SID (CN...)
+                    // phone_number_sid remains empty for BYOD since it's not a purchased Twilio number
                     'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
                     'status' => 'purchased',
                 ]
@@ -860,22 +867,46 @@ class TwilioAccountManager
 
             foreach ($phoneNumbers as $phoneNumber) {
                 try {
-                    // Step 1: Remove from messaging service (deregisters from Meta/WhatsApp)
-                    if ($account->messaging_service_sid && $phoneNumber->phone_number_sid) {
+                    // Step 1: Remove Channel Sender from messaging service (deregisters from Meta/WhatsApp)
+                    // Use channel_sender_sid if available, which is the correct SID for v2 Channel Senders
+                    $channelSenderSid = $phoneNumber->getChannelSenderSid();
+                    if ($account->messaging_service_sid && $channelSenderSid) {
                         try {
-                            $subClient->messaging->v1
-                                ->services($account->messaging_service_sid)
-                                ->phoneNumbers($phoneNumber->phone_number_sid)
+                            // Try to remove as Channel Sender first (v2)
+                            $subClient->messaging->v1->services($account->messaging_service_sid)
+                                ->channelSenders($channelSenderSid)
                                 ->delete();
 
-                            Log::info('Phone number removed from messaging service', [
+                            Log::info('Channel sender removed from messaging service', [
                                 'phone_number' => $phoneNumber->phone_number,
+                                'channel_sender_sid' => $channelSenderSid,
                                 'messaging_service_sid' => $account->messaging_service_sid,
                             ]);
                         } catch (RestException $e) {
-                            // 20404 = resource not found, already removed
-                            if ($e->getStatusCode() !== 404) {
-                                Log::warning('Failed to remove phone from messaging service', [
+                            // If not found as channel sender, try as phone number (legacy v1)
+                            if ($e->getStatusCode() === 404) {
+                                try {
+                                    $incomingPhoneSid = $phoneNumber->getIncomingPhoneNumberSid();
+                                    if ($incomingPhoneSid) {
+                                        $subClient->messaging->v1->services($account->messaging_service_sid)
+                                            ->phoneNumbers($incomingPhoneSid)
+                                            ->delete();
+
+                                        Log::info('Phone number removed from messaging service (legacy)', [
+                                            'phone_number' => $phoneNumber->phone_number,
+                                            'phone_number_sid' => $incomingPhoneSid,
+                                        ]);
+                                    }
+                                } catch (RestException $e2) {
+                                    if ($e2->getStatusCode() !== 404) {
+                                        Log::warning('Failed to remove phone from messaging service', [
+                                            'phone_number' => $phoneNumber->phone_number,
+                                            'error' => $e2->getMessage(),
+                                        ]);
+                                    }
+                                }
+                            } else {
+                                Log::warning('Failed to remove sender from messaging service', [
                                     'phone_number' => $phoneNumber->phone_number,
                                     'error' => $e->getMessage(),
                                 ]);
@@ -883,20 +914,30 @@ class TwilioAccountManager
                         }
                     }
 
-                    // Step 2: Release the phone number from Twilio
-                    if ($phoneNumber->phone_number_sid) {
+                    // Step 2: Release the incoming phone number from Twilio
+                    // Only release if this is a purchased Twilio number (has incoming phone number SID)
+                    $incomingPhoneSid = $phoneNumber->getIncomingPhoneNumberSid();
+                    if ($incomingPhoneSid && $phoneNumber->isValidIncomingPhoneNumberSid()) {
                         try {
-                            $subClient->incomingPhoneNumbers($phoneNumber->phone_number_sid)->delete();
+                            $subClient->incomingPhoneNumbers($incomingPhoneSid)->delete();
 
                             Log::info('Phone number released from Twilio', [
                                 'phone_number' => $phoneNumber->phone_number,
-                                'phone_number_sid' => $phoneNumber->phone_number_sid,
+                                'incoming_phone_sid' => $incomingPhoneSid,
                             ]);
                         } catch (RestException $e) {
                             if ($e->getStatusCode() !== 404) {
                                 throw $e;
                             }
+                            Log::info('Phone number already released or not found in Twilio', [
+                                'phone_number' => $phoneNumber->phone_number,
+                            ]);
                         }
+                    } else {
+                        // BYOD number - only has channel sender, no Twilio phone number to release
+                        Log::info('BYOD number - skipping Twilio release', [
+                            'phone_number' => $phoneNumber->phone_number,
+                        ]);
                     }
 
                     // Update local record
