@@ -70,6 +70,13 @@ class EmbeddedSignupService
     {
         $session = WabaSetupSession::where('session_id', $state)->first();
 
+        Log::info('Embedded Signup callback', [
+            'code' => $code,
+            'state' => $state,
+            'session' => $session->toArray(),
+            'session_is_expired' => $session->isExpired(),
+        ]);
+
         if (! $session) {
             return [
                 'success' => false,
@@ -88,6 +95,10 @@ class EmbeddedSignupService
 
         $tokenData = $this->exchangeCodeForToken($code);
 
+        Log::info('Embedded Signup token exchange', [
+            'token_data' => $tokenData,
+        ]);
+
         if (! $tokenData['success']) {
             $session->markAsFailed();
 
@@ -97,6 +108,10 @@ class EmbeddedSignupService
         $accessToken = $tokenData['access_token'];
 
         $debugData = $this->debugToken($accessToken);
+
+        Log::info('Embedded Signup debug token', [
+            'debug_data' => $debugData,
+        ]);
 
         if (! $debugData['success']) {
             $session->markAsFailed();
@@ -244,6 +259,14 @@ class EmbeddedSignupService
     ): array {
         $account = WhatsAppAccount::where('gym_id', $gymId)->first();
 
+        Log::info('Connecting WABA to subaccount', [
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'phone_number' => $phoneNumber,
+            'meta_access_token' => $metaAccessToken,
+            'account' => $account->toArray(),
+        ]);
+
         if (! $account) {
             return [
                 'success' => false,
@@ -252,16 +275,53 @@ class EmbeddedSignupService
         }
 
         try {
-            $subClient = new Client(
-                $account->twilio_account_sid,
-                $account->twilioAuthToken
-            );
+            $sid = $account->twilio_account_sid;
+            $token = $account->twilio_auth_token;
 
-            $sender = $subClient->messaging->v2->channels->senders->create($phoneNumber, [
-                'configuration' => [
-                    'waba_id' => $wabaId,
-                ],
-            ]);
+            // If phone number is provided, create the sender
+            // Note: During embedded signup callback, phone number may be empty
+            // as the user selects their phone number in step 3 of the wizard
+            $senderSid = null;
+            if (! empty($phoneNumber)) {
+                // Register WhatsApp sender via Twilio Messaging v2 Channels API
+                // Adding asForm() because Twilio API requires application/x-www-form-urlencoded
+                $response = Http::withBasicAuth($sid, $token)
+                    ->asForm()
+                    ->post('https://messaging.twilio.com/v2/Channels/Senders', [
+                        'Sender' => 'whatsapp:' . $phoneNumber,
+                        'Configuration.waba_id' => $wabaId,
+                    ]);
+
+                if ($response->failed()) {
+                    Log::error('Failed to create WhatsApp sender', [
+                        'gym_id' => $gymId,
+                        'error' => $response->json('message') ?? $response->body(),
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'error' => $response->json('message') ?? 'Failed to register WhatsApp sender',
+                    ];
+                }
+
+                $senderSid = $response->json('sid');
+
+                // Attach sender to messaging service if it exists
+                if ($account->messaging_service_sid && $senderSid) {
+                    $response = Http::withBasicAuth($sid, $token)
+                        ->asForm()
+                        ->post("https://messaging.twilio.com/v1/Services/{$account->messaging_service_sid}/ChannelSenders", [
+                            'Sid' => $senderSid,
+                        ]);
+                    // Not a hard failure if this fails — log and continue
+                    if ($response->failed()) {
+                        Log::error('Failed to attach sender to messaging service', [
+                            'gym_id' => $gymId,
+                            'error' => $response->json('message') ?? $response->body(),
+                        ]);
+                    }
+                }
+            }
 
             $account->update([
                 'waba_id' => $wabaId,
@@ -275,12 +335,12 @@ class EmbeddedSignupService
             Log::info('WABA connected to subaccount', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
-                'sender_sid' => $sender->sid,
+                'sender_sid' => $senderSid,
             ]);
 
             return [
                 'success' => true,
-                'sender_sid' => $sender->sid,
+                'sender_sid' => $senderSid,
                 'waba_id' => $wabaId,
             ];
         } catch (\Exception $e) {
@@ -315,14 +375,17 @@ class EmbeddedSignupService
         try {
             $subClient = new Client(
                 $account->twilio_account_sid,
-                $account->twilioAuthToken
+                $account->twilio_auth_token // Fixed: access the attribute correctly
             );
 
-            $sender = $subClient->messaging->v2->channels->senders->create($phoneNumber, [
-                'configuration' => [
+            $request = \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
+                'sender_id' => 'whatsapp:' . $phoneNumber,
+                'configuration' => \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
                     'waba_id' => $wabaId,
-                ],
+                ]),
             ]);
+
+            $sender = $subClient->messaging->v2->channelsSenders->create($request);
 
             $updateData = [
                 'waba_id' => $wabaId,
