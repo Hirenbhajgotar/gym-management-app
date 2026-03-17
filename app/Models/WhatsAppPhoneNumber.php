@@ -92,7 +92,7 @@ class WhatsAppPhoneNumber extends Model
 
     /**
      * Get the Channel Sender SID (WhatsApp sender registration).
-     * Returns channel_sender_sid if set, otherwise falls back to phone_number_sid for backward compatibility.
+     * This is the SID from Twilio's Messaging v2 Channels Senders API (starts with CN).
      */
     public function getChannelSenderSid(): ?string
     {
