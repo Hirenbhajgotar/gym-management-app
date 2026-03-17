@@ -55,6 +55,16 @@ class EmbeddedSignupController extends Controller
             ? route('filament.admin.pages.whats-app-setup', ['tenant' => $tenantSlug])
             : url('/admin');
 
+        Log::info('Embedded Signup callback', [
+            'code' => $code,
+            'state' => $state,
+            'error' => $error,
+            'error_description' => $errorDescription,
+            'tenant_id' => $tenantId,
+            'tenant_slug' => $tenantSlug,
+            'redirect_url' => $redirectUrl,
+        ]);
+
         if ($error) {
             Log::error('Embedded Signup callback error', [
                 'error' => $error,
@@ -71,6 +81,10 @@ class EmbeddedSignupController extends Controller
         }
 
         $result = $this->embeddedSignupService->handleCallback($code, $state);
+
+        Log::info('Embedded Signup callback result', [
+            'result' => $result,
+        ]);
 
         if (! $result['success']) {
             return redirect($redirectUrl)

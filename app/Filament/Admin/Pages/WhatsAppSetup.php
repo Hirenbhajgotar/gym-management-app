@@ -945,7 +945,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             );
 
             if ($result['success']) {
-                $this->whatsappAccount?->refresh();
+                $this->refresh();
                 $this->wabaCreated = true;
                 $this->setupStep = 3;
 
