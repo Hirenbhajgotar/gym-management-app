@@ -569,6 +569,7 @@ class TwilioAccountManager
                 ]),
             ]);
 
+            // creates a WhatsApp sender in Twilio's system, adds it to the WABA connected to Twilio account, and triggers the OTP from Meta.
             $sender = $subClient->messaging->v2->channelsSenders->create($request);
 
             try {
@@ -1429,7 +1430,7 @@ class TwilioAccountManager
     /**
      * Register a phone number as a WhatsApp sender and attach it to the messaging service.
      */
-    protected function registerWhatsAppSender(Client $subClient, WhatsAppAccount $account, string $phoneNumber, ?string $wabaId = null): ?string
+    public function registerWhatsAppSender(Client $subClient, WhatsAppAccount $account, string $phoneNumber, ?string $wabaId = null): ?string
     {
         $whatsAppBusinessId = $wabaId ?? $account->waba_id;
         if (! $whatsAppBusinessId) {

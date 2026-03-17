@@ -284,43 +284,50 @@ class EmbeddedSignupService
             $senderSid = null;
             if (! empty($phoneNumber)) {
                 // Register WhatsApp sender via Twilio Messaging v2 Channels API
-                // Adding asForm() because Twilio API requires application/x-www-form-urlencoded
-                $response = Http::withBasicAuth($sid, $token)
-                    ->asForm()
-                    ->post('https://messaging.twilio.com/v2/Channels/Senders', [
-                        'Sender' => 'whatsapp:' . $phoneNumber,
-                        'Configuration.waba_id' => $wabaId,
-                    ]);
+                // // Adding asForm() because Twilio API requires application/x-www-form-urlencoded
+                // $response = Http::withBasicAuth($sid, $token)
+                //     ->asForm()
+                //     ->post('https://messaging.twilio.com/v2/Channels/Senders', [
+                //         'Sender' => 'whatsapp:' . $phoneNumber,
+                //         'Configuration.waba_id' => $wabaId,
+                //     ]);
 
-                if ($response->failed()) {
-                    Log::error('Failed to create WhatsApp sender', [
-                        'gym_id' => $gymId,
-                        'error' => $response->json('message') ?? $response->body(),
-                    ]);
+                // if ($response->failed()) {
+                //     Log::error('Failed to create WhatsApp sender', [
+                //         'gym_id' => $gymId,
+                //         'error' => $response->json('message') ?? $response->body(),
+                //     ]);
 
-                    return [
-                        'success' => false,
-                        'error' => $response->json('message') ?? 'Failed to register WhatsApp sender',
-                    ];
-                }
+                //     return [
+                //         'success' => false,
+                //         'error' => $response->json('message') ?? 'Failed to register WhatsApp sender',
+                //     ];
+                // }
 
-                $senderSid = $response->json('sid');
+                // $senderSid = $response->json('sid');
 
-                // Attach sender to messaging service if it exists
-                if ($account->messaging_service_sid && $senderSid) {
-                    $response = Http::withBasicAuth($sid, $token)
-                        ->asForm()
-                        ->post("https://messaging.twilio.com/v1/Services/{$account->messaging_service_sid}/ChannelSenders", [
-                            'Sid' => $senderSid,
-                        ]);
-                    // Not a hard failure if this fails — log and continue
-                    if ($response->failed()) {
-                        Log::error('Failed to attach sender to messaging service', [
-                            'gym_id' => $gymId,
-                            'error' => $response->json('message') ?? $response->body(),
-                        ]);
-                    }
-                }
+                // // Attach sender to messaging service if it exists
+                // if ($account->messaging_service_sid && $senderSid) {
+                //     $response = Http::withBasicAuth($sid, $token)
+                //         ->asForm()
+                //         ->post("https://messaging.twilio.com/v1/Services/{$account->messaging_service_sid}/ChannelSenders", [
+                //             'Sid' => $senderSid,
+                //         ]);
+                //     // Not a hard failure if this fails — log and continue
+                //     if ($response->failed()) {
+                //         Log::error('Failed to attach sender to messaging service', [
+                //             'gym_id' => $gymId,
+                //             'error' => $response->json('message') ?? $response->body(),
+                //         ]);
+                //     }
+                // }
+
+                $subClient = new Client(
+                    $account->twilio_account_sid,
+                    $account->twilio_auth_token
+                );
+
+                $senderSid = app(TwilioAccountManager::class)->registerWhatsAppSender($subClient, $account, $phoneNumber, $wabaId);
             }
 
             $account->update([

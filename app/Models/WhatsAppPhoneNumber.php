@@ -96,7 +96,7 @@ class WhatsAppPhoneNumber extends Model
      */
     public function getChannelSenderSid(): ?string
     {
-        return $this->channel_sender_sid ?? $this->phone_number_sid;
+        return $this->channel_sender_sid;
     }
 
     /**
