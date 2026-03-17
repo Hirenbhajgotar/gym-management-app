@@ -67,7 +67,7 @@
                 <div class="relative animate-float">
                     <div class="relative z-10">
                         <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                            alt="Modern Gym Interior" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
+                            alt="Modern gym interior with cardio equipment and weights for fitness center management" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-2xl">
                         </div>
                     </div>
@@ -170,7 +170,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="CRM Dashboard" loading="lazy"
+                                 alt="CRM dashboard showing lead management and customer relationship tools for gym business" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -188,7 +188,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="User Management" loading="lazy"
+                                 alt="User management interface with member profiles and staff management for gym administration" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
@@ -306,7 +306,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Attendance Analytics" loading="lazy"
+                                 alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -324,7 +324,7 @@
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
                             <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Analytics Dashboard" loading="lazy"
+                                 alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
@@ -924,4 +924,54 @@
             </div>
         </div>
     </section>
+
+    <!-- JSON-LD FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is the best gym management software?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Fluxfitness is one of the best gym management software solutions, offering comprehensive features for membership tracking, billing, scheduling, and analytics."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How much does gym management software cost?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Fluxfitness offers plans starting from free, with affordable pricing for gyms of all sizes. Visit our pricing page for details."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I try gym management software for free?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, Fluxfitness offers a free trial with no credit card required. Start your free trial today to explore all features."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What are the features of gym management software?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Fluxfitness offers a wide range of features including membership tracking, attendance, billing, scheduling, WhatsApp notifications, and analytics."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I manage multiple gym branches under one account?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, Fluxfitness allows you to manage multiple gym branches under one account, making it easy to manage your entire gym network from a single platform."
+                }
+            }
+        ]
+    }
+    </script>
 </div>
