@@ -30,12 +30,15 @@ class CmsPage extends Model implements Sitemapable
         'meta_keywords',
     ];
 
-    protected $casts = [
-        'is_published' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_published' => 'boolean',
+        ];
+    }
 
     #[Scope]
-    protected function published(Builder $query)
+    protected function published(Builder $query): void
     {
         $query->where('is_published', true);
     }

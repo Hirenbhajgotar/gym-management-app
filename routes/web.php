@@ -152,7 +152,9 @@ Route::get('/sitemap.xml', function () {
     $path = public_path('sitemap.xml');
 
     if (! file_exists($path)) {
-        Artisan::call('sitemap:generate');
+        Log::error('Sitemap not found');
+
+        abort(404);
     }
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
