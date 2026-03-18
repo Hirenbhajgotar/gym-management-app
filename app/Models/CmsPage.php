@@ -4,11 +4,15 @@ namespace App\Models;
 
 use App\Observers\CmsPageObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Sitemap\Contracts\Sitemapable;
+use Spatie\Sitemap\Tags\Url;
 
 #[ObservedBy([CmsPageObserver::class])]
-class CmsPage extends Model
+class CmsPage extends Model implements Sitemapable
 {
     use HasFactory;
 
@@ -29,4 +33,16 @@ class CmsPage extends Model
     protected $casts = [
         'is_published' => 'boolean',
     ];
+
+    #[Scope]
+    protected function published(Builder $query)
+    {
+        $query->where('is_published', true);
+    }
+
+    public function toSitemapTag(): Url|string|array
+    {
+        return Url::create(route('cms.page', $this->slug))
+            ->setLastModificationDate($this->updated_at);
+    }
 }

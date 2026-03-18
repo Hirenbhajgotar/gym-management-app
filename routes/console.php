@@ -82,3 +82,6 @@ Schedule::call(function () {
         }
     }
 })->everyTenMinutes();
+
+// Generate sitemap daily at midnight
+Schedule::command('sitemap:generate')->dailyAt('00:00');
