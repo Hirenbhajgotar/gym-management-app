@@ -1,6 +1,8 @@
 /.phpunit.cache
 /node_modules
 /public
+!/public/images
+!/public/images/**
 !/public/favicon.ico
 !/public/favicon.svg
 !/public/fluxfitness-icon.png
