@@ -925,53 +925,57 @@
         </div>
     </section>
 
-    <!-- JSON-LD FAQ Schema -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
+    @push('meta') 
+        <!-- JSON-LD FAQ Schema -->
+        @verbatim
+            <script type="application/ld+json">
             {
-                "@type": "Question",
-                "name": "What is the best gym management software?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Fluxfitness is one of the best gym management software solutions, offering comprehensive features for membership tracking, billing, scheduling, and analytics."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "How much does gym management software cost?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Fluxfitness offers plans starting from free, with affordable pricing for gyms of all sizes. Visit our pricing page for details."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "Can I try gym management software for free?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Yes, Fluxfitness offers a free trial with no credit card required. Start your free trial today to explore all features."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "What are the features of gym management software?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Fluxfitness offers a wide range of features including membership tracking, attendance, billing, scheduling, WhatsApp notifications, and analytics."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "Can I manage multiple gym branches under one account?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Yes, Fluxfitness allows you to manage multiple gym branches under one account, making it easy to manage your entire gym network from a single platform."
-                }
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "What is the best gym management software?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness is one of the best gym management software solutions, offering comprehensive features for membership tracking, billing, scheduling, and analytics."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How much does gym management software cost?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness offers plans starting from free, with affordable pricing for gyms of all sizes. Visit our pricing page for details."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Can I try gym management software for free?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes, Fluxfitness offers a free trial with no credit card required. Start your free trial today to explore all features."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "What are the features of gym management software?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness offers a wide range of features including membership tracking, attendance, billing, scheduling, WhatsApp notifications, and analytics."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Can I manage multiple gym branches under one account?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes, Fluxfitness allows you to manage multiple gym branches under one account, making it easy to manage your entire gym network from a single platform."
+                        }
+                    }
+                ]
             }
-        ]
-    }
-    </script>
+            </script>
+        @endverbatim
+    @endpush
 </div>

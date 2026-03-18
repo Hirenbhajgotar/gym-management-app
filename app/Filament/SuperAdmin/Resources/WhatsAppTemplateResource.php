@@ -6,7 +6,7 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 use App\Jobs\PushWhatsAppTemplateToGymJob;
 use App\Models\Gym;
-use App\Models\WhatsappTemplate;
+use App\Models\WhatsAppTemplate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -311,8 +311,8 @@ class WhatsAppTemplateResource extends Resource
                         ->color('primary')
                         ->requiresConfirmation()
                         ->modalHeading('Push Template to All Gyms')
-                        ->modalDescription(fn (WhatsappTemplate $record) => "This will copy \"{$record->display_name}\" to all gyms with active users that don't already have a template with the same name. Existing templates with the same name will NOT be overwritten.")
-                        ->before(function (WhatsappTemplate $record) {
+                        ->modalDescription(fn (WhatsAppTemplate $record) => "This will copy \"{$record->display_name}\" to all gyms with active users that don't already have a template with the same name. Existing templates with the same name will NOT be overwritten.")
+                        ->before(function (WhatsAppTemplate $record) {
                             $gymCount = Gym::whereHas('users', function ($query) {
                                 $query->where('users.is_active', true);
                             })->count();
