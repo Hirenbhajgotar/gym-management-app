@@ -32,7 +32,7 @@ class CmsPageController extends Component
             ->layout('frontend.layouts.app_new', [
                 'seo' => [
                     'description' => $page->meta_description,
-                    'keywords' => 'privacy policy, data protection, fluxfitness privacy',
+                    'keywords' => $page->meta_keywords,
                 ],
             ]);
     }

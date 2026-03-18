@@ -23,6 +23,7 @@ class CmsPage extends Model
         'is_published',
         'meta_title',
         'meta_description',
+        'meta_keywords',
     ];
 
     protected $casts = [
