@@ -5,8 +5,10 @@ namespace App\Livewire\Frontend;
 use App\Models\Plan;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
+#[Title('All-in-one Gym Management Software | CRM, Billing & Member Tracking - Fluxfitness')]
 class HomeController extends Component
 {
     public $selectedPlan = null;
@@ -27,6 +29,15 @@ class HomeController extends Component
         return view('livewire.frontend.home-controller', [
             'plans' => $plans,
             'enterprisePlans' => $enterprisePlans,
+            'seo' => [
+                'description' => 'All-in-one gym management software for fitness centers, studios. Membership tracking, attendance, WhatsApp notifications, billing, scheduling, and analytics. Join 500+ gyms. Start free trial.',
+                'keywords' => 'best gym management software, gym management software, fitness center management, gym membership software, gym scheduling software, gym billing software, gym attendance software, gym analytics software, gym CRM software, fitness center management system, branded gym member app, Automated WhatsApp Reminders for Gyms',
+            ],
+        ])->layout('frontend.layouts.app_new', [
+            'seo' => [
+                'description' => 'All-in-one gym management software for fitness centers, studios. Membership tracking, attendance, WhatsApp notifications, billing, scheduling, and analytics. Join 500+ gyms. Start free trial.',
+                'keywords' => 'best gym management software, gym management software, fitness center management, gym membership software, gym scheduling software, gym billing software, gym attendance software, gym analytics software, gym CRM software, fitness center management system, branded gym member app, Automated WhatsApp Reminders for Gyms',
+            ],
         ]);
     }
 

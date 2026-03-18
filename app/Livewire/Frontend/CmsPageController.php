@@ -28,6 +28,12 @@ class CmsPageController extends Component
         });
 
         return view('livewire.frontend.cms-page-controller', compact('page'))
-            ->title($page->meta_title ?? $page->title);
+            ->title($page->meta_title ?? $page->title)
+            ->layout('frontend.layouts.app_new', [
+                'seo' => [
+                    'description' => $page->meta_description,
+                    'keywords' => $page->meta_keywords,
+                ],
+            ]);
     }
 }
