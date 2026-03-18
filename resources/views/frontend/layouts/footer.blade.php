@@ -44,37 +44,37 @@
                 <h4 class="text-lg font-semibold mb-4">Features</h4>
                 <ul class="space-y-2 text-gray-400">
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#crm-integration" class="hover:text-purple-400 transition-colors duration-300">
                             CRM Integration
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#user-management" class="hover:text-purple-400 transition-colors duration-300">
                             User Management
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#features" class="hover:text-purple-400 transition-colors duration-300">
                             Expense Management
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#attendance-tracking" class="hover:text-purple-400 transition-colors duration-300">
                             Attendance Tracking
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#features" class="hover:text-purple-400 transition-colors duration-300">
                             Bulk SMS
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#multi-location" class="hover:text-purple-400 transition-colors duration-300">
                             Multi-Location
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#multi-location" class="hover:text-purple-400 transition-colors duration-300">
                             Analytics
                         </a>
                     </li>
