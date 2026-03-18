@@ -66,7 +66,7 @@
                 </div>
                 <div class="relative animate-float">
                     <div class="relative z-10">
-                        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        <img src="{{ asset('images/banner.jpg') }}"
                             alt="Modern gym interior with cardio equipment and weights for fitness center management" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-2xl">
                         </div>
@@ -169,7 +169,7 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                            <img src="{{ asset('images/crm-integration.jpg') }}"
                                  alt="CRM dashboard showing lead management and customer relationship tools for gym business" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
@@ -187,7 +187,7 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                            <img src="{{ asset('images/user-management.jpg') }}"
                                  alt="User management interface with member profiles and staff management for gym administration" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
@@ -305,7 +305,7 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-500/40 rounded-full blur-3xl group-hover:bg-pink-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                            <img src="{{ asset('images/attandence-tracking.jpg') }}"
                                  alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
@@ -323,7 +323,7 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-blue-500/40 rounded-full blur-3xl group-hover:bg-blue-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                            <img src="{{ asset('images/multi-location.jpg') }}"
                                  alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
