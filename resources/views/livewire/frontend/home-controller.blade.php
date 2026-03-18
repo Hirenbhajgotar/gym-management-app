@@ -111,7 +111,7 @@
             </div>
 
             <!-- Feature 1: Smart CRM Integration -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up">
+            <div id="crm-integration" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up">
                 <div class="order-2 lg:order-1">
                     <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
                         <div class="flex items-center gap-4 mb-7">
@@ -179,7 +179,7 @@
             </div>
 
             <!-- Feature 2: Advanced User Management -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.1s;">
+            <div id="user-management" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.1s;">
                 <div class="order-1">
                     <div class="relative group h-full">
                         <!-- Decorative elements -->
@@ -247,7 +247,7 @@
             </div>
 
             <!-- Feature 3: Smart Attendance Tracking -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.2s;">
+            <div id="attendance-tracking" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.2s;">
                 <div class="order-2 lg:order-1">
                     <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
                         <div class="flex items-center gap-4 mb-7">
@@ -315,7 +315,7 @@
             </div>
 
             <!-- Feature 4: Multi-Location Support & Analytics -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch animate-slide-up" style="animation-delay: 0.3s;">
+            <div id="multi-location" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch animate-slide-up" style="animation-delay: 0.3s;">
                 <div class="order-1">
                     <div class="relative group h-full">
                         <!-- Decorative elements -->
