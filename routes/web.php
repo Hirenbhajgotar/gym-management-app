@@ -147,6 +147,19 @@ Route::middleware(['auth'])->group(function () {
 // Razorpay Webhook (no auth required)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
+// Sitemap Route
+Route::get('/sitemap.xml', function () {
+    $path = public_path('sitemap.xml');
+
+    if (! file_exists($path)) {
+        Log::error('Sitemap not found');
+
+        abort(404);
+    }
+
+    return response()->file($path, ['Content-Type' => 'application/xml']);
+})->name('sitemap');
+
 Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
 // WhatsApp Embedded Signup Routes

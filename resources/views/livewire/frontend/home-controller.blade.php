@@ -943,6 +943,14 @@
                     },
                     {
                         "@type": "Question",
+                        "name": "What software is used to manage gyms?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness is gym management software designed to make it easy to maintain detailed records of your members and their memberships, book classes and trainers, process and track sales, and communicate en masse with the right members at the right time."
+                        }
+                    },
+                    {
+                        "@type": "Question",
                         "name": "How much does gym management software cost?",
                         "acceptedAnswer": {
                             "@type": "Answer",
