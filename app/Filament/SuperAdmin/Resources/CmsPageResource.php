@@ -68,6 +68,8 @@ class CmsPageResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Textarea::make('meta_description')
                             ->maxLength(255),
+                        Forms\Components\Textarea::make('meta_keywords')
+                            ->helperText('Separate keywords with commas'),
                     ])
                     ->collapsible(),
             ]);
