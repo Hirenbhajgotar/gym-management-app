@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -125,20 +126,81 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
         ];
     }
 
+    // =========================
+    // Relationships
+    // =========================
+
+    public function gyms(): BelongsToMany
+    {
+        return $this->belongsToMany(Gym::class, 'gym_user')
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
+    }
+
+    public function employeeDetails(): HasOne
+    {
+        return $this->hasOne(EmployeeDetail::class, 'user_id');
+    }
+
+    public function address(): MorphOne
+    {
+        return $this->morphOne(Address::class, 'addressable');
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->active()->whereDate('current_period_end', '>=', now());
+    }
+
+    public function subscription(): ?Subscription
+    {
+        return $this->activeSubscription()->first();
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    // =========================
+    // Scopes
+    // =========================
+
+    /**
+     * Scope for active users (backward compatibility)
+     */
+    #[Scope]
+    protected function active($query)
+    {
+        return $query->where('status', UserStatus::ACTIVE);
+    }
+
+    // =========================
+    // Accessors
+    // =========================
+
+    /**
+     * Backward compatibility for is_active column
+     */
+    protected function isActive(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->status === UserStatus::ACTIVE,
+        );
+    }
+
+    // =========================
+    // Filament
+    // =========================
+
     public function getFilamentName(): string
     {
         return $this->name;
-    }
-
-    /**
-     * Get the user's initials
-     */
-    public function initials(): string
-    {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
-            ->implode('');
     }
 
     public function canAccessPanel(Panel $panel): bool
@@ -180,39 +242,10 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
         return $this->gyms->contains($tenant);
     }
 
-    public function gyms(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(Gym::class, 'gym_user')
-            ->withPivot(['role', 'active'])
-            ->withTimestamps();
-    }
-
-    public function employeeDetails(): HasOne
-    {
-        return $this->hasOne(EmployeeDetail::class, 'user_id');
-    }
-
-    public function address(): MorphOne
-    {
-        return $this->morphOne(Address::class, 'addressable');
-    }
-
-    public function subscriptions(): HasMany
-    {
-        return $this->hasMany(Subscription::class);
-    }
-
-    public function activeSubscription(): HasOne
-    {
-        return $this->hasOne(Subscription::class)->active()->whereDate('current_period_end', '>=', now());
-    }
-
-    public function subscription(): ?Subscription
-    {
-        return $this->activeSubscription()->first();
-    }
-
+    // =========================
     // Subscription-based access control methods
+    // =========================
+
     public function hasActiveSubscription(): bool
     {
         return $this->activeSubscription()->exists();
@@ -247,6 +280,21 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
             ->exists();
     }
 
+    // =========================
+    // Helper methods
+    // =========================
+
+    /**
+     * Get the user's initials
+     */
+    public function initials(): string
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->implode('');
+    }
+
     public function getMaxGyms(): int
     {
         $limit = $this->getFeatureLimit('max_gyms');
@@ -271,29 +319,5 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
             ->with(['plan', 'features'])
             ->latest()
             ->get();
-    }
-
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
-    /**
-     * Backward compatibility for is_active column
-     */
-    protected function isActive(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->status === UserStatus::ACTIVE,
-        );
-    }
-
-    /**
-     * Scope for active users (backward compatibility)
-     */
-    #[Scope]
-    protected function active($query)
-    {
-        return $query->where('status', UserStatus::ACTIVE);
     }
 }

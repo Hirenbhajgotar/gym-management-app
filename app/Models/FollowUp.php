@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\Lead $lead
  * @property-read \App\Models\User $user
+ *
  * @method static \Database\Factories\FollowUpFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp newQuery()
@@ -36,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereUserId($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperFollowUp
  */
@@ -44,21 +46,21 @@ class FollowUp extends Model
     use HasFactory;
 
     protected $fillable = [
-        "lead_id",
-        "gym_id",
-        "user_id",
-        "type",
-        "scheduled_date",
-        "status",
-        "notes",
+        'lead_id',
+        'gym_id',
+        'user_id',
+        'type',
+        'scheduled_date',
+        'status',
+        'notes',
     ];
 
     protected function casts(): array
     {
         return [
-            "type" => InteractionType::class,
-            "scheduled_date" => "datetime",
-            "status" => FollowUpStatus::class,
+            'type' => InteractionType::class,
+            'scheduled_date' => 'datetime',
+            'status' => FollowUpStatus::class,
         ];
     }
 

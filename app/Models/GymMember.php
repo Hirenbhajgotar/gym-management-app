@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Notifications\MemberFrozenNotification;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -109,16 +111,27 @@ class GymMember extends Model
         'trainer_id',
         'user_id',
         'lead_id',
+        'is_frozen',
+        'frozen_at',
+        'frozen_until',
+        'frozen_reason',
+        'frozen_by',
     ];
 
-    protected $casts = [
-        'dob' => 'date',
-        'membership_start' => 'date',
-        'membership_end' => 'date',
-        'age' => 'integer',
-        'latest_payment_at' => 'date',
-        'payment_status' => PaymentStatus::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'dob' => 'date',
+            'membership_start' => 'date',
+            'membership_end' => 'date',
+            'age' => 'integer',
+            'latest_payment_at' => 'date',
+            'payment_status' => PaymentStatus::class,
+            'is_frozen' => 'boolean',
+            'frozen_at' => 'datetime',
+            'frozen_until' => 'datetime',
+        ];
+    }
 
     protected static function booted()
     {
@@ -132,84 +145,9 @@ class GymMember extends Model
         });
     }
 
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly([
-                'gym.name',
-                'name',
-                'email',
-                'phone',
-                'address',
-                'membership_start',
-                'membership_end',
-                'membershipPlan.name',
-                'trainer.name',
-            ])
-            ->useLogName('gym_member')
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
-
-    public function getDescriptionForEvent(string $eventName): string
-    {
-        if ($eventName === 'updated') {
-            $changes = $this->getChanges();
-
-            // Remove timestamps from changes
-            unset($changes['updated_at']);
-
-            if (empty($changes)) {
-                return "{$this->name}'s membership was renewed";
-            }
-
-            $changedFields = collect($changes)->keys()->map(function ($field) {
-                return str_replace('_', ' ', ucfirst($field));
-            })->implode(', ');
-
-            return "{$this->name}'s information was updated (Changed: {$changedFields})";
-        }
-
-        return match ($eventName) {
-            'created' => "{$this->name} joined",
-            'deleted' => "{$this->name} was removed",
-            default => "Gym member {$eventName}",
-        };
-    }
-
-    /**
-     * Get the user's initials
-     */
-    public function initials(): string
-    {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
-            ->implode('');
-    }
-
-    public function avatar(): string
-    {
-        if ($this->profile_photo) {
-            return $this->profile_photo;
-        }
-
-        $name = urlencode($this->name);
-        $size = 40;
-        $background = 'random';
-        $color = 'FFFFFF';
-
-        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
-    }
-
-    public function notifyExpiry(int $daysLeft): void
-    {
-        $this->notify(new MembershipExpiryNotification(
-            member: $this,
-            expiresAt: $this->membership_end,
-            daysLeft: $daysLeft
-        ));
-    }
+    // =========================
+    // Relationships
+    // =========================
 
     public function gym(): BelongsTo
     {
@@ -256,6 +194,158 @@ class GymMember extends Model
         return $this->morphOne(Attendances::class, 'attendanceable')->latestOfMany('check_in_time');
     }
 
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
+    }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
+    }
+
+    public function frozenBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'frozen_by');
+    }
+    // =========================
+    // Activity Log
+    // =========================
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'gym.name',
+                'name',
+                'email',
+                'phone',
+                'address',
+                'membership_start',
+                'membership_end',
+                'membershipPlan.name',
+                'trainer.name',
+            ])
+            ->useLogName('gym_member')
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        if ($eventName === 'updated') {
+            $changes = $this->getChanges();
+
+            // Remove timestamps from changes
+            unset($changes['updated_at']);
+
+            if (empty($changes)) {
+                return "{$this->name}'s membership was renewed";
+            }
+
+            $changedFields = collect($changes)->keys()->map(function ($field) {
+                return str_replace('_', ' ', ucfirst($field));
+            })->implode(', ');
+
+            return "{$this->name}'s information was updated (Changed: {$changedFields})";
+        }
+
+        return match ($eventName) {
+            'created' => "{$this->name} joined",
+            'deleted' => "{$this->name} was removed",
+            default => "Gym member {$eventName}",
+        };
+    }
+
+    // =========================
+    // Scope
+    // =========================
+
+    #[Scope]
+    protected function membershipActive($query)
+    {
+        return $query->where('membership_end', '>=', today());
+    }
+
+    #[Scope]
+    protected function membershipExpired($query)
+    {
+        return $query->where('membership_end', '<', today());
+    }
+
+    #[Scope]
+    protected function hasTrainer($query)
+    {
+        return $query->whereNotNull('trainer_id');
+    }
+
+    /**
+     * Scope to get non-frozen members
+     */
+    #[Scope]
+    protected function notFrozen($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('is_frozen', false)
+                ->orWhere(function ($q2) {
+                    $q2->where('is_frozen', true)
+                        ->whereNotNull('frozen_until')
+                        ->where('frozen_until', '<', now());
+                });
+        });
+    }
+
+    /**
+     * Scope to get frozen members
+     */
+    #[Scope]
+    protected function frozen($query)
+    {
+        return $query->where('is_frozen', true)
+            ->where(function ($q) {
+                $q->whereNull('frozen_until')
+                    ->orWhere('frozen_until', '>=', now());
+            });
+    }
+
+    // =========================
+    // Helper methods
+    // =========================
+
+    /**
+     * Get the user's initials
+     */
+    public function initials(): string
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->implode('');
+    }
+
+    public function avatar(): string
+    {
+        if ($this->profile_photo) {
+            return $this->profile_photo;
+        }
+
+        $name = urlencode($this->name);
+        $size = 40;
+        $background = 'random';
+        $color = 'FFFFFF';
+
+        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background={$background}&color={$color}&bold=true";
+    }
+
+    public function notifyExpiry(int $daysLeft): void
+    {
+        $this->notify(new MembershipExpiryNotification(
+            member: $this,
+            expiresAt: $this->membership_end,
+            daysLeft: $daysLeft
+        ));
+    }
+
     public function currentAttendance(): ?Attendances
     {
         return $this->attendances()
@@ -269,28 +359,100 @@ class GymMember extends Model
         return $this->currentAttendance() !== null;
     }
 
-    public function scopeMembershipActive($query)
+    // =========================
+    // Freeze Methods
+    // =========================
+
+    /**
+     * Check if member is currently frozen
+     */
+    public function isFrozen(): bool
     {
-        return $query->where('membership_end', '>=', today());
+        if (! $this->is_frozen) {
+            return false;
+        }
+
+        // If frozen until is set and has passed, auto-unfreeze
+        if ($this->frozen_until && $this->frozen_until->isPast()) {
+            $this->unfreeze();
+
+            return false;
+        }
+
+        return true;
     }
 
-    public function scopeMembershipExpired($query)
+    /**
+     * Check if member can access gym facilities
+     * Combines membership status, payment status, and freeze status
+     */
+    public function canAccessGym(): bool
     {
-        return $query->where('membership_end', '<', today());
+        // Check if membership is active
+        if (! $this->membership_end || $this->membership_end->isPast()) {
+            return false;
+        }
+
+        // Check if payment is completed
+        if ($this->payment_status !== PaymentStatus::COMPLETED) {
+            return false;
+        }
+
+        // Check if frozen
+        if ($this->isFrozen()) {
+            return false;
+        }
+
+        return true;
     }
 
-    public function scopeHasTrainer($query)
+    /**
+     * Freeze member (manual or date-based)
+     */
+    public function freeze(?string $reason = null, ?int $days = null, ?int $frozenById = null): bool
     {
-        return $query->whereNotNull('trainer_id');
+        $this->is_frozen = true;
+        $this->frozen_at = now();
+        $this->frozen_reason = $reason;
+        $this->frozen_by = $frozenById;
+
+        if ($days !== null && $days > 0) {
+            $this->frozen_until = now()->addDays($days);
+        } else {
+            $this->frozen_until = null;
+        }
+
+        $this->save();
+
+        // Send email notification
+        $this->notify(new MemberFrozenNotification(
+            member: $this,
+            isFrozen: true,
+            reason: $reason,
+            frozenUntil: $this->frozen_until
+        ));
+
+        return true;
     }
 
-    public function lead(): BelongsTo
+    /**
+     * Unfreeze member
+     */
+    public function unfreeze(?int $unfrozenById = null): bool
     {
-        return $this->belongsTo(Lead::class);
-    }
+        $this->is_frozen = false;
+        $this->frozen_at = null;
+        $this->frozen_until = null;
+        $this->frozen_reason = null;
+        $this->frozen_by = $unfrozenById;
+        $this->save();
 
-    public function measurements(): HasMany
-    {
-        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
+        // Send email notification
+        $this->notify(new MemberFrozenNotification(
+            member: $this,
+            isFrozen: false
+        ));
+
+        return true;
     }
 }

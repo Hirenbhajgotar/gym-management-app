@@ -21,10 +21,11 @@ class LeadScoringService
         return $leads->map(function ($lead) {
             $lead->score = $this->calculateScore($lead);
             $lead->score_factors = $this->identifyScoreFactors($lead);
+
             return $lead;
         })
-        ->sortByDesc('score')
-        ->take($limit);
+            ->sortByDesc('score')
+            ->take($limit);
     }
 
     /**
@@ -44,7 +45,7 @@ class LeadScoringService
             'paid_ad' => 10,
             'cold_outreach' => 5,
         ];
-        
+
         $source = $lead->source?->value ?? 'unknown';
         $score += $sourceScores[$source] ?? 10;
 
@@ -55,14 +56,24 @@ class LeadScoringService
         // 3. Recency (Max 20)
         // Recently created or updated leads are hotter
         $daysSinceUpdate = $lead->updated_at->diffInDays(now());
-        if ($daysSinceUpdate <= 2) $score += 20;
-        elseif ($daysSinceUpdate <= 7) $score += 10;
-        elseif ($daysSinceUpdate <= 14) $score += 5;
+        if ($daysSinceUpdate <= 2) {
+            $score += 20;
+        } elseif ($daysSinceUpdate <= 7) {
+            $score += 10;
+        } elseif ($daysSinceUpdate <= 14) {
+            $score += 5;
+        }
 
         // 4. Intent / Completeness (Max 25)
-        if ($lead->membership_plan_id) $score += 10; // Known desired plan
-        if (!empty($lead->interest)) $score += 10; // Specific interests
-        if ($lead->phone && $lead->email) $score += 5; // Complete contact info
+        if ($lead->membership_plan_id) {
+            $score += 10;
+        } // Known desired plan
+        if (! empty($lead->interest)) {
+            $score += 10;
+        } // Specific interests
+        if ($lead->phone && $lead->email) {
+            $score += 5;
+        } // Complete contact info
 
         return min(100, $score);
     }
@@ -80,13 +91,13 @@ class LeadScoringService
 
         $followUpCount = $lead->follow_ups_count ?? $lead->followUps()->count();
         if ($followUpCount > 0) {
-            $factors[] = "{$followUpCount} interactions (+".(min(30, $followUpCount * 10)).")";
+            $factors[] = "{$followUpCount} interactions (+" . (min(30, $followUpCount * 10)) . ')';
         }
 
         if ($lead->membership_plan_id) {
             $factors[] = 'Plan selected (+10)';
         }
-        
+
         if ($lead->updated_at->diffInDays(now()) <= 2) {
             $factors[] = 'Recently active (+20)';
         }

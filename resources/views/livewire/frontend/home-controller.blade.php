@@ -66,8 +66,8 @@
                 </div>
                 <div class="relative animate-float">
                     <div class="relative z-10">
-                        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                            alt="Modern Gym Interior" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
+                        <img src="{{ asset('images/banner.jpg') }}"
+                            alt="Modern gym interior with cardio equipment and weights for fitness center management" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-2xl">
                         </div>
                     </div>
@@ -111,7 +111,7 @@
             </div>
 
             <!-- Feature 1: Smart CRM Integration -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up">
+            <div id="crm-integration" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up">
                 <div class="order-2 lg:order-1">
                     <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
                         <div class="flex items-center gap-4 mb-7">
@@ -169,8 +169,8 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="CRM Dashboard"
+                            <img src="{{ asset('images/crm-integration.jpg') }}"
+                                 alt="CRM dashboard showing lead management and customer relationship tools for gym business" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -179,7 +179,7 @@
             </div>
 
             <!-- Feature 2: Advanced User Management -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.1s;">
+            <div id="user-management" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.1s;">
                 <div class="order-1">
                     <div class="relative group h-full">
                         <!-- Decorative elements -->
@@ -187,8 +187,8 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="User Management"
+                            <img src="{{ asset('images/user-management.jpg') }}"
+                                 alt="User management interface with member profiles and staff management for gym administration" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
@@ -247,7 +247,7 @@
             </div>
 
             <!-- Feature 3: Smart Attendance Tracking -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.2s;">
+            <div id="attendance-tracking" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch mb-16 animate-slide-up" style="animation-delay: 0.2s;">
                 <div class="order-2 lg:order-1">
                     <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 lg:p-8 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-500 h-full flex flex-col justify-center">
                         <div class="flex items-center gap-4 mb-7">
@@ -305,8 +305,8 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-500/40 rounded-full blur-3xl group-hover:bg-pink-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Attendance Analytics"
+                            <img src="{{ asset('images/attandence-tracking.jpg') }}"
+                                 alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
@@ -315,7 +315,7 @@
             </div>
 
             <!-- Feature 4: Multi-Location Support & Analytics -->
-            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch animate-slide-up" style="animation-delay: 0.3s;">
+            <div id="multi-location" class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch animate-slide-up" style="animation-delay: 0.3s;">
                 <div class="order-1">
                     <div class="relative group h-full">
                         <!-- Decorative elements -->
@@ -323,8 +323,8 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-blue-500/40 rounded-full blur-3xl group-hover:bg-blue-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                 alt="Analytics Dashboard"
+                            <img src="{{ asset('images/multi-location.jpg') }}"
+                                 alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" loading="lazy"
                                  class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
@@ -924,4 +924,66 @@
             </div>
         </div>
     </section>
+
+    @push('meta') 
+        <!-- JSON-LD FAQ Schema -->
+        @verbatim
+            <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "What is the best gym management software?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness is one of the best gym management software solutions, offering comprehensive features for membership tracking, billing, scheduling, and analytics."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "What software is used to manage gyms?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness is gym management software designed to make it easy to maintain detailed records of your members and their memberships, book classes and trainers, process and track sales, and communicate en masse with the right members at the right time."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How much does gym management software cost?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness offers plans starting from free, with affordable pricing for gyms of all sizes. Visit our pricing page for details."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Can I try gym management software for free?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes, Fluxfitness offers a free trial with no credit card required. Start your free trial today to explore all features."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "What are the features of gym management software?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Fluxfitness offers a wide range of features including membership tracking, attendance, billing, scheduling, WhatsApp notifications, and analytics."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Can I manage multiple gym branches under one account?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes, Fluxfitness allows you to manage multiple gym branches under one account, making it easy to manage your entire gym network from a single platform."
+                        }
+                    }
+                ]
+            }
+            </script>
+        @endverbatim
+    @endpush
 </div>

@@ -51,6 +51,23 @@ class ParserHelper
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 
+    /**
+     * Get the ISO alpha-2 country code from a given phone number.
+     *
+     * @return string|null The country code (e.g., 'IN', 'US') or null on failure.
+     */
+    public static function getCountryCode(string $phoneNumber, ?string $defaultCountryCode = null): ?string
+    {
+        try {
+            $formattedNumber = self::formatPhoneNumberWithCountryCode($phoneNumber, $defaultCountryCode);
+            $phone = new \Propaganistas\LaravelPhone\PhoneNumber($formattedNumber);
+
+            return $phone->getCountry();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     public static function getDurationLabel(int $months): string
     {
         if ($months % 12 === 0) {

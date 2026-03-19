@@ -203,14 +203,6 @@ class WebhookTestService
                     'profile_name' => $baseData['name'],
                 ]);
 
-            case 'indiamart':
-                return array_merge($baseData, [
-                    'query' => 'Gym and Fitness Center',
-                    'quantity' => '1',
-                    'requirement_details' => 'Looking for a good gym with modern equipment',
-                    'location' => 'Mumbai, Maharashtra',
-                ]);
-
             case 'justdial':
                 return array_merge($baseData, [
                     'category' => 'Gyms & Fitness Centres',

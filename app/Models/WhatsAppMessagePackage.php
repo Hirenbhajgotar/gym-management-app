@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $sort_order
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static>|WhatsAppMessagePackage active()
  * @method static Builder<static>|WhatsAppMessagePackage newModelQuery()
  * @method static Builder<static>|WhatsAppMessagePackage newQuery()
@@ -32,30 +33,45 @@ use Illuminate\Database\Eloquent\Model;
  * @method static Builder<static>|WhatsAppMessagePackage wherePrice($value)
  * @method static Builder<static>|WhatsAppMessagePackage whereSortOrder($value)
  * @method static Builder<static>|WhatsAppMessagePackage whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  * @mixin IdeHelperWhatsAppMessagePackage
  */
 class WhatsAppMessagePackage extends Model
 {
-    protected $table = 'whatsapp_message_packages';
+    protected $table = 'whatsapp_packages';
 
     protected $fillable = [
         'name',
         'message_count',
         'price',
+        'selling_price',
         'currency',
         'description',
         'is_active',
         'sort_order',
+        'twilio_number_cost',
+        'twilio_msg_cost_per_unit',
+        'validity_days',
+        'is_popular',
+        'includes_number',
+        'features',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'is_popular' => 'boolean',
+            'includes_number' => 'boolean',
             'price' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'twilio_number_cost' => 'decimal:2',
+            'twilio_msg_cost_per_unit' => 'decimal:4',
             'message_count' => 'integer',
+            'validity_days' => 'integer',
             'sort_order' => 'integer',
+            'features' => 'array',
         ];
     }
 

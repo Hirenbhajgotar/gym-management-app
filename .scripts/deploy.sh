@@ -9,7 +9,9 @@ echo "Deployment started ..."
 
 # Pull the latest version of the app
 echo "Pulling latest version of the app..."
-git pull origin main
+# git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # Install composer dependencies
 echo "Installing Composer dependencies..."

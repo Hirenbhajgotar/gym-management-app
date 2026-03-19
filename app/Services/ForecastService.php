@@ -65,7 +65,7 @@ class ForecastService
 
         // x = time periods (0, 1, 2...)
         // y = values (revenue, members...)
-        
+
         $sumX = 0;
         $sumY = 0;
         $sumXY = 0;
@@ -83,7 +83,7 @@ class ForecastService
         // b = (sumY - m*sumX) / n
 
         $divisor = ($n * $sumXX) - ($sumX * $sumX);
-        
+
         if ($divisor == 0) {
             $slope = 0;
         } else {
@@ -99,7 +99,7 @@ class ForecastService
         for ($i = 1; $i <= $monthsToForecast; $i++) {
             $nextIndex = $n - 1 + $i; // Continue 'x' sequence
             $predictedValue = ($slope * $nextIndex) + $intercept;
-            
+
             // Ensure no negative values for revenue/members
             $predictedValue = max(0, $predictedValue);
 
@@ -125,9 +125,9 @@ class ForecastService
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()
                 ->sum('amount');
-                
+
             $forecast = $this->forecastRevenue($gymId, $monthsToForecast);
-            
+
         } else {
             $historical = Trend::query(
                 GymMember::where('gym_id', $gymId)
@@ -135,14 +135,14 @@ class ForecastService
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()
                 ->count();
-                
+
             $forecast = $this->forecastMemberGrowth($gymId, $monthsToForecast);
         }
 
         $formattedHistory = $historical->map(fn (TrendValue $val) => [
             'date' => \Carbon\Carbon::parse($val->date)->format('M Y'),
             'value' => $val->aggregate,
-            'type' => 'actual'
+            'type' => 'actual',
         ])->values()->toArray();
 
         return array_merge($formattedHistory, $forecast);

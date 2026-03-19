@@ -13,13 +13,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            BusinessTypeSeeder::class,
             PlanSeeder::class,
             WhatsAppMessagePackagesSeeder::class,
             SuperAdminSeeder::class,
             RolesAndPermissionsSeeder::class,
             PermissionDescriptionSeeder::class,
             CountryStateSeeder::class,
+            BusinessTypeSeeder::class,
+            WhatsAppDefaultTemplatesSeeder::class,
         ]);
     }
 }

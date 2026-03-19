@@ -20,22 +20,22 @@ class RequestContactFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->name(),
-            "email" => fake()->unique()->safeEmail(),
-            "phone" => fake()->phoneNumber(),
-            "company_name" => fake()->boolean(70) ? fake()->company() : null,
-            "gym_size" => fake()->boolean(80)
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->phoneNumber(),
+            'company_name' => fake()->boolean(70) ? fake()->company() : null,
+            'gym_size' => fake()->boolean(80)
                 ? fake()->numberBetween(50, 5000)
                 : null,
-            "message" => fake()->boolean(60) ? fake()->paragraph(3) : null,
-            "ip_address" => fake()->ipv4(),
-            "user_agent" => fake()->userAgent(),
-            "is_contacted" => fake()->boolean(30),
-            "contacted_at" => fake()->boolean(30)
-                ? fake()->dateTimeBetween("-30 days", "now")
+            'message' => fake()->boolean(60) ? fake()->paragraph(3) : null,
+            'ip_address' => fake()->ipv4(),
+            'user_agent' => fake()->userAgent(),
+            'is_contacted' => fake()->boolean(30),
+            'contacted_at' => fake()->boolean(30)
+                ? fake()->dateTimeBetween('-30 days', 'now')
                 : null,
-            "admin_notes" => fake()->boolean(20) ? fake()->sentence() : null,
-            "created_at" => fake()->dateTimeBetween("-60 days", "now"),
+            'admin_notes' => fake()->boolean(20) ? fake()->sentence() : null,
+            'created_at' => fake()->dateTimeBetween('-60 days', 'now'),
         ];
     }
 
@@ -45,10 +45,10 @@ class RequestContactFactory extends Factory
     public function contacted(): static
     {
         return $this->state(
-            fn(array $attributes) => [
-                "is_contacted" => true,
-                "contacted_at" => fake()->dateTimeBetween("-30 days", "now"),
-                "admin_notes" => fake()->sentence(),
+            fn (array $attributes) => [
+                'is_contacted' => true,
+                'contacted_at' => fake()->dateTimeBetween('-30 days', 'now'),
+                'admin_notes' => fake()->sentence(),
             ],
         );
     }
@@ -59,10 +59,10 @@ class RequestContactFactory extends Factory
     public function uncontacted(): static
     {
         return $this->state(
-            fn(array $attributes) => [
-                "is_contacted" => false,
-                "contacted_at" => null,
-                "admin_notes" => null,
+            fn (array $attributes) => [
+                'is_contacted' => false,
+                'contacted_at' => null,
+                'admin_notes' => null,
             ],
         );
     }
@@ -73,10 +73,10 @@ class RequestContactFactory extends Factory
     public function recent(): static
     {
         return $this->state(
-            fn(array $attributes) => [
-                "created_at" => fake()->dateTimeBetween("-7 days", "now"),
-                "is_contacted" => false,
-                "contacted_at" => null,
+            fn (array $attributes) => [
+                'created_at' => fake()->dateTimeBetween('-7 days', 'now'),
+                'is_contacted' => false,
+                'contacted_at' => null,
             ],
         );
     }

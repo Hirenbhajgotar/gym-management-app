@@ -33,6 +33,6 @@ class CreateGym extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return GymResource::getUrl("index"); // Redirect to index page after create
+        return GymResource::getUrl('index'); // Redirect to index page after create
     }
 }

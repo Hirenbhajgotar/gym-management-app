@@ -21,7 +21,7 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ["mail", "filament"];
+        return ['mail', 'filament'];
     }
 
     /**
@@ -29,24 +29,24 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage())
+        return (new MailMessage)
             ->subject(
-                "Your Subscription is Ending Soon - " . config("app.name"),
+                'Your Subscription is Ending Soon - ' . config('app.name'),
             )
             ->greeting("Hi {$notifiable->name}!")
-            ->line("Your gym subscription is ending soon.")
+            ->line('Your gym subscription is ending soon.')
             ->line("**Plan:** {$this->subscription->plan->name}")
             ->line("**Billing Cycle:** {$this->subscription->billing_cycle}")
             ->line(
                 "**Expires:** {$this->subscription->current_period_end->format(
-                    "M j, Y",
+                    'M j, Y',
                 )}",
             )
             ->line(
-                "To continue using all the features, please renew your subscription.",
+                'To continue using all the features, please renew your subscription.',
             )
-            ->action("Renew Subscription", route("profile"))
-            ->salutation("Best regards,<br>" . config("app.name") . " Team");
+            ->action('Renew Subscription', route('profile'))
+            ->salutation('Best regards,<br>' . config('app.name') . ' Team');
     }
 
     /**
@@ -55,18 +55,18 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
     public function toFilament(object $notifiable): array
     {
         return [
-            "title" => "Subscription Ending Soon",
-            "body" => "Your {$this->subscription->plan->name} subscription ends on {$this->subscription->current_period_end->format(
-                "M j, Y",
+            'title' => 'Subscription Ending Soon',
+            'body' => "Your {$this->subscription->plan->name} subscription ends on {$this->subscription->current_period_end->format(
+                'M j, Y',
             )}",
-            "icon" => "heroicon-o-exclamation-triangle",
-            "color" => "warning",
-            "actions" => [
+            'icon' => 'heroicon-o-exclamation-triangle',
+            'color' => 'warning',
+            'actions' => [
                 [
-                    "name" => "renew_subscription",
-                    "label" => "Renew Now",
-                    "url" => route("profile"),
-                    "button" => true,
+                    'name' => 'renew_subscription',
+                    'label' => 'Renew Now',
+                    'url' => route('profile'),
+                    'button' => true,
                 ],
             ],
         ];
@@ -80,11 +80,11 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            "subscription_id" => $this->subscription->id,
-            "plan_name" => $this->subscription->plan->name,
-            "billing_cycle" => $this->subscription->billing_cycle,
-            "expires_at" => $this->subscription->current_period_end?->toDateString(),
-            "message" => "Your subscription is ending soon.",
+            'subscription_id' => $this->subscription->id,
+            'plan_name' => $this->subscription->plan->name,
+            'billing_cycle' => $this->subscription->billing_cycle,
+            'expires_at' => $this->subscription->current_period_end?->toDateString(),
+            'message' => 'Your subscription is ending soon.',
         ];
     }
 }

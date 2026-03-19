@@ -43,11 +43,21 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
                 'success' => Color::Green,
                 'danger' => Color::Red,
-                'info' => Color::Blue,
+                'info' => Color::Sky,
                 'warning' => Color::Yellow,
+                'blue' => Color::Blue,
+                'neutral' => Color::Neutral,
+                'orange' => Color::Orange,
+                'lime' => Color::Lime,
+                'teal' => Color::Teal,
+                'cyan' => Color::Cyan,
+                'rose' => Color::Rose,
+                'purple' => Color::Purple,
+                'pink' => Color::Pink,
+
             ])
             ->brandLogo(asset('fluxfitness-logo.svg'))
-            ->brandLogoHeight('3rem')
+            ->brandLogoHeight('1.5rem')
             ->spa()
             ->spaUrlExceptions(fn (): array => [
                 // Allow all files in the import/templates directory
@@ -67,6 +77,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label('CRM')
                     ->icon('phosphor-funnel'),
                 NavigationGroup::make()
+                    ->label('WhatsApp')
+                    ->icon('phosphor-messenger-logo'),
+                NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
                 NavigationGroup::make()
@@ -84,6 +97,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
+            ->discoverPages(in: app_path('Filament/Tenant/Pages'), for: 'App\\Filament\\Tenant\\Pages')
             ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->pages([
                 \App\Filament\Admin\Pages\Dashboard::class,
@@ -142,15 +156,21 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.feedback-popup')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.feedback-popup')
             )
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.error-report')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.error-report')
             )
             ->renderHook(
                 'panels::body.end',
-                fn (): \Illuminate\Contracts\View\View => view('filament.hooks.floating-feedback-button')
+                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+                    ? ''
+                    : view('filament.hooks.floating-feedback-button')
             );
     }
 

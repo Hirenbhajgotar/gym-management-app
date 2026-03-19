@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\CheckWhatsAppBalanceJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -31,11 +30,20 @@ Schedule::command('followups:send-reminders')->daily();
 // Send pending lead reminders daily
 Schedule::command('leads:send-pending-reminders')->daily();
 
-// Check WhatsApp balance daily
-Schedule::job(new CheckWhatsAppBalanceJob)->daily();
-
 // Sync WhatsApp templates to database daily at 3 AM
 Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
+
+// Cleanup soft-deleted templates older than 15 days
+Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
+
+// Process scheduled WhatsApp broadcasts every minute
+Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
+
+// Sync pending WhatsApp template statuses every 2 hours
+Schedule::command('whatsapp:sync-template-statuses')->everyTwoHours();
+
+// Check for gyms with low WhatsApp credits daily at 8 AM
+Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');
 
 // Auto checkout gym members and trainers attendance daily at 11 PM and 1 AM
 Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
@@ -74,3 +82,6 @@ Schedule::call(function () {
         }
     }
 })->everyTenMinutes();
+
+// Generate sitemap daily at midnight
+Schedule::command('sitemap:generate')->dailyAt('00:00');

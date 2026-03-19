@@ -4,6 +4,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\WhatsApp\EmbeddedSignupController;
 use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\ProfileController;
@@ -146,7 +147,27 @@ Route::middleware(['auth'])->group(function () {
 // Razorpay Webhook (no auth required)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
+// Sitemap Route
+Route::get('/sitemap.xml', function () {
+    $path = public_path('sitemap.xml');
+
+    if (! file_exists($path)) {
+        Log::error('Sitemap not found');
+
+        abort(404);
+    }
+
+    return response()->file($path, ['Content-Type' => 'application/xml']);
+})->name('sitemap');
+
 Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
+
+// WhatsApp Embedded Signup Routes
+Route::middleware(['auth'])->prefix('whatsapp/embedded-signup')->name('whatsapp.embedded-signup.')->group(function () {
+    Route::get('/redirect/{tenant}', [EmbeddedSignupController::class, 'redirect'])->name('redirect');
+    Route::get('/callback', [EmbeddedSignupController::class, 'callback'])->name('callback');
+    Route::post('/manual-connect/{tenant}', [EmbeddedSignupController::class, 'manualConnect'])->name('manual-connect');
+});
 
 require __DIR__ . '/auth.php';
 

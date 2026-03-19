@@ -68,6 +68,8 @@ class CmsPageResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Textarea::make('meta_description')
                             ->maxLength(255),
+                        Forms\Components\Textarea::make('meta_keywords')
+                            ->helperText('Separate keywords with commas'),
                     ])
                     ->collapsible(),
             ]);
@@ -125,7 +127,9 @@ class CmsPageResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return Cache::flexible(CmsPage::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            return static::getModel()::where('is_published', true)->count();
+            $count = static::getModel()::where('is_published', true)->count();
+
+            return $count > 0 ? $count : null;
         });
     }
 }

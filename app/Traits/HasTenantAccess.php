@@ -29,4 +29,12 @@ trait HasTenantAccess
         return $this->getGym()->id;
 
     }
+
+    /**
+     * Get the current gym slug
+     */
+    protected function getTenantSlug(): string
+    {
+        return $this->getGym()->slug;
+    }
 }

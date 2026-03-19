@@ -16,6 +16,7 @@ class ReportPdfChartDataTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Gym $gym;
 
     protected function setUp(): void

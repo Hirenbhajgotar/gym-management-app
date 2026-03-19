@@ -20,7 +20,7 @@ class EditErrorReport extends EditRecord
                     $record = $this->getRecord();
                     // Use json_encode to safely escape the string for JavaScript
                     $jsString = json_encode($record->toMarkdown());
-                    
+
                     $livewire->js("
                         window.navigator.clipboard.writeText({$jsString});
                         new FilamentNotification()

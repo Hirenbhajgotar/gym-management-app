@@ -1,10 +1,13 @@
 /.phpunit.cache
 /node_modules
 /public
+!/public/images
+!/public/images/**
 !/public/favicon.ico
 !/public/favicon.svg
 !/public/fluxfitness-icon.png
 !/public/fluxfitness-logo.svg
+!/public/fluxfitness-logo.png
 !/public/b088550e725c81031b1409b0f3bc7317.html
 /storage/*.key
 /storage/pail
@@ -12,8 +15,10 @@
 .env
 .env.backup
 .env.production
+.env.testing
 .phpactor.json
 .phpunit.result.cache
+opencode.json
 Homestead.json
 Homestead.yaml
 npm-debug.log

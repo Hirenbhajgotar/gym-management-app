@@ -39,7 +39,7 @@ class TestSystemWhatsApp extends Command
             $tenantId = config('app.system_tenant_id', 'system');
 
             $this->info("Using tenant ID: {$tenantId}");
-            $this->info("Sandbox mode: " . (config('services.twilio.use_sandbox') ? 'Yes' : 'No'));
+            $this->info('Sandbox mode: ' . (config('services.twilio.use_sandbox') ? 'Yes' : 'No'));
             $this->newLine();
 
             // Initialize service with system tenant

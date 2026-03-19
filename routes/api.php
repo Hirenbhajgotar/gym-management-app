@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\FacebookLeadController;
 use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
+use App\Http\Controllers\Api\RazorpayWebhookController;
+use App\Http\Controllers\Api\TwilioWebhookController;
 use App\Http\Controllers\Api\WebhookTestController;
 use App\Http\Controllers\Api\WhatsAppLeadController;
 use Filament\Facades\Filament;
@@ -49,9 +51,15 @@ Route::prefix('webhooks')->group(function () {
 
     // Razorpay Payment Webhook
     Route::post('/razorpay/payment', [
-        \App\Http\Controllers\Api\RazorpayWebhookController::class,
+        RazorpayWebhookController::class,
         'handlePaymentWebhook',
     ])->name('api.webhooks.razorpay.payment');
+
+    // Twilio Delivery Status Webhook
+    Route::post('/twilio/status', [
+        TwilioWebhookController::class,
+        'handleStatusCallback',
+    ])->name('api.webhooks.twilio.status');
 
     // Webhook Verification Routes (GET)
     Route::get('/facebook/leads', [FacebookLeadController::class, 'verifyWebhook'])
