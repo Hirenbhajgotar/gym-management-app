@@ -44,37 +44,37 @@
                 <h4 class="text-lg font-semibold mb-4">Features</h4>
                 <ul class="space-y-2 text-gray-400">
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#crm-integration" class="hover:text-purple-400 transition-colors duration-300">
                             CRM Integration
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#user-management" class="hover:text-purple-400 transition-colors duration-300">
                             User Management
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#features" class="hover:text-purple-400 transition-colors duration-300">
                             Expense Management
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#attendance-tracking" class="hover:text-purple-400 transition-colors duration-300">
                             Attendance Tracking
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#features" class="hover:text-purple-400 transition-colors duration-300">
                             Bulk SMS
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#multi-location" class="hover:text-purple-400 transition-colors duration-300">
                             Multi-Location
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#multi-location" class="hover:text-purple-400 transition-colors duration-300">
                             Analytics
                         </a>
                     </li>
@@ -123,7 +123,7 @@
 </footer>
 
 <!-- Scroll to top button -->
-<button id="scrollTop"
+<button id="scrollTop" aria-label="Scroll to top"
     class="fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center opacity-0 transition-opacity duration-300 hover:scale-110 transform z-50">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -194,6 +194,7 @@
             </svg>
         `;
     mobileMenuButton.className = 'md:hidden text-white';
+    mobileMenuButton.setAttribute('aria-label', 'Open mobile menu');
 
     // Navbar background on scroll
     window.addEventListener('scroll', () => {

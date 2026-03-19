@@ -4,8 +4,8 @@ namespace App\Livewire\Frontend;
 
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
-use App\Services\TwilioWhatsAppService;
 use App\Rules\ValidEmailDomain;
+use App\Services\TwilioWhatsAppService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +14,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('frontend.layouts.app_new')]
-#[Title('Request Demo - Fluxfitness')]
+#[Title('Request a Free Demo | Gym Management Software | Fluxfitness')]
 class RequestDemo extends Component
 {
     public string $name = '';
@@ -35,7 +35,7 @@ class RequestDemo extends Component
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'email', 'max:255', new ValidEmailDomain()],
+            'email' => ['required', 'email', 'max:255', new ValidEmailDomain],
             'phone' => ['required', 'phone:US,IN,PK'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'gym_size' => ['nullable', 'integer', 'min:1', 'max:100000'],
@@ -252,6 +252,12 @@ class RequestDemo extends Component
 
     public function render()
     {
-        return view('livewire.frontend.request-demo');
+        return view('livewire.frontend.request-demo')
+            ->layout('frontend.layouts.app_new', [
+                'seo' => [
+                    'description' => "Request a free demo of India's best gym management software. Get a personalized demo and see how our software can help your gym grow.",
+                    'keywords' => 'gym software demo, free gym management software demo, fitness software demo, book demo, gym CRM demo',
+                ],
+            ]);
     }
 }

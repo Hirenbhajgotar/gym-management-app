@@ -4,14 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? config('app.name') }} - Complete Gym Management System</title>
-    <meta name="description" content="{{ $metaDescription ?? 'Fluxfitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
-    <meta name="keywords" content="{{ $metaKeywords ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
+    <title>{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}</title>
+    <meta name="description" content="{{ $seo['description'] ?? 'Fluxfitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta name="keywords" content="{{ $seo['keywords'] ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ url()->current() }}">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ $title ?? config('app.name') }} - Complete Gym Management System">
-    <meta property="og:description" content="{{ $metaDescription ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta property="og:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
+    <meta property="og:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:site_name" content="{{ config('app.name') }}">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
+    <meta name="twitter:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta name="twitter:image" content="{{ asset('images/og-home.jpg') }}">
+
+    <!-- JSON-LD Organization Schema -->
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "Organization",
+        "name": "Fluxfitness",
+        "url": "{{ config('app.url') }}",
+        "logo": "{{ asset('images/logo.png') }}",
+        "description": "{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}",
+        "contactPoint": {
+            "@@type": "ContactPoint",
+            "telephone": "{{ config('app.contact_phone') }}",
+            "contactType": "customer service"
+        }
+    }
+    </script>
+
     @stack('meta')
 
     <!-- Favicons -->

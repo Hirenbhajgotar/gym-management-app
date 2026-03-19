@@ -19,7 +19,7 @@
                                 <x-filament::icon icon="heroicon-o-chat-bubble-left-ellipsis" class="h-7 w-7" />
                                 We'd love your feedback!
                             </h3>
-                            <button wire:click="closeFeedback"
+                            <button wire:click="closeFeedback" aria-label="{{ __('Close') }}"
                                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
