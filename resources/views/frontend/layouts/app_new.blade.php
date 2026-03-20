@@ -20,7 +20,7 @@
     <!-- Open Graph -->
     <meta property="og:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
     <meta property="og:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
-    <meta property="og:image" content="{{ asset('images/banner.jpg') }}">
+    <meta property="og:image" content="{{ asset('images/banner.webp') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
     <meta property="og:type" content="website">
@@ -31,7 +31,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
     <meta name="twitter:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
-    <meta name="twitter:image" content="{{ asset('images/banner.jpg') }}">
+    <meta name="twitter:image" content="{{ asset('images/banner.webp') }}">
     <meta name="twitter:image:width" content="1200">
     <meta name="twitter:image:height" content="600">
 

@@ -22,5 +22,3 @@ Sitemap: https://fluxfitness.in/sitemap.xml
 # Crawl delay for polite crawling
 Crawl-delay: 1
 
-# Host directive
-Host: https://fluxfitness.in
