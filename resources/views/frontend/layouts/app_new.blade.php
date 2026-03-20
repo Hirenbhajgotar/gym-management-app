@@ -135,7 +135,8 @@
     <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="apple-touch-icon" href="{{ asset('fluxfitness-icon.png') }}">
 
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    @vite('resources/css/app.css')
+    {{-- <script src="https://cdn.tailwindcss.com?plugins=typography"></script> --}}
     <script>
         tailwind.config = {
             theme: {
