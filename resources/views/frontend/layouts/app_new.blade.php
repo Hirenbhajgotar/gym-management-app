@@ -12,11 +12,10 @@
 
     <!-- hreflang for international SEO -->
     <link rel="alternate" hreflang="en-in" href="{{ url()->current() }}">
-    {{-- <link rel="alternate" hreflang="xdefault" href="{{ url()->current() }}"> --}}
+    <link rel="alternate" hreflang="x-default" href="{{ url()->current() }}">
 
     <!-- Preload critical images for LCP -->
     <link rel="preload" as="image" href="{{ asset('images/banner.webp') }}" fetchpriority="high">
-    <link rel="preload" as="image" href="{{ asset('images/banner.jpg') }}" fetchpriority="high">
 
     <!-- Open Graph -->
     <meta property="og:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
@@ -137,7 +136,7 @@
     <link rel="apple-touch-icon" href="{{ asset('fluxfitness-icon.png') }}">
 
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <script defer>
+    <script>
         tailwind.config = {
             theme: {
                 extend: {
