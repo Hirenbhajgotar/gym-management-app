@@ -20,7 +20,7 @@
         <div class="container mx-auto px-6 relative z-10">
             <div class="grid lg:grid-cols-2 gap-12 items-start">
                 <!-- Left Side - Information -->
-                <div class="animate-slide-up">
+                <div class="animate-slide-up" wire:ignore>
                     <!-- Breadcrumb -->
                     <div class="flex items-center space-x-2 text-sm text-gray-400 mb-6">
                         <a href="{{ route('home') }}" wire:navigate class="hover:text-cyan-400 transition-colors">Home</a>
@@ -319,7 +319,8 @@
         }
 
         .animate-slide-up {
-            animation: slide-up 0.6s ease-out;
+            opacity: 0;
+            animation: slide-up 0.6s ease-out forwards;
         }
 
         .animation-delay-200 {

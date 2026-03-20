@@ -14,7 +14,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('frontend.layouts.app_new')]
-#[Title('Request a Free Demo | Gym Management Software | Fluxfitness')]
+#[Title('Fluxfitness | Request a Free Demo | Gym Software')]
 class RequestDemo extends Component
 {
     public string $name = '';
