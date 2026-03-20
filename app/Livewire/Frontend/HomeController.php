@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('All-in-one Gym Management Software | CRM, Billing, Member Tracking')]
+#[Title('Fluxfitness | Gym Software | CRM, Billing, Member Tracking')]
 class HomeController extends Component
 {
     public $selectedPlan = null;

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}</title>
+    <title>{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}</title>
     <meta name="description" content="{{ $seo['description'] ?? 'Fluxfitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
     <meta name="keywords" content="{{ $seo['keywords'] ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
     <meta name="robots" content="index, follow">
@@ -18,7 +18,7 @@
     <link rel="preload" as="image" href="{{ asset('images/banner.webp') }}" fetchpriority="high">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
+    <meta property="og:title" content="{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}">
     <meta property="og:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
     <meta property="og:image" content="{{ asset('images/banner.webp') }}">
     <meta property="og:image:width" content="1200">
@@ -29,7 +29,7 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $title ?? 'All-in-one Gym Management Software | Fluxfitness' }}">
+    <meta name="twitter:title" content="{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}">
     <meta name="twitter:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
     <meta name="twitter:image" content="{{ asset('images/banner.webp') }}">
     <meta name="twitter:image:width" content="1200">
