@@ -178,7 +178,7 @@
                                 <source srcset="{{ asset('images/crm-integration.webp') }}" type="image/webp">
                                 <img src="{{ asset('images/crm-integration.jpg') }}" 
                                     alt="CRM dashboard showing lead management and customer relationship tools for gym business" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
-                                    width="600" height="420">
+                                    width="600" height="420" loading="lazy">
                             </picture>
                             {{-- <img src="{{ asset('images/crm-integration.webp') }}"
                                  alt="CRM dashboard showing lead management and customer relationship tools for gym business" loading="lazy"
@@ -203,7 +203,7 @@
                                 <source srcset="{{ asset('images/user-management.webp') }}" type="image/webp">
                                 <img src="{{ asset('images/user-management.jpg') }}" 
                                     alt="User management interface with member profiles and staff management for gym administration" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
-                                    width="600" height="420">
+                                    width="600" height="420" loading="lazy">
                             </picture>
                             {{-- <img src="{{ asset('images/user-management.webp') }}"
                                  alt="User management interface with member profiles and staff management for gym administration" loading="lazy"
@@ -328,7 +328,7 @@
                                 <source srcset="{{ asset('images/attandence-tracking.webp') }}" type="image/webp">
                                 <img src="{{ asset('images/attandence-tracking.jpg') }}" 
                                     alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
-                                    width="600" height="420">
+                                    width="600" height="420" loading="lazy">
                             </picture>
                             {{-- <img src="{{ asset('images/attandence-tracking.webp') }}"
                                  alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" loading="lazy"
@@ -353,7 +353,7 @@
                                 <source srcset="{{ asset('images/multi-location.webp') }}" type="image/webp">
                                 <img src="{{ asset('images/multi-location.jpg') }}" 
                                     alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
-                                    width="600" height="420">
+                                    width="600" height="420" loading="lazy">
                             </picture>
                             {{-- <img src="{{ asset('images/multi-location.webp') }}"
                                  alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" loading="lazy"
