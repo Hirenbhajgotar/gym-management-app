@@ -327,3 +327,61 @@ select:focus[data-flux-control] {
 * {
     scroll-behavior: smooth;
 }
+
+@theme {
+    --color-surface-dim: #060e20;
+    --color-inverse-primary: #0053dc;
+    --color-error-dim: #d7383b;
+    --color-inverse-on-surface: #4d556b;
+    --color-primary-dim: #316bf3;
+    --color-secondary-container: #3f465c;
+    --color-error: #ff716c;
+    --color-on-error-container: #ffa8a3;
+    --color-surface-container-lowest: #000000;
+    --color-on-primary-fixed: #000000;
+    --color-surface-container: #0f1930;
+    --color-outline: #6d758c;
+    --color-tertiary: #c5ffc9;
+    --color-secondary-fixed-dim: #ccd4ee;
+    --color-on-primary-container: #001e5a;
+    --color-background: #060e20;
+    --color-tertiary-fixed-dim: #5bf083;
+    --color-on-error: #490006;
+    --color-secondary-dim: #ccd4ee;
+    --color-surface-container-highest: #192540;
+    --color-surface-tint: #90abff;
+    --color-on-primary-fixed-variant: #00266e;
+    --color-surface-container-low: #091328;
+    --color-outline-variant: #40485d;
+    --color-on-secondary-fixed: #373f54;
+    --color-tertiary-dim: #5bf083;
+    --color-on-surface: #dee5ff;
+    --color-on-secondary-container: #c8d0ea;
+    --color-on-secondary-fixed-variant: #535b71;
+    --color-primary-container: #7b9cff;
+    --color-on-background: #dee5ff;
+    --color-on-primary: #002873;
+    --color-on-tertiary-fixed-variant: #006a2d;
+    --color-on-secondary: #4a5167;
+    --color-secondary-fixed: #dae2fd;
+    --color-inverse-surface: #faf8ff;
+    --color-on-tertiary-container: #005f28;
+    --color-on-tertiary: #00692c;
+    --color-surface-container-high: #141f38;
+    --color-surface-variant: #192540;
+    --color-surface: #060e20;
+    --color-primary-fixed-dim: #658eff;
+    --color-on-surface-variant: #a3aac4;
+    --color-primary: #90abff;
+    --color-error-container: #9f0519;
+    --color-on-tertiary-fixed: #004a1d;
+    --color-tertiary-fixed: #6bff8f;
+    --color-primary-fixed: #7b9cff;
+    --color-tertiary-container: #6bff8f;
+    --color-surface-bright: #1f2b49;
+    --color-secondary: #dae2fd;
+
+    --font-headline: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-label: "Inter", sans-serif;
+}
