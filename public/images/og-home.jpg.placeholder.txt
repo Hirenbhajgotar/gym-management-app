@@ -1,0 +1,20 @@
+<!--
+    OG IMAGE PLACEMENT GUIDE for FluxFitness
+    =========================================
+    
+    Place og-home.jpg here with the following specifications:
+    
+    - Dimensions: 1200x630 pixels (or 1200x1200 for square)
+    - Format: JPG or PNG
+    - Max file size: 5MB
+    - Recommended: Use a branded image with FluxFitness logo
+    - Content: Value proposition, no text or minimal text
+    
+    For best results, use a tool like:
+    - Canva (canva.com) - Free templates available
+    - Figma (figma.com) - Design from scratch
+    - Adobe Express (express.adobe.com)
+    
+    TEMPORARY: Currently using banner.jpg as og:image
+    To update: Change the og:image meta tag in app_new.blade.php
+-->
