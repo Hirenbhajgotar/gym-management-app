@@ -66,8 +66,13 @@
                 </div>
                 <div class="relative animate-float">
                     <div class="relative z-10">
-                        <img src="{{ asset('images/banner.jpg') }}"
-                            alt="Modern gym interior with cardio equipment and weights for fitness center management" loading="lazy" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
+                        <picture>
+                            <source srcset="{{ asset('images/banner.webp') }}" type="image/webp">
+                            <img src="{{ asset('images/banner.jpg') }}" 
+                                alt="Modern gym interior with cardio equipment and weights for fitness center management" class="rounded-2xl shadow-2xl w-full h-96 object-cover" 
+                                width="1200" height="600"
+                                fetchpriority="high">  {{-- hero image ko high priority --}}
+                        </picture>
                         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-2xl">
                         </div>
                     </div>
@@ -169,9 +174,16 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-cyan-500/40 rounded-full blur-3xl group-hover:bg-cyan-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="{{ asset('images/crm-integration.jpg') }}"
+                            <picture>
+                                <source srcset="{{ asset('images/crm-integration.webp') }}" type="image/webp">
+                                <img src="{{ asset('images/crm-integration.jpg') }}" 
+                                    alt="CRM dashboard showing lead management and customer relationship tools for gym business" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                                    width="600" height="420">
+                            </picture>
+                            {{-- <img src="{{ asset('images/crm-integration.webp') }}"
                                  alt="CRM dashboard showing lead management and customer relationship tools for gym business" loading="lazy"
-                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                 width="600" height="420"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700"> --}}
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
                     </div>
@@ -187,9 +199,16 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-purple-500/40 rounded-full blur-3xl group-hover:bg-purple-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="{{ asset('images/user-management.jpg') }}"
+                            <picture>
+                                <source srcset="{{ asset('images/user-management.webp') }}" type="image/webp">
+                                <img src="{{ asset('images/user-management.jpg') }}" 
+                                    alt="User management interface with member profiles and staff management for gym administration" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                                    width="600" height="420">
+                            </picture>
+                            {{-- <img src="{{ asset('images/user-management.webp') }}"
                                  alt="User management interface with member profiles and staff management for gym administration" loading="lazy"
-                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                 width="600" height="420"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700"> --}}
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
                     </div>
@@ -305,9 +324,16 @@
                         <div class="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-500/40 rounded-full blur-3xl group-hover:bg-pink-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="{{ asset('images/attandence-tracking.jpg') }}"
+                            <picture>
+                                <source srcset="{{ asset('images/attandence-tracking.webp') }}" type="image/webp">
+                                <img src="{{ asset('images/attandence-tracking.jpg') }}" 
+                                    alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                                    width="600" height="420">
+                            </picture>
+                            {{-- <img src="{{ asset('images/attandence-tracking.webp') }}"
                                  alt="Attendance tracking analytics showing member check-in patterns and peak hours reporting" loading="lazy"
-                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                 width="600" height="420"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700"> --}}
                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-purple-900/20 to-transparent"></div>
                         </div>
                     </div>
@@ -323,9 +349,16 @@
                         <div class="absolute -bottom-6 -right-6 w-36 h-36 bg-blue-500/40 rounded-full blur-3xl group-hover:bg-blue-500/60 transition-all duration-500"></div>
 
                         <div class="relative overflow-hidden rounded-2xl shadow-2xl h-full">
-                            <img src="{{ asset('images/multi-location.jpg') }}"
+                            <picture>
+                                <source srcset="{{ asset('images/multi-location.webp') }}" type="image/webp">
+                                <img src="{{ asset('images/multi-location.jpg') }}" 
+                                    alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                                    width="600" height="420">
+                            </picture>
+                            {{-- <img src="{{ asset('images/multi-location.webp') }}"
                                  alt="Analytics dashboard with multi-location reporting and revenue metrics for gym business insights" loading="lazy"
-                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                 width="600" height="420"
+                                 class="w-full h-full min-h-[420px] object-cover transform group-hover:scale-105 transition-transform duration-700"> --}}
                             <div class="absolute inset-0 bg-gradient-to-t from-cyan-900/60 via-cyan-900/20 to-transparent"></div>
                         </div>
                     </div>
