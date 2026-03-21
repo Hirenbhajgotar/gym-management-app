@@ -74,20 +74,11 @@ new #[Layout('components.layouts.blank')] class extends Component
 
 <div>
     <style>
-        body { font-family: 'Manrope', sans-serif; }
-        .font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
-        .glass-card {
-            background: rgba(25, 37, 63, 0.6);
-            backdrop-filter: blur(12px);
-        }
         .kinetic-pulse {
             background: radial-gradient(circle at center, rgba(197, 255, 201, 0.08) 0%, transparent 70%);
         }
         .atmosphere-glow {
             background: radial-gradient(circle at center, rgba(31, 43, 72, 1) 0%, rgba(6, 14, 32, 1) 80%);
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         @keyframes pulse-slow {
@@ -218,8 +209,8 @@ new #[Layout('components.layouts.blank')] class extends Component
                         <span class="material-symbols-outlined text-tertiary text-xl">trending_up</span>
                     </div>
                     <div>
-                        <p class="font-label text-xs text-on-surface-variant uppercase tracking-widest leading-none mb-1">Active Members</p>
-                        <p class="font-space-grotesk text-lg font-bold text-on-surface leading-none">2,400+</p>
+                        <p class="font-label text-xs text-on-surface-variant uppercase tracking-widest leading-none mb-1">{{ config('app.platform_state_badges.members_managed.title') }}</p>
+                        <p class="font-space-grotesk text-lg font-bold text-on-surface leading-none">{{ config('app.platform_state_badges.members_managed.value') }}</p>
                     </div>
                 </div>
                 <!-- Floating Chart Card -->
@@ -241,7 +232,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                 <div class="flex gap-4 w-full justify-center">
                     <div class="glass-card px-4 py-3 rounded-lg flex items-center gap-2 border border-outline-variant/10">
                         <div class="w-2 h-2 rounded-full bg-tertiary"></div>
-                        <p class="font-label text-xs text-on-surface uppercase tracking-widest">98% Attendance Rate</p>
+                        <p class="font-label text-xs text-on-surface uppercase tracking-widest">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</p>
                     </div>
                 </div>
                 <!-- Floating Stat Badge Bottom Left -->
@@ -250,8 +241,8 @@ new #[Layout('components.layouts.blank')] class extends Component
                         <span class="material-symbols-outlined text-tertiary text-xl">location_on</span>
                     </div>
                     <div>
-                        <p class="font-label text-xs text-on-surface-variant uppercase tracking-widest leading-none mb-1">Gym Branches</p>
-                        <p class="font-space-grotesk text-lg font-bold text-on-surface leading-none">40+</p>
+                        <p class="font-label text-xs text-on-surface-variant uppercase tracking-widest leading-none mb-1">{{ config('app.platform_state_badges.gyms_powered.title') }}</p>
+                        <p class="font-space-grotesk text-lg font-bold text-on-surface leading-none">{{ config('app.platform_state_badges.gyms_powered.value') }}</p>
                     </div>
                 </div>
                 <!-- Large Stacked Branding Text -->
@@ -276,14 +267,4 @@ new #[Layout('components.layouts.blank')] class extends Component
             </div>
         </section>
     </main>
-
-    <style>
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; transform: translateY(0); }
-            50% { opacity: 0.9; transform: translateY(-5px); }
-        }
-        .animate-pulse-slow {
-            animation: pulse-slow 4s ease-in-out infinite;
-        }
-    </style>
 </div>
