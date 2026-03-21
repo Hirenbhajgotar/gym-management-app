@@ -74,20 +74,11 @@ new #[Layout('components.layouts.blank')] class extends Component
 
 <div>
     <style>
-        body { font-family: 'Manrope', sans-serif; }
-        .font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
-        .glass-card {
-            background: rgba(25, 37, 63, 0.6);
-            backdrop-filter: blur(12px);
-        }
         .kinetic-pulse {
             background: radial-gradient(circle at center, rgba(197, 255, 201, 0.08) 0%, transparent 70%);
         }
         .atmosphere-glow {
             background: radial-gradient(circle at center, rgba(31, 43, 72, 1) 0%, rgba(6, 14, 32, 1) 80%);
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         @keyframes pulse-slow {
@@ -276,14 +267,4 @@ new #[Layout('components.layouts.blank')] class extends Component
             </div>
         </section>
     </main>
-
-    <style>
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; transform: translateY(0); }
-            50% { opacity: 0.9; transform: translateY(-5px); }
-        }
-        .animate-pulse-slow {
-            animation: pulse-slow 4s ease-in-out infinite;
-        }
-    </style>
 </div>
