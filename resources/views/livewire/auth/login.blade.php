@@ -103,10 +103,12 @@ new #[Layout('components.layouts.blank')] class extends Component
             <div class="w-full max-w-md space-y-10">
                 <!-- Brand Anchor Header -->
                 <header class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dim flex items-center justify-center shadow-lg shadow-primary/20">
-                        <span class="material-symbols-outlined text-on-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">all_inclusive</span>
-                    </div>
-                    <span class="font-headline font-bold text-2xl tracking-tighter text-primary">FluxFitness</span>
+                    <a href="{{ route('home') }}" wire:navigate>
+                        <div class="flex items-center gap-2 text-2xl font-black italic tracking-tighter text-tertiary font-space-grotesk uppercase">
+                            <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">all_inclusive</span>
+                            <span>FluxFitness</span>
+                        </div>
+                    </a>
                 </header>
     
                 <!-- Welcome Text -->
@@ -166,7 +168,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                     <!-- Login Button -->
                     <button type="submit" wire:loading.attr="disabled" class="w-full flex items-center justify-center gap-2 bg-tertiary text-on-tertiary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-tertiary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer">
                         <span wire:loading.remove wire:target="login">Log In</span>
-                        <span wire:loading wire:target="login" class="flex items-center gap-2">
+                        <span wire:loading.flex wire:target="login" class="flex items-center gap-2">
                             <svg class="w-5 h-5 animate-spin text-on-tertiary-fixed" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

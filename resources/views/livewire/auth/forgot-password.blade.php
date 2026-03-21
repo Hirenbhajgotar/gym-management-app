@@ -85,7 +85,7 @@ new #[Layout('components.layouts.blank')] class extends Component
 
                     <button type="submit" wire:loading.attr="disabled" class="w-full flex items-center justify-center bg-tertiary hover:brightness-110 text-on-tertiary-fixed font-bold py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-tertiary/10 gap-2 group disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer">
                         <span wire:loading.remove wire:target="sendPasswordResetLink">Send Reset Link</span>
-                        <span wire:loading wire:target="sendPasswordResetLink" class="flex items-center gap-2">
+                        <span wire:loading.flex wire:target="sendPasswordResetLink" class="flex items-center gap-2">
                             <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -121,8 +121,6 @@ new #[Layout('components.layouts.blank')] class extends Component
         </section>
 
         <!-- RIGHT SIDE: VISUAL/BANNER PANEL -->
-        {{-- <section class="hidden md:flex md:w-[45%] lg:w-[45%] relative overflow-hidden bg-slate-950 items-center justify-center"> --}}
-        {{-- <section class="hidden md:flex relative flex-1 overflow-hidden bg-slate-950 items-center justify-center"> --}}
         <section class="hidden md:flex flex-1 relative overflow-hidden bg-slate-950 items-center justify-center">
             <!-- Background Elements -->
             <div class="absolute inset-0 bg-gradient-to-br from-surface-container-lowest via-surface-container-low to-tertiary/5"></div>
