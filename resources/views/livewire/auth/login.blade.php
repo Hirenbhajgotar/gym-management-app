@@ -74,25 +74,6 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
 }; ?>
 
 <div>
-    <style>
-        .noise-overlay {
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.03;
-            pointer-events: none;
-        }
-        .kinetic-gradient {
-            background: radial-gradient(circle at 20% 30%, rgba(144, 171, 255, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 70%, rgba(197, 255, 201, 0.1) 0%, transparent 50%);
-        }
-        .glass-card {
-            background: rgba(25, 37, 64, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-    </style>
     
     <div class="relative min-h-screen flex flex-col md:flex-row bg-surface text-on-surface font-body selection:bg-tertiary selection:text-on-tertiary antialiased overflow-hidden">
         <!-- Noise Texture -->
@@ -252,8 +233,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                                 <span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
                             </div>
                             <div>
-                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Active Members</div>
-                                <div class="text-xl font-headline font-bold text-on-surface">2,400+</div>
+                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{{ config('app.platform_state_badges.members_managed.title') }}</div>
+                                <div class="text-xl font-headline font-bold text-on-surface">{{ config('app.platform_state_badges.members_managed.value') }}</div>
                             </div>
                         </div>
                     </div>
@@ -264,8 +245,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                                 <span class="material-symbols-outlined text-primary text-xl">location_on</span>
                             </div>
                             <div>
-                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Gym Branches</div>
-                                <div class="text-xl font-headline font-bold text-on-surface">40+</div>
+                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{{ config('app.platform_state_badges.gyms_powered.title') }}</div>
+                                <div class="text-xl font-headline font-bold text-on-surface">{{ config('app.platform_state_badges.gyms_powered.value') }}</div>
                             </div>
                         </div>
                     </div>
@@ -273,7 +254,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                     <div class="absolute top-1/2 -translate-y-1/2 -left-12 glass-card px-5 py-3 rounded-2xl shadow-xl hidden lg:block transition-all group-hover:translate-x-[-10px]">
                         <div class="flex items-center gap-3">
                             <div class="w-3 h-3 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(197,255,201,0.8)]"></div>
-                            <div class="text-sm font-bold tracking-tight text-on-surface">98% Attendance Rate</div>
+                            <div class="text-sm font-bold tracking-tight text-on-surface">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</div>
                         </div>
                     </div>
                 </div>

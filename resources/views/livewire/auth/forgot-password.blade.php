@@ -24,18 +24,7 @@ new #[Layout('components.layouts.blank')] class extends Component
 }; ?>
 
 <div>
-    <style>
-        body { font-family: 'Manrope', sans-serif; }
-        .font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
-        .grainy-bg {
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.02;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-    </style>
-
+    
     <main class="min-h-screen flex flex-col md:flex-row">
         <!-- LEFT SIDE: FORGOT PASSWORD FORM PANEL -->
         <section class="w-full md:w-[45%] lg:w-[45%] bg-surface-container-lowest relative flex flex-col px-8 md:px-16 py-12">
@@ -126,20 +115,13 @@ new #[Layout('components.layouts.blank')] class extends Component
             <div class="absolute inset-0 bg-gradient-to-br from-surface-container-lowest via-surface-container-low to-tertiary/5"></div>
             <div class="absolute top-20 right-0  w-80 h-80 bg-tertiary/20 rounded-full blur-[120px]" style="transform: translateX(150px) !important;"></div>
             <div class="absolute bottom-20 left-0 -translate-x-0 w-96 h-96 bg-primary/20 rounded-full blur-[120px]"></div>
-            <div class="absolute inset-0 grainy-bg pointer-events-none"></div>
+            <div class="absolute inset-0 noise-overlay pointer-events-none"></div>
 
             <!-- Content -->
             <div class="relative z-10 px-16 text-center">
                 <div class="mb-12 inline-block">
                     <!-- Geometric Power Symbol SVG -->
-                    <svg class="drop-shadow-[0_0_15px_rgba(107,255,143,0.3)]" fill="none" height="180" viewBox="0 0 100 100" width="180" xmlns="http://www.w3.org/2000/svg">
-                        <circle class="text-tertiary/20" cx="50" cy="50" r="48" stroke="currentColor" stroke-dasharray="4 4" stroke-width="0.5"></circle>
-                        <circle class="text-tertiary/40" cx="50" cy="50" r="40" stroke="currentColor" stroke-width="1"></circle>
-                        <path class="text-tertiary" d="M50 20V35M50 65V80M20 50H35M65 50H80" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
-                        <path class="text-tertiary" d="M35 35L42 42M58 58L65 65M35 65L42 58M58 42L65 35" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
-                        <circle class="text-tertiary shadow-lg" cx="50" cy="50" fill="currentColor" r="8"></circle>
-                        <rect class="text-tertiary" fill="currentColor" height="4" rx="2" transform="rotate(-45 50 50)" width="40" x="30" y="48"></rect>
-                    </svg>
+                    <x-icons.geometric-power-symbol />
                 </div>
 
                 <div class="space-y-4">
@@ -161,7 +143,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-primary tracking-widest uppercase">Community</p>
-                            <p class="text-lg font-bold text-on-surface">2,400+ Active Members</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.members_managed.value') }} {{ config('app.platform_state_badges.members_managed.title') }}</p>
                         </div>
                     </div>
 
@@ -171,7 +153,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-secondary tracking-widest uppercase">Consistency</p>
-                            <p class="text-lg font-bold text-on-surface">98% Attendance Rate</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</p>
                         </div>
                     </div>
 
@@ -181,7 +163,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-tertiary tracking-widest uppercase">Global Reach</p>
-                            <p class="text-lg font-bold text-on-surface">40+ Gym Branches</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.gyms_powered.value') }} {{ config('app.platform_state_badges.gyms_powered.title') }}</p>
                         </div>
                     </div>
                 </div>

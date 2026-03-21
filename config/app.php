@@ -131,4 +131,19 @@ return [
     'meta_verification_link' => env('META_VERIFICATION_LINK', 'https://business.facebook.com/settings/verification/'),
     'low_whatsapp_message_balance_threshold' => env('LOW_WHATSAPP_MESSAGE_BALANCE_THRESHOLD', 5),
     'whatsapp_broadcast_limit_per_day' => env('WHATSAPP_BROADCAST_LIMIT_PER_DAY', 2),
+
+    'platform_state_badges' => [
+        'gyms_powered' => [
+            'title' => 'Gyms Powered',
+            'value' => '40+',
+        ],
+        'members_managed' => [
+            'title' => 'Members Managed',
+            'value' => '2,400+',
+        ],
+        'retention_rate' => [
+            'title' => 'Retention Rate',
+            'value' => '94%',
+        ],
+    ],
 ];
