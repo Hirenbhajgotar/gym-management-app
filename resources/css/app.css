@@ -380,6 +380,7 @@ select:focus[data-flux-control] {
     --color-tertiary-container: #6bff8f;
     --color-surface-bright: #1f2b49;
     --color-secondary: #dae2fd;
+    --color-blue: #bfd1ff;
 
     --font-headline: "Space Grotesk", sans-serif;
     --font-body: "Inter", sans-serif;
