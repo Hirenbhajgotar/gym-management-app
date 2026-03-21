@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'FluxFitness') }}</title>
+    <title>{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @fluxAppearance
     <!-- Add required Google Fonts for the new design -->
