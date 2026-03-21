@@ -143,7 +143,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-primary tracking-widest uppercase">Community</p>
-                            <p class="text-lg font-bold text-on-surface">2,400+ Active Members</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.members_managed.value') }} {{ config('app.platform_state_badges.members_managed.title') }}</p>
                         </div>
                     </div>
 
@@ -153,7 +153,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-secondary tracking-widest uppercase">Consistency</p>
-                            <p class="text-lg font-bold text-on-surface">98% Attendance Rate</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</p>
                         </div>
                     </div>
 
@@ -163,7 +163,7 @@ new #[Layout('components.layouts.blank')] class extends Component
                         </div>
                         <div>
                             <p class="text-xs font-bold text-tertiary tracking-widest uppercase">Global Reach</p>
-                            <p class="text-lg font-bold text-on-surface">40+ Gym Branches</p>
+                            <p class="text-lg font-bold text-on-surface">{{ config('app.platform_state_badges.gyms_powered.value') }} {{ config('app.platform_state_badges.gyms_powered.title') }}</p>
                         </div>
                     </div>
                 </div>
