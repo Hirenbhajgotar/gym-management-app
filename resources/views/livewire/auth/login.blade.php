@@ -293,8 +293,4 @@ new #[Layout('components.layouts.blank')] class extends Component
             <div class="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-surface-container-lowest to-transparent z-20"></div>
         </section>
     </div>
-    
-    <!-- Add required Google Fonts for the new design -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </div>
