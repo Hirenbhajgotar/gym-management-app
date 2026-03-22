@@ -148,8 +148,14 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
 // Sitemap Route
-Route::get('/sitemap.xml', function () {
-    $path = public_path('sitemap.xml');
+Route::get('/{filename}.xml', function (string $filename) {
+    $allowed = ['sitemap', 'sitemap_main', 'sitemap_cms'];
+
+    if (! in_array($filename, $allowed)) {
+        abort(404);
+    }
+
+    $path = public_path($filename . '.xml');
 
     if (! file_exists($path)) {
         Log::error('Sitemap not found');
