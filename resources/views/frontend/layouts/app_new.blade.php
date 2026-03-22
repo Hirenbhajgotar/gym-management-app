@@ -2,35 +2,44 @@
 <html lang="en">
 
 <head>
+    @php
+        $appUrl = config('app.url');
+        $appName = config('app.name');
+        $contactPhone = config('app.contact_phone');
+        $contactEmail = config('app.contact_email');
+        $logoUrl = asset('logo.png');
+        $seoDescription = $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.';
+    @endphp
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}</title>
-    <meta name="description" content="{{ $seo['description'] ?? 'Fluxfitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <title>{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
     <meta name="keywords" content="{{ $seo['keywords'] ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="canonical" href="{{ strtolower(url()->current()) }}">
 
     <!-- hreflang for international SEO -->
-    <link rel="alternate" hreflang="en-in" href="{{ url()->current() }}">
-    <link rel="alternate" hreflang="x-default" href="{{ url()->current() }}">
+    <link rel="alternate" hreflang="en-in" href="{{ strtolower(url()->current()) }}">
+    <link rel="alternate" hreflang="x-default" href="{{ strtolower(url()->current()) }}">
 
     <!-- Preload critical images for LCP -->
     <link rel="preload" as="image" href="{{ asset('images/banner.webp') }}" fetchpriority="high">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}">
-    <meta property="og:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta property="og:title" content="{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
     <meta property="og:image" content="{{ asset('images/banner.webp') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ strtolower(url()->current()) }}">
     <meta property="og:site_name" content="{{ config('app.name') }}">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $title ?? 'Fluxfitness | Gym Software | CRM, Billing, Member Tracking' }}">
-    <meta name="twitter:description" content="{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}">
+    <meta name="twitter:title" content="{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
     <meta name="twitter:image" content="{{ asset('images/banner.webp') }}">
     <meta name="twitter:image:width" content="1200">
     <meta name="twitter:image:height" content="600">
@@ -41,12 +50,12 @@
         "@@context": "https://schema.org",
         "@@type": "Organization",
         "name": "Fluxfitness",
-        "url": "{{ config('app.url') }}",
-        "logo": "{{ asset('images/logo.png') }}",
-        "description": "{{ $seo['description'] ?? 'FluxFitness - A complete gym management system with membership tracking, workout plans, class scheduling, trainer management, and more.' }}",
+        "url": "{{ $appUrl }}",
+        "logo": "{{ $logoUrl }}",
+        "description": "{{ $seoDescription }}",
         "contactPoint": {
             "@@type": "ContactPoint",
-            "telephone": "{{ config('app.contact_phone') }}",
+            "telephone": "{{ $contactPhone }}",
             "contactType": "customer service"
         }
     }
@@ -60,16 +69,11 @@
         "name": "Fluxfitness",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
-        "description": "All-in-one gym management software with membership tracking, billing, attendance, and CRM.",
+        "description": "All-in-one gym management software for Indian gyms with membership tracking, billing, attendance, WhatsApp notifications and CRM.",
         "offers": {
             "@@type": "Offer",
             "price": "0",
             "priceCurrency": "INR"
-        },
-        "aggregateRating": {
-            "@@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "ratingCount": "256"
         }
     }
     </script>
@@ -84,25 +88,25 @@
                 "@@type": "ListItem",
                 "position": 1,
                 "name": "Home",
-                "item": "{{ config('app.url') }}"
+                "item": "{{ $appUrl }}"
             },
             {
                 "@@type": "ListItem",
                 "position": 2,
                 "name": "Features",
-                "item": "{{ config('app.url') }}#features"
+                "item": "{{ $appUrl }}#features"
             },
             {
                 "@@type": "ListItem",
                 "position": 3,
                 "name": "Pricing",
-                "item": "{{ config('app.url') }}#pricing"
+                "item": "{{ $appUrl }}#pricing"
             },
             {
                 "@@type": "ListItem",
                 "position": 4,
                 "name": "Contact",
-                "item": "{{ config('app.url') }}#contact"
+                "item": "{{ $appUrl }}#contact"
             }
         ]
     }
@@ -114,16 +118,16 @@
         "@@context": "https://schema.org",
         "@@type": "LocalBusiness",
         "name": "Fluxfitness",
-        "description": "Leading gym management software in India for fitness centers, gyms, and fitness entrepreneurs.",
-        "url": "{{ config('app.url') }}",
-        "telephone": "{{ config('app.contact_phone') }}",
-        "email": "{{ config('app.contact_email') }}",
+        "description": "Leading gym management software in India for fitness centers and gyms.",
+        "url": "{{ $appUrl }}",
+        "telephone": "{{ $contactPhone }}",
+        "email": "{{ $contactEmail }}",
         "areaServed": {
             "@@type": "Country",
             "name": "India"
         },
         "serviceType": "Gym Management Software",
-        "priceRange": "$$"
+        "priceRange": "₹₹"
     }
     </script>
 
