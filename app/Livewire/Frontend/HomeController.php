@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('Fluxfitness | Gym Software | CRM, Billing, Member Tracking')]
+#[Title('Gym Management Software for Indian Gyms | FluxFitness')]
 class HomeController extends Component
 {
     public $selectedPlan = null;
@@ -31,8 +31,8 @@ class HomeController extends Component
             'enterprisePlans' => $enterprisePlans,
         ])->layout('frontend.layouts.app_new', [
             'seo' => [
-                'description' => 'All-in-one gym management software for fitness centers, studios. Membership tracking, attendance, WhatsApp notifications, billing, scheduling, and analytics. Join 500+ gyms. Start free trial.',
-                'keywords' => 'best gym management software, gym management software, fitness center management, gym membership software, gym scheduling software, gym billing software, gym attendance software, gym analytics software, gym CRM software, fitness center management system, branded gym member app, Automated WhatsApp Reminders for Gyms',
+                'description' => 'Fluxfitness is an all-in-one gym management software with membership tracking, WhatsApp reminders, billing & attendance. Made for Indian gyms. Start free trial today',
+                'keywords' => 'gym software, gym software india, gym management software for Indian gyms, fitness center management, gym membership software, gym scheduling software, gym billing software, gym attendance software, gym analytics software, gym CRM software, fitness center management system, branded gym member app, Automated WhatsApp Reminders for Gyms',
             ],
         ]);
     }

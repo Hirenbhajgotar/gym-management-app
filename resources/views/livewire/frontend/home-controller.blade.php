@@ -12,10 +12,11 @@
                         <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                             Gym Management
                         </span>
-                        System
+                        Software
+                        <span class="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent text-xl block">for Indian Gyms</span>
                     </h1>
                     <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                        An all-in-one Gym Management Software solution designed specifically for gyms and fitness centres, offering comprehensive tools for efficient membership management, scheduling, billing, and performance tracking — all within a single integrated platform.
+                        An All-in-One Gym Management Software solution designed specifically for gyms and fitness centres, offering comprehensive tools for efficient membership management, scheduling, billing, and performance tracking — all within a single integrated platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
                         <button wire:click="startFreeTrial" wire:loading.attr="disabled"
