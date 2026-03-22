@@ -14,6 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}</title>
+    <meta name="title" content="{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}">
     <meta name="description" content="{{ $seoDescription }}">
     <meta name="keywords" content="{{ $seo['keywords'] ?? 'gym management, fitness software, membership management, workout tracking, class scheduling' }}">
     <meta name="robots" content="index, follow">

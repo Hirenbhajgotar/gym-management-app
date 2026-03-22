@@ -4,6 +4,7 @@
 User-agent: *
 Allow: /
 Disallow: /thank-you
+Disallow: /business-register
 Disallow: /admin
 Disallow: /filament
 Disallow: /api/
