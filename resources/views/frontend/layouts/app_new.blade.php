@@ -20,8 +20,8 @@
     <link rel="canonical" href="{{ strtolower(url()->current()) }}">
 
     <!-- hreflang for international SEO -->
-    <link rel="alternate" hreflang="en-in" href="{{ url()->current() }}">
-    <link rel="alternate" hreflang="x-default" href="{{ url()->current() }}">
+    <link rel="alternate" hreflang="en-in" href="{{ strtolower(url()->current()) }}">
+    <link rel="alternate" hreflang="x-default" href="{{ strtolower(url()->current()) }}">
 
     <!-- Preload critical images for LCP -->
     <link rel="preload" as="image" href="{{ asset('images/banner.webp') }}" fetchpriority="high">
@@ -33,7 +33,7 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ strtolower(url()->current()) }}">
     <meta property="og:site_name" content="{{ config('app.name') }}">
 
     <!-- Twitter Card -->
@@ -134,7 +134,7 @@
             "name": "India"
         },
         "serviceType": "Gym Management Software",
-        "priceRange": "₹"
+        "priceRange": "₹₹"
     }
     @endverbatim
     </script>
