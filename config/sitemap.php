@@ -61,4 +61,10 @@ return [
      * The profile that determines which URLs to crawl.
      */
     'crawl_profile' => Profile::class,
+
+    'allowed_filenames' => [
+        'sitemap',
+        'sitemap_main',
+        'sitemap_cms',
+    ],
 ];

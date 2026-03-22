@@ -149,12 +149,6 @@ Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->n
 
 // Sitemap Route
 Route::get('/{filename}.xml', function (string $filename) {
-    $allowed = ['sitemap', 'sitemap_main', 'sitemap_cms'];
-
-    if (! in_array($filename, $allowed)) {
-        abort(404);
-    }
-
     $path = public_path($filename . '.xml');
 
     if (! file_exists($path)) {
@@ -164,7 +158,7 @@ Route::get('/{filename}.xml', function (string $filename) {
     }
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
-})->name('sitemap');
+})->whereIn('filename', config('sitemap.allowed_filenames', []))->name('sitemap');
 
 Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
