@@ -46,97 +46,89 @@
 
     <!-- JSON-LD Organization Schema -->
     <script type="application/ld+json">
-    @verbatim
     {
-        "@context": "https://schema.org",
-        "@type": "Organization",
+        "@@context": "https://schema.org",
+        "@@type": "Organization",
         "name": "Fluxfitness",
         "url": "{{ $appUrl }}",
         "logo": "{{ $logoUrl }}",
         "description": "{{ $seoDescription }}",
         "contactPoint": {
-            "@type": "ContactPoint",
+            "@@type": "ContactPoint",
             "telephone": "{{ $contactPhone }}",
             "contactType": "customer service"
         }
     }
-    @endverbatim
     </script>
 
     <!-- JSON-LD SoftwareApplication Schema -->
     <script type="application/ld+json">
-    @verbatim
     {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
+        "@@context": "https://schema.org",
+        "@@type": "SoftwareApplication",
         "name": "Fluxfitness",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
         "description": "All-in-one gym management software for Indian gyms with membership tracking, billing, attendance, WhatsApp notifications and CRM.",
         "offers": {
-            "@type": "Offer",
+            "@@type": "Offer",
             "price": "0",
             "priceCurrency": "INR"
         }
     }
-    @endverbatim
     </script>
 
     <!-- JSON-LD BreadcrumbList Schema -->
     <script type="application/ld+json">
-    @verbatim
     {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
         "itemListElement": [
             {
-                "@type": "ListItem",
+                "@@type": "ListItem",
                 "position": 1,
                 "name": "Home",
                 "item": "{{ $appUrl }}"
             },
             {
-                "@type": "ListItem",
+                "@@type": "ListItem",
                 "position": 2,
                 "name": "Features",
                 "item": "{{ $appUrl }}#features"
             },
             {
-                "@type": "ListItem",
+                "@@type": "ListItem",
                 "position": 3,
                 "name": "Pricing",
                 "item": "{{ $appUrl }}#pricing"
             },
             {
-                "@type": "ListItem",
+                "@@type": "ListItem",
                 "position": 4,
                 "name": "Contact",
                 "item": "{{ $appUrl }}#contact"
             }
         ]
     }
-    @endverbatim
     </script>
 
     <!-- JSON-LD LocalBusiness Schema for India -->
     <script type="application/ld+json">
-    @verbatim
     {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
+        "@@context": "https://schema.org",
+        "@@type": "LocalBusiness",
         "name": "Fluxfitness",
         "description": "Leading gym management software in India for fitness centers and gyms.",
         "url": "{{ $appUrl }}",
         "telephone": "{{ $contactPhone }}",
         "email": "{{ $contactEmail }}",
         "areaServed": {
-            "@type": "Country",
+            "@@type": "Country",
             "name": "India"
         },
         "serviceType": "Gym Management Software",
         "priceRange": "₹₹"
     }
-    @endverbatim
     </script>
 
     @stack('meta')
