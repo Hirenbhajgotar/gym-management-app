@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\CmsPage;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
 
 class GenerateSitemap extends Command
@@ -17,12 +18,20 @@ class GenerateSitemap extends Command
     {
         $this->info('Generating sitemap...');
 
+        // Main Sitemap — static pages
         Sitemap::create()
-            ->add($this->buildIndex(CmsPage::query()->published()->get(), 'sitemap_cms.xml'))
             ->add(Url::create('/'))
-            ->add(Url::create('/business-register'))
+            // ->add(Url::create('/business-register'))
             ->add(Url::create('/request-demo'))
-            ->add(Url::create('/thank-you'))
+            ->writeToFile(public_path('sitemap_main.xml'));
+
+        // CMS Sitemap — dynamic pages
+        $this->buildIndex(CmsPage::query()->published()->get(), 'sitemap_cms.xml');
+
+        // Sitemap Index
+        SitemapIndex::create()
+            ->add('/sitemap_main.xml')
+            ->add('/sitemap_cms.xml')
             ->writeToFile(public_path('sitemap.xml'));
 
         $this->info('Sitemap generated successfully!');

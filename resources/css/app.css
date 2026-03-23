@@ -83,6 +83,61 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* Custom Animations */
+    --animation-float: float 6s ease-in-out infinite;
+    --animation-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    --animation-slide-up: slide-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    --animation-fade-in: fade-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    --animation-scale-in: scale-in 0.6s ease-out;
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-20px);
+        }
+    }
+
+    @keyframes slide-up {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scale-in {
+        from {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
 }
 
 /* @theme {
@@ -326,4 +381,85 @@ select:focus[data-flux-control] {
 /* Smooth Transitions */
 * {
     scroll-behavior: smooth;
+}
+
+@theme {
+    --color-surface-dim: #060e20;
+    --color-inverse-primary: #0053dc;
+    --color-error-dim: #d7383b;
+    --color-inverse-on-surface: #4d556b;
+    --color-primary-dim: #316bf3;
+    --color-secondary-container: #3f465c;
+    --color-error: #ff716c;
+    --color-on-error-container: #ffa8a3;
+    --color-surface-container-lowest: #000000;
+    --color-on-primary-fixed: #000000;
+    --color-surface-container: #0f1930;
+    --color-outline: #6d758c;
+    --color-tertiary: #c5ffc9;
+    --color-secondary-fixed-dim: #ccd4ee;
+    --color-on-primary-container: #001e5a;
+    --color-background: #060e20;
+    --color-tertiary-fixed-dim: #5bf083;
+    --color-on-error: #490006;
+    --color-secondary-dim: #ccd4ee;
+    --color-surface-container-highest: #192540;
+    --color-surface-tint: #90abff;
+    --color-on-primary-fixed-variant: #00266e;
+    --color-surface-container-low: #091328;
+    --color-outline-variant: #40485d;
+    --color-on-secondary-fixed: #373f54;
+    --color-tertiary-dim: #5bf083;
+    --color-on-surface: #dee5ff;
+    --color-on-secondary-container: #c8d0ea;
+    --color-on-secondary-fixed-variant: #535b71;
+    --color-primary-container: #7b9cff;
+    --color-on-background: #dee5ff;
+    --color-on-primary: #002873;
+    --color-on-tertiary-fixed-variant: #006a2d;
+    --color-on-secondary: #4a5167;
+    --color-secondary-fixed: #dae2fd;
+    --color-inverse-surface: #faf8ff;
+    --color-on-tertiary-container: #005f28;
+    --color-on-tertiary: #00692c;
+    --color-surface-container-high: #141f38;
+    --color-surface-variant: #192540;
+    --color-surface: #060e20;
+    --color-primary-fixed-dim: #658eff;
+    --color-on-surface-variant: #a3aac4;
+    --color-primary: #90abff;
+    --color-error-container: #9f0519;
+    --color-on-tertiary-fixed: #004a1d;
+    --color-tertiary-fixed: #6bff8f;
+    --color-primary-fixed: #7b9cff;
+    --color-tertiary-container: #6bff8f;
+    --color-surface-bright: #1f2b49;
+    --color-secondary: #dae2fd;
+    --color-blue: #bfd1ff;
+
+    --font-headline: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-label: "Inter", sans-serif;
+}
+
+/* Auth Page Decorative Styles */
+.noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+}
+
+.kinetic-gradient {
+    background: radial-gradient(circle at 20% 30%, rgba(144, 171, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(197, 255, 201, 0.1) 0%, transparent 50%);
+}
+
+.glass-card {
+    background: rgba(25, 37, 64, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }

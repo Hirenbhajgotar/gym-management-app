@@ -1,2 +1,26 @@
+# FluxFitness Robots.txt
+# Optimized for SEO crawlers
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /thank-you
+Disallow: /business-register
+Disallow: /admin
+Disallow: /filament
+Disallow: /api/
+Disallow: /download-failed-rows/
+Disallow: /filament/failed-import-download/
+Disallow: /*?*
+
+# Allow static assets (needed for rendering)
+Allow: /build/
+Allow: /css/
+Allow: /js/
+Allow: /images/
+
+# Sitemap location
+Sitemap: https://fluxfitness.in/sitemap.xml
+
+# Crawl delay for polite crawling
+Crawl-delay: 1
+
