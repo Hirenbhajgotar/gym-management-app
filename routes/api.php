@@ -201,3 +201,30 @@ Route::prefix('reports')->middleware(['auth:sanctum', 'tenant'])->group(function
     Route::get('/attendance', [App\Http\Controllers\ReportApiController::class, 'attendance'])->name('api.reports.attendance');
     Route::get('/dashboard', [App\Http\Controllers\ReportApiController::class, 'dashboard'])->name('api.reports.dashboard');
 });
+
+// Biometric Device API Routes
+Route::prefix('v1/biometric')->middleware([\App\Http\Middleware\AuthenticateBiometricDevice::class])->group(function () {
+    Route::post('/check-in', [App\Http\Controllers\Api\BiometricCheckInController::class, 'checkIn'])
+        ->name('api.biometric.check-in');
+    Route::post('/check-out', [App\Http\Controllers\Api\BiometricCheckInController::class, 'checkOut'])
+        ->name('api.biometric.check-out');
+    Route::post('/enroll', [App\Http\Controllers\Api\BiometricEnrollController::class, 'enroll'])
+        ->name('api.biometric.enroll');
+    Route::delete('/template/{template}', [App\Http\Controllers\Api\BiometricEnrollController::class, 'deleteTemplate'])
+        ->name('api.biometric.template.delete');
+    Route::post('/heartbeat', [App\Http\Controllers\Api\BiometricDeviceController::class, 'heartbeat'])
+        ->name('api.biometric.heartbeat');
+    Route::get('/device/config', [App\Http\Controllers\Api\BiometricDeviceController::class, 'config'])
+        ->name('api.biometric.config');
+    Route::get('/device/test', [App\Http\Controllers\Api\BiometricDeviceController::class, 'testConnection'])
+        ->name('api.biometric.test');
+});
+
+// Offline sync route (uses biometric device auth)
+Route::post('/v1/biometric/offline-sync', [App\Http\Controllers\Api\BiometricOfflineSyncController::class, 'sync'])
+    ->middleware(\App\Http\Middleware\AuthenticateBiometricDevice::class)
+    ->name('api.biometric.offline-sync');
+
+// Vendor webhook routes (token verified inside controller)
+Route::post('/v1/biometric/webhook/{token}', [App\Http\Controllers\Api\BiometricWebhookController::class, 'handle'])
+    ->name('api.biometric.webhook');

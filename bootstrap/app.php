@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'auth:biometric-device' => \App\Http\Middleware\AuthenticateBiometricDevice::class,
+        ]);
+
         // $middleware->alias([
         //     'set.permissions.team' => TeamsPermission::class,
         // ]);

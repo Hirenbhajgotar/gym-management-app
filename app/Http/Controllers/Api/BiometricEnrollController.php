@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Biometrics\BiometricProviderRegistry;
+use App\Biometrics\DTOs\BiometricSample;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\BiometricEnrollRequest;
+use App\Models\BiometricConsent;
+use App\Models\BiometricDevice;
+use App\Models\BiometricTemplate;
+use App\Models\GymMember;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class BiometricEnrollController extends Controller
+{
+    public function __construct(
+        protected BiometricProviderRegistry $registry
+    ) {}
+
+    public function enroll(BiometricEnrollRequest $request): JsonResponse
+    {
+        /** @var BiometricDevice $device */
+        $device = $request->attributes->get('device');
+
+        $gymMember = GymMember::findOrFail($request->validated('gym_member_id'));
+
+        // Check/create consent if needed
+        if (! $gymMember->hasActiveBiometricConsent()) {
+            BiometricConsent::create([
+                'gym_member_id' => $gymMember->id,
+                'gym_id' => $gymMember->gym_id,
+                'ip_address' => $request->ip(),
+                'version' => config('biometrics.consent_version', '1.0'),
+                'consented_at' => now(),
+            ]);
+        }
+
+        // Get provider and enroll
+        $provider = $this->registry->resolve($device->provider_type, $device->provider_config ?? []);
+
+        $sample = new BiometricSample(
+            type: $request->validated('biometric_type'),
+            data: $request->validated('data'),
+            metadata: $request->validated('metadata', [])
+        );
+
+        try {
+            $templateRef = $provider->enroll($gymMember, $sample);
+
+            // Create BiometricTemplate record
+            $template = BiometricTemplate::create([
+                'gym_member_id' => $gymMember->id,
+                'gym_id' => $device->gym_id,
+                'enrolled_by_device_id' => $device->id,
+                'biometric_type' => $request->validated('biometric_type'),
+                'provider_type' => $device->provider_type,
+                'template_ref' => $templateRef->toJson(),
+                'quality_score' => $templateRef->meta['quality_score'] ?? null,
+                'is_active' => true,
+                'enrolled_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'template_id' => $template->id,
+                'quality_score' => $template->quality_score,
+                'enrolled_at' => $template->enrolled_at->toISOString(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Enrollment failed',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function deleteTemplate(Request $request, BiometricTemplate $template): JsonResponse
+    {
+        /** @var BiometricDevice $device */
+        $device = $request->attributes->get('device');
+
+        // Verify template belongs to this device's gym
+        if ($template->gym_id !== $device->gym_id) {
+            return response()->json([
+                'error' => 'Forbidden',
+                'message' => 'Template does not belong to this device',
+            ], 403);
+        }
+
+        try {
+            $provider = $this->registry->resolve($template->provider_type);
+
+            $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
+            $provider->deleteTemplate($templateRef);
+
+            // Deactivate template (soft delete)
+            $template->is_active = false;
+            $template->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Template deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Deletion failed',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+}

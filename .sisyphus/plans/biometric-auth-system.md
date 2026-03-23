@@ -1,103 +1,110 @@
-# Multi-Tenant Biometric Authentication System
+# Multi-Tenant Biometric Authentication System for FluxFitness
 
 ## TL;DR
 
-> **Quick Summary**: Implement a comprehensive multi-tenant biometric authentication system supporting both hardware devices (fingerprint/face/iris scanners) and third-party cloud APIs (Rekognition/Azure Face/BioID) for gym check-ins.
-> 
-> **Deliverables**:
-> - 5 Database migrations (devices, enrollments, logs, vendors, settings)
-> - 6 Eloquent models with proper tenant isolation
-> - BiometricService with vendor adapter pattern
-> - 12 Filament pages for full device/API management
-> - Error handling with graceful fallbacks
-> - Activity logging and audit trails
-> 
-> **Estimated Effort**: Large
+> **Quick Summary**: Implement biometric check-in/check-out for gym members using face/fingerprint/iris recognition, integrated with existing attendance system. Multi-tenant support via Filament, real-time attendance dashboard via Laravel Reverb.
+
+> **Deliverables**: 
+> - 4 new database tables (biometric_devices, biometric_templates, biometric_consents, + columns to attendances)
+> - 3 new models (BiometricDevice, BiometricTemplate, BiometricConsent)
+> - Provider interface + 5 implementations (Rekognition, Azure, BioID, Local, Custom)
+> - CheckInService orchestrator + 5 guard services
+> - Device-facing REST API with token auth
+> - Filament admin resource for device management
+> - Live attendance dashboard with WebSocket updates
+> - GDPR consent and data deletion services
+
+> **Estimated Effort**: XL (60+ tasks)
 > **Parallel Execution**: YES - 4 waves
-> **Critical Path**: Models → Services → Core Pages → Integration
+> **Critical Path**: Migrations → Models → Provider Interface → CheckInService → API → Filament → Dashboard → Tests
 
 ---
 
 ## Context
 
 ### Original Request
-Design and define all necessary pages, settings, and configurations for multi-tenant biometric authentication - covering both native device support and third-party API integration.
+Implement Multi-Tenant Biometric Authentication System for FluxFitness - a Laravel 12 + Filament 3 gym management platform. System should support biometric check-in via face/fingerprint/iris recognition, write to existing attendances table, and provide real-time attendance monitoring.
 
 ### Interview Summary
 **Key Discussions**:
-- Multi-tenant: Each gym (tenant) independently configures their own biometric device
-- Device Types: fingerprint, face ID, iris scan, turnstile/gate systems
-- Hardware Brands: Multiple vendors (ZKTeco, DigitalPersona, Futronic, etc.)
-- Third-Party APIs: Amazon Rekognition, Azure Face, BioID, Luxand
-- Isolation: One tenant's config must not affect another
-- Scalability: Must support adding new vendors easily
+- [CONFIRMED] GymMember model has `canAccessGym()` method checking membership_end, payment_status, isFrozen
+- [CONFIRMED] GymMember has `isFrozen()` with auto-unfreeze logic
+- [CONFIRMED] GymMember has `isCurrentlyCheckedIn()` using currentAttendance() with status = 'checked_in'
+- [CONFIRMED] GymMember has `avatar()` returning profile_photo or ui-avatars.com fallback
+- [CONFIRMED] GymMember has `initials()` helper method
+- [CONFIRMED] Attendances model has `scopeActive()` = check_in NOT NULL + check_out NULL
+- [CONFIRMED] Attendances has static `isCurrentlyCheckedIn($memberId, $gymId, $attendanceableType)`
+- [CONFIRMED] AttendanceStatus enum: Present, Completed, Absent (string values)
+- [CONFIRMED] AttendanceObserver fires on save - already handles biometric writes automatically
 
-### Research Findings
-**From Codebase**:
-- Use `HasTenantAccess` trait for gym_id scoping
-- Follow `GymSetting` pattern for key-value config storage
-- Follow `WhatsAppAccount` pattern for dedicated credential models
-- Use `TwilioAccountManager` pattern for vendor adapter services
-- Use `WhatsAppSetup.php` wizard pattern for multi-step device setup
+**Research Findings**:
+- [FOUND] GymMember uses PaymentStatus enum with COMPLETED value (not the old "paid" string)
+- [FOUND] Attendances uses `status` column with AttendanceStatus enum (string values)
+- [FOUND] currentAttendance() uses status = 'checked_in' but spec uses AttendanceStatus::Present - need to verify actual behavior
+- [FOUND] BaseAttendanceResource has checkIn/checkOut actions that set status to AttendanceStatus::Present/Completed
+- [FOUND] routes/api.php exists with webhook routes, can add biometric API routes
+- [FOUND] routes/channels.php has broadcast channels, need to add gym.{gymId}.attendance channel
 
-**From External Research**:
-- 1:1 (WebAuthn) vs 1:N (identification) authentication models
-- Multi-tenant isolation via tenant_id on all biometric tables
-- Liveness detection (PAD) required for anti-spoofing
-- Graceful fallbacks: Biometric → QR Code → RFID/PIN
-- Store only templates, never raw biometric images
+### Metis Review
+**Identified Gaps** (addressed):
+- [RESOLVED] Status value mismatch: GymMember.currentAttendance() checks status='checked_in' but AttendanceStatus enum has 'Present' - implementation should use AttendanceStatus::Present
+- [RESOLVED] Need BiometricTypeEnum and BiometricDeviceStatusEnum for type safety
+- [RESOLVED] Device token storage: use Hash::make() per spec, verifyToken() using Hash::check()
+- [RESOLVED] Provider config encryption: use encrypted:array cast on BiometricDevice
 
 ---
 
 ## Work Objectives
 
 ### Core Objective
-Build a complete biometric authentication system where gym owners can:
-1. Connect and manage biometric hardware devices
-2. Integrate third-party biometric APIs
-3. Enroll users and manage biometric templates
-4. Track authentication events and generate reports
+Add biometric authentication (face/fingerprint/iris) to FluxFitness gym management platform that writes check-in/out records to the existing attendances table, with multi-tenant Filament management and real-time WebSocket dashboard updates.
 
 ### Concrete Deliverables
-- Database: 5 migrations, 6 models, proper indexes
-- Backend: BiometricService with vendor adapter pattern
-- Frontend: 12 Filament pages (dashboard, devices, enrollments, logs, settings)
-- Tests: Unit tests for services, feature tests for pages
+- Database migrations for biometric tables and columns
+- BiometricDevice, BiometricTemplate, BiometricConsent models
+- BiometricProvider interface with 5 implementations
+- CheckInService orchestrator with AntiSpoofGuard, MembershipGuard, FraudDetector
+- Device-facing REST API at /api/v1/biometric/*
+- Filament BiometricDeviceResource for admin management
+- GymMemberAttendanceResource extended with biometric columns
+- Livewire GymLiveAttendance dashboard component
+- BiometricDataDeletionService for GDPR compliance
 
 ### Definition of Done
-- [ ] Gym owner can add a hardware device (fingerprint scanner)
-- [ ] Gym owner can connect a cloud API (Rekognition)
-- [ ] Users can enroll biometric templates
-- [ ] Biometric authentication creates attendance record
-- [ ] Failed attempts are logged with error details
-- [ ] All data is isolated per gym (tenant)
+- [ ] Biometric check-in creates attendance with status=AttendanceStatus::Present
+- [ ] Device API authenticates via device_token Bearer auth
+- [ ] Filament resource shows devices scoped to current gym tenant
+- [ ] Live dashboard shows present members with WebSocket updates
+- [ ] Member can delete biometric data via GDPR request
 
 ### Must Have
-- Tenant isolation on ALL biometric data
-- Encrypted storage of API credentials
-- Real-time device status monitoring
-- Graceful fallbacks on failure
+- Backward compatibility: existing manual check-in continues working (check_in_method=null)
+- Multi-tenant scoping: devices and templates scoped to gym_id
+- Real-time updates: WebSocket broadcast on check-in/out
+- Liveness detection: anti-spoofing via provider API
+- Consent tracking: must have active consent before enrollment
 
-### Must NOT Have
-- Cross-tenant biometric matching
-- Raw biometric image storage
-- Hardcoded vendor credentials in code
+### Must NOT Have (Guardrails)
+- No raw biometric data persisted anywhere (only provider-side references)
+- No separate check_in_events table - reuse attendances table
+- No biometric access without active consent record
+- No bypass of membership/payment/freeze checks
 
 ---
 
 ## Verification Strategy
 
 ### Test Decision
-- **Infrastructure exists**: YES
-- **Automated tests**: YES (tests-after)
-- **Framework**: PHPUnit
-- **Test Strategy**: Unit tests for services, feature tests for critical flows
+- **Infrastructure exists**: YES - PHPUnit via composer test
+- **Automated tests**: Tests-after (add test tasks after implementation)
+- **Framework**: PHPUnit (existing test suite)
 
 ### QA Policy
-Every task includes Agent-Executed QA Scenarios:
-- **Hardware Device**: Test connection, enrollment, authentication
-- **Cloud API**: Test credential validation, face match, liveness
-- **Integration**: Verify attendance created on success
+Every task includes agent-executed QA scenarios - verification via:
+- API endpoints: curl commands validating JSON responses
+- Model methods: tinker/REPL to verify relationships and scopes
+- Filament resources: browser automation to verify UI rendering
+- WebSocket: check broadcast events fire correctly
 
 ---
 
@@ -106,1056 +113,981 @@ Every task includes Agent-Executed QA Scenarios:
 ### Parallel Execution Waves
 
 ```
-Wave 1 (Foundation - Can Start Immediately):
-├── T1: Database migrations (biometric tables)
-├── T2: Enums (device types, statuses, event types)
-├── T3: BiometricDevice model + factory
-├── T4: BiometricEnrollment model + factory
-├── T5: BiometricLog model + factory
-├── T6: BiometricVendor model + seeder
-└── T7: GymBiometricSetting model (key-value settings)
+Wave 1 (Start Immediately — foundation):
+├── Task 1: Create biometric columns migration (extend attendances)
+├── Task 2: Create biometric_devices_table migration
+├── Task 3: Create biometric_templates_table migration
+├── Task 4: Create biometric_consents_table migration
+├── Task 5: Update Attendances model with biometric fields
+├── Task 6: Add biometric methods to GymMember model
+├── Task 7: Create BiometricTypeEnum and BiometricDeviceStatusEnum
+├── Task 8: Create BiometricDevice model
+├── Task 9: Create BiometricTemplate model
+└── Task 10: Create BiometricConsent model
 
-Wave 2 (Core Services - After Wave 1):
-├── T8: BiometricService (main service + factory)
-├── T9: Vendor adapters (HardwareAdapter, RekognitionAdapter, AzureAdapter, BioIDAdapter)
-├── T10: BiometricAuthenticationController (API endpoints)
-├── T11: Device connection test logic
-├── T12: Template capture + storage logic
-└── T13: Attendance integration service
+Wave 2 (Core services — MAX PARALLEL):
+├── Task 11: Create DTOs (BiometricSample, TemplateRef, VerificationResult, CheckInResult)
+├── Task 12: Create BiometricProvider interface
+├── Task 13: Create BiometricProviderRegistry + config
+├── Task 14: Create BiometricServiceProvider
+├── Task 15: Create RekognitionProvider (prove pattern)
+├── Task 16: Create AntiSpoofGuard service
+├── Task 17: Create MembershipGuard service
+├── Task 18: Create CheckInService orchestrator
+├── Task 19: Create FusionEngine service
+└── Task 20: Create FraudDetector service
 
-Wave 3 (UI - After Wave 2):
-├── T14: BiometricDashboard page + widgets
-├── T15: DeviceListPage (CRUD)
-├── T16: DeviceSetupPage (wizard)
-├── T17: DeviceDetailPage
-├── T18: EnrollmentListPage
-└── T19: EnrollmentWizardPage
+Wave 3 (API + Filament):
+├── Task 21: Add biometric API routes
+├── Task 22: Create biometric device auth middleware
+├── Task 23: Create BiometricCheckInController
+├── Task 24: Create BiometricEnrollController
+├── Task 25: Create BiometricDeviceController
+├── Task 26: Create BiometricOfflineSyncController
+├── Task 27: Create BiometricDeviceResource (Filament)
+├── Task 28: Extend GymMemberAttendanceResource with biometric columns
+├── Task 29: Create MemberCheckedIn/MemberCheckedOut events
+├── Task 30: Update routes/channels.php with attendance channel
+└── Task 31: Create BiometricEnrollmentPage (Filament)
 
-Wave 4 (UI + Integration - After Wave 3):
-├── T20: ApiCredentialsPage
-├── T21: AttendanceSettingsPage
-├── T22: AccessControlPage
-├── T23: ActivityLogsPage
-├── T24: ReportsPage
-├── T25: GlobalSettingsPage
-└── T26: Panel provider registration
+Wave 4 (Dashboard + Final services):
+├── Task 32: Create GymLiveAttendance Livewire component
+├── Task 33: Create AzureFaceProvider
+├── Task 34: Create BioIDProvider
+├── Task 35: Create LocalModelProvider
+├── Task 36: Create CustomApiProvider
+├── Task 37: Create OfflineSyncService
+├── Task 38: Create BiometricDataDeletionService
+├── Task 39: Create GuardResult DTO
+└── Task 40: Run pint + verify all code
 
-Wave FINAL (Verification):
-├── F1: Integration testing
-├── F2: End-to-end authentication flow
-├── F3: Code quality review
-└── F4: Scope fidelity check
+Wave 5 (Tests):
+├── Task 41: Test CheckInService - granted path
+├── Task 42: Test CheckInService - denied paths (liveness, frozen, expired, payment)
+├── Task 43: Test CheckInService - suspicious duplicate
+├── Task 44: Test MembershipGuard
+├── Task 45: Test FraudDetector isDuplicate
+├── Task 46: Test FraudDetector isSuspiciousVelocity
+├── Task 47: Test OfflineSyncService
+├── Task 48: Test BiometricDataDeletionService
+├── Task 49: Test FusionEngine
+└── Task 50: Test AntiSpoofGuard thresholds
+
+Wave 6 (Final integration):
+├── Task 51: Test full biometric check-in flow
+├── Task 52: Test device API endpoints
+├── Task 53: Test Filament device management
+├── Task 54: Test live attendance dashboard
+└── Task 55: Integration test - cross-component validation
+
+Final Verification:
+├── F1: Plan compliance audit (oracle)
+├── F2: Code quality review (unspecified-high)
+├── F3: Real manual QA (unspecified-high)
+└── F4: Scope fidelity check (deep)
 ```
 
 ### Dependency Matrix
-- T1-T7: No dependencies (Wave 1)
-- T8-T13: Depend on T1-T7 (Wave 2)
-- T14-T19: Depend on T8-T13 (Wave 3)
-- T20-T26: Depend on T14-T19 (Wave 4)
-- F1-F4: Depend on all implementation tasks
+- Tasks 1-4 (Migrations): Run first, no dependencies
+- Task 5 (Attendances update): After migrations
+- Task 6 (GymMember update): After migrations
+- Tasks 7-10 (Models): After migrations
+- Tasks 11-14 (DTOs + Interface + Registry): Independent
+- Task 15 (RekognitionProvider): After interface (12)
+- Tasks 16-20 (Services): After DTOs (11) and Provider (12,15)
+- Tasks 21-26 (API): After services (16-20)
+- Tasks 27-31 (Filament): Independent, can parallel with API
+- Task 32 (Dashboard): After events (29) + channels (30)
+- Tasks 33-36 (More providers): Independent after interface
+- Tasks 37-38 (Offline + GDPR): After CheckInService
+- Tasks 39-40 (GuardResult + pint): After services
+- Tasks 41-50 (Tests): After implementation complete
+- Tasks 51-55 (Integration): After tests pass
+- Final tasks F1-F4: After all implementation
 
 ---
 
 ## TODOs
 
-- [ ] 1. Create database migrations for biometric tables
+> Implementation + Test = ONE Task. Every task MUST have: Recommended Agent Profile + QA Scenarios.
 
-  **What to do**:
-  - Create migration `create_biometric_devices_table` with: gym_id, name, device_type, vendor, connection_type, config_json (encrypted), location, status, last_sync_at, created_at, updated_at
-  - Create migration `create_biometric_enrollments_table` with: gym_id, user_id, device_id, biometric_type, template_data (encrypted), quality_score, enrolled_at, last_used_at, status
-  - Create migration `create_biometric_logs_table` with: gym_id, user_id, device_id, event_type, result, metadata_json, ip_address, created_at
-  - Create migration `create_biometric_vendors_table` with: name, api_class, config_schema_json, is_active
-  - Create migration `create_gym_biometric_settings_table` with: gym_id, key, value, type
-  - Add foreign keys with proper constraints
-  - Add indexes for common queries (gym_id, user_id, device_id, status)
+### Wave 1: Database & Models
 
-  **Must NOT do**:
-  - Store raw biometric images
-  - Use text fields for encrypted data (use binary or cast)
+- [ ] 1. Create migration add_biometric_columns_to_attendances_table
 
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
+  **What to do**: Create migration extending attendances table with biometric columns:
+  - device_id (FK to biometric_devices, nullable)
+  - check_in_method (nullable string: biometric/manual)
+  - biometric_type, provider_type (nullable strings)
+  - confidence_score, liveness_score, fusion_score (nullable floats)
+  - check_in_result, denial_reason (nullable strings)
+  - synced_at, check_in_ip (nullable datetime/string)
+  
+  Must run BEFORE create_biometric_devices_table due to FK constraint.
 
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T2-T7)
-  - **Blocks**: T8-T13
-  - **Blocked By**: None
-
-  **References**:
-  - `database/migrations/2025_06_29_070713_create_gym_user_table.php` - Reference for tenant_id pattern
-  - `app/Models/GymSetting.php` - Key-value storage pattern
-  - `database/migrations/2026_03_04_100645_create_user_login_logs_table.php` - Log table pattern
-
-  **Acceptance Criteria**:
-  - [ ] Migration runs without errors
-  - [ ] All tables created with correct columns
-  - [ ] Foreign keys properly set
-
-  **QA Scenarios**:
-  - Run `php artisan migrate` and verify all 5 tables created
-  - Check table structures match migration definitions
-
-  **Commit**: YES (with T2-T7)
-  - Message: `feat(biometric): add database migrations for biometric system`
-  - Files: `database/migrations/*biometric*.php`
+  **References**: 
+  - `app/Models/Attendances.php` - existing model structure to extend
 
 ---
 
-- [ ] 2. Create enums for biometric types and statuses
+- [ ] 2. Create biometric_devices_table migration
 
-  **What to do**:
-  - Create `app/Enums/BiometricDeviceTypeEnum.php`: FINGERPRINT, FACE, IRIS, TURNSTILE
-  - Create `app/Enums/BiometricConnectionTypeEnum.php`: USB, NETWORK, API
-  - Create `app/Enums/BiometricDeviceStatusEnum.php`: ACTIVE, INACTIVE, ERROR, OFFLINE
-  - Create `app/Enums/BiometricEventTypeEnum.php`: ENROLLMENT, AUTHENTICATION, VERIFICATION, DELETE
-  - Create `app/Enums/BiometricResultEnum.php`: SUCCESS, FAILURE, ERROR, TIMEOUT
-  - Create `app/Enums/BiometricVendorEnum.php`: ZKTEKO, DIGITALPERSONA, FUTRONIC, REKOGNITION, AZURE_FACE, BIOID, LUXAND, OTHER
+  **What to do**: Create migration with:
+  - id, gym_id (FK)
+  - device_name, device_type, provider_type
+  - provider_config (text, nullable)
+  - status (active/inactive/maintenance)
+  - assigned_staff_id (FK nullable)
+  - offline_capable, supports_multi_modal (booleans)
+  - last_heartbeat_at, firmware_version (nullable)
+  - device_token (nullable, stored as hash)
+  - created_by (FK)
+  - timestamps
+  - Index on [gym_id, status]
 
-  **Must NOT do**:
-  - Use numeric values for enum keys
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1, T3-T7)
-  - **Blocks**: T8-T13
-  - **Blocked By**: None
-
-  **References**:
-  - `app/Enums/WhatsAppAccountStatusEnum.php` - Enum pattern
-  - `app/Enums/WhatsAppAccountVerificationStatusEnum.php` - TitleCase keys
-
-  **Acceptance Criteria**:
-  - [ ] All 6 enums created with proper keys
-  - [ ] Follow TitleCase convention
-
-  **QA Scenarios**:
-  - Check enum files exist and are properly formatted
-  - Verify all enum cases are accessible
-
-  **Commit**: YES (with T1, T3-T7)
-  - Message: `feat(biometric): add enums for biometric types and statuses`
-  - Files: `app/Enums/Biometric*.php`
+  **References**: 
+  - Migration naming: `database/migrations/*_create_biometric_devices_table.php`
 
 ---
 
-- [ ] 3. Create BiometricDevice model with factory
+- [ ] 3. Create biometric_templates_table migration
 
-  **What to do**:
-  - Create `app/Models/BiometricDevice.php`
-  - Add: tenant_id (gym_id), name, device_type (enum), vendor, connection_type, config_json (encrypted cast), location, status, last_sync_at
-  - Add casts: config_json (array), last_sync_at (datetime)
-  - Add relationships: gym(), enrollments(), logs()
-  - Add scopes: active(), byGym()
-  - Create factory: `database/factories/BiometricDeviceFactory.php`
+  **What to do**: Create migration with:
+  - id, gym_member_id, gym_id (FKs)
+  - enrolled_by_device_id (FK)
+  - biometric_type, provider_type
+  - template_ref (text, encrypted)
+  - quality_score (float nullable)
+  - is_active (boolean)
+  - enrolled_at (timestamp)
+  - timestamps
+  - Index on [gym_member_id, gym_id, biometric_type, is_active]
 
-  **Must NOT do**:
-  - Store raw credentials in plain text
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1, T2, T4-T7)
-  - **Blocks**: T8, T15-T17
-  - **Blocked By**: None
-
-  **References**:
-  - `app/Models/WhatsAppAccount.php` - Model with encrypted config pattern
-  - `app/Models/GymSetting.php` - Relationship pattern
-
-  **Acceptance Criteria**:
-  - [ ] Model created with all required fields
-  - [ ] Factory creates valid device instances
-  - [ ] Encryption cast works correctly
-
-  **QA Scenarios**:
-  - Create device via factory and verify fields
-  - Test encryption/decryption of config
-
-  **Commit**: YES (with T1, T2, T4-T7)
-  - Message: `feat(biometric): add BiometricDevice model`
-  - Files: `app/Models/BiometricDevice.php`, `database/factories/BiometricDeviceFactory.php`
+  **References**: 
+  - Migration pattern from biometric_devices
 
 ---
 
-- [ ] 4. Create BiometricEnrollment model with factory
+- [ ] 4. Create biometric_consents_table migration
 
-  **What to do**:
-  - Create `app/Models/BiometricEnrollment.php`
-  - Add: gym_id, user_id, device_id, biometric_type, template_data (encrypted), quality_score, enrolled_at, last_used_at, status
-  - Add casts: template_data (array), enrolled_at (datetime), last_used_at (datetime)
-  - Add relationships: gym(), user(), device()
-  - Add scopes: active(), byGym(), byUser()
-  - Create factory: `database/factories/BiometricEnrollmentFactory.php`
+  **What to do**: Create migration with:
+  - id, gym_member_id, gym_id (FKs)
+  - ip_address, version
+  - consented_at (timestamp)
+  - revoked_at (nullable timestamp)
+  - timestamps
+  - Unique constraint on [gym_member_id, gym_id]
 
-  **Must NOT do**:
-  - Store raw biometric images
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1-T3, T5-T7)
-  - **Blocks**: T12, T18-T19
-  - **Blocked By**: None
-
-  **References**:
-  - `app/Models/WhatsAppAccount.php` - Encrypted data pattern
-  - `app/Models/GymMember.php` - User relationship pattern
-
-  **Acceptance Criteria**:
-  - [ ] Model with all required fields and relationships
-  - [ ] Factory creates valid enrollments
-
-  **QA Scenarios**:
-  - Create enrollment and verify relationships
-  - Test template encryption
-
-  **Commit**: YES (with T1-T3, T5-T7)
-  - Message: `feat(biometric): add BiometricEnrollment model`
-  - Files: `app/Models/BiometricEnrollment.php`, `database/factories/BiometricEnrollmentFactory.php`
+  **References**: 
+  - Migration pattern from above
 
 ---
 
-- [ ] 5. Create BiometricLog model
+- [ ] 5. Update Attendances model with biometric fields
 
-  **What to do**:
-  - Create `app/Models/BiometricLog.php`
-  - Add: gym_id, user_id, device_id, event_type, result, metadata_json, ip_address
-  - Add casts: metadata_json (array)
-  - Add relationships: gym(), user(), device()
-  - Add scopes: byGym(), byUser(), byDevice(), byEventType(), byResult()
+  **What to do**: Modify `app/Models/Attendances.php`:
+  - Add to $fillable: device_id, check_in_method, biometric_type, provider_type, confidence_score, liveness_score, fusion_score, check_in_result, denial_reason, synced_at, check_in_ip
+  - Add to casts(): confidence_score=float, liveness_score=float, fusion_score=float, synced_at=datetime, biometric_type=BiometricTypeEnum::class
+  - Add relationship: device() -> BelongsTo(BiometricDevice::class)
+  - Add helper: isBiometric() -> check_in_method === 'biometric'
+  - Add helper: isOfflineSync() -> synced_at !== null && synced_at > check_in_time
+  - Add scope: scopeBiometric() -> where('check_in_method', 'biometric')
 
-  **Must NOT do**:
-  - Store raw biometric data in metadata
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1-T4, T6-T7)
-  - **Blocks**: T10, T23
-  - **Blocked By**: None
-
-  **References**:
-  - `app/Models/UserLoginLog.php` - Log model pattern
-
-  **Acceptance Criteria**:
-  - [ ] Model with all required fields
-  - [ ] Scopes work correctly
-
-  **QA Scenarios**:
-  - Create log entry and query by scopes
-
-  **Commit**: YES (with T1-T4, T6-T7)
-  - Message: `feat(biometric): add BiometricLog model`
-  - Files: `app/Models/BiometricLog.php`
+  **References**: 
+  - `app/Models/Attendances.php:54-68` - existing $fillable and $casts
 
 ---
 
-- [ ] 6. Create BiometricVendor model and seeder
+- [ ] 6. Add biometric methods to GymMember model
 
-  **What to do**:
-  - Create `app/Models/BiometricVendor.php`
-  - Add: name, api_class, config_schema_json, is_active
-  - Add casts: config_schema_json (array)
-  - Create seeder: `database/seeders/BiometricVendorSeeder.php`
-  - Seed with: ZKTeco, DigitalPersona, Futronic, Amazon Rekognition, Azure Face, BioID, Luxand
+  **What to do**: Modify `app/Models/GymMember.php`:
+  - Add relationship: biometricTemplates() -> HasMany(BiometricTemplate::class)
+  - Add relationship: biometricConsents() -> HasMany(BiometricConsent::class)
+  - Add method: activeBiometricConsent() -> first() where revoked_at is null
+  - Add method: hasActiveBiometricConsent() -> boolean
 
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1-T5, T7)
-  - **Blocks**: T8-T9
-  - **Blocked By**: None
-
-  **References**:
-  - `database/seeders/DatabaseSeeder.php` - Seeder pattern
-  - `app/Models/WhatsAppAccount.php` - Config schema pattern
-
-  **Acceptance Criteria**:
-  - [ ] Model with vendor fields
-  - [ ] Seeder creates all vendors
-
-  **QA Scenarios**:
-  - Run seeder and verify vendors created
-
-  **Commit**: YES (with T1-T5)
-  - Message: `feat(biometric): add BiometricVendor model and seeder`
-  - Files: `app/Models/BiometricVendor.php`, `database/seeders/BiometricVendorSeeder.php`
+  **References**: 
+  - `app/Models/GymMember.php:187-210` - existing relationships pattern
 
 ---
 
-- [ ] 7. Create GymBiometricSetting model
+- [ ] 7. Create BiometricTypeEnum
 
-  **What to do**:
-  - Create `app/Models/GymBiometricSetting.php`
-  - Follow GymSetting pattern: gym_id, key, value, type
-  - Add casts for type conversion (boolean, integer)
-  - Add relationship: gym()
+  **What to do**: Create `app/Enums/BiometricTypeEnum.php`:
+  - Cases: Face, Fingerprint, Iris
+  - Implement HasLabel, HasColor (for badges)
+  - Value format: lowercase (face, fingerprint, iris)
 
-  **Must NOT do**:
-  - Duplicate existing GymSetting logic
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with T1-T6)
-  - **Blocks**: T21, T25
-  - **Blocked By**: None
-
-  **References**:
-  - `app/Models/GymSetting.php` - Exact pattern to follow
-
-  **Acceptance Criteria**:
-  - [ ] Model follows GymSetting pattern
-  - [ ] Type casting works correctly
-
-  **QA Scenarios**:
-  - Create setting and verify type casting
-
-  **Commit**: YES (with T1-T6)
-  - Message: `feat(biometric): add GymBiometricSetting model`
-  - Files: `app/Models/GymBiometricSetting.php`
-
-  **Commit**: YES (with T1-T6)
-  - Message: `feat(biometric): add GymBiometricSetting model`
-  - Files: `app/Models/GymBiometricSetting.php`
+  **References**: 
+  - `app/Enums/AttendanceStatus.php` - pattern to follow
 
 ---
 
-- [ ] 8. Create BiometricService with vendor adapter pattern
+- [ ] 8. Create BiometricDeviceStatusEnum
 
-  **What to do**:
-  - Create `app/Services/BiometricService.php`
-  - Implement main service with methods: enroll(), authenticate(), verify(), testConnection()
-  - Add vendor adapter factory pattern
-  - Add tenant isolation (scope by gym_id)
-  - Add encrypted credential handling
-  - Implement fallback logic (biometric → QR → manual)
+  **What to do**: Create `app/Enums/BiometricDeviceStatusEnum.php`:
+  - Cases: Active, Inactive, Maintenance
+  - Implement HasLabel, HasColor
 
-  **Must NOT do**:
-  - Hardcode vendor-specific logic
-  - Skip tenant isolation
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T1-T7)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T10-T13, T14-T26
-  - **Blocked By**: T1-T7
-
-  **References**:
-  - `app/Services/TwilioAccountManager.php` - Service pattern with adapters
-  - `app/Services/WhatsAppTemplateManager.php` - Vendor adapter pattern
-
-  **Acceptance Criteria**:
-  - [ ] Service created with all methods
-  - [ ] Vendor factory works correctly
-
-  **QA Scenarios**:
-  - Test service instantiation
-  - Test vendor adapter resolution
-
-  **Commit**: YES (with T9)
-  - Message: `feat(biometric): add BiometricService`
-  - Files: `app/Services/BiometricService.php`
+  **References**: 
+  - Pattern from BiometricTypeEnum
 
 ---
 
-- [ ] 9. Create vendor adapters (Hardware, Rekognition, Azure, BioID)
+- [ ] 9. Create BiometricDevice model
 
-  **What to do**:
-  - Create `app/Services/Biometric/VendorAdapterInterface.php`
-  - Create `app/Services/Biometric/HardwareAdapter.php` - For USB/Network devices
-  - Create `app/Services/Biometric/RekognitionAdapter.php` - Amazon Rekognition
-  - Create `app/Services/Biometric/AzureFaceAdapter.php` - Azure Face API
-  - Create `app/Services/Biometric/BioIDAdapter.php` - BioID service
-  - Each adapter: connect(), enroll(), authenticate(), testConnection()
+  **What to do**: Create `app/Models/BiometricDevice.php`:
+  - $fillable: gym_id, device_name, device_type, provider_type, provider_config, status, assigned_staff_id, offline_capable, supports_multi_modal, last_heartbeat_at, firmware_version, device_token, created_by
+  - casts: provider_config=encrypted:array, offline_capable=boolean, supports_multi_modal=boolean, last_heartbeat_at=datetime, status=BiometricDeviceStatusEnum::class
+  - Relationships: gym(), assignedStaff(), createdBy(), templates()
+  - Scopes: scopeActive(), scopeForGym()
+  - Method: verifyToken(string $plainToken) -> bool using Hash::check()
 
-  **Must NOT do**:
-  - Store raw biometric data
-  - Skip error handling
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T1-T7)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T10-T13, T14-T26
-  - **Blocked By**: T1-T7
-
-  **References**:
-  - `app/Services/TwilioAccountManager.php` - Adapter pattern
-
-  **Acceptance Criteria**:
-  - [ ] Interface defines all required methods
-  - [ ] All 4 adapters implement interface
-
-  **QA Scenarios**:
-  - Test each adapter can be instantiated
-  - Verify interface compliance
-
-  **Commit**: YES (with T8)
-  - Message: `feat(biometric): add vendor adapters`
-  - Files: `app/Services/Biometric/*.php`
+  **References**: 
+  - `app/Models/GymMember.php` - model structure pattern
 
 ---
 
-- [ ] 10. Create BiometricAuthenticationController (API endpoints)
+- [ ] 10. Create BiometricTemplate model
 
-  **What to do**:
-  - Create `app/Http/Controllers/BiometricAuthController.php`
-  - Endpoints: enroll, authenticate, verify, test-device
-  - Add proper request validation
-  - Add tenant scope middleware
-  - Return JSON responses
+  **What to do**: Create `app/Models/BiometricTemplate.php`:
+  - casts: template_ref=encrypted, quality_score=float, is_active=boolean, enrolled_at=datetime, biometric_type=BiometricTypeEnum::class
+  - Relationships: gymMember(), gym(), enrolledByDevice()
+  - Scopes: scopeActive(), scopeForGymMember(), scopeOfType(), scopeForGym()
 
-  **Must NOT do**:
-  - Skip authentication on endpoints
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T9)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T14-T26
-  - **Blocked By**: T8-T9
-
-  **References**:
-  - `app/Http/Controllers/Api/` - API controller patterns
-
-  **Acceptance Criteria**:
-  - [ ] All endpoints defined and working
-  - [ ] Proper validation
-
-  **QA Scenarios**:
-  - Test endpoint responses
-  - Test validation rules
-
-  **Commit**: YES (with T11-T13)
-  - Message: `feat(biometric): add API controller`
-  - Files: `app/Http/Controllers/BiometricAuthController.php`
+  **References**: 
+  - Pattern from BiometricDevice
 
 ---
 
-- [ ] 11. Implement device connection test logic
+- [ ] 11. Create BiometricConsent model
 
-  **What to do**:
-  - Add testConnection() method to BiometricService
-  - Implement ping test for hardware devices
-  - Implement credential validation for cloud APIs
-  - Return status and latency
+  **What to do**: Create `app/Models/BiometricConsent.php`:
+  - $fillable: gym_member_id, gym_id, ip_address, version, consented_at, revoked_at
+  - casts: consented_at=datetime, revoked_at=datetime
+  - Relationships: gymMember(), gym()
+  - Method: isActive() -> revoked_at === null
 
-  **Must NOT do**:
-  - Leave connection tests unimplemented
+  **References**: 
+  - Pattern from BiometricTemplate
 
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
+### Wave 2: Core Services
 
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T9)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T14-T26
-  - **Blocked By**: T8-T9
+- [ ] 12. Create DTOs
 
-  **References**:
-  - `app/Services/TwilioAccountManager.php` - Connection test pattern
+  **What to do**: Create DTOs in `app/Biometrics/DTOs/`:
+  - BiometricSample: type (string), data (base64 string), metadata (array)
+  - TemplateRef: provider, externalId, meta (array)
+  - VerificationResult: matched (bool), confidence (float), livenessScore (float), providerRef (string), raw (array)
+  - CheckInResult: granted (bool), result (string), denialReason (?string), attendance (?Attendances)
+    - Static: granted(Attendances $attendance), denied(string $reason)
 
-  **Acceptance Criteria**:
-  - [ ] Test returns device status
-  - [ ] Latency measured
-
-  **QA Scenarios**:
-  - Test connection to fake device
-  - Verify response format
-
-  **Commit**: YES (with T10, T12-T13)
-  - Message: `feat(biometric): add device connection tests`
-  - Files: `app/Services/BiometricService.php`
+  **References**: 
+  - Use PHP 8 constructor property promotion
+  - Explicit return types
 
 ---
 
-- [ ] 12. Implement template capture and storage
+- [ ] 13. Create BiometricProvider interface
 
-  **What to do**:
-  - Add template capture from devices/APIs
-  - Add encryption before storage
-  - Add template validation (quality score)
-  - Add template retrieval for matching
+  **What to do**: Create `app/Biometrics/Contracts/BiometricProvider.php`:
+  ```php
+  interface BiometricProvider
+  {
+      public function enroll(GymMember $gymMember, BiometricSample $sample): TemplateRef;
+      public function verify(BiometricSample $sample, TemplateRef $ref): VerificationResult;
+      public function getLivenessScore(BiometricSample $sample): float;
+      public function deleteTemplate(TemplateRef $ref): bool;
+      public function getSupportedTypes(): array;
+      public function isAvailable(): bool;
+  }
+  ```
 
-  **Must NOT do**:
-  - Store raw biometric images
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T9)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T14-T26
-  - **Blocked By**: T8-T9
-
-  **References**:
-  - `app/Models/BiometricEnrollment.php` - Template storage
-
-  **Acceptance Criteria**:
-  - [ ] Templates encrypted before storage
-  - [ ] Quality validation works
-
-  **QA Scenarios**:
-  - Test template encryption
-  - Test quality score calculation
-
-  **Commit**: YES (with T10-T11, T13)
-  - Message: `feat(biometric): add template management`
-  - Files: `app/Services/BiometricService.php`
+  **References**: 
+  - `app/Contracts/` directory if exists, else create in `app/Biometrics/Contracts/`
 
 ---
 
-- [ ] 13. Create Attendance integration service
+- [ ] 14. Create BiometricProviderRegistry + config
 
-  **What to do**:
-  - Create `app/Services/BiometricAttendanceService.php`
-  - On successful biometric: create attendance record
-  - Handle auto check-out logic
-  - Add fallback handling
+  **What to do**: 
+  1. Create `config/biometrics.php` with liveness_threshold, confidence_threshold, fallback_pin_enabled, max_enroll_attempts, offline_ttl_hours, fraud_window_seconds, capacity_warn_pct, consent_version, providers array
+  2. Create `app/Biometrics/BiometricProviderRegistry.php` with resolve(string $providerType, array $config): BiometricProvider
 
-  **Must NOT do**:
-  - Skip attendance record creation
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-  - **Skills**: []
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T9)
-  - **Parallel Group**: Wave 2
-  - **Blocks**: T14-T26
-  - **Blocked By**: T8-T9
-
-  **References**:
-  - `app/Models/Attendance.php` - Attendance pattern
-
-  **Acceptance Criteria**:
-  - [ ] Creates attendance on success
-  - [ ] Auto check-out works
-
-  **QA Scenarios**:
-  - Test attendance creation
-  - Test auto check-out
-
-  **Commit**: YES (with T10-T12)
-  - Message: `feat(biometric): add attendance integration`
-  - Files: `app/Services/BiometricAttendanceService.php`
+  **References**: 
+  - Existing config files for pattern
 
 ---
 
-- [ ] 14. Create BiometricDashboard page with widgets
+- [ ] 15. Create BiometricServiceProvider
 
-  **What to do**:
-  - Create `app/Filament/Admin/Pages/Biometric/BiometricDashboard.php`
-  - Add device status cards
-  - Add today's auth count widget
-  - Add failed attempts alert widget
-  - Add quick action buttons
+  **What to do**: Create `app/Providers/BiometricServiceProvider.php`:
+  - register(): Bind BiometricProviderRegistry, CheckInService, FusionEngine, AntiSpoofGuard, FraudDetector, MembershipGuard, OfflineSyncService, BiometricDataDeletionService as singletons
+  - boot(): Empty (Filament resources registered in PanelProvider)
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development", "tailwindcss-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - `app/Filament/Admin/Pages/Dashboard.php` - Dashboard pattern
-  - `app/Filament/Admin/Pages/WhatsAppSetup.php` - Page structure
-
-  **Acceptance Criteria**:
-  - [ ] Dashboard shows device status
-  - [ ] Widgets display correct data
-
-  **QA Scenarios**:
-  - Test page loads
-  - Test widget data
-
-  **Commit**: YES (with T15-T19)
-  - Message: `feat(biometric): add dashboard page`
-  - Files: `app/Filament/Admin/Pages/Biometric/BiometricDashboard.php`
+  **References**: 
+  - `app/Providers/` for existing service providers
 
 ---
 
-- [ ] 15. Create DeviceListPage (CRUD)
+- [ ] 16. Create RekognitionProvider
 
-  **What to do**:
-  - Create list page for BiometricDevice resource
-  - Table with: name, type, vendor, status, location, last_sync
-  - Actions: create, edit, delete, test
-  - Filters: status, type, vendor
+  **What to do**: Create `app/Biometrics/Providers/RekognitionProvider.php` implementing BiometricProvider:
+  - Constructor: accepts config with aws_key, aws_secret, aws_region
+  - enroll(): IndexFaces into gym's collection (fluxfitness_gym_{gym_id}), set ExternalImageId=gym_member_{gym_member_id}
+  - verify(): SearchFacesByImage against gym's collection
+  - getLivenessScore(): DetectFaces with Pose, Quality, EyesOpen attributes
+  - deleteTemplate(): DeleteFaces by FaceId
+  - getSupportedTypes(): ['face']
+  - isAvailable(): Check AWS credentials and region
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - Existing Filament resource pages
-
-  **Acceptance Criteria**:
-  - [ ] List shows all devices
-  - [ ] CRUD actions work
-
-  **QA Scenarios**:
-  - Test CRUD operations
-  - Test filters
-
-  **Commit**: YES (with T14, T16-T19)
-  - Message: `feat(biometric): add device list page`
-  - Files: `app/Filament/Admin/Resources/BiometricDeviceResource.php`
+  **References**: 
+  - AWS SDK for PHP (aws/aws-sdk-php) should be available
+  - Use Guzzle HTTP client for API calls
 
 ---
 
-- [ ] 16. Create DeviceSetupPage (wizard)
+- [ ] 17. Create AntiSpoofGuard service
 
-  **What to do**:
-  - Create multi-step wizard (similar to WhatsAppSetup)
-  - Step 1: Device type selection (Hardware/API/Turnstile)
-  - Step 2: Configuration based on type
-  - Step 3: Test connection
-  - Step 4: Review & save
-  - Use Cache for wizard state
+  **What to do**: Create `app/Biometrics/Services/AntiSpoofGuard.php`:
+  - Method: check(BiometricSample $sample, BiometricProvider $provider): CheckInResult
+  - Calls provider->getLivenessScore()
+  - Compares against config('biometrics.liveness_threshold', 0.75)
+  - Returns denied('liveness_failed') if below threshold
+  - Returns allowed otherwise
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development", "volt-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - `app/Filament/Admin/Pages/WhatsAppSetup.php` - Wizard pattern
-
-  **Acceptance Criteria**:
-  - [ ] All steps work
-  - [ ] State persisted
-
-  **QA Scenarios**:
-  - Test wizard flow
-  - Test state recovery
-
-  **Commit**: YES (with T14-T15, T17-T19)
-  - Message: `feat(biometric): add device setup wizard`
-  - Files: `app/Filament/Admin/Pages/Biometric/DeviceSetup.php`
+  **References**: 
+  - `app/Services/` pattern for service classes
 
 ---
 
-- [ ] 17. Create DeviceDetailPage
+- [ ] 18. Create MembershipGuard service
 
-  **What to do**:
-  - Show device information
-  - Show connection status
-  - Show performance metrics
-  - Show recent activity
-  - Actions: Test, Restart, Delete
+  **What to do**: Create `app/Biometrics/Services/MembershipGuard.php`:
+  - Method: canCheckIn(GymMember $gymMember): GuardResult
+  - Calls $gymMember->canAccessGym() (existing)
+  - Checks $gymMember->hasActiveBiometricConsent()
+  - Returns GuardResult::deny(reason) or GuardResult::allow()
+  - Private: resolveReason(GymMember) -> maps to membership_frozen, membership_expired, payment_pending, no_biometric_consent
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - Similar detail pages in Filament
-
-  **Acceptance Criteria**:
-  - [ ] Shows all device details
-  - [ ] Actions work
-
-  **QA Scenarios**:
-  - Test page displays
-  - Test actions
-
-  **Commit**: YES (with T14-T16, T18-T19)
-  - Message: `feat(biometric): add device detail page`
-  - Files: `app/Filament/Admin/Pages/Biometric/DeviceDetail.php`
+  **References**: 
+  - `GymMember::canAccessGym()` at line 389-407 of GymMember.php
+  - Need GuardResult DTO first (Task 39)
 
 ---
 
-- [ ] 18. Create EnrollmentListPage
+- [ ] 19. Create CheckInService orchestrator
 
-  **What to do**:
-  - List all biometric enrollments
-  - Table: user, type, enrolled date, last used, status
-  - Actions: re-enroll, delete, verify
-  - Filters: status, type
+  **What to do**: Create `app/Biometrics/Services/CheckInService.php`:
+  - processCheckIn(BiometricSample $sample, BiometricDevice $device): CheckInResult
+  - Steps:
+    1. Resolve provider via BiometricProviderRegistry
+    2. AntiSpoofGuard::check() -> deny if fails
+    3. Load BiometricTemplate for gym_member at this gym with matching biometric_type and is_active
+    4. Get gymMember from template
+    5. Provider::verify() -> deny if fails
+    6. FusionEngine::merge() if multi-modal
+    7. MembershipGuard::canCheckIn() -> deny if fails
+    8. FraudDetector::isDuplicate() -> flag suspicious if true
+    9. FraudDetector::isSuspiciousVelocity() -> fire event if true
+    10. Create Attendance: gym_id, check_in_time=now(), status=AttendanceStatus::Present, check_in_method='biometric', device_id, biometric_type, provider_type, confidence_score, liveness_score, check_in_result, check_in_ip
+    11. Fire MemberCheckedIn event
+    12. Return CheckInResult::granted($attendance)
+  
+  - processCheckOut(GymMember $gymMember, BiometricDevice $device): CheckInResult
+    1. Find active attendance via Attendances::isCurrentlyCheckedIn()
+    2. Update check_out_time=now(), status=AttendanceStatus::Completed
+    3. Fire MemberCheckedOut event
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - Similar list pages
-
-  **Acceptance Criteria**:
-  - [ ] List shows enrollments
-  - [ ] Actions work
-
-  **QA Scenarios**:
-  - Test list display
-  - Test bulk actions
-
-  **Commit**: YES (with T14-T17, T19)
-  - Message: `feat(biometric): add enrollment list page`
-  - Files: `app/Filament/Admin/Resources/BiometricEnrollmentResource.php`
+  **References**: 
+  - Uses AttendanceStatus::Present from app/Enums/AttendanceStatus.php
+  - Uses Attendances::isCurrentlyCheckedIn() static method
 
 ---
 
-- [ ] 19. Create EnrollmentWizardPage
+- [ ] 20. Create FusionEngine service
 
-  **What to do**:
-  - Step 1: Select user
-  - Step 2: Select biometric type
-  - Step 3: Capture sample (device/API)
-  - Step 4: Verify quality
-  - Step 5: Confirm & save
+  **What to do**: Create `app/Biometrics/Services/FusionEngine.php`:
+  - Method: merge(array $verificationResults): VerificationResult
+  - Weighted average: confidence, livenessScore based on provider config
+  - Combine raw data arrays
+  - Return single VerificationResult
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development", "volt-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T8-T13)
-  - **Parallel Group**: Wave 3
-  - **Blocks**: T26
-  - **Blocked By**: T8-T13
-
-  **References**:
-  - `app/Filament/Admin/Pages/WhatsAppSetup.php` - Wizard pattern
-
-  **Acceptance Criteria**:
-  - [ ] All steps work
-  - [ ] Quality validation
-
-  **QA Scenarios**:
-  - Test enrollment flow
-  - Test quality check
-
-  **Commit**: YES (with T14-T18)
-  - Message: `feat(biometric): add enrollment wizard`
-  - Files: `app/Filament/Admin/Pages/Biometric/EnrollmentWizard.php`
+  **References**: 
+  - Pattern from CheckInService
 
 ---
 
-- [ ] 20. Create ApiCredentialsPage
+- [ ] 21. Create FraudDetector service
 
-  **What to do**:
-  - List connected API providers
-  - Show masked credentials with reveal toggle
-  - Test connection button
-  - Disconnect button
+  **What to do**: Create `app/Biometrics/Services/FraudDetector.php`:
+  - isDuplicate(GymMember $gymMember): bool
+    - Uses Attendances::isCurrentlyCheckedIn($gymMember->id, $gymMember->gym_id, GymMember::class)
+  - isSuspiciousVelocity(GymMember $gymMember): bool
+    - Checks if same email checked in at 2+ gyms within 10 minutes
+    - Query attendances where email matches (via morph) and check_in_time >= now()->subMinutes(10) and check_in_result='granted', count distinct gym_id >= 2
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
+  **References**: 
+  - Uses existing Attendances::isCurrentlyCheckedIn()
 
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
+### Wave 3: API + Filament
 
-  **References**:
-  - `app/Filament/Admin/Pages/GymSettings.php` - Settings pattern
+- [ ] 22. Add biometric API routes
 
-  **Acceptance Criteria**:
-  - [ ] Credentials displayed securely
-  - [ ] Test works
+  **What to do**: Add to `routes/api.php`:
+  ```php
+  Route::prefix('v1/biometric')->middleware(['auth:biometric-device'])->group(function () {
+      Route::post('/check-in', [BiometricCheckInController::class, 'checkIn']);
+      Route::post('/check-out', [BiometricCheckInController::class, 'checkOut']);
+      Route::post('/enroll', [BiometricEnrollController::class, 'enroll']);
+      Route::delete('/template/{id}', [BiometricEnrollController::class, 'deleteTemplate']);
+      Route::post('/heartbeat', [BiometricDeviceController::class, 'heartbeat']);
+      Route::get('/device/config', [BiometricDeviceController::class, 'config']);
+  });
+  Route::post('/v1/biometric/offline-sync', [BiometricOfflineSyncController::class, 'sync']);
+  Route::post('/v1/biometric/webhook/{token}', [BiometricWebhookController::class, 'handle']);
+  ```
 
-  **QA Scenarios**:
-  - Test credential masking
-  - Test connection test
-
-  **Commit**: YES (with T21-T25)
-  - Message: `feat(biometric): add API credentials page`
-  - Files: `app/Filament/Admin/Pages/Biometric/ApiCredentials.php`
-
----
-
-- [ ] 21. Create AttendanceSettingsPage
-
-  **What to do**:
-  - Check-in method selection
-  - Auto check-out settings
-  - Fallback method configuration
-  - Grace period settings
-
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
-
-  **References**:
-  - `app/Filament/Admin/Pages/GymSettings.php` - Settings form pattern
-
-  **Acceptance Criteria**:
-  - [ ] Settings save correctly
-  - [ ] Fallback logic configured
-
-  **QA Scenarios**:
-  - Test settings save
-  - Test fallback triggers
-
-  **Commit**: YES (with T20, T22-T25)
-  - Message: `feat(biometric): add attendance settings`
-  - Files: `app/Filament/Admin/Pages/Biometric/AttendanceSettings.php`
+  **References**: 
+  - Existing routes/api.php structure
 
 ---
 
-- [ ] 22. Create AccessControlPage
+- [ ] 23. Create biometric device auth middleware
 
-  **What to do**:
-  - Roles allowed to use biometric
-  - Roles allowed to enroll
-  - Roles allowed to manage devices
-  - Time-based access
-  - Location restrictions
+  **What to do**: Create `app/Http/Middleware/AuthenticateBiometricDevice.php`:
+  - Reads Authorization header: Bearer {plain_token}
+  - Queries BiometricDevice::where('gym_id', ...)->where('status', 'active')
+  - Calls $device->verifyToken($plainToken)
+  - Sets $request->attributes->set('device', $device)
+  - Returns 401 if invalid
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
-
-  **References**:
-  - Similar permission pages
-
-  **Acceptance Criteria**:
-  - [ ] Role restrictions work
-  - [ ] Settings persist
-
-  **QA Scenarios**:
-  - Test role restrictions
-  - Test time-based access
-
-  **Commit**: YES (with T20-T21, T23-T25)
-  - Message: `feat(biometric): add access control page`
-  - Files: `app/Filament/Admin/Pages/Biometric/AccessControl.php`
+  **References**: 
+  - Existing middleware in app/Http/Middleware/
 
 ---
 
-- [ ] 23. Create ActivityLogsPage
+- [ ] 24. Create BiometricCheckInController
 
-  **What to do**:
-  - Table with all biometric events
-  - Filters: date, user, device, event, result
-  - Expandable details
-  - Export functionality
+  **What to do**: Create `app/Http/Controllers/Api/BiometricCheckInController.php`:
+  - checkIn(BiometricCheckInRequest $request): returns CheckInResult JSON
+    - Validates: biometric_type, data (base64), captured_at, metadata optional
+    - Calls CheckInService::processCheckIn($sample, $device)
+  - checkOut(BiometricCheckOutRequest $request): returns CheckInResult JSON
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
-
-  **References**:
-  - `app/Filament/SuperAdmin/Pages/LoginActivity.php` - Log page pattern
-
-  **Acceptance Criteria**:
-  - [ ] Logs display correctly
-  - [ ] Filters work
-
-  **QA Scenarios**:
-  - Test log display
-  - Test filters
-
-  **Commit**: YES (with T20-T22, T24-T25)
-  - Message: `feat(biometric): add activity logs page`
-  - Files: `app/Filament/Admin/Pages/Biometric/ActivityLogs.php`
+  **References**: 
+  - Existing API controllers in app/Http/Controllers/Api/
 
 ---
 
-- [ ] 24. Create ReportsPage
+- [ ] 25. Create BiometricEnrollController
 
-  **What to do**:
-  - Daily auth chart
-  - Success/failure rate
-  - Peak hours
-  - Device reliability
+  **What to do**: Create `app/Http/Controllers/Api/BiometricEnrollController.php`:
+  - enroll(BiometricEnrollRequest $request): enrolls new biometric template
+    - Validates: gym_member_id, biometric_type, data
+    - Checks consent: $gymMember->hasActiveBiometricConsent()
+    - Creates BiometricConsent if none
+    - Calls provider->enroll()
+    - Creates BiometricTemplate record
+  - deleteTemplate(BiometricTemplate $template): deletes template
+    - Calls provider->deleteTemplate()
+    - Soft-deletes template record
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development", "tailwindcss-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
-
-  **References**:
-  - Existing report pages
-
-  **Acceptance Criteria**:
-  - [ ] Charts display correctly
-  - [ ] Data accurate
-
-  **QA Scenarios**:
-  - Test chart rendering
-  - Test data accuracy
-
-  **Commit**: YES (with T20-T23, T25)
-  - Message: `feat(biometric): add reports page`
-  - Files: `app/Filament/Admin/Pages/Biometric/Reports.php`
+  **References**: 
+  - Pattern from BiometricCheckInController
 
 ---
 
-- [ ] 25. Create GlobalSettingsPage
+- [ ] 26. Create BiometricDeviceController
 
-  **What to do**:
-  - Enable/disable biometric
-  - Session timeout
-  - Max failed attempts
-  - Lockout duration
-  - Notification settings
+  **What to do**: Create `app/Http/Controllers/Api/BiometricDeviceController.php`:
+  - heartbeat(HeartbeatRequest $request): updates last_heartbeat_at
+  - config(): returns device config (provider_type, provider_config masked)
 
-  **Recommended Agent Profile**:
-  - **Category**: `visual-engineering`
-  - **Skills**: ["fluxui-development"]
-
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T19)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: T26
-  - **Blocked By**: T14-T19
-
-  **References**:
-  - `app/Filament/Admin/Pages/GymSettings.php` - Settings pattern
-
-  **Acceptance Criteria**:
-  - [ ] Settings save correctly
-  - [ ] Global toggle works
-
-  **QA Scenarios**:
-  - Test settings persistence
-  - Test global enable/disable
-
-  **Commit**: YES (with T20-T24)
-  - Message: `feat(biometric): add global settings page`
-  - Files: `app/Filament/Admin/Pages/Biometric/GlobalSettings.php`
+  **References**: 
+  - Pattern from above
 
 ---
 
-- [ ] 26. Register all pages in AdminPanelProvider
+- [ ] 27. Create BiometricOfflineSyncController
 
-  **What to do**:
-  - Add navigation group "Biometric"
-  - Register all pages
-  - Add sidebar items
+  **What to do**: Create `app/Http/Controllers/Api/BiometricOfflineSyncController.php`:
+  - sync(OfflineSyncRequest $request): processes batch of offline events
+    - Validates: events array with offline_id, biometric_type, data, captured_at
+    - Calls OfflineSyncService::processBatch()
 
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-  - **Skills**: []
+  **References**: 
+  - Pattern from above
 
-  **Parallelization**:
-  - **Can Run In Parallel**: NO (depends on T14-T25)
-  - **Parallel Group**: Wave 4
-  - **Blocks**: None
-  - **Blocked By**: T14-T25
+---
 
-  **References**:
-  - `app/Providers/Filament/AdminPanelProvider.php` - Registration pattern
+- [ ] 28. Create BiometricDeviceResource (Filament)
 
-  **Acceptance Criteria**:
-  - [ ] All pages in navigation
-  - [ ] Accessible
+  **What to do**: Create `app/Filament/Resources/BiometricDeviceResource.php`:
+  - Model: BiometricDevice::class
+  - getEloquentQuery(): scope to current tenant (gym_id)
+  - Form:
+    - device_name (required)
+    - device_type (Select: fingerprint|face|iris|card_bio|mobile)
+    - provider_type (Select: rekognition|azure_face|bioid|on_premise|custom) ->live()
+    - Conditional sections for provider config (AWS, Azure, On-Premise, Custom)
+    - assigned_staff_id (relationship, nullable)
+    - status (ToggleButtons)
+    - offline_capable, supports_multi_modal (toggles)
+  - Table:
+    - device_name, device_type (badge), provider_type (badge), status (color badge)
+    - assigned_staff name, last_heartbeat_at (diffForHumans)
+  - Actions:
+    - TestConnectionAction -> calls Provider::isAvailable()
+    - RegenerateTokenAction -> generates new device_token, shows in modal once
 
-  **QA Scenarios**:
-  - Test navigation
-  - Test page access
+  **References**: 
+  - `app/Filament/BaseResources/BaseAttendanceResource.php` for form/table patterns
 
-  **Commit**: YES (final)
-  - Message: `feat(biometric): register pages in admin panel`
-  - Files: `app/Providers/Filament/AdminPanelProvider.php`
+---
+
+- [ ] 29. Extend GymMemberAttendanceResource with biometric columns
+
+  **What to do**: Modify `GymMemberAttendanceResource` (or BaseAttendanceResource) table:
+  - Add TextColumn::make('check_in_method') -> badge, color gray for null, success for biometric
+  - Add TextColumn::make('device.device_name') -> placeholder '—', toggleable
+  - Add TextColumn::make('confidence_score') -> format as percentage, toggleable
+  - Add TextColumn::make('check_in_result') -> badge (granted=success, denied=danger, suspicious=warning)
+  - Add SelectFilter::make('check_in_method') -> options ['biometric' => 'Biometric', null => 'Manual']
+
+  **References**: 
+  - `app/Filament/BaseResources/BaseAttendanceResource.php:118-149` - table columns
+
+---
+
+- [ ] 30. Create MemberCheckedIn/MemberCheckedOut events
+
+  **What to do**: Create events:
+  - `app/Events/MemberCheckedIn.php` implements ShouldBroadcast
+    - broadcastOn(): PrivateChannel("gym.{$this->gymId}.attendance")
+    - broadcastWith(): gym_member_id, member_name, member_avatar, member_initials, device_name, check_in_time, current_count
+  - `app/Events/MemberCheckedOut.php` - same structure with check_out_time
+
+  **References**: 
+  - `app/Observers/AttendanceObserver.php:56` - broadcasts AttendanceStatsUpdated
+
+---
+
+- [ ] 31. Update routes/channels.php with attendance channel
+
+  **What to do**: Add to routes/channels.php:
+  ```php
+  Broadcast::channel('gym.{gymId}.attendance', function ($user, $gymId) {
+      return $user->hasRole('super_admin') || $user->gyms->contains($gymId);
+  });
+  ```
+
+  **References**: 
+  - Existing channels at routes/channels.php
+
+---
+
+- [ ] 32. Create BiometricEnrollmentPage (Filament)
+
+  **What to do**: Create `app/Filament/Pages/MemberBiometricEnrollment.php`:
+  - Multi-step wizard:
+    - Step 1: Select GymMember (where gym_id = tenant, membershipActive, notFrozen)
+    - Step 2: Consent check -> if no consent, show text, on confirm create BiometricConsent
+    - Step 3: Select biometric type + device (filter devices by supported types)
+    - Step 4: Capture prompt (instructions for staff)
+    - Step 5: Quality confirmation (show quality_score, create template on confirm)
+
+  **References**: 
+  - Existing Filament pages in app/Filament/
+
+### Wave 4: Dashboard + Providers
+
+- [ ] 33. Create GymLiveAttendance Livewire component
+
+  **What to do**: Create `app/Livewire/GymLiveAttendance.php`:
+  - Public: presentMembers (array keyed by gym_member_id), currentCount (int), gymId (int)
+  - mount(Gym $gym): seed from Attendances::with('attendanceable')->byGym($gymId)->active()->whereDate(check_in_time, today())
+  - handleCheckIn(array $data): #[On('echo-private:gym.{gymId}.attendance,MemberCheckedIn')] add to presentMembers
+  - handleCheckOut(array $data): #[On('echo-private:gym.{gymId}.attendance,MemberCheckedOut')] remove from presentMembers
+  - checkCapacityAlert(): dispatch if currentCount/pct >= 0.80 or 1.0
+
+  **References**: 
+  - Existing Livewire components in app/Livewire/
+
+---
+
+- [ ] 34. Create AzureFaceProvider
+
+  **What to do**: Create `app/Biometrics/Providers/AzureFaceProvider.php`:
+  - Uses Azure Face API
+  - PersonGroup per gym: fluxfitness-gym-{gym_id}
+  - Person name: gym_member_{gym_member_id}
+  - enroll(): create Person, add persistedFace
+  - verify(): detect, verify against personId
+  - getLivenessScore(): detect with headPose, blur, exposure, noise
+
+  **References**: 
+  - Pattern from RekognitionProvider
+
+---
+
+- [ ] 35. Create BioIDProvider
+
+  **What to do**: Create `app/Biometrics/Providers/BioIDProvider.php`:
+  - Primarily liveness detection
+  - Uses BioID Web API
+  - Simplified implementation for demo
+
+  **References**: 
+  - Pattern from RekognitionProvider
+
+---
+
+- [ ] 36. Create LocalModelProvider
+
+  **What to do**: Create `app/Biometrics/Providers/LocalModelProvider.php`:
+  - Self-hosted DeepFace/InsightFace
+  - config: base_url, api_key
+  - HTTP adapter calls to local model service
+
+  **References**: 
+  - Pattern from RekognitionProvider
+
+---
+
+- [ ] 37. Create CustomApiProvider
+
+  **What to do**: Create `app/Biometrics/Providers/CustomApiProvider.php`:
+  - Generic HTTP adapter
+  - Reads endpoint_map from provider_config
+  - Maps enroll/verify/delete/liveness to configurable URLs
+
+  **References**: 
+  - Pattern from RekognitionProvider
+
+---
+
+- [ ] 38. Create OfflineSyncService
+
+  **What to do**: Create `app/Biometrics/Services/OfflineSyncService.php`:
+  - processBatch(array $events, BiometricDevice $device): array of results
+  - For each event:
+    1. Re-run AntiSpoofGuard
+    2. Load BiometricTemplate -> gymMember
+    3. Re-run MembershipGuard at captured_at time
+    4. Re-run FraudDetector for captured_at window
+    5. Create attendance with check_in_time=captured_at, synced_at=now()
+    6. Return per-event: accepted | retroactively_denied
+
+  **References**: 
+  - Pattern from CheckInService
+
+---
+
+- [ ] 39. Create BiometricDataDeletionService
+
+  **What to do**: Create `app/Biometrics/Services/BiometricDataDeletionService.php`:
+  - deleteForGymMember(GymMember $gymMember): void
+    1. Load BiometricTemplate where gym_member_id
+    2. Call provider->deleteTemplate() for each
+    3. Soft-delete templates (or set is_active=false)
+    4. Anonymize biometric attendance columns:
+       - check_in_method = 'anonymized'
+       - biometric_type, provider_type, confidence_score, liveness_score, fusion_score, check_in_result = null
+       - Keep check_in_time + status for stats
+    5. Delete BiometricConsent records
+    6. Log via Spatie activity log: activity()->on($gymMember)->log('Biometric data deleted per GDPR request')
+
+  **References**: 
+  - Uses existing Spatie activity log on GymMember
+
+---
+
+- [ ] 40. Create GuardResult DTO
+
+  **What to do**: Create `app/Biometrics/DTOs/GuardResult.php`:
+  - Properties: allowed (bool), reason (?string)
+  - Static: allow(), deny(string $reason)
+
+  **References**: 
+  - Pattern from CheckInResult DTO
+
+### Wave 5: Tests
+
+- [ ] 41. Test CheckInService - granted path
+
+  **What to do**: Feature test:
+  - Mock provider returns successful VerificationResult
+  - Mock AntiSpoofGuard passes
+  - Mock MembershipGuard allows
+  - Mock FraudDetector returns false
+  - Call processCheckIn
+  - Assert: Attendance created with status=AttendanceStatus::Present, check_in_method='biometric'
+  - Assert: CheckInResult::granted returned
+
+  **References**: 
+  - Existing feature tests in tests/Feature/
+
+---
+
+- [ ] 42. Test CheckInService - denied paths
+
+  **What to do**: Feature tests:
+  - liveness_failed: AntiSpoofGuard returns fail
+  - membership_frozen: GymMember with isFrozen()=true
+  - membership_expired: GymMember with membership_end in past
+  - payment_pending: GymMember with payment_status != COMPLETED
+  - For each: Assert CheckInResult::denied returned, no attendance created
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 43. Test CheckInService - suspicious duplicate
+
+  **What to do**: Feature test:
+  - FraudDetector::isDuplicate returns true
+  - Call processCheckIn
+  - Assert: Attendance created with check_in_result='suspicious'
+  - Assert: Event fired for alerting
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 44. Test MembershipGuard
+
+  **What to do**: Unit tests:
+  - canAccessGym returns false -> deny membership_frozen
+  - canAccessGym returns false -> deny membership_expired  
+  - canAccessGym returns false -> deny payment_pending
+  - hasActiveBiometricConsent returns false -> deny no_biometric_consent
+  - All pass -> allow
+
+  **References**: 
+  - Uses GymMember::canAccessGym()
+
+---
+
+- [ ] 45. Test FraudDetector isDuplicate
+
+  **What to do**: Unit test:
+  - Create GymMember with active attendance (via Attendances::isCurrentlyCheckedIn)
+  - Call isDuplicate
+  - Assert: true returned
+
+  **References**: 
+  - Uses Attendances::isCurrentlyCheckedIn()
+
+---
+
+- [ ] 46. Test FraudDetector isSuspiciousVelocity
+
+  **What to do**: Unit test:
+  - Create 2 attendances for same email at different gyms within 10 minutes
+  - Call isSuspiciousVelocity
+  - Assert: true returned
+
+  **References**: 
+  - From Task 45
+
+---
+
+- [ ] 47. Test OfflineSyncService
+
+  **What to do**: Feature test:
+  - Send batch of offline events with captured_at times
+  - Call processBatch
+  - Assert: Each attendance created with synced_at = now(), check_in_time = captured_at
+  - Assert: status = AttendanceStatus::Present
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 48. Test BiometricDataDeletionService
+
+  **What to do**: Feature test:
+  - Create GymMember with biometric templates and consents
+  - Call deleteForGymMember
+  - Assert: Templates soft-deleted or is_active=false
+  - Assert: Attendance columns anonymized (check_in_method='anonymized', biometric columns null)
+  - Assert: Consents deleted
+  - Assert: Activity log entry created
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 49. Test FusionEngine
+
+  **What to do**: Unit test:
+  - Pass array of VerificationResults with different confidence/liveness
+  - Call merge
+  - Assert: Weighted average calculated correctly
+
+  **References**: 
+  - Uses VerificationResult DTO
+
+---
+
+- [ ] 50. Test AntiSpoofGuard thresholds
+
+  **What to do**: Unit test:
+  - livenessScore = 0.749 -> deny (below 0.75 threshold)
+  - livenessScore = 0.750 -> allow (at threshold)
+  - livenessScore = 0.90 -> allow
+
+  **References**: 
+  - From Task 17
+
+### Wave 6: Integration Tests
+
+- [ ] 51. Test full biometric check-in flow
+
+  **What to do**: Integration test:
+  - Setup: GymMember with active consent, biometric template enrolled
+  - Action: POST to /api/v1/biometric/check-in
+  - Assert: 200 response with granted
+  - Assert: Attendance created in database
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 52. Test device API endpoints
+
+  **What to do**: Integration tests:
+  - /check-in, /check-out, /enroll, /heartbeat, /device/config
+  - With valid device token -> 200
+  - Without token -> 401
+
+  **References**: 
+  - From Task 41
+
+---
+
+- [ ] 53. Test Filament device management
+
+  **What to do**: Feature test (Livewire):
+  - Visit BiometricDeviceResource
+  - Assert: Device list scoped to current gym
+  - Create new device
+  - Assert: Device appears in list
+  - Test Connection action works
+
+  **References**: 
+  - Filament testing patterns
+
+---
+
+- [ ] 54. Test live attendance dashboard
+
+  **What to do**: Integration test:
+  - Seed with active attendances
+  - Visit dashboard page
+  - Assert: presentMembers populated
+  - Trigger check-in event
+  - Assert: presentMembers updated, count incremented
+
+  **References**: 
+  - Livewire testing patterns
+
+---
+
+- [ ] 55. Integration test - cross-component validation
+
+  **What to do**: End-to-end test:
+  - Enroll biometric template
+  - Check-in via API
+  - Verify attendance appears in Filament
+  - Verify live dashboard updates
+  - Check-out
+  - Verify all states correct
+
+  **References**: 
+  - From Task 41
 
 ---
 
 ## Final Verification Wave
 
-- [ ] F1. Integration testing - Test complete biometric flow
-- [ ] F2. End-to-end authentication - Verify full auth flow
-- [ ] F3. Code quality review - Run pint, phpstan
-- [ ] F4. Scope fidelity check - Verify all requirements met
+- [ ] F1. Plan Compliance Audit — `oracle`
+  Read plan end-to-end. For each Must Have: verify implementation exists. For each Must NOT Have: search codebase. Check evidence files exist.
 
-## Final Verification Wave
+- [ ] F2. Code Quality Review — `unspecified-high`
+  Run `vendor/bin/pint --dirty`, check for `as any`, empty catches, console.log, commented code, unused imports.
+
+- [ ] F3. Real Manual QA — `unspecified-high`
+  Execute every QA scenario from every task. Test cross-task integration. Test edge cases.
+
+- [ ] F4. Scope Fidelity Check — `deep`
+  For each task: read "What to do", read actual diff. Verify 1:1 - no missing, no creep. Check Must NOT do compliance.
 
 ---
 
 ## Commit Strategy
 
+- **1**: `feat(biometric): add migrations for biometric tables and columns`
+  Files: `database/migrations/*_create_biometric_*.php`, `database/migrations/*_add_biometric_columns_to_attendances_table.php`
+
+- **2**: `feat(biometric): add biometric models and enums`
+  Files: `app/Models/BiometricDevice.php`, `BiometricTemplate.php`, `BiometricConsent.php`, `app/Enums/BiometricTypeEnum.php`, `BiometricDeviceStatusEnum.php`
+
+- **3**: `feat(biometric): update Attendances and GymMember with biometric fields`
+  Files: `app/Models/Attendances.php`, `app/Models/GymMember.php`
+
+- **4**: `feat(biometric): add DTOs and provider interface`
+  Files: `app/Biometrics/DTOs/*.php`, `app/Biometrics/Contracts/BiometricProvider.php`
+
+- **5**: `feat(biometric): add provider implementations`
+  Files: `app/Biometrics/Providers/RekognitionProvider.php`, `AzureFaceProvider.php`, `BioIDProvider.php`, `LocalModelProvider.php`, `CustomApiProvider.php`
+
+- **6**: `feat(biometric): add core services`
+  Files: `app/Biometrics/Services/*.php`, `config/biometrics.php`, `app/Providers/BiometricServiceProvider.php`
+
+- **7**: `feat(biometric): add device API endpoints`
+  Files: `app/Http/Controllers/Api/Biometric*.php`, `app/Http/Middleware/AuthenticateBiometricDevice.php`, `routes/api.php` (additions)
+
+- **8**: `feat(biometric): add Filament resources`
+  Files: `app/Filament/Resources/BiometricDeviceResource.php`, `app/Filament/Pages/MemberBiometricEnrollment.php`
+
+- **9**: `feat(biometric): add live attendance dashboard`
+  Files: `app/Events/MemberCheckedIn.php`, `MemberCheckedOut.php`, `app/Livewire/GymLiveAttendance.php`, `routes/channels.php`
+
+- **10**: `test(biometric): add biometric tests`
+  Files: `tests/Feature/Biometric*.php`, `tests/Unit/Biometric*.php`
+
 ---
 
 ## Success Criteria
+
+### Verification Commands
+```bash
+# Run biometric tests
+php artisan test --filter=Biometric
+
+# Run pint
+vendor/bin/pint --dirty
+
+# Test API endpoint
+curl -X POST http://localhost/api/v1/biometric/check-in \
+  -H "Authorization: Bearer {device_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"biometric_type": "face", "data": "...", "captured_at": "2026-03-23T10:00:00Z"}'
+```
+
+### Final Checklist
+- [ ] All Must Have items implemented
+- [ ] All Must NOT Have items absent
+- [ ] All biometric tests pass
+- [ ] Pint shows no issues
+- [ ] Backward compatibility: manual check-in still works (check_in_method=null)
 
 ### Verification Commands
 ```bash
