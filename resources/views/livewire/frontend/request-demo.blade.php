@@ -115,7 +115,7 @@
                     <div class="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden hover:border-purple-500/50 transition-all duration-500">
                         <!-- Form Header -->
                         <div class="bg-gradient-to-r from-purple-600 to-cyan-600 p-6">
-                            <h2 class="text-2xl font-bold text-white mb-2">Request Your Demo</h2>
+                            <h1 class="text-2xl font-bold text-white mb-2">Book Your Free Demo</h1>
                             <p class="text-purple-100">Fill out the form below and we'll be in touch shortly</p>
                         </div>
 

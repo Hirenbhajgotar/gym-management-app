@@ -14,7 +14,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('frontend.layouts.app_new')]
-#[Title('Fluxfitness | Request a Free Demo | Gym Software')]
+#[Title('Book a Free Demo | Gym Software | Fluxfitness')]
 class RequestDemo extends Component
 {
     public string $name = '';
@@ -255,7 +255,7 @@ class RequestDemo extends Component
         return view('livewire.frontend.request-demo')
             ->layout('frontend.layouts.app_new', [
                 'seo' => [
-                    'description' => "Request a free demo of India's best gym management software. Get a personalized demo and see how our software can help your gym grow.",
+                    'description' => "Book a free demo of India's best gym management software. Get a personalized demo and see how our software can help your gym grow.",
                     'keywords' => 'gym software demo, free gym management software demo, fitness software demo, book demo, gym CRM demo',
                 ],
             ]);
