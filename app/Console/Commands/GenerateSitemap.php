@@ -21,7 +21,7 @@ class GenerateSitemap extends Command
         // Main Sitemap — static pages
         Sitemap::create()
             ->add(Url::create('/'))
-            ->add(Url::create('/business-register'))
+            // ->add(Url::create('/business-register'))
             ->add(Url::create('/request-demo'))
             ->writeToFile(public_path('sitemap_main.xml'));
 
