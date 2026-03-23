@@ -167,6 +167,11 @@ class Gym extends Model
         return $this->hasMany(WhatsAppTemplate::class);
     }
 
+    public function biometricDevices(): HasMany
+    {
+        return $this->hasMany(BiometricDevice::class);
+    }
+
     // =========================
     // Helper Methods
     // =========================

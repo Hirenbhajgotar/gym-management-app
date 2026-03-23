@@ -76,21 +76,31 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('CRM')
                     ->icon('phosphor-funnel'),
-                NavigationGroup::make()
-                    ->label('WhatsApp')
-                    ->icon('phosphor-messenger-logo'),
+
                 NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
+
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
+
                 NavigationGroup::make()
                     ->label('Expense Management')
                     ->icon('phosphor-invoice'),
+
+                NavigationGroup::make()
+                    ->label('WhatsApp')
+                    ->icon('phosphor-messenger-logo'),
+
+                NavigationGroup::make()
+                    ->label('Device Management')
+                    ->icon('heroicon-o-finger-print'),
+
                 NavigationGroup::make()
                     ->label('Settings')
-                    ->icon('heroicon-o-wrench-screwdriver'),
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->collapsed(true),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null)
