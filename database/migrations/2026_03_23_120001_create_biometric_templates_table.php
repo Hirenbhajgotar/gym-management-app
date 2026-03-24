@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('gym_member_id')->constrained('gym_members')->cascadeOnDelete();
             $table->foreignId('gym_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('enrolled_by_device_id')->constrained('biometric_devices');
+            $table->foreignId('enrolled_by_device_id')->nullable()->constrained('biometric_devices');
             $table->string('biometric_type'); // face | fingerprint | iris
             $table->string('provider_type');
             $table->text('template_ref')->nullable(); // encrypted — provider-side ID only, NEVER raw biometric

@@ -83,6 +83,14 @@ class BiometricDeviceResource extends Resource
             ->schema([
                 Section::make('Device Information')
                     ->schema([
+                        Select::make('gym_id')
+                            ->label('Gym')
+                            ->relationship('gym', 'name')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->visible(fn () => auth()->user()->hasRole('super_admin')),
+
                         TextInput::make('device_name')
                             ->label('Device Name')
                             ->required()
@@ -112,6 +120,12 @@ class BiometricDeviceResource extends Resource
                         Toggle::make('supports_multi_modal')
                             ->label('Multi-Modal')
                             ->helperText('Support for multiple biometric types'),
+
+                        TextInput::make('firmware_version')
+                            ->label('Firmware Version')
+                            ->placeholder('v2.1.0')
+                            ->nullable()
+                            ->maxLength(50),
                     ])->columns(2),
 
                 Section::make('Provider Configuration')
@@ -149,18 +163,19 @@ class BiometricDeviceResource extends Resource
                                     ->password()
                                     ->revealable()
                                     ->live(),
-                                TextInput::make('provider_config.collection_id')
-                                    ->label('Face Collection ID')
-                                    ->placeholder('gym-faces')
-                                    ->required()
-                                    ->live(),
                                 TextInput::make('provider_config.similarity_threshold')
                                     ->label('Similarity Threshold (%)')
                                     ->numeric()
                                     ->minValue(0)
                                     ->maxValue(100)
-                                    ->default(85)
-                                    ->live(),
+                                    ->default(config('biometrics.similarity_threshold') * 100)
+                                    ->live()
+                                    ->helperText('Override global threshold (' . config('biometrics.similarity_threshold') * 100 . '%). Leave default if unsure.'),
+
+                                Placeholder::make('collection_info')
+                                    ->label('Face Collection ID')
+                                    ->content(fn () => 'Auto-generated: flux_gym_' . Filament::getTenant()->id)
+                                    ->helperText('Collection is automatically created in AWS when first member enrolls'),
                             ])
                             ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'rekognition')
                             ->columns(2),
@@ -180,18 +195,19 @@ class BiometricDeviceResource extends Resource
                                     ->password()
                                     ->revealable()
                                     ->live(),
-                                TextInput::make('provider_config.face_list_id')
-                                    ->label('Face List ID')
-                                    ->placeholder('gym-member-faces')
-                                    ->required()
-                                    ->live(),
                                 TextInput::make('provider_config.confidence_threshold')
                                     ->label('Confidence Threshold (%)')
                                     ->numeric()
                                     ->minValue(0)
                                     ->maxValue(100)
-                                    ->default(80)
-                                    ->live(),
+                                    ->default(config('biometrics.confidence_threshold') * 100)
+                                    ->live()
+                                    ->helperText('Override global threshold (' . config('biometrics.confidence_threshold') * 100 . '%). Leave default if unsure.'),
+
+                                // face_list_id TextInput hatao, replace karo with:
+                                Placeholder::make('person_group_info')
+                                    ->label('Person Group ID')
+                                    ->content(fn () => 'Auto-generated: flux_gym-' . Filament::getTenant()->id),
                             ])
                             ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'azure_face')
                             ->columns(2),
@@ -284,6 +300,32 @@ class BiometricDeviceResource extends Resource
                                     ->maxValue(300)
                                     ->default(30)
                                     ->live(),
+
+                                Section::make('Endpoint Paths')
+                                    ->description('Optional: Override default paths if vendor API uses different routes')
+                                    ->schema([
+                                        TextInput::make('provider_config.path_enroll')
+                                            ->label('Enroll Path')
+                                            ->placeholder('/enroll')  // default
+                                            ->nullable(),
+
+                                        TextInput::make('provider_config.path_verify')
+                                            ->label('Verify Path')
+                                            ->placeholder('/verify')  // default
+                                            ->nullable(),
+
+                                        TextInput::make('provider_config.path_liveness')
+                                            ->label('Liveness Path')
+                                            ->placeholder('/liveness')  // default
+                                            ->nullable(),
+
+                                        TextInput::make('provider_config.path_delete')
+                                            ->label('Delete Path')
+                                            ->placeholder('/delete')  // default
+                                            ->nullable(),
+                                    ])
+                                    ->columns(2)
+                                    ->collapsible(),
                             ])
                             ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'custom')
                             ->columns(2),
