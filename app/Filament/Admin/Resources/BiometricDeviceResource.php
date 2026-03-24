@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
+use Filament\Notifications\Actions\Action as ActionsAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -24,6 +25,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Js;
 
 class BiometricDeviceResource extends Resource
 {
@@ -501,9 +503,18 @@ class BiometricDeviceResource extends Resource
                         $plainToken = bin2hex(random_bytes(32));
                         $record->update(['device_token' => $plainToken]);
                         Notification::make()
-                            ->title('Token Regenerated')
+                            ->title('API Token Generated')
                             ->success()
-                            ->body('New API token: ' . $plainToken)
+                            ->body('Your new API token has been generated. Make sure to copy it now as you won\'t be able to see it again!')
+                            ->actions([
+                                ActionsAction::make('copy')
+                                    ->label('Copy to Clipboard')
+                                    ->color('primary')
+                                    ->icon('heroicon-m-clipboard')
+                                    ->link()
+                                    ->url('javascript:navigator.clipboard.writeText(' . Js::from($plainToken) . ')')
+                                    ->close(),
+                            ])
                             ->persistent()
                             ->send();
                     })
