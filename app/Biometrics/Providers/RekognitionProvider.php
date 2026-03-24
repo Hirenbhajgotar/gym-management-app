@@ -13,31 +13,29 @@ class RekognitionProvider implements BiometricProvider
 {
     protected RekognitionClient $client;
 
-    protected string $collectionId;
-
     public function __construct(
         protected array $config
     ) {
         $this->client = new RekognitionClient([
-            'region' => $config['aws_region'] ?? 'us-east-1',
+            'region' => $config['region'] ?? 'us-east-1',
             'version' => 'latest',
             'credentials' => [
-                'key' => $config['aws_key'] ?? '',
-                'secret' => $config['aws_secret'] ?? '',
+                'key' => $config['access_key'] ?? '',
+                'secret' => $config['secret_key'] ?? '',
             ],
         ]);
     }
 
     public function enroll(GymMember $gymMember, BiometricSample $sample): TemplateRef
     {
-        $this->collectionId = $this->getCollectionId($gymMember->gym_id);
+        $collectionId = $this->getCollectionId($gymMember->gym_id);
 
         // Ensure collection exists
-        $this->ensureCollection();
+        $this->ensureCollection($collectionId);
 
         // Index the face
         $result = $this->client->IndexFaces([
-            'CollectionId' => $this->collectionId,
+            'CollectionId' => $collectionId,
             'Image' => [
                 'Bytes' => base64_decode($sample->data),
             ],
@@ -58,7 +56,7 @@ class RekognitionProvider implements BiometricProvider
             provider: 'rekognition',
             externalId: $faceId,
             meta: [
-                'collection_id' => $this->collectionId,
+                'collection_id' => $collectionId,
                 'quality_score' => $quality ? ($quality['Brightness'] + $quality['Sharpness']) / 200 : null,
             ]
         );
@@ -68,11 +66,12 @@ class RekognitionProvider implements BiometricProvider
     {
         // Search for matching face
         $result = $this->client->SearchFacesByImage([
-            'CollectionId' => $ref->meta['collection_id'] ?? $this->collectionId,
+            'CollectionId' => $ref->meta['collection_id'],
             'Image' => [
                 'Bytes' => base64_decode($sample->data),
             ],
-            'MaxFaces' => 1,
+            'MaxFaces' => 5,
+            'FaceMatchThreshold' => ($this->config['similarity_threshold'] ?? 85),
         ]);
 
         $faceMatches = $result->get('FaceMatches');
@@ -87,14 +86,26 @@ class RekognitionProvider implements BiometricProvider
             );
         }
 
-        $match = $faceMatches[0];
-        $face = $match['Face'];
+        // $match = $faceMatches[0];
+        // $face = $match['Face'];
+        $expectedFaceId = $ref->externalId;
+        $matchedFace = collect($faceMatches)->first(fn ($m) => $m['Face']['FaceId'] === $expectedFaceId);
+
+        if (! $matchedFace) {
+            return new VerificationResult(
+                matched: false,
+                confidence: 0.0,
+                livenessScore: 0.0,
+                providerRef: '',
+                raw: $result->toArray()
+            );
+        }
 
         return new VerificationResult(
             matched: true,
-            confidence: $match['Similarity'] / 100,
+            confidence: $matchedFace['Similarity'] / 100,
             livenessScore: 0.0, // Will be set by AntiSpoofGuard
-            providerRef: $face['FaceId'],
+            providerRef: $matchedFace['Face']['FaceId'],
             raw: $result->toArray()
         );
     }
@@ -128,10 +139,15 @@ class RekognitionProvider implements BiometricProvider
         // Higher quality and more centered face = higher liveness score
         $qualityScore = ($brightness + $sharpness) / 200;
         $poseScore = max(0, 1 - ($yaw + $roll + $pitch) / 90);
-        $eyesOpen = $detail['EyesOpen'] ?? ['Value' => true];
+        $eyesOpen = $detail['EyesOpen']['Value'] ?? true;
         $confidence = $detail['Confidence'] / 100;
 
-        $livenessScore = ($qualityScore * 0.3 + $poseScore * 0.3 + ($eyesOpen['Value'] ? 0.2 : 0) + $confidence * 0.2);
+        $livenessScore = (
+            $qualityScore * 0.3
+            + $poseScore * 0.3
+            + ($eyesOpen ? 0.2 : 0)
+            + $confidence * 0.2
+        );
 
         return min(1.0, max(0.0, $livenessScore));
     }
@@ -140,7 +156,7 @@ class RekognitionProvider implements BiometricProvider
     {
         try {
             $this->client->DeleteFaces([
-                'CollectionId' => $ref->meta['collection_id'] ?? $this->collectionId,
+                'CollectionId' => $ref->meta['collection_id'],
                 'FaceIds' => [$ref->externalId],
             ]);
 
@@ -158,14 +174,15 @@ class RekognitionProvider implements BiometricProvider
     public function isAvailable(): bool
     {
         try {
-            $this->client->describeCollection([
-                'CollectionId' => 'test_collection',
+            $this->client->listCollections([
+                'MaxResults' => 1,
             ]);
 
             return true;
+        } catch (\Aws\Exception\AwsException $e) {
+            return false;
         } catch (\Exception $e) {
-            // Check if it's a credentials issue
-            return ! str_contains($e->getMessage(), 'credentials');
+            return false;
         }
     }
 
@@ -174,16 +191,16 @@ class RekognitionProvider implements BiometricProvider
         return "fluxfitness_gym_{$gymId}";
     }
 
-    protected function ensureCollection(): void
+    protected function ensureCollection(string $collectionId): void
     {
         try {
             $this->client->describeCollection([
-                'CollectionId' => $this->collectionId,
+                'CollectionId' => $collectionId,
             ]);
         } catch (\Exception $e) {
             // Collection doesn't exist, create it
             $this->client->createCollection([
-                'CollectionId' => $this->collectionId,
+                'CollectionId' => $collectionId,
             ]);
         }
     }

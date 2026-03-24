@@ -18,13 +18,25 @@ class CustomApiProvider implements BiometricProvider
 
     protected string $apiKey;
 
+    protected string $secret;
+
     protected int $timeout;
 
     public function __construct(
         protected array $config
     ) {
-        $this->endpointMap = $config['endpoint_map'] ?? [];
+        $baseUrl = rtrim($config['api_url'] ?? '', '/');
+
+        $this->endpointMap = [
+            'enroll' => $baseUrl . ($config['path_enroll'] ?? '/enroll'),
+            'verify' => $baseUrl . ($config['path_verify'] ?? '/verify'),
+            'liveness' => $baseUrl . ($config['path_liveness'] ?? '/liveness'),
+            'delete' => $baseUrl . ($config['path_delete'] ?? '/delete/{id}'),
+            'health' => $baseUrl . '/health',
+        ];
+
         $this->apiKey = $config['api_key'] ?? '';
+        $this->secret = $config['secret'] ?? '';
         $this->timeout = (int) ($config['timeout'] ?? 10);
     }
 
@@ -45,6 +57,12 @@ class CustomApiProvider implements BiometricProvider
                 'type' => $sample->type,
                 'metadata' => $sample->metadata,
             ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException(
+                "Custom API enroll failed [{$response->status()}]: " . $response->body()
+            );
+        }
 
         $result = $response->json();
 
@@ -72,10 +90,15 @@ class CustomApiProvider implements BiometricProvider
 
         $result = $response->json();
 
+        $matchedKey = $this->config['response_matched_key'] ?? 'matched';
+        $confidenceKey = $this->config['response_confidence_key'] ?? 'confidence';
+        $livenessKey = $this->config['response_liveness_key'] ?? 'liveness_score';
+        $threshold = ($this->config['confidence_threshold'] ?? 80) / 100;
+
         return new VerificationResult(
-            matched: $result['matched'] ?? false,
-            confidence: (float) ($result['confidence'] ?? $result['score'] ?? 0.0),
-            livenessScore: (float) ($result['liveness'] ?? $result['liveness_score'] ?? 0.0),
+            matched: (bool) ($result[$matchedKey] ?? false) && (float) ($result[$confidenceKey] ?? 0) >= $threshold,
+            confidence: (float) ($result[$confidenceKey] ?? 0.0),
+            livenessScore: (float) ($result[$livenessKey] ?? 0.0),
             providerRef: $ref->externalId,
             raw: $result
         );
@@ -86,7 +109,14 @@ class CustomApiProvider implements BiometricProvider
         $endpoint = $this->endpointMap['liveness'] ?? $this->endpointMap['verify'] ?? null;
 
         if (! $endpoint) {
-            return 0.75; // Default fallback
+            // return 0.75; // Default fallback
+            if ($this->config['skip_liveness'] ?? false) {
+                return 1.0; // intentional bypass — config mein set hai
+            }
+            throw new \RuntimeException(
+                'Liveness endpoint not configured for custom provider. ' .
+                'Set skip_liveness=true in config to bypass liveness check.'
+            );
         }
 
         $response = Http::timeout($this->timeout)
@@ -109,10 +139,20 @@ class CustomApiProvider implements BiometricProvider
             return false;
         }
 
+        $deleteEndpoint = str_replace(
+            ['{id}', ':id'],
+            $ref->externalId,
+            $endpoint
+        );
+
+        if ($deleteEndpoint === $endpoint) {
+            $deleteEndpoint = rtrim($endpoint, '/') . '/' . $ref->externalId;
+        }
+
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders($this->getHeaders())
-                ->delete(str_replace('{id}', $ref->externalId, $endpoint));
+                ->delete($deleteEndpoint);
 
             return $response->successful();
         } catch (\Exception $e) {
@@ -151,9 +191,20 @@ class CustomApiProvider implements BiometricProvider
             'Accept' => 'application/json',
         ];
 
+        if (! empty($this->config['headers'])) {
+            $headers = array_merge($headers, $this->config['headers']);
+        }
+
         if (! empty($this->apiKey)) {
-            $headers['Authorization'] = "Bearer {$this->apiKey}";
-            $headers['X-API-Key'] = $this->apiKey;
+            $authType = $this->config['auth_type'] ?? 'bearer';
+
+            match ($authType) {
+                'bearer' => $headers['Authorization'] = "Bearer {$this->apiKey}",
+                'x-api-key' => $headers['X-API-Key'] = $this->apiKey,
+                'basic' => $headers['Authorization'] = 'Basic ' . base64_encode($this->apiKey . ':' . $this->secret),
+                'custom' => null, // custom headers se already set hoga
+                default => $headers['Authorization'] = "Bearer {$this->apiKey}",
+            };
         }
 
         return $headers;

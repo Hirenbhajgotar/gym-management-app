@@ -217,20 +217,31 @@ class BiometricDeviceResource extends Resource
                             ->description('Configure BioID liveness detection')
                             ->schema([
                                 TextInput::make('provider_config.wsdl_url')
-                                    ->label('WSDL URL')
-                                    ->placeholder('https://www.bioid.com/WS/BioIDWebService.WSLa')
+                                    ->label('BWS API URL')
+                                    ->placeholder('https://bws.bioid.com/extension')
+                                    ->helperText('BioID Web Service 3.0 base URL')
                                     ->required()
                                     ->live(),
+
+                                TextInput::make('provider_config.app_identifier')
+                                    ->label('App Identifier')
+                                    ->required()
+                                    ->helperText('From BioID portal — your application ID'),
+
                                 TextInput::make('provider_config.api_key')
                                     ->label('API Key')
+                                    ->helperText('App secret from BioID portal')
                                     ->required()
                                     ->password()
                                     ->revealable()
                                     ->live(),
+
                                 TextInput::make('provider_config.service_id')
                                     ->label('Service ID')
+                                    ->helperText('Storage ID from BioID portal (used in BCID)')
                                     ->nullable()
                                     ->live(),
+
                                 Toggle::make('provider_config.enable_liveness')
                                     ->label('Enable Liveness Detection')
                                     ->default(true)
@@ -289,10 +300,18 @@ class BiometricDeviceResource extends Resource
                                     ->password()
                                     ->revealable()
                                     ->live(),
-                                KeyValue::make('provider_config.headers')
-                                    ->label('Additional Headers')
-                                    ->helperText('Key-value pairs for custom headers')
-                                    ->nullable(),
+
+                                Select::make('provider_config.auth_type')
+                                    ->label('Authentication Type')
+                                    ->options([
+                                        'bearer' => 'Bearer Token',
+                                        'x-api-key' => 'X-API-Key Header',
+                                        'basic' => 'Basic Auth',
+                                        'custom' => 'Custom Headers Only',
+                                    ])
+                                    ->default('bearer')
+                                    ->live(),
+
                                 TextInput::make('provider_config.timeout')
                                     ->label('Request Timeout (seconds)')
                                     ->numeric()
@@ -300,6 +319,17 @@ class BiometricDeviceResource extends Resource
                                     ->maxValue(300)
                                     ->default(30)
                                     ->live(),
+
+                                Toggle::make('provider_config.skip_liveness')
+                                    ->label('Skip Liveness Check')
+                                    ->helperText('Enable only if vendor does not support liveness detection')
+                                    ->default(false),
+
+                                KeyValue::make('provider_config.headers')
+                                    ->label('Additional Headers')
+                                    ->helperText('Key-value pairs for custom headers')
+                                    ->nullable()
+                                    ->columnSpanFull(),
 
                                 Section::make('Endpoint Paths')
                                     ->description('Optional: Override default paths if vendor API uses different routes')
@@ -325,7 +355,32 @@ class BiometricDeviceResource extends Resource
                                             ->nullable(),
                                     ])
                                     ->columns(2)
-                                    ->collapsible(),
+                                    ->collapsible()
+                                    ->collapsed(),
+
+                                Section::make('Response Mapping')
+                                    ->description('Map vendor response fields to FluxFitness expected fields')
+                                    ->schema([
+                                        TextInput::make('provider_config.response_template_id_key')
+                                            ->label('Template ID Field')
+                                            ->placeholder('template_id')
+                                            ->nullable(),
+                                        TextInput::make('provider_config.response_matched_key')
+                                            ->label('Match Result Field')
+                                            ->placeholder('matched')
+                                            ->nullable(),
+                                        TextInput::make('provider_config.response_confidence_key')
+                                            ->label('Confidence Score Field')
+                                            ->placeholder('confidence')
+                                            ->nullable(),
+                                        TextInput::make('provider_config.response_liveness_key')
+                                            ->label('Liveness Score Field')
+                                            ->placeholder('liveness_score')
+                                            ->nullable(),
+                                    ])
+                                    ->columns(2)
+                                    ->collapsible()
+                                    ->collapsed(),
                             ])
                             ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'custom')
                             ->columns(2),
