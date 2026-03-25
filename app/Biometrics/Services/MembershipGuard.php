@@ -9,8 +9,6 @@ class MembershipGuard
 {
     public function canCheckIn(GymMember $gymMember): GuardResult
     {
-        $gymMember->refresh();
-
         if (! $gymMember->canAccessGym()) {
             return GuardResult::deny($this->resolveReason($gymMember));
         }

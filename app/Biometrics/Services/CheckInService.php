@@ -63,6 +63,8 @@ class CheckInService
         // Step 6: FusionEngine - merge if multi-modal (simplified for single modal)
         $finalResult = $verificationResult;
 
+        $gymMember->refresh();
+
         // Step 7: MembershipGuard - check membership, payment, freeze, consent
         $guardResult = $this->membershipGuard->canCheckIn($gymMember);
 
