@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
+use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BiometricEnrollRequest;
 use App\Models\BiometricConsent;
@@ -12,6 +13,7 @@ use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BiometricEnrollController extends Controller
 {
@@ -75,6 +77,54 @@ class BiometricEnrollController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    public function syncFromDevice(Request $request)
+    {
+        $device = $request->attributes->get('device');
+
+        // Validate karo
+        $validated = $request->validate([
+            'gym_member_id' => [
+                'required',
+                'exists:gym_members,id',
+                // Ensure member is same gym as device
+                Rule::exists('gym_members', 'id')
+                    ->where('gym_id', $device->gym_id),
+            ],
+            'biometric_type' => ['required', Rule::in(BiometricTypeEnum::class)],
+            'template_ref' => 'required|string|max:255', // device ka internal ID
+            'quality_score' => 'nullable|numeric|between:0,1',
+        ]);
+
+        $gymMember = GymMember::find($validated['gym_member_id']);
+
+        // Consent check — agar nahi hai toh deny karo
+        if (! $gymMember->hasActiveBiometricConsent()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Member ne biometric consent nahi diya',
+            ], 422);
+        }
+
+        // Sirf record banao — koi provider call nahi
+        BiometricTemplate::updateOrCreate(
+            [
+                'gym_member_id' => $validated['gym_member_id'],
+                'gym_id' => $device->gym_id,
+                'biometric_type' => $validated['biometric_type'],
+            ],
+            [
+                'provider_type' => 'custom',
+                'template_ref' => $validated['template_ref'],
+                'enrolled_by_device_id' => $device->id,
+                'quality_score' => $validated['quality_score'] ?? null,
+                'is_active' => true,
+                'enrolled_at' => now(),
+            ]
+        );
+
+        return response()->json(['success' => true]);
     }
 
     public function deleteTemplate(Request $request, BiometricTemplate $template): JsonResponse

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\BiometricCheckInController;
+use App\Http\Controllers\Api\BiometricDeviceController;
+use App\Http\Controllers\Api\BiometricEnrollController;
 use App\Http\Controllers\Api\FacebookLeadController;
 use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
@@ -7,6 +10,8 @@ use App\Http\Controllers\Api\RazorpayWebhookController;
 use App\Http\Controllers\Api\TwilioWebhookController;
 use App\Http\Controllers\Api\WebhookTestController;
 use App\Http\Controllers\Api\WhatsAppLeadController;
+use App\Http\Controllers\ReportApiController;
+use App\Http\Middleware\AuthenticateBiometricDevice;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -195,34 +200,36 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
 
 // Reports API Routes for BI Tools
 Route::prefix('reports')->middleware(['auth:sanctum', 'tenant'])->group(function () {
-    Route::get('/members', [App\Http\Controllers\ReportApiController::class, 'members'])->name('api.reports.members');
-    Route::get('/revenue', [App\Http\Controllers\ReportApiController::class, 'revenue'])->name('api.reports.revenue');
-    Route::get('/leads', [App\Http\Controllers\ReportApiController::class, 'leads'])->name('api.reports.leads');
-    Route::get('/attendance', [App\Http\Controllers\ReportApiController::class, 'attendance'])->name('api.reports.attendance');
-    Route::get('/dashboard', [App\Http\Controllers\ReportApiController::class, 'dashboard'])->name('api.reports.dashboard');
+    Route::get('/members', [ReportApiController::class, 'members'])->name('api.reports.members');
+    Route::get('/revenue', [ReportApiController::class, 'revenue'])->name('api.reports.revenue');
+    Route::get('/leads', [ReportApiController::class, 'leads'])->name('api.reports.leads');
+    Route::get('/attendance', [ReportApiController::class, 'attendance'])->name('api.reports.attendance');
+    Route::get('/dashboard', [ReportApiController::class, 'dashboard'])->name('api.reports.dashboard');
 });
 
 // Biometric Device API Routes
-Route::prefix('v1/biometric')->middleware([\App\Http\Middleware\AuthenticateBiometricDevice::class])->group(function () {
-    Route::post('/check-in', [App\Http\Controllers\Api\BiometricCheckInController::class, 'checkIn'])
+Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])->group(function () {
+    Route::post('/check-in', [BiometricCheckInController::class, 'checkIn'])
         ->name('api.biometric.check-in');
-    Route::post('/check-out', [App\Http\Controllers\Api\BiometricCheckInController::class, 'checkOut'])
+    Route::post('/check-out', [BiometricCheckInController::class, 'checkOut'])
         ->name('api.biometric.check-out');
-    Route::post('/enroll', [App\Http\Controllers\Api\BiometricEnrollController::class, 'enroll'])
+    Route::post('/enroll', [BiometricEnrollController::class, 'enroll'])
         ->name('api.biometric.enroll');
-    Route::delete('/template/{template}', [App\Http\Controllers\Api\BiometricEnrollController::class, 'deleteTemplate'])
+    Route::post('/enroll-sync', [BiometricEnrollController::class, 'syncFromDevice'])
+        ->name('api.biometric.enroll-sync');
+    Route::delete('/template/{template}', [BiometricEnrollController::class, 'deleteTemplate'])
         ->name('api.biometric.template.delete');
-    Route::post('/heartbeat', [App\Http\Controllers\Api\BiometricDeviceController::class, 'heartbeat'])
+    Route::post('/heartbeat', [BiometricDeviceController::class, 'heartbeat'])
         ->name('api.biometric.heartbeat');
-    Route::get('/device/config', [App\Http\Controllers\Api\BiometricDeviceController::class, 'config'])
+    Route::get('/device/config', [BiometricDeviceController::class, 'config'])
         ->name('api.biometric.config');
-    Route::get('/device/test', [App\Http\Controllers\Api\BiometricDeviceController::class, 'testConnection'])
+    Route::get('/device/test', [BiometricDeviceController::class, 'testConnection'])
         ->name('api.biometric.test');
 });
 
 // Offline sync route (uses biometric device auth)
 Route::post('/v1/biometric/offline-sync', [App\Http\Controllers\Api\BiometricOfflineSyncController::class, 'sync'])
-    ->middleware(\App\Http\Middleware\AuthenticateBiometricDevice::class)
+    ->middleware(AuthenticateBiometricDevice::class)
     ->name('api.biometric.offline-sync');
 
 // Vendor webhook routes (token verified inside controller)

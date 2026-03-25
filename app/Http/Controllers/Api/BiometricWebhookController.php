@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class BiometricWebhookController extends Controller
@@ -22,7 +23,7 @@ class BiometricWebhookController extends Controller
         $device = BiometricDevice::whereNotNull('device_token')
             ->get()
             ->first(function ($d) use ($token) {
-                return hash_equals($d->device_token, $token);
+                return Hash::check($token, $d->device_token);
             });
 
         if (! $device) {
