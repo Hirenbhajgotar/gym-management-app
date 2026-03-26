@@ -220,7 +220,7 @@ class EnrollMember extends Page
         ]);
 
         // Optionally send to device for verification
-        if ($this->sendToDevice ?? true) {
+        if ($this->sendToDevice) {
             $this->sendToDevice($device, $member, $templateRef);
         }
 

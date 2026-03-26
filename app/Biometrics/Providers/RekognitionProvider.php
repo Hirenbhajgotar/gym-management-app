@@ -104,7 +104,10 @@ class RekognitionProvider implements BiometricProvider
         return new VerificationResult(
             matched: true,
             confidence: $matchedFace['Similarity'] / 100,
-            livenessScore: 0.0, // Will be set by AntiSpoofGuard
+            /**
+             * Will be set by AntiSpoofGuard
+             */
+            livenessScore: 0.0,
             providerRef: $matchedFace['Face']['FaceId'],
             raw: $result->toArray()
         );

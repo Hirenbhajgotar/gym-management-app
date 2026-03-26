@@ -202,7 +202,7 @@ class CustomApiProvider implements BiometricProvider
                 'bearer' => $headers['Authorization'] = "Bearer {$this->apiKey}",
                 'x-api-key' => $headers['X-API-Key'] = $this->apiKey,
                 'basic' => $headers['Authorization'] = 'Basic ' . base64_encode($this->apiKey . ':' . $this->secret),
-                'custom' => null, // custom headers se already set hoga
+                'custom' => null,
                 default => $headers['Authorization'] = "Bearer {$this->apiKey}",
             };
         }

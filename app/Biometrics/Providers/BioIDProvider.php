@@ -123,12 +123,12 @@ class BioIDProvider implements BiometricProvider
             ->withHeaders($this->getHeaders())
             ->post($this->getBaseUrl() . '/livenessdetection', [
                 'Images' => [
-                    ['Data' => $sample->data], // already base64 — double encode mat karo
+                    ['Data' => $sample->data], // already base64
                 ],
             ]);
 
         if (! $response->successful()) {
-            // Liveness endpoint fail — safe default: 0 (deny karo, bypass mat karo)
+            // Liveness endpoint fail — safe default: 0
             return 0.0;
         }
 

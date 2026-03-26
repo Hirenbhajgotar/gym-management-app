@@ -5,6 +5,7 @@ namespace App\Biometrics\Services;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class OfflineQueueManager
@@ -252,21 +253,17 @@ class OfflineQueueManager
     protected function sendBatchToServer(array $batch, string $apiUrl, string $apiToken): array
     {
         try {
-            $client = new \GuzzleHttp\Client([
-                'timeout' => 30,
-            ]);
-
-            $response = $client->post($apiUrl, [
-                'headers' => [
+            $client = Http::timeout(30)
+                ->withHeaders([
                     'Authorization' => 'Bearer ' . $apiToken,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
-                ],
-                'json' => [
-                    'events' => $batch,
-                    'device_id' => config('biometrics.device_id'),
-                    'synced_at' => now()->toISOString(),
-                ],
+                ]);
+
+            $response = $client->post($apiUrl, [
+                'events' => $batch,
+                'device_id' => config('biometrics.device_id'),
+                'synced_at' => now()->toISOString(),
             ]);
 
             $body = json_decode($response->getBody()->getContents(), true);
