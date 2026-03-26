@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
 use App\Models\BiometricDevice;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\Actions\Action as ComponentsActionsAction;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -16,11 +17,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Actions\Action as ActionsAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -395,6 +398,36 @@ class BiometricDeviceResource extends Resource
                             ->content(function (): string {
                                 return 'A secure API token will be auto-generated on creation. You can view/regenerate it from the table actions.';
                             }),
+
+                        Placeholder::make('webhook_endpoint_info')
+                            ->label('Webhook Endpoint (for device vendors)')
+                            ->content(function (): string {
+                                return config('app.url') . '/api/v1/biometric/webhook/{device_token}';
+                            })
+                            ->helperText('Device vendors send attendance events to this URL with HMAC signature in X-Signature header.'),
+
+                        TextInput::make('provider_config.webhook_secret')
+                            ->label('Webhook Secret')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->hint('Generate webhook secret')
+                            ->hintAction(
+                                ComponentsActionsAction::make('generateWebhookSecret')
+                                    ->label('Generate')
+                                    ->icon('heroicon-o-key')
+                                    ->action(function (Set $set) {
+                                        $secret = bin2hex(random_bytes(24)); // 48 character hex string
+                                        $set('provider_config.webhook_secret', $secret);
+                                    })
+                            )
+                            ->helperText('Used to verify HMAC signatures on incoming webhooks.'),
+
+                        TextInput::make('provider_config.webhook_signature_header')
+                            ->label('Signature Header')
+                            ->placeholder('X-Signature')
+                            ->default('X-Signature')
+                            ->helperText('Header name containing HMAC-SHA256 signature (without sha256= prefix)'),
                     ])->collapsible(),
             ]);
     }
@@ -481,50 +514,82 @@ class BiometricDeviceResource extends Resource
                     ]),
             ])
             ->actions([
-                // Action::make('test')
-                //     ->label('Test')
-                //     ->icon('heroicon-o-play')
-                //     ->color('info')
-                //     ->action(function (BiometricDevice $record) {
-                //         $record->update(['last_heartbeat_at' => now()]);
-                //         Notification::make()
-                //             ->title('Device Test Successful')
-                //             ->success()
-                //             ->body('Device is responding correctly.')
-                //             ->send();
-                //     })
-                //     ->requiresConfirmation(),
+                ActionGroup::make([
 
-                Action::make('regenerateToken')
-                    ->label('Regenerate Token')
-                    ->icon('heroicon-o-key')
-                    ->color('warning')
-                    ->action(function (BiometricDevice $record) {
-                        $plainToken = bin2hex(random_bytes(32));
-                        $record->update(['device_token' => $plainToken]);
-                        Notification::make()
-                            ->title('API Token Generated')
-                            ->success()
-                            ->body('Your new API token has been generated. Make sure to copy it now as you won\'t be able to see it again!')
-                            ->actions([
-                                ActionsAction::make('copy')
-                                    ->label('Copy to Clipboard')
-                                    ->color('primary')
-                                    ->icon('heroicon-m-clipboard')
-                                    ->link()
-                                    ->url('javascript:navigator.clipboard.writeText(' . Js::from($plainToken) . ')')
-                                    ->close(),
-                            ])
-                            ->persistent()
-                            ->send();
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Regenerate API Token')
-                    ->modalDescription('This will invalidate the current API token. A new one will be generated.')
-                    ->modalSubmitActionLabel('Regenerate'),
+                    // Action::make('test')
+                    //     ->label('Test')
+                    //     ->icon('heroicon-o-play')
+                    //     ->color('info')
+                    //     ->action(function (BiometricDevice $record) {
+                    //         $record->update(['last_heartbeat_at' => now()]);
+                    //         Notification::make()
+                    //             ->title('Device Test Successful')
+                    //             ->success()
+                    //             ->body('Device is responding correctly.')
+                    //             ->send();
+                    //     })
+                    //     ->requiresConfirmation(),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                    Action::make('regenerateToken')
+                        ->label('Regenerate Token')
+                        ->icon('heroicon-o-key')
+                        ->color('warning')
+                        ->action(function (BiometricDevice $record) {
+                            $plainToken = bin2hex(random_bytes(32));
+                            $record->update(['device_token' => $plainToken]);
+                            Notification::make()
+                                ->title('API Token Generated')
+                                ->success()
+                                ->body('Your new API token has been generated. Make sure to copy it now as you won\'t be able to see it again!')
+                                ->actions([
+                                    ActionsAction::make('copy')
+                                        ->label('Copy to Clipboard')
+                                        ->color('primary')
+                                        ->icon('heroicon-m-clipboard')
+                                        ->link()
+                                        ->url('javascript:navigator.clipboard.writeText(' . Js::from($plainToken) . ')')
+                                        ->close(),
+                                ])
+                                ->persistent()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Regenerate API Token')
+                        ->modalDescription('This will invalidate the current API token. A new one will be generated.')
+                        ->modalSubmitActionLabel('Regenerate'),
+
+                    Action::make('generateWebhookSecret')
+                        ->label('Generate Webhook Secret')
+                        ->icon('heroicon-o-shield-check')
+                        ->color('info')
+                        ->action(function (BiometricDevice $record) {
+                            $secret = bin2hex(random_bytes(24)); // 48 character hex string
+                            $config = $record->provider_config ?? [];
+                            $config['webhook_secret'] = $secret;
+                            $record->update(['provider_config' => $config]);
+                            Notification::make()
+                                ->title('Webhook Secret Generated')
+                                ->success()
+                                ->body('A new webhook secret has been generated. Copy it now - you won\'t see it again!')
+                                ->actions([
+                                    ActionsAction::make('copy')
+                                        ->label('Copy Secret')
+                                        ->color('primary')
+                                        ->icon('heroicon-m-clipboard')
+                                        ->link()
+                                        ->url('javascript:navigator.clipboard.writeText(' . Js::from($secret) . ')')
+                                        ->close(),
+                                ])
+                                ->persistent()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Generate Webhook Secret')
+                        ->modalDescription('This will generate a new webhook secret. The old secret will no longer work. Make sure to update your device configuration.'),
+
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

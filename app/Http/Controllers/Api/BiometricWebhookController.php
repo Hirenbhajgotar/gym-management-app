@@ -31,9 +31,33 @@ class BiometricWebhookController extends Controller
         }
 
         // Verify HMAC signature if provided
-        $signature = $request->header('X-Signature') ?? $request->header('X-Hub-Signature-256');
+        // Support custom header name from device config, default to X-Signature
+        $signatureHeader = $device->provider_config['webhook_signature_header'] ?? 'X-Signature';
+        $signature = $request->header($signatureHeader) ?? $request->header('X-Hub-Signature-256');
 
+        // If device has webhook_secret configured, signature is required
+        $hasWebhookSecret = ! empty($device->provider_config['webhook_secret'] ?? '');
+
+        // If signature is required but not provided, reject
+        if ($hasWebhookSecret && ! $signature) {
+            Log::warning('BiometricWebhook: Signature required but not provided', [
+                'device_id' => $device->id,
+                'device_name' => $device->device_name,
+                'expected_header' => $signatureHeader,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['error' => 'Signature required'], 401);
+        }
+
+        // If signature is provided but invalid
         if ($signature && ! $this->verifySignature($request, $signature, $device)) {
+            Log::warning('BiometricWebhook: Invalid signature', [
+                'device_id' => $device->id,
+                'device_name' => $device->device_name,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
@@ -102,7 +126,15 @@ class BiometricWebhookController extends Controller
     {
         $secret = $device->provider_config['webhook_secret'] ?? '';
 
+        // If no secret is configured, reject the request for security
+        // This prevents processing unverified webhooks
         if (empty($secret)) {
+            Log::warning('BiometricWebhook: Webhook secret not configured for device', [
+                'device_id' => $device->id,
+                'device_name' => $device->device_name,
+                'ip' => $request->ip(),
+            ]);
+
             return false;
         }
 
