@@ -64,7 +64,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== VIEW STATE TESTS ==========
 
-    /** @test */
+    
     public function it_shows_onboarding_state_when_no_whatsapp_account_exists(): void
     {
         Livewire::actingAs($this->user)
@@ -75,7 +75,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSee('Start Setup');
     }
 
-    /** @test */
+    
     public function it_shows_setup_state_when_account_is_pending(): void
     {
         WhatsAppAccount::create([
@@ -91,7 +91,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('viewState', 'setup');
     }
 
-    /** @test */
+    
     public function it_shows_active_state_when_account_is_active_with_phone(): void
     {
         $account = WhatsAppAccount::create([
@@ -117,7 +117,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSee('Active');
     }
 
-    /** @test */
+    
     public function it_shows_error_state_when_account_active_but_no_phone(): void
     {
         WhatsAppAccount::create([
@@ -136,7 +136,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== SETUP STEP DETERMINATION TESTS ==========
 
-    /** @test */
+    
     public function it_sets_step_2_when_waba_id_is_missing(): void
     {
         WhatsAppAccount::create([
@@ -154,7 +154,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('setupStep', 2);
     }
 
-    /** @test */
+    
     public function it_sets_step_3_when_phone_number_is_missing(): void
     {
         WhatsAppAccount::create([
@@ -174,7 +174,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== START SETUP ACTION TEST ==========
 
-    /** @test */
+    
     public function it_transitions_to_setup_state_on_start(): void
     {
         Livewire::actingAs($this->user)
@@ -187,7 +187,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== CREATE SUBACCOUNT TESTS ==========
 
-    /** @test */
+    
     public function it_creates_subaccount_successfully(): void
     {
         $mock = Mockery::mock(TwilioAccountManager::class);
@@ -212,7 +212,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('setupStep', 2);
     }
 
-    /** @test */
+    
     public function it_shows_error_on_subaccount_creation_failure(): void
     {
         $mock = Mockery::mock(TwilioAccountManager::class);
@@ -231,7 +231,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Failed to Create Account');
     }
 
-    /** @test */
+    
     public function it_handles_exception_during_subaccount_creation(): void
     {
         $mock = Mockery::mock(TwilioAccountManager::class);
@@ -249,7 +249,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== SAVE BUSINESS PROFILE TESTS ==========
 
-    /** @test */
+    
     public function it_saves_business_profile_and_advances_step(): void
     {
         $account = WhatsAppAccount::create([
@@ -277,7 +277,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== CREATE WABA TESTS ==========
 
-    /** @test */
+    
     public function it_creates_waba_successfully(): void
     {
         $account = WhatsAppAccount::create([
@@ -304,7 +304,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('WABA Created');
     }
 
-    /** @test */
+    
     public function it_handles_waba_creation_failure(): void
     {
         WhatsAppAccount::create([
@@ -333,7 +333,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== SEARCH NUMBERS TESTS ==========
 
-    /** @test */
+    
     public function it_searches_available_numbers(): void
     {
         WhatsAppAccount::create([
@@ -364,7 +364,7 @@ class WhatsAppSetupTest extends TestCase
             ]);
     }
 
-    /** @test */
+    
     public function it_shows_warning_when_no_numbers_found(): void
     {
         WhatsAppAccount::create([
@@ -391,7 +391,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== PURCHASE NUMBER TESTS ==========
 
-    /** @test */
+    
     public function it_purchases_selected_number_successfully(): void
     {
         $account = WhatsAppAccount::create([
@@ -427,7 +427,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Number Purchased');
     }
 
-    /** @test */
+    
     public function it_warns_if_no_number_selected_before_purchase(): void
     {
         WhatsAppAccount::create([
@@ -447,7 +447,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== CREATE DEFAULT TEMPLATES TESTS ==========
 
-    /** @test */
+    
     public function it_creates_default_templates(): void
     {
         WhatsAppAccount::create([
@@ -474,7 +474,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Templates Created');
     }
 
-    /** @test */
+    
     public function it_handles_template_creation_failure(): void
     {
         WhatsAppAccount::create([
@@ -502,7 +502,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== WELCOME CREDITS TESTS ==========
 
-    /** @test */
+    
     public function it_claims_welcome_credits_and_activates_account(): void
     {
         $account = WhatsAppAccount::create([
@@ -542,7 +542,7 @@ class WhatsAppSetupTest extends TestCase
         $this->assertEquals('active', $account->status->value ?? $account->status);
     }
 
-    /** @test */
+    
     public function it_handles_welcome_credits_claim_failure(): void
     {
         WhatsAppAccount::create([
@@ -568,7 +568,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== SEND TEST MESSAGE TESTS ==========
 
-    /** @test */
+    
     public function it_sends_test_message_successfully(): void
     {
         $account = WhatsAppAccount::create([
@@ -604,7 +604,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Test Message Sent!');
     }
 
-    /** @test */
+    
     public function it_handles_test_message_failure(): void
     {
         $account = WhatsAppAccount::create([
@@ -639,7 +639,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Failed to Send');
     }
 
-    /** @test */
+    
     public function it_requires_phone_number_for_test_message(): void
     {
         $account = WhatsAppAccount::create([
@@ -666,7 +666,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== FORM INITIALIZATION TESTS ==========
 
-    /** @test */
+    
     public function it_initializes_form_data_from_gym_and_user(): void
     {
         Livewire::actingAs($this->user)
@@ -677,7 +677,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== REFRESH TESTS ==========
 
-    /** @test */
+    
     public function it_refreshes_data_and_recalculates_state(): void
     {
         $component = Livewire::actingAs($this->user)
@@ -708,7 +708,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== CONNECT EXISTING WABA TESTS ==========
 
-    /** @test */
+    
     public function it_shows_waba_connection_method_options_on_step_2(): void
     {
         WhatsAppAccount::create([
@@ -729,7 +729,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSee('Create New WABA');
     }
 
-    /** @test */
+    
     public function it_connects_existing_waba_successfully(): void
     {
         WhatsAppAccount::create([
@@ -766,7 +766,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('WABA Connected');
     }
 
-    /** @test */
+    
     public function it_connects_existing_waba_with_access_token(): void
     {
         WhatsAppAccount::create([
@@ -804,7 +804,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('WABA Connected');
     }
 
-    /** @test */
+    
     public function it_shows_error_when_existing_waba_connection_fails(): void
     {
         WhatsAppAccount::create([
@@ -837,7 +837,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Connection Failed');
     }
 
-    /** @test */
+    
     public function it_shows_error_when_waba_id_missing_on_connect(): void
     {
         WhatsAppAccount::create([
@@ -860,7 +860,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Missing Information');
     }
 
-    /** @test */
+    
     public function it_shows_error_when_phone_missing_on_connect(): void
     {
         WhatsAppAccount::create([
@@ -883,7 +883,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Missing Information');
     }
 
-    /** @test */
+    
     public function it_handles_exception_during_existing_waba_connection(): void
     {
         WhatsAppAccount::create([
@@ -913,7 +913,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Connection Failed');
     }
 
-    /** @test */
+    
     public function it_still_creates_new_waba_successfully_after_integration(): void
     {
         $account = WhatsAppAccount::create([
@@ -940,7 +940,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('WABA Created');
     }
 
-    /** @test */
+    
     public function it_shows_phone_number_source_radio_on_step_3(): void
     {
         WhatsAppAccount::create([
@@ -963,7 +963,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('data.phone_number_source', 'purchase_twilio');
     }
 
-    /** @test */
+    
     public function it_registers_own_phone_number_and_triggers_otp(): void
     {
         WhatsAppAccount::create([
@@ -1000,7 +1000,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Verification Code Sent');
     }
 
-    /** @test */
+    
     public function it_handles_own_number_registration_failure(): void
     {
         WhatsAppAccount::create([
@@ -1033,7 +1033,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Registration Failed');
     }
 
-    /** @test */
+    
     public function it_handles_exception_during_own_number_registration(): void
     {
         WhatsAppAccount::create([
@@ -1063,7 +1063,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Registration Failed');
     }
 
-    /** @test */
+    
     public function it_warns_when_registering_own_number_without_input(): void
     {
         WhatsAppAccount::create([
@@ -1088,7 +1088,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== OTP VERIFICATION TESTS ==========
 
-    /** @test */
+    
     public function it_verifies_own_phone_number_otp_successfully(): void
     {
         $account = WhatsAppAccount::create([
@@ -1132,7 +1132,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Number Verified');
     }
 
-    /** @test */
+    
     public function it_handles_otp_verification_failure(): void
     {
         WhatsAppAccount::create([
@@ -1166,7 +1166,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Verification Failed');
     }
 
-    /** @test */
+    
     public function it_warns_when_verifying_without_otp_code(): void
     {
         WhatsAppAccount::create([
@@ -1191,7 +1191,7 @@ class WhatsAppSetupTest extends TestCase
 
     // ========== RESEND OTP TESTS ==========
 
-    /** @test */
+    
     public function it_resends_otp_successfully(): void
     {
         WhatsAppAccount::create([
@@ -1224,7 +1224,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertNotified('Code Resent');
     }
 
-    /** @test */
+    
     public function it_handles_resend_otp_failure(): void
     {
         WhatsAppAccount::create([

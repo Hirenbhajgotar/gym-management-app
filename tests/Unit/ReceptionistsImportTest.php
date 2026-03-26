@@ -26,7 +26,6 @@ class ReceptionistsImportTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    /** @test */
     public function it_can_import_receptionists()
     {
         // Given
@@ -76,7 +75,6 @@ class ReceptionistsImportTest extends TestCase
         $this->assertEquals(['communication', 'php'], $employeeDetail->skills);
     }
 
-    /** @test */
     public function it_fails_to_import_when_required_data_is_missing()
     {
         // Given

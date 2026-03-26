@@ -36,7 +36,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    
     public function it_deletes_owners_soft_deleted_more_than_15_days_ago(): void
     {
         $owner = User::factory()->create();
@@ -67,7 +67,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $this->assertDatabaseMissing('gyms', ['id' => $gym->id]);
     }
 
-    /** @test */
+    
     public function it_does_not_delete_owners_soft_deleted_less_than_15_days_ago(): void
     {
         $owner = User::factory()->create();
@@ -89,7 +89,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $this->assertDatabaseHas('gyms', ['id' => $gym->id]);
     }
 
-    /** @test */
+    
     public function it_reports_no_owners_found(): void
     {
         $this->artisan('owners:clean-deleted')
@@ -97,7 +97,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /** @test */
+    
     public function it_supports_dry_run_mode(): void
     {
         $owner = User::factory()->create();
@@ -119,7 +119,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $this->assertDatabaseHas('gyms', ['id' => $gym->id]);
     }
 
-    /** @test */
+    
     public function it_triggers_twilio_cleanup_when_gym_has_whatsapp_account(): void
     {
         $owner = User::factory()->create();
@@ -180,7 +180,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $this->assertDatabaseMissing('whatsapp_phone_numbers', ['whatsapp_account_id' => $whatsappAccount->id]);
     }
 
-    /** @test */
+    
     public function it_handles_multiple_gym_owners(): void
     {
         $owners = [];
@@ -221,7 +221,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_continues_processing_when_one_owner_fails(): void
     {
         // Create two owners - one will fail, one should succeed
