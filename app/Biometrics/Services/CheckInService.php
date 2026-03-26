@@ -34,35 +34,43 @@ class CheckInService
             return CheckInResult::denied('liveness_failed');
         }
 
-        // Step 3: Load BiometricTemplate for this gym and biometric type
-        $template = BiometricTemplate::where('gym_id', $device->gym_id)
+        // Step 3: Load ALL BiometricTemplates for this gym and biometric type
+        $templates = BiometricTemplate::where('gym_id', $device->gym_id)
             ->where('biometric_type', $sample->type)
             ->where('is_active', true)
-            ->first();
+            ->with('gymMember')
+            ->get();
 
-        if (! $template) {
+        if ($templates->isEmpty()) {
             return CheckInResult::denied('no_template_enrolled');
         }
 
-        // Step 4: Get gym member from template
-        $gymMember = $template->gymMember;
+        // Step 4: Try to match against each template
+        $matchedTemplate = null;
+        $confidenceThreshold = config('biometrics.confidence_threshold', 0.80);
+
+        foreach ($templates as $template) {
+            $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
+            $verificationResult = $provider->verify($sample, $templateRef);
+
+            if ($verificationResult->matched && $verificationResult->confidence >= $confidenceThreshold) {
+                $matchedTemplate = $template;
+                break; // Found a match, stop iterating
+            }
+        }
+
+        if (! $matchedTemplate) {
+            return CheckInResult::denied('verification_failed');
+        }
+
+        // Step 5: Get gym member from matched template
+        $gymMember = $matchedTemplate->gymMember;
 
         if (! $gymMember) {
             return CheckInResult::denied('member_not_found');
         }
 
-        // Step 5: Provider verify
-        $verificationResult = $provider->verify($sample, \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref));
-
-        $confidenceThreshold = config('biometrics.confidence_threshold', 0.80);
-
-        if (! $verificationResult->matched || $verificationResult->confidence < $confidenceThreshold) {
-            return CheckInResult::denied('verification_failed');
-        }
-
-        // Step 6: FusionEngine - merge if multi-modal (simplified for single modal)
-        $finalResult = $verificationResult;
-
+        // Step 6: Provider verify succeeded, continue with checks
         $gymMember->refresh();
 
         // Step 7: MembershipGuard - check membership, payment, freeze, consent
@@ -94,8 +102,8 @@ class CheckInService
             'device_id' => $device->id,
             'biometric_type' => $sample->type,
             'provider_type' => $device->provider_type,
-            'confidence_score' => $finalResult->confidence,
-            'liveness_score' => $finalResult->livenessScore,
+            'confidence_score' => $verificationResult->confidence ?? null,
+            'liveness_score' => $verificationResult->livenessScore ?? null,
             'check_in_result' => $isSuspicious ? 'suspicious' : 'granted',
             'check_in_ip' => request()->ip(),
         ]);

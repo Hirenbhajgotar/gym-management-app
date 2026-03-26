@@ -4,6 +4,7 @@ namespace App\Biometrics\Services;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\AttendanceStatus;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
@@ -55,13 +56,14 @@ class OfflineSyncService
             ];
         }
 
-        // Step 2: Load BiometricTemplate
-        $template = BiometricTemplate::where('gym_id', $device->gym_id)
+        // Step 2: Load ALL BiometricTemplates for this gym and biometric type
+        $templates = BiometricTemplate::where('gym_id', $device->gym_id)
             ->where('biometric_type', $event['biometric_type'])
             ->where('is_active', true)
-            ->first();
+            ->with('gymMember')
+            ->get();
 
-        if (! $template) {
+        if ($templates->isEmpty()) {
             return [
                 'offline_id' => $event['offline_id'],
                 'status' => 'retroactively_denied',
@@ -69,7 +71,29 @@ class OfflineSyncService
             ];
         }
 
-        $gymMember = $template->gymMember;
+        // Step 3: Try to match against each template
+        $matchedTemplate = null;
+        $confidenceThreshold = config('biometrics.confidence_threshold', 0.80);
+
+        foreach ($templates as $template) {
+            $templateRef = TemplateRef::fromJson($template->template_ref);
+            $verificationResult = $provider->verify($sample, $templateRef);
+
+            if ($verificationResult->matched && $verificationResult->confidence >= $confidenceThreshold) {
+                $matchedTemplate = $template;
+                break; // Found a match, stop iterating
+            }
+        }
+
+        if (! $matchedTemplate) {
+            return [
+                'offline_id' => $event['offline_id'],
+                'status' => 'retroactively_denied',
+                'reason' => 'verification_failed',
+            ];
+        }
+
+        $gymMember = $matchedTemplate->gymMember;
 
         if (! $gymMember) {
             return [
@@ -79,7 +103,7 @@ class OfflineSyncService
             ];
         }
 
-        // Step 3 & 4: Re-run MembershipGuard and FraudDetector at captured_at time
+        // Step 4 & 5: Re-run MembershipGuard and FraudDetector at captured_at time
         // For simplicity, we use current state for these checks
         // A more sophisticated implementation would query historical state
 
@@ -93,7 +117,7 @@ class OfflineSyncService
             ];
         }
 
-        // Step 5: Create attendance with offline timestamps
+        // Step 6: Create attendance with offline timestamps
         $isSuspicious = $this->fraudDetector->isDuplicate($gymMember);
 
         $attendance = $gymMember->attendances()->create([
