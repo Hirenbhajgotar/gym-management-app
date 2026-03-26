@@ -30,7 +30,7 @@ class AuthenticateBiometricDevice
         }
 
         // Find active device with matching token
-        $devices = BiometricDevice::active()->get();
+        $devices = BiometricDevice::query()->active()->get();
 
         $device = null;
         foreach ($devices as $d) {

@@ -115,7 +115,7 @@ class BiometricEnrollController extends Controller
                 'biometric_type' => $validated['biometric_type'],
             ],
             [
-                'provider_type' => 'custom',
+                'provider_type' => $device->provider_type,
                 'template_ref' => $validated['template_ref'],
                 'enrolled_by_device_id' => $device->id,
                 'quality_score' => $validated['quality_score'] ?? null,
