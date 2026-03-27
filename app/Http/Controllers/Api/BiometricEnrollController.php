@@ -143,8 +143,14 @@ class BiometricEnrollController extends Controller
             $provider = $this->registry->resolve($template->provider_type);
 
             $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
-            $provider->deleteTemplate($templateRef);
 
+            if (! $provider->deleteTemplate($templateRef)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Deletion failed',
+                    'message' => 'Provider-side template deletion was not confirmed.',
+                ], 422);
+            }
             // Deactivate template (soft delete)
             $template->is_active = false;
             $template->save();
