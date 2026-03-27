@@ -18,12 +18,17 @@ return new class extends Migration
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['gym_member_id', 'gym_id']);
+            // Partial unique index: only one active consent per member/gym
+            // Allows multiple rows over time but only one active consent at a time
+            $table->unique(['gym_member_id', 'gym_id'], 'biometric_consents_active_unique')
+                ->whereNull('revoked_at');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('biometric_consents');
+        Schema::table('biometric_consents', function (Blueprint $table) {
+            $table->dropUnique('biometric_consents_active_unique');
+        });
     }
 };
