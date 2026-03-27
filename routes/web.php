@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BiometricConsentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
@@ -177,3 +178,12 @@ Route::get('/download-sample-excel/{type}', [ImportController::class, 'downloadS
 Route::prefix('shared-reports')->name('shared-reports.')->group(function () {
     Route::get('/{token}', [App\Http\Controllers\SharedReportController::class, 'show'])->name('show');
 });
+
+// Biometric Consent Routes (public, signed URL protected)
+Route::get('/consent/biometric', [BiometricConsentController::class, 'show'])
+    ->name('biometric.consent.show')
+    ->middleware('signed');
+
+Route::post('/consent/biometric', [BiometricConsentController::class, 'store'])
+    ->name('biometric.consent.store')
+    ->middleware('signed');

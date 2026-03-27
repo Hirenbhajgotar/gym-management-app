@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Events\BiometricConsentGiven;
+use App\Events\BiometricConsentRevoked;
+use App\Listeners\HandleConsentRevoked;
 use App\Listeners\LogUserLogin;
+use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
 use App\Models\Attendances;
 use App\Models\Expense;
@@ -91,6 +95,17 @@ class AppServiceProvider extends ServiceProvider
         FacadesEvent::listen(
             Failed::class,
             [LogUserLogin::class, 'handleFailed']
+        );
+
+        // Biometric consent event listeners
+        FacadesEvent::listen(
+            BiometricConsentGiven::class,
+            NotifyStaffOnConsentGiven::class
+        );
+
+        FacadesEvent::listen(
+            BiometricConsentRevoked::class,
+            HandleConsentRevoked::class
         );
 
         Notification::extend('whatsapp', function ($app) {

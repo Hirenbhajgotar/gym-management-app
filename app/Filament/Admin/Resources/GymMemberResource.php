@@ -225,6 +225,16 @@ class GymMemberResource extends Resource
                     ->label('Payment Status')
                     ->badge(),
 
+                Tables\Columns\TextColumn::make('biometric_consent_status')
+                    ->label('Biometric Consent')
+                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending'
+                    )
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'Consented' => 'success',
+                        'Pending' => 'warning',
+                    }),
+
                 Tables\Columns\IconColumn::make('is_frozen')
                     ->label('Frozen')
                     ->boolean()
@@ -382,6 +392,91 @@ class GymMemberResource extends Resource
                     })
                     ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
                     ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('resend_consent_email')
+                        ->label('Resend Consent Email')
+                        ->icon('heroicon-o-envelope')
+                        ->color('info')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
+                            && ! empty($record->email)
+                        )
+                        ->action(function (GymMember $record) {
+                            \App\Jobs\SendBiometricConsentEmail::dispatch($record);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Consent email sent to ' . $record->email)
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('copy_consent_link')
+                        ->label('Copy Consent Link')
+                        ->icon('heroicon-o-link')
+                        ->color('gray')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->action(function (GymMember $record, $livewire) {
+                            $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                                'biometric.consent.show',
+                                now()->addDays(7),
+                                [
+                                    'gym_member_id' => $record->id,
+                                    'gym_id' => $record->gym_id,
+                                ]
+                            );
+
+                            $livewire->js("
+                                navigator.clipboard.writeText('{$url}')
+                                    .catch(() => prompt('Copy this consent link:', '{$url}'));
+                            ");
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Link copied')
+                                ->body('Share this link via WhatsApp, SMS, or any channel.')
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('open_consent_page')
+                        ->label('Open on Tablet (Walk-in)')
+                        ->icon('heroicon-o-device-tablet')
+                        ->color('gray')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->url(fn (GymMember $record) => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                            'biometric.consent.show',
+                            now()->addHours(1),
+                            [
+                                'gym_member_id' => $record->id,
+                                'gym_id' => $record->gym_id,
+                            ]
+                        ))
+                        ->openUrlInNewTab(),
+
+                    Tables\Actions\Action::make('revoke_consent')
+                        ->label('Revoke Biometric Consent')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
+                        ->requiresConfirmation()
+                        ->modalHeading('Revoke Biometric Consent')
+                        ->modalDescription(
+                            'This will revoke consent and permanently delete all biometric templates for this member. This action cannot be undone.'
+                        )
+                        ->modalSubmitActionLabel('Yes, Revoke and Delete')
+                        ->action(function (GymMember $record) {
+                            $record->activeBiometricConsent()?->update([
+                                'revoked_at' => now(),
+                            ]);
+
+                            \App\Events\BiometricConsentRevoked::dispatch($record);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Consent revoked')
+                                ->body('All biometric data for ' . $record->name . ' has been deleted.')
+                                ->warning()
+                                ->send();
+                        }),
+                ]),
 
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
