@@ -30,15 +30,59 @@ class OfflineQueueManager
     }
 
     /**
+     * Acquire exclusive lock on queue file
+     *
+     * @return resource|false
+     */
+    protected function acquireLock()
+    {
+        $queueFile = $this->getQueueFilePath();
+        $handle = fopen($queueFile, 'c+');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        if (! flock($handle, LOCK_EX)) {
+            fclose($handle);
+
+            return false;
+        }
+
+        return $handle;
+    }
+
+    /**
+     * Release lock on queue file
+     *
+     * @param  resource|false  $handle
+     */
+    protected function releaseLock($handle): void
+    {
+        if ($handle !== false && $handle !== null) {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+    /**
      * Queue an offline check-in event for later sync
      */
     public function queueCheckIn(array $data): bool
     {
-        try {
-            $queueFile = $this->getQueueFilePath();
+        $handle = null;
 
-            // Check queue size limit
-            if ($this->getQueueCount() >= $this->maxQueueSize) {
+        try {
+            $handle = $this->acquireLock();
+
+            if ($handle === false) {
+                Log::error('Failed to acquire lock for queue check-in', $data);
+
+                return false;
+            }
+
+            // Check queue size limit while holding lock (prevents TOCTOU)
+            if ($this->getQueueCountFromHandle($handle) >= $this->maxQueueSize) {
                 Log::warning('Biometric offline queue full, dropping event', $data);
 
                 return false;
@@ -51,8 +95,10 @@ class OfflineQueueManager
                 'queued_at' => now()->toISOString(),
             ];
 
-            // Append to queue file (JSON lines format)
-            File::append($queueFile, json_encode($event) . "\n");
+            // Append to queue file while holding lock
+            fseek($handle, 0, SEEK_END);
+            fwrite($handle, json_encode($event) . "\n");
+            fflush($handle);
 
             Log::info('Biometric check-in queued for offline sync', [
                 'member_id' => $data['gym_member_id'] ?? 'unknown',
@@ -67,6 +113,8 @@ class OfflineQueueManager
             ]);
 
             return false;
+        } finally {
+            $this->releaseLock($handle);
         }
     }
 
@@ -88,6 +136,9 @@ class OfflineQueueManager
             return [];
         }
 
+        // Use shared lock for reading
+        flock($handle, LOCK_SH);
+
         while (($line = fgets($handle)) !== false) {
             $line = trim($line);
             if (empty($line)) {
@@ -100,36 +151,45 @@ class OfflineQueueManager
             }
         }
 
+        flock($handle, LOCK_UN);
         fclose($handle);
 
         return $events;
     }
 
     /**
-     * Get count of queued events
+     * Get count of queued events (for external use - acquires own lock)
      */
     public function getQueueCount(): int
     {
-        $queueFile = $this->getQueueFilePath();
-
-        if (! File::exists($queueFile)) {
-            return 0;
-        }
-
-        $count = 0;
-        $handle = fopen($queueFile, 'r');
+        $handle = $this->acquireLock();
 
         if ($handle === false) {
             return 0;
         }
+
+        try {
+            return $this->getQueueCountFromHandle($handle);
+        } finally {
+            $this->releaseLock($handle);
+        }
+    }
+
+    /**
+     * Get count from open file handle (must hold lock)
+     *
+     * @param  resource  $handle
+     */
+    protected function getQueueCountFromHandle($handle): int
+    {
+        fseek($handle, 0, SEEK_SET);
+        $count = 0;
 
         while (($line = fgets($handle)) !== false) {
             if (trim($line)) {
                 $count++;
             }
         }
-
-        fclose($handle);
 
         return $count;
     }
@@ -139,8 +199,22 @@ class OfflineQueueManager
      */
     public function clearQueue(): bool
     {
+        $handle = null;
+
         try {
+            $handle = $this->acquireLock();
+
+            if ($handle === false) {
+                Log::error('Failed to acquire lock for clear queue');
+
+                return false;
+            }
+
             $queueFile = $this->getQueueFilePath();
+
+            // Close the lock handle before deleting
+            $this->releaseLock($handle);
+            $handle = null;
 
             if (File::exists($queueFile)) {
                 File::delete($queueFile);
@@ -155,6 +229,8 @@ class OfflineQueueManager
             Log::error('Failed to clear offline queue', ['error' => $e->getMessage()]);
 
             return false;
+        } finally {
+            $this->releaseLock($handle);
         }
     }
 
@@ -163,16 +239,63 @@ class OfflineQueueManager
      */
     public function removeEvents(array $eventIndices): bool
     {
+        $handle = null;
+
         try {
-            $events = $this->getQueuedEvents();
+            $handle = $this->acquireLock();
+
+            if ($handle === false) {
+                Log::error('Failed to acquire lock for remove events');
+
+                return false;
+            }
+
+            // Read current events while holding lock
+            $events = [];
+            fseek($handle, 0, SEEK_SET);
+
+            while (($line = fgets($handle)) !== false) {
+                $line = trim($line);
+                if (empty($line)) {
+                    continue;
+                }
+
+                $event = json_decode($line, true);
+                if ($event) {
+                    $events[] = $event;
+                }
+            }
+
             $remainingEvents = array_values(array_diff_key($events, array_flip($eventIndices)));
 
-            // Rewrite queue file with remaining events
+            // Write to temp file while holding lock
             $queueFile = $this->getQueueFilePath();
-            File::put($queueFile, '');
+            $tempFile = $queueFile . '.tmp.' . uniqid('', true);
+            $tempHandle = fopen($tempFile, 'w');
+
+            if ($tempHandle === false) {
+                Log::error('Failed to create temp file for queue rewrite');
+
+                return false;
+            }
 
             foreach ($remainingEvents as $event) {
-                File::append($queueFile, json_encode($event) . "\n");
+                fwrite($tempHandle, json_encode($event) . "\n");
+            }
+
+            fflush($tempHandle);
+            fclose($tempHandle);
+
+            // Atomic replace: close lock first, then rename
+            $this->releaseLock($handle);
+            $handle = null;
+
+            // Rename temp file to queue file (atomic on POSIX)
+            if (! rename($tempFile, $queueFile)) {
+                Log::error('Failed to atomic replace queue file');
+                @unlink($tempFile);
+
+                return false;
             }
 
             Log::info('Biometric offline queue updated after sync', [
@@ -185,6 +308,8 @@ class OfflineQueueManager
             Log::error('Failed to remove events from queue', ['error' => $e->getMessage()]);
 
             return false;
+        } finally {
+            $this->releaseLock($handle);
         }
     }
 

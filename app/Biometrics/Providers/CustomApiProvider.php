@@ -90,6 +90,16 @@ class CustomApiProvider implements BiometricProvider
 
         $result = $response->json();
 
+        if (! $response->successful() || ! is_array($result)) {
+            return new VerificationResult(
+                matched: false,
+                confidence: 0.0,
+                livenessScore: 0.0,
+                providerRef: $ref->externalId,
+                raw: ['error' => $response->body()]
+            );
+        }
+
         $matchedKey = $this->config['response_matched_key'] ?? 'matched';
         $confidenceKey = $this->config['response_confidence_key'] ?? 'confidence';
         $livenessKey = $this->config['response_liveness_key'] ?? 'liveness_score';
@@ -128,7 +138,11 @@ class CustomApiProvider implements BiometricProvider
 
         $result = $response->json();
 
-        return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.75);
+        if (! $response->successful() || ! is_array($result)) {
+            return 0.0;
+        }
+
+        return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.00);
     }
 
     public function deleteTemplate(TemplateRef $ref): bool
