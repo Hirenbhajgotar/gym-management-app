@@ -117,7 +117,26 @@ class OfflineSyncService
             ];
         }
 
-        // Step 6: Create attendance with offline timestamps
+        // Step 6: Create or update attendance with offline timestamps (idempotent)
+        // Ensure offline_id is present in event
+        $offlineId = $event['offline_id'] ?? uniqid('offline_', true);
+
+        // Check for existing attendance (prevent duplicates from retry)
+        $existingAttendance = \App\Models\Attendances::where('device_id', $device->id)
+            ->where('offline_id', $offlineId)
+            ->first();
+
+        if ($existingAttendance) {
+            // Already synced - return existing record
+            return [
+                'offline_id' => $event['offline_id'],
+                'status' => 'accepted',
+                'attendance_id' => $existingAttendance->id,
+                'is_suspicious' => false,
+                'already_synced' => true,
+            ];
+        }
+
         $isSuspicious = $this->fraudDetector->isDuplicate($gymMember);
 
         $attendance = $gymMember->attendances()->create([
@@ -126,6 +145,7 @@ class OfflineSyncService
             'status' => AttendanceStatus::Present,
             'check_in_method' => 'biometric',
             'device_id' => $device->id,
+            'offline_id' => $offlineId,
             'biometric_type' => $event['biometric_type'],
             'provider_type' => $device->provider_type,
             'confidence_score' => $event['confidence_score'] ?? null,
