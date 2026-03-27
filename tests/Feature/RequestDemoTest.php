@@ -21,7 +21,7 @@ class RequestDemoTest extends TestCase
         RateLimiter::clear('request-demo:127.0.0.1');
     }
 
-    /** @test */
+    
     public function it_can_render_request_demo_page(): void
     {
         $response = $this->get(route('request-demo'));
@@ -30,7 +30,7 @@ class RequestDemoTest extends TestCase
         $response->assertSeeLivewire(RequestDemo::class);
     }
 
-    /** @test */
+    
     public function it_can_submit_demo_request_with_required_fields_only(): void
     {
         Livewire::test(RequestDemo::class)
@@ -49,7 +49,7 @@ class RequestDemoTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_can_submit_demo_request_with_all_fields(): void
     {
         Livewire::test(RequestDemo::class)
@@ -75,7 +75,7 @@ class RequestDemoTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_requires_name_field(): void
     {
         Livewire::test(RequestDemo::class)
@@ -85,7 +85,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['name' => 'required']);
     }
 
-    /** @test */
+    
     public function it_requires_email_field(): void
     {
         Livewire::test(RequestDemo::class)
@@ -95,7 +95,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['email' => 'required']);
     }
 
-    /** @test */
+    
     public function it_requires_phone_field(): void
     {
         Livewire::test(RequestDemo::class)
@@ -105,7 +105,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['phone' => 'required']);
     }
 
-    /** @test */
+    
     public function it_validates_email_format(): void
     {
         Livewire::test(RequestDemo::class)
@@ -116,7 +116,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['email' => 'email']);
     }
 
-    /** @test */
+    
     public function it_validates_name_minimum_length(): void
     {
         Livewire::test(RequestDemo::class)
@@ -127,7 +127,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['name' => 'min']);
     }
 
-    /** @test */
+    
     public function it_validates_phone_minimum_length(): void
     {
         Livewire::test(RequestDemo::class)
@@ -138,7 +138,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['phone' => 'min']);
     }
 
-    /** @test */
+    
     public function it_validates_gym_size_is_integer(): void
     {
         Livewire::test(RequestDemo::class)
@@ -150,7 +150,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['gym_size' => 'integer']);
     }
 
-    /** @test */
+    
     public function it_validates_message_maximum_length(): void
     {
         Livewire::test(RequestDemo::class)
@@ -162,7 +162,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['message' => 'max']);
     }
 
-    /** @test */
+    
     public function it_validates_preferred_contact_method_values(): void
     {
         Livewire::test(RequestDemo::class)
@@ -174,7 +174,7 @@ class RequestDemoTest extends TestCase
             ->assertHasErrors(['preferred_contact_method' => 'in']);
     }
 
-    /** @test */
+    
     public function it_stores_ip_address_and_user_agent(): void
     {
         Livewire::test(RequestDemo::class)
@@ -189,7 +189,7 @@ class RequestDemoTest extends TestCase
         $this->assertNotNull($requestContact->user_agent);
     }
 
-    /** @test */
+    
     public function it_resets_form_after_successful_submission(): void
     {
         Livewire::test(RequestDemo::class)
@@ -206,7 +206,7 @@ class RequestDemoTest extends TestCase
             ->assertDispatched('show-success');
     }
 
-    /** @test */
+    
     public function it_enforces_rate_limiting(): void
     {
         $component = Livewire::test(RequestDemo::class);
@@ -232,7 +232,7 @@ class RequestDemoTest extends TestCase
         $this->assertCount(3, RequestContact::all());
     }
 
-    /** @test */
+    
     public function it_dispatches_success_event_after_submission(): void
     {
         Livewire::test(RequestDemo::class)
@@ -243,7 +243,7 @@ class RequestDemoTest extends TestCase
             ->assertDispatched('show-success');
     }
 
-    /** @test */
+    
     public function it_dispatches_error_event_on_rate_limit(): void
     {
         $component = Livewire::test(RequestDemo::class);
@@ -266,7 +266,7 @@ class RequestDemoTest extends TestCase
             ->assertDispatched('show-error');
     }
 
-    /** @test */
+    
     public function request_contact_can_be_marked_as_contacted(): void
     {
         $requestContact = RequestContact::factory()->uncontacted()->create();
@@ -284,7 +284,7 @@ class RequestDemoTest extends TestCase
         );
     }
 
-    /** @test */
+    
     public function it_displays_contact_information_on_page(): void
     {
         $response = $this->get(route('request-demo'));
@@ -296,7 +296,7 @@ class RequestDemoTest extends TestCase
         $response->assertSee('Preferred Contact Method');
     }
 
-    /** @test */
+    
     public function home_controller_can_redirect_to_request_demo(): void
     {
         $response = $this->get(route('home'));

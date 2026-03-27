@@ -15,7 +15,7 @@ class GymSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    
     public function when_whatsapp_notifications_is_enabled_all_specific_whatsapp_notification_types_are_enabled_based_on_database()
     {
         $user = User::factory()->create();
@@ -45,7 +45,7 @@ class GymSettingsTest extends TestCase
             ]);
     }
 
-    /** @test */
+    
     public function when_whatsapp_notifications_is_disabled_all_specific_whatsapp_notification_types_are_disabled()
     {
         $user = User::factory()->create();

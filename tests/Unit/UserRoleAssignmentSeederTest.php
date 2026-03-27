@@ -42,7 +42,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    
     public function it_can_run_with_create_super_admin_choice()
     {
         $this->mockCommand->shouldReceive('choice')
@@ -92,7 +92,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_can_run_with_create_demo_users_for_specific_gym_choice()
     {
         // Create a test gym
@@ -143,7 +143,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_can_run_with_invalid_choice()
     {
         $this->mockCommand->shouldReceive('choice')
@@ -166,7 +166,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->seeder->run();
     }
 
-    /** @test */
+    
     public function it_creates_global_roles_correctly()
     {
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
@@ -191,7 +191,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_creates_tenant_roles_for_specific_gym()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -215,7 +215,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_creates_tenant_roles_for_all_gyms()
     {
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
@@ -242,7 +242,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_validates_super_admin_creation_inputs()
     {
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -260,7 +260,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_validates_super_admin_email()
     {
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -279,7 +279,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_validates_existing_email()
     {
         User::create([
@@ -302,7 +302,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_validates_password_length()
     {
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -320,7 +320,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_validates_password_confirmation()
     {
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -339,7 +339,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_creates_demo_users_with_correct_roles()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -384,7 +384,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_creates_trainer_profiles()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -410,7 +410,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_creates_member_profiles()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -436,7 +436,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_handles_no_gyms_scenario()
     {
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for specific gym...');
@@ -450,7 +450,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_gets_available_gyms()
     {
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
@@ -468,7 +468,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->assertEquals('Gym 2', $gyms[1]['name']);
     }
 
-    /** @test */
+    
     public function it_displays_final_summary_with_users()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -515,7 +515,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_handles_exception_during_super_admin_creation()
     {
         $this->mockCommand->shouldReceive('info')->with('🔐 Creating Super-Admin User...');
@@ -542,7 +542,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    /** @test */
+    
     public function it_creates_or_updates_user_with_global_role()
     {
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
@@ -572,7 +572,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->assertTrue($user->hasRole('gym_owner'));
     }
 
-    /** @test */
+    
     public function it_creates_or_updates_user_with_tenant_role()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);

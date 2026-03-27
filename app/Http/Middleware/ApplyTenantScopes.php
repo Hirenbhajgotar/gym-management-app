@@ -3,6 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\Attendances;
+use App\Models\BiometricConsent;
+use App\Models\BiometricDevice;
+use App\Models\BiometricTemplate;
 use App\Models\FollowUp;
 use App\Models\GymMember;
 use App\Models\Lead;
@@ -49,6 +52,18 @@ class ApplyTenantScopes
         );
 
         FollowUp::addGlobalScope(
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+        );
+
+        BiometricDevice::addGlobalScope(
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+        );
+
+        BiometricConsent::addGlobalScope(
+            fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+        );
+
+        BiometricTemplate::addGlobalScope(
             fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
 

@@ -49,14 +49,14 @@ class EditGymProfileTest extends TestCase
      |  Access control
      * ------------------------------------------------------- */
 
-    /** @test */
+    
     public function guest_is_redirected_to_login(): void
     {
         $this->get(EditGymProfile::getUrl(['tenant' => $this->tenant]))
             ->assertRedirect(route('filament.admin.auth.login'));
     }
 
-    /** @test */
+    
     public function user_without_tenant_access_cannot_view_edit_page(): void
     {
         $this->actingAs($this->otherUser)
@@ -64,7 +64,7 @@ class EditGymProfileTest extends TestCase
             ->assertForbidden();
     }
 
-    /** @test */
+    
     public function gym_owner_of_tenant_can_view_edit_page(): void
     {
         $this->actingAs($this->gymOwner)
@@ -77,7 +77,7 @@ class EditGymProfileTest extends TestCase
      |  Submission / update flow
      * ------------------------------------------------------- */
 
-    /** @test */
+    
     public function test_gym_owner_can_successfully_edit_gym_profile()
     {
         $this->actingAs($this->gymOwner);
@@ -116,7 +116,7 @@ class EditGymProfileTest extends TestCase
         $response->assertRedirect(route('filament.admin.tenant.edit', ['tenant' => 'new-fitness-hub']));
     }
 
-    /** @test */
+    
     public function slug_must_be_unique_except_for_current_tenant(): void
     {
         Gym::factory()->create(['slug' => 'existing-slug']);
@@ -130,7 +130,7 @@ class EditGymProfileTest extends TestCase
         $response->assertSessionHasErrors(['slug']);
     }
 
-    /** @test */
+    
     public function name_is_required(): void
     {
         $response = $this->actingAs($this->gymOwner)
@@ -142,7 +142,7 @@ class EditGymProfileTest extends TestCase
         $response->assertSessionHasErrors(['name']);
     }
 
-    /** @test */
+    
     public function user_cannot_edit_tenant_they_do_not_own(): void
     {
         $otherGym = Gym::factory()->create(); // no pivot for $this->gymOwner
