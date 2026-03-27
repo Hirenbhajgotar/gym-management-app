@@ -31,7 +31,7 @@ class TwilioAccountManagerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_registers_whatsapp_sender_when_purchasing_number(): void
     {
         // Mock Twilio Client and its nested resources

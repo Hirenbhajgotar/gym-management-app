@@ -11,3 +11,8 @@ Broadcast::channel('reports.{gymId}', function ($user, $gymId) {
     // Check if user has access to this gym
     return $user->gyms()->where('gyms.id', $gymId)->exists();
 });
+
+// Real-time attendance channel - authorize users for their gym's attendance
+Broadcast::channel('gym.{gymId}.attendance', function ($user, $gymId) {
+    return $user->gyms()->where('gyms.id', $gymId)->exists();
+});

@@ -39,7 +39,6 @@ class ReceptionistImportTest extends TestCase
         $this->import = app(ReceptionistsImport::class);
     }
 
-    /** @test */
     public function it_validates_required_headers(): void
     {
         $expected = $this->import->getExpectedHeaders();
@@ -55,7 +54,7 @@ class ReceptionistImportTest extends TestCase
         $this->assertContains('skills', $expected);
     }
 
-    // /** @test */
+    // 
     // public function it_validates_email_uniqueness()
     // {
     //     $rules = $this->import->setRules();
@@ -70,7 +69,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertTrue($validator->fails());
     // }
 
-    // /** @test */
+    // 
     // public function it_validates_data_rules()
     // {
     //     $rules = $this->import->setRules();
@@ -96,7 +95,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertArrayHasKey('monthly_salary', $validator->errors());
     // }
 
-    // /** @test */
+    // 
     // public function it_creates_user_with_hashed_password()
     // {
     //     $userData = [
@@ -113,7 +112,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertTrue(Hash::check('password123', $user->password));
     // }
 
-    // /** @test */
+    // 
     // public function it_creates_employee_details_with_complete_data()
     // {
     //     $data = [
@@ -147,7 +146,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertEquals(['customer_service', 'phone_handling', 'cash_handling'], $employeeDetail->skills);
     // }
 
-    // /** @test */
+    // 
     // public function it_handles_optional_fields_correctly()
     // {
     //     $minimalData = [
@@ -168,7 +167,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertNull($employeeDetail->skills);
     // }
 
-    // /** @test */
+    // 
     // public function it_assigns_correct_role_and_tenant()
     // {
     //     $data = [
@@ -196,7 +195,7 @@ class ReceptionistImportTest extends TestCase
     //     $this->assertTrue($user->gyms->contains($this->tenant));
     // }
 
-    // /** @test */
+    // 
     // public function it_validates_enum_fields()
     // {
     //     $rules = $this->import->setRules();

@@ -146,6 +146,18 @@ abstract class BaseAttendanceResource extends Resource
                     ->label('Date')
                     ->date('M d, Y')
                     ->sortable(),
+
+                TextColumn::make('check_in_method')
+                    ->label('Method')
+                    ->badge()
+                    ->color(fn (string $state) => $state === 'biometric' ? 'info' : 'gray')
+                    ->formatStateUsing(fn (?string $state) => $state === 'biometric' ? 'Biometric' : 'Manual'),
+
+                TextColumn::make('biometricDevice.name')
+                    ->label('Device')
+                    ->badge()
+                    ->color('warning')
+                    ->hidden(fn (): bool => ! in_array('biometric_device_id', (new Attendances)->getFillable())),
             ])
             ->filters([
                 SelectFilter::make('status')

@@ -14,7 +14,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    
     public function it_can_be_called_via_artisan_command()
     {
         // Create a gym first
@@ -92,7 +92,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $this->assertTrue($user->hasRole('super_admin'));
     }
 
-    /** @test */
+    
     public function it_creates_all_required_global_roles()
     {
         $seeder = new class extends UserRoleAssignmentSeeder
@@ -133,7 +133,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_creates_tenant_roles_for_existing_gyms()
     {
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
@@ -176,7 +176,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_creates_demo_users_programmatically()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -262,7 +262,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
     }
 
-    /** @test */
+    
     public function it_handles_multiple_gyms_correctly()
     {
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
@@ -344,7 +344,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_does_not_duplicate_roles_when_run_multiple_times()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -388,7 +388,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         }
     }
 
-    /** @test */
+    
     public function it_does_not_duplicate_users_when_run_multiple_times()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -456,7 +456,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $this->assertEquals(1, \App\Models\GymMember::where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
     }
 
-    /** @test */
+    
     public function it_works_with_no_existing_gyms()
     {
         // Don't create any gyms

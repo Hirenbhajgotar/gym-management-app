@@ -208,6 +208,30 @@ class GymMember extends Model
     {
         return $this->belongsTo(User::class, 'frozen_by');
     }
+
+    public function biometricTemplates(): HasMany
+    {
+        return $this->hasMany(BiometricTemplate::class, 'gym_member_id');
+    }
+
+    public function biometricConsents(): HasMany
+    {
+        return $this->hasMany(BiometricConsent::class, 'gym_member_id');
+    }
+
+    public function activeBiometricConsent(): ?BiometricConsent
+    {
+        return $this->biometricConsents()
+            ->where('gym_id', $this->gym_id)
+            ->whereNull('revoked_at')
+            ->first();
+    }
+
+    public function hasActiveBiometricConsent(): bool
+    {
+        return $this->activeBiometricConsent() !== null;
+    }
+
     // =========================
     // Activity Log
     // =========================
