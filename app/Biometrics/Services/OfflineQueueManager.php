@@ -30,13 +30,52 @@ class OfflineQueueManager
     }
 
     /**
-     * Acquire exclusive lock on queue file
+     * Get all queue file paths sorted by date (oldest first)
+     *
+     * @return array<string, string> Key is file path, value is date
+     */
+    protected function getAllQueueFilePaths(): array
+    {
+        $pattern = $this->queuePath . '/queue-*.jsonl';
+        $files = glob($pattern);
+
+        if ($files === false) {
+            return [];
+        }
+
+        $queueFiles = [];
+
+        foreach ($files as $file) {
+            $filename = basename($file);
+            if (preg_match('/queue-(\d{4}-\d{2}-\d{2})\.jsonl/', $filename, $matches)) {
+                $date = $matches[1];
+                $queueFiles[$file] = $date;
+            }
+        }
+
+        // Sort by date (oldest first)
+        asort($queueFiles);
+
+        return $queueFiles;
+    }
+
+    /**
+     * Get today's queue file path
+     */
+    protected function getQueueFilePath(): string
+    {
+        $date = now()->format('Y-m-d');
+
+        return $this->queuePath . '/queue-' . $date . '.jsonl';
+    }
+
+    /**
+     * Acquire exclusive lock on a specific queue file
      *
      * @return resource|false
      */
-    protected function acquireLock()
+    protected function acquireLock(string $queueFile)
     {
-        $queueFile = $this->getQueueFilePath();
         $handle = fopen($queueFile, 'c+');
 
         if ($handle === false) {
@@ -71,9 +110,10 @@ class OfflineQueueManager
     public function queueCheckIn(array $data): bool
     {
         $handle = null;
+        $queueFile = $this->getQueueFilePath();
 
         try {
-            $handle = $this->acquireLock();
+            $handle = $this->acquireLock($queueFile);
 
             if ($handle === false) {
                 Log::error('Failed to acquire lock for queue check-in', $data);
@@ -81,8 +121,9 @@ class OfflineQueueManager
                 return false;
             }
 
-            // Check queue size limit while holding lock (prevents TOCTOU)
-            if ($this->getQueueCountFromHandle($handle) >= $this->maxQueueSize) {
+            // Check total queue size across all files while holding lock
+            $totalQueueSize = $this->getTotalQueueCountWithLock($handle, $queueFile);
+            if ($totalQueueSize >= $this->maxQueueSize) {
                 Log::warning('Biometric offline queue full, dropping event', $data);
 
                 return false;
@@ -95,7 +136,7 @@ class OfflineQueueManager
                 'queued_at' => now()->toISOString(),
             ];
 
-            // Append to queue file while holding lock
+            // Append to today's queue file while holding lock
             fseek($handle, 0, SEEK_END);
             fwrite($handle, json_encode($event) . "\n");
             fflush($handle);
@@ -119,24 +160,86 @@ class OfflineQueueManager
     }
 
     /**
-     * Get all queued events from the queue file
+     * Get total queue count across all queue files (must hold lock on current file)
+     */
+    protected function getTotalQueueCountWithLock($handle, string $currentFile): int
+    {
+        // Count current file
+        $count = $this->getQueueCountFromHandle($handle);
+
+        // Add count from other files
+        $allFiles = $this->getAllQueueFilePaths();
+        foreach ($allFiles as $file => $date) {
+            if ($file !== $currentFile && File::exists($file)) {
+                $count += $this->getQueueCountFromFile($file);
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Get count from a file (no lock)
+     */
+    protected function getQueueCountFromFile(string $file): int
+    {
+        if (! File::exists($file)) {
+            return 0;
+        }
+
+        $count = 0;
+        $handle = fopen($file, 'r');
+
+        if ($handle === false) {
+            return 0;
+        }
+
+        flock($handle, LOCK_SH);
+
+        while (($line = fgets($handle)) !== false) {
+            if (trim($line)) {
+                $count++;
+            }
+        }
+
+        flock($handle, LOCK_UN);
+        fclose($handle);
+
+        return $count;
+    }
+
+    /**
+     * Get all queued events from all queue files (oldest first)
      */
     public function getQueuedEvents(): array
     {
-        $queueFile = $this->getQueueFilePath();
+        $allFiles = $this->getAllQueueFilePaths();
+        $events = [];
 
-        if (! File::exists($queueFile)) {
+        foreach ($allFiles as $file => $date) {
+            $fileEvents = $this->getEventsFromFile($file);
+            $events = array_merge($events, $fileEvents);
+        }
+
+        return $events;
+    }
+
+    /**
+     * Get events from a single file
+     */
+    protected function getEventsFromFile(string $file): array
+    {
+        if (! File::exists($file)) {
             return [];
         }
 
         $events = [];
-        $handle = fopen($queueFile, 'r');
+        $handle = fopen($file, 'r');
 
         if ($handle === false) {
             return [];
         }
 
-        // Use shared lock for reading
         flock($handle, LOCK_SH);
 
         while (($line = fgets($handle)) !== false) {
@@ -158,21 +261,18 @@ class OfflineQueueManager
     }
 
     /**
-     * Get count of queued events (for external use - acquires own lock)
+     * Get total count of queued events across all files
      */
     public function getQueueCount(): int
     {
-        $handle = $this->acquireLock();
+        $allFiles = $this->getAllQueueFilePaths();
+        $total = 0;
 
-        if ($handle === false) {
-            return 0;
+        foreach ($allFiles as $file => $date) {
+            $total += $this->getQueueCountFromFile($file);
         }
 
-        try {
-            return $this->getQueueCountFromHandle($handle);
-        } finally {
-            $this->releaseLock($handle);
-        }
+        return $total;
     }
 
     /**
@@ -195,54 +295,41 @@ class OfflineQueueManager
     }
 
     /**
-     * Clear all queued events (after successful sync)
+     * Clear all queued events (after successful sync of all files)
      */
     public function clearQueue(): bool
     {
-        $handle = null;
-
         try {
-            $handle = $this->acquireLock();
+            $allFiles = $this->getAllQueueFilePaths();
 
-            if ($handle === false) {
-                Log::error('Failed to acquire lock for clear queue');
-
-                return false;
-            }
-
-            $queueFile = $this->getQueueFilePath();
-
-            // Close the lock handle before deleting
-            $this->releaseLock($handle);
-            $handle = null;
-
-            if (File::exists($queueFile)) {
-                File::delete($queueFile);
+            foreach ($allFiles as $file => $date) {
+                if (File::exists($file)) {
+                    File::delete($file);
+                }
             }
 
             $this->ensureQueueDirectoryExists();
 
-            Log::info('Biometric offline queue cleared');
+            Log::info('Biometric offline queue cleared (all files)');
 
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to clear offline queue', ['error' => $e->getMessage()]);
 
             return false;
-        } finally {
-            $this->releaseLock($handle);
         }
     }
 
     /**
-     * Remove specific events from queue (after successful sync)
+     * Remove specific events from current queue file (for partial sync)
      */
     public function removeEvents(array $eventIndices): bool
     {
         $handle = null;
+        $queueFile = $this->getQueueFilePath();
 
         try {
-            $handle = $this->acquireLock();
+            $handle = $this->acquireLock($queueFile);
 
             if ($handle === false) {
                 Log::error('Failed to acquire lock for remove events');
@@ -269,7 +356,6 @@ class OfflineQueueManager
             $remainingEvents = array_values(array_diff_key($events, array_flip($eventIndices)));
 
             // Write to temp file while holding lock
-            $queueFile = $this->getQueueFilePath();
             $tempFile = $queueFile . '.tmp.' . uniqid('', true);
             $tempHandle = fopen($tempFile, 'w');
 
@@ -314,13 +400,13 @@ class OfflineQueueManager
     }
 
     /**
-     * Process and sync queued events to the server
+     * Process and sync queued events from all queue files (oldest first)
      */
     public function syncQueue(string $apiUrl, string $apiToken): array
     {
-        $events = $this->getQueuedEvents();
+        $allFiles = $this->getAllQueueFilePaths();
 
-        if (empty($events)) {
+        if (empty($allFiles)) {
             return [
                 'success' => true,
                 'synced' => 0,
@@ -329,58 +415,133 @@ class OfflineQueueManager
             ];
         }
 
-        $syncedCount = 0;
-        $failedCount = 0;
-        $failedIndices = [];
-        $successfulIndices = [];
+        $totalSynced = 0;
+        $totalFailed = 0;
+        $filesProcessed = 0;
+        $filesDeleted = 0;
 
-        // Process in batches
-        $batches = array_chunk($events, $this->batchSize);
+        // Process each file in chronological order (oldest first)
+        foreach ($allFiles as $file => $date) {
+            $events = $this->getEventsFromFile($file);
 
-        foreach ($batches as $batchIndex => $batch) {
-            $response = $this->sendBatchToServer($batch, $apiUrl, $apiToken);
+            if (empty($events)) {
+                // Empty file - can be safely deleted
+                File::delete($file);
+                $filesDeleted++;
 
-            if ($response['success']) {
-                $syncedCount += count($batch);
+                continue;
+            }
 
-                // Track successful batch indices
-                foreach ($batch as $event) {
-                    $eventIndex = array_search($event, $events, true);
-                    if ($eventIndex !== false) {
-                        $successfulIndices[] = $eventIndex;
+            $fileSyncedCount = 0;
+            $fileFailedCount = 0;
+            $successfulIndices = [];
+
+            // Process in batches
+            $batches = array_chunk($events, $this->batchSize);
+
+            foreach ($batches as $batch) {
+                $response = $this->sendBatchToServer($batch, $apiUrl, $apiToken);
+
+                if ($response['success']) {
+                    $fileSyncedCount += count($batch);
+
+                    // Track successful indices
+                    foreach ($batch as $event) {
+                        $eventIndex = array_search($event, $events, true);
+                        if ($eventIndex !== false) {
+                            $successfulIndices[] = $eventIndex;
+                        }
                     }
-                }
 
-                // Mark as synced in attendance records
-                $this->markAttendanceAsSynced($batch);
-            } else {
-                $failedCount += count($batch);
-
-                // Track failed batch indices
-                foreach ($batch as $event) {
-                    $eventIndex = array_search($event, $events, true);
-                    if ($eventIndex !== false) {
-                        $failedIndices[] = $eventIndex;
-                    }
+                    $this->markAttendanceAsSynced($batch);
+                } else {
+                    $fileFailedCount += count($batch);
                 }
             }
+
+            // Handle file after processing
+            if ($fileFailedCount === 0) {
+                // All events synced - delete the file
+                File::delete($file);
+                $filesDeleted++;
+                Log::info('Processed and deleted queue file', ['file' => $date, 'synced' => $fileSyncedCount]);
+            } else {
+                // Some failed - remove only successful events, keep failed
+                $remainingEvents = array_values(array_diff_key($events, array_flip($successfulIndices)));
+
+                if (empty($remainingEvents)) {
+                    // All events synced - delete the file
+                    File::delete($file);
+                    $filesDeleted++;
+                } else {
+                    // Rewrite file with remaining events
+                    $this->rewriteQueueFile($file, $remainingEvents);
+                }
+            }
+
+            $totalSynced += $fileSyncedCount;
+            $totalFailed += $fileFailedCount;
+            $filesProcessed++;
         }
 
-        // Remove successfully synced events from queue
-        if ($failedCount === 0) {
-            // All events synced successfully - clear entire queue
-            $this->clearQueue();
-        } else {
-            // Some events failed - remove only successful ones, keep failures for retry
-            $this->removeEvents($successfulIndices);
-        }
+        // Update last sync time
+        cache()->put('biometric_last_sync', now()->toISOString(), now()->addDay());
 
         return [
-            'success' => $failedCount === 0,
-            'synced' => $syncedCount,
-            'failed' => $failedCount,
+            'success' => $totalFailed === 0,
+            'synced' => $totalSynced,
+            'failed' => $totalFailed,
             'remaining' => $this->getQueueCount(),
+            'files_processed' => $filesProcessed,
+            'files_deleted' => $filesDeleted,
         ];
+    }
+
+    /**
+     * Rewrite queue file with remaining events (internal use)
+     */
+    protected function rewriteQueueFile(string $file, array $events): bool
+    {
+        $handle = $this->acquireLock($file);
+
+        if ($handle === false) {
+            Log::error('Failed to acquire lock for rewrite', ['file' => $file]);
+
+            return false;
+        }
+
+        try {
+            $tempFile = $file . '.tmp.' . uniqid('', true);
+            $tempHandle = fopen($tempFile, 'w');
+
+            if ($tempHandle === false) {
+                return false;
+            }
+
+            foreach ($events as $event) {
+                fwrite($tempHandle, json_encode($event) . "\n");
+            }
+
+            fflush($tempHandle);
+            fclose($tempHandle);
+
+            $this->releaseLock($handle);
+            $handle = null;
+
+            if (! rename($tempFile, $file)) {
+                @unlink($tempFile);
+
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to rewrite queue file', ['error' => $e->getMessage()]);
+
+            return false;
+        } finally {
+            $this->releaseLock($handle);
+        }
     }
 
     /**
@@ -431,7 +592,6 @@ class OfflineQueueManager
                 continue;
             }
 
-            // Find attendance by captured_at timestamp and member
             $capturedAt = $event['data']['captured_at'] ?? null;
             $memberId = $event['data']['gym_member_id'] ?? null;
 
@@ -448,35 +608,31 @@ class OfflineQueueManager
     }
 
     /**
-     * Get queue file path with date-based rotation
-     */
-    protected function getQueueFilePath(): string
-    {
-        $date = now()->format('Y-m-d');
-
-        return $this->queuePath . '/queue-' . $date . '.jsonl';
-    }
-
-    /**
-     * Clean up old queue files (older than specified days)
+     * Clean up old queue files (only empty files or older than retention policy)
      */
     public function cleanupOldQueues(int $daysToKeep = 7): int
     {
         $cutoffDate = now()->subDays($daysToKeep);
         $deletedCount = 0;
 
-        $files = File::files($this->queuePath);
+        $allFiles = $this->getAllQueueFilePaths();
 
-        foreach ($files as $file) {
-            $filename = $file->getFilename();
+        foreach ($allFiles as $file => $date) {
+            $fileDate = \Carbon\Carbon::parse($date);
 
-            // Extract date from filename (queue-YYYY-MM-DD.jsonl)
-            if (preg_match('/queue-(\d{4}-\d{2}-\d{2})\.jsonl/', $filename, $matches)) {
-                $fileDate = \Carbon\Carbon::parse($matches[1]);
+            // Only delete files older than retention policy
+            if ($fileDate->lt($cutoffDate)) {
+                // Check if file is empty before deleting
+                $count = $this->getQueueCountFromFile($file);
 
-                if ($fileDate->lt($cutoffDate)) {
-                    File::delete($file->getPathname());
+                if ($count === 0) {
+                    File::delete($file);
                     $deletedCount++;
+                } else {
+                    Log::warning('Skipping cleanup of non-empty queue file', [
+                        'file' => $date,
+                        'events' => $count,
+                    ]);
                 }
             }
         }
@@ -523,23 +679,27 @@ class OfflineQueueManager
     {
         return [
             'queue_count' => $this->getQueueCount(),
-            'queue_size_bytes' => $this->getQueueSizeBytes(),
+            'queue_size_bytes' => $this->getTotalQueueSizeBytes(),
             'should_use_offline' => $this->shouldUseOfflineMode(),
             'last_sync' => cache()->get('biometric_last_sync'),
+            'files' => $this->getAllQueueFilePaths(),
         ];
     }
 
     /**
-     * Get total queue size in bytes
+     * Get total queue size in bytes across all files
      */
-    protected function getQueueSizeBytes(): int
+    protected function getTotalQueueSizeBytes(): int
     {
-        $queueFile = $this->getQueueFilePath();
+        $total = 0;
 
-        if (! File::exists($queueFile)) {
-            return 0;
+        $allFiles = $this->getAllQueueFilePaths();
+        foreach ($allFiles as $file => $date) {
+            if (File::exists($file)) {
+                $total += File::size($file);
+            }
         }
 
-        return File::size($queueFile);
+        return $total;
     }
 }
