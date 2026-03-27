@@ -226,7 +226,7 @@ class EnrollMember extends Page
 
         Notification::make()
             ->title('Biometric Enrolled Successfully')
-            ->body("Member {$member->first_name} {$member->last_name} has been enrolled with {$this->biometricType}.")
+            ->body("Member {$member->name} has been enrolled with {$this->biometricType}.")
             ->success()
             ->send();
 

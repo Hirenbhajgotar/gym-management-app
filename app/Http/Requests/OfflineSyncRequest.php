@@ -20,7 +20,7 @@ class OfflineSyncRequest extends FormRequest
             'events.*.offline_id' => ['required', 'string'],
             'events.*.biometric_type' => [
                 'required',
-                Rule::in(BiometricTypeEnum::class),
+                Rule::enum(BiometricTypeEnum::class),
             ],
             'events.*.data' => ['required', 'string'],
             'events.*.captured_at' => ['required', 'date'],

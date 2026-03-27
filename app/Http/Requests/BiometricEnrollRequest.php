@@ -19,7 +19,7 @@ class BiometricEnrollRequest extends FormRequest
             'gym_member_id' => ['required', 'integer', 'exists:gym_members,id'],
             'biometric_type' => [
                 'required',
-                Rule::in(BiometricTypeEnum::class),
+                Rule::enum(BiometricTypeEnum::class),
             ],
             'data' => ['required', 'string'],
             'metadata' => ['nullable', 'array'],

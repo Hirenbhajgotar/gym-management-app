@@ -18,7 +18,7 @@ class BiometricCheckInRequest extends FormRequest
         return [
             'biometric_type' => [
                 'required',
-                Rule::in(BiometricTypeEnum::class),
+                Rule::enum(BiometricTypeEnum::class),
             ],
             'data' => ['required', 'string'],
             'captured_at' => ['required', 'date'],

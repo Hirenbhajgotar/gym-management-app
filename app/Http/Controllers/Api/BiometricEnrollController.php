@@ -92,7 +92,7 @@ class BiometricEnrollController extends Controller
                 Rule::exists('gym_members', 'id')
                     ->where('gym_id', $device->gym_id),
             ],
-            'biometric_type' => ['required', Rule::in(BiometricTypeEnum::class)],
+            'biometric_type' => ['required', Rule::enum(BiometricTypeEnum::class)],
             'template_ref' => 'required|string|max:255', // device ka internal ID
             'quality_score' => 'nullable|numeric|between:0,1',
         ]);

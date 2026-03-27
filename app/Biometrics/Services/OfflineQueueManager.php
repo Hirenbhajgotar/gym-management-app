@@ -207,6 +207,7 @@ class OfflineQueueManager
         $syncedCount = 0;
         $failedCount = 0;
         $failedIndices = [];
+        $successfulIndices = [];
 
         // Process in batches
         $batches = array_chunk($events, $this->batchSize);
@@ -216,6 +217,14 @@ class OfflineQueueManager
 
             if ($response['success']) {
                 $syncedCount += count($batch);
+
+                // Track successful batch indices
+                foreach ($batch as $event) {
+                    $eventIndex = array_search($event, $events, true);
+                    if ($eventIndex !== false) {
+                        $successfulIndices[] = $eventIndex;
+                    }
+                }
 
                 // Mark as synced in attendance records
                 $this->markAttendanceAsSynced($batch);
@@ -234,9 +243,11 @@ class OfflineQueueManager
 
         // Remove successfully synced events from queue
         if ($failedCount === 0) {
+            // All events synced successfully - clear entire queue
             $this->clearQueue();
         } else {
-            $this->removeEvents($failedIndices);
+            // Some events failed - remove only successful ones, keep failures for retry
+            $this->removeEvents($successfulIndices);
         }
 
         return [
