@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 
 class ImportDefaultPermissionsJobTest extends \Tests\TestCase
 {
@@ -34,6 +35,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         parent::tearDown();
     }
 
+    #[Test]
     public function it_can_be_instantiated_with_role_and_user_id()
     {
         $job = new ImportDefaultPermissionsJob('admin', 1);
@@ -41,6 +43,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }
 
+    #[Test]
     public function it_can_be_instantiated_with_null_values()
     {
         // Mock auth to return a user ID
@@ -51,6 +54,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }
 
+    #[Test]
     public function it_imports_permissions_for_specific_role_successfully()
     {
         // Arrange
@@ -74,6 +78,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         ]);
     }
 
+    #[Test]
     public function it_imports_permissions_for_all_roles_successfully()
     {
         // Arrange
@@ -104,6 +109,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         }
     }
 
+    #[Test]
     public function it_handles_empty_permissions_for_specific_role()
     {
         // Arrange
@@ -129,6 +135,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         ]);
     }
 
+    #[Test]
     public function it_throws_exception_when_service_fails_for_specific_role()
     {
         // Arrange
@@ -153,6 +160,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $job->handle();
     }
 
+    #[Test]
     public function it_throws_exception_when_service_fails_for_all_roles()
     {
         // Arrange
@@ -173,6 +181,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $job->handle();
     }
 
+    #[Test]
     public function it_updates_existing_permission_settings()
     {
         // Arrange
@@ -206,6 +215,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertDatabaseCount('permission_settings', 1);
     }
 
+    #[Test]
     public function it_handles_failed_job_properly()
     {
         // Arrange

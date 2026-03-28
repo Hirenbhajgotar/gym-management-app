@@ -12,6 +12,7 @@ use App\Models\WhatsAppTemplate;
 use App\Services\TwilioWhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Twilio\Rest\Client;
 
@@ -81,7 +82,7 @@ class TwilioWhatsAppServiceTest extends TestCase
 
     // ========== SEND TEMPLATE MESSAGE ==========
 
-    
+    #[Test]
     public function it_sends_template_message_successfully(): void
     {
         $messageMock = Mockery::mock();
@@ -108,7 +109,7 @@ class TwilioWhatsAppServiceTest extends TestCase
         $this->assertEquals('SM_test_message_sid', $result['message_id']);
     }
 
-    
+    #[Test]
     public function it_fails_when_template_not_found(): void
     {
         $clientMock = Mockery::mock(Client::class);
@@ -124,7 +125,7 @@ class TwilioWhatsAppServiceTest extends TestCase
         $this->assertStringContains('not found or not approved', $result['error']);
     }
 
-    
+    #[Test]
     public function it_fails_when_template_is_not_approved(): void
     {
         $this->template->update(['status' => 'pending']);
@@ -142,7 +143,7 @@ class TwilioWhatsAppServiceTest extends TestCase
         $this->assertStringContains('not found or not approved', $result['error']);
     }
 
-    
+    #[Test]
     public function it_fails_when_no_phone_number_configured(): void
     {
         $this->phoneNumber->delete();
@@ -160,7 +161,7 @@ class TwilioWhatsAppServiceTest extends TestCase
         $this->assertStringContains('No phone number', $result['error']);
     }
 
-    
+    #[Test]
     public function it_fails_when_insufficient_credits(): void
     {
         $this->credits->update([
@@ -183,7 +184,7 @@ class TwilioWhatsAppServiceTest extends TestCase
 
     // ========== CREDIT BALANCE ==========
 
-    
+    #[Test]
     public function it_returns_credit_balance(): void
     {
         $clientMock = Mockery::mock(Client::class);
@@ -197,7 +198,7 @@ class TwilioWhatsAppServiceTest extends TestCase
         $this->assertTrue($balance['can_send']);
     }
 
-    
+    #[Test]
     public function it_returns_zero_balance_when_no_credits(): void
     {
         $this->credits->delete();
@@ -213,7 +214,7 @@ class TwilioWhatsAppServiceTest extends TestCase
 
     // ========== MONTHLY USAGE ==========
 
-    
+    #[Test]
     public function it_returns_monthly_usage(): void
     {
         $clientMock = Mockery::mock(Client::class);
