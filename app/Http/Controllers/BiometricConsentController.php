@@ -60,7 +60,7 @@ class BiometricConsentController extends Controller
             event(new BiometricConsentGiven($gymMember, $consent));
         } catch (\Illuminate\Database\QueryException $e) {
             // Check for duplicate key error (MySQL error code 1062 or SQLSTATE 23000)
-            if ($e->getCode() === '23000' || $e->errorInfo[1] ?? null === 1062) {
+            if ($e->getCode() === '23000' || ($e->errorInfo[1] ?? null) === 1062) {
                 // Another request created the consent first - reload and return success
                 $gymMember->refresh();
 

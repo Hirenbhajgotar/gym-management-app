@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Services;
 
+use App\Biometrics\BiometricProviderRegistry;
 use App\Models\BiometricConsent;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
@@ -10,8 +11,17 @@ use Spatie\Activitylog\Facades\Activity;
 
 class BiometricDataDeletionService
 {
+    public function __construct(
+        private BiometricProviderRegistry $registry
+    ) {}
+
     /**
      * Delete all biometric data for a gym member (GDPR compliance)
+     *
+     * This method is idempotent and resilient:
+     * - Skips already inactive templates
+     * - Catches exceptions per template and continues processing
+     * - Throws aggregated exception after loop if any failures occurred
      *
      * @throws \Exception when provider deletion fails - allows listener retry
      */
@@ -20,31 +30,52 @@ class BiometricDataDeletionService
         // Step 1: Load all BiometricTemplate for this member
         $templates = BiometricTemplate::where('gym_member_id', $gymMember->id)->get();
 
+        // Accumulate errors for throwing after loop
+        $errors = [];
+
         // Step 2: Call provider->deleteTemplate() for each
-        // Provider errors are NOT suppressed - rethrow to trigger listener retry
         foreach ($templates as $template) {
-            $provider = $this->registry->resolve($template->provider_type);
+            // Skip already inactive templates (idempotent)
+            if (! $template->is_active) {
+                continue;
+            }
 
-            $templateRef = new \App\Biometrics\DTOs\TemplateRef(
-                provider: $template->provider_type,
-                externalId: $template->template_ref,
-                meta: []
-            );
+            try {
+                $provider = $this->registry->resolve($template->provider_type);
 
-            // This will throw if provider deletion fails - allowing retry
-            $result = $provider->deleteTemplate($templateRef);
+                $templateRef = new \App\Biometrics\DTOs\TemplateRef(
+                    provider: $template->provider_type,
+                    externalId: $template->template_ref,
+                    meta: []
+                );
 
-            // Only deactivate local template AFTER successful provider deletion
-            if ($result === true) {
-                $template->is_active = false;
-                $template->save();
-            } else {
-                // Provider returned false - log and continue but don't deactivate
-                // This indicates provider couldn't delete (not an error, but not success)
-                Log::warning('Provider did not confirm template deletion', [
+                $result = $provider->deleteTemplate($templateRef);
+
+                // Only deactivate local template AFTER successful provider deletion
+                if ($result === true) {
+                    $template->is_active = false;
+                    $template->save();
+                } else {
+                    // Provider returned false - log and continue but don't deactivate
+                    Log::warning('Provider did not confirm template deletion', [
+                        'template_id' => $template->id,
+                        'external_id' => $template->template_ref,
+                        'provider' => $template->provider_type,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Catch exception per template and accumulate error
+                // This allows processing to continue for remaining templates
+                $errors[] = [
                     'template_id' => $template->id,
                     'external_id' => $template->template_ref,
                     'provider' => $template->provider_type,
+                    'error' => $e->getMessage(),
+                ];
+
+                Log::warning('Provider deletion failed for template', [
+                    'template_id' => $template->id,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -69,6 +100,16 @@ class BiometricDataDeletionService
 
         // Step 5: Log via Spatie activity log
         Activity::on($gymMember)->log('Biometric data deleted per GDPR request');
+
+        // Step 6: Throw aggregated exception if any errors occurred
+        // This triggers the listener retry mechanism
+        if (! empty($errors)) {
+            throw new \RuntimeException(
+                'Biometric data deletion failed for ' . count($errors) . ' template(s). See logs for details.',
+                0,
+                null
+            );
+        }
     }
 
     /**

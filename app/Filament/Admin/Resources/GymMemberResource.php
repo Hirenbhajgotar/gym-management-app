@@ -113,7 +113,8 @@ class GymMemberResource extends Resource
             ->modifyQueryUsing(function ($query) {
                 // Eager-load biometric consent existence to avoid N+1 queries
                 $query->withExists(['biometricConsents' => function ($query) {
-                    $query->whereNull('revoked_at');
+                    $query->whereColumn('biometric_consents.gym_id', 'gym_members.gym_id')
+                        ->whereNull('revoked_at');
                 }]);
             })
             ->columns([
