@@ -138,11 +138,18 @@ class CustomApiProvider implements BiometricProvider
 
         $result = $response->json();
 
-        if (! $response->successful() || ! is_array($result)) {
-            return 0.0;
+        if (! $response->successful()) {
+            throw new \RuntimeException(
+                "Custom API liveness check failed [{$response->status()}]: " . $response->body()
+            );
+        }
+        if (! is_array($result)) {
+            throw new \RuntimeException(
+                'Custom API liveness check returned invalid JSON response'
+            );
         }
 
-        return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.00);
+        return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.0);
     }
 
     public function deleteTemplate(TemplateRef $ref): bool

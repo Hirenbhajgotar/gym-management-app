@@ -227,12 +227,12 @@ class GymMemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('biometric_consent_status')
                     ->label('Biometric Consent')
-                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending'
-                    )
+                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
                         'Consented' => 'success',
                         'Pending' => 'warning',
+                        default => 'gray',
                     }),
 
                 Tables\Columns\IconColumn::make('is_frozen')
@@ -429,7 +429,8 @@ class GymMemberResource extends Resource
                             && ! empty($record->email)
                         )
                         ->action(function (GymMember $record) {
-                            \App\Jobs\SendBiometricConsentEmail::dispatch($record);
+                            // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
+                            \App\Jobs\SendBiometricConsentEmail::dispatch($record->load('gym'));
 
                             \Filament\Notifications\Notification::make()
                                 ->title('Consent email sent to ' . $record->email)
@@ -452,8 +453,9 @@ class GymMemberResource extends Resource
                                 ]
                             );
 
+                            $escapedUrl = json_encode($url);
                             $livewire->js("
-                                navigator.clipboard.writeText('{$url}');
+                                navigator.clipboard.writeText({$escapedUrl});
                             ");
 
                             \Filament\Notifications\Notification::make()

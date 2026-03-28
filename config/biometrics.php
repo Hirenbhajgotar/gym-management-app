@@ -18,4 +18,6 @@ return [
         'on_premise' => \App\Biometrics\Providers\LocalModelProvider::class,
         'custom' => \App\Biometrics\Providers\CustomApiProvider::class,
     ],
+
+    'biometric_consent_email_delay' => (int) env('BIOMETRIC_CONSENT_EMAIL_DELAY', 1), // minutes
 ];

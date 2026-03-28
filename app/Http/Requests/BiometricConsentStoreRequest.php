@@ -14,8 +14,38 @@ class BiometricConsentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gym_member_id' => ['required', 'integer', 'exists:gym_members,id'],
-            'gym_id' => ['required', 'integer', 'exists:gyms,id'],
+            'gym_member_id' => [
+                'required',
+                'integer',
+                'exists:gym_members,id',
+                // Validate form value matches signed URL query parameter to prevent tampering
+                function ($attribute, $value, $fail) {
+                    $signedMemberId = $this->query('gym_member_id');
+                    if ($signedMemberId !== null && (int) $value !== (int) $signedMemberId) {
+                        $fail('The gym member ID does not match the signed URL.');
+                    }
+                },
+            ],
+            'gym_id' => [
+                'required',
+                'integer',
+                'exists:gyms,id',
+                // Validate form value matches signed URL query parameter to prevent tampering
+                function ($attribute, $value, $fail) {
+                    $signedGymId = $this->query('gym_id');
+                    if ($signedGymId !== null && (int) $value !== (int) $signedGymId) {
+                        $fail('The gym ID does not match the signed URL.');
+                    }
+                },
+                // Also validate gym matches member
+                function ($attribute, $value, $fail) {
+                    $gymMemberId = $this->input('gym_member_id');
+                    $member = \App\Models\GymMember::find($gymMemberId);
+                    if ($member && (int) $member->gym_id !== (int) $value) {
+                        $fail('The gym does not match the member\'s gym.');
+                    }
+                },
+            ],
             'consented' => ['required', 'accepted'],
         ];
     }
