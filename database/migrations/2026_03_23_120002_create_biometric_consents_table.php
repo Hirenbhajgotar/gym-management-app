@@ -27,8 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('biometric_consents', function (Blueprint $table) {
-            $table->dropUnique('biometric_consents_active_unique');
-        });
+        Schema::dropIfExists('biometric_consents');
     }
 };

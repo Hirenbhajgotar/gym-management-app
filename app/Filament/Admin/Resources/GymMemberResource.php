@@ -225,6 +225,16 @@ class GymMemberResource extends Resource
                     ->label('Payment Status')
                     ->badge(),
 
+                Tables\Columns\TextColumn::make('biometric_consent_status')
+                    ->label('Biometric Consent')
+                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'Consented' => 'success',
+                        'Pending' => 'warning',
+                        default => 'gray',
+                    }),
+
                 Tables\Columns\IconColumn::make('is_frozen')
                     ->label('Frozen')
                     ->boolean()
@@ -321,68 +331,6 @@ class GymMemberResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('quick_measure')
-                    ->label('Measure')
-                    ->icon('heroicon-o-scale')
-                    ->tooltip('Add new measurement')
-                    ->form([
-                        Section::make('Create member measurement')
-                            ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
-                            ->columns(2),
-                    ])
-                    ->action(function (GymMember $record, array $data) {
-                        $record->measurements()->create([
-                            'weight' => $data['weight'],
-                            'height' => $data['height'],
-                            'measured_at' => $data['measured_at'],
-                            'notes' => $data['notes'],
-                        ]);
-
-                        \Filament\Notifications\Notification::make()
-                            ->title('Measurement Added')
-                            ->success()
-                            ->send();
-                    }),
-
-                Tables\Actions\Action::make('toggle_freeze')
-                    ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
-                    ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
-                    ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
-                    ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
-                    ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
-                    ->form([
-                        Forms\Components\Textarea::make('reason')
-                            ->label('Reason for freezing (optional)')
-                            ->placeholder('Enter reason for freezing membership'),
-                        Forms\Components\TextInput::make('days')
-                            ->label('Freeze for days (optional)')
-                            ->placeholder('Leave empty for manual unfreeze')
-                            ->numeric()
-                            ->minValue(1)
-                            ->helperText('Enter number of days or leave empty for manual unfreeze'),
-                    ])
-                    ->action(function (GymMember $record, array $data) {
-                        if ($record->is_frozen) {
-                            $record->unfreeze();
-                            \Filament\Notifications\Notification::make()
-                                ->title('Member Unfrozen')
-                                ->success()
-                                ->send();
-                        } else {
-                            $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
-                            $record->freeze(
-                                reason: $data['reason'] ?? null,
-                                days: $days
-                            );
-                            \Filament\Notifications\Notification::make()
-                                ->title('Member Frozen')
-                                ->success()
-                                ->send();
-                        }
-                    })
-                    ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
-                    ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
-
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
@@ -409,6 +357,154 @@ class GymMemberResource extends Resource
                                 },
                             ]),
                     ]),
+
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('quick_measure')
+                        ->label('Measure')
+                        ->icon('heroicon-o-scale')
+                        ->tooltip('Add new measurement')
+                        ->form([
+                            Section::make('Create member measurement')
+                                ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
+                                ->columns(2),
+                        ])
+                        ->action(function (GymMember $record, array $data) {
+                            $record->measurements()->create([
+                                'weight' => $data['weight'],
+                                'height' => $data['height'],
+                                'measured_at' => $data['measured_at'],
+                                'notes' => $data['notes'],
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Measurement Added')
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('toggle_freeze')
+                        ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
+                        ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
+                        ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
+                        ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
+                        ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason for freezing (optional)')
+                                ->placeholder('Enter reason for freezing membership'),
+                            Forms\Components\TextInput::make('days')
+                                ->label('Freeze for days (optional)')
+                                ->placeholder('Leave empty for manual unfreeze')
+                                ->numeric()
+                                ->minValue(1)
+                                ->helperText('Enter number of days or leave empty for manual unfreeze'),
+                        ])
+                        ->action(function (GymMember $record, array $data) {
+                            if ($record->is_frozen) {
+                                $record->unfreeze();
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Member Unfrozen')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
+                                $record->freeze(
+                                    reason: $data['reason'] ?? null,
+                                    days: $days
+                                );
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Member Frozen')
+                                    ->success()
+                                    ->send();
+                            }
+                        })
+                        ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
+                        ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+
+                    Tables\Actions\Action::make('resend_consent_email')
+                        ->label('Resend Consent Email')
+                        ->icon('heroicon-o-envelope')
+                        ->color('info')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
+                            && ! empty($record->email)
+                        )
+                        ->action(function (GymMember $record) {
+                            // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
+                            \App\Jobs\SendBiometricConsentEmail::dispatch($record->load('gym'));
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Consent email sent to ' . $record->email)
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('copy_consent_link')
+                        ->label('Copy Consent Link')
+                        ->icon('heroicon-o-link')
+                        ->color('gray')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->action(function (GymMember $record, $livewire) {
+                            $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                                'biometric.consent.show',
+                                now()->addDays(7),
+                                [
+                                    'gym_member_id' => $record->id,
+                                    'gym_id' => $record->gym_id,
+                                ]
+                            );
+
+                            $escapedUrl = json_encode($url);
+                            $livewire->js("
+                                navigator.clipboard.writeText({$escapedUrl});
+                            ");
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Link copied')
+                                ->body('Share this link via WhatsApp, SMS, or any channel.')
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('open_consent_page')
+                        ->label('Open on Tablet (Walk-in)')
+                        ->icon('heroicon-o-device-tablet')
+                        ->color('gray')
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->url(fn (GymMember $record) => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                            'biometric.consent.show',
+                            now()->addHours(1),
+                            [
+                                'gym_member_id' => $record->id,
+                                'gym_id' => $record->gym_id,
+                            ]
+                        ))
+                        ->openUrlInNewTab(),
+
+                    Tables\Actions\Action::make('revoke_consent')
+                        ->label('Revoke Biometric Consent')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
+                        ->requiresConfirmation()
+                        ->modalHeading('Revoke Biometric Consent')
+                        ->modalDescription(
+                            'This will revoke consent and permanently delete all biometric templates for this member. This action cannot be undone.'
+                        )
+                        ->modalSubmitActionLabel('Yes, Revoke and Delete')
+                        ->action(function (GymMember $record) {
+                            $record->activeBiometricConsent()?->update([
+                                'revoked_at' => now(),
+                            ]);
+
+                            \App\Events\BiometricConsentRevoked::dispatch($record);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Consent revoked')
+                                ->body('All biometric data for ' . $record->name . ' has been deleted.')
+                                ->warning()
+                                ->send();
+                        }),
+                ]),
             ])
             ->bulkActions([
                 // Tables\Actions\BulkActionGroup::make([
