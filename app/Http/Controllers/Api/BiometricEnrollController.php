@@ -35,7 +35,7 @@ class BiometricEnrollController extends Controller
                 'success' => false,
                 'error' => 'Biometric consent required',
                 'message' => 'Member must have an active biometric consent on file',
-            ], 403);
+            ], 422);
         }
 
         // Get provider and enroll

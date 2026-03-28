@@ -118,8 +118,12 @@ class OfflineSyncService
         }
 
         // Step 6: Create or update attendance with offline timestamps (idempotent)
-        // Ensure offline_id is present in event
-        $offlineId = $event['offline_id'] ?? uniqid('offline_', true);
+        if (empty($event['offline_id'])) {
+            // Derive deterministic ID from event properties
+            $offlineId = hash('sha256', $device->id . '|' . $event['captured_at'] . '|' . ($event['biometric_type'] ?? ''));
+        } else {
+            $offlineId = $event['offline_id'];
+        }
 
         // Check for existing attendance (prevent duplicates from retry)
         $existingAttendance = \App\Models\Attendances::where('device_id', $device->id)

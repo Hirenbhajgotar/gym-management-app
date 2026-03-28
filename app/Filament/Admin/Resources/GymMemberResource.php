@@ -110,6 +110,13 @@ class GymMemberResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function ($query) {
+                // Eager-load biometric consent existence to avoid N+1 queries
+                $query->withExists(['biometricConsents' => function ($query) {
+                    $query->whereColumn('biometric_consents.gym_id', 'gym_members.gym_id')
+                        ->whereNull('revoked_at');
+                }]);
+            })
             ->columns([
                 Tables\Columns\ImageColumn::make('profile_photo')
                     ->circular()
@@ -227,7 +234,7 @@ class GymMemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('biometric_consent_status')
                     ->label('Biometric Consent')
-                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending')
+                    ->getStateUsing(fn (GymMember $record) => $record->biometric_consents_exists ? 'Consented' : 'Pending')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
                         'Consented' => 'success',
@@ -425,7 +432,7 @@ class GymMemberResource extends Resource
                         ->label('Resend Consent Email')
                         ->icon('heroicon-o-envelope')
                         ->color('info')
-                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
+                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists
                             && ! empty($record->email)
                         )
                         ->action(function (GymMember $record) {
@@ -442,7 +449,7 @@ class GymMemberResource extends Resource
                         ->label('Copy Consent Link')
                         ->icon('heroicon-o-link')
                         ->color('gray')
-                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
                         ->action(function (GymMember $record, $livewire) {
                             $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                                 'biometric.consent.show',
@@ -469,7 +476,7 @@ class GymMemberResource extends Resource
                         ->label('Open on Tablet (Walk-in)')
                         ->icon('heroicon-o-device-tablet')
                         ->color('gray')
-                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
                         ->url(fn (GymMember $record) => \Illuminate\Support\Facades\URL::temporarySignedRoute(
                             'biometric.consent.show',
                             now()->addHours(1),
@@ -484,7 +491,7 @@ class GymMemberResource extends Resource
                         ->label('Revoke Biometric Consent')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
-                        ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
+                        ->visible(fn (GymMember $record) => $record->biometric_consents_exists)
                         ->requiresConfirmation()
                         ->modalHeading('Revoke Biometric Consent')
                         ->modalDescription(

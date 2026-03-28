@@ -8,6 +8,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Twilio\Rest\Client;
 
@@ -16,6 +17,7 @@ class TwilioAccountManagerTest extends TestCase
     use RefreshDatabase;
 
     protected Gym $gym;
+
     protected WhatsAppAccount $account;
 
     protected function setUp(): void
@@ -31,19 +33,19 @@ class TwilioAccountManagerTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_registers_whatsapp_sender_when_purchasing_number(): void
     {
         // Mock Twilio Client and its nested resources
         $mockClient = Mockery::mock(Client::class);
         $mockSubClient = Mockery::mock(Client::class);
-        
+
         // Mock IncomingPhoneNumbers
         $incomingPhoneNumbersMock = Mockery::mock();
         $mockSubClient->incomingPhoneNumbers = $incomingPhoneNumbersMock;
         $incomingPhoneNumbersMock->shouldReceive('read')->andReturn([]);
-        
-        $purchasedNumberMock = (object)[
+
+        $purchasedNumberMock = (object) [
             'sid' => 'PN123',
             'phoneNumber' => '+14155551234',
             'isoCountry' => 'US',
@@ -69,8 +71,8 @@ class TwilioAccountManagerTest extends TestCase
         $msgServiceMock->v2 = $v2Mock;
         $channelsSendersMock = Mockery::mock();
         $v2Mock->channelsSenders = $channelsSendersMock;
-        
-        $senderMock = (object)['sid' => 'XE123'];
+
+        $senderMock = (object) ['sid' => 'XE123'];
         $channelsSendersMock->shouldReceive('create')->once()->andReturn($senderMock);
 
         // Mock Messaging Service Attachment (XE)
@@ -89,7 +91,7 @@ class TwilioAccountManagerTest extends TestCase
 
         // Assertions
         $this->assertTrue($result['success']);
-        
+
         $phoneNumberRecord = WhatsAppPhoneNumber::where('phone_number', '+14155551234')->first();
         $this->assertNotNull($phoneNumberRecord);
         $this->assertEquals('XE123', $phoneNumberRecord->phone_number_sid); // Should store Sender SID
