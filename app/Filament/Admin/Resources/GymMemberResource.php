@@ -331,69 +331,96 @@ class GymMemberResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('quick_measure')
-                    ->label('Measure')
-                    ->icon('heroicon-o-scale')
-                    ->tooltip('Add new measurement')
-                    ->form([
-                        Section::make('Create member measurement')
-                            ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
-                            ->columns(2),
-                    ])
-                    ->action(function (GymMember $record, array $data) {
-                        $record->measurements()->create([
-                            'weight' => $data['weight'],
-                            'height' => $data['height'],
-                            'measured_at' => $data['measured_at'],
-                            'notes' => $data['notes'],
-                        ]);
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-o-pencil')
+                    ->color('primary'),
 
-                        \Filament\Notifications\Notification::make()
-                            ->title('Measurement Added')
-                            ->success()
-                            ->send();
-                    }),
-
-                Tables\Actions\Action::make('toggle_freeze')
-                    ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
-                    ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
-                    ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
-                    ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
-                    ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
+                Tables\Actions\DeleteAction::make()
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete Member')
+                    ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
+                    ->modalSubmitActionLabel('Confirm Delete')
                     ->form([
-                        Forms\Components\Textarea::make('reason')
-                            ->label('Reason for freezing (optional)')
-                            ->placeholder('Enter reason for freezing membership'),
-                        Forms\Components\TextInput::make('days')
-                            ->label('Freeze for days (optional)')
-                            ->placeholder('Leave empty for manual unfreeze')
-                            ->numeric()
-                            ->minValue(1)
-                            ->helperText('Enter number of days or leave empty for manual unfreeze'),
-                    ])
-                    ->action(function (GymMember $record, array $data) {
-                        if ($record->is_frozen) {
-                            $record->unfreeze();
-                            \Filament\Notifications\Notification::make()
-                                ->title('Member Unfrozen')
-                                ->success()
-                                ->send();
-                        } else {
-                            $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
-                            $record->freeze(
-                                reason: $data['reason'] ?? null,
-                                days: $days
-                            );
-                            \Filament\Notifications\Notification::make()
-                                ->title('Member Frozen')
-                                ->success()
-                                ->send();
-                        }
-                    })
-                    ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
-                    ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+                        Forms\Components\TextInput::make('password')
+                            ->label('Your Password')
+                            ->revealable()
+                            ->password()
+                            ->required()
+                            ->rules([
+                                'required',
+                                fn ($get) => function ($attribute, $value, $fail) {
+                                    if (! Hash::check($value, auth()->user()->password)) {
+                                        $fail('The password is incorrect.');
+                                    }
+                                },
+                            ]),
+                    ]),
 
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('quick_measure')
+                        ->label('Measure')
+                        ->icon('heroicon-o-scale')
+                        ->tooltip('Add new measurement')
+                        ->form([
+                            Section::make('Create member measurement')
+                                ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
+                                ->columns(2),
+                        ])
+                        ->action(function (GymMember $record, array $data) {
+                            $record->measurements()->create([
+                                'weight' => $data['weight'],
+                                'height' => $data['height'],
+                                'measured_at' => $data['measured_at'],
+                                'notes' => $data['notes'],
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Measurement Added')
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('toggle_freeze')
+                        ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
+                        ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
+                        ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
+                        ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
+                        ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason for freezing (optional)')
+                                ->placeholder('Enter reason for freezing membership'),
+                            Forms\Components\TextInput::make('days')
+                                ->label('Freeze for days (optional)')
+                                ->placeholder('Leave empty for manual unfreeze')
+                                ->numeric()
+                                ->minValue(1)
+                                ->helperText('Enter number of days or leave empty for manual unfreeze'),
+                        ])
+                        ->action(function (GymMember $record, array $data) {
+                            if ($record->is_frozen) {
+                                $record->unfreeze();
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Member Unfrozen')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
+                                $record->freeze(
+                                    reason: $data['reason'] ?? null,
+                                    days: $days
+                                );
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Member Frozen')
+                                    ->success()
+                                    ->send();
+                            }
+                        })
+                        ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
+                        ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+
                     Tables\Actions\Action::make('resend_consent_email')
                         ->label('Resend Consent Email')
                         ->icon('heroicon-o-envelope')
@@ -426,8 +453,7 @@ class GymMemberResource extends Resource
                             );
 
                             $livewire->js("
-                                navigator.clipboard.writeText('{$url}')
-                                    .catch(() => prompt('Copy this consent link:', '{$url}'));
+                                navigator.clipboard.writeText('{$url}');
                             ");
 
                             \Filament\Notifications\Notification::make()
@@ -477,33 +503,6 @@ class GymMemberResource extends Resource
                                 ->send();
                         }),
                 ]),
-
-                Tables\Actions\EditAction::make()
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary'),
-
-                Tables\Actions\DeleteAction::make()
-                    ->icon('heroicon-o-trash')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Delete Member')
-                    ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
-                    ->modalSubmitActionLabel('Confirm Delete')
-                    ->form([
-                        Forms\Components\TextInput::make('password')
-                            ->label('Your Password')
-                            ->revealable()
-                            ->password()
-                            ->required()
-                            ->rules([
-                                'required',
-                                fn ($get) => function ($attribute, $value, $fail) {
-                                    if (! Hash::check($value, auth()->user()->password)) {
-                                        $fail('The password is incorrect.');
-                                    }
-                                },
-                            ]),
-                    ]),
             ])
             ->bulkActions([
                 // Tables\Actions\BulkActionGroup::make([
