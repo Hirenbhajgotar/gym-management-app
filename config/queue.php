@@ -41,7 +41,6 @@ return [
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
             'after_commit' => false,
-            'retry_until' => 3600, // Max retry window: 1 hour
         ],
 
         'beanstalkd' => [
@@ -51,7 +50,6 @@ return [
             'retry_after' => (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 90),
             'block_for' => 0,
             'after_commit' => false,
-            'retry_until' => 3600,
         ],
 
         'sqs' => [
@@ -63,7 +61,6 @@ return [
             'suffix' => env('SQS_SUFFIX'),
             'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
             'after_commit' => false,
-            'retry_until' => 3600,
         ],
 
         'redis' => [
@@ -73,7 +70,6 @@ return [
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
             'after_commit' => false,
-            'retry_until' => 3600,
         ],
 
     ],

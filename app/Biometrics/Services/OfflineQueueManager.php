@@ -372,17 +372,19 @@ class OfflineQueueManager
             fflush($tempHandle);
             fclose($tempHandle);
 
-            // Atomic replace: close lock first, then rename
-            $this->releaseLock($handle);
-            $handle = null;
-
-            // Rename temp file to queue file (atomic on POSIX)
+            // Rename temp file to queue file (atomic on POSIX) while still holding lock
+            // This prevents race condition where another process could write between release and rename
             if (! rename($tempFile, $queueFile)) {
                 Log::error('Failed to atomic replace queue file');
                 @unlink($tempFile);
+                $this->releaseLock($handle);
 
                 return false;
             }
+
+            // Only release lock after atomic rename succeeds
+            $this->releaseLock($handle);
+            $handle = null;
 
             Log::info('Biometric offline queue updated after sync', [
                 'removed' => count($eventIndices),
@@ -525,14 +527,18 @@ class OfflineQueueManager
             fflush($tempHandle);
             fclose($tempHandle);
 
-            $this->releaseLock($handle);
-            $handle = null;
-
+            // Rename temp file to queue file (atomic on POSIX) while still holding lock
+            // This prevents race condition where another process could write between release and rename
             if (! rename($tempFile, $file)) {
                 @unlink($tempFile);
+                $this->releaseLock($handle);
 
                 return false;
             }
+
+            // Only release lock after atomic rename succeeds
+            $this->releaseLock($handle);
+            $handle = null;
 
             return true;
         } catch (\Exception $e) {

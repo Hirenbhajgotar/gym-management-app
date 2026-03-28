@@ -27,6 +27,15 @@ class HandleConsentRevoked implements ShouldQueue
      */
     public bool $afterCommit = true;
 
+    /**
+     * Calculate the time at which the job should expire.
+     * Enforces a 1-hour retry window from the first attempt.
+     */
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addHour();
+    }
+
     public function __construct(
         private BiometricDataDeletionService $deletionService
     ) {}

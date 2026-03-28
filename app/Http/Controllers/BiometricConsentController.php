@@ -46,15 +46,33 @@ class BiometricConsentController extends Controller
             ]);
         }
 
-        $consent = BiometricConsent::create([
-            'gym_member_id' => $gymMember->id,
-            'gym_id' => $gymMember->gym_id,
-            'ip_address' => $request->ip(),
-            'version' => config('biometrics.consent_version', '1.0'),
-            'consented_at' => now(),
-        ]);
+        // Try to create consent - handle race condition where another request creates first
+        try {
+            $consent = BiometricConsent::create([
+                'gym_member_id' => $gymMember->id,
+                'gym_id' => $gymMember->gym_id,
+                'ip_address' => $request->ip(),
+                'version' => config('biometrics.consent_version', '1.0'),
+                'consented_at' => now(),
+            ]);
 
-        event(new BiometricConsentGiven($gymMember, $consent));
+            // Only fire event when create actually succeeds
+            event(new BiometricConsentGiven($gymMember, $consent));
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Check for duplicate key error (MySQL error code 1062 or SQLSTATE 23000)
+            if ($e->getCode() === '23000' || $e->errorInfo[1] ?? null === 1062) {
+                // Another request created the consent first - reload and return success
+                $gymMember->refresh();
+
+                return view('consent.biometric.success', [
+                    'gymMember' => $gymMember,
+                    'gym' => $gymMember->gym,
+                ]);
+            }
+
+            // Re-throw non-duplicate errors
+            throw $e;
+        }
 
         return view('consent.biometric.success', [
             'gymMember' => $gymMember,
