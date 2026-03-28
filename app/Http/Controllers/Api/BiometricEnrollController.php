@@ -7,7 +7,6 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BiometricEnrollRequest;
-use App\Models\BiometricConsent;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
@@ -26,17 +25,17 @@ class BiometricEnrollController extends Controller
         /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
-        $gymMember = GymMember::findOrFail($request->validated('gym_member_id'));
+        // Scope member lookup to device's gym (prevents cross-gym enrollment)
+        $gymMember = GymMember::where('gym_id', $device->gym_id)
+            ->findOrFail($request->validated('gym_member_id'));
 
-        // Check/create consent if needed
+        // Enforce that active consent exists - do not auto-create
         if (! $gymMember->hasActiveBiometricConsent()) {
-            BiometricConsent::create([
-                'gym_member_id' => $gymMember->id,
-                'gym_id' => $gymMember->gym_id,
-                'ip_address' => $request->ip(),
-                'version' => config('biometrics.consent_version', '1.0'),
-                'consented_at' => now(),
-            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Biometric consent required',
+                'message' => 'Member must have an active biometric consent on file',
+            ], 422);
         }
 
         // Get provider and enroll
@@ -144,8 +143,14 @@ class BiometricEnrollController extends Controller
             $provider = $this->registry->resolve($template->provider_type);
 
             $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
-            $provider->deleteTemplate($templateRef);
 
+            if (! $provider->deleteTemplate($templateRef)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Deletion failed',
+                    'message' => 'Provider-side template deletion was not confirmed.',
+                ], 422);
+            }
             // Deactivate template (soft delete)
             $template->is_active = false;
             $template->save();

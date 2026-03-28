@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -41,7 +42,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         parent::tearDown();
     }
 
-    
+    #[Test]
     public function it_can_assign_roles_to_existing_users_with_global_context()
     {
         // Create a user without roles
@@ -77,7 +78,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertTrue($user->fresh()->hasRole('super_admin'));
     }
 
-    
+    #[Test]
     public function it_can_assign_roles_to_existing_users_with_gym_context()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -117,7 +118,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_handles_no_users_without_roles_scenario()
     {
         // Create a user with a role
@@ -145,7 +146,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertTrue($result);
     }
 
-    
+    #[Test]
     public function it_can_update_existing_user_roles_global_context()
     {
         // Create a user with a global role
@@ -188,7 +189,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertTrue($user->fresh()->hasRole('super_admin'));
     }
 
-    
+    #[Test]
     public function it_can_remove_all_global_roles()
     {
         // Create a user with a global role
@@ -226,7 +227,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertFalse($user->fresh()->hasRole('super_admin'));
     }
 
-    
+    #[Test]
     public function it_can_update_tenant_roles_for_specific_gym()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -277,7 +278,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_can_remove_tenant_roles_for_specific_gym()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -324,7 +325,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_handles_no_users_with_roles_scenario()
     {
         $this->mockCommand->shouldReceive('info')->with('🔄 Updating existing user roles...');
@@ -342,7 +343,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertTrue($result);
     }
 
-    
+    #[Test]
     public function it_creates_demo_users_for_all_gyms()
     {
         $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
@@ -370,7 +371,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_handles_no_gyms_for_all_gyms_scenario()
     {
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for all gyms...');
@@ -384,7 +385,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    
+    #[Test]
     public function it_updates_existing_user_instead_of_creating_new_one()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -425,7 +426,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->assertFalse($user->wasRecentlyCreated);
     }
 
-    
+    #[Test]
     public function it_skips_profile_creation_when_no_profile_data()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -450,7 +451,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
     }
 
-    
+    #[Test]
     public function it_handles_roles_that_dont_exist_when_assigning()
     {
         $this->mockCommand->shouldReceive('info')->with('👥 Assigning roles to existing users...');
@@ -467,7 +468,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    
+    #[Test]
     public function it_displays_summary_with_no_global_users()
     {
         $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
@@ -492,7 +493,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $method->invoke($this->seeder);
     }
 
-    
+    #[Test]
     public function it_displays_warning_for_users_without_roles()
     {
         // Create a user without any roles

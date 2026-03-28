@@ -157,7 +157,7 @@ abstract class BaseAttendanceResource extends Resource
                     ->label('Device')
                     ->badge()
                     ->color('warning')
-                    ->hidden(fn (): bool => ! in_array('biometric_device_id', (new Attendances)->getFillable())),
+                    ->hidden(fn (): bool => ! in_array('device_id', (new Attendances)->getFillable())),
             ])
             ->filters([
                 SelectFilter::make('status')

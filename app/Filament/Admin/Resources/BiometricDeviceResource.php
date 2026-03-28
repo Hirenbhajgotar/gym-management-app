@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricTypeEnum;
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
 use App\Models\BiometricDevice;
 use Filament\Facades\Filament;
@@ -63,7 +64,11 @@ class BiometricDeviceResource extends Resource
         }
 
         if (filament()?->getId() === 'admin') {
-            return $user->hasAnyRole(['super_admin', 'gym_owner', 'manager']);
+            return $user->hasAnyRole([
+                DefaultRole::SUPER_ADMIN->value,
+                DefaultRole::GYM_OWNER->value,
+                DefaultRole::MANAGER->value,
+            ]);
         } elseif (filament()?->getId() === 'staff') {
             return true;
         }

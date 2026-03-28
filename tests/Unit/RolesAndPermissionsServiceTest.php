@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase
@@ -39,6 +40,7 @@ class RolesAndPermissionsServiceTest extends TestCase
     //     parent::tearDown();
     // }
 
+    #[Test]
     public function it_creates_default_tenant_roles_for_a_gym()
     {
         // Create a user and gym
@@ -86,6 +88,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertCount(count($permissions), $gymOwnerRole->permissions);
     }
 
+    #[Test]
     public function it_does_not_create_roles_when_user_is_null()
     {
         $gym = Gym::factory()->create();
@@ -99,6 +102,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function it_does_not_create_roles_when_gym_is_null()
     {
         $user = User::factory()->create();
@@ -110,6 +114,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertDatabaseCount('roles', 0);
     }
 
+    #[Test]
     public function it_does_not_create_roles_when_both_user_and_gym_are_null()
     {
         // Call the service method with null user and gym
@@ -119,6 +124,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertDatabaseCount('roles', 0);
     }
 
+    #[Test]
     public function it_assigns_permissions_to_roles_based_on_permission_settings()
     {
         // Create a user and gym
@@ -159,6 +165,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
     }
 
+    #[Test]
     public function it_handles_roles_without_permission_settings()
     {
         // Create a user and gym
@@ -201,6 +208,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertCount(0, $gymOwnerRole->permissions);
     }
 
+    #[Test]
     public function it_handles_empty_permission_settings()
     {
         // Create a user and gym
@@ -229,6 +237,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $this->assertCount(0, $gymOwnerRole->permissions);
     }
 
+    #[Test]
     public function it_assigns_role_to_user_when_role_exists()
     {
         // Arrange: Create gym, user, and role
@@ -253,6 +262,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function it_throws_exception_when_role_does_not_exist()
     {
         // Arrange: Create gym and user, no role

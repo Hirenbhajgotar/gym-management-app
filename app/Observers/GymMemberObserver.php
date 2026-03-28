@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Events\Reports\MemberStatsUpdated;
 use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
+use App\Jobs\SendBiometricConsentEmail;
 use App\Models\GymMember;
 use App\Models\ReportGoal;
 use App\Services\AvatarService;
@@ -30,6 +31,15 @@ class GymMemberObserver
             $profile_photo = AvatarService::generate($gymMember->name, background: 'random');
             $gymMember->profile_photo = $profile_photo;
             $gymMember->save(); // Save the updated profile_photo
+        }
+
+        // Auto-send biometric consent email
+        // Only if member has an email address
+        if (! empty($gymMember->email)) {
+            // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
+            SendBiometricConsentEmail::dispatch($gymMember->load('gym'))
+                ->delay(now()->addMinutes(config('biometrics.biometric_consent_email_delay')))
+                ->afterCommit();
         }
     }
 

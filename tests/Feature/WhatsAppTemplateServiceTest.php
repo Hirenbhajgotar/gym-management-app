@@ -8,6 +8,7 @@ use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class WhatsAppTemplateServiceTest extends TestCase
@@ -28,7 +29,7 @@ class WhatsAppTemplateServiceTest extends TestCase
 
     // ========== DEFAULT TEMPLATES ==========
 
-    
+    #[Test]
     public function it_creates_default_templates_for_gym(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
@@ -45,7 +46,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         });
     }
 
-    
+    #[Test]
     public function it_creates_templates_with_correct_names(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
@@ -70,7 +71,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         }
     }
 
-    
+    #[Test]
     public function it_creates_templates_with_category_utility(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
@@ -82,7 +83,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         });
     }
 
-    
+    #[Test]
     public function it_creates_templates_with_variables(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
@@ -95,7 +96,6 @@ class WhatsAppTemplateServiceTest extends TestCase
         });
     }
 
-    
     public function default_templates_are_idempotent(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
@@ -110,7 +110,7 @@ class WhatsAppTemplateServiceTest extends TestCase
 
     // ========== TEMPLATE RETRIEVAL ==========
 
-    
+    #[Test]
     public function it_returns_default_templates_definition(): void
     {
         $defaults = $this->templateService->getDefaultTemplates();
@@ -119,7 +119,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         $this->assertNotEmpty($defaults);
     }
 
-    
+    #[Test]
     public function it_retrieves_approved_templates_for_gym(): void
     {
         WhatsAppTemplate::create([
@@ -156,7 +156,7 @@ class WhatsAppTemplateServiceTest extends TestCase
 
     // ========== TEMPLATE CREATION ==========
 
-    
+    #[Test]
     public function it_creates_custom_template(): void
     {
         $templateData = [
@@ -182,7 +182,7 @@ class WhatsAppTemplateServiceTest extends TestCase
 
     // ========== TEMPLATE DELETION ==========
 
-    
+    #[Test]
     public function it_deletes_a_template(): void
     {
         $template = WhatsAppTemplate::create([

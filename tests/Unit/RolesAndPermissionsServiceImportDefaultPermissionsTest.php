@@ -7,6 +7,7 @@ use App\Enums\PermissionCategory;
 use App\Models\Permission;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase as TestsTestCase;
 
 class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCase
@@ -21,6 +22,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->service = new RolesAndPermissionsService;
     }
 
+    #[Test]
     public function it_returns_all_roles_permissions_when_no_role_specified()
     {
         // Create permissions for different categories
@@ -52,6 +54,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         }
     }
 
+    #[Test]
     public function it_returns_specific_role_permissions_when_role_specified()
     {
         // Create permissions for gym owner categories
@@ -72,6 +75,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertContains('view_permission', $result);
     }
 
+    #[Test]
     public function it_returns_manager_specific_permissions()
     {
         // Create permissions for manager categories (excludes MANAGER category)
@@ -93,6 +97,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertNotContains('manage_staff', $result);
     }
 
+    #[Test]
     public function it_returns_receptionist_specific_permissions()
     {
         // Create permissions for receptionist categories (excludes PERMISSION and MANAGER)
@@ -117,6 +122,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertNotContains('view_setting', $result);
     }
 
+    #[Test]
     public function it_returns_indexed_array_without_keys()
     {
         // Create some permissions
@@ -134,6 +140,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertEquals($expectedKeys, $keys);
     }
 
+    #[Test]
     public function it_returns_empty_array_for_role_with_no_permissions()
     {
         // Don't create any permissions
@@ -145,6 +152,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertEmpty($result);
     }
 
+    #[Test]
     public function it_returns_all_data_when_invalid_role_specified()
     {
         // Create some permissions
@@ -161,6 +169,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertArrayHasKey(DefaultRole::RECEPTIONIST->value, $result);
     }
 
+    #[Test]
     public function it_handles_permissions_with_different_categories_correctly()
     {
         // Create permissions across all categories to test role-specific filtering
@@ -200,6 +209,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertNotContains('view_manager', $receptionistResult);
     }
 
+    #[Test]
     public function it_maintains_permission_order_by_category()
     {
         // Create permissions in a specific order
