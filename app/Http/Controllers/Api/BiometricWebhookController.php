@@ -172,6 +172,8 @@ class BiometricWebhookController extends Controller
                 'skipped' => 'unlock',
                 // unlocked = API already unlocked it
                 'unlocked' => 'confirm_unlock',
+                // locked/failed = door control denied or API error
+                'locked', 'failed' => 'keep_locked',
                 // not_applicable = attendance_only device, no door action
                 'not_applicable' => 'none',
                 default => 'none',
@@ -186,6 +188,8 @@ class BiometricWebhookController extends Controller
                 'action' => $doorAction,
                 // unlock          → device must trigger relay/wiegand
                 // confirm_unlock  → API already did it, device just shows green
+                // confirm_lock    → member denied door access, show locked/error
+                // error           → door controller API failed, show error
                 // none            → attendance only device, no door action
                 'duration_seconds' => $device->unlock_duration_seconds,
                 'zone' => $device->door_zone,

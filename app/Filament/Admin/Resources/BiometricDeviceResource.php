@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
+use App\Enums\BiometricDoorControlType;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
@@ -422,33 +423,24 @@ class BiometricDeviceResource extends Resource
                     ->schema([
                         Select::make('door_control_type')
                             ->label('Door Control Method')
-                            ->options([
-                                'relay' => 'Built-in Relay — Device directly controls door lock',
-                                'wiegand' => 'Wiegand Output — Device signals an access controller',
-                                'api' => 'Separate Door API — FluxFitness calls a door controller',
-                            ])
+                            ->options(BiometricDoorControlType::toSelectOptions())
                             ->required()
                             ->live()
-                            ->helperText(fn (Forms\Get $get) => match ($get('door_control_type')) {
-                                'relay' => 'FluxFitness sends granted/denied in webhook response. Device triggers relay.',
-                                'wiegand' => 'FluxFitness sends granted/denied in webhook response. Device sends Wiegand signal.',
-                                'api' => 'FluxFitness will call your door controller API directly on every check-in.',
-                                default => '',
-                            }),
+                            ->helperText(fn (Forms\Get $get) => BiometricDoorControlType::getShortDescription($get('door_control_type'))),
 
                         TextInput::make('door_controller_url')
                             ->label('Door Controller API URL')
                             ->placeholder('http://192.168.1.200:8080/door/unlock')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === 'api'),
+                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
 
                         TextInput::make('door_controller_token')
                             ->label('Door Controller Token')
                             ->password()
                             ->revealable()
                             ->nullable()
-                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === 'api'),
+                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
 
                         TextInput::make('unlock_duration_seconds')
                             ->label('Unlock Duration (seconds)')

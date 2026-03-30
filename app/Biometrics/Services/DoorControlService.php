@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Biometrics\DTOs\DoorControlResult;
@@ -52,16 +54,16 @@ class DoorControlService
         }
 
         try {
-            $response = Http::timeout(3)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $device->door_controller_token,
-                    'Content-Type' => 'application/json',
-                ])
-                ->post($device->door_controller_url, [
-                    'action' => 'unlock',
-                    'duration' => $device->unlock_duration_seconds,
-                    'zone' => $device->door_zone,
-                ]);
+            $request = Http::timeout(config('biometrics.door_controller_timeout', 3));
+
+            if ($device->door_controller_token) {
+                $request = $request->withToken($device->door_controller_token);
+            }
+            $response = $request->post($device->door_controller_url, [
+                'action' => 'unlock',
+                'duration' => $device->unlock_duration_seconds,
+                'zone' => $device->door_zone,
+            ]);
 
             if ($response->successful()) {
                 return DoorControlResult::unlocked();
@@ -104,7 +106,7 @@ class DoorControlService
             'door_status' => $result->status,
             'unlock_duration_seconds' => $device->unlock_duration_seconds,
             'unlocked_at' => $result->unlockedAt,
-            'ip_address' => request()->ip(),
+            'ip_address' => request()?->ip(),
             'raw_response' => $result->raw,
         ]);
     }

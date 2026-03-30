@@ -6,6 +6,7 @@ use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\CheckInResult;
 use App\Biometrics\DTOs\DoorControlResult;
+use App\Biometrics\DTOs\VerificationResult;
 use App\Enums\AttendanceStatus;
 use App\Events\MemberCheckedIn;
 use App\Events\MemberCheckedOut;
@@ -134,6 +135,7 @@ class CheckInService
                 )
                 ->whereDate('check_in_time', today())
                 ->where('check_in_result', 'granted')
+                ->with('attendanceable')
                 ->first();
 
             // STEP 8B-2: Attempt door unlock
@@ -197,7 +199,10 @@ class CheckInService
                 result: $doorResult
             );
 
-            event(new MemberCheckedIn($attendance ?? $existingAttendance, $device));
+            // Only fire check-in event if there's an attendance record
+            if ($attendance || $existingAttendance) {
+                event(new MemberCheckedIn($attendance ?? $existingAttendance, $device));
+            }
 
             return CheckInResult::granted($attendance ?? $existingAttendance, $doorResult);
         }
@@ -212,13 +217,14 @@ class CheckInService
     private function createAttendance(
         GymMember $gymMember,
         BiometricDevice $device,
-        $verificationResult,
+        VerificationResult $verificationResult,
         float $livenessScore,
         bool $isDuplicate,
         string $doorStatus,
         ?Carbon $doorUnlockedAt = null
     ): Attendances {
-        return $gymMember->attendances()->create([
+        /** `@var` Attendances */
+        $attendance = $gymMember->attendances()->create([
             'gym_id' => $device->gym_id,
             'check_in_time' => now(),
             'status' => AttendanceStatus::Present,
@@ -233,6 +239,11 @@ class CheckInService
             'door_unlocked_at' => $doorUnlockedAt,
             'check_in_ip' => request()->ip(),
         ]);
+
+        // Eager-load the polymorphic relation for webhook response
+        $attendance->load('attendanceable');
+
+        return $attendance;
     }
 
     /**
@@ -291,6 +302,7 @@ class CheckInService
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $device->gym_id)
             ->active()
+            ->with('attendanceable')
             ->first();
 
         if (! $attendance) {

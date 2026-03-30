@@ -55,8 +55,11 @@ class PollBiometricDevices extends Command
             // For poll mode to work, the device needs to implement a getEvents() endpoint
             // that returns pending biometric events since last poll
 
-            // Check if provider supports fetching events
-            if (! method_exists($registry, 'fetchRecentEvents')) {
+            // Resolve the actual provider instance from the registry
+            $provider = $registry->resolve($device->provider_type, $device->provider_config ?? []);
+
+            // Check if the resolved provider supports fetching events
+            if (! method_exists($provider, 'fetchRecentEvents')) {
                 $this->warn('  Provider does not support event fetching. Poll mode requires custom provider implementation.');
 
                 return;
