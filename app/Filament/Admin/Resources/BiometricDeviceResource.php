@@ -426,7 +426,9 @@ class BiometricDeviceResource extends Resource
                             ->options(BiometricDoorControlType::toSelectOptions())
                             ->required()
                             ->live()
-                            ->helperText(fn (Forms\Get $get) => BiometricDoorControlType::getShortDescription($get('door_control_type'))),
+                            ->helperText(fn (Forms\Get $get) => $get('door_control_type')
+                                ? BiometricDoorControlType::from($get('door_control_type'))->getShortDescription()
+                                : ''),
 
                         TextInput::make('door_controller_url')
                             ->label('Door Controller API URL')
