@@ -74,11 +74,7 @@ class BiometricWebhookController extends Controller
             // Process check-in
             $result = $this->checkInService->processCheckIn($sample, $device);
 
-            return response()->json([
-                'success' => $result->granted,
-                'result' => $result->result,
-                'denial_reason' => $result->denialReason,
-            ], $result->granted ? 200 : 403);
+            return $this->formatResponse($result, $device);
         } catch (\Exception $e) {
             Log::error('Biometric webhook error', [
                 'device_id' => $device->id,
@@ -142,5 +138,85 @@ class BiometricWebhookController extends Controller
         $expectedSignature = 'sha256=' . hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($expectedSignature, $signature);
+    }
+
+    /**
+     * Format the webhook response with door control information
+     */
+    protected function formatResponse($result, BiometricDevice $device): JsonResponse
+    {
+        if (! $result->granted) {
+            return response()->json([
+                'granted' => false,
+                'reason' => $result->denialReason,
+
+                // Door stays locked
+                'door' => [
+                    'action' => 'keep_locked',
+                ],
+
+                // Device display
+                'display' => [
+                    'message' => $this->getDenialMessage($result->denialReason),
+                    'beep_pattern' => 'error',
+                    'led_color' => 'red',
+                ],
+            ], 403);
+        }
+
+        $doorAction = 'none';
+
+        if ($result->doorResult && $device->isDoorAccess()) {
+            $doorAction = match ($result->doorResult->status) {
+                // skipped = relay/wiegand — tell device to trigger relay
+                'skipped' => 'unlock',
+                // unlocked = API already unlocked it
+                'unlocked' => 'confirm_unlock',
+                // locked/failed = door control denied or API error
+                'locked', 'failed' => 'keep_locked',
+                // not_applicable = attendance_only device, no door action
+                'not_applicable' => 'none',
+                default => 'none',
+            };
+        }
+
+        return response()->json([
+            'granted' => true,
+            'member_name' => $result->attendance?->attendanceable?->name,
+
+            'door' => [
+                'action' => $doorAction,
+                // unlock          → device must trigger relay/wiegand
+                // confirm_unlock  → API already did it, device just shows green
+                // confirm_lock    → member denied door access, show locked/error
+                // error           → door controller API failed, show error
+                // none            → attendance only device, no door action
+                'duration_seconds' => $device->unlock_duration_seconds,
+                'zone' => $device->door_zone,
+            ],
+
+            'display' => [
+                'message' => 'Welcome, ' . ($result->attendance?->attendanceable?->name ?? 'Member') . '!',
+                'beep_pattern' => 'success',
+                'led_color' => 'green',
+            ],
+        ], 200);
+    }
+
+    /**
+     * Get denial message for display on device
+     */
+    protected function getDenialMessage(?string $reason): string
+    {
+        return match ($reason) {
+            'membership_expired' => 'Membership expired. Please contact reception.',
+            'payment_pending' => 'Payment pending. Please pay at reception.',
+            'membership_frozen' => 'Membership is on hold.',
+            'no_biometric_consent' => 'Please complete registration at reception.',
+            'verification_failed' => 'Biometric not recognized. Please try again.',
+            'liveness_failed' => 'Liveness check failed. Please look at camera.',
+            'door_controller_unreachable' => 'Door system error. Please contact staff.',
+            default => 'Access denied. Please contact reception.',
+        };
     }
 }

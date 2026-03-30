@@ -73,6 +73,10 @@ class Attendances extends Model
         'denial_reason',
         'synced_at',
         'check_in_ip',
+        // Door control fields
+        'door_status',
+        'door_denial_reason',
+        'door_unlocked_at',
     ];
 
     protected $casts = [
@@ -84,6 +88,8 @@ class Attendances extends Model
         'fusion_score' => 'float',
         'synced_at' => 'datetime',
         'biometric_type' => BiometricTypeEnum::class,
+        // Door control casts
+        'door_unlocked_at' => 'datetime',
     ];
 
     public function attendanceable(): MorphTo
@@ -99,6 +105,11 @@ class Attendances extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(BiometricDevice::class, 'device_id');
+    }
+
+    public function doorEvent(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DoorEvent::class, 'attendance_id');
     }
 
     protected function duration(): Attribute
@@ -148,6 +159,11 @@ class Attendances extends Model
         return $this->synced_at !== null
             && $this->check_in_time !== null
             && $this->synced_at->gt($this->check_in_time);
+    }
+
+    public function wasDoorUnlocked(): bool
+    {
+        return $this->door_status === 'unlocked';
     }
 
     #[Scope]

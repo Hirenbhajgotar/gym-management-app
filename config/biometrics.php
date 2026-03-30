@@ -20,4 +20,5 @@ return [
     ],
 
     'biometric_consent_email_delay' => (int) env('BIOMETRIC_CONSENT_EMAIL_DELAY', 1), // minutes
+    'door_controller_timeout' => (int) env('DOOR_CONTROLLER_TIMEOUT', 3), // seconds
 ];
