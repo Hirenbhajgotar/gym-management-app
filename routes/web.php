@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BiometricConsentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
@@ -148,8 +149,8 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
 // Sitemap Route
-Route::get('/sitemap.xml', function () {
-    $path = public_path('sitemap.xml');
+Route::get('/{filename}.xml', function (string $filename) {
+    $path = public_path($filename . '.xml');
 
     if (! file_exists($path)) {
         Log::error('Sitemap not found');
@@ -158,7 +159,7 @@ Route::get('/sitemap.xml', function () {
     }
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
-})->name('sitemap');
+})->whereIn('filename', config('sitemap.allowed_filenames', []))->name('sitemap');
 
 Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
@@ -177,3 +178,12 @@ Route::get('/download-sample-excel/{type}', [ImportController::class, 'downloadS
 Route::prefix('shared-reports')->name('shared-reports.')->group(function () {
     Route::get('/{token}', [App\Http\Controllers\SharedReportController::class, 'show'])->name('show');
 });
+
+// Biometric Consent Routes (public, signed URL protected)
+Route::get('/consent/biometric', [BiometricConsentController::class, 'show'])
+    ->name('biometric.consent.show')
+    ->middleware('signed');
+
+Route::post('/consent/biometric', [BiometricConsentController::class, 'store'])
+    ->name('biometric.consent.store')
+    ->middleware('signed');

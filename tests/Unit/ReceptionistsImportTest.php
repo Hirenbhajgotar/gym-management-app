@@ -10,6 +10,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ReceptionistsImportTest extends TestCase
@@ -26,7 +27,7 @@ class ReceptionistsImportTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_import_receptionists()
     {
         // Given
@@ -76,7 +77,7 @@ class ReceptionistsImportTest extends TestCase
         $this->assertEquals(['communication', 'php'], $employeeDetail->skills);
     }
 
-    /** @test */
+    #[Test]
     public function it_fails_to_import_when_required_data_is_missing()
     {
         // Given

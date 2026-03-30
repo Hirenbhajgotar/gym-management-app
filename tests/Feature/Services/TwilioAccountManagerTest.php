@@ -8,6 +8,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Twilio\Rest\Client;
 
@@ -32,7 +33,7 @@ class TwilioAccountManagerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_registers_whatsapp_sender_when_purchasing_number(): void
     {
         // Mock Twilio Client and its nested resources

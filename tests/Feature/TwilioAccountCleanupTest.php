@@ -11,6 +11,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -64,7 +65,7 @@ class TwilioAccountCleanupTest extends TestCase
 
     // ========== CLEANUP TENANT RESOURCES ==========
 
-    /** @test */
+    #[Test]
     public function it_returns_success_when_no_twilio_resources_exist(): void
     {
         $gymWithoutWhatsApp = Gym::factory()->create();
@@ -78,7 +79,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertEquals('No Twilio resources to clean up', $result['message']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_success_when_account_has_no_twilio_sid(): void
     {
         $gym = Gym::factory()->create();
@@ -98,7 +99,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertTrue($result['success']);
     }
 
-    /** @test */
+    #[Test]
     public function it_cleans_up_resources_and_returns_cleaned_structure(): void
     {
         $clientMock = $this->createFullCleanupMock();
@@ -118,7 +119,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertEquals(WhatsAppAccountStatusEnum::SUSPENDED, $this->whatsappAccount->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_cleanup_with_no_phone_numbers(): void
     {
         $this->phoneNumber->delete();
@@ -164,7 +165,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertEquals(0, $result['cleaned']['phone_numbers']['released']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_cleanup_with_no_messaging_service(): void
     {
         $this->whatsappAccount->update(['messaging_service_sid' => null]);
@@ -197,7 +198,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertTrue($result['cleaned']['messaging_service']['success']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_already_deleted_resources_gracefully(): void
     {
         $restException404 = new RestException('Resource not found', 20404, 404);
@@ -265,7 +266,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertTrue($result['success']);
     }
 
-    /** @test */
+    #[Test]
     public function it_continues_cleanup_even_when_phone_release_fails(): void
     {
         $restException500 = new RestException('Internal server error', 50000, 500);
@@ -326,7 +327,7 @@ class TwilioAccountCleanupTest extends TestCase
 
     // ========== GYM OBSERVER INTEGRATION ==========
 
-    /** @test */
+    #[Test]
     public function it_calls_twilio_cleanup_when_gym_is_deleted(): void
     {
         $managerMock = Mockery::mock(TwilioAccountManager::class);
@@ -348,7 +349,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertDatabaseMissing('whatsapp_phone_numbers', ['whatsapp_account_id' => $this->whatsappAccount->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_still_deletes_gym_when_twilio_cleanup_fails(): void
     {
         $managerMock = Mockery::mock(TwilioAccountManager::class);
@@ -366,7 +367,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertDatabaseMissing('whatsapp_accounts', ['gym_id' => $this->gym->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_call_twilio_cleanup_when_gym_has_no_whatsapp_account(): void
     {
         $gymWithoutWhatsApp = Gym::factory()->create();
@@ -381,7 +382,7 @@ class TwilioAccountCleanupTest extends TestCase
         $this->assertDatabaseMissing('gyms', ['id' => $gymWithoutWhatsApp->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_cleans_up_multiple_phone_numbers(): void
     {
         // Add a second phone number

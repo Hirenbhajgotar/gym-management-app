@@ -3,7 +3,6 @@
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -11,7 +10,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym Software | CRM, Billing, Member Tracking'])] class extends Component
+{
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -29,7 +29,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -48,7 +48,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -73,188 +73,205 @@ new #[Layout('components.layouts.auth')] class extends Component {
     }
 }; ?>
 
-<!-- Background with subtle gradient -->
-<div
-    class="min-h-screen- bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-8">
-    <!-- Main login card -->
-    <div class="w-full max-w-xl">
-        <!-- Card with glassmorphism effect -->
-        <div
-            class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700/50 p-8 relative overflow-hidden">
-            <!-- Decorative elements -->
-            <div
-                class="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-xl">
-            </div>
-            <div
-                class="absolute -bottom-10 -left-10 w-24 h-24 bg-gradient-to-tr from-emerald-400/20 to-cyan-500/20 rounded-full blur-xl">
-            </div>
-
-            <!-- Header section -->
-            <div class="relative z-10 text-center mb-8">
-                <!-- Icon -->
-                <div
-                    class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                </div>
-
-                <h1
-                    class="text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:via-slate-100 dark:to-white bg-clip-text text-transparent mb-2">
-                    {{ __('Welcome Back') }}
-                </h1>
-                <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                    {{ __('Enter your credentials to access your gym dashboard') }}
-                </p>
-            </div>
-
-            <!-- Session Status -->
-            <x-auth-session-status class="relative z-10 text-center mb-6" :status="session('status')" />
-
-            <!-- Login form -->
-            <form wire:submit="login" class="relative z-10 flex flex-col gap-6">
-                <!-- Email Address -->
-                <div class="space-y-3">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {{ __('Email address') }}
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207">
-                                </path>
-                            </svg>
+<div>
+    
+    <div class="relative min-h-screen flex flex-col md:flex-row bg-surface text-on-surface font-body selection:bg-tertiary selection:text-on-tertiary antialiased overflow-hidden">
+        <!-- Noise Texture -->
+        <div class="fixed inset-0 noise-overlay z-0"></div>
+    
+        <!-- Left Side: Login Form -->
+        <main class="relative z-10 w-full md:w-[45%] lg:w-[40%] bg-surface-container-low flex items-center justify-center p-8 lg:p-16">
+            <div class="w-full max-w-md space-y-10">
+                <!-- Brand Anchor Header -->
+                <header class="flex items-center gap-3">
+                    <a href="{{ route('home') }}" wire:navigate>
+                        <div class="flex items-center gap-2 text-2xl font-black italic tracking-tighter text-tertiary font-space-grotesk uppercase">
+                            <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">all_inclusive</span>
+                            <span>FluxFitness</span>
                         </div>
-                        <input wire:model="email" type="email" required autofocus autocomplete="email"
-                            placeholder="email@example.com"
-                            class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 @error('email') border-red-500 focus:ring-red-500 @enderror" />
-                    </div>
-                    @error('email')
-                        <p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            {{ $message }}
-                        </p>
-                    @enderror
+                    </a>
+                </header>
+    
+                <!-- Welcome Text -->
+                <div class="space-y-2">
+                    <h1 class="font-headline font-bold text-4xl lg:text-5xl tracking-tight text-on-surface leading-none">Welcome Back</h1>
+                    <p class="text-on-surface-variant font-medium text-lg">Log in to manage your gym.</p>
                 </div>
-
-                <!-- Password -->
-                <div class="space-y-3" x-data="{ showPassword: false }">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {{ __('Password') }}
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
-                                </path>
-                            </svg>
+    
+                <!-- Session Status -->
+                <x-auth-session-status class="mb-4" :status="session('status')" />
+    
+                <!-- Form -->
+                <form wire:submit="login" class="space-y-6">
+                    <div class="space-y-4">
+                        <!-- Email Field -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1" for="email">Email address</label>
+                            <div class="relative group">
+                                <input wire:model="email" id="email" type="email" required autofocus autocomplete="email" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-tertiary/50 focus:border-tertiary transition-all placeholder:text-outline/50 @error('email') border-error focus:ring-error @enderror" placeholder="coach@fluxfitness.com" />
+                                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-tertiary transition-colors">mail</span>
+                            </div>
+                            @error('email')
+                                <p class="text-xs text-error mt-1 ml-1 font-medium">{{ $message }}</p>
+                            @enderror
                         </div>
-                        <input wire:model="password" x-bind:type="showPassword ? 'text' : 'password'" required autocomplete="current-password"
-                            placeholder="{{ __('Password') }}"
-                            class="w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 @error('password') border-red-500 focus:ring-red-500 @enderror" />
-
-                        <!-- Password Visibility Toggle -->
-                        <button type="button" x-on:click="showPassword = !showPassword"
-                            class="absolute inset-y-0 right-3 flex items-center p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none rounded">
-                            <svg x-show="!showPassword" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            <svg x-show="showPassword" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-                            </svg>
-                        </button>
+    
+                        <!-- Password Field -->
+                        <div class="space-y-2" x-data="{ showPassword: false }">
+                            <label class="block text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1" for="password">Password</label>
+                            <div class="relative group">
+                                <input wire:model="password" id="password" x-bind:type="showPassword ? 'text' : 'password'" required autocomplete="current-password" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-tertiary/50 focus:border-tertiary transition-all placeholder:text-outline/50 @error('password') border-error focus:ring-error @enderror" placeholder="••••••••" />
+                                <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors focus:outline-none">
+                                    <span class="material-symbols-outlined" x-text="showPassword ? 'visibility_off' : 'visibility'">visibility</span>
+                                </button>
+                            </div>
+                            @error('password')
+                                <p class="text-xs text-error mt-1 ml-1 font-medium">{{ $message }}</p>
+                            @enderror
+    
+                            <!-- Remember Me & Forgot Password -->
+                            <div class="flex items-center justify-between pt-2 ml-1">
+                                <label class="relative flex items-center gap-2 cursor-pointer group">
+                                    <div class="relative flex items-center justify-center">
+                                        <input type="checkbox" wire:model="remember" class="peer appearance-none w-4 h-4 border border-outline-variant/50 rounded-sm bg-surface-container-lowest checked:bg-tertiary checked:border-tertiary transition-colors focus:ring-2 focus:ring-tertiary/50 focus:outline-none cursor-pointer" />
+                                        <span class="material-symbols-outlined absolute text-[14px] text-on-tertiary-fixed font-bold opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">check</span>
+                                    </div>
+                                    <span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors select-none">Remember me</span>
+                                </label>
+    
+                                @if (Route::has('password.request'))
+                                    <a href="{{ route('password.request') }}" wire:navigate class="text-sm font-semibold text-primary hover:text-primary-dim transition-colors">Forgot password?</a>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- Forgot Password Link -->
-                    @if (Route::has('password.request'))
-                        <div class="flex justify-end">
-                            <flux:link
-                                class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
-                                :href="route('password.request')" wire:navigate>
-                                {{ __('Forgot password?') }}
-                            </flux:link>
+    
+                    <!-- Login Button -->
+                    <button type="submit" wire:loading.attr="disabled" class="w-full flex items-center justify-center gap-2 bg-tertiary text-on-tertiary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-tertiary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer">
+                        <span wire:loading.remove wire:target="login">Log In</span>
+                        <span wire:loading.flex wire:target="login" class="flex items-center gap-2">
+                            <svg class="w-5 h-5 animate-spin text-on-tertiary-fixed" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Logging in...
+                        </span>
+                    </button>
+    
+                    <!-- Divider -->
+                    @if (Route::has('register'))
+                        <div class="relative flex items-center py-4">
+                            <div class="flex-grow border-t border-outline-variant/20"></div>
+                            <span class="flex-shrink mx-4 text-xs font-bold uppercase tracking-widest text-outline-variant">or</span>
+                            <div class="flex-grow border-t border-outline-variant/20"></div>
                         </div>
                     @endif
-
-                    @error('password')
-                        <p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            {{ $message }}
+    
+                    <!-- Sign Up Link -->
+                    @if (Route::has('register'))
+                        <p class="text-center text-on-surface-variant font-medium">
+                            Don't have an account?
+                            <a href="{{ route('register') }}" wire:navigate class="text-tertiary font-bold hover:underline underline-offset-4 decoration-2">Sign Up</a>
                         </p>
-                    @enderror
-                </div>
-
-                <!-- Remember Me -->
-                <div class="flex items-center justify-between">
-                    <flux:checkbox wire:model="remember" :label="__('Remember me')"
-                        class="text-slate-700 dark:text-slate-300 text-sm" />
-                </div>
-
-                <!-- Login Button -->
-                <button type="submit" wire:loading.attr="disabled"
-                    class="group w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 disabled:from-slate-500 disabled:via-slate-500 disabled:to-slate-500 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 hover:shadow-lg shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 disabled:opacity-75">
-                    <span class="flex items-center justify-center gap-2">
-                        <!-- Loading Text -->
-                        <span wire:loading wire:target="login" class="hidden">{{ __('Logging in...') }}</span>
-                        <span wire:loading.remove wire:target="login">{{ __('Log in') }}</span>
-
-                        <!-- Loading Spinner -->
-                        <svg wire:loading wire:target="login" class="hidden w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-
-                        <!-- Arrow Icon (hidden during loading) -->
-                        <svg wire:loading.remove wire:target="login" class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                    </span>
-                </button>
-
-                <!-- General Error Messages -->
-                @if($errors->any() && !$errors->has(['email', 'password']))
-                    <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <p class="text-sm text-red-700 dark:text-red-300 font-medium">Authentication Error</p>
+                    @endif
+                </form>
+            </div>
+        </main>
+    
+        <!-- Right Side: Visual Banner -->
+        <section class="hidden md:flex relative flex-1 bg-surface-container-lowest items-center justify-center overflow-hidden kinetic-gradient">
+            <!-- Background Elements -->
+            <div class="absolute inset-0 z-0">
+                <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full"></div>
+                <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-tertiary/5 blur-[120px] rounded-full"></div>
+            </div>
+    
+            <!-- Dashboard Mockup Composition -->
+            <div class="relative z-10 w-full max-w-2xl px-12">
+                <div class="relative group">
+                    <!-- Main Dashboard Window -->
+                    <div class="glass-card rounded-2xl p-8 shadow-2xl relative overflow-hidden transform rotate-[-2deg] transition-transform duration-700 group-hover:rotate-0">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="space-y-1">
+                                <div class="h-2 w-24 bg-primary/30 rounded-full"></div>
+                                <div class="h-2 w-16 bg-outline-variant/30 rounded-full"></div>
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="w-2 h-2 rounded-full bg-error/40"></div>
+                                <div class="w-2 h-2 rounded-full bg-tertiary/40"></div>
+                                <div class="w-2 h-2 rounded-full bg-primary/40"></div>
+                            </div>
                         </div>
-                        <ul class="mt-2 text-sm text-red-600 dark:text-red-400 space-y-1">
-                            @foreach($errors->all() as $error)
-                                <li>• {{ $error }}</li>
-                            @endforeach
-                        </ul>
+                        <!-- Pulse Chart Simulation -->
+                        <div class="space-y-6">
+                            <div class="flex items-end gap-2 h-32">
+                                <div class="flex-1 bg-primary/20 rounded-t-lg h-[40%]"></div>
+                                <div class="flex-1 bg-primary/40 rounded-t-lg h-[65%]"></div>
+                                <div class="flex-1 bg-primary/60 rounded-t-lg h-[50%]"></div>
+                                <div class="flex-1 bg-primary/80 rounded-t-lg h-[85%]"></div>
+                                <div class="flex-1 bg-tertiary rounded-t-lg h-[100%] shadow-[0_0_20px_rgba(197,255,201,0.3)]"></div>
+                                <div class="flex-1 bg-primary/50 rounded-t-lg h-[70%]"></div>
+                                <div class="flex-1 bg-primary/30 rounded-t-lg h-[45%]"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="h-16 bg-surface-container-highest/50 rounded-xl border border-white/5 p-3">
+                                    <div class="h-2 w-12 bg-on-surface-variant/20 rounded mb-2"></div>
+                                    <div class="h-4 w-20 bg-tertiary/20 rounded"></div>
+                                </div>
+                                <div class="h-16 bg-surface-container-highest/50 rounded-xl border border-white/5 p-3">
+                                    <div class="h-2 w-12 bg-on-surface-variant/20 rounded mb-2"></div>
+                                    <div class="h-4 w-20 bg-primary/20 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                @endif
-            </form>
-
-            @if (Route::has('register'))
-                <div class="relative z-10 text-center">
-                    <p class="text-slate-600 dark:text-slate-400 text-sm">
-                        {{ __('Don\'t have an account?') }}
-                        <flux:link :href="route('register')" wire:navigate
-                            class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                            {{ __('Sign up') }}
-                        </flux:link>
-                    </p>
+    
+                    <!-- Floating Stat Badges -->
+                    <div class="absolute -top-10 -right-6 glass-card px-6 py-4 rounded-2xl shadow-xl transform rotate-[5deg] transition-all group-hover:translate-y-[-10px]">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-tertiary/20 rounded-lg">
+                                <span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{{ config('app.platform_state_badges.members_managed.title') }}</div>
+                                <div class="text-xl font-headline font-bold text-on-surface">{{ config('app.platform_state_badges.members_managed.value') }}</div>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div class="absolute -bottom-12 -left-8 glass-card px-6 py-4 rounded-2xl shadow-xl transform rotate-[-5deg] transition-all group-hover:translate-y-[10px]">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-primary/20 rounded-lg">
+                                <span class="material-symbols-outlined text-primary text-xl">location_on</span>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{{ config('app.platform_state_badges.gyms_powered.title') }}</div>
+                                <div class="text-xl font-headline font-bold text-on-surface">{{ config('app.platform_state_badges.gyms_powered.value') }}</div>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div class="absolute top-1/2 -translate-y-1/2 -left-12 glass-card px-5 py-3 rounded-2xl shadow-xl hidden lg:block transition-all group-hover:translate-x-[-10px]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(197,255,201,0.8)]"></div>
+                            <div class="text-sm font-bold tracking-tight text-on-surface">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</div>
+                        </div>
+                    </div>
                 </div>
-            @endif
-        </div>
-
-        <!-- Footer text -->
-        <p class="text-center text-xs text-slate-500 dark:text-slate-400 mt-6">
-            Secure login powered by Laravel
-        </p>
+    
+                <!-- Tagline Overlay -->
+                <div class="mt-24 space-y-4 relative">
+                    <div class="h-[2px] w-20 bg-tertiary mb-6"></div>
+                    <h2 class="font-headline font-extrabold text-6xl lg:text-7xl leading-[0.9] tracking-tighter text-on-surface drop-shadow-2xl">
+                        CONTINUOUS <br />
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary">FITNESS</span> <br />
+                        EVOLUTION
+                    </h2>
+                </div>
+            </div>
+    
+            <!-- Bottom Gradient Fade -->
+            <div class="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-surface-container-lowest to-transparent z-20"></div>
+        </section>
     </div>
 </div>

@@ -22,8 +22,6 @@ class GymMemberFactory extends Factory
             'profile_photo' => $this->faker->imageUrl(200, 200, 'people'),
             'email' => $this->faker->unique()->safeEmail(),
             'phone' => $this->faker->phoneNumber(),
-            'weight' => $this->faker->randomFloat(2, 40, 120),
-            'height' => $this->faker->randomFloat(2, 1.4, 2.0),
             'age' => rand(18, 60),
             'dob' => $this->faker->dateTimeBetween('-60 years', '-18 years'),
             'membership_start' => $membershipStart,

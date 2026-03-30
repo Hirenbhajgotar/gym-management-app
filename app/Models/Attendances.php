@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\BiometricTypeEnum;
 use App\Observers\AttendanceObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -59,12 +63,34 @@ class Attendances extends Model
         'check_out_time',
         'status',
         'note',
+        'device_id',
+        'check_in_method',
+        'biometric_type',
+        'provider_type',
+        'confidence_score',
+        'liveness_score',
+        'fusion_score',
+        'check_in_result',
+        'denial_reason',
+        'synced_at',
+        'check_in_ip',
+        // Door control fields
+        'door_status',
+        'door_denial_reason',
+        'door_unlocked_at',
     ];
 
     protected $casts = [
         'check_in_time' => 'datetime',
         'check_out_time' => 'datetime',
         'status' => AttendanceStatus::class,
+        'confidence_score' => 'float',
+        'liveness_score' => 'float',
+        'fusion_score' => 'float',
+        'synced_at' => 'datetime',
+        'biometric_type' => BiometricTypeEnum::class,
+        // Door control casts
+        'door_unlocked_at' => 'datetime',
     ];
 
     public function attendanceable(): MorphTo
@@ -72,9 +98,19 @@ class Attendances extends Model
         return $this->morphTo();
     }
 
-    public function gym()
+    public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
+    }
+
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(BiometricDevice::class, 'device_id');
+    }
+
+    public function doorEvent(): HasOne
+    {
+        return $this->hasOne(DoorEvent::class, 'attendance_id');
     }
 
     protected function duration(): Attribute
@@ -114,36 +150,64 @@ class Attendances extends Model
         );
     }
 
-    // Scope for filtering by date
-    public function scopeByDate($query, $date)
+    public function isBiometric(): bool
     {
-        return $query->whereDate('check_in_time', $date);
+        return $this->check_in_method === 'biometric';
+    }
+
+    public function isOfflineSync(): bool
+    {
+        return $this->synced_at !== null
+            && $this->check_in_time !== null
+            && $this->synced_at->gt($this->check_in_time);
+    }
+
+    public function wasDoorUnlocked(): bool
+    {
+        return $this->door_status === 'unlocked';
+    }
+
+    #[Scope]
+    protected function biometric($query): void
+    {
+        $query->where('check_in_method', 'biometric');
+    }
+
+    // Scope for filtering by date
+    #[Scope]
+    protected function byDate($query, $date): void
+    {
+        $query->whereDate('check_in_time', $date);
     }
 
     // Scope for filtering by gym
-    public function scopeByGym($query, $gymId)
+    #[Scope]
+    protected function byGym($query, $gymId): void
     {
-        return $query->where('gym_id', $gymId);
+        $query->where('gym_id', $gymId);
     }
 
     // Scope for active attendance (checked in but not checked out)
-    public function scopeActive($query)
+    #[Scope]
+    protected function active($query): void
     {
-        return $query->whereNotNull('check_in_time')
+        $query->whereNotNull('check_in_time')
             ->whereNull('check_out_time');
     }
 
     // Scope for completed attendance
-    public function scopeCompleted($query)
+    #[Scope]
+    protected function completed($query): void
     {
-        return $query->whereNotNull('check_in_time')
+        $query->whereNotNull('check_in_time')
             ->whereNotNull('check_out_time');
     }
 
     // Scope for absent attendance
-    public function scopeAbsent($query)
+    #[Scope]
+    protected function absent($query): void
     {
-        return $query->whereNull('check_in_time')
+        $query->whereNull('check_in_time')
             ->whereNull('check_out_time');
     }
 

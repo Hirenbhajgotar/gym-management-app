@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 
 class ImportDefaultPermissionsJobTest extends \Tests\TestCase
 {
@@ -34,9 +35,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         parent::tearDown();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_can_be_instantiated_with_role_and_user_id()
     {
         $job = new ImportDefaultPermissionsJob('admin', 1);
@@ -44,9 +43,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_can_be_instantiated_with_null_values()
     {
         // Mock auth to return a user ID
@@ -57,9 +54,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_imports_permissions_for_specific_role_successfully()
     {
         // Arrange
@@ -83,9 +78,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_imports_permissions_for_all_roles_successfully()
     {
         // Arrange
@@ -116,9 +109,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_handles_empty_permissions_for_specific_role()
     {
         // Arrange
@@ -144,9 +135,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_throws_exception_when_service_fails_for_specific_role()
     {
         // Arrange
@@ -171,9 +160,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $job->handle();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_throws_exception_when_service_fails_for_all_roles()
     {
         // Arrange
@@ -194,9 +181,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $job->handle();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_updates_existing_permission_settings()
     {
         // Arrange
@@ -230,9 +215,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         $this->assertDatabaseCount('permission_settings', 1);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_handles_failed_job_properly()
     {
         // Arrange
@@ -397,9 +380,6 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
     //     Event::assertNotDispatched(DatabaseNotificationsSent::class);
     // }
 
-    /**
-     * Helper method to create a user for testing
-     */
     private function createUser()
     {
         return User::factory()->create();

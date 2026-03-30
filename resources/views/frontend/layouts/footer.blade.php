@@ -80,7 +80,7 @@
                     </li>
                 </ul>
             </div>
-            <div>
+            {{-- <div>
                 <h4 class="text-lg font-semibold mb-4">Support</h4>
                 <ul class="space-y-2 text-gray-400">
                     <li>
@@ -89,20 +89,20 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="hover:text-purple-400 transition-colors duration-300">
+                        <a href="{{ route('home') }}#contact" class="hover:text-purple-400 transition-colors duration-300">
                             Contact Support
                         </a>
                     </li>
                 </ul>
-            </div>
+            </div> --}}
             <div>
                 <h4 class="text-lg font-semibold mb-4">Company</h4>
                 <ul class="space-y-2 text-gray-400">
-                    <li>
+                    {{-- <li>
                         <a href="#" class="hover:text-purple-400 transition-colors duration-300">
                             About Us
                         </a>
-                    </li>
+                    </li> --}}
                     <li>
                         <a href="{{ route('cms.page', 'privacy-policy') }}" class="hover:text-purple-400 transition-colors duration-300">
                             Privacy Policy
@@ -117,7 +117,7 @@
             </div>
         </div>
         <div class="border-t border-white/10 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 {{config('app.name')}}. All rights reserved. Built with ❤️ for fitness entrepreneurs.</p>
+            <p>&copy; {{ date('Y') }} {{config('app.name')}}. All rights reserved. Built with ❤️ for fitness entrepreneurs.</p>
         </div>
     </div>
 </footer>
@@ -130,7 +130,7 @@
     </svg>
 </button>
 
-<script>
+<script defer>
     // Smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {

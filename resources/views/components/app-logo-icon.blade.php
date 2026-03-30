@@ -6,12 +6,14 @@
         'icon' => 'h-9 w-9',
         default => 'h-9 w-9'
     };
+
+    $finalClasses = $class ?: $sizeClasses;
 @endphp
 
 @if($variant === 'full')
     {{-- Full Logo with Text --}}
-    <img src="{{ asset('fluxfitness-logo.svg') }}" alt="Flux Fitness Logo" {{ $attributes->class([$sizeClasses, $class]) }}>
+    <img src="{{ asset('fluxfitness-logo.svg') }}" alt="Fluxfitness" {{ $attributes->class([$finalClasses]) }}>
 @else
     {{-- Icon Only --}}
-    <img src="{{ asset('fluxfitness-icon.png') }}" alt="Flux Fitness Logo" {{ $attributes->class([$sizeClasses, $class]) }}>
+    <img src="{{ asset('fluxfitness-icon.png') }}" alt="Fluxfitness" {{ $attributes->class([$finalClasses]) }}>
 @endif

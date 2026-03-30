@@ -10,6 +10,7 @@ use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use App\Services\WhatsAppBillingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class WhatsAppBillingServiceTest extends TestCase
@@ -30,7 +31,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== WELCOME CREDITS ==========
 
-    /** @test */
+    #[Test]
     public function it_adds_welcome_credits_for_new_gym(): void
     {
         $this->billingService->addWelcomeCredits($this->gym->id);
@@ -43,7 +44,7 @@ class WhatsAppBillingServiceTest extends TestCase
         $this->assertTrue($credit->welcome_credits_claimed);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_add_welcome_credits_twice(): void
     {
         $this->billingService->addWelcomeCredits($this->gym->id);
@@ -52,7 +53,7 @@ class WhatsAppBillingServiceTest extends TestCase
         $this->billingService->addWelcomeCredits($this->gym->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_checks_welcome_credits_claimed_status(): void
     {
         $this->assertFalse($this->billingService->hasClaimedWelcomeCredits($this->gym->id));
@@ -64,7 +65,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== CREDIT BALANCE ==========
 
-    /** @test */
+    #[Test]
     public function it_returns_zero_balance_when_no_credits_exist(): void
     {
         $balance = $this->billingService->getCreditBalance($this->gym->id);
@@ -72,7 +73,7 @@ class WhatsAppBillingServiceTest extends TestCase
         $this->assertEquals(0, $balance);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_correct_credit_balance(): void
     {
         WhatsAppMessageCredit::create([
@@ -89,7 +90,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== CREDIT USAGE ==========
 
-    /** @test */
+    #[Test]
     public function it_uses_credits_successfully(): void
     {
         WhatsAppMessageCredit::create([
@@ -106,7 +107,7 @@ class WhatsAppBillingServiceTest extends TestCase
         $this->assertEquals(5, $credit->used_credits);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_insufficient_credits(): void
     {
         WhatsAppMessageCredit::create([
@@ -122,7 +123,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== CREDIT ADJUSTMENT ==========
 
-    /** @test */
+    #[Test]
     public function it_adjusts_credits_positively(): void
     {
         WhatsAppMessageCredit::create([
@@ -140,7 +141,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== PACKAGE PURCHASE ==========
 
-    /** @test */
+    #[Test]
     public function it_purchases_package_and_adds_credits(): void
     {
         $package = WhatsAppPackage::create([
@@ -175,7 +176,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== REFUND CREDITS ==========
 
-    /** @test */
+    #[Test]
     public function it_refunds_credits(): void
     {
         WhatsAppMessageCredit::create([
@@ -193,7 +194,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== TRANSACTION HISTORY ==========
 
-    /** @test */
+    #[Test]
     public function it_returns_transaction_history(): void
     {
         $credit = WhatsAppMessageCredit::create([
@@ -222,7 +223,7 @@ class WhatsAppBillingServiceTest extends TestCase
 
     // ========== USAGE REPORT ==========
 
-    /** @test */
+    #[Test]
     public function it_generates_usage_report(): void
     {
         WhatsAppMessageCredit::create([
