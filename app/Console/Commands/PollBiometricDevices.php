@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Biometrics\BiometricProviderRegistry;
@@ -62,6 +64,7 @@ class PollBiometricDevices extends Command
             if (! method_exists($provider, 'fetchRecentEvents')) {
                 $this->warn('  Provider does not support event fetching. Poll mode requires custom provider implementation.');
 
+                // Do NOT update last_polled_at - polling was not actually performed
                 return;
             }
 
@@ -72,8 +75,14 @@ class PollBiometricDevices extends Command
             $this->warn('  Polling is not yet fully implemented for this provider type.');
             $this->line('  To enable polling, the biometric provider must implement fetchRecentEvents() method.');
 
-            // Update last_polled_at timestamp anyway to show the device was checked
-            $device->update(['last_polled_at' => now()]);
+            // TODO: When implementing real polling, add actual fetch logic here:
+            // $events = $provider->fetchRecentEvents($device, $device->last_polled_at);
+            // foreach ($events as $event) {
+            //     $checkInService->processWebhookEvent($device, $event);
+            // }
+            // $device->update(['last_polled_at' => now()]);  // <-- Only update AFTER real fetch
+
+            // Do NOT update last_polled_at in placeholder path - only mark as polled after real fetch
 
         } catch (\Exception $e) {
             $this->error("  Polling failed: {$e->getMessage()}");

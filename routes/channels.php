@@ -16,3 +16,8 @@ Broadcast::channel('reports.{gymId}', function ($user, $gymId) {
 Broadcast::channel('gym.{gymId}.attendance', function ($user, $gymId) {
     return $user->gyms()->where('gyms.id', $gymId)->exists();
 });
+
+// Door controller events channel - authorize users for their gym's door events
+Broadcast::channel('gym.{gymId}.door', function ($user, $gymId) {
+    return $user->gyms()->where('gyms.id', $gymId)->exists();
+});

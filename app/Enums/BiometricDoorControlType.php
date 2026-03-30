@@ -53,7 +53,6 @@ enum BiometricDoorControlType: string implements HasColor, HasLabel
             self::Relay => 'FluxFitness sends granted/denied in webhook response. Device triggers relay.',
             self::Wiegand => 'FluxFitness sends granted/denied in webhook response. Device sends Wiegand signal.',
             self::Api => 'FluxFitness will call your door controller API directly on every check-in.',
-            default => '',
         };
     }
 }
