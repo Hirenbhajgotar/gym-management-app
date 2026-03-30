@@ -20,4 +20,10 @@ return [
     ],
 
     'biometric_consent_email_delay' => (int) env('BIOMETRIC_CONSENT_EMAIL_DELAY', 1), // minutes
+    'door_controller_timeout' => (int) env('DOOR_CONTROLLER_TIMEOUT', 3), // seconds
+
+    // Allow-list for door controller URLs (security feature)
+    // Default is empty for least-privilege - operators must configure these
+    'trusted_domains' => explode(',', env('BIOMETRIC_TRUSTED_DOMAINS', '')),
+    'trusted_subnets' => explode(',', env('BIOMETRIC_TRUSTED_SUBNETS', '')),
 ];

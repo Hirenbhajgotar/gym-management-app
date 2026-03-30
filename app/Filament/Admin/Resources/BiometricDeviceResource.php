@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
+use App\Enums\BiometricDoorControlType;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
@@ -12,12 +14,14 @@ use Filament\Forms;
 use Filament\Forms\Components\Actions\Action as ComponentsActionsAction;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Actions\Action as ActionsAction;
 use Filament\Notifications\Notification;
@@ -396,6 +400,85 @@ class BiometricDeviceResource extends Resource
                             ->columns(2),
                     ]),
 
+                // ── SECTION: Device Purpose — THIS DRIVES EVERYTHING ─────
+                Section::make('What is this device for?')
+                    ->description('Select the primary purpose. Fields below will update accordingly.')
+                    ->schema([
+                        Radio::make('purpose')
+                            ->label('Device Purpose')
+                            ->options(BiometricDevicePurpose::class)
+                            ->live()
+                            ->required()
+                            ->default(BiometricDevicePurpose::AttendanceOnly)
+                            ->descriptions([
+                                BiometricDevicePurpose::AttendanceOnly->value => 'This device will record member check-ins only. No door control.',
+                                BiometricDevicePurpose::DoorAccess->value => 'This device will unlock the door AND record attendance.',
+                                BiometricDevicePurpose::DoorAccessNoAttendance->value => 'This device will only unlock the door. No attendance will be recorded.',
+                            ]),
+                    ]),
+
+                // ── SECTION: Door Control ─────────────────────────────────
+                Section::make('Door Control Configuration')
+                    ->description('Configure how this device controls the door lock.')
+                    ->schema([
+                        Select::make('door_control_type')
+                            ->label('Door Control Method')
+                            ->options(BiometricDoorControlType::toSelectOptions())
+                            ->required()
+                            ->live()
+                            ->helperText(fn (Forms\Get $get) => BiometricDoorControlType::getShortDescription($get('door_control_type'))),
+
+                        TextInput::make('door_controller_url')
+                            ->label('Door Controller API URL')
+                            ->placeholder('http://192.168.1.200:8080/door/unlock')
+                            ->url()
+                            ->required()
+                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
+
+                        TextInput::make('door_controller_token')
+                            ->label('Door Controller Token')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
+
+                        TextInput::make('unlock_duration_seconds')
+                            ->label('Unlock Duration (seconds)')
+                            ->numeric()
+                            ->default(5)
+                            ->minValue(1)
+                            ->maxValue(30)
+                            ->helperText('How long the door stays unlocked after a successful check-in'),
+
+                        TextInput::make('door_zone')
+                            ->label('Door Zone Label')
+                            ->placeholder('main_entrance')
+                            ->helperText('e.g. main_entrance, gym_floor, pool, locker_room')
+                            ->nullable(),
+
+                        Select::make('connection_mode')
+                            ->label('Connection Mode')
+                            ->options([
+                                'webhook' => 'Device sends data to FluxFitness (Recommended)',
+                                'poll' => 'FluxFitness fetches data from device',
+                            ])
+                            ->default('webhook')
+                            ->live()
+                            ->required(),
+
+                        TextInput::make('poll_interval_seconds')
+                            ->label('Poll Interval (seconds)')
+                            ->numeric()
+                            ->default(60)
+                            ->minValue(10)
+                            ->maxValue(300)
+                            ->visible(fn (Forms\Get $get): bool => $get('connection_mode') === 'poll')
+                            ->helperText('How often FluxFitness checks the device for new events'),
+                    ])
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => self::isDoorAccessPurpose($get('purpose')))
+                    ->collapsible(),
+
                 Section::make('Security & Access')
                     ->schema([
                         Placeholder::make('token_info')
@@ -611,5 +694,26 @@ class BiometricDeviceResource extends Resource
             'create' => Pages\CreateBiometricDevice::route('/create'),
             'edit' => Pages\EditBiometricDevice::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Check if the purpose field indicates door access (handles both enum and string).
+     */
+    public static function isDoorAccessPurpose(mixed $purpose): bool
+    {
+        if ($purpose === null) {
+            return false;
+        }
+
+        // If it's already an enum instance
+        if ($purpose instanceof BiometricDevicePurpose) {
+            return in_array($purpose, [
+                BiometricDevicePurpose::DoorAccess,
+                BiometricDevicePurpose::DoorAccessNoAttendance,
+            ], true);
+        }
+
+        // If it's a string (from form input)
+        return in_array($purpose, ['door_access', 'door_access_no_attendance'], true);
     }
 }
