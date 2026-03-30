@@ -113,10 +113,10 @@ class DoorControlService
 
         $host = $parsed['host'];
 
-        // Allow localhost and IP addresses
-        if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
-            return true;
-        }
+        // // Allow localhost and IP addresses
+        // if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+        //     return true;
+        // }
 
         // Get trusted config
         $trustedDomains = array_filter(config('biometrics.trusted_domains', []));

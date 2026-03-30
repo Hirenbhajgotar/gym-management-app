@@ -23,6 +23,7 @@ return [
     'door_controller_timeout' => (int) env('DOOR_CONTROLLER_TIMEOUT', 3), // seconds
 
     // Allow-list for door controller URLs (security feature)
+    // Default is empty for least-privilege - operators must configure these
     'trusted_domains' => explode(',', env('BIOMETRIC_TRUSTED_DOMAINS', '')),
-    'trusted_subnets' => explode(',', env('BIOMETRIC_TRUSTED_SUBNETS', '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1')),
+    'trusted_subnets' => explode(',', env('BIOMETRIC_TRUSTED_SUBNETS', '')),
 ];

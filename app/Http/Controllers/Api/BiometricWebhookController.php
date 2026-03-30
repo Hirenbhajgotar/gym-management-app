@@ -196,7 +196,7 @@ class BiometricWebhookController extends Controller
             ],
 
             'display' => [
-                'message' => 'Welcome, ' . ($result->attendance->attendanceable->name ?? 'Member') . '!',
+                'message' => 'Welcome, ' . ($result->attendance?->attendanceable?->name ?? 'Member') . '!',
                 'beep_pattern' => 'success',
                 'led_color' => 'green',
             ],

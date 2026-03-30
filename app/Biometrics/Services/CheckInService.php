@@ -256,10 +256,10 @@ class CheckInService
         string $reason
     ): CheckInResult {
         // Log door denied event (always log door events regardless of attendance creation)
-        if ($gymMember && $device->isDoorAccess()) {
+        if ($device->isDoorAccess()) {
             // Create minimal attendance for door event logging if needed
             $attendanceForLog = null;
-            if ($device->shouldCreateAttendance()) {
+            if ($gymMember && $device->shouldCreateAttendance()) {
                 $attendanceForLog = $gymMember->attendances()->create([
                     'gym_id' => $device->gym_id,
                     'check_in_time' => now(),
