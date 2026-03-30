@@ -135,6 +135,7 @@ class CheckInService
                 )
                 ->whereDate('check_in_time', today())
                 ->where('check_in_result', 'granted')
+                ->whereNull('check_out_time')
                 ->with('attendanceable')
                 ->first();
 
@@ -200,7 +201,7 @@ class CheckInService
             );
 
             // Only fire check-in event if there's an attendance record
-            if ($attendance || $existingAttendance) {
+            if ($device->shouldCreateAttendance() && ($attendance || $existingAttendance)) {
                 event(new MemberCheckedIn($attendance ?? $existingAttendance, $device));
             }
 
@@ -254,45 +255,47 @@ class CheckInService
         ?GymMember $gymMember,
         string $reason
     ): CheckInResult {
-        // Log denied attendance for audit
-        if ($gymMember) {
-            $attendance = $gymMember->attendances()->create([
+        // Log door denied event (always log door events regardless of attendance creation)
+        if ($device->isDoorAccess()) {
+            // Create minimal attendance for door event logging if needed
+            $attendanceForLog = null;
+            if ($gymMember && $device->shouldCreateAttendance()) {
+                $attendanceForLog = $gymMember->attendances()->create([
+                    'gym_id' => $device->gym_id,
+                    'check_in_time' => now(),
+                    'check_out_time' => now(), // Immediately checkout so it's not counted as active
+                    'status' => AttendanceStatus::Absent, // Denied = not present
+                    'check_in_method' => 'biometric',
+                    'device_id' => $device->id,
+                    'check_in_result' => 'denied',
+                    'denial_reason' => $reason,
+                    'door_status' => 'locked',
+                    'door_denial_reason' => $reason,
+                ]);
+            }
+
+            $this->doorControlService->logEvent(
+                device: $device,
+                gymMember: $gymMember,
+                attendance: $attendanceForLog,
+                eventType: 'unlock_denied',
+                result: DoorControlResult::locked($reason)
+            );
+        } elseif ($gymMember && $device->shouldCreateAttendance()) {
+            // Attendance-only device: create audit record for denied attempt
+            $gymMember->attendances()->create([
                 'gym_id' => $device->gym_id,
                 'check_in_time' => now(),
-                'status' => AttendanceStatus::Present,
+                'check_out_time' => now(), // Immediately checkout so it's not counted as active
+                'status' => AttendanceStatus::Absent, // Denied = not present
                 'check_in_method' => 'biometric',
                 'device_id' => $device->id,
                 'check_in_result' => 'denied',
                 'denial_reason' => $reason,
-                'door_status' => $device->isDoorAccess() ? 'locked' : 'not_applicable',
-                'door_denial_reason' => $reason,
             ]);
-
-            // Log door denied event
-            if ($device->isDoorAccess()) {
-                $this->doorControlService->logEvent(
-                    device: $device,
-                    gymMember: $gymMember,
-                    attendance: $attendance,
-                    eventType: 'unlock_denied',
-                    result: DoorControlResult::locked($reason)
-                );
-            }
         }
 
         return CheckInResult::denied($reason);
-    }
-
-    /**
-     * Get current attendance count for the gym
-     */
-    private function getCurrentCount(int $gymId): int
-    {
-        return Attendances::byGym($gymId)
-            ->active()
-            ->whereDate('check_in_time', today())
-            ->whereHasMorph('attendanceable', [GymMember::class])
-            ->count();
     }
 
     public function processCheckOut(GymMember $gymMember, BiometricDevice $device): CheckInResult
