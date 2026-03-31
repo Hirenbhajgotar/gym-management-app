@@ -64,13 +64,14 @@ class WhatsAppTemplateResource extends Resource
         $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->where(function ($query) use ($tenant) {
+                $query->where('gym_id', $tenant?->id);
 
-        if (config('services.twilio.use_sandbox')) {
-            $query->orWhereNull('gym_id');
-        } else {
-            $query->where('gym_id', $tenant?->id);
-        }
+                if (config('services.twilio.use_sandbox')) {
+                    $query->orWhereNull('gym_id');
+                }
+            });
 
         return $query;
     }

@@ -161,6 +161,10 @@ class WhatsAppPhoneNumber extends Model
         // - phone_number_sid is either valid PN or null/empty
         // - channel_sender_sid is either valid XE or null/empty
         // - No legacy issue where XE is in phone_number_sid field
-        return ! $hasLegacyIssue && ($phoneNumberSidValid || empty($this->phone_number_sid));
+        // return ! $hasLegacyIssue && ($phoneNumberSidValid || empty($this->phone_number_sid));
+
+        return ! $hasLegacyIssue
+           && ($phoneNumberSidValid || empty($this->phone_number_sid))
+           && ($channelSenderSidValid || empty($this->channel_sender_sid));
     }
 }
