@@ -25,7 +25,13 @@ class ListWhatsAppTemplates extends ListRecords
                 ->action(function (WhatsAppTemplateService $service) {
                     $result = $service->syncTemplatesFromTwilio();
 
-                    if ($result['success']) {
+                    if ($result['success'] === true && !empty($result['error_count']) && $result['error_count'] > 0) {
+                        Notification::make()
+                            ->warning()
+                            ->title('Sync Partially Completed')
+                            ->body('Successfully synced ' . ($result['synced_count'] ?? 0) . ' templates, but ' . $result['error_count'] . ' failed. ' . (isset($result['errors']) ? collect($result['errors'])->implode(', ') : ''))
+                            ->send();
+                    } elseif ($result['success']) {
                         Notification::make()
                             ->success()
                             ->title('Sync Completed')

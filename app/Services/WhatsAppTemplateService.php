@@ -380,6 +380,16 @@ class WhatsAppTemplateService
         try {
             $contents = $this->masterClient->content->v1->contents->read();
 
+            $statusMap = [
+                'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
+                'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
+                'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
+                'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
+                'UNAPPROVED' => WhatsAppTemplateStatusEnum::PENDING,
+                'PAUSED' => WhatsAppTemplateStatusEnum::DISABLED,
+                'UNSUBMITTED' => WhatsAppTemplateStatusEnum::UNSUBMITTED,
+            ];
+
             foreach ($contents as $record) {
                 try {
                     $types = $record->types;
@@ -414,39 +424,48 @@ class WhatsAppTemplateService
                     }
 
                     $rawStatus = strtoupper($whatsapp['status'] ?? 'PENDING');
-                    $statusMap = [
-                        'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
-                        'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
-                        'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
-                        'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
-                        'UNAPPROVED' => WhatsAppTemplateStatusEnum::PENDING,
-                        'PAUSED' => WhatsAppTemplateStatusEnum::DISABLED,
-                        'UNSUBMITTED' => WhatsAppTemplateStatusEnum::UNSUBMITTED,
-                    ];
+
                     $status = $statusMap[$rawStatus] ?? WhatsAppTemplateStatusEnum::PENDING;
+
+                    if ($status !== WhatsAppTemplateStatusEnum::APPROVED) {
+                        continue;
+                    }
 
                     $category = strtolower($whatsapp['category'] ?? 'utility');
                     $rejectionReason = $whatsapp['rejection_reason'] ?? null;
 
-                    WhatsAppTemplate::updateOrCreate(
-                        [
-                            'twilio_template_sid' => $record->sid,
-                            'gym_id' => null,
-                        ],
-                        [
-                            'name' => $record->friendlyName, // Twilio friendly name as internal name
-                            'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
-                            'body' => $body,
-                            'category' => $category,
-                            'variables' => $variables,
-                            'variable_count' => $variableCount,
-                            'variable_placeholder' => $placeholders,
-                            'status' => $status,
-                            'rejection_reason' => $rejectionReason,
-                            'is_active' => true,
-                            'is_default' => true,
-                        ]
-                    );
+                    $attributes = [
+                        'twilio_template_sid' => $record->sid,
+                        'gym_id' => null,
+                    ];
+
+                    $values = [
+                        'name' => $record->friendlyName, // Twilio friendly name as internal name
+                        'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
+                        'body' => $body,
+                        'category' => $category,
+                        'variables' => $variables,
+                        'variable_count' => $variableCount,
+                        'variable_placeholder' => $placeholders,
+                        'status' => $status,
+                        'rejection_reason' => $rejectionReason,
+                        'is_active' => true,
+                        'is_default' => true,
+                    ];
+
+                    try {
+                        WhatsAppTemplate::updateOrCreate($attributes, $values);
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                        // Concurrent sync caused a duplicate key error, fallback to explicit update
+                        WhatsAppTemplate::where($attributes)->update($values);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Fallback constraint violation check
+                        if ($e->getCode() === '23000') {
+                            WhatsAppTemplate::where($attributes)->update($values);
+                        } else {
+                            throw $e;
+                        }
+                    }
 
                     $successCount++;
                 } catch (\Exception $e) {

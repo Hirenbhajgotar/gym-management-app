@@ -43,13 +43,13 @@ class WhatsAppTemplateResource extends Resource
         }
 
         return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addMinutes(30), now()->addHour()], function () use ($tenant) {
-            $query = static::getModel()::query();
-
-            if (config('services.twilio.use_sandbox')) {
-                $query->orWhereNull('gym_id');
-            } else {
-                $query->where('gym_id', $tenant->id);
-            }
+            $query = static::getModel()::query()
+                ->where(function ($query) use ($tenant) {
+                    $query->where('gym_id', $tenant->id);
+                    if (config('services.twilio.use_sandbox')) {
+                        $query->orWhereNull('gym_id');
+                    }
+                });
 
             $count = $query->count();
 
