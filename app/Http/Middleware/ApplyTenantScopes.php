@@ -12,6 +12,7 @@ use App\Models\Lead;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
+use App\Models\WhatsAppTemplate;
 use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,6 +67,12 @@ class ApplyTenantScopes
         BiometricTemplate::addGlobalScope(
             fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
         );
+
+        if (! config('services.twilio.use_sandbox')) {
+            WhatsAppTemplate::addGlobalScope(
+                fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+            );
+        }
 
         return $next($request);
     }
