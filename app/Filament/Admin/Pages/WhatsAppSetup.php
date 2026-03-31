@@ -452,13 +452,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing'),
 
                 // Create New WABA Section
-                Forms\Components\Section::make('Create a New WABA')
+                Forms\Components\Section::make('Create a New WhatsApp Business Account')
                     ->description('We will create a WhatsApp Business Account for you through our system.')
                     ->schema([
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('createWaba')
-                                ->label($this->wabaCreated ? 'WABA Created' : 'Create WABA')
-                                ->color('primary')
+                                ->label($this->wabaCreated ? 'WhatsApp Business Account Created' : 'Create WhatsApp Business Account')
+                                ->color('success')
                                 ->action('createWaba')
                                 ->disabled($this->wabaCreated)
                                 ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : 'heroicon-o-plus-circle'),

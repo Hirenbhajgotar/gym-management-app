@@ -92,7 +92,7 @@ class WhatsAppPhoneNumber extends Model
 
     /**
      * Get the Channel Sender SID (WhatsApp sender registration).
-     * Returns channel_sender_sid if set, otherwise falls back to phone_number_sid for backward compatibility.
+     * This is the SID from Twilio's Messaging v2 Channels Senders API (starts with XE).
      */
     public function getChannelSenderSid(): ?string
     {
@@ -123,7 +123,7 @@ class WhatsAppPhoneNumber extends Model
 
     /**
      * Check if the stored channel_sender_sid looks like a valid Channel Sender SID.
-     * Valid SIDs start with "CN" (Channel).
+     * Valid SIDs start with "XE" (Channel).
      */
     public function isValidChannelSenderSid(): bool
     {
@@ -131,11 +131,11 @@ class WhatsAppPhoneNumber extends Model
             return false;
         }
 
-        return str_starts_with($this->channel_sender_sid, 'CN');
+        return str_starts_with($this->channel_sender_sid, 'XE');
     }
 
     /**
-     * Check if the legacy phone_number_sid contains a Channel Sender SID (starts with CN).
+     * Check if the legacy phone_number_sid contains a Channel Sender SID (starts with XE).
      * This helps identify records that need migration.
      */
     public function hasLegacyChannelSenderSidInPhoneNumberField(): bool
@@ -144,7 +144,7 @@ class WhatsAppPhoneNumber extends Model
             return false;
         }
 
-        return str_starts_with($this->phone_number_sid, 'CN');
+        return str_starts_with($this->phone_number_sid, 'XE');
     }
 
     /**
@@ -159,8 +159,12 @@ class WhatsAppPhoneNumber extends Model
 
         // Proper separation means:
         // - phone_number_sid is either valid PN or null/empty
-        // - channel_sender_sid is either valid CN or null/empty
-        // - No legacy issue where CN is in phone_number_sid field
-        return ! $hasLegacyIssue && ($phoneNumberSidValid || empty($this->phone_number_sid));
+        // - channel_sender_sid is either valid XE or null/empty
+        // - No legacy issue where XE is in phone_number_sid field
+        // return ! $hasLegacyIssue && ($phoneNumberSidValid || empty($this->phone_number_sid));
+
+        return ! $hasLegacyIssue
+           && ($phoneNumberSidValid || empty($this->phone_number_sid))
+           && ($channelSenderSidValid || empty($this->channel_sender_sid));
     }
 }

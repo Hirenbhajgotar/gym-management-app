@@ -43,7 +43,15 @@ class WhatsAppTemplateResource extends Resource
         }
 
         return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addMinutes(30), now()->addHour()], function () use ($tenant) {
-            $count = static::getModel()::where('gym_id', $tenant->id)->count();
+            $query = static::getModel()::query()
+                ->where(function ($query) use ($tenant) {
+                    $query->where('gym_id', $tenant->id);
+                    if (config('services.twilio.use_sandbox')) {
+                        $query->orWhereNull('gym_id');
+                    }
+                });
+
+            $count = $query->count();
 
             return $count > 0 ? (string) $count : null;
         });
@@ -53,11 +61,19 @@ class WhatsAppTemplateResource extends Resource
     {
         $tenant = Filament::getTenant();
 
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->where('gym_id', $tenant?->id);
+            ->where(function ($query) use ($tenant) {
+                $query->where('gym_id', $tenant?->id);
+
+                if (config('services.twilio.use_sandbox')) {
+                    $query->orWhereNull('gym_id');
+                }
+            });
+
+        return $query;
     }
 
     public static function form(Form $form): Form
@@ -606,7 +622,7 @@ class WhatsAppTemplateResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('Submit Template for Meta Approval')
                         ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
-                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT)
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT && $record->gym_id === Filament::getTenant()?->id)
                         ->action(function (WhatsAppTemplate $record) {
                             $service = app(WhatsAppTemplateService::class);
                             $result = $service->submitForVerification($record);
@@ -634,7 +650,7 @@ class WhatsAppTemplateResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('Resubmit Template for Approval')
                         ->modalDescription(fn (WhatsAppTemplate $record) => 'Previous rejection reason: "' . ($record->rejection_reason ?? 'Unknown') . '". Please ensure you\'ve fixed the issue before resubmitting.')
-                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED)
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED && $record->gym_id === Filament::getTenant()?->id)
                         ->action(function (WhatsAppTemplate $record) {
                             // Reset status to draft, clear rejection, then resubmit
                             $record->update([
@@ -665,7 +681,7 @@ class WhatsAppTemplateResource extends Resource
                         ->label('Sync Status')
                         ->icon('heroicon-o-arrow-path')
                         ->color('gray')
-                        ->visible(fn (WhatsAppTemplate $record) => ! empty($record->twilio_template_sid))
+                        ->visible(fn (WhatsAppTemplate $record) => ! empty($record->twilio_template_sid) && $record->gym_id === Filament::getTenant()?->id)
                         ->requiresConfirmation()
                         ->modalHeading('Sync Template Status')
                         ->modalDescription('This will fetch the latest status from Meta/WhatsApp. Use this if your template is stuck in "pending" status.')
@@ -682,13 +698,13 @@ class WhatsAppTemplateResource extends Resource
                         }),
 
                     Tables\Actions\EditAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === Filament::getTenant()?->id),
 
                     Tables\Actions\DeleteAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === Filament::getTenant()?->id),
 
                     Tables\Actions\RestoreAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->trashed()),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->trashed() && $record->gym_id === Filament::getTenant()?->id),
                 ]),
             ])
             ->bulkActions([
