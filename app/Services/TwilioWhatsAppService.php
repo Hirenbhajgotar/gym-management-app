@@ -310,10 +310,16 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         array $variables = []
     ): array {
         try {
-            $template = WhatsAppTemplate::where('gym_id', $this->tenantId)
-                ->where('name', $templateName)
-                ->where('status', 'approved')
-                ->first();
+            $query = WhatsAppTemplate::where('name', $templateName)
+                ->where('status', 'approved');
+
+            if ($this->useSandbox) {
+                $query->whereNull('gym_id');
+            } else {
+                $query->where('gym_id', $this->tenantId);
+            }
+
+            $template = $query->first();
 
             if (! $template) {
                 return [

@@ -369,4 +369,106 @@ class WhatsAppTemplateService
 
         return $placeholders;
     }
+
+    public function syncTemplatesFromTwilio(): array
+    {
+        Log::info('Starting WhatsApp template sync from Twilio main account');
+        $successCount = 0;
+        $errorCount = 0;
+        $errors = [];
+
+        try {
+            $contents = $this->masterClient->content->v1->contents->read();
+
+            foreach ($contents as $record) {
+                try {
+                    $types = $record->types;
+
+                    // Extract body from supported types
+                    $body = null;
+                    if (isset($types['twilio/text'])) {
+                        $body = $types['twilio/text']['body'];
+                    } elseif (isset($types['twilio/media'])) {
+                        $body = $types['twilio/media']['body'];
+                    } elseif (isset($types['twilio/location'])) {
+                        $body = $types['twilio/location']['body'];
+                    } elseif (isset($types['twilio/card'])) {
+                        $body = $types['twilio/card']['body'];
+                    }
+
+                    if (! $body) {
+                        continue;
+                    }
+
+                    $variables = $this->extractVariables($body);
+                    $variableCount = count($variables);
+                    $placeholders = $this->generateDefaultPlaceholders($variables);
+
+                    // Fetch approval status to get correct category and status
+                    $whatsapp = [];
+                    try {
+                        $approvalFetch = $this->masterClient->content->v1->contents($record->sid)->approvalFetch()->fetch();
+                        $whatsapp = $approvalFetch->whatsapp ?? [];
+                    } catch (\Exception $e) {
+                        Log::warning("Could not fetch approval status for {$record->sid}: " . $e->getMessage());
+                    }
+
+                    $rawStatus = strtoupper($whatsapp['status'] ?? 'PENDING');
+                    $statusMap = [
+                        'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
+                        'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
+                        'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
+                        'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
+                        'UNAPPROVED' => WhatsAppTemplateStatusEnum::PENDING,
+                        'PAUSED' => WhatsAppTemplateStatusEnum::DISABLED,
+                        'UNSUBMITTED' => WhatsAppTemplateStatusEnum::UNSUBMITTED,
+                    ];
+                    $status = $statusMap[$rawStatus] ?? WhatsAppTemplateStatusEnum::PENDING;
+
+                    $category = strtolower($whatsapp['category'] ?? 'utility');
+                    $rejectionReason = $whatsapp['rejection_reason'] ?? null;
+
+                    WhatsAppTemplate::updateOrCreate(
+                        [
+                            'twilio_template_sid' => $record->sid,
+                            'gym_id' => null,
+                        ],
+                        [
+                            'name' => $record->friendlyName, // Twilio friendly name as internal name
+                            'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
+                            'body' => $body,
+                            'category' => $category,
+                            'variables' => $variables,
+                            'variable_count' => $variableCount,
+                            'variable_placeholder' => $placeholders,
+                            'status' => $status,
+                            'rejection_reason' => $rejectionReason,
+                            'is_active' => true,
+                            'is_default' => true,
+                        ]
+                    );
+
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Error syncing template {$record->sid}: " . $e->getMessage();
+                    Log::error("Error syncing Twilio template {$record->sid}", ['error' => $e->getMessage()]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'synced_count' => $successCount,
+                'error_count' => $errorCount,
+                'errors' => $errors,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

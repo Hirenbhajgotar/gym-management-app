@@ -83,11 +83,16 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
     private function loadTemplates(): void
     {
-        $this->templates = WhatsAppTemplate::where('gym_id', $this->getGymId())
-            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
-            ->isActive()
-            ->get()
-            ->toArray();
+        $query = WhatsAppTemplate::where('status', WhatsAppTemplateStatusEnum::APPROVED)
+            ->isActive();
+
+        if (config('services.twilio.use_sandbox')) {
+            $query->orWhereNull('gym_id');
+        } else {
+            $query->where('gym_id', $this->getGymId());
+        }
+
+        $this->templates = $query->get()->toArray();
     }
 
     private function initializeForm(): void
