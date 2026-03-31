@@ -57,6 +57,15 @@ class WhatsAppTemplateResource extends Resource
         });
     }
 
+    public static function isScopedToTenant(): bool
+    {
+        if (config('services.twilio.use_sandbox')) {
+            return false;
+        }
+
+        return true;
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $tenant = Filament::getTenant();
