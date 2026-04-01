@@ -369,7 +369,25 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         return Forms\Components\Wizard\Step::make('WABA Setup')
             ->label('WhatsApp Business')
             ->schema([
-                Forms\Components\Placeholder::make('')
+                Forms\Components\Placeholder::make('waba_connected_success')
+                    ->hiddenLabel()
+                    ->visible(fn () => $this->wabaCreated)
+                    ->content(new HtmlString('
+                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <div class="w-28 h-28 mb-10 rounded-full ff-bg-gradient-success ff-shadow-success flex items-center justify-center border-4 border-white dark:border-gray-900 relative">
+                                <div class="absolute inset-0 rounded-full bg-success-400 ff-animate-ping opacity-30"></div>
+                                <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">WhatsApp Business Account Connected</h3>
+                            <p class="text-gray-500 dark:text-gray-400 max-w-lg text-lg">Your WhatsApp Business Account has been successfully linked to your system. You can now proceed to the next step to set up your phone number.</p>
+                        </div>
+                    ')),
+
+                Forms\Components\Placeholder::make('waba_setup_intro')
+                    ->hiddenLabel()
+                    ->hidden(fn () => $this->wabaCreated)
                     ->content(new HtmlString('
                         <div class="mb-4">
                             <h3 class="font-medium text-gray-900 dark:text-gray-100">WhatsApp Business Account (WABA) Setup</h3>
@@ -391,7 +409,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->live()
                     ->inline()
                     ->inlineLabel(false)
-                    ->disabled($this->wabaCreated),
+                    ->hidden(fn () => $this->wabaCreated),
 
                 // Connect Existing WABA Section
                 Forms\Components\Section::make('Connect Your Existing WABA')
@@ -420,14 +438,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('connectExistingWaba')
-                                ->label($this->wabaCreated ? 'WABA Connected' : 'Connect WABA')
+                                ->label('Connect WABA')
                                 ->color('primary')
-                                ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : 'heroicon-o-link')
-                                ->action('connectExistingWaba')
-                                ->disabled($this->wabaCreated),
+                                ->icon('heroicon-o-link')
+                                ->action('connectExistingWaba'),
                         ]),
                     ])
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing')
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->wabaCreated)
                     ->collapsed(false),
 
                 Forms\Components\Section::make('How to Find Your WABA Details')
@@ -449,7 +466,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ])
                     ->collapsible()
                     ->collapsed(true)
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing'),
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->wabaCreated),
 
                 // Create New WABA Section
                 Forms\Components\Section::make('Create a New WhatsApp Business Account')
@@ -457,12 +474,11 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->schema([
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('createWaba')
-                                ->label($this->wabaCreated ? 'WhatsApp Business Account Created' : 'Create WhatsApp Business Account')
+                                ->label('Create WhatsApp Business Account')
                                 ->color('success')
                                 ->action('createWaba')
-                                ->disabled($this->wabaCreated)
-                                ->icon($this->wabaCreated ? 'heroicon-o-check-circle' : 'heroicon-o-plus-circle'),
-                        ]),
+                                ->icon('heroicon-o-plus-circle'),
+                        ])->hidden($this->wabaCreated),
                         Forms\Components\Placeholder::make('embedded_signup_info')
                             ->hidden(! $this->requiresEmbeddedSignup)
                             ->content(new HtmlString('
@@ -485,7 +501,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 ->hidden(! $this->requiresEmbeddedSignup),
                         ]),
                     ])
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new'),
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new' && ! $this->wabaCreated),
             ])
             ->afterValidation(function () {
                 $this->setupStep = 3;
