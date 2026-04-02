@@ -567,6 +567,9 @@ class TwilioAccountManager
                 'configuration' => ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
                     'waba_id' => $account->waba_id,
                 ]),
+                'profile' => ChannelsSenderModels::createMessagingV2ChannelsSenderProfile([
+                    'name' => $account->business_name ?? $account->waba_name ?? 'Gym Business',
+                ]),
             ]);
 
             // creates a WhatsApp sender in Twilio's system, adds it to the WABA connected to Twilio account, and triggers the OTP from Meta.
@@ -578,6 +581,14 @@ class TwilioAccountManager
                     ->create($sender->sid);
             } catch (RestException $e) {
                 if ($e->getStatusCode() !== 409) {
+                    Log::error('Failed to register own number', [
+                        'gym_id' => $gymId,
+                        'phone_number' => strlen($phoneNumber) > 6
+                            ? substr($phoneNumber, 0, 4) . '****' . substr($phoneNumber, -2)
+                            : str_repeat('*', max(0, strlen($phoneNumber))),
+                        'error' => $e->getMessage(),
+                    ]);
+
                     throw $e;
                 }
             }

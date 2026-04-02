@@ -12,17 +12,6 @@
 
         @elseif($viewState === 'setup')
             <div class="space-y-6">
-                {{-- Progress Indicator --}}
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Setup Progress</span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">Step {{ $setupStep }} of {{ $totalSteps }}</span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: {{ ($setupStep / $totalSteps) * 100 }}%"></div>
-                    </div>
-                </div>
-
                 {{-- Setup Form with Wizard --}}
                 {{ $this->form }}
             </div>
