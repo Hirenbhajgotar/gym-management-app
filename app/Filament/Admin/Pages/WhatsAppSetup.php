@@ -99,6 +99,23 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public bool $isExistWhatsAppTemplates = false;
 
+    /**
+     * Compute whether the WABA is truly connected based on persisted data.
+     */
+    public function isWabaConnected(): bool
+    {
+        return $this->whatsappAccount !== null
+            && $this->whatsappAccount->waba_id !== null;
+    }
+
+    /**
+     * Compute whether a phone number is connected based on persisted data.
+     */
+    public function isPhoneNumberConnected(): bool
+    {
+        return $this->phoneNumber !== null;
+    }
+
     public function mount(): void
     {
         $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
@@ -115,15 +132,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
         $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
-        $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::query()->isActive()
-            ->where(function ($query) use ($gymId) {
-                $query->where('gym_id', $gymId);
-
-                if (config('services.twilio.use_individual_waba')) {
-                    $query->orWhereNull('gym_id');
-                }
-            })
-            ->exists();
+        $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::isExistsForGym($gymId);
     }
 
     private function determineViewState(): void
@@ -159,7 +168,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             return 2;
         }
 
-        $this->wabaCreated = true;
+        // No need to set wabaCreated here - isWabaConnected() checks persisted data
 
         if (! $this->phoneNumber) {
             return 3;
@@ -382,7 +391,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ->schema([
                 Forms\Components\Placeholder::make('waba_connected_success')
                     ->hiddenLabel()
-                    ->visible(fn () => $this->wabaCreated)
+                    ->visible(fn () => $this->isWabaConnected())
                     ->content(new HtmlString('
                         <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
                             <div class="w-28 h-28 mb-10 rounded-full ff-bg-gradient-success ff-shadow-success flex items-center justify-center border-4 border-white dark:border-gray-900 relative">
@@ -398,7 +407,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
                 Forms\Components\Placeholder::make('waba_setup_intro')
                     ->hiddenLabel()
-                    ->hidden(fn () => $this->wabaCreated)
+                    ->hidden(fn () => $this->isWabaConnected())
                     ->content(new HtmlString('
                         <div class="mb-4">
                             <h3 class="font-medium text-gray-900 dark:text-gray-100">WhatsApp Business Account (WABA) Setup</h3>
@@ -420,7 +429,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->live()
                     ->inline()
                     ->inlineLabel(false)
-                    ->hidden(fn () => $this->wabaCreated),
+                    ->hidden(fn () => $this->isWabaConnected()),
 
                 // Connect Existing WABA Section
                 Forms\Components\Section::make('Connect Your Existing WABA')
@@ -455,7 +464,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 ->action('connectExistingWaba'),
                         ]),
                     ])
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->wabaCreated)
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->isWabaConnected())
                     ->collapsed(false),
 
                 Forms\Components\Section::make('How to Find Your WABA Details')
@@ -477,7 +486,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ])
                     ->collapsible()
                     ->collapsed(true)
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->wabaCreated),
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'connect_existing' && ! $this->isWabaConnected()),
 
                 // Create New WABA Section
                 Forms\Components\Section::make('Create a New WhatsApp Business Account')
@@ -489,7 +498,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 ->color('success')
                                 ->action('createWaba')
                                 ->icon('heroicon-o-plus-circle'),
-                        ])->hidden($this->wabaCreated),
+                        ])->hidden($this->isWabaConnected()),
                         Forms\Components\Placeholder::make('embedded_signup_info')
                             ->hidden(! $this->requiresEmbeddedSignup)
                             ->content(new HtmlString('
@@ -512,7 +521,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 ->hidden(! $this->requiresEmbeddedSignup),
                         ]),
                     ])
-                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new' && ! $this->wabaCreated),
+                    ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'create_new' && ! $this->isWabaConnected()),
             ])
             ->afterValidation(function () {
                 $this->setupStep = 3;
@@ -954,7 +963,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         ->info()
                         ->send();
                 } else {
-                    $this->wabaCreated = true;
+                    // WABA created and persisted - isWabaConnected() will now return true
                     $this->setupStep = 3;
 
                     Notification::make()
@@ -1003,7 +1012,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
             if ($result['success']) {
                 $this->refresh();
-                $this->wabaCreated = true;
+                // isWabaConnected() will now check persisted waba_id
                 $this->setupStep = 3;
 
                 Notification::make()
@@ -1061,7 +1070,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function skipEmbeddedSignup(): void
     {
         $this->requiresEmbeddedSignup = false;
-        $this->wabaCreated = true;
+        // Don't set wabaCreated = true here - the success state should only show
+        // when WABA is truly connected (persisted waba_id check in isWabaConnected())
         $this->setupStep = 3;
 
         Notification::make()

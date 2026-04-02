@@ -580,12 +580,13 @@ class TwilioAccountManager
                     ->channelSenders
                     ->create($sender->sid);
             } catch (RestException $e) {
-                Log::error('Failed to register own number', [
-                    'gym_id' => $gymId,
-                    'phone_number' => $phoneNumber,
-                    'error' => $e->getMessage(),
-                ]);
                 if ($e->getStatusCode() !== 409) {
+                    Log::error('Failed to register own number', [
+                        'gym_id' => $gymId,
+                        'phone_number' => $phoneNumber,
+                        'error' => $e->getMessage(),
+                    ]);
+
                     throw $e;
                 }
             }

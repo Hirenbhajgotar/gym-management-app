@@ -246,4 +246,18 @@ class WhatsAppTemplate extends Model
     {
         return self::whereNull('gym_id')->isDefault()->get();
     }
+
+    public static function isExistsForGym(int $gymId): bool
+    {
+        return (bool) self::query()
+            ->isActive()
+            ->where(function ($query) use ($gymId) {
+                $query->where('gym_id', $gymId);
+
+                if (config('services.twilio.use_individual_waba')) {
+                    $query->orWhereNull('gym_id');
+                }
+            })
+            ->exists();
+    }
 }
