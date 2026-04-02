@@ -97,6 +97,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     public string $wabaConnectionMethod = 'create_new';
 
+    public bool $isExistWhatsAppTemplates = false;
+
     public function mount(): void
     {
         $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
@@ -113,6 +115,15 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
         $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
+        $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::query()->isActive()
+            ->where(function ($query) use ($gymId) {
+                $query->where('gym_id', $gymId);
+
+                if (config('services.twilio.use_individual_waba')) {
+                    $query->orWhereNull('gym_id');
+                }
+            })
+            ->exists();
     }
 
     private function determineViewState(): void
@@ -381,7 +392,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </svg>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">WhatsApp Business Account Connected</h3>
-                            <p class="text-gray-500 dark:text-gray-400 max-w-lg text-lg">Your WhatsApp Business Account has been successfully linked to your system. You can now proceed to the next step to set up your phone number.</p>
+                            <p class="text-gray-500 dark:text-gray-400 max-w-lg text-lg">Your WhatsApp Business Account has been successfully linked to your system.</p>
                         </div>
                     ')),
 
@@ -519,7 +530,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Get Your WhatsApp Business Number</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400">A dedicated phone number is required to send WhatsApp messages to your members. Choose how you would like to get your number.</p>
                         </div>
-                    ')),
+                    '))
+                    ->visible(fn () => ! $this->numberPurchased),
 
                 Forms\Components\Radio::make('phone_number_source')
                     ->label('How would you like to get your phone number?')
@@ -535,7 +547,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->live()
                     ->inline()
                     ->inlineLabel(false)
-                    ->disabled($this->numberPurchased),
+                    ->disabled($this->numberPurchased)
+                    ->visible(fn () => ! $this->numberPurchased),
 
                 // Own Number Section
                 Forms\Components\Section::make('Register Your Own Number')
@@ -583,14 +596,18 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             ->defaultCountry('IN')
                             ->initialCountry('IN')
                             ->required()
-                            ->validateFor(
-                                country: ['IN', 'PK', 'BD', 'US'],
-                                type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
-                                lenient: true,
-                            )
+                            // ->validateFor(
+                            //     country: ['IN', 'PK', 'BD', 'US'],
+                            //     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                            //     lenient: true,
+                            // )
                             ->placeholder('+91234567890')
                             ->helperText('Enter the full phone number including country code (e.g., +1 for US, +91 for India).')
-                            ->disabled(fn () => $this->ownNumberRegistered || $this->numberPurchased),
+                            ->disabled(fn () => $this->ownNumberRegistered || $this->numberPurchased)
+                            ->validationMessages([
+                                'required' => 'Please enter your phone number.',
+                                'regex' => 'Please enter a valid phone number in E.164 format (e.g., +1234567890).',
+                            ]),
 
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('registerOwnNumber')
@@ -642,7 +659,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             '))
                             ->visible(fn () => $this->numberPurchased && $this->data['phone_number_source'] === 'use_own_number'),
                     ])
-                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'use_own_number'),
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'use_own_number' && ! $this->numberPurchased),
 
                 // Purchase from Twilio Section
                 Forms\Components\Section::make('Why This Number Works for You')
@@ -653,7 +670,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 view('filament.admin.pages.whatsapp.partials.phone-number-info')->render()
                             )),
                     ])
-                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio' && ! $this->numberPurchased),
 
                 Forms\Components\Select::make('search_country')
                     ->label('Select Country for Phone Number')
@@ -668,7 +685,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                     ->required()
                     ->disabled($this->numberPurchased)
                     ->helperText('Choose the country where you want your WhatsApp number to be registered.')
-                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
+                    ->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio' && ! $this->numberPurchased),
 
                 Forms\Components\Actions::make([
                     Forms\Components\Actions\Action::make('searchNumbers')
@@ -678,8 +695,30 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ])->visible(fn (Get $get): bool => $get('phone_number_source') === 'purchase_twilio'),
 
                 Forms\Components\Placeholder::make('numbers_list')
-                    ->hidden(fn () => ! $this->availableNumbersLoaded || ($this->data['phone_number_source'] ?? 'purchase_twilio') !== 'purchase_twilio')
+                    ->hidden(fn () => ! $this->availableNumbersLoaded || ($this->data['phone_number_source'] ?? 'purchase_twilio') !== 'purchase_twilio' || $this->numberPurchased)
                     ->content(fn () => new HtmlString(view('filament.admin.pages.whatsapp.partials.available-numbers', ['numbers' => $this->availableNumbers])->render())),
+
+                // Phone Number Purchased Success
+                Forms\Components\Placeholder::make('phone_purchased_success')
+                    ->hiddenLabel()
+                    ->visible(fn () => $this->numberPurchased && $this->phoneNumber)
+                    ->content(new HtmlString('
+                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center bg-green-50 dark:bg-green-900/20 rounded-lg">
+                            <div class="w-20 h-20 mb-6 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                                <svg class="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Phone Number Added</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">Your WhatsApp Business number has been successfully registered.</p>
+                            <div class="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <span class="text-lg font-semibold text-green-800 dark:text-green-200">' . e(config('services.twilio.use_sandbox') ? config('services.twilio.sandbox_number') : $this->phoneNumber?->phone_number ?? 'N/A') . '</span>
+                            </div>
+                        </div>
+                    ')),
             ])
             ->afterValidation(function () {
                 $this->setupStep = 4;
@@ -710,7 +749,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             ])
             ->afterValidation(function () {
                 $this->setupStep = 5;
-            });
+            })
+            ->visible(fn () => ! $this->isExistWhatsAppTemplates);
     }
 
     private function getWelcomeCreditsStep(): Forms\Components\Wizard\Step
@@ -734,8 +774,9 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                         ->color('success')
                         ->action('claimWelcomeCredits')
                         ->disabled($this->welcomeCreditsClaimed)
-                        ->icon($this->welcomeCreditsClaimed ? 'heroicon-o-check-circle' : null),
-                ]),
+                        ->icon($this->welcomeCreditsClaimed ? 'heroicon-o-check-circle' : null)
+                        ->visible(fn () => ! $this->welcomeCreditsClaimed),
+                ])->alignCenter(),
             ])
             ->afterValidation(function () {
                 $this->setupStep = 6;
@@ -1132,6 +1173,9 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 'string',
                 'regex:/^\+[1-9]\d{1,14}$/',
             ],
+        ], [
+            'data.own_phone_number.required' => 'Please enter your phone number.',
+            'data.own_phone_number.regex' => 'Please enter a valid phone number in E.164 format (e.g., +1234567890).',
         ]);
 
         $ownNumber = $this->data['own_phone_number'] ?? null;
@@ -1174,6 +1218,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+
+            throw ValidationException::withMessages(['data.own_phone_number' => $e->getMessage()]);
         }
     }
 
