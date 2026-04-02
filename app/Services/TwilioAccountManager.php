@@ -583,7 +583,7 @@ class TwilioAccountManager
                 if ($e->getStatusCode() !== 409) {
                     Log::error('Failed to register own number', [
                         'gym_id' => $gymId,
-                        'phone_number' => $phoneNumber,
+                        'phone_number' => substr($phoneNumber, 0, 4) . '****' . substr($phoneNumber, -2),
                         'error' => $e->getMessage(),
                     ]);
 
