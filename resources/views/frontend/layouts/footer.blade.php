@@ -124,7 +124,7 @@
 
 <!-- Scroll to top button -->
 <button id="scrollTop" aria-label="Scroll to top"
-    class="fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center opacity-0 transition-opacity duration-300 hover:scale-110 transform z-50">
+    class="cursor-pointer fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center opacity-0 transition-opacity duration-300 hover:scale-110 transform z-50">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
     </svg>

@@ -74,11 +74,13 @@ class GymOwnerRegister extends Component
         // Get selected plan from session
         $planId = session('selected_plan_id');
 
-        if (! $planId) {
+        $plan = Plan::active()->find($planId) ?? Plan::active()->trial()->orderByDesc('trial_days')->orderBy('id')->first();
+
+        if (! $plan) {
             return redirect()->route('home')->with('error', 'Plan not selected');
         }
 
-        $this->selectedPlan = Plan::find($planId);
+        $this->selectedPlan = $plan;
     }
 
     public function getBusinessTypes(): Collection
@@ -225,6 +227,19 @@ class GymOwnerRegister extends Component
     public function submit()
     {
         $this->isLoading = true;
+
+        // Revalidate plan at submit time to ensure it's still active
+        $planId = session('selected_plan_id');
+        $plan = Plan::active()->find($planId) ?? Plan::active()->trial()->first();
+
+        if (! $plan) {
+            session()->flash('error', 'Selected plan is no longer available. Please select a new plan.');
+
+            return redirect()->route('home');
+        }
+
+        // Update the confirmed active plan
+        $this->selectedPlan = $plan;
 
         // Validate all steps
         for ($i = 1; $i <= $this->totalSteps; $i++) {
