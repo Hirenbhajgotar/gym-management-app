@@ -74,7 +74,7 @@ class GymOwnerRegister extends Component
         // Get selected plan from session
         $planId = session('selected_plan_id');
 
-        $plan = Plan::find($planId) ?? Plan::query()->trial()->first();
+        $plan = Plan::active()->find($planId) ?? Plan::active()->trial()->first();
 
         if (! $plan) {
             return redirect()->route('home')->with('error', 'Plan not selected');

@@ -91,13 +91,13 @@ class Plan extends Model
      * Scope for active plans
      */
     #[Scope]
-    protected function active(Builder $query)
+    protected function active(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
     #[Scope]
-    protected function trial(Builder $query)
+    protected function trial(Builder $query): Builder
     {
         return $query->where('trial_days', '>', 0);
     }
