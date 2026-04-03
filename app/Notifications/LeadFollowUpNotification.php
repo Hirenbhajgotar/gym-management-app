@@ -43,7 +43,7 @@ class LeadFollowUpNotification extends Notification implements ShouldQueue
             ->line('Scheduled Date: ' . $this->followUp->scheduled_date->format('M d, Y H:i'))
             ->line('Type: ' . $this->followUp->type->getLabel())
             ->line('Notes: ' . $this->followUp->notes)
-            ->action('View Follow-up', url('/admin/leads/' . $this->followUp->lead->id . '/edit'))
+            ->action('View Follow-up', url("/admin/{$this->followUp?->gym?->slug}/leads/{$this->followUp->lead_id}"))
             ->line('Please review and prepare for this follow-up.');
     }
 

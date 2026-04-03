@@ -51,7 +51,7 @@ class FollowUpReminderNotification extends BaseTenantNotification
             ->line('Notes: ' . $this->followUp->notes)
             ->action(
                 'View Follow-up',
-                url('/admin/leads/' . $this->followUp->lead_id . '/edit'),
+                url("/admin/{$this->gym?->slug}/leads/{$this->followUp->lead_id}"),
             )
             ->line('Please make sure to complete this follow-up on time.');
     }
