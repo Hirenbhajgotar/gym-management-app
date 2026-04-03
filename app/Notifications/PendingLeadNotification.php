@@ -46,7 +46,7 @@ class PendingLeadNotification extends BaseTenantNotification
             ->line('Created: ' . $this->lead->created_at->format('M d, Y'))
             ->action(
                 'View Lead',
-                url('/admin/leads/' . $this->lead->id . '/edit'),
+                url("/admin/{$this->gym?->slug}/leads/{$this->lead->id}"),
             )
             ->line('Please follow up with this lead as soon as possible.');
     }

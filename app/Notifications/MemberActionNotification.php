@@ -81,7 +81,7 @@ class MemberActionNotification extends Notification implements ShouldQueue
 
         $message->action(
             'View Members',
-            url('/admin/gym-members')
+            url("/admin/{$this->member?->gym?->slug}/gym-members")
         )->line('Thank you for using our app!');
 
         return $message;
