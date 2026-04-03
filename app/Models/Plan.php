@@ -88,6 +88,21 @@ class Plan extends Model
     }
 
     /**
+     * Scope for active plans
+     */
+    #[Scope]
+    protected function active(Builder $query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    #[Scope]
+    protected function trial(Builder $query)
+    {
+        return $query->where('trial_days', '>', 0);
+    }
+
+    /**
      * Check if the plan has a free trial
      */
     public function hasTrial(): bool
@@ -142,14 +157,5 @@ class Plan extends Model
         $value = $this->getFeatureValue($featureName);
 
         return $value === '-1' ? -1 : (int) $value;
-    }
-
-    /**
-     * Scope for active plans
-     */
-    #[Scope]
-    protected function active(Builder $query)
-    {
-        return $query->where('is_active', true);
     }
 }
