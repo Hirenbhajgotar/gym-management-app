@@ -33,12 +33,13 @@ class GymOwnerRegistrationService
      *
      * @return array{user: User, gym: Gym, subscription: \App\Models\Subscription, subscription_status: string, already_exists: bool}
      */
-    public function createFromRegistrationData(array $registrationData, ?Payment $payment = null): array
+    public function createFromRegistrationData(array $registrationData, ?Payment $payment = null, ?Plan $confirmedPlan = null): array
     {
         try {
             DB::beginTransaction();
 
-            $plan = Plan::findOrFail($registrationData['selected_plan_id']);
+            // Use confirmed active plan if provided, otherwise validate from registration data
+            $plan = $confirmedPlan ?? $this->validateActivePlan($registrationData['selected_plan_id'] ?? null);
 
             // Check if user already exists (idempotency)
             $existingUser = User::where('email', $registrationData['email'])->first();
@@ -143,6 +144,26 @@ class GymOwnerRegistrationService
         ]);
 
         return $payment->fresh();
+    }
+
+    /**
+     * Validate that a plan is active
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpResponseException
+     */
+    protected function validateActivePlan(?int $planId): Plan
+    {
+        if (! $planId) {
+            abort(422, 'No plan selected');
+        }
+
+        $plan = Plan::active()->find($planId);
+
+        if (! $plan) {
+            abort(422, 'Selected plan is no longer available');
+        }
+
+        return $plan;
     }
 
     /**
