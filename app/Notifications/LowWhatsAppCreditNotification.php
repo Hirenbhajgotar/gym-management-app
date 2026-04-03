@@ -31,7 +31,7 @@ class LowWhatsAppCreditNotification extends Notification implements ShouldQueue
             ->line('Your WhatsApp message credit balance is running low.')
             ->line("You currently have **{$this->credit->remaining_credits}** messages remaining (estimated value: **\${$balance}**).")
             ->line('To ensure uninterrupted automated notifications and seamless communication with your members, please consider topping up your balance soon.')
-            ->action('Purchase Credits', url('/admin/whatsapp-setup'))
+            ->action('Purchase Credits', url("/admin/{$this->credit?->gym?->slug}/whatsapp-setup"))
             ->line('Thank you for choosing our platform!');
     }
 
