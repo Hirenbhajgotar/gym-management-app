@@ -19,7 +19,7 @@
                         An All-in-One Gym Management Software solution designed specifically for gyms and fitness centres, offering comprehensive tools for efficient membership management, scheduling, billing, and performance tracking — all within a single integrated platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <button wire:click="startFreeTrial" wire:loading.attr="disabled"
+                        <button wire:click="startFreeTrial" wire:loading.attr="disabled" wire:loading.class.remove="cursor-pointer" wire:loading.class="cursor-not-allowed"
                             class="cursor-pointer w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-lg font-semibold">
                             <span wire:loading.remove wire:target="startFreeTrial">Start a Free Trial</span>
                             <span wire:loading wire:target="startFreeTrial">Starting...</span>
@@ -621,7 +621,7 @@
                         their growth with our platform.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button wire:click="startFreeTrial" wire:loading.attr="disabled"
+                        <button wire:click="startFreeTrial" wire:loading.attr="disabled" wire:loading.class.remove="cursor-pointer" wire:loading.class="cursor-not-allowed"
                             class="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
                                 <span wire:loading.remove wire:target="startFreeTrial">Start Free Trial</span>
                                 <span wire:loading wire:target="startFreeTrial">Starting...</span>
@@ -897,7 +897,7 @@
 
                         <!-- Action Buttons -->
                         <div class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 items-center mx-auto">
-                            <button wire:click="startFreeTrial" wire:loading.attr="disabled"
+                            <button wire:click="startFreeTrial" wire:loading.attr="disabled" wire:loading.class.remove="cursor-pointer" wire:loading.class="cursor-not-allowed"
                                 class="cursor-pointer w-full px-6 py-3 lg:px-8 lg:py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl hover:from-purple-600 hover:to-cyan-600 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 text-base lg:text-lg font-semibold">
                                 <span wire:loading.remove wire:target="startFreeTrial">Try Us Out for Free!</span>
                                 <span wire:loading wire:target="startFreeTrial">Starting...</span>
