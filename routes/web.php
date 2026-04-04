@@ -6,6 +6,7 @@ use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WhatsApp\EmbeddedSignupController;
+use App\Livewire\Frontend\BlogListing;
 use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\ProfileController;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
 Route::get('/', HomeController::class)->name('home');
+
+Route::get('/blog', BlogListing::class)->name('blog');
 
 Route::get('/request-demo', RequestDemo::class)->name('request-demo');
 

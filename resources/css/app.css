@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&family=Inter:wght@100..900&display=swap');
 @import "tailwindcss";
 @import "../../vendor/livewire/flux/dist/flux.css";
 
@@ -384,62 +385,107 @@ select:focus[data-flux-control] {
 }
 
 @theme {
-    --color-surface-dim: #060e20;
-    --color-inverse-primary: #0053dc;
-    --color-error-dim: #d7383b;
-    --color-inverse-on-surface: #4d556b;
-    --color-primary-dim: #316bf3;
-    --color-secondary-container: #3f465c;
-    --color-error: #ff716c;
-    --color-on-error-container: #ffa8a3;
-    --color-surface-container-lowest: #000000;
-    --color-on-primary-fixed: #000000;
-    --color-surface-container: #0f1930;
-    --color-outline: #6d758c;
-    --color-tertiary: #c5ffc9;
-    --color-secondary-fixed-dim: #ccd4ee;
-    --color-on-primary-container: #001e5a;
-    --color-background: #060e20;
-    --color-tertiary-fixed-dim: #5bf083;
-    --color-on-error: #490006;
-    --color-secondary-dim: #ccd4ee;
-    --color-surface-container-highest: #192540;
-    --color-surface-tint: #90abff;
-    --color-on-primary-fixed-variant: #00266e;
-    --color-surface-container-low: #091328;
-    --color-outline-variant: #40485d;
-    --color-on-secondary-fixed: #373f54;
-    --color-tertiary-dim: #5bf083;
-    --color-on-surface: #dee5ff;
-    --color-on-secondary-container: #c8d0ea;
-    --color-on-secondary-fixed-variant: #535b71;
-    --color-primary-container: #7b9cff;
-    --color-on-background: #dee5ff;
-    --color-on-primary: #002873;
-    --color-on-tertiary-fixed-variant: #006a2d;
-    --color-on-secondary: #4a5167;
-    --color-secondary-fixed: #dae2fd;
-    --color-inverse-surface: #faf8ff;
-    --color-on-tertiary-container: #005f28;
-    --color-on-tertiary: #00692c;
-    --color-surface-container-high: #141f38;
-    --color-surface-variant: #192540;
-    --color-surface: #060e20;
-    --color-primary-fixed-dim: #658eff;
-    --color-on-surface-variant: #a3aac4;
-    --color-primary: #90abff;
-    --color-error-container: #9f0519;
-    --color-on-tertiary-fixed: #004a1d;
-    --color-tertiary-fixed: #6bff8f;
-    --color-primary-fixed: #7b9cff;
-    --color-tertiary-container: #6bff8f;
-    --color-surface-bright: #1f2b49;
-    --color-secondary: #dae2fd;
-    --color-blue: #bfd1ff;
+    /* FluxFitness Frontend - Kinetic Pulse Theme  */
+    /* Override Filament colors for frontend with Electric Lime theme */
 
-    --font-headline: "Space Grotesk", sans-serif;
+    /* Surface Colors - Deep Charcoal */
+    --color-surface-dim: #0e0e0e;
+    --color-background: #0e0e0e;
+    --color-surface: #0e0e0e;
+    --color-surface-bright: #2c2c2c;
+    --color-surface-container: #1a1919;
+    --color-surface-container-high: #201f1f;
+    --color-surface-container-highest: #262626;
+    --color-surface-container-low: #131313;
+    --color-surface-container-lowest: #000000;
+
+    /* On Surface Colors */
+    --color-on-surface: #ffffff;
+    --color-on-surface-variant: #adaaaa;
+    --color-on-background: #ffffff;
+
+    /* Primary - Electric Lime */
+    /* --color-primary: #ccff00; */
+    --color-primary: #f3ffca;
+    --color-primary-container: #cafd00;
+    --color-on-primary: #516700;
+    --color-on-primary-container: #4a5e00;
+    --color-primary-dim: #beee00;
+    --color-primary-fixed: #cafd00;
+    --color-primary-fixed-dim: #beee00;
+    --color-on-primary-fixed: #3a4a00;
+    --color-on-primary-fixed-variant: #526900;
+
+    /* Other semantic colors (preserve from Filament) */
+    --color-success: #22c55e;
+    --color-success-container: #166534;
+    --color-on-success: #ffffff;
+    --color-on-success-container: #d1fae5;
+
+    --color-warning: #eab308;
+    --color-warning-container: #713f12;
+    --color-on-warning: #ffffff;
+    --color-on-warning-container: #fef9c3;
+
+    --color-danger: #ef4444;
+    --color-danger-container: #7f1d1d;
+    --color-on-danger: #ffffff;
+    --color-on-danger-container: #fee2e2;
+
+    --color-info: #0ea5e9;
+    --color-info-container: #0c4a6e;
+    --color-on-info: #ffffff;
+    --color-on-info-container: #e0f2fe;
+
+    --color-error: #ff7351;
+    --color-error-container: #b92902;
+    --color-on-error: #450900;
+    --color-on-error-container: #ffd2c8;
+
+    --color-outline: #767575;
+    --color-outline-variant: #484847;
+
+    --color-inverse-surface: #fcf9f8;
+    --color-inverse-on-surface: #565555;
+    --color-inverse-primary: #516700;
+
+    --color-tertiary: #ffeea5;
+    --color-tertiary-container: #fce047;
+    --color-tertiary-dim: #edd13a;
+    --color-tertiary-fixed: #fce047;
+    --color-tertiary-fixed-dim: #edd13a;
+    --color-on-tertiary: #665800;
+    --color-on-tertiary-container: #5d5000;
+    --color-on-tertiary-fixed: #483d00;
+    --color-on-tertiary-fixed-variant: #685900;
+
+    --color-secondary: #ece856;
+    --color-secondary-container: #636100;
+    --color-secondary-dim: #ddda49;
+    --color-secondary-fixed: #ece856;
+    --color-secondary-fixed-dim: #ddda49;
+    --color-on-secondary: #565400;
+    --color-on-secondary-container: #fffca4;
+    --color-on-secondary-fixed: #434100;
+    --color-on-secondary-fixed-variant: #605e00;
+
+    /* Typography */
+    --font-headline: "Lexend", sans-serif;
     --font-body: "Inter", sans-serif;
     --font-label: "Inter", sans-serif;
+
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.kinetic-pulse-hover:hover {
+    box-shadow: inset 0 0 20px rgba(202, 253, 0, 0.1);
+}
+
+.editorial-overlap {
+    margin-top: -4rem;
 }
 
 /* Auth Page Decorative Styles */
