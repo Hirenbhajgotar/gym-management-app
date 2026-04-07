@@ -6,6 +6,7 @@ use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WhatsApp\EmbeddedSignupController;
+use App\Livewire\Frontend\BlogDetail;
 use App\Livewire\Frontend\BlogListing;
 use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
@@ -24,6 +25,10 @@ use Livewire\Volt\Volt;
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('/blog', BlogListing::class)->name('blog');
+
+Route::get('/blog/{slug}', BlogDetail::class)->name('blog.show');
+
+Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
 Route::get('/request-demo', RequestDemo::class)->name('request-demo');
 
@@ -163,8 +168,6 @@ Route::get('/{filename}.xml', function (string $filename) {
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
 })->whereIn('filename', config('sitemap.allowed_filenames', []))->name('sitemap');
-
-Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
 // WhatsApp Embedded Signup Routes
 Route::middleware(['auth'])->prefix('whatsapp/embedded-signup')->name('whatsapp.embedded-signup.')->group(function () {
