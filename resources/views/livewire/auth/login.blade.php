@@ -75,7 +75,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
 
 <div>
     
-    <div class="relative min-h-screen flex flex-col md:flex-row bg-surface text-on-surface font-body selection:bg-tertiary selection:text-on-tertiary antialiased overflow-hidden">
+    <div class="relative min-h-screen flex flex-col md:flex-row bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary antialiased overflow-hidden">
         <!-- Noise Texture -->
         <div class="fixed inset-0 noise-overlay z-0"></div>
     
@@ -85,7 +85,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                 <!-- Brand Anchor Header -->
                 <header class="flex items-center gap-3">
                     <a href="{{ route('home') }}" wire:navigate>
-                        <div class="flex items-center gap-2 text-2xl font-black italic tracking-tighter text-tertiary font-space-grotesk uppercase">
+                        <div class="flex text-2xl font-black italic text-primary tracking-tighter font-headline items-center gap-2 uppercase">
                             <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">all_inclusive</span>
                             <span>FluxFitness</span>
                         </div>
@@ -108,8 +108,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                         <div class="space-y-2">
                             <label class="block text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1" for="email">Email address</label>
                             <div class="relative group">
-                                <input wire:model="email" id="email" type="email" required autofocus autocomplete="email" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-tertiary/50 focus:border-tertiary transition-all placeholder:text-outline/50 @error('email') border-error focus:ring-error @enderror" placeholder="coach@fluxfitness.com" />
-                                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-tertiary transition-colors">mail</span>
+                                <input wire:model="email" id="email" type="email" required autofocus autocomplete="email" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-outline/50 @error('email') border-error focus:ring-error @enderror" placeholder="coach@fluxfitness.com" />
+                                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors">mail</span>
                             </div>
                             @error('email')
                                 <p class="text-xs text-error mt-1 ml-1 font-medium">{{ $message }}</p>
@@ -120,7 +120,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                         <div class="space-y-2" x-data="{ showPassword: false }">
                             <label class="block text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1" for="password">Password</label>
                             <div class="relative group">
-                                <input wire:model="password" id="password" x-bind:type="showPassword ? 'text' : 'password'" required autocomplete="current-password" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-tertiary/50 focus:border-tertiary transition-all placeholder:text-outline/50 @error('password') border-error focus:ring-error @enderror" placeholder="••••••••" />
+                                <input wire:model="password" id="password" x-bind:type="showPassword ? 'text' : 'password'" required autocomplete="current-password" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-outline/50 @error('password') border-error focus:ring-error @enderror" placeholder="••••••••" />
                                 <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors focus:outline-none">
                                     <span class="material-symbols-outlined" x-text="showPassword ? 'visibility_off' : 'visibility'">visibility</span>
                                 </button>
@@ -133,8 +133,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                             <div class="flex items-center justify-between pt-2 ml-1">
                                 <label class="relative flex items-center gap-2 cursor-pointer group">
                                     <div class="relative flex items-center justify-center">
-                                        <input type="checkbox" wire:model="remember" class="peer appearance-none w-4 h-4 border border-outline-variant/50 rounded-sm bg-surface-container-lowest checked:bg-tertiary checked:border-tertiary transition-colors focus:ring-2 focus:ring-tertiary/50 focus:outline-none cursor-pointer" />
-                                        <span class="material-symbols-outlined absolute text-[14px] text-on-tertiary-fixed font-bold opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">check</span>
+                                        <input type="checkbox" wire:model="remember" class="peer appearance-none w-4 h-4 border border-outline-variant/50 rounded-sm bg-surface-container-lowest checked:bg-primary checked:border-primary transition-colors focus:ring-2 focus:ring-primary/50 focus:outline-none cursor-pointer" />
+                                        <span class="material-symbols-outlined absolute text-[14px] text-on-primary-fixed font-bold opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">check</span>
                                     </div>
                                     <span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors select-none">Remember me</span>
                                 </label>
@@ -147,10 +147,10 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                     </div>
     
                     <!-- Login Button -->
-                    <button type="submit" wire:loading.attr="disabled" class="w-full flex items-center justify-center gap-2 bg-tertiary text-on-tertiary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-tertiary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer">
+                    <button type="submit" wire:loading.attr="disabled" class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-primary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer">
                         <span wire:loading.remove wire:target="login">Log In</span>
                         <span wire:loading.flex wire:target="login" class="flex items-center gap-2">
-                            <svg class="w-5 h-5 animate-spin text-on-tertiary-fixed" fill="none" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 animate-spin text-on-primary-fixed" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -171,7 +171,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                     @if (Route::has('register'))
                         <p class="text-center text-on-surface-variant font-medium">
                             Don't have an account?
-                            <a href="{{ route('register') }}" wire:navigate class="text-tertiary font-bold hover:underline underline-offset-4 decoration-2">Sign Up</a>
+                            <a href="{{ route('register') }}" wire:navigate class="text-primary font-bold hover:underline underline-offset-4 decoration-2">Sign Up</a>
                         </p>
                     @endif
                 </form>
@@ -182,8 +182,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
         <section class="hidden md:flex relative flex-1 bg-surface-container-lowest items-center justify-center overflow-hidden kinetic-gradient">
             <!-- Background Elements -->
             <div class="absolute inset-0 z-0">
-                <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full"></div>
-                <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-tertiary/5 blur-[120px] rounded-full"></div>
+                <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-primary-container/10 blur-[120px] rounded-full"></div>
+                <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full"></div>
             </div>
     
             <!-- Dashboard Mockup Composition -->
@@ -198,7 +198,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                             </div>
                             <div class="flex gap-2">
                                 <div class="w-2 h-2 rounded-full bg-error/40"></div>
-                                <div class="w-2 h-2 rounded-full bg-tertiary/40"></div>
+                                <div class="w-2 h-2 rounded-full bg-primary/40"></div>
                                 <div class="w-2 h-2 rounded-full bg-primary/40"></div>
                             </div>
                         </div>
@@ -209,14 +209,14 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                                 <div class="flex-1 bg-primary/40 rounded-t-lg h-[65%]"></div>
                                 <div class="flex-1 bg-primary/60 rounded-t-lg h-[50%]"></div>
                                 <div class="flex-1 bg-primary/80 rounded-t-lg h-[85%]"></div>
-                                <div class="flex-1 bg-tertiary rounded-t-lg h-[100%] shadow-[0_0_20px_rgba(197,255,201,0.3)]"></div>
+                                <div class="flex-1 bg-primary-container rounded-t-lg h-[100%] shadow-[0_0_20px_rgba(197,255,201,0.3)]"></div>
                                 <div class="flex-1 bg-primary/50 rounded-t-lg h-[70%]"></div>
                                 <div class="flex-1 bg-primary/30 rounded-t-lg h-[45%]"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="h-16 bg-surface-container-highest/50 rounded-xl border border-white/5 p-3">
                                     <div class="h-2 w-12 bg-on-surface-variant/20 rounded mb-2"></div>
-                                    <div class="h-4 w-20 bg-tertiary/20 rounded"></div>
+                                    <div class="h-4 w-20 bg-primary/20 rounded"></div>
                                 </div>
                                 <div class="h-16 bg-surface-container-highest/50 rounded-xl border border-white/5 p-3">
                                     <div class="h-2 w-12 bg-on-surface-variant/20 rounded mb-2"></div>
@@ -229,8 +229,8 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
                     <!-- Floating Stat Badges -->
                     <div class="absolute -top-10 -right-6 glass-card px-6 py-4 rounded-2xl shadow-xl transform rotate-[5deg] transition-all group-hover:translate-y-[-10px]">
                         <div class="flex items-center gap-3">
-                            <div class="p-2 bg-tertiary/20 rounded-lg">
-                                <span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+                            <div class="p-2 bg-primary/20 rounded-lg">
+                                <span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
                             </div>
                             <div>
                                 <div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{{ config('app.platform_state_badges.members_managed.title') }}</div>
@@ -253,7 +253,7 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
     
                     <div class="absolute top-1/2 -translate-y-1/2 -left-12 glass-card px-5 py-3 rounded-2xl shadow-xl hidden lg:block transition-all group-hover:translate-x-[-10px]">
                         <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(197,255,201,0.8)]"></div>
+                            <div class="w-3 h-3 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(197,255,201,0.8)]"></div>
                             <div class="text-sm font-bold tracking-tight text-on-surface">{{ config('app.platform_state_badges.retention_rate.value') }} {{ config('app.platform_state_badges.retention_rate.title') }}</div>
                         </div>
                     </div>
@@ -261,10 +261,10 @@ new #[Layout('components.layouts.blank', ['title' => 'Login | Fluxfitness | Gym 
     
                 <!-- Tagline Overlay -->
                 <div class="mt-24 space-y-4 relative">
-                    <div class="h-[2px] w-20 bg-tertiary mb-6"></div>
+                    <div class="h-[2px] w-20 bg-primary mb-6"></div>
                     <h2 class="font-headline font-extrabold text-6xl lg:text-7xl leading-[0.9] tracking-tighter text-on-surface drop-shadow-2xl">
                         CONTINUOUS <br />
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary">FITNESS</span> <br />
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">FITNESS</span> <br />
                         EVOLUTION
                     </h2>
                 </div>
