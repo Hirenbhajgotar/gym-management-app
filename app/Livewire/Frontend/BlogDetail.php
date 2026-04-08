@@ -41,7 +41,7 @@ class BlogDetail extends Component
                 'category' => $blog->category->getLabel(),
                 'author' => $blog->author,
                 'readTime' => $blog->read_time ?? '5 min read',
-                'image' => $blog->image_url,
+                'image' => $blog->full_image_url,
                 'slug' => $blog->slug,
             ])->toArray();
     }
@@ -91,7 +91,7 @@ class BlogDetail extends Component
      */
     public function getOgImage(): ?string
     {
-        return $this->blog->og_image ?: $this->blog->image_url;
+        return $this->blog->og_image ?: $this->blog->full_image_url;
     }
 
     public function render()

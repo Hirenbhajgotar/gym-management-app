@@ -7,8 +7,10 @@ use App\Observers\BlogObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 #[ObservedBy([BlogObserver::class])]
 class Blog extends Model
@@ -87,5 +89,22 @@ class Blog extends Model
         }
 
         return asset('storage/' . $this->image_url);
+    }
+
+    protected function fullImageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (! $this->image_url) {
+                    return null;
+                }
+
+                if (str_starts_with($this->image_url, 'http') || str_starts_with($this->image_url, 'https')) {
+                    return $this->image_url;
+                }
+
+                return Storage::disk('public')->url($this->image_url);
+            },
+        );
     }
 }

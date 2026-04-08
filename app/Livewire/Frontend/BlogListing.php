@@ -57,7 +57,7 @@ class BlogListing extends Component
                 'authorRole' => $featured->author_role,
                 'date' => $featured->published_at ? $featured->published_at->format('M d, Y') : $featured->created_at->format('M d, Y'),
                 'readTime' => $featured->read_time ?? '5 min read',
-                'image' => $featured->image_url,
+                'image' => $featured->full_image_url,
                 'slug' => $featured->slug,
             ];
         }
@@ -99,7 +99,7 @@ class BlogListing extends Component
             'category' => $blog->category->getLabel(),
             'author' => $blog->author,
             'readTime' => $blog->read_time ?? '5 min read',
-            'image' => $blog->image_url,
+            'image' => $blog->full_image_url,
             'slug' => $blog->slug,
         ])->toArray();
     }

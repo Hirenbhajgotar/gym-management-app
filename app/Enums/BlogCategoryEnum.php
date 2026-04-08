@@ -42,12 +42,8 @@ enum BlogCategoryEnum: string implements HasLabel
      */
     public static function toArray(): array
     {
-        $array = [];
-
-        foreach (self::cases() as $case) {
-            $array[$case->value] = $case->getLabel();
-        }
-
-        return $array;
+        return collect(self::cases())->mapWithKeys(
+            fn (self $case) => [$case->value => $case->getLabel()]
+        )->toArray();
     }
 }

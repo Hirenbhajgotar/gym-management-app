@@ -39,7 +39,7 @@
             @if($blog->image_url)
             <div class="relative aspect-video rounded-2xl overflow-hidden mb-14 md:mb-16 bg-[#1a1919]">
                 <img 
-                    src="{{ asset('storage/'.$blog->image_url) }}" 
+                    src="{{ $blog->full_image_url }}" 
                     alt="{{ $blog->title }}"
                     class="w-full h-full object-cover"
                 >
@@ -74,7 +74,7 @@
                 <a href="{{ route('blog.show', $article['slug']) }}" class="group bg-[#131313] rounded-xl overflow-hidden hover:bg-[#1a1919] transition-all duration-300 border border-transparent hover:border-[#484847]/30">
                     <div class="relative aspect-video overflow-hidden">
                         <img 
-                            src="{{ asset('storage/'.$article['image']) }}" 
+                            src="{{ $article['image'] }}" 
                             alt="{{ $article['title'] }}"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         >

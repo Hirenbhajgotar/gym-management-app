@@ -61,7 +61,7 @@
             class="relative group overflow-hidden rounded-2xl bg-surface-container-low grid md:grid-cols-12 items-stretch">
             <div class="md:col-span-7 relative h-[400px] md:h-auto overflow-hidden">
                 <a href="{{ route('blog.show', $featuredArticle['slug']) }}">
-                    <img src="{{ asset('storage/'.$featuredArticle['image']) }}" 
+                    <img src="{{ $featuredArticle['image'] }}" 
                             alt="{{ $featuredArticle['title'] }}"
                             class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80"
                     />
@@ -111,7 +111,7 @@
                 <!-- Image -->
                 <div class="relative aspect-video overflow-hidden">
                     <img 
-                        src="{{ asset('storage/' . $article['image']) }}" 
+                        src="{{ $article['image'] }}" 
                         alt="{{ $article['title'] }}"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     >

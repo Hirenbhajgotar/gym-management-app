@@ -39,8 +39,8 @@
     margin: 0 0 1.4rem;
     color: var(--text-on-surface);
     line-height: 1.625;
-    font-size: 1.25rem !important;
-    font-family: 'Inter', sans-serif !important;
+    font-size: 1.07rem;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Blockquote */
