@@ -28,9 +28,9 @@
     <link rel="preload" as="image" href="{{ asset('images/banner.webp') }}" fetchpriority="high">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}">
-    <meta property="og:description" content="{{ $seoDescription }}">
-    <meta property="og:image" content="{{ asset('images/banner.webp') }}">
+    <meta property="og:title" content="{{ $ogTitle ?? $title ?? 'Gym Management Software for Indian Gyms | FluxFitness' }}">
+    <meta property="og:description" content="{{ $ogDescription ?? $seoDescription }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('images/banner.webp') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
     <meta property="og:type" content="website">

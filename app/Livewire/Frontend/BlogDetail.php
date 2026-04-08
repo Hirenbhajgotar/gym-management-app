@@ -33,7 +33,7 @@ class BlogDetail extends Component
         $this->relatedArticles = Blog::where('is_published', true)
             ->where('id', '!=', $this->blog->id)
             ->where('category', $this->blog->category)
-            ->limit(3)
+            ->limit(2)
             ->get()
             ->map(fn (Blog $blog) => [
                 'title' => $blog->title,
@@ -97,12 +97,15 @@ class BlogDetail extends Component
     public function render()
     {
         return view('livewire.frontend.blog-detail')
-            ->title($this->blog->meta_title ?? $this->blog->title)
+            ->title($this->getMetaTitle())
             ->layout('frontend.layouts.blog', [
                 'seo' => [
-                    'description' => $this->blog->meta_description ?? $this->blog->excerpt,
-                    'keywords' => $this->blog->meta_keywords,
+                    'description' => $this->getMetaDescription(),
+                    'keywords' => $this->getMetaKeywords(),
                 ],
+                'ogTitle' => $this->getOgTitle(),
+                'ogDescription' => $this->getOgDescription(),
+                'ogImage' => $this->getOgImage(),
             ]);
     }
 }
