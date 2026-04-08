@@ -33,7 +33,7 @@ class BlogDetail extends Component
         $this->relatedArticles = Blog::where('is_published', true)
             ->where('id', '!=', $this->blog->id)
             ->where('category', $this->blog->category)
-            ->limit(3)
+            ->limit(2)
             ->get()
             ->map(fn (Blog $blog) => [
                 'title' => $blog->title,

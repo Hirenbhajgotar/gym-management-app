@@ -56,10 +56,31 @@
         <div class="mt-16 pt-10 border-t border-[#484847]/30">
             <h3 class="font-['Lexend'] font-bold text-xl text-white mb-6">Share this article</h3>
             <div class="flex gap-4">
-                <button class="cursor-pointer px-6 py-3 bg-[#1a1919] rounded-xl hover:bg-[#262626] hover:text-[#f3ffca] transition-all duration-300 group border border-[#484847]/30">
+                <button 
+                    type="button"
+                    x-data
+                    @click="
+                        if (navigator.share) {
+                            navigator.share({
+                                title: '{{ $blog->title }}',
+                                url: window.location.href
+                            }).catch(() => {
+                                navigator.clipboard.writeText(window.location.href).then(() => showToast('Link copied!'));
+                            });
+                        } else {
+                            navigator.clipboard.writeText(window.location.href).then(() => showToast('Link copied!'));
+                        }
+                    "
+                    class="cursor-pointer px-6 py-3 bg-[#1a1919] rounded-xl hover:bg-[#262626] hover:text-[#f3ffca] transition-all duration-300 group border border-[#484847]/30">
                     <span class="material-symbols-outlined text-on-surface-variant group-hover:text-[#f3ffca] transition-colors" data-icon="share">share</span>
                 </button>
-                <button class="cursor-pointer px-6 py-3 bg-[#1a1919] rounded-xl hover:bg-[#262626] hover:text-[#f3ffca] transition-all duration-300 group border border-[#484847]/30">
+                <button 
+                    type="button"
+                    x-data
+                    @click="
+                        navigator.clipboard.writeText(window.location.href).then(() => showToast('Link copied!'));
+                    "
+                    class="cursor-pointer px-6 py-3 bg-[#1a1919] rounded-xl hover:bg-[#262626] hover:text-[#f3ffca] transition-all duration-300 group border border-[#484847]/30">
                     <span class="material-symbols-outlined text-on-surface-variant group-hover:text-[#f3ffca] transition-colors" data-icon="link">link</span>
                 </button>
             </div>
@@ -95,3 +116,34 @@
         @endif
     </div>
 </div>
+
+@push('scripts')
+<script>
+function showToast(message) {
+    // Remove existing toast if any
+    const existingToast = document.getElementById('share-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'share-toast';
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-[#262626] text-white rounded-xl shadow-2xl border border-[#484847]/50 font-[\'Lexend\'] text-sm font-medium transform transition-all duration-300 translate-y-4 opacity-0';
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+    });
+
+    // Auto remove after 2 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+</script>
+@endpush
