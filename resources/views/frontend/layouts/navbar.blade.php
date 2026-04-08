@@ -35,11 +35,11 @@
                         class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-white font-semibold shadow-lg shadow-purple-500/30">
                         Start Free Trial
                     </a>
+                    <a href="{{ route('request-demo') }}"
+                        class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-white font-semibold shadow-lg shadow-purple-500/30">
+                            Request a Demo
+                    </a>
                 @endguest
-                <a href="{{ route('request-demo') }}"
-                    class="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg hover:from-purple-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 text-white font-semibold shadow-lg shadow-purple-500/30">
-                        Request a Demo
-                </a>
             </div>
 
             <!-- Mobile Menu Button -->
