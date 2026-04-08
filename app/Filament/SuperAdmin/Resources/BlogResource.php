@@ -109,14 +109,12 @@ class BlogResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('meta_title')
                             ->label('Meta Title')
-                            ->maxLength(255)
-                            ->helperText('Title for search engines. Defaults to blog title if empty.'),
+                            ->maxLength(255),
 
                         Forms\Components\Textarea::make('meta_description')
                             ->label('Meta Description')
                             ->maxLength(500)
-                            ->rows(3)
-                            ->helperText('Description for search engines. Defaults to excerpt if empty.'),
+                            ->rows(3),
 
                         Forms\Components\Textarea::make('meta_keywords')
                             ->label('Meta Keywords')
