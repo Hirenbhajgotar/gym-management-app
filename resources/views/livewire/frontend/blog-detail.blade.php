@@ -62,7 +62,7 @@
                     @click="
                         if (navigator.share) {
                             navigator.share({
-                                title: '{{ $blog->title }}',
+                                title: @js($blog->title),
                                 url: window.location.href
                             }).catch(() => {
                                 navigator.clipboard.writeText(window.location.href).then(() => showToast('Link copied!'));
