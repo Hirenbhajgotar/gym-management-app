@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $waba_status
  * @property string|null $waba_mode
  * @property string|null $messaging_service_sid
+ * @property string|null $verify_service_sid
  * @property string|null $meta_business_portfolio_id
  * @property string|null $meta_access_token
  * @property bool $embedded_signup_completed
@@ -67,6 +68,7 @@ class WhatsAppAccount extends Model
         'waba_status',
         'waba_mode',
         'messaging_service_sid',
+        'verify_service_sid',
         'meta_business_portfolio_id',
         'meta_access_token',
         'embedded_signup_completed',

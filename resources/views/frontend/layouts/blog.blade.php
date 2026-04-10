@@ -173,11 +173,16 @@
                     <a href="#" class="text-on-surface-variant hover:text-white transition-colors">Pricing</a>
                     <a href="{{ route('blog') }}" class="text-primary-container font-medium">Blog</a>
                     <a href="#" class="text-on-surface-variant hover:text-white transition-colors">Support</a>
-                    <a href="{{ route('login') }}" class="text-on-surface-variant hover:text-white transition-colors hidden sm:block">Login</a>
-                    <!-- CTA Button -->
-                    <a href="{{ route('gym.register') }}" class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-bold hover:opacity-80 transition-all duration-300 scale-95 active:scale-90">
-                        Start Free Trial
-                    </a>
+                    @auth
+                        <a href="{{ route('profile') }}" class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-bold hover:opacity-80 transition-all duration-300 scale-95 active:scale-90">Profile</a>
+                    @endauth
+                    @guest
+                        <a href="{{ route('login') }}" class="text-on-surface-variant hover:text-white transition-colors hidden sm:block">Login</a>
+                        <!-- CTA Button -->
+                        <a href="{{ route('gym.register') }}" class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-bold hover:opacity-80 transition-all duration-300 scale-95 active:scale-90">
+                            Start Free Trial
+                        </a>
+                    @endguest
                 </div>
                 <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-primary">
                     <svg x-show="!mobileMenuOpen" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,10 +227,10 @@
                         <a href="{{ route('gym.register') }}" class="text-center bg-primary text-on-primary-container px-10 py-4 rounded font-bold hover:opacity-80 transition-all duration-300 active:scale-95">
                             Start Free Trial
                         </a>
+                        <a href="{{ route('request-demo') }}" class="text-center bg-primary text-on-primary-container px-10 py-4 rounded font-bold hover:opacity-80 transition-all duration-300 active:scale-95">
+                            Request a Demo
+                        </a>
                     @endguest
-                    <a href="{{ route('request-demo') }}" class="text-center bg-primary text-on-primary-container px-10 py-4 rounded font-bold hover:opacity-80 transition-all duration-300 active:scale-95">
-                        Request a Demo
-                    </a>
                 </div>
             </div>
         </div>

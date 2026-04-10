@@ -10,14 +10,17 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
+    libmagickwand-dev \
+    imagemagick \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql intl zip pcntl \
     && docker-php-ext-enable pcntl
 
 
-# ✅ Install Redis using PECL
+# Install Redis and Imagick using PECL
 RUN pecl install redis \
-    && docker-php-ext-enable redis
+    && pecl install imagick \
+    && docker-php-ext-enable redis imagick
 
 # Install Node.js and npm (for Filament frontend assets)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \

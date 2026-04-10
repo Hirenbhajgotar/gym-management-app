@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
 /**
@@ -39,6 +40,7 @@ class GymSettings extends Page implements HasActions, HasForms
         'payment_reminders',
         'followup_reminders',
         'lead_reminders_notifications',
+        'qr_checkin_otp_enabled',
     ];
 
     public function mount(): void
@@ -183,6 +185,14 @@ class GymSettings extends Page implements HasActions, HasForms
                             ->helperText(
                                 'Send reminders for pending leads that need attention',
                             ),
+
+                        Forms\Components\Toggle::make('qr_checkin_otp_enabled')
+                            ->label('CheckIn/CheckOut OTP')
+                            ->helperText(
+                                'Require OTP verification for QR code attendance check-in',
+                            )
+                            // ->disabled(! $whatsappConfigured)
+                            ->live(),
                     ])
                     ->columns(2),
             ]);
@@ -286,6 +296,21 @@ class GymSettings extends Page implements HasActions, HasForms
                     ])
                     ->columns(2),
             ]);
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+        $gym = $this->getGym();
+
+        foreach ($data as $key => $value) {
+            $this->saveSetting($gym->id, $key, $value);
+        }
+
+        Notification::make()
+            ->title('Settings saved successfully!')
+            ->success()
+            ->send();
     }
 
     private function saveSetting(int $gymId, string $key, $value): void
