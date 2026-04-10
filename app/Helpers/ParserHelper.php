@@ -49,7 +49,6 @@ class ParserHelper
      */
     public static function normalizePhoneNumber(string $phone): string
     {
-        // If doesn't start with +, just return digits
         return preg_replace('/\D/', '', $phone);
     }
 

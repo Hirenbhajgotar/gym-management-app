@@ -89,28 +89,6 @@ class OtpService
             // Create service name based on gym
             $serviceName = $gym->name;
 
-            // Try to find existing service by listing
-            try {
-                $services = $client->verify->v2->services->read();
-
-                foreach ($services as $service) {
-                    if ($service->friendlyName === $serviceName) {
-                        // Found existing service - save and return
-                        $account->verify_service_sid = $service->sid;
-                        $account->save();
-
-                        Log::info('Found existing Verify service', [
-                            'gym_id' => $gym->id,
-                            'service_sid' => $service->sid,
-                        ]);
-
-                        return $service->sid;
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::warning('Could not list Verify services', ['error' => $e->getMessage()]);
-            }
-
             // Create new Verify service if not found
             $newService = $client->verify->v2->services->create(
                 $serviceName

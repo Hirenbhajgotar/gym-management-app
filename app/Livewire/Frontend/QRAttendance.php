@@ -20,7 +20,7 @@ class QRAttendance extends Component
 {
     public ?Gym $gym = null;
 
-    public string $memberId = '';
+    public string $phoneNumber = '';
 
     public string $otp = '';
 
@@ -43,7 +43,7 @@ class QRAttendance extends Component
     protected function rules(): array
     {
         $rules = [
-            'memberId' => ['required', 'string', 'min:5', 'max:20'],
+            'phoneNumber' => ['required', 'string', 'min:5', 'max:20'],
         ];
 
         if ($this->otpSent && $this->useOtpFlow) {
@@ -56,7 +56,7 @@ class QRAttendance extends Component
     protected function validationAttributes(): array
     {
         return [
-            'memberId' => 'phone number',
+            'phoneNumber' => 'phone number',
             'otp' => 'verification code',
         ];
     }
@@ -103,13 +103,13 @@ class QRAttendance extends Component
 
     public function sendOtp(): void
     {
-        $this->validate(['memberId' => 'required|string|min:5|max:20']);
+        $this->validate(['phoneNumber' => 'required|string|min:5|max:20']);
 
         $this->isSubmitting = true;
 
         try {
             // Find member by phone (handles both with and without country code)
-            $this->member = $this->findMemberByPhone($this->memberId, $this->gym->id);
+            $this->member = $this->findMemberByPhone($this->phoneNumber, $this->gym->id);
 
             if (! $this->member) {
                 $this->result = [
@@ -304,7 +304,7 @@ class QRAttendance extends Component
         try {
             // Member should already be set from sendOtp validation
             if (! $this->member) {
-                $this->member = $this->findMemberByPhone($this->memberId, $this->gym->id);
+                $this->member = $this->findMemberByPhone($this->phoneNumber, $this->gym->id);
             }
 
             if (! $this->member) {
@@ -373,7 +373,7 @@ class QRAttendance extends Component
 
     public function resetForm(): void
     {
-        $this->reset(['memberId', 'otp', 'result', 'showResult', 'otpSent', 'member']);
+        $this->reset(['phoneNumber', 'otp', 'result', 'showResult', 'otpSent', 'member']);
         Session::forget('qr_checkin_verification');
         Session::forget('qr_checkin_otp');
     }

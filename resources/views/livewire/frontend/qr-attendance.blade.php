@@ -92,7 +92,7 @@
                                     </svg>
                                 </div>
                                 <p class="text-sm text-gray-400">Verification code sent to</p>
-                                <p class="font-medium text-white">{{ $memberId }}</p>
+                                <p class="font-medium text-white">{{ $phoneNumber }}</p>
                             </div>
 
                             <!-- OTP Input -->
@@ -147,18 +147,18 @@
                         <form wire:submit.prevent="sendOtp" class="space-y-6">
                             <!-- Phone Input -->
                             <div>
-                                <label for="memberId" class="block text-sm font-medium text-gray-300 mb-2">
+                                <label for="phoneNumber" class="block text-sm font-medium text-gray-300 mb-2">
                                     Phone Number
                                 </label>
                                 <input
                                     type="tel"
-                                    id="memberId"
-                                    wire:model="memberId"
+                                    id="phoneNumber"
+                                    wire:model="phoneNumber"
                                     placeholder="Enter your registered phone number"
                                     class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                                     autofocus
                                 >
-                                @error('memberId')
+                                @error('phoneNumber')
                                     <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                                 @enderror
                             </div>
