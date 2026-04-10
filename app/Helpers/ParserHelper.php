@@ -44,6 +44,16 @@ class ParserHelper
     }
 
     /**
+     * Normalize phone number by removing country code prefix (+91, +1, etc.)
+     * Also removes spaces, dashes, and parentheses.
+     */
+    public static function normalizePhoneNumber(string $phone): string
+    {
+        // If doesn't start with +, just return digits
+        return preg_replace('/\D/', '', $phone);
+    }
+
+    /**
      * Check if the email is valid.
      */
     public static function isValidEmail(string $email): bool

@@ -4,42 +4,45 @@ namespace App\Models;
 
 use App\Enums\DefaultRole;
 use App\Observers\GymObserver;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
  * @property int $id
  * @property string $name
  * @property string|null $slug
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Address|null $address
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Address|null $address
+ * @property-read Collection<int, Attendances> $attendances
  * @property-read int|null $attendances_count
- * @property-read \App\Models\BusinessDetail|null $businessDetail
- * @property-read \App\Models\User|null $owner
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $gymMembers
+ * @property-read BusinessDetail|null $businessDetail
+ * @property-read User|null $owner
+ * @property-read Collection<int, GymMember> $gymMembers
  * @property-read int|null $gym_members_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
+ * @property-read Collection<int, Lead> $leads
  * @property-read int|null $leads_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
+ * @property-read Collection<int, GymMember> $members
  * @property-read int|null $members_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MembershipPlan> $membershipPlans
+ * @property-read Collection<int, MembershipPlan> $membershipPlans
  * @property-read int|null $membership_plans_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymSetting> $settings
+ * @property-read Collection<int, GymSetting> $settings
  * @property-read int|null $settings_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TenantSocialConfig> $socialConfigs
+ * @property-read Collection<int, TenantSocialConfig> $socialConfigs
  * @property-read int|null $social_configs_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Trainer> $trainers
+ * @property-read Collection<int, Trainer> $trainers
  * @property-read int|null $trainers_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read Collection<int, User> $users
  * @property-read int|null $users_count
  *
  * @method static \Database\Factories\GymFactory factory($count = null, $state = [])
@@ -60,7 +63,7 @@ class Gym extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'logo'];
+    protected $fillable = ['name', 'slug', 'logo', 'qr_code_token'];
 
     // =========================
     // Relationships
@@ -88,16 +91,16 @@ class Gym extends Model
         return $this->morphOne(Address::class, 'addressable');
     }
 
-    /** @return HasMany<\App\Models\GymMember, self> */
+    /** @return HasMany<GymMember, self> */
     public function gymMembers(): HasMany
     {
-        return $this->hasMany(\App\Models\GymMember::class);
+        return $this->hasMany(GymMember::class);
     }
 
-    /** @return HasMany<\App\Models\MembershipPlan, self> */
+    /** @return HasMany<MembershipPlan, self> */
     public function membershipPlans(): HasMany
     {
-        return $this->hasMany(\App\Models\MembershipPlan::class);
+        return $this->hasMany(MembershipPlan::class);
     }
 
     public function attendances(): HasMany
@@ -110,7 +113,7 @@ class Gym extends Model
         return $this->hasOne(BusinessDetail::class);
     }
 
-    /** @return HasMany<\App\Models\TenantSocialConfig, self> */
+    /** @return HasMany<TenantSocialConfig, self> */
     public function socialConfigs(): HasMany
     {
         return $this->hasMany(TenantSocialConfig::class);
@@ -121,37 +124,37 @@ class Gym extends Model
         return $this->hasMany(Lead::class);
     }
 
-    /** @return HasMany<\App\Models\ExpenseCategory, self> */
+    /** @return HasMany<ExpenseCategory, self> */
     public function expenseCategories(): HasMany
     {
         return $this->hasMany(ExpenseCategory::class);
     }
 
-    /** @return HasMany<\App\Models\Expense, self> */
+    /** @return HasMany<Expense, self> */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
     }
 
-    /** @return HasMany<\App\Models\ExpenseBudget, self> */
+    /** @return HasMany<ExpenseBudget, self> */
     public function expenseBudgets(): HasMany
     {
         return $this->hasMany(ExpenseBudget::class);
     }
 
-    /** @return HasMany<\App\Models\ReportGoal, self> */
+    /** @return HasMany<ReportGoal, self> */
     public function reportGoals(): HasMany
     {
         return $this->hasMany(ReportGoal::class);
     }
 
-    /** @return HasMany<\App\Models\ScheduledReport, self> */
+    /** @return HasMany<ScheduledReport, self> */
     public function scheduledReports(): HasMany
     {
         return $this->hasMany(ScheduledReport::class);
     }
 
-    /** @return HasMany<\App\Models\GymSetting, self> */
+    /** @return HasMany<GymSetting, self> */
     public function settings(): HasMany
     {
         return $this->hasMany(GymSetting::class);
@@ -215,9 +218,9 @@ class Gym extends Model
     public static function getCurrentTenantUsers()
     {
         /**
-         * @var \App\Models\Gym $currentTenant
+         * @var Gym $currentTenant
          */
-        $currentTenant = \Filament\Facades\Filament::getTenant();
+        $currentTenant = Filament::getTenant();
 
         if ($currentTenant) {
             return $currentTenant->users();
@@ -283,5 +286,43 @@ class Gym extends Model
         return Attribute::make(
             get: fn () => $this->owner()?->email,
         );
+    }
+
+    // =========================
+    // QR Code Methods
+    // =========================
+
+    /**
+     * Generate or retrieve QR code token for this gym.
+     */
+    public function generateQrCodeToken(): string
+    {
+        if (empty($this->qr_code_token)) {
+            $this->qr_code_token = Str::random(32);
+            $this->save();
+        }
+
+        return $this->qr_code_token;
+    }
+
+    /**
+     * Get the full QR code attendance URL.
+     */
+    public function getQrCodeUrl(): string
+    {
+        $token = $this->generateQrCodeToken();
+
+        return route('attendance.qr', [
+            'gymId' => $this->id,
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Check if QR code token is valid.
+     */
+    public function hasValidQrCodeToken(string $token): bool
+    {
+        return $this->qr_code_token === $token;
     }
 }
