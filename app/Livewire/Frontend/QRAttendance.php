@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Helpers\ParserHelper;
 use App\Models\Attendances;
 use App\Models\Gym;
 use App\Models\GymMember;
@@ -60,12 +61,10 @@ class QRAttendance extends Component
         ];
     }
 
-    public function __construct()
+    public function boot(OtpService $otpService, QRAttendanceService $qrAttendanceService): void
     {
-        // parent::__construct();
-
-        $this->otpService = app(OtpService::class);
-        $this->qrAttendanceService = app(QRAttendanceService::class);
+        $this->otpService = $otpService;
+        $this->qrAttendanceService = $qrAttendanceService;
     }
 
     public function mount(int $gymId, string $token): void
@@ -81,69 +80,25 @@ class QRAttendance extends Component
     }
 
     /**
-     * Normalize phone number by removing country code prefix (+91, +1, etc.)
-     * Also removes spaces, dashes, and parentheses.
-     */
-    private function normalizePhoneNumber(string $phone): string
-    {
-        // Remove all non-digit characters except +
-        $normalized = preg_replace('/[^\d+]/', '', $phone);
-
-        // If starts with +, extract country code and digits
-        if (str_starts_with($normalized, '+')) {
-            // Remove + and get only digits
-            $digits = preg_replace('/\D/', '', $normalized);
-
-            // Return just the digits without country code
-            return $digits;
-        }
-
-        // If doesn't start with +, just return digits
-        return preg_replace('/\D/', '', $normalized);
-    }
-
-    /**
      * Find member by phone number - handles both with and without country code.
      */
     private function findMemberByPhone(string $phone, int $gymId): ?GymMember
     {
-        $normalizedInput = $this->normalizePhoneNumber($phone);
+        $normalizedInput = ParserHelper::normalizePhoneNumber($phone);
 
         if (empty($normalizedInput)) {
             return null;
         }
 
-        // First try exact match
-        $member = GymMember::where('gym_id', $gymId)
-            ->where('phone', $normalizedInput)
-            ->first();
-
-        if ($member) {
-            return $member;
-        }
-
-        // Try with common Indian country code (+91)
-        $withCountryCode = '91' . $normalizedInput;
-        $member = GymMember::where('gym_id', $gymId)
-            ->where('phone', 'LIKE', '%' . $withCountryCode)
-            ->first();
-
-        if ($member) {
-            return $member;
-        }
-
-        // Try matching the end of phone numbers (last 10 digits)
-        // This handles cases where stored number has country code but input doesn't
-        $member = GymMember::where('gym_id', $gymId)
+        // First try exact match or common variations in a single query
+        return GymMember::where('gym_id', $gymId)
             ->where(function ($query) use ($normalizedInput) {
-                // Match if the stored phone ends with the input number
-                $query->where('phone', 'LIKE', '%' . $normalizedInput)
-                    // Or if input ends with the stored phone (input has country code)
+                $query->where('phone', $normalizedInput)
+                    ->orWhere('phone', 'LIKE', '%91' . $normalizedInput)
+                    ->orWhere('phone', 'LIKE', '%' . $normalizedInput)
                     ->orWhere('phone', 'LIKE', $normalizedInput . '%');
             })
             ->first();
-
-        return $member;
     }
 
     public function sendOtp(): void

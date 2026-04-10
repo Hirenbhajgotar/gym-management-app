@@ -243,7 +243,7 @@ class OtpService
         $client = $this->getClient($gym->id);
 
         // Get Verify service SID
-        $serviceSid = self::getVerifyServiceSid($gym);
+        $serviceSid = $this->getVerifyServiceSid($gym);
 
         if (! $serviceSid) {
             return [
@@ -253,7 +253,7 @@ class OtpService
         }
 
         // Format phone
-        $formattedPhone = self::formatPhoneForVerify($phone);
+        $formattedPhone = $this->formatPhoneForVerify($phone);
 
         try {
             $verificationCheck = $client->verify->v2->services($serviceSid)
