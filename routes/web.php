@@ -11,6 +11,7 @@ use App\Livewire\Frontend\BlogListing;
 use App\Livewire\Frontend\CmsPageController;
 use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\ProfileController;
+use App\Livewire\Frontend\QRAttendance;
 use App\Livewire\Frontend\RequestDemo;
 use App\Livewire\GymOwnerRegister;
 use Filament\Actions\Imports\Models\Import;
@@ -193,3 +194,7 @@ Route::get('/consent/biometric', [BiometricConsentController::class, 'show'])
 Route::post('/consent/biometric', [BiometricConsentController::class, 'store'])
     ->name('biometric.consent.store')
     ->middleware('signed');
+
+// QR Code Attendance Routes (public)
+Route::get('/attendance/qr/{gymId}/{token}', QRAttendance::class)
+    ->name('attendance.qr');

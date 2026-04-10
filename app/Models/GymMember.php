@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -412,18 +413,27 @@ class GymMember extends Model
      */
     public function canAccessGym(): bool
     {
+        Log::info('member', [
+            'id' => $this->id,
+        ]);
         // Check if membership is active
         if (! $this->membership_end || $this->membership_end->isPast()) {
+            Log::info('membership end');
+
             return false;
         }
 
         // Check if payment is completed
         if ($this->payment_status !== PaymentStatus::COMPLETED) {
+            Log::info('payment is not completed');
+
             return false;
         }
 
         // Check if frozen
         if ($this->isFrozen()) {
+            Log::info('member is freeze');
+
             return false;
         }
 
