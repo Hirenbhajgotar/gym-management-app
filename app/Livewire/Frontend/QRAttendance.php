@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Enums\ErrorCategory;
+use App\Enums\ErrorPriority;
 use App\Helpers\ParserHelper;
 use App\Models\Attendances;
 use App\Models\Gym;
 use App\Models\GymMember;
+use App\Services\ErrorReportService;
 use App\Services\OtpService;
 use App\Services\QRAttendanceService;
 use Illuminate\Support\Facades\Log;
@@ -129,11 +132,6 @@ class QRAttendance extends Component
                         'success' => false,
                         'message' => 'Your membership is currently frozen.',
                     ];
-                } elseif (! $this->member->isActive()) {
-                    $this->result = [
-                        'success' => false,
-                        'message' => 'Your membership has expired. Please renew to check in.',
-                    ];
                 } else {
                     $this->result = [
                         'success' => false,
@@ -207,10 +205,14 @@ class QRAttendance extends Component
                 $this->checkInWithoutOtp();
             }
         } catch (\Exception $e) {
-            Log::error('QR Attendance OTP Error', [
-                'error' => $e->getMessage(),
-                'gym_id' => $this->gym->id,
-            ]);
+            $errorReportService = app(ErrorReportService::class);
+
+            $errorReportService->manuallyReportException(
+                userDescription: $e->getMessage(),
+                priority: ErrorPriority::HIGH->value,
+                errorCategory: ErrorCategory::FORM_SUBMISSION->value,
+                exceptionId: $e->getTraceAsString(),
+            );
 
             // Fall back to direct check-in on error
             $this->checkInWithoutOtp();
@@ -281,16 +283,20 @@ class QRAttendance extends Component
                 'member_id' => $this->member->id,
             ]);
         } catch (\Exception $e) {
-            Log::error('QR Attendance Verify Error', [
-                'error' => $e->getMessage(),
-                'gym_id' => $this->gym->id,
-            ]);
-
             $this->result = [
                 'success' => false,
                 'message' => 'An error occurred. Please try again.',
             ];
             $this->showResult = true;
+
+            $errorReportService = app(ErrorReportService::class);
+
+            $errorReportService->manuallyReportException(
+                userDescription: $e->getMessage(),
+                priority: ErrorPriority::HIGH->value,
+                errorCategory: ErrorCategory::FORM_SUBMISSION->value,
+                exceptionId: $e->getTraceAsString(),
+            );
         } finally {
             $this->isSubmitting = false;
         }
@@ -325,11 +331,6 @@ class QRAttendance extends Component
                         'success' => false,
                         'message' => 'Your membership is currently frozen.',
                     ];
-                } elseif (! $this->member->isActive()) {
-                    $this->result = [
-                        'success' => false,
-                        'message' => 'Your membership has expired. Please renew to check in.',
-                    ];
                 } else {
                     $this->result = [
                         'success' => false,
@@ -350,22 +351,21 @@ class QRAttendance extends Component
             ]);
 
             $this->showResult = true;
-
-            Log::info('QR Attendance Check-in (direct without OTP)', [
-                'gym_id' => $this->gym->id,
-                'member_id' => $this->member->id,
-            ]);
         } catch (\Exception $e) {
-            Log::error('QR Attendance Direct Check-in Error', [
-                'error' => $e->getMessage(),
-                'gym_id' => $this->gym->id,
-            ]);
-
             $this->result = [
                 'success' => false,
                 'message' => 'An error occurred. Please try again.',
             ];
             $this->showResult = true;
+
+            $errorReportService = app(ErrorReportService::class);
+
+            $errorReportService->manuallyReportException(
+                userDescription: $e->getMessage(),
+                priority: ErrorPriority::HIGH->value,
+                errorCategory: ErrorCategory::FORM_SUBMISSION->value,
+                exceptionId: $e->getTraceAsString(),
+            );
         } finally {
             $this->isSubmitting = false;
         }
