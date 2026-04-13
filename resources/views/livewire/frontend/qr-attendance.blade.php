@@ -148,13 +148,13 @@
                             <!-- Phone Input -->
                             <div>
                                 <label for="phoneNumber" class="block text-sm font-medium text-gray-300 mb-2">
-                                    Phone Number
+                                    Registered Phone Number
                                 </label>
                                 <input
                                     type="tel"
                                     id="phoneNumber"
                                     wire:model="phoneNumber"
-                                    placeholder="Enter your registered phone number"
+                                    placeholder="+911234567897"
                                     class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                                     autofocus
                                 >

@@ -100,6 +100,7 @@ class QRCodeManager extends Page implements HasActions, HasForms
                             // Use larazeus/qr to render with download option
                             $qrHtml = Qr::render(
                                 data: $url,
+                                statePath: 'check_in_qr_code',
                                 downloadable: true
                             );
 

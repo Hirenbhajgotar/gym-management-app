@@ -118,4 +118,8 @@ return [
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
     ],
+
+    'otp' => [
+        'expiry_minutes' => env('OTP_EXPIRY_MINUTES', 5),
+    ],
 ];
