@@ -13,11 +13,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.blank')]
-#[Title('Check In | FluxFitness')]
 class QRAttendance extends Component
 {
     public ?Gym $gym = null;
@@ -38,11 +36,17 @@ class QRAttendance extends Component
 
     public bool $useOtpFlow = false;
 
+    public bool $isCheckout = false;
+
     private ?OtpService $otpService = null;
 
     private ?QRAttendanceService $qrAttendanceService = null;
 
     private ?ErrorReportService $errorReportService = null;
+
+    public $checkInVerificationSessionId = null;
+
+    public $checkOutVerificationSessionId = null;
 
     protected function rules(): array
     {
@@ -86,9 +90,21 @@ class QRAttendance extends Component
 
     public function mount(int $gymId, string $token): void
     {
+        $this->checkInVerificationSessionId = config('session.checkin_verification_id');
+        $this->checkOutVerificationSessionId = config('session.checkout_verification_id');
+
         $this->gym = Gym::find($gymId);
 
-        if (! $this->gym || ! $this->gym->hasValidQrCodeToken($token)) {
+        if (! $this->gym) {
+            abort(404, 'Gym not found.');
+        }
+
+        // Check if this is a check-out QR code
+        if ($this->gym->hasValidCheckoutQrCodeToken($token)) {
+            $this->isCheckout = true;
+        } elseif ($this->gym->hasValidCheckInQrCodeToken($token)) {
+            $this->isCheckout = false;
+        } else {
             abort(404, 'Invalid QR code. Please scan a valid QR code from your gym.');
         }
 
@@ -100,8 +116,6 @@ class QRAttendance extends Component
     {
         $this->validateOnly('phoneNumber');
 
-        $this->isSubmitting = true;
-
         try {
             // Find member by phone (handles both with and without country code)
             $this->member = $this->qrAttendanceService->findMember($this->gym->id, $this->phoneNumber, 'phone');
@@ -112,49 +126,76 @@ class QRAttendance extends Component
                     'message' => 'Member not found with this phone number.',
                 ];
                 $this->showResult = true;
-                $this->isSubmitting = false;
 
                 return;
             }
 
             // Use OTP flow if enabled
             if ($this->useOtpFlow) {
-                // Check if member can access gym
-                if (! $this->member->canAccessGym()) {
-                    $reason = $this->qrAttendanceService->getAccessDeniedReason($this->member);
-                    $this->result = [
-                        'success' => false,
-                        'message' => $reason,
-                    ];
+                // For checkout, check if member has checked in today
+                if ($this->isCheckout) {
+                    $existingAttendance = $this->qrAttendanceService->getTodayAttendance($this->member);
 
-                    $this->showResult = true;
-                    $this->isSubmitting = false;
+                    if (! $existingAttendance) {
+                        $this->result = [
+                            'success' => false,
+                            'message' => 'No check-in found for today. Please check in first before checking out.',
+                        ];
+                        $this->showResult = true;
 
-                    return;
-                }
+                        return;
+                    }
 
-                // Check if already checked in today
-                $existingAttendance = $this->qrAttendanceService->getTodayAttendance($this->member);
+                    if ($existingAttendance->check_out_time) {
+                        $this->result = [
+                            'success' => true,
+                            'message' => 'You have already checked out today.',
+                            'already_checked_out' => true,
+                        ];
+                        $this->showResult = true;
 
-                if ($existingAttendance) {
-                    $this->result = [
-                        'success' => true,
-                        'message' => 'You are already checked in today.',
-                        'already_checked_in' => true,
-                    ];
-                    $this->showResult = true;
-                    $this->isSubmitting = false;
+                        return;
+                    }
+                } else {
+                    // Check if member can access gym (for check-in)
+                    if (! $this->member->canAccessGym()) {
+                        $reason = $this->qrAttendanceService->getAccessDeniedReason($this->member);
+                        $this->result = [
+                            'success' => false,
+                            'message' => $reason,
+                        ];
 
-                    return;
+                        $this->showResult = true;
+
+                        return;
+                    }
+
+                    // Check if already checked in today
+                    $existingAttendance = $this->qrAttendanceService->getTodayAttendance($this->member);
+
+                    if ($existingAttendance) {
+                        $this->result = [
+                            'success' => true,
+                            'message' => 'You are already checked in today.',
+                            'already_checked_in' => true,
+                        ];
+                        $this->showResult = true;
+
+                        return;
+                    }
                 }
 
                 // Use OtpService to send verification via Twilio Verify API
                 $otpResult = $this->otpService->sendVerification($this->member, $this->gym);
 
                 if (! $otpResult['success']) {
-                    // If OTP fails (not configured, etc), fall back to direct check-in
+                    // If OTP fails (not configured, etc), fall back to direct check-in/check-out
                     if (isset($otpResult['otp_disabled']) || isset($otpResult['whatsapp_not_configured'])) {
-                        $this->checkInWithoutOtp();
+                        if ($this->isCheckout) {
+                            $this->checkOutWithoutOtp();
+                        } else {
+                            $this->checkInWithoutOtp();
+                        }
 
                         return;
                     }
@@ -164,23 +205,26 @@ class QRAttendance extends Component
                         'message' => $otpResult['message'] ?? 'Failed to send verification code.',
                     ];
                     $this->showResult = true;
-                    $this->isSubmitting = false;
 
                     return;
                 }
 
                 // Store verification SID for later verification
-                Session::put('qr_checkin_verification', [
+                $sessionKey = $this->isCheckout ? $this->checkOutVerificationSessionId : $this->checkInVerificationSessionId;
+                Session::put($sessionKey, [
                     'sid' => $otpResult['verification_sid'] ?? null,
                     'member_id' => $this->member->id,
                     'expires' => now()->addMinutes((int) config('services.otp.expiry_minutes', 5))->timestamp,
                 ]);
 
                 $this->otpSent = true;
-                $this->isSubmitting = false;
             } else {
-                // Direct check-in without OTP
-                $this->checkInWithoutOtp();
+                // Direct check-in/check-out without OTP
+                if ($this->isCheckout) {
+                    $this->checkOutWithoutOtp();
+                } else {
+                    $this->checkInWithoutOtp();
+                }
             }
         } catch (\Exception $e) {
             $this->errorReportService->manuallyReportException(
@@ -202,7 +246,8 @@ class QRAttendance extends Component
         $this->validateOnly('otp');
 
         try {
-            $sessionData = Session::get('qr_checkin_verification');
+            $sessionKey = $this->isCheckout ? $this->checkOutVerificationSessionId : $this->checkInVerificationSessionId;
+            $sessionData = Session::get($sessionKey);
 
             if (! $sessionData) {
                 $this->result = [
@@ -216,7 +261,7 @@ class QRAttendance extends Component
 
             // Check expiry
             if (now()->timestamp > $sessionData['expires']) {
-                Session::forget('qr_checkin_verification');
+                Session::forget($sessionKey);
                 $this->result = [
                     'success' => false,
                     'message' => 'Verification code expired. Please try again.',
@@ -251,19 +296,28 @@ class QRAttendance extends Component
                 return;
             }
 
-            // Create attendance
-            $this->result = $this->qrAttendanceService->checkIn([
-                'gym_id' => $this->gym->id,
-                'member_id' => $this->member->id,
-                'identifier' => 'member_id',
-            ]);
+            // Create attendance or check-out based on mode
+            if ($this->isCheckout) {
+                $this->result = $this->qrAttendanceService->checkOut([
+                    'gym_id' => $this->gym->id,
+                    'member_id' => $this->member->id,
+                    'identifier' => 'phone',
+                ]);
+            } else {
+                $this->result = $this->qrAttendanceService->checkIn([
+                    'gym_id' => $this->gym->id,
+                    'member_id' => $this->member->id,
+                    'identifier' => 'phone',
+                ]);
+            }
 
             // Clear session
-            Session::forget('qr_checkin_verification');
+            Session::forget($sessionKey);
 
             $this->showResult = true;
 
-            Log::info('QR Attendance Check-in (OTP verified)', [
+            $logMessage = $this->isCheckout ? 'QR Attendance Check-out (OTP verified)' : 'QR Attendance Check-in (OTP verified)';
+            Log::info($logMessage, [
                 'gym_id' => $this->gym->id,
                 'member_id' => $this->member->id,
             ]);
@@ -310,7 +364,7 @@ class QRAttendance extends Component
             $result = $this->qrAttendanceService->checkIn([
                 'gym_id' => $this->gym->id,
                 'member_id' => $this->member->id,
-                'identifier' => 'member_id',
+                'identifier' => 'phone',
             ]);
 
             if (! $result['success']) {
@@ -343,14 +397,77 @@ class QRAttendance extends Component
         }
     }
 
+    /**
+     * Direct check-out without OTP (fallback when OTP disabled or not configured).
+     */
+    private function checkOutWithoutOtp(): void
+    {
+        try {
+            // Member should already be set from sendOtp validation
+            if (! $this->member) {
+                $this->member = $this->qrAttendanceService->findMember($this->gym->id, $this->phoneNumber, 'phone');
+            }
+
+            if (! $this->member) {
+                $this->result = [
+                    'success' => false,
+                    'message' => 'Member not found with this phone number.',
+                ];
+                $this->showResult = true;
+
+                return;
+            }
+
+            // Create check-out directly
+            $result = $this->qrAttendanceService->checkOut([
+                'gym_id' => $this->gym->id,
+                'member_id' => $this->member->id,
+                'identifier' => 'phone',
+            ]);
+
+            if (! $result['success']) {
+                $this->result = [
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Failed to check out.',
+                ];
+
+                $this->showResult = true;
+
+                return;
+            }
+
+            $this->result = $result;
+            $this->showResult = true;
+        } catch (\Exception $e) {
+            $this->result = [
+                'success' => false,
+                'message' => 'An error occurred. Please try again.',
+            ];
+            $this->showResult = true;
+
+            $this->errorReportService->manuallyReportException(
+                userDescription: $e->getMessage(),
+                priority: ErrorPriority::HIGH->value,
+                errorCategory: ErrorCategory::FORM_SUBMISSION->value,
+            );
+        } finally {
+            $this->isSubmitting = false;
+        }
+    }
+
     public function resetForm(): void
     {
         $this->reset(['phoneNumber', 'otp', 'result', 'showResult', 'otpSent', 'member']);
-        Session::forget('qr_checkin_verification');
+        Session::forget($this->checkInVerificationSessionId);
+        Session::forget($this->checkOutVerificationSessionId);
     }
 
     public function render(): View
     {
-        return view('livewire.frontend.qr-attendance');
+        $title = $this->isCheckout ? 'Check Out' : 'Check In';
+
+        return view('livewire.frontend.qr-attendance')
+            ->layout('components.layouts.blank')
+            ->title($title . ' | ' . config('app.name'));
     }
 }

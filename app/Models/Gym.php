@@ -63,7 +63,7 @@ class Gym extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'logo', 'qr_code_token'];
+    protected $fillable = ['name', 'slug', 'logo', 'qr_code_token', 'qr_code_checkout_token'];
 
     // =========================
     // Relationships
@@ -289,13 +289,13 @@ class Gym extends Model
     }
 
     // =========================
-    // QR Code Methods
+    // CheckIn QR Code Methods
     // =========================
 
     /**
      * Generate or retrieve QR code token for this gym.
      */
-    public function generateQrCodeToken(): string
+    public function generateCheckInQrCodeToken(): string
     {
         if (empty($this->qr_code_token)) {
             $this->qr_code_token = Str::random(32);
@@ -308,11 +308,11 @@ class Gym extends Model
     /**
      * Get the full QR code attendance URL.
      */
-    public function getQrCodeUrl(): string
+    public function getCheckInQrCodeUrl(): string
     {
-        $token = $this->generateQrCodeToken();
+        $token = $this->generateCheckInQrCodeToken();
 
-        return route('attendance.qr', [
+        return route('attendance.qr.checkin', [
             'gymId' => $this->id,
             'token' => $token,
         ]);
@@ -321,8 +321,46 @@ class Gym extends Model
     /**
      * Check if QR code token is valid.
      */
-    public function hasValidQrCodeToken(string $token): bool
+    public function hasValidCheckInQrCodeToken(string $token): bool
     {
         return $this->qr_code_token === $token;
+    }
+
+    // =========================
+    // Checkout QR Code Methods
+    // =========================
+
+    /**
+     * Generate or retrieve QR code token for checkout.
+     */
+    public function generateCheckoutQrCodeToken(): string
+    {
+        if (empty($this->qr_code_checkout_token)) {
+            $this->qr_code_checkout_token = Str::random(32);
+            $this->save();
+        }
+
+        return $this->qr_code_checkout_token;
+    }
+
+    /**
+     * Get the full QR code checkout attendance URL.
+     */
+    public function getCheckoutQrCodeUrl(): string
+    {
+        $token = $this->generateCheckoutQrCodeToken();
+
+        return route('attendance.qr.checkout', [
+            'gymId' => $this->id,
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Check if checkout QR code token is valid.
+     */
+    public function hasValidCheckoutQrCodeToken(string $token): bool
+    {
+        return $this->qr_code_checkout_token === $token;
     }
 }

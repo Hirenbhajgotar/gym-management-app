@@ -214,4 +214,7 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    'checkin_verification_id' => env('CHECKIN_VERIFICATION_SESSION_ID'),
+    'checkout_verification_id' => env('CHECKOUT_VERIFICATION_SESSION_ID'),
+
 ];

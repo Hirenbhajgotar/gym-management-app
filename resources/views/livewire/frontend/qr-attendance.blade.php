@@ -38,22 +38,34 @@
                                             </svg>
                                         </div>
                                         <h3 class="text-2xl font-bold text-yellow-400 mb-2">Already Checked In</h3>
+                                    @elseif(isset($result['already_checked_out']) && $result['already_checked_out'])
+                                        <div class="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <svg class="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-yellow-400 mb-2">Already Checked Out</h3>
                                     @else
                                         <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
                                         </div>
-                                        <h3 class="text-2xl font-bold text-green-400 mb-2">Check-In Successful!</h3>
+                                        <h3 class="text-2xl font-bold text-green-400 mb-2">{{ $isCheckout ? 'Check-Out' : 'Check-In' }} Successful!</h3>
                                     @endif
                                 </div>
 
                                 <p class="text-gray-300 mb-6">{{ $result['message'] ?? 'Check-in successful' }}</p>
 
-                                @if(isset($result['attendance']))
+                                @if(isset($result['attendance']) && $result['attendance'])
                                     <div class="bg-gray-800/50 rounded-lg p-4 mb-6 text-left">
-                                        <p class="text-sm text-gray-400">Check-in Time</p>
-                                        <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_in_time->format('F j, Y g:i A') }}</p>
+                                        @if ($isCheckout)
+                                            <p class="text-sm text-gray-400">Check-out Time</p>
+                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_out_time->format('F j, Y g:i A') }}</p>
+                                        @else
+                                            <p class="text-sm text-gray-400">Check-in Time</p>
+                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_in_time->format('F j, Y g:i A') }}</p>
+                                        @endif
                                     </div>
                                 @endif
                             @else
@@ -63,7 +75,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
                                     </div>
-                                    <h3 class="text-2xl font-bold text-red-400 mb-2">Check-In Failed</h3>
+                                    <h3 class="text-2xl font-bold text-red-400 mb-2">{{ $isCheckout ? 'Check-Out' : 'Check-In' }} Failed</h3>
                                 </div>
 
                                 <p class="text-gray-300 mb-6">{{ $result['message'] ?? 'Something went wrong. Please try again.' }}</p>
@@ -121,7 +133,6 @@
                             <!-- Submit Button -->
                             <button
                                 type="submit"
-                                wire:disabled="isSubmitting"
                                 class="cursor-pointer w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-primary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed"
                             >
                                 <span wire:loading.remove wire:target="verifyOtp" class="flex items-center gap-2">
@@ -172,17 +183,18 @@
                             <!-- Submit Button -->
                             <button
                                 type="submit"
-                                wire:disabled="isSubmitting"
                                 class="cursor-pointer w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-fixed font-headline font-bold text-lg py-4 rounded-xl shadow-xl shadow-primary/10 active:scale-[0.98] transition-all hover:brightness-110 uppercase tracking-wide disabled:opacity-75 disabled:cursor-not-allowed"
                             >
                                 <span wire:loading.remove wire:target="sendOtp">
                                     @if($useOtpFlow)
                                         Send Code
+                                    @elseif($isCheckout)
+                                        Check Out
                                     @else
                                         Check In
                                     @endif
                                 </span>
-                                <x-loading-icon target="sendOtp" variant="text" name="Sending" />
+                                <x-loading-icon target="sendOtp" variant="text" name="Loading" />
                             </button>
                         </form>
                     @endif

@@ -122,4 +122,58 @@ class QRAttendanceService
 
         return 'Your membership has expired. Please renew to check in.';
     }
+
+    /**
+     * Check out a member using QR code attendance.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{success: bool, message: string, attendance?: Attendances}
+     */
+    public function checkOut(array $data): array
+    {
+        $gymId = $data['gym_id'];
+        $memberId = $data['member_id'];
+        $identifier = $data['identifier'] ?? 'member_id';
+
+        // Find the member
+        $member = $this->findMember($gymId, $memberId, $identifier);
+
+        if (! $member) {
+            return [
+                'success' => false,
+                'message' => 'Member not found. Please check your Member ID or phone number and try again.',
+            ];
+        }
+
+        // Get today's attendance
+        $attendance = $this->getTodayAttendance($member);
+
+        if (! $attendance) {
+            return [
+                'success' => false,
+                'message' => 'No check-in found for today. Please check in first before checking out.',
+            ];
+        }
+
+        // Check if already checked out today
+        if ($attendance->check_out_time) {
+            return [
+                'success' => true,
+                'message' => 'You have already checked out today.',
+                'attendance' => $attendance,
+                'already_checked_out' => true,
+            ];
+        }
+
+        // Update attendance with check-out time
+        $attendance->check_out_time = Carbon::now();
+        $attendance->status = AttendanceStatus::Completed;
+        $attendance->save();
+
+        return [
+            'success' => true,
+            'message' => 'Check-out successful! Have a great day.',
+            'attendance' => $attendance,
+        ];
+    }
 }
