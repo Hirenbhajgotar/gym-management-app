@@ -72,16 +72,11 @@ class QRAttendanceService
         $query = GymMember::where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
-            // Only use prefix match - trailing wildcards cannot use indexes
-            return $query->where(function ($query) use ($value) {
-                $query->where('phone', $value);
-            })->first();
+            return $query->where('phone', $value)->first();
         }
 
         // Default: search by member_id (custom_id or id)
-        return $query->where(function ($q) use ($value) {
-            $q->where('id', $value);
-        })->first();
+        return $query->where('id', $value)->first();
     }
 
     /**

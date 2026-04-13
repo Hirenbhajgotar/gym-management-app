@@ -189,16 +189,17 @@ class QRAttendance extends Component
                 errorCategory: ErrorCategory::FORM_SUBMISSION->value
             );
 
-            // Fall back to direct check-in on error
-            $this->checkInWithoutOtp();
+            $this->result = [
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.',
+            ];
+            $this->showResult = true;
         }
     }
 
     public function verifyOtp(): void
     {
         $this->validateOnly('otp');
-
-        $this->isSubmitting = true;
 
         try {
             $sessionData = Session::get('qr_checkin_verification');
@@ -209,7 +210,6 @@ class QRAttendance extends Component
                     'message' => 'Verification session expired. Please try again.',
                 ];
                 $this->showResult = true;
-                $this->isSubmitting = false;
 
                 return;
             }
@@ -222,7 +222,6 @@ class QRAttendance extends Component
                     'message' => 'Verification code expired. Please try again.',
                 ];
                 $this->showResult = true;
-                $this->isSubmitting = false;
 
                 return;
             }
@@ -235,7 +234,6 @@ class QRAttendance extends Component
                     'message' => 'Member not found. Please try again.',
                 ];
                 $this->showResult = true;
-                $this->isSubmitting = false;
 
                 return;
             }
@@ -249,7 +247,6 @@ class QRAttendance extends Component
                     'message' => $verifyResult['message'] ?? 'Invalid verification code. Please try again.',
                 ];
                 $this->showResult = true;
-                $this->isSubmitting = false;
 
                 return;
             }
