@@ -132,11 +132,6 @@ class OtpService
 
         // Check if WhatsApp is configured
         if (! $this->isWhatsAppConfigured($gym)) {
-            Log::warning('QR Attendance OTP skipped - WhatsApp not configured', [
-                'gym_id' => $gym->id,
-                'member_id' => $member->id,
-            ]);
-
             return [
                 'success' => false,
                 'whatsapp_not_configured' => true,
@@ -148,10 +143,6 @@ class OtpService
         $serviceSid = $this->getVerifyServiceSid($gym);
 
         if (! $serviceSid) {
-            Log::error('QR Attendance OTP - No Verify service SID configured', [
-                'gym_id' => $gym->id,
-            ]);
-
             return [
                 'success' => false,
                 'message' => 'Verify service not configured. Please contact gym admin.',
@@ -178,22 +169,11 @@ class OtpService
                 ->create($formattedPhone, 'whatsapp');
 
             if ($verification->status === 'pending') {
-                Log::info('QR Attendance OTP sent successfully via Verify API', [
-                    'gym_id' => $gym->id,
-                    'member_id' => $member->id,
-                    'verification_sid' => $verification->sid,
-                ]);
-
                 return [
                     'success' => true,
                     'verification_sid' => $verification->sid,
                 ];
             }
-
-            Log::warning('QR Attendance OTP - Unexpected status', [
-                'gym_id' => $gym->id,
-                'status' => $verification->status,
-            ]);
 
             return [
                 'success' => false,

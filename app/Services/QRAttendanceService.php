@@ -67,12 +67,15 @@ class QRAttendanceService
     /**
      * Find member by member ID or phone number.
      */
-    protected function findMember(int $gymId, string $value, string $identifier): ?GymMember
+    public function findMember(int $gymId, string $value, string $identifier): ?GymMember
     {
         $query = GymMember::where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
-            return $query->where('phone', $value)->first();
+            // Only use prefix match - trailing wildcards cannot use indexes
+            return $query->where(function ($query) use ($value) {
+                $query->where('phone', $value);
+            })->first();
         }
 
         // Default: search by member_id (custom_id or id)
@@ -84,7 +87,7 @@ class QRAttendanceService
     /**
      * Get today's attendance for the member.
      */
-    protected function getTodayAttendance(GymMember $member): ?Attendances
+    public function getTodayAttendance(GymMember $member): ?Attendances
     {
         return Attendances::where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
@@ -111,7 +114,7 @@ class QRAttendanceService
     /**
      * Get reason why member cannot access gym.
      */
-    protected function getAccessDeniedReason(GymMember $member): string
+    public function getAccessDeniedReason(GymMember $member): string
     {
         if ($member->isFrozen()) {
             $reason = 'Your membership is currently frozen.';
