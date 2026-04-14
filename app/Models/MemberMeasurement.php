@@ -11,6 +11,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[ObservedBy([MemberMeasurementObserver::class])]
+/**
+ * @property int $id
+ * @property int $gym_member_id
+ * @property numeric $weight
+ * @property numeric $height
+ * @property numeric|null $bmi
+ * @property \Illuminate\Support\Carbon $measured_at
+ * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\GymMember $gymMember
+ * @property-read mixed $status
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereBmi($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereGymMemberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereHeight($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereMeasuredAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereWeight($value)
+ * @mixin \Eloquent
+ */
 class MemberMeasurement extends Model
 {
     use HasFactory;

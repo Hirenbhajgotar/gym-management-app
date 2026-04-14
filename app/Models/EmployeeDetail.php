@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $employee_id
  * @property string|null $hire_date
  * @property string|null $employment_type
- * @property string|null $monthly_salary
+ * @property numeric|null $monthly_salary
  * @property array<array-key, mixed>|null $skills
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at

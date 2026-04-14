@@ -10,6 +10,74 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property string $device_name
+ * @property string $device_type
+ * @property string $provider_type
+ * @property array<array-key, mixed>|null $provider_config
+ * @property \App\Enums\BiometricDeviceStatusEnum $status
+ * @property BiometricDevicePurpose $purpose
+ * @property \App\Enums\BiometricDoorControlType|null $door_control_type
+ * @property string|null $door_controller_url
+ * @property string|null $door_controller_token
+ * @property int $unlock_duration_seconds
+ * @property string|null $door_zone
+ * @property string $connection_mode
+ * @property int $poll_interval_seconds
+ * @property \Illuminate\Support\Carbon|null $last_polled_at
+ * @property int|null $assigned_staff_id
+ * @property bool $offline_capable
+ * @property bool $supports_multi_modal
+ * @property \Illuminate\Support\Carbon|null $last_heartbeat_at
+ * @property string|null $firmware_version
+ * @property string|null $device_token
+ * @property int $created_by
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User|null $assignedStaff
+ * @property-read \App\Models\User $createdBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DoorEvent> $doorEvents
+ * @property-read int|null $door_events_count
+ * @property-read \App\Models\Gym $gym
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BiometricTemplate> $templates
+ * @property-read int|null $templates_count
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice active()
+ * @method static \Database\Factories\BiometricDeviceFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice forGym(int $gymId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereAssignedStaffId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereConnectionMode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDeviceName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDeviceToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDeviceType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDoorControlType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDoorControllerToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDoorControllerUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereDoorZone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereFirmwareVersion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereLastHeartbeatAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereLastPolledAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereOfflineCapable($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice wherePollIntervalSeconds($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereProviderConfig($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereProviderType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice wherePurpose($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereSupportsMultiModal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereUnlockDurationSeconds($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BiometricDevice whereUpdatedAt($value)
+ *
+ * @mixin \Eloquent
+ */
 class BiometricDevice extends Model
 {
     use HasFactory;

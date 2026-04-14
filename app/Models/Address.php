@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $state_id
  * @property int|null $country_id
  * @property string|null $postal_code
- * @property string|null $latitude
- * @property string|null $longitude
+ * @property numeric|null $latitude
+ * @property numeric|null $longitude
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

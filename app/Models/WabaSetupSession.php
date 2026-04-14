@@ -11,15 +11,30 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property int $gym_id
  * @property string $session_id
- * @property string $status
+ * @property WabaSetupSessionStatusEnum $status
+ * @property string|null $meta_response
  * @property string|null $waba_id
  * @property string|null $phone_number_id
- * @property string|null $meta_response
  * @property \Illuminate\Support\Carbon $expires_at
  * @property \Illuminate\Support\Carbon|null $completed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereCompletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereExpiresAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereMetaResponse($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession wherePhoneNumberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereSessionId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereWabaId($value)
+ * @mixin \Eloquent
  */
 class WabaSetupSession extends Model
 {

@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $membership_plans_count
  *
  * @method static \Database\Factories\MembershipPlanFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MembershipPlan inactive()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MembershipPlan isActive()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MembershipPlan newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MembershipPlan newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MembershipPlan query()

@@ -22,9 +22,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $check_out_time
  * @property AttendanceStatus|null $status
  * @property string|null $note
+ * @property int|null $device_id
+ * @property string|null $offline_id
+ * @property string|null $check_in_method
+ * @property BiometricTypeEnum|null $biometric_type
+ * @property string|null $provider_type
+ * @property float|null $confidence_score
+ * @property float|null $liveness_score
+ * @property float|null $fusion_score
+ * @property string|null $check_in_result
+ * @property string|null $denial_reason
+ * @property string|null $door_status
+ * @property string|null $door_denial_reason
+ * @property \Illuminate\Support\Carbon|null $door_unlocked_at
+ * @property \Illuminate\Support\Carbon|null $synced_at
+ * @property string|null $check_in_ip
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $attendanceable
+ * @property-read Model|\Eloquent $attendanceable
+ * @property-read \App\Models\BiometricDevice|null $device
+ * @property-read \App\Models\DoorEvent|null $doorEvent
  * @property-read mixed $duration
  * @property-read mixed $duration_in_minutes
  * @property-read \App\Models\Gym $gym
@@ -32,6 +49,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances absent()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances biometric()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byDate($date)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byGym($gymId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances completed()
@@ -40,13 +58,28 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereBiometricType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInIp($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInMethod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInResult($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInTime($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckOutTime($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereConfidenceScore($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDenialReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDeviceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorDenialReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorUnlockedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereFusionScore($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereGymId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereLivenessScore($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereOfflineId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereProviderType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereSyncedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereUpdatedAt($value)
  *
  * @mixin \Eloquent
