@@ -16,11 +16,13 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property int $id
+ * @property string|null $invoice_number
+ * @property string|null $invoice_path
  * @property int|null $gym_id
  * @property int|null $member_id
  * @property int|null $membership_plan_id
  * @property numeric|null $amount
- * @property string|null $currency
+ * @property Currency|null $currency
  * @property string|null $payment_method
  * @property PaymentStatus|null $status
  * @property string|null $notes
@@ -31,6 +33,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
  * @property-read int|null $activities_count
+ * @property-read mixed $formatted_amount
  * @property-read \App\Models\Gym|null $gym
  * @property-read \App\Models\GymMember|null $member
  * @property-read \App\Models\MembershipPlan|null $membershipPlan
@@ -44,6 +47,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereCurrency($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereGymId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereInvoiceNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereInvoicePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMemberId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipEnd($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipPlanId($value)

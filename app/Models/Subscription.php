@@ -34,7 +34,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $features_count
  * @property-read \App\Models\Plan $plan
  * @property-read \App\Models\User $user
- *
  * @method static Builder<static>|Subscription active()
  * @method static Builder<static>|Subscription cancelled()
  * @method static Builder<static>|Subscription expired()
@@ -58,9 +57,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Subscription whereTrialEndsAt($value)
  * @method static Builder<static>|Subscription whereUpdatedAt($value)
  * @method static Builder<static>|Subscription whereUserId($value)
- *
  * @mixin \Eloquent
- * @mixin IdeHelperSubscription
  */
 class Subscription extends Model
 {

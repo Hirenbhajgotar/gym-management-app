@@ -21,29 +21,47 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string|null $slug
+ * @property string|null $qr_code_token
+ * @property string|null $qr_code_checkout_token
+ * @property string|null $logo
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Address|null $address
- * @property-read Collection<int, Attendances> $attendances
+ * @property-read \App\Models\Address|null $address
+ * @property-read Collection<int, \App\Models\Attendances> $attendances
  * @property-read int|null $attendances_count
- * @property-read BusinessDetail|null $businessDetail
- * @property-read User|null $owner
- * @property-read Collection<int, GymMember> $gymMembers
+ * @property-read Collection<int, \App\Models\BiometricDevice> $biometricDevices
+ * @property-read int|null $biometric_devices_count
+ * @property-read \App\Models\BusinessDetail|null $businessDetail
+ * @property-read Collection<int, \App\Models\ExpenseBudget> $expenseBudgets
+ * @property-read int|null $expense_budgets_count
+ * @property-read Collection<int, \App\Models\ExpenseCategory> $expenseCategories
+ * @property-read int|null $expense_categories_count
+ * @property-read Collection<int, \App\Models\Expense> $expenses
+ * @property-read int|null $expenses_count
+ * @property-read Collection<int, \App\Models\GymMember> $gymMembers
  * @property-read int|null $gym_members_count
- * @property-read Collection<int, Lead> $leads
+ * @property-read Collection<int, \App\Models\Lead> $leads
  * @property-read int|null $leads_count
- * @property-read Collection<int, GymMember> $members
+ * @property-read Collection<int, \App\Models\GymMember> $members
  * @property-read int|null $members_count
- * @property-read Collection<int, MembershipPlan> $membershipPlans
+ * @property-read Collection<int, \App\Models\MembershipPlan> $membershipPlans
  * @property-read int|null $membership_plans_count
- * @property-read Collection<int, GymSetting> $settings
+ * @property-read mixed $owner_email
+ * @property-read Collection<int, \App\Models\ReportGoal> $reportGoals
+ * @property-read int|null $report_goals_count
+ * @property-read Collection<int, \App\Models\ScheduledReport> $scheduledReports
+ * @property-read int|null $scheduled_reports_count
+ * @property-read Collection<int, \App\Models\GymSetting> $settings
  * @property-read int|null $settings_count
- * @property-read Collection<int, TenantSocialConfig> $socialConfigs
+ * @property-read Collection<int, \App\Models\TenantSocialConfig> $socialConfigs
  * @property-read int|null $social_configs_count
- * @property-read Collection<int, Trainer> $trainers
+ * @property-read Collection<int, \App\Models\Trainer> $trainers
  * @property-read int|null $trainers_count
- * @property-read Collection<int, User> $users
+ * @property-read Collection<int, \App\Models\User> $users
  * @property-read int|null $users_count
+ * @property-read \App\Models\WhatsAppAccount|null $whatsAppAccount
+ * @property-read Collection<int, \App\Models\WhatsAppTemplate> $whatsAppTemplates
+ * @property-read int|null $whats_app_templates_count
  *
  * @method static \Database\Factories\GymFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newModelQuery()
@@ -51,7 +69,10 @@ use Illuminate\Support\Str;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereLogo($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereQrCodeCheckoutToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereQrCodeToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereUpdatedAt($value)
  *

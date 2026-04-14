@@ -150,7 +150,7 @@ class OtpService
         }
 
         // Get member's phone
-        $phone = $member->phone;
+        $phone = $member?->phone;
 
         if (empty($phone)) {
             return [

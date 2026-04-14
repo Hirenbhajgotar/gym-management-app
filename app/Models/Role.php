@@ -16,7 +16,6 @@ use Spatie\Permission\Models\Role as ModelsRole;
  * @property-read int|null $permissions_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
  * @property-read int|null $users_count
- *
  * @method static \Database\Factories\RoleFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role newQuery()
@@ -29,9 +28,7 @@ use Spatie\Permission\Models\Role as ModelsRole;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role withoutPermission($permissions)
- *
  * @mixin \Eloquent
- * @mixin IdeHelperRole
  */
 class Role extends ModelsRole
 {

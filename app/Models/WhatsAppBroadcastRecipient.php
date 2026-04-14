@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $member_id
  * @property string $phone_number
  * @property string $member_name
- * @property string $status
+ * @property WhatsAppBroadcastRecipientStatusEnum|null $status
  * @property string|null $twilio_message_sid
  * @property string|null $failure_reason
  * @property \Illuminate\Support\Carbon|null $sent_at
@@ -20,19 +20,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\WhatsAppBroadcast $broadcast
- * @property-read \App\Models\Member $member
- *
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient query()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient whereBroadcastId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient whereMemberId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcastRecipient whereStatus($value)
- *
+ * @property-read \App\Models\GymMember $member
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereDeliveredAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereFailureReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereMemberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereMemberName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient wherePhoneNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereSentAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereTwilioMessageSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereWhatsappBroadcastId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppBroadcastRecipient
  */
 class WhatsAppBroadcastRecipient extends Model
 {

@@ -42,7 +42,12 @@ class QRAttendanceService
         }
 
         // Check for existing attendance today (duplicate prevention)
-        $existingAttendance = $this->getTodayAttendance($member);
+        $existingAttendance = Attendances::where('attendanceable_id', $member->id)
+            ->where('attendanceable_type', GymMember::class)
+            ->where('gym_id', $member->gym_id)
+            ->whereDate('check_in_time', Carbon::today())
+            ->lockForUpdate()
+            ->first();
 
         if ($existingAttendance) {
             // Already checked in today - return existing attendance
@@ -67,16 +72,16 @@ class QRAttendanceService
     /**
      * Find member by member ID or phone number.
      */
-    public function findMember(int $gymId, string $value, string $identifier): ?GymMember
+    public function findMember(int $gymId, string $searchValue, string $identifier): ?GymMember
     {
         $query = GymMember::where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
-            return $query->where('phone', $value)->first();
+            return $query->where('phone', $searchValue)->first();
         }
 
-        // Default: search by member_id (custom_id or id)
-        return $query->where('id', $value)->first();
+        // Default: search by member_id (id)
+        return $query->where('id', $searchValue)->first();
     }
 
     /**
@@ -146,7 +151,12 @@ class QRAttendanceService
         }
 
         // Get today's attendance
-        $attendance = $this->getTodayAttendance($member);
+        $attendance = Attendances::where('attendanceable_id', $member->id)
+            ->where('attendanceable_type', GymMember::class)
+            ->where('gym_id', $member->gym_id)
+            ->whereDate('check_in_time', Carbon::today())
+            ->lockForUpdate()
+            ->first();
 
         if (! $attendance) {
             return [

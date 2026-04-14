@@ -17,20 +17,20 @@ use Illuminate\Support\Facades\Crypt;
 /**
  * @property int $id
  * @property int $gym_id
- * @property string $twilio_account_sid
- * @property string $twilio_auth_token
+ * @property string|null $twilio_account_sid
+ * @property string|null $twilio_auth_token
  * @property string|null $waba_id
  * @property string|null $waba_name
- * @property string|null $waba_status
- * @property string|null $waba_mode
+ * @property WabaStatusEnum|null $waba_status
+ * @property WabaModeEnum|null $waba_mode
  * @property string|null $messaging_service_sid
  * @property string|null $verify_service_sid
  * @property string|null $meta_business_portfolio_id
  * @property string|null $meta_access_token
- * @property bool $embedded_signup_completed
+ * @property bool|null $embedded_signup_completed
  * @property string|null $embedded_signup_session_id
- * @property string $status
- * @property string $verification_status
+ * @property WhatsAppAccountStatusEnum|null $status
+ * @property WhatsAppAccountVerificationStatusEnum|null $verification_status
  * @property string|null $business_name
  * @property string|null $business_email
  * @property string|null $business_description
@@ -38,19 +38,49 @@ use Illuminate\Support\Facades\Crypt;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\WhatsAppPhoneNumber $phoneNumber
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\WhatsAppTemplate[] $templates
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppPhoneNumber> $phoneNumber
+ * @property-read int|null $phone_number_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppTemplate> $templates
+ * @property-read int|null $templates_count
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereEmbeddedSignupCompleted($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereEmbeddedSignupSessionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereGymId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMessagingServiceSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMetaAccessToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMetaBusinessPortfolioId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereTwilioAccountSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereTwilioAuthToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerificationStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifiedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifyServiceSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaMode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaStatus($value)
+ * @method bool isActive()
+ * @method bool isVerified()
+ * @method bool hasPhoneNumber()
+ * @method \App\Models\WhatsAppPhoneNumber|null getPhoneNumber()
+ * @method bool hasIndividualWaba()
+ * @method bool hasSharedWaba()
+ * @method bool hasManualWaba()
+ * @method bool isEmbeddedSignupComplete()
+ * @method bool isWabaActive()
+ * @method bool isWabaRestricted()
+ * @method bool isSetupComplete()
  *
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppAccount
  */
 #[ObservedBy([WhatsAppAccountObserver::class])]
 class WhatsAppAccount extends Model

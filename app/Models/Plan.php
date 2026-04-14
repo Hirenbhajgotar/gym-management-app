@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $name
  * @property string $slug
+ * @property bool $is_enterprise
  * @property numeric|null $price_monthly
  * @property numeric|null $price_yearly
  * @property Currency $currency
@@ -26,11 +27,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PlanFeature> $features
  * @property-read int|null $features_count
- *
  * @method static Builder<static>|Plan active()
  * @method static Builder<static>|Plan newModelQuery()
  * @method static Builder<static>|Plan newQuery()
  * @method static Builder<static>|Plan query()
+ * @method static Builder<static>|Plan trial()
  * @method static Builder<static>|Plan whereBadge($value)
  * @method static Builder<static>|Plan whereBriefDescription($value)
  * @method static Builder<static>|Plan whereCreatedAt($value)
@@ -38,15 +39,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Plan whereDescription($value)
  * @method static Builder<static>|Plan whereId($value)
  * @method static Builder<static>|Plan whereIsActive($value)
+ * @method static Builder<static>|Plan whereIsEnterprise($value)
  * @method static Builder<static>|Plan whereName($value)
  * @method static Builder<static>|Plan wherePriceMonthly($value)
  * @method static Builder<static>|Plan wherePriceYearly($value)
  * @method static Builder<static>|Plan whereSlug($value)
  * @method static Builder<static>|Plan whereTrialDays($value)
  * @method static Builder<static>|Plan whereUpdatedAt($value)
- *
  * @mixin \Eloquent
- * @mixin IdeHelperPlan
  */
 #[ObservedBy([PlanObserver::class])]
 class Plan extends Model

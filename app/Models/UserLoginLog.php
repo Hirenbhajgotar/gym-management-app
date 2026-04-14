@@ -20,27 +20,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $login_method
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User $user
+ * @property-read mixed $duration_minutes
  * @property-read \App\Models\Gym $gym
- *
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> query()
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereDeviceType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereIpAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereLoginAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereLoggedOutAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereLoginMethod($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereUserAgent($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<UserLoginLog> whereIsCurrentSession($value)
- *
+ * @property-read mixed $session_duration
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog forUser(int $userId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereDeviceType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereIpAddress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereIsCurrentSession($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoggedOutAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoginAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoginMethod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserAgent($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperUserLoginLog
  */
 class UserLoginLog extends Model
 {

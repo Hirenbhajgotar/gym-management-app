@@ -9,32 +9,42 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $whatsapp_account_id
+ * @property int|null $whatsapp_account_id
  * @property string $phone_number
  * @property string $phone_number_sid
- * @property string|null $channel_sender_sid
+ * @property string|null $channel_sender_sid WhatsApp Channel Sender SID (starts with CN)
  * @property string $country_code
  * @property string|null $friendly_name
  * @property string|null $locality
  * @property string|null $region
- * @property float $monthly_cost
- * @property float $number_cost
- * @property string $status
- * @property string $type
+ * @property numeric $monthly_cost
+ * @property numeric $number_cost
+ * @property WhatsAppPhoneNumberStatusEnum $status
+ * @property WhatsAppPhoneNumberTypesEnum $type
  * @property \Illuminate\Support\Carbon|null $purchased_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\WhatsAppAccount $account
- *
+ * @property-read \App\Models\WhatsAppAccount|null $account
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newModelQuery()
- * @method static \Illuminate\Database\Eloquent.Builder<static>|WhatsAppPhoneNumber newQuery()
- * @method static \Illuminate\Database\Eloquent.Builder<static>|WhatsAppPhoneNumber query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereChannelSenderSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereCountryCode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppPhoneNumber whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePhoneNumber($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereFriendlyName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereLocality($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereMonthlyCost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereNumberCost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePhoneNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePhoneNumberSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePurchasedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereRegion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereWhatsappAccountId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppPhoneNumber
  */
 class WhatsAppPhoneNumber extends Model
 {

@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $whatsapp_template_id
  * @property string|null $twilio_message_sid
  * @property string $recipient
- * @property int $credits_used
- * @property float $twilio_cost
- * @property string $status
+ * @property int|null $credits_used
+ * @property numeric|null $twilio_cost
+ * @property WhatsAppUsageLogStatusEnum|null $status
  * @property string|null $error_message
  * @property \Illuminate\Support\Carbon|null $sent_at
  * @property \Illuminate\Support\Carbon|null $delivered_at
@@ -22,19 +22,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppTemplate|null $template
- *
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog query()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereRecipient($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereSentAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppUsageLog whereStatus($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereCreditsUsed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereDeliveredAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereErrorMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereRecipient($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereSentAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereTwilioCost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereTwilioMessageSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereWhatsappTemplateId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppUsageLog
  */
 class WhatsAppUsageLog extends Model
 {

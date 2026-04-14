@@ -30,8 +30,36 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property-read int|null $activities_count
  * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read mixed $formatted_amount
+ * @property-read mixed $formatted_remaining_amount
+ * @property-read mixed $formatted_spent_amount
+ * @property-read \App\Models\Gym $gym
+ * @method static Builder<static>|ExpenseBudget active()
+ * @method static Builder<static>|ExpenseBudget current()
+ * @method static Builder<static>|ExpenseBudget forCategory(int $categoryId)
+ * @method static Builder<static>|ExpenseBudget forGym(int $gymId)
+ * @method static Builder<static>|ExpenseBudget newModelQuery()
+ * @method static Builder<static>|ExpenseBudget newQuery()
+ * @method static Builder<static>|ExpenseBudget query()
+ * @method static Builder<static>|ExpenseBudget whereAlertSent($value)
+ * @method static Builder<static>|ExpenseBudget whereAlertThreshold($value)
+ * @method static Builder<static>|ExpenseBudget whereAmount($value)
+ * @method static Builder<static>|ExpenseBudget whereCreatedAt($value)
+ * @method static Builder<static>|ExpenseBudget whereCurrency($value)
+ * @method static Builder<static>|ExpenseBudget whereDescription($value)
+ * @method static Builder<static>|ExpenseBudget whereEndDate($value)
+ * @method static Builder<static>|ExpenseBudget whereExpenseCategoryId($value)
+ * @method static Builder<static>|ExpenseBudget whereGymId($value)
+ * @method static Builder<static>|ExpenseBudget whereId($value)
+ * @method static Builder<static>|ExpenseBudget whereIsActive($value)
+ * @method static Builder<static>|ExpenseBudget whereName($value)
+ * @method static Builder<static>|ExpenseBudget wherePeriod($value)
+ * @method static Builder<static>|ExpenseBudget whereStartDate($value)
+ * @method static Builder<static>|ExpenseBudget whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 #[ObservedBy([ExpenseBudgetObserver::class])]
 class ExpenseBudget extends Model

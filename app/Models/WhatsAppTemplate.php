@@ -14,41 +14,56 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
- * @property int $gym_id
+ * @property int|null $gym_id
  * @property string $name
  * @property string $display_name
- * @property string $body
- * @property string $category
- * @property array|null $variables
- * @property int $variable_count
- * @property array|null $variable_placeholder
+ * @property string|null $body
+ * @property string|null $category
+ * @property array<array-key, mixed>|null $variables
+ * @property int|null $variable_count
+ * @property array<array-key, mixed>|null $variable_placeholder
  * @property string|null $twilio_template_sid
  * @property string|null $meta_template_id
- * @property string $status
+ * @property WhatsAppTemplateStatusEnum|null $status
  * @property string|null $rejection_reason
- * @property bool $is_default
- * @property bool $is_active
- * @property int $usage_count
+ * @property bool|null $is_default
+ * @property bool|null $is_active
+ * @property int|null $usage_count
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- *
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read mixed $formatted_body
+ * @property-read \App\Models\Gym|null $gym
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isActive()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isDefault()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate query()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereCategory($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereDisplayName($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereIsDefault($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereName($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppTemplate whereTwilioTemplateSid($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereBody($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereCategory($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereDisplayName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereIsDefault($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereLastUsedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereMetaTemplateId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereRejectionReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereTwilioTemplateSid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereUsageCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereVariableCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereVariablePlaceholder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereVariables($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withoutTrashed()
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppTemplate
  */
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model

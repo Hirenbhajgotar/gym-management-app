@@ -61,10 +61,10 @@
                                     <div class="bg-gray-800/50 rounded-lg p-4 mb-6 text-left">
                                         @if ($isCheckout)
                                             <p class="text-sm text-gray-400">Check-out Time</p>
-                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_out_time->format('F j, Y g:i A') }}</p>
+                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_out_time?->format('F j, Y g:i A') ?? 'N/A' }}</p>
                                         @else
                                             <p class="text-sm text-gray-400">Check-in Time</p>
-                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_in_time->format('F j, Y g:i A') }}</p>
+                                            <p class="text-lg font-semibold text-white">{{ $result['attendance']->check_in_time?->format('F j, Y g:i A') ?? 'N/A' }}</p>
                                         @endif
                                     </div>
                                 @endif

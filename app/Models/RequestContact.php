@@ -13,9 +13,9 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @property int $id
  * @property string $name
  * @property string $email
- * @property string|null $phone
+ * @property \Propaganistas\LaravelPhone\PhoneNumber $phone
  * @property string|null $company_name
- * @property int|null $gym_size
+ * @property int|null $gym_size Number of members or size
  * @property string|null $message
  * @property string|null $ip_address
  * @property string|null $user_agent
@@ -24,10 +24,28 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @property string|null $admin_notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact uncontacted()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact contacted()
+ * @method static \Database\Factories\RequestContactFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact recent()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact uncontacted()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereAdminNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereCompanyName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereContactedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereGymSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereIpAddress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereIsContacted($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact wherePhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUserAgent($value)
+ * @mixin \Eloquent
  */
 #[ObservedBy([RequestContactObserver::class])]
 class RequestContact extends Model

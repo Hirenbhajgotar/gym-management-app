@@ -10,6 +10,7 @@ use App\Services\ErrorReportService;
 use App\Services\OtpService;
 use App\Services\QRAttendanceService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -23,8 +24,6 @@ class QRAttendance extends Component
     public string $phoneNumber = '';
 
     public string $otp = '';
-
-    public bool $isSubmitting = false;
 
     public bool $otpSent = false;
 
@@ -44,9 +43,9 @@ class QRAttendance extends Component
 
     private ?ErrorReportService $errorReportService = null;
 
-    public $checkInVerificationSessionId = null;
+    public ?string $checkInVerificationSessionId = null;
 
-    public $checkOutVerificationSessionId = null;
+    public ?string $checkOutVerificationSessionId = null;
 
     protected function rules(): array
     {
@@ -70,7 +69,7 @@ class QRAttendance extends Component
         ];
     }
 
-    protected function messages()
+    protected function messages(): array
     {
         return [
             'phoneNumber.required' => 'The :attribute is missing.',
@@ -90,8 +89,8 @@ class QRAttendance extends Component
 
     public function mount(int $gymId, string $token): void
     {
-        $this->checkInVerificationSessionId = config('session.checkin_verification_id');
-        $this->checkOutVerificationSessionId = config('session.checkout_verification_id');
+        $this->checkInVerificationSessionId = config('session.checkin_verification_id', 'qr_checkin_verification');
+        $this->checkOutVerificationSessionId = config('session.checkout_verification_id', 'qr_checkout_verification');
 
         $this->gym = Gym::find($gymId);
 
@@ -115,6 +114,15 @@ class QRAttendance extends Component
     public function sendOtp(): void
     {
         $this->validateOnly('phoneNumber');
+
+        $key = 'otp:' . $this->phoneNumber;
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $this->result = ['success' => false, 'message' => 'Too many attempts. Try again later.'];
+            $this->showResult = true;
+
+            return;
+        }
+        RateLimiter::hit($key, 300); // 5 requests per 5 minutes
 
         try {
             // Find member by phone (handles both with and without country code)
@@ -214,6 +222,7 @@ class QRAttendance extends Component
                 Session::put($sessionKey, [
                     'sid' => $otpResult['verification_sid'] ?? null,
                     'member_id' => $this->member->id,
+                    'gym_id' => $this->gym->id,
                     'expires' => now()->addMinutes((int) config('services.otp.expiry_minutes', 5))->timestamp,
                 ]);
 
@@ -227,6 +236,12 @@ class QRAttendance extends Component
                 }
             }
         } catch (\Exception $e) {
+            Log::error('QR Attendance (sendOtp) exception', [
+                'gym_id' => $this->gym->id,
+                'member_id' => $this->member->id,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->errorReportService->manuallyReportException(
                 userDescription: $e->getMessage(),
                 priority: ErrorPriority::HIGH->value,
@@ -301,13 +316,13 @@ class QRAttendance extends Component
                 $this->result = $this->qrAttendanceService->checkOut([
                     'gym_id' => $this->gym->id,
                     'member_id' => $this->member->id,
-                    'identifier' => 'phone',
+                    'identifier' => 'member_id',
                 ]);
             } else {
                 $this->result = $this->qrAttendanceService->checkIn([
                     'gym_id' => $this->gym->id,
                     'member_id' => $this->member->id,
-                    'identifier' => 'phone',
+                    'identifier' => 'member_id',
                 ]);
             }
 
@@ -322,6 +337,12 @@ class QRAttendance extends Component
                 'member_id' => $this->member->id,
             ]);
         } catch (\Exception $e) {
+            Log::error('QR Attendance (verifyOtp) exception', [
+                'gym_id' => $this->gym->id,
+                'member_id' => $this->member->id,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->errorReportService->manuallyReportException(
                 userDescription: $e->getMessage(),
                 priority: ErrorPriority::HIGH->value,
@@ -334,8 +355,6 @@ class QRAttendance extends Component
             ];
             $this->showResult = true;
 
-        } finally {
-            $this->isSubmitting = false;
         }
     }
 
@@ -345,26 +364,11 @@ class QRAttendance extends Component
     private function checkInWithoutOtp(): void
     {
         try {
-            // Member should already be set from sendOtp validation
-            if (! $this->member) {
-                $this->member = $this->qrAttendanceService->findMember($this->gym->id, $this->phoneNumber, 'phone');
-            }
-
-            if (! $this->member) {
-                $this->result = [
-                    'success' => false,
-                    'message' => 'Member not found with this phone number.',
-                ];
-                $this->showResult = true;
-
-                return;
-            }
-
             // Create attendance directly
             $result = $this->qrAttendanceService->checkIn([
-                'gym_id' => $this->gym->id,
-                'member_id' => $this->member->id,
-                'identifier' => 'phone',
+                'gym_id' => $this->gym?->id,
+                'member_id' => $this->member?->id,
+                'identifier' => 'member_id',
             ]);
 
             if (! $result['success']) {
@@ -381,6 +385,12 @@ class QRAttendance extends Component
             $this->result = $result;
             $this->showResult = true;
         } catch (\Exception $e) {
+            Log::error('QR Attendance Check-in (without OTP) exception', [
+                'gym_id' => $this->gym?->id,
+                'member_id' => $this->member?->id,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->result = [
                 'success' => false,
                 'message' => 'An error occurred. Please try again.',
@@ -392,8 +402,6 @@ class QRAttendance extends Component
                 priority: ErrorPriority::HIGH->value,
                 errorCategory: ErrorCategory::FORM_SUBMISSION->value,
             );
-        } finally {
-            $this->isSubmitting = false;
         }
     }
 
@@ -403,26 +411,11 @@ class QRAttendance extends Component
     private function checkOutWithoutOtp(): void
     {
         try {
-            // Member should already be set from sendOtp validation
-            if (! $this->member) {
-                $this->member = $this->qrAttendanceService->findMember($this->gym->id, $this->phoneNumber, 'phone');
-            }
-
-            if (! $this->member) {
-                $this->result = [
-                    'success' => false,
-                    'message' => 'Member not found with this phone number.',
-                ];
-                $this->showResult = true;
-
-                return;
-            }
-
             // Create check-out directly
             $result = $this->qrAttendanceService->checkOut([
-                'gym_id' => $this->gym->id,
-                'member_id' => $this->member->id,
-                'identifier' => 'phone',
+                'gym_id' => $this->gym?->id,
+                'member_id' => $this->member?->id,
+                'identifier' => 'member_id',
             ]);
 
             if (! $result['success']) {
@@ -439,6 +432,12 @@ class QRAttendance extends Component
             $this->result = $result;
             $this->showResult = true;
         } catch (\Exception $e) {
+            Log::error('QR Attendance Check-out (without OTP) exception', [
+                'gym_id' => $this->gym?->id,
+                'member_id' => $this->member?->id,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->result = [
                 'success' => false,
                 'message' => 'An error occurred. Please try again.',
@@ -450,8 +449,6 @@ class QRAttendance extends Component
                 priority: ErrorPriority::HIGH->value,
                 errorCategory: ErrorCategory::FORM_SUBMISSION->value,
             );
-        } finally {
-            $this->isSubmitting = false;
         }
     }
 

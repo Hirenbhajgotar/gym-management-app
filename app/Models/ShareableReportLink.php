@@ -7,6 +7,37 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property int $user_id
+ * @property string $token
+ * @property string $report_type
+ * @property array<array-key, mixed>|null $filters
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink notExpired()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink valid()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereExpiresAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereFilters($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereReportType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUserId($value)
+ * @mixin \Eloquent
+ */
 class ShareableReportLink extends Model
 {
     protected $fillable = [

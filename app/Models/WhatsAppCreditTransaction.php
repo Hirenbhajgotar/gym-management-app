@@ -11,31 +11,37 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $gym_id
  * @property int|null $whatsapp_message_credit_id
  * @property int|null $whatsapp_package_id
- * @property string $type
- * @property int $credits
- * @property int $balance_before
- * @property int $balance_after
- * @property float|null $amount
+ * @property WhatsAppCreditTransactionEnum|null $type
+ * @property int|null $credits
+ * @property int|null $balance_before
+ * @property int|null $balance_after
+ * @property numeric|null $amount
  * @property string|null $payment_reference
  * @property string|null $description
  * @property int|null $admin_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppMessageCredit|null $credit
+ * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppPackage|null $package
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction query()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction whereCredits($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppCreditTransaction whereType($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereAdminId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereBalanceAfter($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereBalanceBefore($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereCredits($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction wherePaymentReference($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereWhatsappMessageCreditId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereWhatsappPackageId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppCreditTransaction
  */
 class WhatsAppCreditTransaction extends Model
 {
