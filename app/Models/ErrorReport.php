@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport autoReported()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport frequent()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport highPriority()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport investigating()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport pending()

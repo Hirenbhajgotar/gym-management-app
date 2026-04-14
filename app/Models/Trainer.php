@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property string|null $name
  * @property string|null $email
  * @property string|null $phone
+ * @property string|null $profile_photo
  * @property string|null $specialization
  * @property int|null $experience_years
  * @property string|null $certifications
@@ -33,7 +34,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read \App\Models\Gym $gym
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
  * @property-read int|null $members_count
- *
  * @method static Builder<static>|Trainer available()
  * @method static \Database\Factories\TrainerFactory factory($count = null, $state = [])
  * @method static Builder<static>|Trainer newModelQuery()
@@ -51,12 +51,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static Builder<static>|Trainer whereIsAvailable($value)
  * @method static Builder<static>|Trainer whereName($value)
  * @method static Builder<static>|Trainer wherePhone($value)
+ * @method static Builder<static>|Trainer whereProfilePhoto($value)
  * @method static Builder<static>|Trainer wherePtSalaryPerMember($value)
  * @method static Builder<static>|Trainer whereSpecialization($value)
  * @method static Builder<static>|Trainer whereUpdatedAt($value)
- *
  * @mixin \Eloquent
- * @mixin IdeHelperTrainer
  */
 #[ObservedBy([TrainerObserver::class])]
 class Trainer extends Model

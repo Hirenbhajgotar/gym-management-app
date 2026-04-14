@@ -28,15 +28,15 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $description
  * @property numeric $amount
  * @property string $currency
- * @property \Illuminate\Support\Carbon $expense_date
+ * @property \Illuminate\Support\Carbon|null $expense_date
  * @property ExpensePaymentMethod $payment_method
  * @property ExpenseStatus $status
  * @property string|null $vendor_name
  * @property string|null $vendor_contact
  * @property string|null $reference_number
- * @property array|null $attachments
- * @property array|null $metadata
- * @property bool $is_recurring
+ * @property array<array-key, mixed>|null $attachments
+ * @property array<array-key, mixed>|null $metadata
+ * @property bool|null $is_recurring
  * @property RecurringFrequency|null $recurring_frequency
  * @property \Illuminate\Support\Carbon|null $next_due_date
  * @property \Illuminate\Support\Carbon|null $submitted_at
@@ -46,10 +46,55 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\ExpenseCategory|null $category
- * @property-read \App\Models\User $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property-read int|null $activities_count
  * @property-read \App\Models\User|null $approvedBy
+ * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read mixed $formatted_amount
+ * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\User $user
+ * @method static Builder<static>|Expense approved()
+ * @method static Builder<static>|Expense draft()
+ * @method static Builder<static>|Expense dueSoon(int $days = 7)
+ * @method static \Database\Factories\ExpenseFactory factory($count = null, $state = [])
+ * @method static Builder<static>|Expense forGym(int $gymId)
+ * @method static Builder<static>|Expense forUser(int $userId)
+ * @method static Builder<static>|Expense inPeriod($startDate, $endDate)
+ * @method static Builder<static>|Expense newModelQuery()
+ * @method static Builder<static>|Expense newQuery()
+ * @method static Builder<static>|Expense paid()
+ * @method static Builder<static>|Expense pending()
+ * @method static Builder<static>|Expense query()
+ * @method static Builder<static>|Expense recurring()
+ * @method static Builder<static>|Expense rejected()
+ * @method static Builder<static>|Expense whereAmount($value)
+ * @method static Builder<static>|Expense whereApprovedAt($value)
+ * @method static Builder<static>|Expense whereApprovedById($value)
+ * @method static Builder<static>|Expense whereAttachments($value)
+ * @method static Builder<static>|Expense whereCreatedAt($value)
+ * @method static Builder<static>|Expense whereCurrency($value)
+ * @method static Builder<static>|Expense whereDescription($value)
+ * @method static Builder<static>|Expense whereExpenseCategoryId($value)
+ * @method static Builder<static>|Expense whereExpenseDate($value)
+ * @method static Builder<static>|Expense whereGymId($value)
+ * @method static Builder<static>|Expense whereId($value)
+ * @method static Builder<static>|Expense whereIsRecurring($value)
+ * @method static Builder<static>|Expense whereMetadata($value)
+ * @method static Builder<static>|Expense whereNextDueDate($value)
+ * @method static Builder<static>|Expense wherePaidAt($value)
+ * @method static Builder<static>|Expense wherePaymentMethod($value)
+ * @method static Builder<static>|Expense whereRecurringFrequency($value)
+ * @method static Builder<static>|Expense whereReferenceNumber($value)
+ * @method static Builder<static>|Expense whereRejectedAt($value)
+ * @method static Builder<static>|Expense whereRejectionReason($value)
+ * @method static Builder<static>|Expense whereStatus($value)
+ * @method static Builder<static>|Expense whereSubmittedAt($value)
+ * @method static Builder<static>|Expense whereTitle($value)
+ * @method static Builder<static>|Expense whereUpdatedAt($value)
+ * @method static Builder<static>|Expense whereUserId($value)
+ * @method static Builder<static>|Expense whereVendorContact($value)
+ * @method static Builder<static>|Expense whereVendorName($value)
+ * @mixin \Eloquent
  */
 #[ObservedBy([ExpenseObserver::class])]
 class Expense extends Model

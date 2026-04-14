@@ -12,6 +12,45 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[ObservedBy([ReportGoalObserver::class])]
+/**
+ * @property int $id
+ * @property int $gym_id
+ * @property int|null $created_by
+ * @property string $metric_type
+ * @property string $period
+ * @property numeric $target_value
+ * @property \Illuminate\Support\Carbon $period_start
+ * @property \Illuminate\Support\Carbon $period_end
+ * @property string|null $notes
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read mixed $current_value
+ * @property-read mixed $days_left
+ * @property-read \App\Models\Gym $gym
+ * @property-read mixed $progress
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal current()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal ofPeriod(string $period)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal ofType(string $type)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereMetricType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal wherePeriod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal wherePeriodEnd($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal wherePeriodStart($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereTargetValue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
 class ReportGoal extends Model
 {
     use HasFactory;

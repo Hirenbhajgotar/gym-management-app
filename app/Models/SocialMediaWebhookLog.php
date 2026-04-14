@@ -18,8 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $processed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\TenantSocialConfig|null $socialConfig
- *
+ * @property-read \App\Models\TenantSocialConfig $socialConfig
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog query()
@@ -34,9 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereTenantSocialConfigId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereWebhookId($value)
- *
  * @mixin \Eloquent
- * @mixin IdeHelperSocialMediaWebhookLog
  */
 class SocialMediaWebhookLog extends Model
 {

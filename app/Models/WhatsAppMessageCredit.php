@@ -8,31 +8,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $gym_id
- * @property int $total_credits
- * @property int $used_credits
- * @property int $remaining_credits
- * @property float $cost_per_message
- * @property float $selling_price_per_msg
- * @property int $welcome_credits_used
- * @property bool $welcome_credits_claimed
+ * @property int|null $total_credits
+ * @property int|null $used_credits
+ * @property int|null $remaining_credits
+ * @property numeric|null $cost_per_message
+ * @property numeric|null $selling_price_per_msg
+ * @property int|null $welcome_credits_used
+ * @property bool|null $welcome_credits_claimed
  * @property bool $is_low_credit_notified
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
- *
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppMessageCredit newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppMessageCredit newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppMessageCredit query()
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppMessageCredit whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent\Builder<static>|WhatsAppMessageCredit whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppMessageCredit whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppMessageCredit whereRemainingCredits($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppMessageCredit whereTotalCredits($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppMessageCredit whereUsedCredits($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereCostPerMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereIsLowCreditNotified($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereLastUsedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereRemainingCredits($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereSellingPricePerMsg($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereTotalCredits($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereUsedCredits($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereWelcomeCreditsClaimed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereWelcomeCreditsUsed($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppMessageCredit
  */
 class WhatsAppMessageCredit extends Model
 {

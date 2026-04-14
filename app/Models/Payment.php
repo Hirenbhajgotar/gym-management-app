@@ -31,6 +31,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property \Illuminate\Support\Carbon|null $refunded_at
  * @property numeric|null $refund_amount
+ * @property string|null $invoice_number
+ * @property string|null $invoice_path
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
@@ -51,11 +53,14 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static>|Payment whereCurrency($value)
  * @method static Builder<static>|Payment whereGymId($value)
  * @method static Builder<static>|Payment whereId($value)
+ * @method static Builder<static>|Payment whereInvoiceNumber($value)
+ * @method static Builder<static>|Payment whereInvoicePath($value)
  * @method static Builder<static>|Payment whereMetadata($value)
  * @method static Builder<static>|Payment wherePaidAt($value)
  * @method static Builder<static>|Payment wherePaymentType($value)
  * @method static Builder<static>|Payment whereRazorpayOrderId($value)
  * @method static Builder<static>|Payment whereRazorpayPaymentId($value)
+ * @method static Builder<static>|Payment whereRazorpaySignature($value)
  * @method static Builder<static>|Payment whereRefundAmount($value)
  * @method static Builder<static>|Payment whereRefundedAt($value)
  * @method static Builder<static>|Payment whereStatus($value)

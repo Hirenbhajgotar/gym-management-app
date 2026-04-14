@@ -13,33 +13,43 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $whatsapp_template_id
  * @property string $title
  * @property string|null $description
- * @property array|null $target_filters
+ * @property array<array-key, mixed>|null $target_filters
  * @property int $target_count
- * @property string $status
+ * @property WhatsAppBroadcastStatusEnum|null $status
  * @property \Illuminate\Support\Carbon|null $scheduled_at
  * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $completed_at
  * @property int $sent_count
  * @property int $failed_count
  * @property int $credits_used
- * @property array|null $message_variables
+ * @property array<array-key, mixed>|null $message_variables
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppBroadcastRecipient> $recipients
+ * @property-read int|null $recipients_count
  * @property-read \App\Models\WhatsAppTemplate $template
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\WhatsAppBroadcastRecipient[] $recipients
- *
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast query()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppBroadcast whereTitle($value)
- *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCompletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCreditsUsed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereFailedCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereGymId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereMessageVariables($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereScheduledAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereSentCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereStartedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTargetCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTargetFilters($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereWhatsappTemplateId($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppBroadcast
  */
 class WhatsAppBroadcast extends Model
 {

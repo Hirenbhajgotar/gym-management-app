@@ -196,5 +196,8 @@ Route::post('/consent/biometric', [BiometricConsentController::class, 'store'])
     ->middleware('signed');
 
 // QR Code Attendance Routes (public)
-Route::get('/attendance/qr/{gymId}/{token}', QRAttendance::class)
-    ->name('attendance.qr');
+Route::get('/attendance/qr-checkin/{gymId}/{token}', QRAttendance::class)
+    ->name('attendance.qr.checkin');
+
+Route::get('/attendance/qr-checkout/{gymId}/{token}', QRAttendance::class)
+    ->name('attendance.qr.checkout');

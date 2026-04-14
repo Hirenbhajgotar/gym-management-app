@@ -30,26 +30,39 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $profile_photo
  * @property string $email
  * @property string|null $phone
- * @property float|null $weight Weight in kg
- * @property float|null $height Height in cm
  * @property int|null $age
  * @property \Illuminate\Support\Carbon|null $dob
  * @property \Illuminate\Support\Carbon|null $membership_start
  * @property \Illuminate\Support\Carbon|null $membership_end
  * @property PaymentStatus|null $payment_status
+ * @property \Illuminate\Support\Carbon|null $latest_payment_at
  * @property int|null $gym_membership_plan_id
  * @property int|null $trainer_id
  * @property int|null $membership_plan_id
  * @property int|null $user_id
+ * @property bool $is_frozen
+ * @property \Illuminate\Support\Carbon|null $frozen_at
+ * @property \Illuminate\Support\Carbon|null $frozen_until
+ * @property string|null $frozen_reason
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $frozen_by
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
  * @property-read int|null $activities_count
  * @property-read \App\Models\Address|null $address
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
  * @property-read int|null $attendances_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BiometricConsent> $biometricConsents
+ * @property-read int|null $biometric_consents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BiometricTemplate> $biometricTemplates
+ * @property-read int|null $biometric_templates_count
+ * @property-read \App\Models\User|null $frozenBy
  * @property-read \App\Models\Gym $gym
+ * @property-read \App\Models\Attendances|null $lastAttendance
+ * @property-read \App\Models\MemberPayment|null $latestPayment
  * @property-read \App\Models\Lead|null $lead
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MemberMeasurement> $measurements
+ * @property-read int|null $measurements_count
  * @property-read \App\Models\MembershipPlan|null $membershipPlan
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
@@ -57,22 +70,28 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read int|null $payments_count
  * @property-read \App\Models\Trainer|null $trainer
  * @property-read \App\Models\User|null $user
- *
  * @method static \Database\Factories\GymMemberFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember frozen()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember hasTrainer()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember membershipActive()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember membershipExpired()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember notFrozen()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereAge($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereDob($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereFrozenAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereFrozenBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereFrozenReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereFrozenUntil($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereGymId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereGymMembershipPlanId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereHeight($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereIsFrozen($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereLatestPaymentAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereMembershipEnd($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereMembershipPlanId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereMembershipStart($value)
@@ -83,9 +102,6 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereTrainerId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereWeight($value)
- *
- * @mixin IdeHelperGymMember
  * @mixin \Eloquent
  */
 class GymMember extends Model

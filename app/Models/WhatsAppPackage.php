@@ -14,31 +14,42 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  * @property string|null $description
  * @property int $message_count
- * @property float $selling_price
- * @property float $twilio_number_cost
- * @property float $twilio_msg_cost_per_unit
+ * @property numeric $selling_price
+ * @property numeric $twilio_number_cost
+ * @property numeric $twilio_msg_cost_per_unit
  * @property int $validity_days
  * @property int $sort_order
  * @property bool $is_active
  * @property bool $is_popular
  * @property bool $includes_number
- * @property array|null $features
+ * @property array<array-key, mixed>|null $features
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- *
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage newQuery()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage query()
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereId($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereMessageCount($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereName($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereSellingPrice($value)
- * @method static \Illuminate\Database\Eloquent\Eloquent Builder<static>|WhatsAppPackage whereSortOrder($value)
- *
+ * @property-read mixed $cost_per_message
+ * @property-read mixed $margin_percentage
+ * @property-read mixed $your_profit
+ * @method static Builder<static>|WhatsAppPackage active()
+ * @method static Builder<static>|WhatsAppPackage newModelQuery()
+ * @method static Builder<static>|WhatsAppPackage newQuery()
+ * @method static Builder<static>|WhatsAppPackage ordered()
+ * @method static Builder<static>|WhatsAppPackage popular()
+ * @method static Builder<static>|WhatsAppPackage query()
+ * @method static Builder<static>|WhatsAppPackage whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppPackage whereDescription($value)
+ * @method static Builder<static>|WhatsAppPackage whereFeatures($value)
+ * @method static Builder<static>|WhatsAppPackage whereId($value)
+ * @method static Builder<static>|WhatsAppPackage whereIncludesNumber($value)
+ * @method static Builder<static>|WhatsAppPackage whereIsActive($value)
+ * @method static Builder<static>|WhatsAppPackage whereIsPopular($value)
+ * @method static Builder<static>|WhatsAppPackage whereMessageCount($value)
+ * @method static Builder<static>|WhatsAppPackage whereName($value)
+ * @method static Builder<static>|WhatsAppPackage whereSellingPrice($value)
+ * @method static Builder<static>|WhatsAppPackage whereSortOrder($value)
+ * @method static Builder<static>|WhatsAppPackage whereTwilioMsgCostPerUnit($value)
+ * @method static Builder<static>|WhatsAppPackage whereTwilioNumberCost($value)
+ * @method static Builder<static>|WhatsAppPackage whereUpdatedAt($value)
+ * @method static Builder<static>|WhatsAppPackage whereValidityDays($value)
  * @mixin \Eloquent
- * @mixin IdeHelperWhatsAppPackage
  */
 #[ObservedBy(WhatsAppPackageObserver::class)]
 class WhatsAppPackage extends Model

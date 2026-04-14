@@ -42,7 +42,12 @@ class QRAttendanceService
         }
 
         // Check for existing attendance today (duplicate prevention)
-        $existingAttendance = $this->getTodayAttendance($member);
+        $existingAttendance = Attendances::where('attendanceable_id', $member->id)
+            ->where('attendanceable_type', GymMember::class)
+            ->where('gym_id', $member->gym_id)
+            ->whereDate('check_in_time', Carbon::today())
+            ->lockForUpdate()
+            ->first();
 
         if ($existingAttendance) {
             // Already checked in today - return existing attendance
@@ -67,16 +72,16 @@ class QRAttendanceService
     /**
      * Find member by member ID or phone number.
      */
-    public function findMember(int $gymId, string $value, string $identifier): ?GymMember
+    public function findMember(int $gymId, string $searchValue, string $identifier): ?GymMember
     {
         $query = GymMember::where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
-            return $query->where('phone', $value)->first();
+            return $query->where('phone', $searchValue)->first();
         }
 
-        // Default: search by member_id (custom_id or id)
-        return $query->where('id', $value)->first();
+        // Default: search by member_id (id)
+        return $query->where('id', $searchValue)->first();
     }
 
     /**
@@ -121,5 +126,64 @@ class QRAttendanceService
         }
 
         return 'Your membership has expired. Please renew to check in.';
+    }
+
+    /**
+     * Check out a member using QR code attendance.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{success: bool, message: string, attendance?: Attendances}
+     */
+    public function checkOut(array $data): array
+    {
+        $gymId = $data['gym_id'];
+        $memberId = $data['member_id'];
+        $identifier = $data['identifier'] ?? 'member_id';
+
+        // Find the member
+        $member = $this->findMember($gymId, $memberId, $identifier);
+
+        if (! $member) {
+            return [
+                'success' => false,
+                'message' => 'Member not found. Please check your Member ID or phone number and try again.',
+            ];
+        }
+
+        // Get today's attendance
+        $attendance = Attendances::where('attendanceable_id', $member->id)
+            ->where('attendanceable_type', GymMember::class)
+            ->where('gym_id', $member->gym_id)
+            ->whereDate('check_in_time', Carbon::today())
+            ->lockForUpdate()
+            ->first();
+
+        if (! $attendance) {
+            return [
+                'success' => false,
+                'message' => 'No check-in found for today. Please check in first before checking out.',
+            ];
+        }
+
+        // Check if already checked out today
+        if ($attendance->check_out_time) {
+            return [
+                'success' => true,
+                'message' => 'You have already checked out today.',
+                'attendance' => $attendance,
+                'already_checked_out' => true,
+            ];
+        }
+
+        // Update attendance with check-out time
+        $attendance->check_out_time = Carbon::now();
+        $attendance->status = AttendanceStatus::Completed;
+        $attendance->save();
+
+        return [
+            'success' => true,
+            'message' => 'Check-out successful! Have a great day.',
+            'attendance' => $attendance,
+        ];
     }
 }
