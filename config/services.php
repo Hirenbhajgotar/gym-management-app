@@ -52,11 +52,15 @@ return [
     ],
 
     'whatsapp' => [
+        // Provider selection: 'twilio' or 'waba' (Meta WhatsApp Business API)
+        'provider' => env('WHATSAPP_PROVIDER', 'waba'),
+
         'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
-        'api_version' => env('WHATSAPP_API_VERSION', 'v18.0'),
+        'api_version' => env('META_API_VERSION', 'v25.0'),
+        'welcome_credits' => env('WHATSAPP_WELCOME_CREDITS', 50),
     ],
 
     'indiamart' => [

@@ -196,8 +196,8 @@ class TwilioAccountManager
     protected function createIndividualWaba(WhatsAppAccount $account, int $gymId, Client $subClient, array $businessProfile): array
     {
         $account->update([
-            'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-            'waba_status' => WabaStatusEnum::PENDING->value,
+            'waba_mode' => WabaModeEnum::INDIVIDUAL,
+            'waba_status' => WabaStatusEnum::PENDING,
         ]);
 
         if (! $account->messaging_service_sid) {
@@ -222,7 +222,7 @@ class TwilioAccountManager
         return [
             'success' => true,
             'messaging_service_sid' => $account->messaging_service_sid,
-            'waba_mode' => 'individual',
+            'waba_mode' => WabaModeEnum::INDIVIDUAL,
             'requires_embedded_signup' => true,
             'message' => 'Please complete Embedded Signup to connect your WABA',
         ];
@@ -251,8 +251,8 @@ class TwilioAccountManager
 
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
+                'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                'waba_status' => WabaStatusEnum::PENDING,
                 'embedded_signup_completed' => true,
             ]);
 

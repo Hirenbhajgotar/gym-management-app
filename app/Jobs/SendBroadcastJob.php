@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\WhatsAppBroadcast;
-use App\Services\TwilioWhatsAppService;
+use App\Providers\WhatsAppProviderFactory;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -42,9 +42,9 @@ class SendBroadcastJob implements ShouldQueue
         }
 
         try {
-            $service = new TwilioWhatsAppService((string) $this->gymId);
+            $provider = WhatsAppProviderFactory::create((int) $this->gymId);
 
-            $results = $service->sendBroadcast($this->broadcastId);
+            $results = $provider->sendBroadcast($this->broadcastId);
 
             Log::info('Broadcast processing completed', [
                 'broadcast_id' => $this->broadcastId,

@@ -150,59 +150,59 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
             ->statePath('data');
     }
 
-    public function sendTestMessageAction(): Action
-    {
-        return Action::make('sendTestMessage')
-            ->label('Send Test Message')
-            ->color('info')
-            ->form([
-                PhoneInput::make('phone_number')
-                    ->label('Phone Number')
-                    ->required()
-                    ->defaultCountry('IN')
-                    ->placeholder('+91 XXXXX XXXXX'),
-            ])
-            ->action(fn (array $data) => $this->sendTestMessage($data));
-    }
+    // public function sendTestMessageAction(): Action
+    // {
+    //     return Action::make('sendTestMessage')
+    //         ->label('Send Test Message')
+    //         ->color('info')
+    //         ->form([
+    //             PhoneInput::make('phone_number')
+    //                 ->label('Phone Number')
+    //                 ->required()
+    //                 ->defaultCountry('IN')
+    //                 ->placeholder('+91 XXXXX XXXXX'),
+    //         ])
+    //         ->action(fn (array $data) => $this->sendTestMessage($data));
+    // }
 
-    private function sendTestMessage(array $data): void
-    {
-        try {
-            $phoneNumber = $data['phone_number'] ?? null;
+    // private function sendTestMessage(array $data): void
+    // {
+    //     try {
+    //         $phoneNumber = $data['phone_number'] ?? null;
 
-            if (! $phoneNumber) {
-                throw new \Exception('Phone number is required');
-            }
+    //         if (! $phoneNumber) {
+    //             throw new \Exception('Phone number is required');
+    //         }
 
-            $service = new \App\Services\TwilioWhatsAppService((string) $this->getGymId());
+    //         $service = new \App\Services\TwilioWhatsAppService((string) $this->getGymId());
 
-            $result = $service->sendTemplateMessage(
-                $phoneNumber,
-                'welcome_message',
-                [
-                    '1' => $this->getGym()?->name ?? 'Gym',
-                    '2' => Auth::user()?->name ?? 'User',
-                    '3' => 'Premium',
-                    '4' => now()->addDays(30)->format('F j, Y'),
-                ]
-            );
+    //         $result = $service->sendTemplateMessage(
+    //             $phoneNumber,
+    //             'welcome_message',
+    //             [
+    //                 '1' => $this->getGym()?->name ?? 'Gym',
+    //                 '2' => Auth::user()?->name ?? 'User',
+    //                 '3' => 'Premium',
+    //                 '4' => now()->addDays(30)->format('F j, Y'),
+    //             ]
+    //         );
 
-            if ($result['success']) {
-                Notification::make()
-                    ->title('Test Message Sent!')
-                    ->success()
-                    ->send();
-            } else {
-                throw new \Exception($result['error'] ?? 'Failed to send');
-            }
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title('Failed to Send')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
+    //         if ($result['success']) {
+    //             Notification::make()
+    //                 ->title('Test Message Sent!')
+    //                 ->success()
+    //                 ->send();
+    //         } else {
+    //             throw new \Exception($result['error'] ?? 'Failed to send');
+    //         }
+    //     } catch (\Exception $e) {
+    //         Notification::make()
+    //             ->title('Failed to Send')
+    //             ->body($e->getMessage())
+    //             ->danger()
+    //             ->send();
+    //     }
+    // }
 
     public function refresh(): void
     {

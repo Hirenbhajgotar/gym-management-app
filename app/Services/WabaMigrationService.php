@@ -170,8 +170,8 @@ class WabaMigrationService
 
             $account->update([
                 'waba_id' => $newWabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::ACTIVE->value,
+                'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                'waba_status' => WabaStatusEnum::ACTIVE,
                 'embedded_signup_completed' => true,
             ]);
 

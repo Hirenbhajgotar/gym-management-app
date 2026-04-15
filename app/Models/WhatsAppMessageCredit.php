@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit query()
@@ -36,6 +37,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereUsedCredits($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereWelcomeCreditsClaimed($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppMessageCredit whereWelcomeCreditsUsed($value)
+ * @method bool hasWelcomeCredits()
+ *
  * @mixin \Eloquent
  */
 class WhatsAppMessageCredit extends Model
@@ -90,7 +93,7 @@ class WhatsAppMessageCredit extends Model
 
     public function getWelcomeCreditsRemaining(): int
     {
-        $welcomeCredits = 50;
+        $welcomeCredits = (int) config('services.whatsapp.welcome_credits', 50);
 
         return max(0, $welcomeCredits - $this->welcome_credits_used);
     }

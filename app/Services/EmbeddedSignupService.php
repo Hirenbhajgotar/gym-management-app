@@ -332,11 +332,11 @@ class EmbeddedSignupService
 
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
+                'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                'waba_status' => WabaStatusEnum::PENDING,
                 'meta_access_token' => $metaAccessToken,
                 'embedded_signup_completed' => true,
-                'status' => WhatsAppAccountStatusEnum::PENDING->value,
+                'status' => WhatsAppAccountStatusEnum::PENDING,
             ]);
 
             Log::info('WABA connected to subaccount', [
