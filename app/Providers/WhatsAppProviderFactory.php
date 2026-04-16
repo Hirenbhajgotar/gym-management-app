@@ -26,12 +26,23 @@ class WhatsAppProviderFactory
      * Create a WhatsApp provider instance for the given gym.
      *
      * @param  int  $gymId  The gym ID
+     * @param  bool  $isSystemMessage  If true, uses Twilio for system messages (super-admin)
      *
      * @throws \InvalidArgumentException If provider is not supported
      */
-    public static function create(int $gymId): WhatsAppProviderInterface
+    public static function create(int $gymId, bool $isSystemMessage = false): WhatsAppProviderInterface
     {
-        $provider = (string) config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
+        // System messages always use Twilio
+        if ($isSystemMessage) {
+            Log::debug('Creating WhatsApp provider for system message', [
+                'gym_id' => $gymId,
+                'provider' => self::PROVIDER_TWILIO,
+            ]);
+
+            return new TwilioWhatsAppProvider($gymId);
+        }
+
+        $provider = config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
 
         Log::debug('Creating WhatsApp provider', [
             'gym_id' => $gymId,
@@ -55,7 +66,7 @@ class WhatsAppProviderFactory
      */
     public static function getProviderName(): string
     {
-        return (string) config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
+        return config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
     }
 
     /**

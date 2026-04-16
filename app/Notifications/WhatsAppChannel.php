@@ -35,12 +35,14 @@ class WhatsAppChannel
         // Get the WhatsApp message from the notification
         $message = $notification->toWhatsApp($notifiable);
 
-        if (! $message) {
+        if (empty($message) || ! isset($message['to']) || (! isset($message['body']) && ! isset($message['template_sid']))) {
+            Log::warning('Invalid WhatsApp message format', ['message' => $message]);
+
             return null;
         }
 
         // Get the gym/tenant ID
-        $gymId = $this->getGymId($notifiable, $notification);
+        $gymId = (int) $this->getGymId($notifiable, $notification);
 
         if (! $gymId) {
             Log::error('Unable to determine gym ID for WhatsApp notification', [
@@ -52,8 +54,13 @@ class WhatsAppChannel
             return null;
         }
 
-        // Create provider using factory (based on config)
-        $provider = WhatsAppProviderFactory::create($gymId);
+        // Check if this is a system message (super-admin) or owner message
+        $isSystemMessage = method_exists($notification, 'isSystemMessage')
+            ? $notification->isSystemMessage()
+            : false;
+
+        // Create provider using factory (based on config and system message flag)
+        $provider = WhatsAppProviderFactory::create((int) $gymId, $isSystemMessage);
 
         $result = [];
 
@@ -92,7 +99,7 @@ class WhatsAppChannel
         return $result;
     }
 
-    private function getGymId($notifiable, $notification): ?string
+    private function getGymId($notifiable, $notification): ?int
     {
         $gymId = null;
 
@@ -131,6 +138,6 @@ class WhatsAppChannel
             return null;
         }
 
-        return $gymId;
+        return (int) $gymId;
     }
 }

@@ -46,7 +46,7 @@ class MetaWhatsAppProvider implements WhatsAppProviderInterface
      */
     protected function getAccessToken(): ?string
     {
-        return $this->account?->metaAccessToken;
+        return $this->account?->meta_access_token;
     }
 
     /**

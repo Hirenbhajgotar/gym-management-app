@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Gym;
 use App\Notifications\Contracts\HasGymContext;
+use App\Providers\WhatsAppProviderFactory;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
@@ -15,6 +16,17 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
     use Queueable;
 
     protected Gym $gym;
+
+    /**
+     * Determine if this is a system message sent by super-admin.
+     *
+     * When true, the WhatsApp provider will use Twilio instead of owner's WABA.
+     * Override in specific notifications for system-level messages.
+     */
+    public function isSystemMessage(): bool
+    {
+        return false;
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -56,8 +68,8 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
         }
 
         return [
-            'from_number' => $whatsAppAccount->getPhoneNumber()->phone_number,
-            'provider' => 'twilio',
+            'from_number' => $whatsAppAccount->getPhoneNumber()?->phone_number ?? null,
+            'provider' => WhatsAppProviderFactory::getProviderName(),
         ];
     }
 
@@ -74,7 +86,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getWhatsAppTemplate(string $name): ?object
     {
-        $templateManager = new WhatsAppTemplateManager($this->gym->id);
+        $templateManager = new WhatsAppTemplateManager((string) $this->gym->id);
 
         return $templateManager->getTemplate($name);
     }
