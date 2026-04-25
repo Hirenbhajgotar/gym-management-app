@@ -2781,7 +2781,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.2.12
+- php - 8.2.30
 - filament/filament (FILAMENT) - v3
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
@@ -2809,6 +2809,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `frontend-design` — Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
 - `laravel-security` — Laravel security best practices for authn/authz, validation, CSRF, mass assignment, file uploads, secrets, rate limiting, and secure deployment.
 - `laravel-specialist` — Build and configure Laravel 10+ applications, including creating Eloquent models and relationships, implementing Sanctum authentication, configuring Horizon queues, designing RESTful APIs with API resources, and building reactive interfaces with Livewire. Use when creating Laravel models, setting up queue workers, implementing Sanctum auth flows, building Livewire components, optimising Eloquent queries, or writing Pest/PHPUnit tests for Laravel features.
+- `phpunit-best-practices` — PHPUnit testing best practices and conventions guide. This skill should be used when writing, reviewing, or refactoring PHPUnit tests to ensure consistent, maintainable, and effective test suites. Triggers on tasks involving test creation, test refactoring, test configuration, code coverage, data providers, mocking, or PHPUnit XML configuration.
 
 ## Conventions
 

@@ -18,6 +18,7 @@
         "tailwindcss-development",
         "frontend-design",
         "laravel-security",
-        "laravel-specialist"
+        "laravel-specialist",
+        "phpunit-best-practices"
     ]
 }

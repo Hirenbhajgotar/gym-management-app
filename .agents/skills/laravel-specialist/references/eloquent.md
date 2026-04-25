@@ -24,13 +24,11 @@ class Post extends Model
         'user_id',
     ];
 
-    protected function casts () {
-        [
-            'published_at' => 'datetime',
-            'metadata' => 'array',
-            'is_featured' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'published_at' => 'datetime',
+        'metadata' => 'array',
+        'is_featured' => 'boolean',
+    ];
 
     // Accessor using new Attribute syntax (Laravel 9+)
     protected function title(): Attribute
@@ -146,15 +144,13 @@ class Tag extends Model
 class Post extends Model
 {
     // Local scope
-    #[Scope]
-    public function published($query): void
+    public function scopePublished($query): void
     {
         $query->whereNotNull('published_at')
             ->where('published_at', '<=', now());
     }
 
-    #[Scope]
-    public function popular($query, int $threshold = 100): void
+    public function scopePopular($query, int $threshold = 100): void
     {
         $query->where('views', '>=', $threshold);
     }
@@ -214,11 +210,9 @@ class Money implements CastsAttributes
 }
 
 // In model
-protected function casts () {
-    return [
-        'price' => Money::class,
-    ];
-}
+protected $casts = [
+    'price' => Money::class,
+];
 ```
 
 ## Query Optimization
