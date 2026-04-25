@@ -1,7 +1,7 @@
 {
-  "active_plan": "C:\\xampp\\htdocs\\projects\\gym-app\\.sisyphus\\plans\\qr-code-attendance.md",
-  "started_at": "2026-04-08T12:00:00Z",
-  "session_ids": ["ses_293d56972ffeMxf2H35nCetxUs"],
-  "plan_name": "qr-code-attendance",
+  "active_plan": "C:\\xampp\\htdocs\\projects\\gym-app\\.sisyphus\\plans\\embedded-signup-refactor.md",
+  "started_at": "2026-04-25T12:00:00Z",
+  "session_ids": ["ses_25a1c6f0ffe1234567890abcdef"],
+  "plan_name": "embedded-signup-refactor",
   "worktree_path": null
 }

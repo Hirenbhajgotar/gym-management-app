@@ -253,9 +253,29 @@ class TwilioWhatsAppProvider implements WhatsAppProviderInterface
     /**
      * {@inheritdoc}
      */
-    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null): array
+    public function connectManualWaba(
+        int $gymId,
+        string $wabaId,
+        string $phoneNumber,
+        ?string $metaAccessToken = null,
+        ?string $phoneNumberId = null,
+        ?array $businessData = null
+    ): array {
+        // Twilio doesn't support manual WABA connection - delegate to account manager
+        return $this->accountManager->connectManualWaba($gymId, $wabaId, $phoneNumber, $metaAccessToken, $phoneNumberId);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function verifyWabaConnection(string $wabaId, string $phoneNumberId, ?string $accessToken = null): array
     {
-        return $this->accountManager->connectManualWaba($gymId, $wabaId, $phoneNumber, $metaAccessToken);
+        // Twilio provider doesn't support Meta API verification
+        // This is only applicable for Meta provider
+        return [
+            'success' => false,
+            'error' => 'WABA verification is only supported for Meta provider',
+        ];
     }
 
     // =========================

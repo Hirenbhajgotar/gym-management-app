@@ -6,12 +6,14 @@ use App\Enums\WabaModeEnum;
 use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Observers\WhatsAppAccountObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -34,6 +36,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $business_name
  * @property string|null $business_email
  * @property string|null $business_description
+ * @property WhatsAppProviderTypeEnum|null $provider_type
  * @property \Illuminate\Support\Carbon|null $verified_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -71,7 +74,6 @@ use Illuminate\Support\Facades\Crypt;
  * @method bool isActive()
  * @method bool isVerified()
  * @method bool hasPhoneNumber()
- * @method \App\Models\WhatsAppPhoneNumber|null getPhoneNumber()
  * @method bool hasIndividualWaba()
  * @method bool hasSharedWaba()
  * @method bool hasManualWaba()
@@ -109,6 +111,7 @@ class WhatsAppAccount extends Model
         'business_email',
         'business_description',
         'verified_at',
+        'provider_type',
     ];
 
     protected $hidden = [
@@ -125,6 +128,7 @@ class WhatsAppAccount extends Model
             'waba_mode' => WabaModeEnum::class,
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
+            'provider_type' => WhatsAppProviderTypeEnum::class,
         ];
     }
 
@@ -137,9 +141,9 @@ class WhatsAppAccount extends Model
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
-    public function phoneNumber(): HasMany
+    public function phoneNumber(): HasOne
     {
-        return $this->hasMany(WhatsAppPhoneNumber::class, 'whatsapp_account_id');
+        return $this->hasOne(WhatsAppPhoneNumber::class, 'whatsapp_account_id');
     }
 
     public function templates(): HasMany
@@ -190,11 +194,6 @@ class WhatsAppAccount extends Model
         return $this->phoneNumber()->exists();
     }
 
-    public function getPhoneNumber(): ?WhatsAppPhoneNumber
-    {
-        return $this->phoneNumber()->first();
-    }
-
     public function hasIndividualWaba(): bool
     {
         return $this->waba_mode === WabaModeEnum::INDIVIDUAL;
@@ -232,5 +231,87 @@ class WhatsAppAccount extends Model
             && $this->twilio_account_sid
             && $this->twilio_auth_token
             && $this->messaging_service_sid;
+    }
+
+    // =========================
+    // Provider Helper Methods (Per-Tenant)
+    // =========================
+
+    /**
+     * Get the provider type for this account.
+     * Defaults to WABA for backward compatibility.
+     */
+    public function getProvider(): WhatsAppProviderTypeEnum
+    {
+        return $this->provider_type ?? WhatsAppProviderTypeEnum::WABA;
+    }
+
+    /**
+     * Check if this account uses Twilio provider.
+     */
+    public function isTwilioProvider(): bool
+    {
+        return $this->getProvider() === WhatsAppProviderTypeEnum::TWILIO;
+    }
+
+    /**
+     * Check if this account uses WABA provider.
+     */
+    public function isWabaProvider(): bool
+    {
+        return $this->getProvider() === WhatsAppProviderTypeEnum::WABA;
+    }
+
+    /**
+     * Check if provider type has been set.
+     */
+    public function hasProvider(): bool
+    {
+        return $this->provider_type !== null;
+    }
+
+    /**
+     * Get the primary phone number ID based on provider.
+     * Uses the whatsapp_phone_numbers table relationship.
+     */
+    public function getPhoneNumberId(): ?string
+    {
+        $phoneNumber = $this->phoneNumber;
+
+        if (! $phoneNumber) {
+            return null;
+        }
+
+        // For Twilio, use phone_number_sid; for WABA, could use channel_sender_sid
+        return $this->isTwilioProvider()
+            ? $phoneNumber->phone_number_sid
+            : $phoneNumber->waba_phone_number_id;
+    }
+
+    /**
+     * Check if WABA setup is required.
+     * (WABA provider selected but no WABA configured yet)
+     */
+    public function requiresWabaSetup(): bool
+    {
+        return $this->isWabaProvider() && empty($this->waba_id);
+    }
+
+    /**
+     * Check if Twilio setup is required.
+     * (Twilio provider selected, no subaccount or no phone number)
+     */
+    public function requiresTwilioSetup(): bool
+    {
+        return $this->isTwilioProvider()
+            && (empty($this->twilio_account_sid) || ! $this->hasPhoneNumber());
+    }
+
+    /**
+     * Set provider type and save.
+     */
+    public function setProvider(WhatsAppProviderTypeEnum $provider): void
+    {
+        $this->update(['provider_type' => $provider]);
     }
 }

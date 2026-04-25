@@ -347,19 +347,111 @@ interface WhatsAppProviderInterface
     /**
      * Connect a manual WABA.
      *
+     * This method handles complete WABA connection:
+     * 1. If access token provided, verifies credentials via Meta API
+     * 2. Creates or updates WhatsAppAccount with all fields
+     * 3. Creates or updates WhatsAppPhoneNumber with all fields
+     * 4. Uses Meta API authoritative data where available
+     *
      * @param  int  $gymId  The gym ID
      * @param  string  $wabaId  The WABA ID
      * @param  string  $phoneNumber  Phone number
-     * @param  string|null  $metaAccessToken  Meta access token
+     * @param  string|null  $metaAccessToken  Meta access token (required for verification)
+     * @param  string|null  $phoneNumberId  WABA phone number ID
+     * @param  array{
+     *     business_name?: string,
+     *     business_email?: string,
+     *     business_description?: string,
+     *     verified_result?: array
+     * }|null  $businessData  Optional business data from form
      * @return array{
      *     success: bool,
      *     waba_id?: string,
-     *     sender_sid?: string,
+     *     phone_number_id?: string,
+     *     display_phone_number?: string,
+     *     business_name?: string,
+     *     waba_status?: string,
      *     message?: string,
      *     error?: string
      * }
      */
-    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null): array;
+    public function connectManualWaba(
+        int $gymId,
+        string $wabaId,
+        string $phoneNumber,
+        ?string $metaAccessToken = null,
+        ?string $phoneNumberId = null,
+        ?array $businessData = null
+    ): array;
+
+    // =========================
+    // WABA Verification
+    // =========================
+
+    /**
+     * Verify WABA and phone number ID via Meta API.
+     *
+     * @param  string  $wabaId  The WhatsApp Business Account ID
+     * @param  string  $phoneNumberId  The Phone Number ID
+     * @param  string|null  $accessToken  Optional access token (uses account token if not provided)
+     * @return array{
+     *     success: bool,
+     *     verified?: bool,
+     *     phone_number_id?: string,
+     *     display_phone_number?: string,
+     *     verified_name?: string,
+     *     code_verification_status?: string,
+     *     certificate?: string,
+     *     quality_score?: string,
+     *     waba_id?: string,
+     *     business_name?: string,
+     *     waba_status?: string,
+     *     currency?: string,
+     *     timezone?: string,
+     *     error?: string
+     * }
+     */
+    public function verifyWabaConnection(string $wabaId, string $phoneNumberId, ?string $accessToken = null): array;
+
+    // =========================
+    // Embedded Signup (Meta-specific)
+    // =========================
+
+    /**
+     * Start the embedded signup flow for a gym.
+     *
+     * Creates a WABA setup session and returns the Meta OAuth login URL.
+     *
+     * @param  int  $gymId  The gym ID
+     * @return string The Facebook OAuth login URL for embedded signup
+     */
+    public function startEmbeddedSignup(int $gymId): string;
+
+    /**
+     * Get the embedded signup login URL.
+     *
+     * @param  int  $gymId  The gym ID
+     * @return string The Facebook OAuth login URL
+     */
+    public function getEmbeddedSignupLoginUrl(int $gymId): string;
+
+    /**
+     * Handle the embedded signup OAuth callback.
+     *
+     * Exchanges the authorization code for an access token, verifies the token,
+     * and retrieves the WABA and phone number IDs.
+     *
+     * @param  string  $code  The authorization code from Meta
+     * @param  string  $state  The session state
+     * @return array{
+     *     success: bool,
+     *     waba_id?: string,
+     *     phone_number_id?: string,
+     *     access_token?: string,
+     *     error?: string
+     * }
+     */
+    public function handleEmbeddedSignupCallback(string $code, string $state): array;
 
     // =========================
     // Test Messages

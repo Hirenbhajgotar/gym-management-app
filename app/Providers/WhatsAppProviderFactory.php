@@ -2,17 +2,37 @@
 
 namespace App\Providers;
 
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Interfaces\WhatsAppProviderInterface;
+use App\Models\WhatsAppAccount;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
  * WhatsApp Provider Factory.
  *
- * Creates the appropriate WhatsApp provider based on the configured
- * provider type in services.php config.
+ * Creates the appropriate WhatsApp provider based on:
+ * 1. Per-tenant provider_type in whatsapp_accounts table (preferred)
+ * 2. Config fallback for backward compatibility
+ *
+ * Caching: Uses Cache::flexible() for SWR (Stale-While-Revalidate) pattern.
+ * Caches for 1 day minimum, up to 7 days max. Auto-refreshes before expiration.
+ * Use invalidateProviderCache() to manually clear cache when needed.
  */
 class WhatsAppProviderFactory
 {
+    /**
+     * Cache TTL - minimum 1 day, maximum 1 week (SWR pattern).
+     */
+    private const CACHE_MIN_TTL = 86400;    // 1 day in seconds
+
+    private const CACHE_MAX_TTL = 604800;  // 1 week in seconds
+
+    /**
+     * Cache key prefix.
+     */
+    private const CACHE_PREFIX = 'whatsapp_provider:';
+
     /**
      * Supported providers.
      */
@@ -42,7 +62,8 @@ class WhatsAppProviderFactory
             return new TwilioWhatsAppProvider($gymId);
         }
 
-        $provider = config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
+        // Get provider from cache or database
+        $provider = self::getProviderForGym($gymId);
 
         Log::debug('Creating WhatsApp provider', [
             'gym_id' => $gymId,
@@ -60,39 +81,55 @@ class WhatsAppProviderFactory
     }
 
     /**
-     * Get the currently configured provider.
+     * Get the provider for a specific gym (per-tenant) with config fallback.
+     * Uses Cache::flexible() for SWR pattern - caches 1 day min, 1 week max.
      *
+     * @param  int  $gymId  The gym ID
      * @return string The provider name
      */
-    public static function getProviderName(): string
+    public static function getProviderForGym(int $gymId): string
     {
-        return config('services.whatsapp.provider', self::DEFAULT_PROVIDER);
+        $cacheKey = self::CACHE_PREFIX . $gymId;
+
+        return Cache::flexible(
+            $cacheKey,
+            [self::CACHE_MIN_TTL, self::CACHE_MAX_TTL],
+            function () use ($gymId) {
+                // Try to get provider from WhatsAppAccount (per-tenant)
+                $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+
+                if ($account && $account->provider_type) {
+                    // Convert enum to string constant
+                    return match ($account->provider_type) {
+                        WhatsAppProviderTypeEnum::TWILIO => self::PROVIDER_TWILIO,
+                        WhatsAppProviderTypeEnum::WABA => self::PROVIDER_META,
+                    };
+                }
+
+                // Fallback to config (backward compatibility)
+                return config('services.whatsapp.default_provider', self::DEFAULT_PROVIDER);
+            }
+        );
     }
 
     /**
-     * Check if a specific provider is configured.
+     * Invalidate provider cache for a specific gym.
+     * Call this when provider_type is changed in WhatsAppAccount.
      *
-     * @param  string  $provider  The provider to check
+     * @param  int  $gymId  The gym ID
      */
-    public static function isProvider(string $provider): bool
+    public static function invalidateProviderCache(int $gymId): void
     {
-        return self::getProviderName() === $provider;
+        Cache::forget(self::CACHE_PREFIX . $gymId);
     }
 
     /**
-     * Check if Twilio provider is configured.
+     * Invalidate all provider caches.
+     * Use with caution - clears all cached provider types.
      */
-    public static function isTwilio(): bool
+    public static function invalidateAllProviderCache(): void
     {
-        return self::isProvider(self::PROVIDER_TWILIO);
-    }
-
-    /**
-     * Check if Meta WABA provider is configured.
-     */
-    public static function isMeta(): bool
-    {
-        return self::isProvider(self::PROVIDER_META);
+        Cache::flush();
     }
 
     /**

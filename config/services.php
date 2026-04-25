@@ -53,7 +53,7 @@ return [
 
     'whatsapp' => [
         // Provider selection: 'twilio' or 'waba' (Meta WhatsApp Business API)
-        'provider' => env('WHATSAPP_PROVIDER', 'waba'),
+        'default_provider' => env('WHATSAPP_DEFAULT_PROVIDER', 'waba'),
 
         'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),

@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
 
+/**
+ * EmbeddedSignupService - Legacy service for WhatsApp embedded signup.
+ *
+ * @deprecated Use MetaWhatsAppProvider::startEmbeddedSignup() and ::handleEmbeddedSignupCallback() instead.
+ *             This service is kept for backward compatibility with existing route handlers.
+ *             Methods delegate to provider implementation where applicable.
+ * @see \App\Providers\MetaWhatsAppProvider::startEmbeddedSignup()
+ * @see \App\Providers\MetaWhatsAppProvider::handleEmbeddedSignupCallback()
+ */
 class EmbeddedSignupService
 {
     private string $metaAppId;
@@ -50,6 +59,9 @@ class EmbeddedSignupService
             && ! empty($this->metaAppSecret);
     }
 
+    /**
+     * @deprecated Use MetaWhatsAppProvider::startEmbeddedSignup() instead.
+     */
     public function getLoginUrl(int $gymId): string
     {
         $session = WabaSetupSession::createForGym($gymId);
@@ -66,6 +78,9 @@ class EmbeddedSignupService
         return "https://www.facebook.com/{$this->metaApiVersion}/dialog/oauth?{$params}";
     }
 
+    /**
+     * @deprecated Use MetaWhatsAppProvider::handleEmbeddedSignupCallback() instead.
+     */
     public function handleCallback(string $code, string $state): array
     {
         $session = WabaSetupSession::where('session_id', $state)->first();

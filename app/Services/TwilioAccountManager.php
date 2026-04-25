@@ -287,7 +287,7 @@ class TwilioAccountManager
         }
     }
 
-    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null): array
+    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null, ?string $phoneNumberId = null, ?array $businessData = null): array
     {
         try {
             $account = $this->getAccountOrFail($gymId);

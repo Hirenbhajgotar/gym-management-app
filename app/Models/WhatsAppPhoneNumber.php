@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $phone_number
  * @property string $phone_number_sid
  * @property string|null $channel_sender_sid WhatsApp Channel Sender SID (starts with CN)
+ * @property string|null $waba_phone_number_id Meta WABA phone number ID for WABA provider
  * @property string $country_code
  * @property string|null $friendly_name
  * @property string|null $locality
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\WhatsAppAccount|null $account
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber query()
@@ -44,6 +46,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereWhatsappAccountId($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppPhoneNumber extends Model
@@ -55,6 +58,7 @@ class WhatsAppPhoneNumber extends Model
         'phone_number',
         'phone_number_sid',
         'channel_sender_sid',
+        'waba_phone_number_id',
         'country_code',
         'friendly_name',
         'locality',

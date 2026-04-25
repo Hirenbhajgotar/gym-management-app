@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Gym;
 use App\Notifications\Contracts\HasGymContext;
-use App\Providers\WhatsAppProviderFactory;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
@@ -68,8 +67,8 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
         }
 
         return [
-            'from_number' => $whatsAppAccount->getPhoneNumber()?->phone_number ?? null,
-            'provider' => WhatsAppProviderFactory::getProviderName(),
+            'from_number' => $whatsAppAccount->phoneNumber?->phone_number ?? null,
+            'provider' => $whatsAppAccount->getProvider(),
         ];
     }
 

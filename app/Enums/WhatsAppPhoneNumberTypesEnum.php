@@ -7,6 +7,7 @@ use Filament\Support\Contracts\HasLabel;
 
 enum WhatsAppPhoneNumberTypesEnum: string implements HasColor, HasLabel
 {
+    case BUSINESS = 'business';
     case LOCAL = 'local';
     case MOBILE = 'mobile';
     case TOLL_FREE = 'toll_free';
@@ -14,6 +15,7 @@ enum WhatsAppPhoneNumberTypesEnum: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
+            self::BUSINESS => 'Business',
             self::LOCAL => 'Local',
             self::MOBILE => 'Mobile',
             self::TOLL_FREE => 'Toll Free',
@@ -23,6 +25,7 @@ enum WhatsAppPhoneNumberTypesEnum: string implements HasColor, HasLabel
     public function getColor(): string
     {
         return match ($this) {
+            self::BUSINESS => 'success',
             self::LOCAL => 'info',
             self::MOBILE => 'warning',
             self::TOLL_FREE => 'success',
