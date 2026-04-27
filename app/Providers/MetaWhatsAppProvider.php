@@ -6,7 +6,12 @@ use App\Enums\WabaModeEnum;
 use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
-use App\Interfaces\WhatsAppProviderInterface;
+use App\Interfaces\CreditManagementInterface;
+use App\Interfaces\EmbeddedSignupInterface;
+use App\Interfaces\MessagingInterface;
+use App\Interfaces\TemplateManagementInterface;
+use App\Interfaces\TestMessagingInterface;
+use App\Interfaces\WabaSetupInterface;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
@@ -20,11 +25,18 @@ use Illuminate\Support\Facades\Log;
 /**
  * Meta WhatsApp Business API Provider.
  *
- * This provider implements WhatsAppProviderInterface using Meta's
+ * This provider implements focused WhatsApp interfaces using Meta's
  * WhatsApp Business API (WABA). It uses the WhatsAppAccount model
  * to store and retrieve credentials.
+ *
+ * @implements MessagingInterface,
+ *           TemplateManagementInterface,
+ *           CreditManagementInterface,
+ *           WabaSetupInterface,
+ *           EmbeddedSignupInterface,
+ *           TestMessagingInterface
  */
-class MetaWhatsAppProvider implements WhatsAppProviderInterface
+class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupInterface, MessagingInterface, TemplateManagementInterface, TestMessagingInterface, WabaSetupInterface
 {
     protected int $gymId;
 
@@ -356,19 +368,6 @@ class MetaWhatsAppProvider implements WhatsAppProviderInterface
     /**
      * {@inheritdoc}
      */
-    public function createSubAccount(int $gymId, string $gymName, string $email): array
-    {
-        // Meta doesn't have sub-accounts like Twilio
-        // The WhatsAppAccount model already represents the account
-        return [
-            'success' => false,
-            'error' => 'Meta WABA does not support sub-accounts. Use WhatsAppAccount model instead.',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getAccountStatus(int $gymId): array
     {
         $wabaId = $this->getWabaId();
@@ -396,20 +395,6 @@ class MetaWhatsAppProvider implements WhatsAppProviderInterface
     /**
      * {@inheritdoc}
      */
-    public function cleanupAccount(int $gymId): array
-    {
-        // Cleanup would involve disconnecting phone numbers, etc.
-        // This is a placeholder - actual cleanup depends on Meta's API capabilities
-        return [
-            'success' => true,
-            'message' => 'Account cleanup not implemented for Meta WABA',
-            'cleaned' => [],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getWabaMode(int $gymId): string
     {
         return $this->account?->waba_mode?->value ?? 'not_created';
@@ -422,79 +407,6 @@ class MetaWhatsAppProvider implements WhatsAppProviderInterface
     {
         return $this->account?->hasIndividualWaba()
             && ! $this->account?->isEmbeddedSignupComplete();
-    }
-
-    // =========================
-    // Phone Number Management
-    // =========================
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getAvailableNumbers(string $country, string $type = 'local', int $limit = 5): array
-    {
-        // Meta doesn't expose phone number search API like Twilio
-        return [
-            'success' => false,
-            'error' => 'Phone number search not available for Meta WABA. Use Meta Business Suite to purchase numbers.',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function purchaseNumber(int $gymId, string $phoneNumber): array
-    {
-        // Phone number purchase is done through Meta Business Suite
-        return [
-            'success' => false,
-            'error' => 'Phone numbers must be purchased through Meta Business Suite, not API.',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function registerOwnNumber(int $gymId, string $phoneNumber): array
-    {
-        $wabaId = $this->getWabaId();
-
-        if (! $wabaId) {
-            return [
-                'success' => false,
-                'error' => 'WABA not configured',
-            ];
-        }
-
-        // Register phone number through Meta API
-        $response = $this->makeRequest('POST', "/{$wabaId}/phone_numbers", [
-            'phone_number' => $phoneNumber,
-        ]);
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function verifyOwnNumber(int $gymId, string $senderSid, string $otpCode): array
-    {
-        // OTP verification is handled through Meta's flow
-        return [
-            'success' => false,
-            'error' => 'Phone verification must be completed through Meta Business Suite',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function resendOwnNumberOtp(int $gymId, string $senderSid, string $channel = 'sms'): array
-    {
-        return [
-            'success' => false,
-            'error' => 'OTP resend not available through API',
-        ];
     }
 
     // =========================
