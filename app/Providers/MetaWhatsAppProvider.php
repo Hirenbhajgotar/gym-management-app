@@ -193,4 +193,9 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
     {
         return $this->embeddedSignup()->handleEmbeddedSignupCallback($code, $state);
     }
+
+    public function isEmbeddedSignupEnabled(): bool
+    {
+        return $this->embeddedSignup()->isEnabled();
+    }
 }

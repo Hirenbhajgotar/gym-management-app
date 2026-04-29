@@ -111,7 +111,7 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
         return [
             'app_id' => config('services.twilio.meta.app_id', ''),
             'app_secret' => config('services.twilio.meta.app_secret', ''),
-            'api_version' => config('services.twilio.meta.api_version', 'v19.0'),
+            'api_version' => config('services.twilio.meta.api_version', 'v25.0'),
             'redirect_uri' => config('services.twilio.meta.redirect_uri', ''),
             'config_id' => config('services.twilio.meta.config_id', ''),
         ];
@@ -196,5 +196,16 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
             'scopes' => $data['scopes'] ?? [],
             'expires_at' => $data['expires_at'] ?? null,
         ];
+    }
+
+    public function isEnabled(): bool
+    {
+        $metaAppId = config('services.twilio.meta.app_id', '');
+        $metaAppSecret = config('services.twilio.meta.app_secret', '');
+        $configId = config('services.twilio.meta.config_id', '');
+
+        return ! empty($metaAppId)
+            && ! empty($metaAppSecret)
+            && ! empty($configId);
     }
 }

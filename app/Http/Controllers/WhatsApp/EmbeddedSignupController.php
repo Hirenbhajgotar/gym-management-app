@@ -4,8 +4,8 @@ namespace App\Http\Controllers\WhatsApp;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gym;
+use App\Providers\MetaWhatsAppProvider;
 use App\Services\EmbeddedSignupService;
-use App\Services\WabaMigrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
 class EmbeddedSignupController extends Controller
 {
     public function __construct(
-        private EmbeddedSignupService $embeddedSignupService,
-        private WabaMigrationService $migrationService
+        private MetaWhatsAppProvider $metaWhatsAppProvider,
+        private EmbeddedSignupService $embeddedSignupService
     ) {}
 
     public function redirect(Request $request, string $tenant): RedirectResponse
@@ -26,7 +26,7 @@ class EmbeddedSignupController extends Controller
                 ->with('error', 'Tenant not found');
         }
 
-        if (! $this->embeddedSignupService->isEnabled()) {
+        if (! $this->metaWhatsAppProvider->isEmbeddedSignupEnabled()) {
             return redirect()->route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant])
                 ->with('error', 'Embedded Signup is not enabled');
         }
@@ -34,7 +34,7 @@ class EmbeddedSignupController extends Controller
         session(['embedded_signup_tenant_id' => $gym->id]);
         session(['embedded_signup_tenant_slug' => $gym->slug]);
 
-        $loginUrl = $this->embeddedSignupService->getLoginUrl($gym->id);
+        $loginUrl = $this->metaWhatsAppProvider->startEmbeddedSignup($gym->id);
 
         return redirect()->away($loginUrl);
     }
@@ -80,7 +80,7 @@ class EmbeddedSignupController extends Controller
                 ->with('error', 'Invalid callback parameters');
         }
 
-        $result = $this->embeddedSignupService->handleCallback($code, $state);
+        $result = $this->metaWhatsAppProvider->handleEmbeddedSignupCallback($code, $state);
 
         Log::info('Embedded Signup callback result', [
             'result' => $result,
@@ -117,15 +117,17 @@ class EmbeddedSignupController extends Controller
 
         $validated = $request->validate([
             'waba_id' => ['required', 'string'],
-            'phone_number' => ['required', 'string'],
+            'manual_phone_number' => ['required', 'string'],
+            'waba_phone_number_id' => ['required', 'string'],
             'meta_access_token' => ['nullable', 'string'],
         ]);
 
-        $result = $this->embeddedSignupService->connectManualWaba(
+        $result = $this->metaWhatsAppProvider->connectManualWaba(
             $gym->id,
             $validated['waba_id'],
-            $validated['phone_number'],
-            $validated['meta_access_token'] ?? null
+            $validated['manual_phone_number'],
+            $validated['meta_access_token'] ?? null,
+            $validated['waba_phone_number_id']
         );
 
         if (! $result['success']) {
