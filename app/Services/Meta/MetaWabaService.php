@@ -12,7 +12,7 @@ use App\Enums\WhatsAppProviderTypeEnum;
 use App\Interfaces\WabaSetupInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
-use App\Providers\WhatsAppProviderFactory as ProvidersWhatsAppProviderFactory;
+use App\Providers\WhatsAppProviderFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -135,7 +135,7 @@ class MetaWabaService implements WabaSetupInterface
                 'type' => $phoneType,
             ]);
 
-            ProvidersWhatsAppProviderFactory::invalidateProviderCache($gymId);
+            WhatsAppProviderFactory::invalidateProviderCache($gymId);
 
             return [
                 'success' => true,
@@ -161,7 +161,7 @@ class MetaWabaService implements WabaSetupInterface
         try {
             $phoneResponse = $this->api->get("/{$phoneNumberId}", [
                 'fields' => 'id,display_phone_number,code_verification_status,certificate,verified_name,quality_score,message_template_namespace',
-            ]);
+            ], $token);
 
             if (! $phoneResponse['success']) {
                 $errorMessage = $phoneResponse['error'] ?? 'Failed to fetch phone number details';
@@ -173,7 +173,7 @@ class MetaWabaService implements WabaSetupInterface
 
             $wabaResponse = $this->api->get("/{$wabaId}", [
                 'fields' => 'id,name,business,business_verification_status,currency,timezone',
-            ]);
+            ], $token);
 
             $wabaData = $wabaResponse['success'] ? $wabaResponse['data'] : [];
 

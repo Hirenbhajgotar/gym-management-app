@@ -128,7 +128,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     /**
      * Get the WhatsApp provider instance for the current gym.
      */
-    public function getProvider(): ?WhatsAppProviderInterface
+    public function getProvider(): MetaWhatsAppProvider|TwilioWhatsAppProvider
     {
         $gymId = $this->getGymId();
 

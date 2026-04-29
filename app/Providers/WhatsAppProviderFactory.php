@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Enums\WhatsAppProviderTypeEnum;
-use App\Interfaces\WhatsAppProviderInterface;
 use App\Models\WhatsAppAccount;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -50,7 +49,7 @@ class WhatsAppProviderFactory
      *
      * @throws \InvalidArgumentException If provider is not supported
      */
-    public static function create(int $gymId, bool $isSystemMessage = false): WhatsAppProviderInterface
+    public static function create(int $gymId, bool $isSystemMessage = false): MetaWhatsAppProvider|TwilioWhatsAppProvider
     {
         // System messages always use Twilio
         if ($isSystemMessage) {

@@ -25,9 +25,9 @@ class MetaApiClient
      * @param  array  $data  Request payload
      * @return array{success: bool, data?: array, error?: string}
      */
-    public function makeRequest(string $method, string $endpoint, array $data = []): array
+    public function makeRequest(string $method, string $endpoint, array $data = [], ?string $token = null): array
     {
-        $token = $this->context->getAccessToken();
+        $token = $token ?? $this->context->getAccessToken();
         $baseUrl = $this->context->getApiBaseUrl();
 
         if (! $token) {
@@ -71,17 +71,17 @@ class MetaApiClient
     /**
      * Make a GET request.
      */
-    public function get(string $endpoint, array $data = []): array
+    public function get(string $endpoint, array $data = [], ?string $token = null): array
     {
-        return $this->makeRequest('get', $endpoint, $data);
+        return $this->makeRequest('get', $endpoint, $data, $token);
     }
 
     /**
      * Make a POST request.
      */
-    public function post(string $endpoint, array $data = []): array
+    public function post(string $endpoint, array $data = [], ?string $token = null): array
     {
-        return $this->makeRequest('post', $endpoint, $data);
+        return $this->makeRequest('post', $endpoint, $data, $token);
     }
 
     /**
