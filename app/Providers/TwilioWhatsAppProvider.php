@@ -11,9 +11,9 @@ use App\Interfaces\TestMessagingInterface;
 use App\Models\Gym;
 use App\Services\Twilio\TwilioAccountService;
 use App\Services\Twilio\TwilioContext;
-use App\Services\Twilio\TwilioCreditService;
 use App\Services\Twilio\TwilioMessagingService;
 use App\Services\Twilio\TwilioPhoneService;
+use App\Services\WhatsApp\WhatsAppCreditService;
 use App\Services\WhatsAppTemplateManager;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Support\Facades\Log;
@@ -32,18 +32,19 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
 {
     private TwilioContext $context;
 
+    private WhatsAppCreditService $credits;
+
     // Lazy-loaded services
     private ?TwilioMessagingService $messaging = null;
 
     private ?TwilioAccountService $account = null;
-
-    private ?TwilioCreditService $credits = null;
 
     private ?TwilioPhoneService $phoneNumbers = null;
 
     public function __construct(int $gymId)
     {
         $this->context = new TwilioContext($gymId);
+        $this->credits = new WhatsAppCreditService($gymId);
     }
 
     // =========================
@@ -60,9 +61,9 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         return $this->account ??= new TwilioAccountService($this->context);
     }
 
-    protected function credits(): TwilioCreditService
+    protected function credits(): WhatsAppCreditService
     {
-        return $this->credits ??= new TwilioCreditService($this->context);
+        return $this->credits;
     }
 
     protected function phoneNumbers(): TwilioPhoneService
@@ -209,8 +210,8 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
             }
 
             $gym = Gym::find($gymId);
-            $gymName = $gym?->name ?? 'Your Gym';
-            $recipientNumber = $to ?? $account->phoneNumber?->phone_number;
+            $gymName = $gym->name ?? 'Your Gym';
+            $recipientNumber = $to ?? $account?->phoneNumber?->phone_number;
 
             if (! $recipientNumber) {
                 return ['success' => false, 'error' => 'No phone number configured.'];

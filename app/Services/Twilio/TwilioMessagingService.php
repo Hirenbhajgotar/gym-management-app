@@ -8,6 +8,8 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
+use App\Services\WhatsApp\WhatsAppBroadcastService;
+use App\Services\WhatsApp\WhatsAppCreditService;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -21,10 +23,21 @@ use Twilio\Exceptions\RestException;
  */
 class TwilioMessagingService implements MessagingInterface
 {
+    private ?WhatsAppBroadcastService $broadcastService = null;
+
     public function __construct(
         protected TwilioContext $context,
-        protected TwilioCreditService $credits,
+        protected WhatsAppCreditService $credits,
     ) {}
+
+    /**
+     * Get or create the broadcast service instance.
+     */
+    private function getBroadcastService(): WhatsAppBroadcastService
+    {
+        // Pass $this so the broadcast service can call sendTemplateMessage()
+        return $this->broadcastService ??= new WhatsAppBroadcastService($this, $this->context->gymId);
+    }
 
     /**
      * Send a WhatsApp message.
@@ -198,66 +211,7 @@ class TwilioMessagingService implements MessagingInterface
      */
     public function sendBroadcast(int $broadcastId): array
     {
-        $results = ['total' => 0, 'sent' => 0, 'failed' => 0];
-
-        try {
-            $broadcast = WhatsAppBroadcast::with('template')
-                ->where('gym_id', $this->context->gymId)
-                ->findOrFail($broadcastId);
-
-            $broadcast->markAsSending();
-
-            $query = $broadcast->recipients()->where('status', 'pending');
-            $results['total'] = $query->count();
-
-            $query->chunkById(100, function ($recipients) use ($broadcast, &$results) {
-                foreach ($recipients as $recipient) {
-                    $this->processBroadcastRecipient($broadcast, $recipient, $results);
-                    usleep(50000); // Rate limit protection
-                }
-            });
-
-            $broadcast->markAsCompleted();
-
-            Log::info('Broadcast completed', [
-                'broadcast_id' => $broadcastId,
-                'results' => $results,
-            ]);
-
-            return $results;
-        } catch (Exception $e) {
-            Log::error('Broadcast error', [
-                'broadcast_id' => $broadcastId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return $results;
-        }
-    }
-
-    private function processBroadcastRecipient(
-        WhatsAppBroadcast $broadcast,
-        WhatsAppBroadcastRecipient $recipient,
-        array &$results
-    ): void {
-        try {
-            $variables = $this->prepareBroadcastVariables($broadcast, $recipient);
-            $result = $this->sendTemplateMessage($recipient->phone_number, $broadcast->template->name, $variables);
-
-            if ($result['success']) {
-                $recipient->markAsSent($result['message_id']);
-                $broadcast->incrementSentCount();
-                $results['sent']++;
-            } else {
-                $recipient->markAsFailed($result['error']);
-                $broadcast->incrementFailedCount();
-                $results['failed']++;
-            }
-        } catch (\Exception $e) {
-            $recipient->markAsFailed($e->getMessage());
-            $broadcast->incrementFailedCount();
-            $results['failed']++;
-        }
+        return $this->getBroadcastService()->processBroadcast($broadcastId);
     }
 
     /**
