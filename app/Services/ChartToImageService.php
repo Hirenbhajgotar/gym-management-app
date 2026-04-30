@@ -152,6 +152,13 @@ class ChartToImageService
         }
 
         $maxValue = max($values);
+
+        // Guard against division by zero when all values are 0
+        if ($maxValue === 0) {
+            $this->drawNoDataMessage($image, $margin * 2 + $chartWidth, $margin * 2 + $chartHeight, 'No data available');
+
+            return;
+        }
         $pointSpacing = $chartWidth / (count($values) - 1);
 
         $points = [];
@@ -199,6 +206,14 @@ class ChartToImageService
         }
 
         $total = array_sum($values);
+
+        // Guard against division by zero when all values are 0
+        if ($total === 0) {
+            $this->drawNoDataMessage($image, $width, $height, 'No data available');
+
+            return;
+        }
+
         $centerX = $width / 2 - 100;
         $centerY = $height / 2;
         $outerRadius = min($width, $height) / 3;
@@ -401,5 +416,18 @@ class ChartToImageService
         }
 
         return $labels;
+    }
+
+    /**
+     * Draw "No Data" message on the image when chart has no data to display.
+     */
+    private function drawNoDataMessage($image, int $width, int $height, string $message = 'No data available'): void
+    {
+        $image->text($message, $width / 2, $height / 2, function ($font) {
+            $font->size(24);
+            $font->color('#666666');
+            $font->align('center');
+            $font->valign('middle');
+        });
     }
 }
