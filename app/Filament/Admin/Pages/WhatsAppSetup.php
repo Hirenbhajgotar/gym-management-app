@@ -416,8 +416,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                                     <div class="p-4 rounded-lg border-2 ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700') . '">
                                         <div class="flex items-center justify-between mb-2">
-                                            <span class="font-semibold text-gray-900 dark:text-gray-100">Meta WABA</span>
-                                            ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? '<span class="text-green-600">✓ Selected</span>' : '') . '
+                                            <span class="font-semibold ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? 'text-primary-900 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100') . '">Meta WABA</span>
+                                            ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? '<span class="' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? 'text-primary-900 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100') . '">✓ Selected</span>' : '') . '
                                         </div>
                                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Connect your existing WhatsApp Business number using Meta\'s embedded signup.</p>
                                         <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
@@ -428,8 +428,8 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                     </div>
                                     <div class="p-4 rounded-lg border-2 ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::TWILIO->value ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700') . '">
                                         <div class="flex items-center justify-between mb-2">
-                                            <span class="font-semibold text-gray-900 dark:text-gray-100">Twilio</span>
-                                            ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::TWILIO->value ? '<span class="text-green-600">✓ Selected</span>' : '') . '
+                                            <span class="font-semibold ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::TWILIO->value ? 'text-primary-900 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100') . '">Twilio</span>
+                                            ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::TWILIO->value ? '<span class="' . ($this->selectedProvider === WhatsAppProviderTypeEnum::TWILIO->value ? 'text-primary-900 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100') . '">✓ Selected</span>' : '') . '
                                         </div>
                                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Purchase a dedicated WhatsApp number through Twilio. We\'ll create a subaccount for your gym.</p>
                                         <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
@@ -511,88 +511,88 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
             : $this->getTwilioPhoneNumberStep();
     }
 
-    private function getCreateAccountStep(): Forms\Components\Wizard\Step
-    {
-        return Forms\Components\Wizard\Step::make('Create Account')
-            ->label('Account & Phone')
-            ->schema([
-                // Business Info Section
-                Forms\Components\Section::make('Business Information')
-                    ->description('Enter your business details')
-                    ->schema([
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TextInput::make('business_name')
-                                ->label('Business Name')
-                                ->required()
-                                ->disabled($this->accountCreated),
-                            Forms\Components\TextInput::make('business_email')
-                                ->label('Business Email')
-                                ->email()
-                                ->required()
-                                ->disabled($this->accountCreated),
-                        ]),
-                        Forms\Components\Textarea::make('business_description')
-                            ->label('Business Description')
-                            ->rows(2)
-                            ->placeholder('Describe your gym business...'),
-                    ]),
+    // private function getCreateAccountStep(): Forms\Components\Wizard\Step
+    // {
+    //     return Forms\Components\Wizard\Step::make('Create Account')
+    //         ->label('Account & Phone')
+    //         ->schema([
+    //             // Business Info Section
+    //             Forms\Components\Section::make('Business Information')
+    //                 ->description('Enter your business details')
+    //                 ->schema([
+    //                     Forms\Components\Grid::make(2)->schema([
+    //                         Forms\Components\TextInput::make('business_name')
+    //                             ->label('Business Name')
+    //                             ->required()
+    //                             ->disabled($this->accountCreated),
+    //                         Forms\Components\TextInput::make('business_email')
+    //                             ->label('Business Email')
+    //                             ->email()
+    //                             ->required()
+    //                             ->disabled($this->accountCreated),
+    //                     ]),
+    //                     Forms\Components\Textarea::make('business_description')
+    //                         ->label('Business Description')
+    //                         ->rows(2)
+    //                         ->placeholder('Describe your gym business...'),
+    //                 ]),
 
-                // Provider Selection Section (Per-Tenant)
-                Forms\Components\Section::make('WhatsApp Provider')
-                    ->description('Choose how you want to set up WhatsApp')
-                    ->schema([
-                        Forms\Components\Radio::make('provider_type')
-                            ->label('Select your provider')
-                            ->options([
-                                'twilio' => 'Twilio (Purchase a number)',
-                                'waba' => 'Meta WABA (Use existing number)',
-                            ])
-                            ->descriptions([
-                                'twilio' => 'Purchase a dedicated WhatsApp number through Twilio. We\'ll create a subaccount for you.',
-                                'waba' => 'Connect your existing WhatsApp Business number. Uses Meta\'s embedded signup flow.',
-                            ])
-                            ->default('twilio')
-                            ->live()
-                            ->disabled($this->accountCreated),
+    //             // Provider Selection Section (Per-Tenant)
+    //             Forms\Components\Section::make('WhatsApp Provider')
+    //                 ->description('Choose how you want to set up WhatsApp')
+    //                 ->schema([
+    //                     Forms\Components\Radio::make('provider_type')
+    //                         ->label('Select your provider')
+    //                         ->options([
+    //                             'twilio' => 'Twilio (Purchase a number)',
+    //                             'waba' => 'Meta WABA (Use existing number)',
+    //                         ])
+    //                         ->descriptions([
+    //                             'twilio' => 'Purchase a dedicated WhatsApp number through Twilio. We\'ll create a subaccount for you.',
+    //                             'waba' => 'Connect your existing WhatsApp Business number. Uses Meta\'s embedded signup flow.',
+    //                         ])
+    //                         ->default('twilio')
+    //                         ->live()
+    //                         ->disabled($this->accountCreated),
 
-                        // Show phone number options based on provider
-                        Forms\Components\Section::make('Phone Number')
-                            ->description('Choose how to get your WhatsApp phone number')
-                            ->schema([
-                                Forms\Components\Radio::make('phone_number_source')
-                                    ->label('How would you like to get your phone number?')
-                                    ->options([
-                                        'purchase_twilio' => 'Purchase from Twilio',
-                                        'use_own_number' => 'Use My Own Number',
-                                    ])
-                                    ->descriptions([
-                                        'purchase_twilio' => 'Get a new dedicated WhatsApp number instantly.',
-                                        'use_own_number' => 'Register an existing phone number you own.',
-                                    ])
-                                    ->default('purchase_twilio')
-                                    ->live()
-                                    ->visible(fn (Get $get) => $get('provider_type') === 'twilio' && ! $this->numberPurchased),
-                            ])
-                            ->visible(fn (Get $get) => $get('provider_type') === 'twilio'),
-                    ])
-                    ->visible(fn () => ! $this->accountCreated || ! $this->whatsappAccount?->hasProvider()),
-            ])
-            ->afterValidation(function () {
-                try {
-                    $this->processAccountAndProviderSetup();
-                } catch (\Exception $e) {
-                    Log::error('Failed to process account setup', ['error' => $e->getMessage()]);
+    //                     // Show phone number options based on provider
+    //                     Forms\Components\Section::make('Phone Number')
+    //                         ->description('Choose how to get your WhatsApp phone number')
+    //                         ->schema([
+    //                             Forms\Components\Radio::make('phone_number_source')
+    //                                 ->label('How would you like to get your phone number?')
+    //                                 ->options([
+    //                                     'purchase_twilio' => 'Purchase from Twilio',
+    //                                     'use_own_number' => 'Use My Own Number',
+    //                                 ])
+    //                                 ->descriptions([
+    //                                     'purchase_twilio' => 'Get a new dedicated WhatsApp number instantly.',
+    //                                     'use_own_number' => 'Register an existing phone number you own.',
+    //                                 ])
+    //                                 ->default('purchase_twilio')
+    //                                 ->live()
+    //                                 ->visible(fn (Get $get) => $get('provider_type') === 'twilio' && ! $this->numberPurchased),
+    //                         ])
+    //                         ->visible(fn (Get $get) => $get('provider_type') === 'twilio'),
+    //                 ])
+    //                 ->visible(fn () => ! $this->accountCreated || ! $this->whatsappAccount?->hasProvider()),
+    //         ])
+    //         ->afterValidation(function () {
+    //             try {
+    //                 $this->processAccountAndProviderSetup();
+    //             } catch (\Exception $e) {
+    //                 Log::error('Failed to process account setup', ['error' => $e->getMessage()]);
 
-                    Notification::make()
-                        ->title('Setup Failed')
-                        ->body($e->getMessage())
-                        ->danger()
-                        ->send();
+    //                 Notification::make()
+    //                     ->title('Setup Failed')
+    //                     ->body($e->getMessage())
+    //                     ->danger()
+    //                     ->send();
 
-                    throw new Halt;
-                }
-            });
-    }
+    //                 throw new Halt;
+    //             }
+    //         });
+    // }
 
     /**
      * Twilio Account Step - Step 2 for Twilio provider.
@@ -704,6 +704,22 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                             '))
                             ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'embedded_signup' && ! $this->isWabaConnected()),
 
+                        Forms\Components\Placeholder::make('')
+                            ->content(new HtmlString('
+                                <div class="mt-4 p-4 bg-primary-500 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-lg flex items-start gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-800/50 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-green-600 dark:text-green-400">Connected Successfully</p>
+                                        <p class="text-sm text-green-500 dark:text-green-400 mt-1">' . session('success') . '</p>
+                                    </div>
+                                </div>
+                            '))
+                            ->visible(fn (): bool => session()->has('success')),
+
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('connectViaFacebook')
                                 ->label('Connect via Facebook')
@@ -732,22 +748,6 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 </div>
                             '))
                             ->visible(fn (): bool => session()->has('error')),
-
-                        Forms\Components\Placeholder::make('')
-                            ->content(new HtmlString('
-                                <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
-                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-green-800 dark:text-green-300">Connected Successfully</p>
-                                        <p class="text-sm text-green-700 dark:text-green-400 mt-1">' . session('success') . ' asdf asdf asdf asdf asdf asdf asdf asdf </p>
-                                    </div>
-                                </div>
-                            '))
-                            ->visible(fn (): bool => true),
 
                         // Manual Connect Form Fields (shown when manual_connect is selected)
                         Forms\Components\Section::make('Connect Your Existing WABA')
