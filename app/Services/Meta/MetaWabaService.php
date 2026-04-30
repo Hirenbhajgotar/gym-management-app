@@ -282,4 +282,142 @@ class MetaWabaService implements WabaSetupInterface
 
         return WhatsAppPhoneNumberTypesEnum::BUSINESS;
     }
+
+    /**
+     * Complete embedded signup - save newly created WABA to database.
+     *
+     * This method is called after MetaEmbeddedSignupService::handleEmbeddedSignupCallback()
+     * successfully processes the OAuth callback. It saves the newly created WABA details
+     * to the WhatsAppAccount.
+     *
+     * Note: For embedded signup, phone_number_id is often null because the user selects
+     * their phone number in the next step of the wizard. We only save the phone number
+     * if a phone_number_id is explicitly provided.
+     *
+     * @param  int  $gymId  The gym ID
+     * @param  string  $wabaId  The newly created WABA ID from Meta
+     * @param  string  $accessToken  The Meta access token from OAuth
+     * @param  string|null  $phoneNumberId  The phone number ID (optional - may be null)
+     * @return array{
+     *     success: bool,
+     *     waba_id?: string,
+     *     message?: string,
+     *     error?: string
+     * }
+     */
+    public function completeEmbeddedSignup(int $gymId, string $wabaId, string $accessToken, ?string $phoneNumberId = null): array
+    {
+        try {
+            // Get or create WhatsAppAccount for the gym
+            $account = WhatsAppAccount::firstOrCreate(
+                ['gym_id' => $gymId],
+                [
+                    'provider_type' => WhatsAppProviderTypeEnum::WABA,
+                ]
+            );
+
+            // Update with WABA details from embedded signup
+            // waba_mode = INDIVIDUAL because user created it via embedded signup (owns it)
+            // status = PENDING because it needs verification with Meta
+            $account->update([
+                'waba_id' => $wabaId,
+                'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                'meta_access_token' => $accessToken,
+                'embedded_signup_completed' => true,
+                'status' => WhatsAppAccountStatusEnum::PENDING,
+            ]);
+
+            // Note: phone_number_id is often null in embedded signup
+            // (user selects phone in next step of the wizard)
+            // Only create phone record if we have actual phone number ID
+            if ($phoneNumberId) {
+                // Fetch phone details from Meta API to get the display phone number
+                $phoneDetails = $this->fetchPhoneDetails($phoneNumberId, $accessToken);
+
+                $displayPhoneNumber = $phoneDetails['display_phone_number'] ?? null;
+                $normalizedPhoneNumber = $displayPhoneNumber
+                    ? $this->normalizePhoneNumber($displayPhoneNumber)
+                    : null;
+                $countryCode = $normalizedPhoneNumber
+                    ? $this->extractCountryCode($normalizedPhoneNumber)
+                    : null;
+
+                WhatsAppPhoneNumber::updateOrCreate(
+                    ['whatsapp_account_id' => $account->id],
+                    [
+                        'waba_phone_number_id' => $phoneNumberId,
+                        'phone_number' => $normalizedPhoneNumber,
+                        'country_code' => $countryCode,
+                        'friendly_name' => $normalizedPhoneNumber,
+                        'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+                        'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
+                    ]
+                );
+            }
+
+            // Invalidate provider cache so factory recreates provider with new credentials
+            WhatsAppProviderFactory::invalidateProviderCache($gymId);
+
+            Log::info('Embedded signup completed successfully', [
+                'gym_id' => $gymId,
+                'waba_id' => $wabaId,
+                'phone_number_id' => $phoneNumberId,
+            ]);
+
+            return [
+                'success' => true,
+                'waba_id' => $wabaId,
+                'message' => 'Embedded signup completed successfully',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to complete embedded signup', [
+                'gym_id' => $gymId,
+                'waba_id' => $wabaId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to complete embedded signup: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Fetch phone number details from Meta API.
+     *
+     * @param  string  $phoneNumberId  The phone number ID
+     * @param  string  $accessToken  The Meta access token
+     * @return array{success: bool, display_phone_number?: string, error?: string}
+     */
+    protected function fetchPhoneDetails(string $phoneNumberId, string $accessToken): array
+    {
+        try {
+            $response = $this->api->get("/{$phoneNumberId}", [
+                'fields' => 'id,display_phone_number',
+            ], $accessToken);
+
+            if (! $response['success']) {
+                return [
+                    'success' => false,
+                    'error' => $response['error'] ?? 'Failed to fetch phone details',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'display_phone_number' => $response['data']['display_phone_number'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch phone details from Meta', [
+                'phone_number_id' => $phoneNumberId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

@@ -109,4 +109,27 @@ interface WabaSetupInterface
      * }
      */
     public function verifyWabaConnection(string $wabaId, string $phoneNumberId, ?string $accessToken = null): array;
+
+    /**
+     * Complete embedded signup - save newly created WABA to database.
+     *
+     * This method is called after MetaEmbeddedSignupService::handleEmbeddedSignupCallback()
+     * successfully processes the OAuth callback. It saves the newly created WABA details
+     * to the WhatsAppAccount.
+     *
+     * Note: For embedded signup, phone_number_id is often null because the user selects
+     * their phone number in the next step of the wizard.
+     *
+     * @param  int  $gymId  The gym ID
+     * @param  string  $wabaId  The newly created WABA ID from Meta
+     * @param  string  $accessToken  The Meta access token from OAuth
+     * @param  string|null  $phoneNumberId  The phone number ID (optional)
+     * @return array{
+     *     success: bool,
+     *     waba_id?: string,
+     *     message?: string,
+     *     error?: string
+     * }
+     */
+    public function completeEmbeddedSignup(int $gymId, string $wabaId, string $accessToken, ?string $phoneNumberId = null): array;
 }

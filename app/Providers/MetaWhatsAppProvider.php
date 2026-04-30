@@ -179,6 +179,11 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         return $this->wabaSetup()->verifyWabaConnection($wabaId, $phoneNumberId, $accessToken);
     }
 
+    public function completeEmbeddedSignup(int $gymId, string $wabaId, string $accessToken, ?string $phoneNumberId = null): array
+    {
+        return $this->wabaSetup()->completeEmbeddedSignup($gymId, $wabaId, $accessToken, $phoneNumberId);
+    }
+
     public function startEmbeddedSignup(int $gymId): string
     {
         return $this->embeddedSignup()->startEmbeddedSignup($gymId);

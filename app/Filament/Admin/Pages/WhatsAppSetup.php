@@ -154,12 +154,21 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
-        $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
+        $this->welcomeCreditsClaimed = $this->creditBalance->welcome_credits_claimed ?? false;
         $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::isExistsForGym((int) $gymId);
     }
 
     private function determineViewState(): void
     {
+        $requestedStep = request()->query('step');
+
+        if ($requestedStep && ! $this->whatsappAccount) {
+            $this->viewState = 'setup';
+            $this->setupStep = (int) $requestedStep;
+
+            return;
+        }
+
         if (! $this->whatsappAccount) {
             $this->viewState = 'onboarding';
             $this->setupStep = 1;
@@ -242,16 +251,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 : $existingProvider;
         } else {
             // Initial load - get from database or default
-            $this->selectedProvider = $this->whatsappAccount?->provider_type?->value ?? WhatsAppProviderTypeEnum::TWILIO->value;
+            $this->selectedProvider = $this->whatsappAccount?->provider_type->value ?? WhatsAppProviderTypeEnum::TWILIO->value;
         }
 
         $this->data = [
-            'business_name' => $this->whatsappAccount?->business_name ?? $gym?->name ?? '',
-            'business_email' => $this->whatsappAccount?->business_email ?? $user?->email ?? '',
-            'business_description' => $this->whatsappAccount?->business_description ?? '',
+            'business_name' => $this->whatsappAccount->business_name ?? $gym?->name ?? '',
+            'business_email' => $this->whatsappAccount->business_email ?? $user?->email ?? '',
+            'business_description' => $this->whatsappAccount->business_description ?? '',
             'search_country' => 'US',
             'waba_connection_method' => 'embedded_signup',
-            'waba_id' => $this->whatsappAccount?->waba_id ?? '',
+            'waba_id' => $this->whatsappAccount->waba_id ?? '',
             'waba_phone_number_id' => '',
             'manual_phone_number' => '',
             'meta_access_token' => '',
@@ -264,9 +273,9 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
         ];
 
         $this->businessProfile = [
-            'business_name' => $this->whatsappAccount?->business_name ?? $gym?->name ?? '',
-            'business_email' => $this->whatsappAccount?->business_email ?? $user?->email ?? '',
-            'business_description' => $this->whatsappAccount?->business_description ?? '',
+            'business_name' => $this->whatsappAccount->business_name ?? $gym->name ?? '',
+            'business_email' => $this->whatsappAccount->business_email ?? $user->email ?? '',
+            'business_description' => $this->whatsappAccount->business_description ?? '',
         ];
     }
 
@@ -377,7 +386,7 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                 $this->getTemplatesStep(), // Step 4: Default Templates
                 $this->getWelcomeCreditsStep(), // Step 5: Welcome Credits
             ])
-                ->skippable(true)
+                ->persistStepInQueryString()
                 ->startOnStep($this->setupStep)
                 ->nextAction(function (Action $action) {
                     $step = (int) request()->get('step', $this->setupStep);
@@ -446,8 +455,10 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                 $this->selectedProvider = $stringValue;
                                 $this->data['provider_type'] = $stringValue;
 
-                                // Force form to re-render with explicit data array
-                                $this->form->fill($this->data);
+                                if (isset($this->form)) {
+                                    // Force form to re-render with explicit data array
+                                    $this->form->fill($this->data);
+                                }
                             })
                             ->disabled($this->accountCreated),
                     ])
@@ -705,6 +716,38 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
                                     'wire:target' => 'data.waba_connection_method',
                                 ]),
                         ]),
+
+                        Forms\Components\Placeholder::make('')
+                            ->content(new HtmlString('
+                                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-800/50 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-red-800 dark:text-red-300">Connection Error</p>
+                                        <p class="text-sm text-red-700 dark:text-gray-700 mt-1">' . session('error') . '</p>
+                                    </div>
+                                </div>
+                            '))
+                            ->visible(fn (): bool => session()->has('error')),
+
+                        Forms\Components\Placeholder::make('')
+                            ->content(new HtmlString('
+                                <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-green-800 dark:text-green-300">Connected Successfully</p>
+                                        <p class="text-sm text-green-700 dark:text-green-400 mt-1">' . session('success') . ' asdf asdf asdf asdf asdf asdf asdf asdf </p>
+                                    </div>
+                                </div>
+                            '))
+                            ->visible(fn (): bool => true),
 
                         // Manual Connect Form Fields (shown when manual_connect is selected)
                         Forms\Components\Section::make('Connect Your Existing WABA')
