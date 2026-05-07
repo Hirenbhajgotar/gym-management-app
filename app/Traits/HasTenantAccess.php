@@ -13,7 +13,7 @@ trait HasTenantAccess
     /**
      * Get the current gym tenant with proper type hinting
      */
-    protected function getGym(): Gym
+    public function getGym(): Gym
     {
         /** @var Gym $gym */
         $gym = Filament::getTenant();
@@ -24,7 +24,7 @@ trait HasTenantAccess
     /**
      * Get the current gym ID
      */
-    protected function getGymId(): int|string
+    public function getGymId(): int|string
     {
         return $this->getGym()->id;
 
@@ -33,7 +33,7 @@ trait HasTenantAccess
     /**
      * Get the current gym slug
      */
-    protected function getTenantSlug(): string
+    public function getTenantSlug(): string
     {
         return $this->getGym()->slug;
     }

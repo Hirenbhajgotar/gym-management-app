@@ -13,6 +13,8 @@ use App\Interfaces\WabaSetupInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Providers\WhatsAppProviderFactory;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -71,83 +73,82 @@ class MetaWabaService implements WabaSetupInterface
             ];
         }
 
-        $verificationResult = $this->verifyWabaConnection($wabaId, $phoneNumberId, $metaAccessToken);
+        try {
+            return Cache::lock("meta:manual-waba:{$gymId}", 60)->block(15, function () use ($gymId, $wabaId, $phoneNumber, $metaAccessToken, $phoneNumberId, $businessData) {
+                $verificationResult = $this->verifyWabaConnection($wabaId, $phoneNumberId, $metaAccessToken);
 
-        if (! $verificationResult['success']) {
+                if (! $verificationResult['success'] || ! ($verificationResult['verified'] ?? false)) {
+                    return [
+                        'success' => false,
+                        'error' => $verificationResult['error'] ?? 'The provided Phone Number ID does not exist or is not valid in Meta system',
+                    ];
+                }
+
+                $businessName = $verificationResult['business_name'] ?? ($businessData['business_name'] ?? null);
+                $displayPhoneNumber = $verificationResult['display_phone_number'] ?? $phoneNumber;
+                $normalizedPhoneNumber = $this->normalizePhoneNumber($displayPhoneNumber);
+
+                return DB::transaction(function () use ($gymId, $businessData, $wabaId, $phoneNumberId, $metaAccessToken, $verificationResult, $businessName, $normalizedPhoneNumber) {
+                    $account = WhatsAppAccount::updateOrCreate([
+                        'gym_id' => $gymId,
+                    ], [
+                        'business_name' => $businessName,
+                        'business_email' => $businessData['business_email'] ?? null,
+                        'business_description' => $businessData['business_description'] ?? '',
+                        'waba_id' => $wabaId,
+                        'waba_name' => $businessName,
+                        'waba_mode' => WabaModeEnum::MANUAL,
+                        'meta_access_token' => $metaAccessToken,
+                        'embedded_signup_completed' => true,
+                        'waba_status' => $this->mapWabaStatus($verificationResult['waba_status'] ?? null),
+                        'provider_type' => WhatsAppProviderTypeEnum::WABA,
+                        'status' => WhatsAppAccountStatusEnum::ACTIVE,
+                        'verification_status' => $this->mapBusinessVerificationStatus($verificationResult['business_verification_status'] ?? null),
+                        'verified_at' => now(),
+                    ]);
+
+                    WhatsAppPhoneNumber::updateOrCreate([
+                        'whatsapp_account_id' => $account->id,
+                    ], [
+                        'waba_phone_number_id' => $verificationResult['phone_number_id'] ?? $phoneNumberId,
+                        'phone_number' => $normalizedPhoneNumber,
+                        'country_code' => $this->extractCountryCode($normalizedPhoneNumber),
+                        'friendly_name' => $normalizedPhoneNumber,
+                        'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+                        'type' => $this->determinePhoneType($verificationResult),
+                    ]);
+
+                    WhatsAppProviderFactory::invalidateProviderCache($gymId);
+
+                    return [
+                        'success' => true,
+                        'waba_id' => $wabaId,
+                        'phone_number_id' => $verificationResult['phone_number_id'] ?? $phoneNumberId,
+                        'display_phone_number' => $normalizedPhoneNumber,
+                        'business_name' => $businessName,
+                        'waba_status' => $verificationResult['waba_status'],
+                        'verification_status' => $verificationResult['business_verification_status'],
+                        'message' => 'Manual WABA connected successfully',
+                    ];
+                });
+            });
+        } catch (LockTimeoutException $e) {
             return [
                 'success' => false,
-                'error' => $verificationResult['error'] ?? 'Failed to verify WABA connection with Meta',
+                'error' => 'WABA connection is currently in progress. Please wait a moment.',
             ];
-        }
-
-        if (! ($verificationResult['verified'] ?? false)) {
-            return [
-                'success' => false,
-                'error' => 'The provided Phone Number ID does not exist or is not valid in Meta system',
-            ];
-        }
-
-        return DB::transaction(function () use ($gymId, $businessData, $wabaId, $phoneNumberId, $metaAccessToken, $verificationResult, $phoneNumber) {
-            $businessName = $verificationResult['business_name']
-                ?? ($businessData['business_name'] ?? null);
-
-            $businessEmail = $businessData['business_email'] ?? null;
-            $businessDescription = $businessData['business_description'] ?? '';
-
-            $displayPhoneNumber = $verificationResult['display_phone_number'] ?? $phoneNumber;
-            $verifiedPhoneNumberId = $verificationResult['phone_number_id'] ?? $phoneNumberId;
-            $normalizedPhoneNumber = $this->normalizePhoneNumber($displayPhoneNumber);
-            $countryCode = $this->extractCountryCode($normalizedPhoneNumber);
-            $phoneType = $this->determinePhoneType($verificationResult);
-            $verificationStatus = $verificationResult['business_verification_status'];
-            $wabaStatusEnum = $verificationResult['waba_status']
-                ?? WabaStatusEnum::ACTIVE;
-
-            $accountData = [
+        } catch (\Exception $e) {
+            Log::error('Failed to connect manual WABA', [
                 'gym_id' => $gymId,
-                'business_name' => $businessName,
-                'business_email' => $businessEmail,
-                'business_description' => $businessDescription,
                 'waba_id' => $wabaId,
-                'waba_name' => $businessName,
-                'waba_mode' => WabaModeEnum::MANUAL,
-                'meta_access_token' => $metaAccessToken,
-                'embedded_signup_completed' => true,
-                'waba_status' => $wabaStatusEnum,
-                'provider_type' => WhatsAppProviderTypeEnum::WABA,
-                'status' => WhatsAppAccountStatusEnum::ACTIVE,
-                'verification_status' => $verificationStatus,
-                'verified_at' => now(),
-            ];
-
-            $account = WhatsAppAccount::updateOrCreate([
-                'gym_id' => $gymId,
-            ], $accountData);
-
-            WhatsAppPhoneNumber::updateOrCreate([
-                'whatsapp_account_id' => $account->id,
-            ], [
-                'waba_phone_number_id' => $verifiedPhoneNumberId,
-                'phone_number' => $normalizedPhoneNumber,
-                'country_code' => $countryCode,
-                'friendly_name' => $normalizedPhoneNumber,
-                'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
-                'type' => $phoneType,
+                'error' => $e->getMessage(),
             ]);
 
-            WhatsAppProviderFactory::invalidateProviderCache($gymId);
-
             return [
-                'success' => true,
-                'waba_id' => $wabaId,
-                'phone_number_id' => $verifiedPhoneNumberId,
-                'display_phone_number' => $normalizedPhoneNumber,
-                'business_name' => $businessName,
-                'waba_status' => $wabaStatusEnum?->value,
-                'verification_status' => $verificationStatus?->value,
-                'message' => 'Manual WABA connected successfully',
+                'success' => false,
+                'error' => 'An unexpected error occurred while connecting WABA.',
             ];
-        });
+        }
     }
 
     public function verifyWabaConnection(string $wabaId, string $phoneNumberId, ?string $accessToken = null): array
@@ -164,23 +165,18 @@ class MetaWabaService implements WabaSetupInterface
             ], $token);
 
             if (! $phoneResponse['success']) {
-                $errorMessage = $phoneResponse['error'] ?? 'Failed to fetch phone number details';
-
-                return $this->verificationError("Meta API error: {$errorMessage}");
+                return $this->verificationError('Meta API error: ' . ($phoneResponse['error'] ?? 'Failed to fetch phone number details'));
             }
-
-            $phoneData = $phoneResponse['data'];
 
             $wabaResponse = $this->api->get("/{$wabaId}", [
                 'fields' => 'id,name,business,business_verification_status,currency,timezone',
             ], $token);
 
+            $phoneData = $phoneResponse['data'];
             $wabaData = $wabaResponse['success'] ? $wabaResponse['data'] : [];
 
             $businessName = $wabaData['business']['name'] ?? $wabaData['name'] ?? $phoneData['verified_name'] ?? null;
-
-            $businessVerificationStatus = $this->mapBusinessVerificationStatus($wabaData['business_verification_status'] ?? null);
-            $wabaStatus = $this->mapWabaStatus($wabaData['business_verification_status'] ?? $wabaData['status'] ?? null);
+            $bizStatus = $wabaData['business_verification_status'] ?? null;
 
             return [
                 'success' => true,
@@ -188,13 +184,13 @@ class MetaWabaService implements WabaSetupInterface
                 'phone_number_id' => $phoneData['id'] ?? $phoneNumberId,
                 'display_phone_number' => $phoneData['display_phone_number'] ?? null,
                 'verified_name' => $phoneData['verified_name'] ?? null,
-                'business_verification_status' => $businessVerificationStatus->value,
+                'business_verification_status' => $this->mapBusinessVerificationStatus($bizStatus)->value,
                 'code_verification_status' => $phoneData['code_verification_status'] ?? null,
                 'certificate' => $phoneData['certificate'] ?? null,
                 'quality_score' => $phoneData['quality_score'] ?? null,
                 'waba_id' => $wabaData['id'] ?? $wabaId,
                 'business_name' => $businessName,
-                'waba_status' => $wabaStatus->value,
+                'waba_status' => $this->mapWabaStatus($bizStatus)->value,
                 'currency' => $wabaData['currency'] ?? null,
                 'timezone' => $wabaData['timezone'] ?? null,
                 'error' => null,
@@ -235,8 +231,6 @@ class MetaWabaService implements WabaSetupInterface
     {
         return match ($status) {
             'VERIFIED' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
-            'UNVERIFIED' => WhatsAppAccountVerificationStatusEnum::PENDING,
-            'PENDING' => WhatsAppAccountVerificationStatusEnum::PENDING,
             'IN_REVIEW' => WhatsAppAccountVerificationStatusEnum::IN_REVIEW,
             'REJECTED' => WhatsAppAccountVerificationStatusEnum::REJECTED,
             default => WhatsAppAccountVerificationStatusEnum::PENDING,
@@ -247,20 +241,13 @@ class MetaWabaService implements WabaSetupInterface
     {
         return match ($status) {
             'VERIFIED' => WabaStatusEnum::ACTIVE,
-            'UNVERIFIED' => WabaStatusEnum::PENDING,
-            'PENDING' => WabaStatusEnum::PENDING,
-            'IN_REVIEW' => WabaStatusEnum::PENDING,
             default => WabaStatusEnum::PENDING,
         };
     }
 
     protected function normalizePhoneNumber(string $phoneNumber): string
     {
-        if (str_starts_with($phoneNumber, '+')) {
-            return $phoneNumber;
-        }
-
-        return '+' . ltrim($phoneNumber, '+');
+        return str_starts_with($phoneNumber, '+') ? $phoneNumber : '+' . ltrim($phoneNumber, '+');
     }
 
     protected function extractCountryCode(string $phoneNumber): ?string
@@ -308,66 +295,81 @@ class MetaWabaService implements WabaSetupInterface
     public function completeEmbeddedSignup(int $gymId, string $wabaId, string $accessToken, ?string $phoneNumberId = null): array
     {
         try {
-            // Get or create WhatsAppAccount for the gym
-            $account = WhatsAppAccount::firstOrCreate(
-                ['gym_id' => $gymId],
-                [
-                    'provider_type' => WhatsAppProviderTypeEnum::WABA,
-                ]
-            );
+            return Cache::lock("meta:embedded-signup:{$gymId}", 60)->block(15, function () use ($gymId, $wabaId, $accessToken, $phoneNumberId) {
+                // Double-check if already processed (Meta callback deduplication)
+                $existingAccount = WhatsAppAccount::where('gym_id', $gymId)
+                    ->where('waba_id', $wabaId)
+                    ->where('embedded_signup_completed', true)
+                    ->first();
 
-            // Update with WABA details from embedded signup
-            // waba_mode = INDIVIDUAL because user created it via embedded signup (owns it)
-            // status = PENDING because it needs verification with Meta
-            $account->update([
-                'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL,
-                'meta_access_token' => $accessToken,
-                'embedded_signup_completed' => true,
-                'status' => WhatsAppAccountStatusEnum::PENDING,
-            ]);
+                if ($existingAccount) {
+                    return [
+                        'success' => true,
+                        'waba_id' => $wabaId,
+                        'message' => 'Embedded signup already completed',
+                    ];
+                }
 
-            // Note: phone_number_id is often null in embedded signup
-            // (user selects phone in next step of the wizard)
-            // Only create phone record if we have actual phone number ID
-            if ($phoneNumberId) {
-                // Fetch phone details from Meta API to get the display phone number
-                $phoneDetails = $this->fetchPhoneDetails($phoneNumberId, $accessToken);
-
-                $displayPhoneNumber = $phoneDetails['display_phone_number'] ?? null;
-                $normalizedPhoneNumber = $displayPhoneNumber
-                    ? $this->normalizePhoneNumber($displayPhoneNumber)
-                    : null;
-                $countryCode = $normalizedPhoneNumber
-                    ? $this->extractCountryCode($normalizedPhoneNumber)
-                    : null;
-
-                WhatsAppPhoneNumber::updateOrCreate(
-                    ['whatsapp_account_id' => $account->id],
-                    [
-                        'waba_phone_number_id' => $phoneNumberId,
-                        'phone_number' => $normalizedPhoneNumber,
-                        'country_code' => $countryCode,
-                        'friendly_name' => $normalizedPhoneNumber,
-                        'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
-                        'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
-                    ]
+                // Get or create WhatsAppAccount for the gym
+                $account = WhatsAppAccount::firstOrCreate(
+                    ['gym_id' => $gymId],
+                    ['provider_type' => WhatsAppProviderTypeEnum::WABA]
                 );
-            }
 
-            // Invalidate provider cache so factory recreates provider with new credentials
-            WhatsAppProviderFactory::invalidateProviderCache($gymId);
+                // Update with WABA details from embedded signup
+                // waba_mode = INDIVIDUAL because user created it via embedded signup (owns it)
+                // status = PENDING because it needs verification with Meta
+                $account->update([
+                    'waba_id' => $wabaId,
+                    'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                    'meta_access_token' => $accessToken,
+                    'embedded_signup_completed' => true,
+                    'status' => WhatsAppAccountStatusEnum::PENDING,
+                ]);
 
-            Log::info('Embedded signup completed successfully', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'phone_number_id' => $phoneNumberId,
-            ]);
+                // Note: phone_number_id is often null in embedded signup
+                // (user selects phone in next step of the wizard)
+                // Only create phone record if we have actual phone number ID
+                if ($phoneNumberId) {
+                    // Fetch phone details from Meta API to get the display phone number
+                    $phoneDetails = $this->fetchPhoneDetails($phoneNumberId, $accessToken);
 
+                    if ($phoneDetails['success'] && $phoneDetails['display_phone_number']) {
+                        $normalizedPhoneNumber = $this->normalizePhoneNumber($phoneDetails['display_phone_number']);
+
+                        WhatsAppPhoneNumber::updateOrCreate(
+                            ['whatsapp_account_id' => $account->id],
+                            [
+                                'waba_phone_number_id' => $phoneNumberId,
+                                'phone_number' => $normalizedPhoneNumber,
+                                'country_code' => $this->extractCountryCode($normalizedPhoneNumber),
+                                'friendly_name' => $normalizedPhoneNumber,
+                                'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+                                'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
+                            ]
+                        );
+                    }
+                }
+
+                // Invalidate provider cache so factory recreates provider with new credentials
+                WhatsAppProviderFactory::invalidateProviderCache($gymId);
+
+                Log::info('Embedded signup completed successfully', [
+                    'gym_id' => $gymId,
+                    'waba_id' => $wabaId,
+                ]);
+
+                return [
+                    'success' => true,
+                    'waba_id' => $wabaId,
+                    'message' => 'Embedded signup completed successfully',
+                ];
+            });
+
+        } catch (LockTimeoutException $e) {
             return [
-                'success' => true,
-                'waba_id' => $wabaId,
-                'message' => 'Embedded signup completed successfully',
+                'success' => false,
+                'error' => 'Processing embedded signup. Please wait.',
             ];
         } catch (\Exception $e) {
             Log::error('Failed to complete embedded signup', [

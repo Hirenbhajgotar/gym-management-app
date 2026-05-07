@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
+/**
+ * @deprecated: This class is deprected and will be removed in future version.
+ */
 class TwilioWhatsAppService implements WhatsAppServiceInterface
 {
     private string $tenantId;

@@ -12,19 +12,22 @@ trait HasFormInitialization
         $gym = $this->getGym();
         $user = Auth::user();
 
-        $existingProvider = $this->data['provider_type'] ?? $this->selectedProvider ?? null;
+        $existingProvider = $this->whatsappAccount?->provider_type?->value ?? null;
+
         if ($existingProvider !== null) {
-            $this->selectedProvider = $existingProvider instanceof WhatsAppProviderTypeEnum
-                ? $existingProvider->value
-                : $existingProvider;
+            $this->selectedProvider = $existingProvider;
         } else {
-            $this->selectedProvider = $this->whatsappAccount?->provider_type->value
-                ?? WhatsAppProviderTypeEnum::TWILIO->value;
+            $selectedProvider = $this->data['provider_type'] ?? $this->selectedProvider ?? null;
+            if (is_string($selectedProvider)) {
+                $this->selectedProvider = $selectedProvider;
+            } elseif ($selectedProvider instanceof WhatsAppProviderTypeEnum) {
+                $this->selectedProvider = $selectedProvider->value;
+            }
         }
 
         $this->data = [
-            'business_name' => $this->whatsappAccount->business_name ?? $gym?->name ?? '',
-            'business_email' => $this->whatsappAccount->business_email ?? $user?->email ?? '',
+            'business_name' => $this->whatsappAccount->business_name ?? $gym->name,
+            'business_email' => $this->whatsappAccount->business_email ?? $user->email,
             'business_description' => $this->whatsappAccount->business_description ?? '',
             'search_country' => 'US',
             'waba_connection_method' => 'embedded_signup',

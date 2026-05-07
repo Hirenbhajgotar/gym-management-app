@@ -4,10 +4,9 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasFormInitialization;
-use App\Filament\Admin\WhatsAppSetup\Concerns\HasSetupActions;
-use App\Filament\Admin\WhatsAppSetup\Concerns\HasSetupSchemas;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasSetupState;
-use App\Interfaces\WhatsAppProviderInterface;
+use App\Filament\Admin\WhatsAppSetup\Concerns\SetupActions;
+use App\Filament\Admin\WhatsAppSetup\Schemas\SetupSchema;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Traits\HasTenantAccess;
@@ -24,11 +23,7 @@ use Filament\Pages\Page;
  */
 class WhatsAppSetup extends Page implements HasActions, HasForms
 {
-    use HasFormInitialization;
-    use HasSetupActions;
-    use HasSetupSchemas;
-    use HasSetupState;
-    use HasTenantAccess, InteractsWithActions, InteractsWithForms;
+    use HasFormInitialization, HasSetupState, HasTenantAccess, InteractsWithActions, InteractsWithForms, SetupActions;
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
 
@@ -40,11 +35,16 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     protected static ?int $navigationSort = 2;
 
-    protected ?WhatsAppProviderInterface $provider = null;
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->hasRole('gym_owner');
+    }
 
     public function mount(): void
     {
-        $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
+        // $this->useIndividualWaba = (bool) config('services.twilio.use_individual_waba', false);
         $this->loadWhatsAppData();
         $this->determineViewState();
         $this->initializeFormData();
@@ -53,8 +53,27 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function form(Form $form): Form
     {
         return $form
-            ->schema($this->getWhatsAppFormSchema())
+            ->schema(SetupSchema::make($this))
             ->statePath('data');
+    }
+
+    public function refresh(): void
+    {
+        $this->initializeFormData();
+        $this->data = array_merge($this->data, ['provider_type' => $this->selectedProvider]);
+    }
+
+    public function refreshWizard(): void
+    {
+        $this->selectedProvider = is_string($this->data['provider_type'] ?? null) ? $this->data['provider_type'] : $this->selectedProvider;
+        $this->form->fill();
+    }
+
+    public function updatedProviderType(?string $value): void
+    {
+        if ($value) {
+            $this->selectedProvider = $value;
+        }
     }
 
     /**

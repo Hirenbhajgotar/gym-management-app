@@ -2,10 +2,13 @@
 
 namespace App\Services\Twilio;
 
+use App\Enums\WabaModeEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Interfaces\AccountManagementInterface;
 use App\Models\WhatsAppAccount;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 
@@ -36,37 +39,61 @@ class TwilioAccountService implements AccountManagementInterface
     public function createSubAccount(int $gymId, string $gymName, string $email): array
     {
         try {
-            // Load account for this gym
-            $account = $this->context->getAccount();
+            return Cache::lock('twilio:subaccount:setup:' . $gymId, 120)->block(30, function () use ($gymId, $gymName, $email) {
+                // Load account for this gym
+                $account = $this->context->getAccount();
 
-            if ($account?->twilio_account_sid) {
-                return [
-                    'success' => true,
-                    'account_sid' => $account->twilio_account_sid,
-                    'message' => 'Account already exists',
-                ];
-            }
+                if ($account?->twilio_account_sid) {
+                    return [
+                        'success' => true,
+                        'account_sid' => $account->twilio_account_sid,
+                        'message' => 'Account already exists',
+                    ];
+                }
 
-            $subaccount = $this->context->getMasterClient()
-                ->api->v2010->accounts->create([
-                    'friendlyName' => "Gym_{$gymId}_{$gymName}",
+                $subaccount = $this->context->getMasterClient()
+                    ->api->v2010->accounts->create([
+                        'friendlyName' => "{$gymId}-{$gymName}",
+                    ]);
+
+                // Create a Messaging Service on the subaccount for WhatsApp Channel Sender registration
+                $subClient = $this->context->getClientForAccount(
+                    new WhatsAppAccount([
+                        'twilio_account_sid' => $subaccount->sid,
+                        'twilio_auth_token' => $subaccount->authToken,
+                    ])
+                );
+
+                $messagingService = $subClient->messaging->v1->services->create("Gym_{$gymId}_SERVICE");
+
+                WhatsAppAccount::updateOrCreate([
+                    'gym_id' => $gymId,
+                ], [
+                    'twilio_account_sid' => $subaccount->sid,
+                    'twilio_auth_token' => $subaccount->authToken,
+                    'messaging_service_sid' => $messagingService->sid,
+                    'waba_mode' => WabaModeEnum::INDIVIDUAL,
+                    'status' => WhatsAppAccountStatusEnum::PENDING,
+                    'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
+                    'business_name' => $gymName,
+                    'business_email' => $email,
                 ]);
 
-            WhatsAppAccount::create([
-                'gym_id' => $gymId,
-                'twilio_account_sid' => $subaccount->sid,
-                'twilio_auth_token' => $subaccount->authToken,
-                'status' => WhatsAppAccountStatusEnum::PENDING,
-                'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
-                'business_name' => $gymName,
-                'business_email' => $email,
-            ]);
+                return [
+                    'success' => true,
+                    'account_sid' => $subaccount->sid,
+                    'message' => 'Subaccount created successfully',
+                ];
+            });
+
+        } catch (LockTimeoutException $e) {
+            Log::warning('Twilio setup lock timeout', ['gym_id' => $gymId]);
 
             return [
-                'success' => true,
-                'account_sid' => $subaccount->sid,
-                'message' => 'Subaccount created successfully',
+                'success' => false,
+                'message' => 'Account setup is currently in progress. Please wait a moment and try again.',
             ];
+
         } catch (RestException $e) {
             Log::error('Failed to create Twilio subaccount', [
                 'gym_id' => $gymId,
@@ -101,29 +128,33 @@ class TwilioAccountService implements AccountManagementInterface
         }
 
         try {
-            $client = $this->context->getClientForAccount($account);
+            $cacheKey = "twilio:account_status:{$gymId}";
 
-            $usage = $client->usage->records->read([
-                'category' => 'totalprice',
-                'startDate' => now()->startOfMonth()->format('Y-m-d'),
-                'endDate' => now()->format('Y-m-d'),
-            ]);
+            return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addHours(15)], function () use ($account) {
+                $client = $this->context->getClientForAccount($account);
 
-            $messageCount = 0;
-            $cost = 0;
-            foreach ($usage as $record) {
-                $messageCount += $record->count;
-                $cost += (float) $record->price;
-            }
+                $usage = $client->usage->records->read([
+                    'category' => 'totalprice',
+                    'startDate' => now()->startOfMonth()->format('Y-m-d'),
+                    'endDate' => now()->format('Y-m-d'),
+                ]);
 
-            return [
-                'status' => $account->status->value,
-                'verification_status' => $account->verification_status->value,
-                'messages_sent' => $messageCount,
-                'monthly_cost' => $cost,
-                'account_created' => $account->created_at,
-                'last_activity' => now(),
-            ];
+                $messageCount = 0;
+                $cost = 0;
+                foreach ($usage as $record) {
+                    $messageCount += $record->count;
+                    $cost += (float) $record->price;
+                }
+
+                return [
+                    'status' => $account->status->value,
+                    'verification_status' => $account->verification_status->value,
+                    'messages_sent' => $messageCount,
+                    'monthly_cost' => $cost,
+                    'account_created' => $account->created_at,
+                    'last_activity' => now(),
+                ];
+            });
         } catch (RestException $e) {
             Log::error('Failed to fetch account status', ['error' => $e->getMessage()]);
 
@@ -157,48 +188,72 @@ class TwilioAccountService implements AccountManagementInterface
      */
     public function cleanupAccount(int $gymId): array
     {
-        $account = $this->context->getAccount();
+        $lockKey = "twilio:cleanup:{$gymId}";
 
-        if (! $account || ! $account->twilio_account_sid) {
-            Log::info('No Twilio resources to clean up for gym', ['gym_id' => $gymId]);
+        try {
+            return Cache::lock($lockKey, 60)->block(10, function () use ($gymId) {
+                $account = $this->context->getAccount();
+
+                if (! $account || ! $account->twilio_account_sid) {
+                    Log::info('No Twilio resources to clean up for gym', ['gym_id' => $gymId]);
+
+                    return [
+                        'success' => true,
+                        'message' => 'No Twilio resources to clean up',
+                        'cleaned' => [],
+                    ];
+                }
+
+                $cleaned = [];
+                $errors = [];
+
+                // Delegate to specialized cleanup methods
+                $phoneResult = $this->cleanupPhoneNumbers($account);
+                $cleaned['phone_numbers'] = $phoneResult;
+                if (! $phoneResult['success']) {
+                    $errors[] = $phoneResult['error'];
+                }
+
+                $serviceResult = $this->cleanupMessagingService($account);
+                $cleaned['messaging_service'] = $serviceResult;
+                if (! $serviceResult['success']) {
+                    $errors[] = $serviceResult['error'];
+                }
+
+                $accountResult = $this->closeSubaccount($account);
+                $cleaned['subaccount'] = $accountResult;
+                if (! $accountResult['success']) {
+                    $errors[] = $accountResult['error'];
+                }
+
+                $account->update(['status' => WhatsAppAccountStatusEnum::SUSPENDED]);
+
+                // Clear the status cache so next read gets fresh data
+                Cache::forget("twilio:account_status:{$gymId}");
+
+                return [
+                    'success' => empty($errors),
+                    'message' => empty($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
+                    'cleaned' => $cleaned,
+                    'errors' => $errors,
+                ];
+            });
+        } catch (LockTimeoutException $e) {
+            return [
+                'success' => false,
+                'message' => 'Account cleanup is currently in progress. Please wait.',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during Twilio cleanup', [
+                'gym_id' => $gymId,
+                'error' => $e->getMessage(),
+            ]);
 
             return [
-                'success' => true,
-                'message' => 'No Twilio resources to clean up',
-                'cleaned' => [],
+                'success' => false,
+                'message' => 'An unexpected error occurred during cleanup.',
             ];
         }
-
-        $cleaned = [];
-        $errors = [];
-
-        // Delegate to specialized cleanup methods
-        $phoneResult = $this->cleanupPhoneNumbers($account);
-        $cleaned['phone_numbers'] = $phoneResult;
-        if (! $phoneResult['success']) {
-            $errors[] = $phoneResult['error'];
-        }
-
-        $serviceResult = $this->cleanupMessagingService($account);
-        $cleaned['messaging_service'] = $serviceResult;
-        if (! $serviceResult['success']) {
-            $errors[] = $serviceResult['error'];
-        }
-
-        $accountResult = $this->closeSubaccount($account);
-        $cleaned['subaccount'] = $accountResult;
-        if (! $accountResult['success']) {
-            $errors[] = $accountResult['error'];
-        }
-
-        $account->update(['status' => WhatsAppAccountStatusEnum::SUSPENDED]);
-
-        return [
-            'success' => empty($errors),
-            'message' => empty($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
-            'cleaned' => $cleaned,
-            'errors' => $errors,
-        ];
     }
 
     /**

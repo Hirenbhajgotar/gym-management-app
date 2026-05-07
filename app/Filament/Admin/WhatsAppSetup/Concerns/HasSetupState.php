@@ -2,20 +2,18 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 
+use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
+use App\Filament\Admin\WhatsAppSetup\Schemas\SetupWizardSchema;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 
-/**
- * Shared state properties and lifecycle methods for the WhatsApp setup wizard.
- * Used by WhatsAppSetup page and step classes.
- */
 trait HasSetupState
 {
-    /** @var array<string, mixed> */
+    /** @var array{provider_type?: string, business_name?: string, ...} */
     public ?array $data = [];
 
     public ?WhatsAppAccount $whatsappAccount = null;
@@ -28,9 +26,9 @@ trait HasSetupState
 
     public int $setupStep = 1;
 
-    public int $totalSteps = 5;
+    public int $totalSteps = 6;
 
-    /** @var array<int, array{phone_number: string, capabilities: array<string>, rate: float}> */
+    /** @var array<int, array{phoneNumber: string, friendlyName: string, locality: string, region: string, isoCountry: string}> */
     public array $availableNumbers = [];
 
     public bool $availableNumbersLoaded = false;
@@ -39,12 +37,12 @@ trait HasSetupState
 
     public bool $isSearching = false;
 
-    /** @var array<string, string> */
+    /** @var array{business_name: string, business_email: string, business_description: string} */
     public array $businessProfile = [];
 
     public bool $welcomeCreditsClaimed = false;
 
-    public bool $useIndividualWaba = false;
+    // public bool $useIndividualWaba = false;
 
     public bool $requiresEmbeddedSignup = false;
 
@@ -70,15 +68,13 @@ trait HasSetupState
 
     public bool $isExistWhatsAppTemplates = false;
 
-    /** @var 'twilio'|'waba' */
-    public string $selectedProvider = 'waba';
+    public string $selectedProvider = WhatsAppProviderTypeEnum::WABA->value;
 
     public bool $hasExistingNumber = false;
 
     public function isWabaConnected(): bool
     {
-        return $this->whatsappAccount !== null
-            && $this->whatsappAccount->waba_id !== null;
+        return $this->whatsappAccount !== null && $this->whatsappAccount->waba_id !== null;
     }
 
     public function isPhoneNumberConnected(): bool
@@ -89,9 +85,8 @@ trait HasSetupState
     protected function loadWhatsAppData(): void
     {
         $gymId = $this->getGymId();
-
-        $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
-        $this->phoneNumber = $this->whatsappAccount?->phoneNumber()->first();
+        $this->whatsappAccount = WhatsAppAccount::with('phoneNumber')->where('gym_id', $gymId)->first();
+        $this->phoneNumber = $this->whatsappAccount?->phoneNumber;
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
         $this->welcomeCreditsClaimed = $this->creditBalance->welcome_credits_claimed ?? false;
         $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::isExistsForGym((int) $gymId);
@@ -101,7 +96,9 @@ trait HasSetupState
     {
         $requestedStep = request()->query('step');
 
-        if ($requestedStep && ! $this->whatsappAccount) {
+        // If a step is explicitly requested (e.g., after OAuth callback), use it directly.
+        // This handles redirects from EmbeddedSignupController with ?step=N.
+        if ($requestedStep) {
             $this->viewState = 'setup';
             $this->setupStep = (int) $requestedStep;
 
@@ -133,42 +130,55 @@ trait HasSetupState
         $this->viewState = 'error';
     }
 
-    protected function determineSetupStep(): int
+    public function determineSetupStep(): int
     {
-        if (
-            ! $this->whatsappAccount?->twilio_account_sid
-            && $this->whatsappAccount?->provider_type !== WhatsAppProviderTypeEnum::WABA
-        ) {
-            return 1;
+        $provider = $this->whatsappAccount?->provider_type;
+
+        // Twilio: Account creation step (Step 2)
+        if ($provider !== WhatsAppProviderTypeEnum::WABA) {
+            if (empty($this->whatsappAccount?->twilio_account_sid)) {
+                return SetupWizardSchema::TWILIO_ACCOUNT_STEP; // TwilioAccountStep
+            }
+
+            // Twilio: Phone number step (Step 3)
+            if (! $this->phoneNumber) {
+                return SetupWizardSchema::TWILIO_PHONE_NUMBER_STEP; // TwilioPhoneNumberStep
+            }
         }
 
-        if (! $this->whatsappAccount?->waba_id) {
-            return 2;
+        // WABA: Account setup step (Step 2)
+        if ($provider === WhatsAppProviderTypeEnum::WABA) {
+            if (empty($this->whatsappAccount?->waba_id)) {
+                return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
+            }
+
+            // Stay on WabaAccountStep until WABA is ACTIVE (not just PENDING)
+            if (empty($this->whatsappAccount?->waba_status) || $this->whatsappAccount?->waba_status !== WabaStatusEnum::ACTIVE) {
+                return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
+            }
         }
 
-        if (
-            ! $this->phoneNumber
-            && $this->whatsappAccount?->provider_type !== WhatsAppProviderTypeEnum::WABA
-        ) {
-            return 2;
+        // Both providers: phone number is confirmed at this point
+        if ($provider !== WhatsAppProviderTypeEnum::WABA) {
+            $this->numberPurchased = true;
         }
 
-        $this->numberPurchased = true;
-
-        $defaultTemplates = WhatsAppTemplate::where('gym_id', $this->getGymId())
-            ->where('is_default', true)
-            ->count();
-
+        // Both: Templates step
+        $defaultTemplates = WhatsAppTemplate::where('gym_id', $this->getGymId())->count();
         if ($defaultTemplates === 0) {
-            return 3;
+            return $provider === WhatsAppProviderTypeEnum::WABA ? SetupWizardSchema::WABA_TEMPLATES_STEP : SetupWizardSchema::TWILIO_TEMPLATES_STEP; // TemplatesStep
         }
 
         $this->templatesCreated = true;
 
+        // Both: Welcome credits step
         if (! $this->welcomeCreditsClaimed) {
-            return 4;
+            return $provider === WhatsAppProviderTypeEnum::WABA ? SetupWizardSchema::WABA_WELCOME_CREDITS_STEP : SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP; // WelcomeCreditsStep
         }
 
-        return 5;
+        // All steps complete — return last step
+        // WABA: WhatsApp Business Account step
+        // Twilio: Account step
+        return $provider === WhatsAppProviderTypeEnum::WABA ? SetupWizardSchema::WABA_ACCOUNT_STEP : SetupWizardSchema::TWILIO_ACCOUNT_STEP;
     }
 }

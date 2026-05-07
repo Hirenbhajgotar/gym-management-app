@@ -19,7 +19,7 @@ class TwilioContext
 
     public readonly string $sharedWabaId;
 
-    public readonly bool $useIndividualWaba;
+    // public readonly bool $useIndividualWaba;
 
     public readonly string $masterAccountSid;
 
@@ -38,7 +38,7 @@ class TwilioContext
         $this->gymId = $gymId;
         $this->useSandbox = config('services.twilio.use_sandbox', true);
         $this->sharedWabaId = config('services.twilio.shared_waba_id', '');
-        $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
+        // $this->useIndividualWaba = config('services.twilio.use_individual_waba', false);
         $this->masterAccountSid = config('services.twilio.master_sid', '');
         $this->masterAuthToken = config('services.twilio.master_token', '');
 
@@ -140,7 +140,7 @@ class TwilioContext
 
         return new Client(
             $account->twilio_account_sid,
-            $account->getRawOriginal('twilio_auth_token')
+            $account->getRawOriginal('twilio_auth_token') ?? $account->twilio_auth_token
         );
     }
 

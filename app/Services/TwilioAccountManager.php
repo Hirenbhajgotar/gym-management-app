@@ -18,6 +18,9 @@ use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 use Twilio\Rest\Messaging\V2\ChannelsSenderModels;
 
+/**
+ * @deprecated: This class is deprecated and will be removed in a future version.
+ */
 class TwilioAccountManager
 {
     protected Client $masterClient;
