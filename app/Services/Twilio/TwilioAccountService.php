@@ -39,6 +39,9 @@ class TwilioAccountService implements AccountManagementInterface
     public function createSubAccount(int $gymId, string $gymName, string $email): array
     {
         try {
+            $gymName = strip_tags($gymName);
+            $email = filter_var($email, FILTER_VALIDATE_EMAIL) ?: null;
+
             return Cache::lock('twilio:subaccount:setup:' . $gymId, 120)->block(30, function () use ($gymId, $gymName, $email) {
                 // Load account for this gym
                 $account = $this->context->getAccount();
@@ -53,7 +56,7 @@ class TwilioAccountService implements AccountManagementInterface
 
                 $subaccount = $this->context->getMasterClient()
                     ->api->v2010->accounts->create([
-                        'friendlyName' => "{$gymId}-{$gymName}",
+                        'friendlyName' => substr(preg_replace(pattern: "/([^A-Za-z0-9\-_]/", replacement: '', subject: "{$gymId}-{$gymName}"), 0, 100),
                     ]);
 
                 // Create a Messaging Service on the subaccount for WhatsApp Channel Sender registration
@@ -491,7 +494,7 @@ class TwilioAccountService implements AccountManagementInterface
     // {
     //     $account->update([
     //         'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-    //         'waba_status' => WabaStatusEnum::PENDING,
+    //         'status' => WhatsAppAccountStatusEnum::PENDING,
     //     ]);
 
     //     if (! $account->messaging_service_sid) {

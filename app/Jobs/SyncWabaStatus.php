@@ -2,7 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Enums\WabaStatusEnum;
+use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Services\EmbeddedSignupService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -60,26 +61,28 @@ class SyncWabaStatus implements ShouldQueue
 
         $data = $wabaDetails['data'];
         $reviewStatus = $data['account_review_status'] ?? null;
+        $verificationStatus = $data['business_verification_status'] ?? null;
 
-        $statusMap = [
-            'PENDING' => WabaStatusEnum::PENDING,
-            'APPROVED' => WabaStatusEnum::ACTIVE,
-            'RESTRICTED' => WabaStatusEnum::RESTRICTED,
-            'REJECTED' => WabaStatusEnum::BANNED,
-            'BANNED' => WabaStatusEnum::BANNED,
-        ];
+        $accountReviewStatus = match ($reviewStatus) {
+            'APPROVED' => WhatsAppAccountStatusEnum::ACTIVE,
+            'REJECTED' => WhatsAppAccountStatusEnum::BANNED,
+            'PENDING' => WhatsAppAccountStatusEnum::PENDING,
+            'DISABLED' => WhatsAppAccountStatusEnum::RESTRICTED,
+            default => WhatsAppAccountStatusEnum::PENDING,
+        };
 
-        $newStatus = $statusMap[$reviewStatus] ?? WabaStatusEnum::PENDING;
+        $accountVerificationStatus = match ($verificationStatus) {
+            'VERIFIED' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
+            'NOT_VERIFIED' => WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED,
+            'IN_REVIEW' => WhatsAppAccountVerificationStatusEnum::IN_REVIEW,
+            'REJECTED' => WhatsAppAccountVerificationStatusEnum::REJECTED,
+            default => WhatsAppAccountVerificationStatusEnum::PENDING,
+        };
 
         $account->update([
-            'waba_status' => $newStatus->value,
             'waba_name' => $data['name'] ?? $account->waba_name,
-        ]);
-
-        Log::info('WABA status synced', [
-            'account_id' => $this->whatsAppAccountId,
-            'waba_id' => $account->waba_id,
-            'status' => $newStatus->value,
+            'status' => $accountReviewStatus,
+            'verification_status' => $accountVerificationStatus,
         ]);
     }
 

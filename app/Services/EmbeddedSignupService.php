@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
@@ -84,13 +83,6 @@ class EmbeddedSignupService
     public function handleCallback(string $code, string $state): array
     {
         $session = WabaSetupSession::where('session_id', $state)->first();
-
-        Log::info('Embedded Signup callback', [
-            'code' => $code,
-            'state' => $state,
-            'session' => $session->toArray(),
-            'session_is_expired' => $session->isExpired(),
-        ]);
 
         if (! $session) {
             return [
@@ -244,7 +236,7 @@ class EmbeddedSignupService
     {
         $response = Http::withToken($accessToken)
             ->get("https://graph.facebook.com/{$this->metaApiVersion}/{$wabaId}", [
-                'fields' => 'id,name,account_review_status,ownership_tier,currency,timezone_id',
+                'fields' => 'id,name,account_review_status,business_verification_status,ownership_tier,currency,timezone_id',
             ]);
 
         if ($response->failed()) {
@@ -274,20 +266,19 @@ class EmbeddedSignupService
     ): array {
         $account = WhatsAppAccount::where('gym_id', $gymId)->first();
 
-        Log::info('Connecting WABA to subaccount', [
-            'gym_id' => $gymId,
-            'waba_id' => $wabaId,
-            'phone_number' => $phoneNumber,
-            'meta_access_token' => $metaAccessToken,
-            'account' => $account->toArray(),
-        ]);
-
         if (! $account) {
             return [
                 'success' => false,
                 'error' => 'WhatsApp account not found for gym',
             ];
         }
+
+        Log::info('Connecting WABA to subaccount', [
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'phone_number' => $phoneNumber,
+            'account' => $account->toArray(),
+        ]);
 
         try {
             $sid = $account->twilio_account_sid;
@@ -348,16 +339,9 @@ class EmbeddedSignupService
             $account->update([
                 'waba_id' => $wabaId,
                 'waba_mode' => WabaModeEnum::INDIVIDUAL,
-                'waba_status' => WabaStatusEnum::PENDING,
                 'meta_access_token' => $metaAccessToken,
                 'embedded_signup_completed' => true,
                 'status' => WhatsAppAccountStatusEnum::PENDING,
-            ]);
-
-            Log::info('WABA connected to subaccount', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'sender_sid' => $senderSid,
             ]);
 
             return [
@@ -412,7 +396,6 @@ class EmbeddedSignupService
             $updateData = [
                 'waba_id' => $wabaId,
                 'waba_mode' => WabaModeEnum::MANUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
                 'embedded_signup_completed' => false,
                 'status' => WhatsAppAccountStatusEnum::PENDING->value,
             ];
@@ -422,12 +405,6 @@ class EmbeddedSignupService
             }
 
             $account->update($updateData);
-
-            Log::info('Manual WABA connected to subaccount', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'sender_sid' => $sender->sid,
-            ]);
 
             return [
                 'success' => true,

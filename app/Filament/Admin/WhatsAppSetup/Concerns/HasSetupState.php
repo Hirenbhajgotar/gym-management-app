@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Schemas\SetupWizardSchema;
 use App\Models\WhatsAppAccount;
@@ -70,11 +70,25 @@ trait HasSetupState
 
     public string $selectedProvider = WhatsAppProviderTypeEnum::WABA->value;
 
+    public ?WhatsAppAccountStatusEnum $accountStatus = null;
+
+    public ?WhatsAppAccountVerificationStatusEnum $verificationStatus = null;
+
     public bool $hasExistingNumber = false;
 
     public function isWabaConnected(): bool
     {
-        return $this->whatsappAccount !== null && $this->whatsappAccount->waba_id !== null;
+        return $this->whatsappAccount !== null;
+    }
+
+    public function isWabaVerified(): bool
+    {
+        return $this->isWabaConnected() && $this->verificationStatus === WhatsAppAccountVerificationStatusEnum::VERIFIED;
+    }
+
+    public function isWabaPending(): bool
+    {
+        return $this->isWabaConnected() && $this->verificationStatus === WhatsAppAccountVerificationStatusEnum::PENDING;
     }
 
     public function isPhoneNumberConnected(): bool
@@ -88,8 +102,19 @@ trait HasSetupState
         $this->whatsappAccount = WhatsAppAccount::with('phoneNumber')->where('gym_id', $gymId)->first();
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber;
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
-        $this->welcomeCreditsClaimed = $this->creditBalance->welcome_credits_claimed ?? false;
+        $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
         $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::isExistsForGym((int) $gymId);
+
+        // Load WABA status and Verification status for UI state management
+        if ($this->whatsappAccount) {
+            $this->accountStatus = $this->whatsappAccount->status instanceof WhatsAppAccountStatusEnum
+                ? $this->whatsappAccount->status
+                : ($this->whatsappAccount->status ? WhatsAppAccountStatusEnum::tryFrom($this->whatsappAccount->status) : null);
+
+            $this->verificationStatus = $this->whatsappAccount->verification_status instanceof WhatsAppAccountVerificationStatusEnum
+                ? $this->whatsappAccount->verification_status
+                : ($this->whatsappAccount->verification_status ? WhatsAppAccountVerificationStatusEnum::tryFrom($this->whatsappAccount->verification_status) : null);
+        }
     }
 
     protected function determineViewState(): void
@@ -99,8 +124,11 @@ trait HasSetupState
         // If a step is explicitly requested (e.g., after OAuth callback), use it directly.
         // This handles redirects from EmbeddedSignupController with ?step=N.
         if ($requestedStep) {
+            abort_if(! $this->isStepAccessible((string) $requestedStep), 403, 'Unauthorized to access this step.');
+
             $this->viewState = 'setup';
-            $this->setupStep = (int) $requestedStep;
+            // $this->setupStep = (int) $requestedStep;
+            $this->setupStep = (int) $this->determineSetupStep();
 
             return;
         }
@@ -121,8 +149,15 @@ trait HasSetupState
             return;
         }
 
-        if ($this->whatsappAccount->status === WhatsAppAccountStatusEnum::ACTIVE && $this->phoneNumber) {
+        if ($this->whatsappAccount->isActive() && $this->phoneNumber) {
             $this->viewState = 'active';
+
+            return;
+        }
+
+        // Route non-active/non-pending statuses to named viewStates for clear UX messaging
+        if ($this->whatsappAccount->isWabaRestricted() || $this->whatsappAccount->isWabaSuspended() || $this->whatsappAccount->isWabaBlocked()) {
+            $this->viewState = 'account_issue';
 
             return;
         }
@@ -153,7 +188,7 @@ trait HasSetupState
             }
 
             // Stay on WabaAccountStep until WABA is ACTIVE (not just PENDING)
-            if (empty($this->whatsappAccount?->waba_status) || $this->whatsappAccount?->waba_status !== WabaStatusEnum::ACTIVE) {
+            if ($this->accountStatus !== WhatsAppAccountStatusEnum::ACTIVE) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
             }
         }
@@ -180,5 +215,63 @@ trait HasSetupState
         // WABA: WhatsApp Business Account step
         // Twilio: Account step
         return $provider === WhatsAppProviderTypeEnum::WABA ? SetupWizardSchema::WABA_ACCOUNT_STEP : SetupWizardSchema::TWILIO_ACCOUNT_STEP;
+    }
+
+    private function isStepAccessible(string $requestedStep): bool
+    {
+        $step = (int) $this->getStepNumberFromRequestStep($requestedStep);
+
+        if (! $this->whatsappAccount) {
+            return $step === 1; // Only provider selection is allowed
+        }
+
+        $provider = $this->whatsappAccount->provider_type;
+
+        if ($provider === WhatsAppProviderTypeEnum::TWILIO) {
+            // Twilio specific step validation
+            if ($step === SetupWizardSchema::TWILIO_ACCOUNT_STEP) {
+                return true; // Always allow account step if account not connected
+            }
+
+            if ($step === SetupWizardSchema::TWILIO_PHONE_NUMBER_STEP) {
+                // Phone number step only allowed if account is connected
+                return ! empty($this->whatsappAccount->twilio_account_sid);
+            }
+
+            if ($step === SetupWizardSchema::TWILIO_TEMPLATES_STEP) {
+                // Templates step only allowed if phone number is connected
+                return $this->phoneNumber !== null;
+            }
+
+            if ($step === SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP) {
+                // Welcome credits step only allowed if templates are created
+                return $this->phoneNumber !== null && $this->templatesCreated;
+            }
+        }
+
+        // For WABA users, allow any step after connection
+        if ($provider === WhatsAppProviderTypeEnum::WABA) {
+            // Allow WABA-related steps if account is connected
+            // Steps 2 (WABA account), 3 (Templates), 4 (Welcome Credits)
+            return $step >= SetupWizardSchema::WABA_ACCOUNT_STEP && $step <= SetupWizardSchema::WABA_WELCOME_CREDITS_STEP;
+        }
+
+        // Default: only allow current or previous steps (linear progression)
+        return $step <= $this->setupStep;
+    }
+
+    private function getStepNumberFromRequestStep(string $queryStep): ?int
+    {
+        $provider = $this->whatsappAccount?->provider_type;
+
+        return match ($queryStep) {
+            'select-provider' => SetupWizardSchema::PROVIDER_SELECTION_STEP,
+            'twilio-account' => SetupWizardSchema::TWILIO_ACCOUNT_STEP,
+            'phone-number' => SetupWizardSchema::TWILIO_PHONE_NUMBER_STEP,
+            'templates' => $provider === WhatsAppProviderTypeEnum::TWILIO ? SetupWizardSchema::TWILIO_TEMPLATES_STEP : SetupWizardSchema::WABA_TEMPLATES_STEP,
+            'welcome-credits' => $provider === WhatsAppProviderTypeEnum::TWILIO ? SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP : SetupWizardSchema::WABA_WELCOME_CREDITS_STEP,
+            'whats-app-business' => SetupWizardSchema::WABA_ACCOUNT_STEP,
+            default => null,
+        };
     }
 }

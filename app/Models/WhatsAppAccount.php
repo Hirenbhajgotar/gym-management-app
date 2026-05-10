@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
@@ -23,7 +22,6 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $twilio_auth_token
  * @property string|null $waba_id
  * @property string|null $waba_name
- * @property WabaStatusEnum|null $waba_status
  * @property WabaModeEnum|null $waba_mode
  * @property string|null $messaging_service_sid
  * @property string|null $verify_service_sid
@@ -70,7 +68,6 @@ use Illuminate\Support\Facades\Crypt;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaMode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaStatus($value)
  * @method bool isActive()
  * @method bool isVerified()
  * @method bool hasPhoneNumber()
@@ -97,7 +94,6 @@ class WhatsAppAccount extends Model
         'twilio_auth_token',
         'waba_id',
         'waba_name',
-        'waba_status',
         'waba_mode',
         'messaging_service_sid',
         'verify_service_sid',
@@ -124,7 +120,6 @@ class WhatsAppAccount extends Model
         return [
             'status' => WhatsAppAccountStatusEnum::class,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::class,
-            'waba_status' => WabaStatusEnum::class,
             'waba_mode' => WabaModeEnum::class,
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
@@ -189,6 +184,16 @@ class WhatsAppAccount extends Model
         return $this->verification_status === WhatsAppAccountVerificationStatusEnum::VERIFIED;
     }
 
+    public function isInReview(): bool
+    {
+        return $this->verification_status === WhatsAppAccountVerificationStatusEnum::IN_REVIEW;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->verification_status === WhatsAppAccountVerificationStatusEnum::REJECTED;
+    }
+
     public function hasPhoneNumber(): bool
     {
         return $this->phoneNumber()->exists();
@@ -216,13 +221,23 @@ class WhatsAppAccount extends Model
 
     public function isWabaActive(): bool
     {
-        return $this->waba_status === WabaStatusEnum::ACTIVE;
+        return $this->status === WhatsAppAccountStatusEnum::ACTIVE;
     }
 
     public function isWabaRestricted(): bool
     {
-        return $this->waba_status === WabaStatusEnum::RESTRICTED
-            || $this->waba_status === WabaStatusEnum::BANNED;
+        return $this->status === WhatsAppAccountStatusEnum::RESTRICTED
+            || $this->status === WhatsAppAccountStatusEnum::BANNED;
+    }
+
+    public function isWabaSuspended(): bool
+    {
+        return $this->status === WhatsAppAccountStatusEnum::SUSPENDED;
+    }
+
+    public function isWabaBlocked(): bool
+    {
+        return $this->status === WhatsAppAccountStatusEnum::BLOCKED;
     }
 
     public function isSetupComplete(): bool

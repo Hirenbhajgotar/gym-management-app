@@ -34,7 +34,7 @@ class ProviderSelectionStep
                                     $page->form->fill($page->data);
                                 }
                             })
-                            ->disabled($page->accountCreated),
+                            ->disabled($page->accountCreated || ($page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview())),
                     ]),
             ]);
     }

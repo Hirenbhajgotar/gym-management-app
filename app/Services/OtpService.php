@@ -52,9 +52,9 @@ class OtpService
      */
     public function isWhatsAppConfigured(Gym $gym): bool
     {
-        $account = $gym->whatsAppAccount;
+        $account = $gym?->whatsAppAccount;
 
-        return $account && $account->isActive() && $account->isVerified();
+        return $account && $account?->isActive() && $account?->isVerified();
     }
 
     /**

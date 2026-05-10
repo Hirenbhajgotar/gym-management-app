@@ -370,7 +370,7 @@ interface WhatsAppProviderInterface
      *     phone_number_id?: string,
      *     display_phone_number?: string,
      *     business_name?: string,
-     *     waba_status?: string,
+     *     status?: string,
      *     message?: string,
      *     error?: string
      * }
@@ -405,7 +405,7 @@ interface WhatsAppProviderInterface
      *     quality_score?: string,
      *     waba_id?: string,
      *     business_name?: string,
-     *     waba_status?: string,
+     *     status?: string,
      *     currency?: string,
      *     timezone?: string,
      *     error?: string

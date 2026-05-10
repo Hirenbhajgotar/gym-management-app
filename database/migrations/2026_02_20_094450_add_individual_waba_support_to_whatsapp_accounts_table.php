@@ -1,7 +1,5 @@
 <?php
 
-use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('whatsapp_accounts', function (Blueprint $table) {
             $table->string('waba_name')->nullable()->after('waba_id');
-            $table->string('waba_status')->nullable()->default(WabaStatusEnum::PENDING->value)->after('waba_name');
-            $table->string('waba_mode')->nullable()->default(WabaModeEnum::SHARED->value)->after('waba_status');
+            $table->string('waba_status')->nullable()->default('pending')->after('waba_name');
+            $table->string('waba_mode')->nullable()->default('shared')->after('waba_status');
 
             $table->string('meta_business_portfolio_id')->nullable()->after('messaging_service_sid');
             $table->text('meta_access_token')->nullable()->after('meta_business_portfolio_id');

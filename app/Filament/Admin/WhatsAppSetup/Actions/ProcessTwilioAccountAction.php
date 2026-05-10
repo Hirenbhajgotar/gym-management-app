@@ -39,21 +39,24 @@ class ProcessTwilioAccountAction
         $gym = $this->page->getGym();
         $user = Auth::user();
         $data = $this->page->data;
-        $accountData = [
-            'gym_id' => $gymId,
-            'business_name' => $data['business_name'] ?? $gym?->name,
-            'business_email' => $data['business_email'] ?? $user?->email,
-            'business_description' => $data['business_description'] ?? '',
-            'provider_type' => WhatsAppProviderTypeEnum::TWILIO->value,
-            'status' => WhatsAppAccountStatusEnum::PENDING,
-        ];
 
         $existing = WhatsAppAccount::with('phoneNumber')->where('gym_id', $gymId)->first();
         if ($existing) {
-            $existing->update($accountData);
+            $existing->update([
+                'business_name' => $data['business_name'] ?? $gym?->name,
+                'business_email' => $data['business_email'] ?? $user?->email,
+                'business_description' => $data['business_description'] ?? '',
+            ]);
             $this->page->whatsappAccount = $existing->fresh();
         } else {
-            $whatsappAccount = WhatsAppAccount::create($accountData);
+            $whatsappAccount = WhatsAppAccount::create([
+                'gym_id' => $gymId,
+                'business_name' => $data['business_name'] ?? $gym?->name,
+                'business_email' => $data['business_email'] ?? $user?->email,
+                'business_description' => $data['business_description'] ?? '',
+                'provider_type' => WhatsAppProviderTypeEnum::TWILIO->value,
+                'status' => WhatsAppAccountStatusEnum::PENDING,
+            ]);
             $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber']);
         }
 

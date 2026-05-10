@@ -18,7 +18,8 @@ class TemplatesStep
                 \Filament\Forms\Components\Actions::make([
                     Action::make('createTemplates')->label('Create Templates')->color('primary')
                         ->url(route('filament.admin.resources.whats-app-templates.index', ['tenant' => $page->getTenantSlug()]))
-                        ->openUrlInNewTab(true)->icon('heroicon-o-check-circle'),
+                        ->openUrlInNewTab(true)->icon('heroicon-o-check-circle')
+                        ->disabled(fn () => $page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview()),
                 ]),
             ]);
     }

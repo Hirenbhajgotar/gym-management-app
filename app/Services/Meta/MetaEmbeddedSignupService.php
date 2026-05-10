@@ -52,6 +52,13 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
             ];
         }
 
+        if ($this->context->gymId !== $session->gym_id) {
+            return [
+                'success' => false,
+                'error' => 'Session mismatch',
+            ];
+        }
+
         if ($session->isExpired()) {
             $session->markAsExpired();
 

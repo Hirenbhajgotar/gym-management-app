@@ -54,22 +54,7 @@ class EmbeddedSignupController extends Controller
             ? route('filament.admin.pages.whats-app-setup', ['tenant' => $tenantSlug])
             : url('/admin');
 
-        Log::info('Embedded Signup callback', [
-            'code' => $code,
-            'state' => $state,
-            'error' => $error,
-            'error_description' => $errorDescription,
-            'tenant_id' => $tenantId,
-            'tenant_slug' => $tenantSlug,
-            'redirect_url' => $redirectUrl,
-        ]);
-
         if ($error) {
-            Log::error('Embedded Signup callback error', [
-                'error' => $error,
-                'description' => $errorDescription,
-            ]);
-
             return redirect($redirectUrl . '?step=2')
                 ->with('error', $errorDescription ?? $error);
         }
@@ -117,10 +102,10 @@ class EmbeddedSignupController extends Controller
         }
 
         $validated = $request->validate([
-            'waba_id' => ['required', 'string'],
-            'manual_phone_number' => ['required', 'string'],
-            'waba_phone_number_id' => ['required', 'string'],
-            'meta_access_token' => ['nullable', 'string'],
+            'waba_id' => ['required', 'string', 'max:100', 'regex:/^[A-Z0-9]+$/'],
+            'manual_phone_number' => ['required', 'string', 'max:20', 'regex:/^\+?[1-9]\d{1,14}$/'],
+            'waba_phone_number_id' => ['required', 'string', 'max:100'],
+            'meta_access_token' => ['nullable', 'string', 'max:2000'],
         ]);
 
         // Create provider with gym ID

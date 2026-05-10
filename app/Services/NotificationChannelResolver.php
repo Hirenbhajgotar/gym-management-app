@@ -60,7 +60,7 @@ class NotificationChannelResolver
      */
     public static function isWhatsAppConfigured(Gym $gym): bool
     {
-        $whatsAppAccount = $gym->whatsAppAccount;
+        $whatsAppAccount = $gym?->whatsAppAccount;
 
         if (! $whatsAppAccount) {
             return false;

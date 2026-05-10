@@ -21,13 +21,36 @@ class TwilioAccountStep
             ->schema([
                 Section::make('Business Information')->schema([
                     Grid::make(2)->schema([
-                        TextInput::make('business_name')->label('Business Name')->required()->disabled($page->accountCreated),
-                        TextInput::make('business_email')->label('Business Email')->email()->required()->disabled($page->accountCreated),
+                        TextInput::make('business_name')
+                            ->label('Business Name')
+                            ->required()
+                            ->disabled($page->accountCreated || ($page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview())),
+
+                        TextInput::make('business_email')
+                            ->label('Business Email')
+                            ->email()
+                            ->required()
+                            ->disabled($page->accountCreated || ($page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview())),
                     ]),
-                    Textarea::make('business_description')->label('Business Description')->rows(2),
+
+                    Textarea::make('business_description')
+                        ->label('Business Description')
+                        ->rows(2)
+                        ->disabled($page->accountCreated || ($page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview())),
                 ]),
             ])
             ->afterValidation(function () use ($page) {
+                // Skip if account is already verified, in review, or disabled
+                if ($page->whatsappAccount && (
+                    $page->whatsappAccount->isVerified() ||
+                    $page->whatsappAccount->isInReview() ||
+                    $page->whatsappAccount->isWabaRestricted() ||
+                    $page->whatsappAccount->isWabaSuspended() ||
+                    $page->whatsappAccount->isWabaBlocked()
+                )) {
+                    return;
+                }
+
                 try {
                     (new ProcessTwilioAccountAction($page))();
                 } catch (\Exception $e) {

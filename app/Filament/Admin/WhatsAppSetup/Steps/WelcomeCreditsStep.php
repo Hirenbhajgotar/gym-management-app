@@ -19,7 +19,7 @@ class WelcomeCreditsStep
                         ->label($page->welcomeCreditsClaimed ? 'Credits Claimed' : 'Claim Welcome Credits')
                         ->color('success')
                         ->action('claimWelcomeCreditsAction')
-                        ->disabled($page->welcomeCreditsClaimed)
+                        ->disabled($page->welcomeCreditsClaimed || ($page->whatsappAccount?->isVerified() || $page->whatsappAccount?->isInReview()))
                         ->icon($page->welcomeCreditsClaimed ? 'heroicon-o-check-circle' : null),
                 ])->alignCenter(),
             ]);

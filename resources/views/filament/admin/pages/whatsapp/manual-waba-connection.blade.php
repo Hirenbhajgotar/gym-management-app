@@ -19,8 +19,8 @@
                         <div>
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">WABA Status</dt>
                             <dd class="mt-1">
-                                <x-filament::badge :color="$whatsappAccount->waba_status->getColor()">
-                                    {{ $whatsappAccount->waba_status->getLabel() }}
+                                <x-filament::badge :color="$whatsappAccount->status->getColor()">
+                                    {{ $whatsappAccount->status->getLabel() }}
                                 </x-filament::badge>
                             </dd>
                         </div>

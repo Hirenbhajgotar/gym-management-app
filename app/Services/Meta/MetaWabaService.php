@@ -3,7 +3,6 @@
 namespace App\Services\Meta;
 
 use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
@@ -92,17 +91,16 @@ class MetaWabaService implements WabaSetupInterface
                     $account = WhatsAppAccount::updateOrCreate([
                         'gym_id' => $gymId,
                     ], [
-                        'business_name' => $businessName,
-                        'business_email' => $businessData['business_email'] ?? null,
-                        'business_description' => $businessData['business_description'] ?? '',
+                        'business_name' => htmlspecialchars(strip_tags($businessName)),
+                        'business_email' => filter_var($businessData['business_email'] ?? null, FILTER_VALIDATE_EMAIL) ?: null,
+                        'business_description' => htmlspecialchars(strip_tags($businessData['business_description'] ?? '')),
                         'waba_id' => $wabaId,
                         'waba_name' => $businessName,
                         'waba_mode' => WabaModeEnum::MANUAL,
                         'meta_access_token' => $metaAccessToken,
                         'embedded_signup_completed' => true,
-                        'waba_status' => $this->mapWabaStatus($verificationResult['waba_status'] ?? null),
+                        'status' => $this->mapWabaStatus($verificationResult['status'] ?? null),
                         'provider_type' => WhatsAppProviderTypeEnum::WABA,
-                        'status' => WhatsAppAccountStatusEnum::ACTIVE,
                         'verification_status' => $this->mapBusinessVerificationStatus($verificationResult['business_verification_status'] ?? null),
                         'verified_at' => now(),
                     ]);
@@ -126,7 +124,7 @@ class MetaWabaService implements WabaSetupInterface
                         'phone_number_id' => $verificationResult['phone_number_id'] ?? $phoneNumberId,
                         'display_phone_number' => $normalizedPhoneNumber,
                         'business_name' => $businessName,
-                        'waba_status' => $verificationResult['waba_status'],
+                        'status' => $verificationResult['status'],
                         'verification_status' => $verificationResult['business_verification_status'],
                         'message' => 'Manual WABA connected successfully',
                     ];
@@ -169,14 +167,13 @@ class MetaWabaService implements WabaSetupInterface
             }
 
             $wabaResponse = $this->api->get("/{$wabaId}", [
-                'fields' => 'id,name,business,business_verification_status,currency,timezone',
+                'fields' => 'id,name,business,account_review_status,business_verification_status,currency,timezone',
             ], $token);
 
             $phoneData = $phoneResponse['data'];
             $wabaData = $wabaResponse['success'] ? $wabaResponse['data'] : [];
 
             $businessName = $wabaData['business']['name'] ?? $wabaData['name'] ?? $phoneData['verified_name'] ?? null;
-            $bizStatus = $wabaData['business_verification_status'] ?? null;
 
             return [
                 'success' => true,
@@ -184,13 +181,13 @@ class MetaWabaService implements WabaSetupInterface
                 'phone_number_id' => $phoneData['id'] ?? $phoneNumberId,
                 'display_phone_number' => $phoneData['display_phone_number'] ?? null,
                 'verified_name' => $phoneData['verified_name'] ?? null,
-                'business_verification_status' => $this->mapBusinessVerificationStatus($bizStatus)->value,
+                'business_verification_status' => $this->mapBusinessVerificationStatus($wabaData['business_verification_status'] ?? null)->value,
                 'code_verification_status' => $phoneData['code_verification_status'] ?? null,
                 'certificate' => $phoneData['certificate'] ?? null,
                 'quality_score' => $phoneData['quality_score'] ?? null,
                 'waba_id' => $wabaData['id'] ?? $wabaId,
                 'business_name' => $businessName,
-                'waba_status' => $this->mapWabaStatus($bizStatus)->value,
+                'status' => $this->mapWabaStatus($wabaData['account_review_status'] ?? null)->value,
                 'currency' => $wabaData['currency'] ?? null,
                 'timezone' => $wabaData['timezone'] ?? null,
                 'error' => null,
@@ -221,7 +218,7 @@ class MetaWabaService implements WabaSetupInterface
             'quality_score' => null,
             'waba_id' => null,
             'business_name' => null,
-            'waba_status' => null,
+            'status' => null,
             'currency' => null,
             'timezone' => null,
         ];
@@ -231,17 +228,21 @@ class MetaWabaService implements WabaSetupInterface
     {
         return match ($status) {
             'VERIFIED' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
+            'NOT_VERIFIED' => WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED,
             'IN_REVIEW' => WhatsAppAccountVerificationStatusEnum::IN_REVIEW,
             'REJECTED' => WhatsAppAccountVerificationStatusEnum::REJECTED,
             default => WhatsAppAccountVerificationStatusEnum::PENDING,
         };
     }
 
-    protected function mapWabaStatus(?string $status): WabaStatusEnum
+    protected function mapWabaStatus(?string $status): WhatsAppAccountStatusEnum
     {
         return match ($status) {
-            'VERIFIED' => WabaStatusEnum::ACTIVE,
-            default => WabaStatusEnum::PENDING,
+            'APPROVED' => WhatsAppAccountStatusEnum::ACTIVE,
+            'REJECTED' => WhatsAppAccountStatusEnum::BANNED,
+            'PENDING' => WhatsAppAccountStatusEnum::PENDING,
+            'DISABLED' => WhatsAppAccountStatusEnum::RESTRICTED,
+            default => WhatsAppAccountStatusEnum::PENDING,
         };
     }
 
@@ -354,11 +355,6 @@ class MetaWabaService implements WabaSetupInterface
                 // Invalidate provider cache so factory recreates provider with new credentials
                 WhatsAppProviderFactory::invalidateProviderCache($gymId);
 
-                Log::info('Embedded signup completed successfully', [
-                    'gym_id' => $gymId,
-                    'waba_id' => $wabaId,
-                ]);
-
                 return [
                     'success' => true,
                     'waba_id' => $wabaId,
@@ -372,12 +368,6 @@ class MetaWabaService implements WabaSetupInterface
                 'error' => 'Processing embedded signup. Please wait.',
             ];
         } catch (\Exception $e) {
-            Log::error('Failed to complete embedded signup', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'error' => $e->getMessage(),
-            ]);
-
             return [
                 'success' => false,
                 'error' => 'Failed to complete embedded signup: ' . $e->getMessage(),

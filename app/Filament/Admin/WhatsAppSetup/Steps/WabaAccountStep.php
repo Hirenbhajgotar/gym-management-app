@@ -30,10 +30,15 @@ class WabaAccountStep
                         ->descriptions(['embedded_signup' => "Use Meta's embedded signup flow.", 'manual_connect' => 'Enter your existing WABA credentials manually.'])
                         ->inline()
                         ->inlineLabel(false)
-                        ->default('embedded_signup')->live()->visible(fn () => ! $page->isWabaConnected()),
+                        ->default('embedded_signup')->live()
+                        ->disabled($page->accountStatus !== null),
 
                     Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-connection-info')))
                         ->visible(fn (Get $get) => $get('waba_connection_method') === 'embedded_signup' && ! $page->isWabaConnected()),
+
+                    Placeholder::make('waba_pending_message')->hiddenLabel()->content(fn () => new HtmlString(
+                        view('filament.admin.whatsapp-setup.waba-pending-message')
+                    ))->visible(fn () => $page->isWabaPending()),
 
                     Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-success-message')))
                         ->visible(fn () => session()->has('success')),
@@ -45,6 +50,7 @@ class WabaAccountStep
                                 'wire:loading.attr' => 'disabled',
                                 'wire:target' => 'data.waba_connection_method',
                             ])
+                            ->disabled($page->accountStatus !== null)
                             ->visible(fn (Get $get) => $get('waba_connection_method') === 'embedded_signup' && ! $page->isWabaConnected()),
                     ]),
 
@@ -80,7 +86,8 @@ class WabaAccountStep
 
                         \Filament\Forms\Components\Actions::make([
                             Action::make('connectExistingWaba')->label('Connect WABA')->color('primary')->icon('heroicon-o-link')
-                                ->action('connectExistingWabaAction'),
+                                ->action('connectExistingWabaAction')
+                                ->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
                         ]),
                     ])->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
 
@@ -89,10 +96,22 @@ class WabaAccountStep
                     ])->collapsible()->collapsed(true)->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
                 ])->visible(fn () => ! $page->isWabaConnected()),
 
-                Placeholder::make('waba_connected')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-connected')))
-                    ->visible(fn () => $page->isWabaConnected()),
+                Placeholder::make('waba_connected')->hiddenLabel()->content(fn () => new HtmlString(
+                    view('filament.admin.whatsapp-setup.waba-connected', ['verificationStatus' => $page->verificationStatus])
+                ))->visible(fn () => $page->isWabaConnected()),
             ])
             ->afterValidation(function () use ($page) {
+                // Skip if account is already verified, in review, or disabled
+                if ($page->whatsappAccount && (
+                    $page->whatsappAccount->isVerified() ||
+                    $page->whatsappAccount->isInReview() ||
+                    $page->whatsappAccount->isWabaRestricted() ||
+                    $page->whatsappAccount->isWabaSuspended() ||
+                    $page->whatsappAccount->isWabaBlocked()
+                )) {
+                    return;
+                }
+
                 try {
                     if ($page->data['waba_connection_method'] === 'embedded_signup') {
                         (new StartEmbeddedSignupAction($page))();

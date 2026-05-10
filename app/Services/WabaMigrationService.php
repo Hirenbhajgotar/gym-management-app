@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Enums\WabaMigrationStatusEnum;
 use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
+use App\Enums\WhatsAppAccountStatusEnum;
 use App\Jobs\MigrateTenantToIndividualWaba;
 use App\Models\WabaMigration;
 use App\Models\WhatsAppAccount;
@@ -171,17 +171,11 @@ class WabaMigrationService
             $account->update([
                 'waba_id' => $newWabaId,
                 'waba_mode' => WabaModeEnum::INDIVIDUAL,
-                'waba_status' => WabaStatusEnum::ACTIVE,
+                'status' => WhatsAppAccountStatusEnum::ACTIVE,
                 'embedded_signup_completed' => true,
             ]);
 
             $migration->markAsCompleted($newWabaId, WabaModeEnum::INDIVIDUAL->value);
-
-            Log::info('Migration completed successfully', [
-                'migration_id' => $migration->id,
-                'gym_id' => $migration->gym_id,
-                'new_waba_id' => $newWabaId,
-            ]);
 
             return true;
         } catch (\Exception $e) {
