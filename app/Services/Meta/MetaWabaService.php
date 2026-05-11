@@ -226,24 +226,12 @@ class MetaWabaService implements WabaSetupInterface
 
     protected function mapBusinessVerificationStatus(?string $status): WhatsAppAccountVerificationStatusEnum
     {
-        return match ($status) {
-            'VERIFIED' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
-            'NOT_VERIFIED' => WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED,
-            'IN_REVIEW' => WhatsAppAccountVerificationStatusEnum::IN_REVIEW,
-            'REJECTED' => WhatsAppAccountVerificationStatusEnum::REJECTED,
-            default => WhatsAppAccountVerificationStatusEnum::PENDING,
-        };
+        return WhatsAppAccountVerificationStatusEnum::fromMetaVerificationStatus($status);
     }
 
     protected function mapWabaStatus(?string $status): WhatsAppAccountStatusEnum
     {
-        return match ($status) {
-            'APPROVED' => WhatsAppAccountStatusEnum::ACTIVE,
-            'REJECTED' => WhatsAppAccountStatusEnum::BANNED,
-            'PENDING' => WhatsAppAccountStatusEnum::PENDING,
-            'DISABLED' => WhatsAppAccountStatusEnum::RESTRICTED,
-            default => WhatsAppAccountStatusEnum::PENDING,
-        };
+        return WhatsAppAccountStatusEnum::fromMetaReviewStatus($status);
     }
 
     protected function normalizePhoneNumber(string $phoneNumber): string
@@ -409,6 +397,67 @@ class MetaWabaService implements WabaSetupInterface
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get WABA account details including review and verification status.
+     *
+     * Used by SyncWabaStatus job to fetch current account_review_status and
+     * business_verification_status from Meta API.
+     *
+     * @param  string  $wabaId  The WhatsApp Business Account ID
+     * @param  string  $accessToken  The Meta access token
+     * @return array{
+     *     success: bool,
+     *     data?: array{
+     *         id: string,
+     *         name: string,
+     *         account_review_status: string,
+     *         business_verification_status: string,
+     *         currency?: string,
+     *         timezone?: string
+     *     },
+     *     error?: string
+     * }
+     */
+    public function getWabaDetails(string $wabaId, string $accessToken): array
+    {
+        try {
+            $response = $this->api->get("/{$wabaId}", [
+                'fields' => 'id,name,account_review_status,business_verification_status',
+            ], $accessToken);
+
+            if (! $response['success']) {
+                $metaError = $response['error'] ?? 'Unknown error';
+
+                Log::error('Failed to get WABA details from Meta API', [
+                    'waba_id' => $wabaId,
+                    'meta_error' => $metaError,
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => "Failed to retrieve WABA details from Meta API: {$metaError}",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $response['data'],
+            ];
+        } catch (\Exception $e) {
+            $exceptionMessage = $e->getMessage();
+
+            Log::error('Exception while getting WABA details', [
+                'waba_id' => $wabaId,
+                'error' => $exceptionMessage,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => "Exception while retrieving WABA details from Meta: {$exceptionMessage}",
             ];
         }
     }

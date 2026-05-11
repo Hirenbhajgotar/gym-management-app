@@ -203,4 +203,34 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
     {
         return $this->embeddedSignup()->isEnabled();
     }
+
+    // =========================
+    // WabaSetupInterface - Extended Methods
+    // =========================
+
+    /**
+     * Get WABA account details including review and verification status.
+     *
+     * Used by SyncWabaStatus job to fetch current account_review_status and
+     * business_verification_status from Meta API.
+     *
+     * @param  string  $wabaId  The WhatsApp Business Account ID
+     * @param  string  $accessToken  The Meta access token
+     * @return array{
+     *     success: bool,
+     *     data?: array{
+     *         id: string,
+     *         name: string,
+     *         account_review_status: string,
+     *         business_verification_status: string,
+     *         currency?: string,
+     *         timezone?: string
+     *     },
+     *     error?: string
+     * }
+     */
+    public function getWabaDetails(string $wabaId, string $accessToken): array
+    {
+        return $this->wabaSetup()->getWabaDetails($wabaId, $accessToken);
+    }
 }

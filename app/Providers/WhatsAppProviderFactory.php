@@ -35,9 +35,9 @@ class WhatsAppProviderFactory
     /**
      * Supported providers.
      */
-    public const PROVIDER_TWILIO = 'twilio';
+    public const PROVIDER_TWILIO = WhatsAppProviderTypeEnum::TWILIO->value;
 
-    public const PROVIDER_META = 'waba';
+    public const PROVIDER_META = WhatsAppProviderTypeEnum::WABA->value;
 
     public const DEFAULT_PROVIDER = self::PROVIDER_META;
 
@@ -49,7 +49,7 @@ class WhatsAppProviderFactory
      *
      * @throws \InvalidArgumentException If provider is not supported
      */
-    public static function create(int $gymId, bool $isSystemMessage = false): MetaWhatsAppProvider|TwilioWhatsAppProvider
+    public static function create(int $gymId, bool $isSystemMessage = false, ?string $providerType = null): MetaWhatsAppProvider|TwilioWhatsAppProvider
     {
         // System messages always use Twilio
         if ($isSystemMessage) {
@@ -62,7 +62,7 @@ class WhatsAppProviderFactory
         }
 
         // Get provider from cache or database
-        $provider = self::getProviderForGym($gymId);
+        $provider = $providerType ?? self::getProviderForGym($gymId);
 
         Log::debug('Creating WhatsApp provider', [
             'gym_id' => $gymId,

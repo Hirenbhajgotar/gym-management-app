@@ -85,3 +85,6 @@ Schedule::call(function () {
 
 // Generate sitemap daily at midnight
 Schedule::command('sitemap:generate')->dailyAt('00:00');
+
+// Sync WABA status twice daily at 3am and 3pm
+Schedule::command('whatsapp:sync-waba-status')->twiceDailyAt(3, 15);

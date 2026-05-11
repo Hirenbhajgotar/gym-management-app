@@ -13,6 +13,7 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
     case SUSPENDED = 'suspended';
     case BLOCKED = 'blocked';
     case RESTRICTED = 'restricted';
+    case REJECTED = 'rejected';
     case BANNED = 'banned';
 
     public function getLabel(): string
@@ -23,6 +24,7 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
             self::SUSPENDED => 'Suspended',
             self::BLOCKED => 'Blocked',
             self::RESTRICTED => 'Restricted',
+            self::REJECTED => 'Rejected',
             self::BANNED => 'Banned',
         };
     }
@@ -35,6 +37,7 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
             self::SUSPENDED => 'warning',
             self::BLOCKED => 'danger',
             self::RESTRICTED => 'danger',
+            self::REJECTED => 'danger',
             self::BANNED => 'danger',
         };
     }
@@ -47,6 +50,7 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
             self::SUSPENDED => 'heroicon-o-pause-circle',
             self::BLOCKED => 'heroicon-o-x-circle',
             self::RESTRICTED => 'heroicon-o-no-symbol',
+            self::REJECTED => 'heroicon-o-no-symbol',
             self::BANNED => 'heroicon-o-shield-exclamation',
         };
     }
@@ -81,5 +85,29 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
     public function isWabaBlocked(): bool
     {
         return $this === self::BLOCKED;
+    }
+
+    /**
+     * Map Meta WABA review status to WhatsAppAccountStatusEnum.
+     */
+    public static function fromMetaReviewStatus(?string $status): self
+    {
+        return match ($status) {
+            'APPROVED' => self::ACTIVE,
+            'REJECTED' => self::REJECTED,
+            'PENDING' => self::PENDING,
+            'DISABLED' => self::RESTRICTED,
+            default => self::logAndFallback($status),
+        };
+    }
+
+    private static function logAndFallback(?string $status): self
+    {
+        \Illuminate\Support\Facades\Log::warning('Unknown Meta WABA review status encountered', [
+            'status' => $status,
+            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
+        ]);
+
+        return self::PENDING;
     }
 }

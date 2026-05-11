@@ -124,6 +124,7 @@ class WhatsAppAccount extends Model
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
             'provider_type' => WhatsAppProviderTypeEnum::class,
+            'waba_status_synced_at' => 'datetime',
         ];
     }
 
@@ -242,10 +243,23 @@ class WhatsAppAccount extends Model
 
     public function isSetupComplete(): bool
     {
-        return $this->isActive()
-            && $this->twilio_account_sid
-            && $this->twilio_auth_token
-            && $this->messaging_service_sid;
+        if (! $this->isActive()) {
+            return false;
+        }
+
+        if ($this->isWabaProvider()) {
+            return $this->waba_id !== null
+                && $this->isVerified()
+                && $this->hasPhoneNumber();
+        }
+
+        if ($this->isTwilioProvider()) {
+            return $this->twilio_account_sid !== null
+                && $this->twilio_auth_token !== null
+                && $this->hasPhoneNumber();
+        }
+
+        return false;
     }
 
     // =========================

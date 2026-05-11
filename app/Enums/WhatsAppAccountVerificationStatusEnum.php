@@ -46,4 +46,28 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
             self::REJECTED => 'heroicon-o-x-mark',
         };
     }
+
+    /**
+     * Map Meta WABA verification status to WhatsAppAccountVerificationStatusEnum.
+     */
+    public static function fromMetaVerificationStatus(?string $status): self
+    {
+        return match ($status) {
+            'VERIFIED' => self::VERIFIED,
+            'NOT_VERIFIED' => self::NOT_VERIFIED,
+            'IN_REVIEW' => self::IN_REVIEW,
+            'REJECTED' => self::REJECTED,
+            default => self::logAndFallback($status),
+        };
+    }
+
+    private static function logAndFallback(?string $status): self
+    {
+        \Illuminate\Support\Facades\Log::warning('Unknown Meta WABA verification status encountered', [
+            'status' => $status,
+            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
+        ]);
+
+        return self::PENDING;
+    }
 }
