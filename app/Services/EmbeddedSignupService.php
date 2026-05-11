@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\WabaModeEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
@@ -338,7 +337,6 @@ class EmbeddedSignupService
 
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL,
                 'meta_access_token' => $metaAccessToken,
                 'embedded_signup_completed' => true,
                 'status' => WhatsAppAccountStatusEnum::PENDING,
@@ -395,7 +393,6 @@ class EmbeddedSignupService
 
             $updateData = [
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::MANUAL->value,
                 'embedded_signup_completed' => false,
                 'status' => WhatsAppAccountStatusEnum::PENDING->value,
             ];

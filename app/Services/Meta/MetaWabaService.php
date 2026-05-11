@@ -2,7 +2,6 @@
 
 namespace App\Services\Meta;
 
-use App\Enums\WabaModeEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
@@ -45,7 +44,6 @@ class MetaWabaService implements WabaSetupInterface
         if ($account) {
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL,
                 'meta_access_token' => $metaAccessToken,
             ]);
         }
@@ -96,7 +94,6 @@ class MetaWabaService implements WabaSetupInterface
                         'business_description' => htmlspecialchars(strip_tags($businessData['business_description'] ?? '')),
                         'waba_id' => $wabaId,
                         'waba_name' => $businessName,
-                        'waba_mode' => WabaModeEnum::MANUAL,
                         'meta_access_token' => $metaAccessToken,
                         'embedded_signup_completed' => true,
                         'status' => $this->mapWabaStatus($verificationResult['status'] ?? null),
@@ -306,11 +303,10 @@ class MetaWabaService implements WabaSetupInterface
                 );
 
                 // Update with WABA details from embedded signup
-                // waba_mode = INDIVIDUAL because user created it via embedded signup (owns it)
+                // provider_type = WABA because user created it via embedded signup (owns it)
                 // status = PENDING because it needs verification with Meta
                 $account->update([
                     'waba_id' => $wabaId,
-                    'waba_mode' => WabaModeEnum::INDIVIDUAL,
                     'meta_access_token' => $accessToken,
                     'embedded_signup_completed' => true,
                     'status' => WhatsAppAccountStatusEnum::PENDING,

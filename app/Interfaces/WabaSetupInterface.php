@@ -21,7 +21,6 @@ interface WabaSetupInterface
      *     success: bool,
      *     waba_id?: string,
      *     messaging_service_sid?: string,
-     *     waba_mode?: string,
      *     message?: string,
      *     error?: string
      * }

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\WabaModeEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
@@ -22,7 +21,6 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $twilio_auth_token
  * @property string|null $waba_id
  * @property string|null $waba_name
- * @property WabaModeEnum|null $waba_mode
  * @property string|null $messaging_service_sid
  * @property string|null $verify_service_sid
  * @property string|null $meta_business_portfolio_id
@@ -66,14 +64,10 @@ use Illuminate\Support\Facades\Crypt;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifyServiceSid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaMode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaName($value)
  * @method bool isActive()
  * @method bool isVerified()
  * @method bool hasPhoneNumber()
- * @method bool hasIndividualWaba()
- * @method bool hasSharedWaba()
- * @method bool hasManualWaba()
  * @method bool isEmbeddedSignupComplete()
  * @method bool isWabaActive()
  * @method bool isWabaRestricted()
@@ -94,7 +88,6 @@ class WhatsAppAccount extends Model
         'twilio_auth_token',
         'waba_id',
         'waba_name',
-        'waba_mode',
         'messaging_service_sid',
         'verify_service_sid',
         'meta_business_portfolio_id',
@@ -120,7 +113,6 @@ class WhatsAppAccount extends Model
         return [
             'status' => WhatsAppAccountStatusEnum::class,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::class,
-            'waba_mode' => WabaModeEnum::class,
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
             'provider_type' => WhatsAppProviderTypeEnum::class,
@@ -198,21 +190,6 @@ class WhatsAppAccount extends Model
     public function hasPhoneNumber(): bool
     {
         return $this->phoneNumber()->exists();
-    }
-
-    public function hasIndividualWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::INDIVIDUAL;
-    }
-
-    public function hasSharedWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::SHARED;
-    }
-
-    public function hasManualWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::MANUAL;
     }
 
     public function isEmbeddedSignupComplete(): bool

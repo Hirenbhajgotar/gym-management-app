@@ -38,7 +38,6 @@ class TwilioAccountCleanupTest extends TestCase
             'twilio_auth_token' => 'test_auth_token',
             'messaging_service_sid' => 'MGtest_service_sid',
             'waba_id' => 'waba_test_id',
-            'waba_mode' => 'shared',
             'status' => 'active',
             'verification_status' => 'verified',
             'business_name' => 'Test Gym',

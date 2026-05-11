@@ -56,14 +56,6 @@ interface AccountManagementInterface
     public function cleanupAccount(int $gymId): array;
 
     /**
-     * Get the WABA mode for a gym.
-     *
-     * @param  int  $gymId  The gym ID
-     * @return string One of: 'shared', 'individual', 'manual', 'not_created'
-     */
-    public function getWabaMode(int $gymId): string;
-
-    /**
      * Check if embedded signup is required.
      *
      * @param  int  $gymId  The gym ID

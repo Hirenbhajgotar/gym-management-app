@@ -133,11 +133,6 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         return $this->account()->cleanupAccount($gymId);
     }
 
-    public function getWabaMode(int $gymId): string
-    {
-        return $this->account()->getWabaMode($gymId);
-    }
-
     public function requiresEmbeddedSignup(int $gymId): bool
     {
         return $this->account()->requiresEmbeddedSignup($gymId);

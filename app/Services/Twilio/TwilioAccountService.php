@@ -2,7 +2,6 @@
 
 namespace App\Services\Twilio;
 
-use App\Enums\WabaModeEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Interfaces\AccountManagementInterface;
@@ -75,7 +74,6 @@ class TwilioAccountService implements AccountManagementInterface
                     'twilio_account_sid' => $subaccount->sid,
                     'twilio_auth_token' => $subaccount->authToken,
                     'messaging_service_sid' => $messagingService->sid,
-                    'waba_mode' => WabaModeEnum::INDIVIDUAL,
                     'status' => WhatsAppAccountStatusEnum::PENDING,
                     'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
                     'business_name' => $gymName,
@@ -169,21 +167,13 @@ class TwilioAccountService implements AccountManagementInterface
     }
 
     /**
-     * Get WABA mode.
-     */
-    public function getWabaMode(int $gymId): string
-    {
-        return $this->context->getAccount()?->waba_mode?->value ?? 'not_created';
-    }
-
-    /**
      * Check if embedded signup is required.
      */
     public function requiresEmbeddedSignup(int $gymId): bool
     {
         $account = $this->context->getAccount();
 
-        return $account?->hasIndividualWaba() && ! $account->isEmbeddedSignupComplete();
+        return $account && $account->isWabaProvider() && ! $account->isEmbeddedSignupComplete();
     }
 
     /**
@@ -455,7 +445,6 @@ class TwilioAccountService implements AccountManagementInterface
     //     if (! $account->waba_id) {
     //         $account->update([
     //             'waba_id' => $this->sharedWabaId,
-    //             'waba_mode' => WabaModeEnum::SHARED->value,
     //         ]);
     //     }
 
@@ -482,7 +471,6 @@ class TwilioAccountService implements AccountManagementInterface
     //         'success' => true,
     //         'waba_id' => $account->waba_id,
     //         'messaging_service_sid' => $account->messaging_service_sid,
-    //         'waba_mode' => 'shared',
     //         'message' => 'Shared WABA created successfully',
     //     ];
     // }
@@ -493,7 +481,6 @@ class TwilioAccountService implements AccountManagementInterface
     // private function createIndividualWaba(WhatsAppAccount $account, int $gymId, Client $subClient, array $businessProfile): array
     // {
     //     $account->update([
-    //         'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
     //         'status' => WhatsAppAccountStatusEnum::PENDING,
     //     ]);
 
@@ -519,7 +506,6 @@ class TwilioAccountService implements AccountManagementInterface
     //     return [
     //         'success' => true,
     //         'messaging_service_sid' => $account->messaging_service_sid,
-    //         'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
     //         'requires_embedded_signup' => true,
     //         'message' => 'Please complete Embedded Signup to connect your WABA',
     //     ];
