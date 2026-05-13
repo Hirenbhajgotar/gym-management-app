@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read mixed $formatted_body
  * @property-read \App\Models\Gym|null $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isActive()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isDefault()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate newModelQuery()
@@ -63,6 +64,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereVariables($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([WhatsAppTemplateObserver::class])]
@@ -77,23 +79,24 @@ class WhatsAppTemplate extends Model
     protected $table = 'whatsapp_templates';
 
     protected $fillable = [
+        // Core form fields (both Admin and SuperAdmin panels)
         'gym_id',
         'name',
         'display_name',
         'body',
         'category',
+        // Computed/derived fields (explicitly set by services, not from form input)
         'variables',
         'variable_count',
         'variable_placeholder',
-        'twilio_template_sid',
-        'meta_template_id',
-        'status',
-        'rejection_reason',
-        'is_default',
-        'is_active',
-        'usage_count',
-        'last_used_at',
+        // Form-submitted fields
+        'status',      // SuperAdmin panel can set status on create/edit
+        'is_active',   // Admin panel toggles this in Settings section
     ];
+
+    // System/Internal fields (NOT fillable)
+    // twilio_template_sid, meta_template_id, rejection_reason, is_default, usage_count, last_used_at
+    // These are updated explicitly via direct property assignment (e.g., $record->field = value).
 
     protected function casts(): array
     {
@@ -199,25 +202,24 @@ class WhatsAppTemplate extends Model
 
     public function markAsApproved(string $twilioSid, string $metaId): void
     {
-        $this->update([
-            'status' => WhatsAppTemplateStatusEnum::APPROVED,
-            'twilio_template_sid' => $twilioSid,
-            'meta_template_id' => $metaId,
-        ]);
+        $this->status = WhatsAppTemplateStatusEnum::APPROVED;
+        $this->twilio_template_sid = $twilioSid;
+        $this->meta_template_id = $metaId;
+        $this->save();
     }
 
     public function markAsRejected(string $reason): void
     {
-        $this->update([
-            'status' => WhatsAppTemplateStatusEnum::REJECTED,
-            'rejection_reason' => $reason,
-        ]);
+        $this->status = WhatsAppTemplateStatusEnum::REJECTED;
+        $this->rejection_reason = $reason;
+        $this->save();
     }
 
     public function incrementUsage(): void
     {
         $this->increment('usage_count');
-        $this->update(['last_used_at' => now()]);
+        $this->last_used_at = now();
+        $this->save();
     }
 
     public function getVariableNames(): array

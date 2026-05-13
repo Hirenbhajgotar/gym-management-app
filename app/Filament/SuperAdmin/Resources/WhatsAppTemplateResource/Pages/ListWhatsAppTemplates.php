@@ -3,7 +3,7 @@
 namespace App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource;
-use App\Services\WhatsAppTemplateService;
+use App\Services\Twilio\TwilioTemplateService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -22,10 +22,10 @@ class ListWhatsAppTemplates extends ListRecords
                 ->requiresConfirmation()
                 ->modalHeading('Sync Templates from Twilio Main Account')
                 ->modalDescription('This will fetch all WhatsApp templates from the main Twilio account and save them as system-wide templates (gym_id=null). Only approved templates with valid content will be imported.')
-                ->action(function (WhatsAppTemplateService $service) {
-                    $result = $service->syncTemplatesFromTwilio();
+                ->action(function (TwilioTemplateService $service) {
+                    $result = $service->syncTemplatesFromTwilioMasterAccount();
 
-                    if ($result['success'] === true && !empty($result['error_count']) && $result['error_count'] > 0) {
+                    if ($result['success'] === true && ! empty($result['error_count']) && $result['error_count'] > 0) {
                         Notification::make()
                             ->warning()
                             ->title('Sync Partially Completed')

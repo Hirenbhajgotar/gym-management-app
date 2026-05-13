@@ -61,6 +61,14 @@ class TwilioContext
     }
 
     /**
+     * Get the API base URL for v1.
+     */
+    public function getApiBaseUrlv1(): string
+    {
+        return 'https://content.twilio.com/v1';
+    }
+
+    /**
      * Get account.
      */
     public function getAccount(): ?WhatsAppAccount
@@ -125,7 +133,7 @@ class TwilioContext
 
         return $this->subAccountClient = new Client(
             $this->account->twilio_account_sid,
-            $this->account->getRawOriginal('twilio_auth_token')
+            $this->account->twilio_auth_token
         );
     }
 
@@ -140,7 +148,7 @@ class TwilioContext
 
         return new Client(
             $account->twilio_account_sid,
-            $account->getRawOriginal('twilio_auth_token') ?? $account->twilio_auth_token
+            $account->twilio_auth_token
         );
     }
 

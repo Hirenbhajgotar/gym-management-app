@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Cache;
@@ -158,19 +159,22 @@ class WhatsAppTemplateManager
 
             $synced = 0;
             foreach ($result['templates'] as $template) {
-                WhatsAppTemplate::updateOrCreate(
+                $record = WhatsAppTemplate::updateOrCreate(
                     [
                         'gym_id' => $this->tenantId,
                         'name' => $template['friendly_name'],
                     ],
                     [
-                        'twilio_template_sid' => $template['sid'],
-                        'language' => $template['language'],
                         'variables' => $template['variables'],
-                        'status' => 'approved',
+                        'status' => WhatsAppTemplateStatusEnum::APPROVED,
                         'is_active' => true,
                     ],
                 );
+                // System fields updated explicitly (not mass-assignment)
+                if ($record) {
+                    $record->twilio_template_sid = $template['sid'];
+                    $record->save();
+                }
                 $synced++;
             }
 

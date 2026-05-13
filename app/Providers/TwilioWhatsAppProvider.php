@@ -13,8 +13,8 @@ use App\Services\Twilio\TwilioAccountService;
 use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioMessagingService;
 use App\Services\Twilio\TwilioPhoneService;
+use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use App\Services\WhatsAppTemplateManager;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Support\Facades\Log;
 
@@ -40,6 +40,8 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
     private ?TwilioAccountService $account = null;
 
     private ?TwilioPhoneService $phoneNumbers = null;
+
+    private ?TwilioTemplateService $templates = null;
 
     public function __construct(int $gymId)
     {
@@ -69,6 +71,14 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
     protected function phoneNumbers(): TwilioPhoneService
     {
         return $this->phoneNumbers ??= new TwilioPhoneService($this->context);
+    }
+
+    protected function templates(): TwilioTemplateService
+    {
+        return $this->templates ??= new TwilioTemplateService(
+            $this->context,
+            app(WhatsAppTemplateService::class)
+        );
     }
 
     // =========================
@@ -173,22 +183,22 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
 
     public function createTemplate(int $gymId, array $data): \App\Models\WhatsAppTemplate
     {
-        return app(WhatsAppTemplateService::class)->createTemplate($gymId, $data);
+        return $this->templates()->createTemplate($gymId, $data);
     }
 
     public function submitTemplate(\App\Models\WhatsAppTemplate $template): array
     {
-        return app(WhatsAppTemplateService::class)->submitForVerification($template);
+        return $this->templates()->submitTemplate($template);
     }
 
     public function syncTemplateStatus(\App\Models\WhatsAppTemplate $template): void
     {
-        app(WhatsAppTemplateService::class)->syncTemplateStatus($template);
+        $this->templates()->syncTemplateStatus($template);
     }
 
     public function getTemplates(int $gymId): array
     {
-        return (new WhatsAppTemplateManager((string) $gymId))->fetchTemplates();
+        return $this->templates()->getTemplates($gymId);
     }
 
     // =========================

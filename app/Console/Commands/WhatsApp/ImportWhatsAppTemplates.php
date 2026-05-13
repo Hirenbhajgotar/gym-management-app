@@ -7,6 +7,10 @@ namespace App\Console\Commands\WhatsApp;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Console\Command;
 
+/**
+ * @deprecated
+ * No longer in use
+ */
 class ImportWhatsAppTemplates extends Command
 {
     /**

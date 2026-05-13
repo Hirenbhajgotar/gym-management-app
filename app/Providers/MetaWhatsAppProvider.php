@@ -16,6 +16,7 @@ use App\Services\Meta\MetaMessagingService;
 use App\Services\Meta\MetaTemplateService;
 use App\Services\Meta\MetaWabaService;
 use App\Services\WhatsApp\WhatsAppCreditService;
+use App\Services\WhatsAppTemplateService;
 
 /**
  * Meta WhatsApp Business API Provider.
@@ -64,7 +65,11 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
 
     protected function templates(): MetaTemplateService
     {
-        return $this->templates ??= new MetaTemplateService($this->context, $this->api);
+        return $this->templates ??= new MetaTemplateService(
+            $this->context,
+            $this->api,
+            app(WhatsAppTemplateService::class)
+        );
     }
 
     protected function wabaSetup(): MetaWabaService

@@ -35,7 +35,7 @@ class OtpService
 
         return new Client(
             $account->twilio_account_sid,
-            $account->getRawOriginal('twilio_auth_token'),
+            $account->twilio_auth_token,
         );
     }
 
