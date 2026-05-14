@@ -1,7 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Twilio;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\DTOs\WhatsAppTemplates\TemplateMasterSyncResult;
+use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppAccount;
@@ -29,7 +35,7 @@ class TwilioTemplateService implements TemplateManagementInterface
 
     private const LOCK_TTL = 30;
 
-    private const SYNC_LOCK_TTL = 300; // master sync can take longer
+    private const SYNC_LOCK_TTL = 300;
 
     public function __construct(
         protected TwilioContext $context,
@@ -42,7 +48,7 @@ class TwilioTemplateService implements TemplateManagementInterface
      * Template creation is provider-agnostic (DB storage only),
      * so we delegate to the base service.
      */
-    public function createTemplate(int $gymId, array $data): WhatsAppTemplate
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
         return $this->templateService->createTemplate($gymId, $data);
     }
@@ -50,10 +56,10 @@ class TwilioTemplateService implements TemplateManagementInterface
     /**
      * Submit template for verification.
      */
-    public function submitTemplate(?WhatsAppTemplate $template = null): array
+    public function submitTemplate(?WhatsAppTemplate $template = null): TemplateSubmissionResult
     {
         if (! $template) {
-            return ['success' => false, 'error' => 'Template no longer exists.'];
+            return new TemplateSubmissionResult(success: false, error: 'Template no longer exists.');
         }
 
         $account = $this->context->getAccount();
@@ -65,22 +71,22 @@ class TwilioTemplateService implements TemplateManagementInterface
                 default => 'WhatsApp account is not verified',
             };
 
-            return ['success' => false, 'error' => $reason];
+            return new TemplateSubmissionResult(success: false, error: $reason);
         }
 
         $lock = Cache::lock("twilio_template_submit:{$template->id}", self::LOCK_TTL);
 
         if (! $lock->get()) {
-            return ['success' => false, 'error' => 'Template submission already in progress'];
-        }
-
-        $template = $template->fresh();
-
-        if ($template->status === WhatsAppTemplateStatusEnum::PENDING) {
-            return ['success' => false, 'error' => 'Template is already pending verification.'];
+            return new TemplateSubmissionResult(success: false, error: 'Template submission already in progress');
         }
 
         try {
+            $template = $template?->fresh();
+
+            if ($template?->status === WhatsAppTemplateStatusEnum::PENDING) {
+                return new TemplateSubmissionResult(success: false, error: 'Template is already pending verification.');
+            }
+
             return $this->processTwilioSubmission($template, $account);
         } catch (RestException $e) {
             Log::error('Twilio REST exception during template submit', [
@@ -88,9 +94,18 @@ class TwilioTemplateService implements TemplateManagementInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return ['success' => false, 'error' => $e->getMessage()];
+            return new TemplateSubmissionResult(success: false, error: $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Twilio template submit exception', [
+                'template_id' => $template->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new TemplateSubmissionResult(success: false, error: 'An unexpected error occurred during template submission.');
         } finally {
-            optional($lock)->release();
+            if ($lock !== null) {
+                $lock->release();
+            }
         }
     }
 
@@ -169,12 +184,12 @@ class TwilioTemplateService implements TemplateManagementInterface
      *
      * Fetches templates directly from Twilio API using context credentials.
      */
-    public function getTemplates(int $gymId): array
+    public function getTemplates(int $gymId): TemplateCollectionResult
     {
         $account = $this->context->getAccount();
 
         if (! $account?->twilio_account_sid || ! $account->twilio_auth_token) {
-            return ['success' => false, 'error' => 'Twilio credentials not configured', 'templates' => []];
+            return new TemplateCollectionResult(success: false, templates: [], error: 'Twilio credentials not configured');
         }
 
         try {
@@ -192,15 +207,11 @@ class TwilioTemplateService implements TemplateManagementInterface
             Log::warning('Failed to fetch fresh Twilio templates, falling back to cache.', ['error' => $e->getMessage()]);
             $templates = Cache::get($this->templatesCacheKey($gymId));
             if ($templates === null) {
-                return ['success' => false, 'error' => 'No templates found and API unavailable.', 'templates' => []];
+                return new TemplateCollectionResult(success: false, templates: [], error: 'No templates found and API unavailable.');
             }
         }
 
-        return [
-            'success' => true,
-            'templates' => $templates,
-            'count' => count($templates),
-        ];
+        return new TemplateCollectionResult(success: true, templates: $templates, count: count($templates));
     }
 
     // -------------------------------------------------------------------------
@@ -226,7 +237,6 @@ class TwilioTemplateService implements TemplateManagementInterface
             $client = $this->context->getClientForAccount($account);
             $client->content->v1->contents($template->twilio_template_sid)->delete();
 
-            // Bust cache so deleted template doesn't show up in next getTemplates()
             Cache::forget($this->templatesCacheKey($this->context->gymId));
 
             return true;
@@ -245,22 +255,22 @@ class TwilioTemplateService implements TemplateManagementInterface
      * Sync all approved templates from the Twilio master account into the DB.
      * Typically run as a scheduled command.
      */
-    public function syncTemplatesFromTwilioMasterAccount(): array
+    public function syncTemplatesFromTwilioMasterAccount(): TemplateMasterSyncResult
     {
         $lock = Cache::lock('twilio_master_template_sync', self::SYNC_LOCK_TTL);
 
         if (! $lock->get()) {
-            return ['success' => false, 'error' => 'Sync already in progress'];
+            return new TemplateMasterSyncResult(success: false, error: 'Sync already in progress');
         }
 
         try {
             return $this->processMasterSync();
         } catch (LockTimeoutException $e) {
-            return ['success' => false, 'error' => 'Master template sync is already in progress.'];
+            return new TemplateMasterSyncResult(success: false, error: 'Master template sync is already in progress.');
         } catch (\Exception $e) {
             Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'error' => $e->getMessage()];
+            return new TemplateMasterSyncResult(success: false, error: $e->getMessage());
         } finally {
             optional($lock)->release();
         }
@@ -270,9 +280,12 @@ class TwilioTemplateService implements TemplateManagementInterface
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private function processTwilioSubmission(WhatsAppTemplate $template, WhatsAppAccount $account): array
+    private function processTwilioSubmission(?WhatsAppTemplate $template, WhatsAppAccount $account): TemplateSubmissionResult
     {
-        // Step 1: Create content template
+        if (! $template) {
+            return new TemplateSubmissionResult(success: false, error: 'Template not found.');
+        }
+
         $createResponse = Http::withBasicAuth($account->twilio_account_sid, $account->twilio_auth_token)
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post("{$this->context->getApiBaseUrlv1()}/Content", [
@@ -287,12 +300,11 @@ class TwilioTemplateService implements TemplateManagementInterface
             $error = $createResponse->json('message') ?? $createResponse->body();
             Log::error('Twilio content create failed', ['error' => $error, 'template_id' => $template->id]);
 
-            return ['success' => false, 'error' => $error];
+            return new TemplateSubmissionResult(success: false, error: $error);
         }
 
         $contentSid = (string) $createResponse->json('sid');
 
-        // Step 2: Submit for WhatsApp approval
         $approvalResponse = Http::withBasicAuth($account->twilio_account_sid, $account->twilio_auth_token)
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post("{$this->context->getApiBaseUrlv1()}/Content/{$contentSid}/ApprovalRequests/whatsapp", [
@@ -304,17 +316,17 @@ class TwilioTemplateService implements TemplateManagementInterface
             $error = $approvalResponse->json('message') ?? $approvalResponse->body();
             Log::error('Twilio approval submit failed', ['error' => $error, 'template_id' => $template->id]);
 
-            return ['success' => false, 'error' => $error];
+            return new TemplateSubmissionResult(success: false, error: $error);
         }
 
         $template->twilio_template_sid = $contentSid;
         $template->status = WhatsAppTemplateStatusEnum::PENDING;
         $template->save();
 
-        return ['success' => true, 'status' => WhatsAppTemplateStatusEnum::PENDING->value, 'sid' => $contentSid];
+        return new TemplateSubmissionResult(success: true, status: WhatsAppTemplateStatusEnum::PENDING->value, sid: $contentSid);
     }
 
-    private function processMasterSync(): array
+    private function processMasterSync(): TemplateMasterSyncResult
     {
         $statusMap = [
             'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
@@ -345,7 +357,6 @@ class TwilioTemplateService implements TemplateManagementInterface
                     $rawStatus = strtoupper($whatsapp['status'] ?? 'PENDING');
                     $status = $statusMap[$rawStatus] ?? WhatsAppTemplateStatusEnum::PENDING;
 
-                    // Only sync approved templates as system defaults
                     if ($status !== WhatsAppTemplateStatusEnum::APPROVED) {
                         continue;
                     }
@@ -378,16 +389,15 @@ class TwilioTemplateService implements TemplateManagementInterface
                 }
             }
 
-            return [
-                'success' => true,
-                'synced_count' => $successCount,
-                'error_count' => $errorCount,
-                'errors' => $errors,
-            ];
+            return TemplateMasterSyncResult::fromTwilioResponse(
+                syncedCount: $successCount,
+                errorCount: $errorCount,
+                errors: $errors,
+            );
         } catch (\Exception $e) {
             Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'error' => $e->getMessage()];
+            return TemplateMasterSyncResult::fromError($e->getMessage());
         }
     }
 
@@ -406,7 +416,6 @@ class TwilioTemplateService implements TemplateManagementInterface
 
     private function upsertTemplate(array $attributes, array $values): void
     {
-        // Separate fillable fields (user/system data) from system fields
         $fillableValues = array_intersect_key($values, array_flip([
             'name', 'display_name', 'body', 'category',
             'variables', 'variable_count', 'variable_placeholder',
@@ -426,7 +435,6 @@ class TwilioTemplateService implements TemplateManagementInterface
             }
         }
 
-        // System fields updated explicitly (not mass-assignment)
         if ($record && ! empty($systemFields)) {
             foreach ($systemFields as $attribute => $value) {
                 $record->{$attribute} = $value;

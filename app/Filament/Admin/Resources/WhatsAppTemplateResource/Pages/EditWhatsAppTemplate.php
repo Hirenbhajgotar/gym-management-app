@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -8,6 +10,7 @@ use App\Services\WhatsAppTemplateService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Log;
 
 class EditWhatsAppTemplate extends EditRecord
 {
@@ -45,10 +48,11 @@ class EditWhatsAppTemplate extends EditRecord
                             ->body('Your updated template has been resubmitted for Meta approval.')
                             ->send();
                     } else {
+                        Log::info('Template resubmission failed', ['error' => $result['error']]);
                         Notification::make()
                             ->danger()
                             ->title('Resubmission Failed')
-                            ->body($result['error'] ?? 'Unknown error occurred.')
+                            ->body('Your updated template has not been submitted for Meta approval.')
                             ->send();
                     }
                 }),
@@ -76,10 +80,11 @@ class EditWhatsAppTemplate extends EditRecord
                             ->body('Your template has been submitted for Meta approval.')
                             ->send();
                     } else {
+                        Log::info('Template submission failed', ['error' => $result['error']]);
                         Notification::make()
                             ->danger()
                             ->title('Submission Failed')
-                            ->body($result['error'] ?? 'Unknown error occurred.')
+                            ->body('Your template has not been submitted for Meta approval.')
                             ->send();
                     }
                 }),

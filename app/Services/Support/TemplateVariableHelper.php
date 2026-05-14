@@ -1,6 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Support;
+
+use App\DTOs\WhatsAppTemplates\TemplatePlaceholder;
+use App\DTOs\WhatsAppTemplates\TemplateVariable;
 
 class TemplateVariableHelper
 {
@@ -13,6 +18,9 @@ class TemplateVariableHelper
         '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text', 'source' => 'plan.name'],
     ];
 
+    /**
+     * @return list<TemplateVariable>
+     */
     public static function extractVariables(string $body): array
     {
         preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
@@ -23,31 +31,36 @@ class TemplateVariableHelper
         foreach ($matches[1] as $number) {
             if (! in_array($number, $usedNumbers, true)) {
                 $usedNumbers[] = $number;
-                $variables[] = [
-                    'name' => 'variable_' . $number,
-                    'format' => 'text',
-                    'example' => 'Example ' . $number,
-                ];
+                $variables[] = new TemplateVariable(
+                    name: 'variable_' . $number,
+                    format: 'text',
+                    example: 'Example ' . $number,
+                );
             }
         }
 
         return $variables;
     }
 
+    /**
+     * @param  list<TemplateVariable>  $variables
+     * @return array<int, TemplatePlaceholder>
+     */
     public static function generateDefaultPlaceholders(array $variables): array
     {
         $placeholders = [];
 
         foreach ($variables as $variable) {
-            if (preg_match('/variable_(\d+)/', $variable['name'], $matches)) {
-                $num = $matches[1];
-                $placeholders[$num] = self::DEFAULT_PLACEHOLDERS[$num] ?? [
+            if (preg_match('/variable_(\d+)/', $variable->name, $matches)) {
+                $num = (string) $matches[1];
+                $default = self::DEFAULT_PLACEHOLDERS[$num] ?? [
                     'placeholder' => 'Variable ' . $num,
                     'name' => 'variable_' . $num,
                     'example' => 'Example ' . $num,
                     'type' => 'text',
                     'source' => 'custom',
                 ];
+                $placeholders[$num] = TemplatePlaceholder::fromArray($default);
             }
         }
 

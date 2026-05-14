@@ -1,10 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Interfaces;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Models\WhatsAppTemplate;
 
 /**
+ * @deprecated 1.x will be remove in 2.x.
+ *
  * Comprehensive WhatsApp Provider Interface.
  *
  * This interface defines all operations required for WhatsApp messaging
@@ -232,20 +239,14 @@ interface WhatsAppProviderInterface
      * @param  int  $gymId  The gym ID
      * @param  array<string, mixed>  $data  Template data
      */
-    public function createTemplate(int $gymId, array $data): WhatsAppTemplate;
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate;
 
     /**
      * Submit a template for verification/approval.
      *
      * @param  WhatsAppTemplate  $template  The template to submit
-     * @return array{
-     *     success: bool,
-     *     status?: string,
-     *     sid?: string,
-     *     error?: string
-     * }
      */
-    public function submitTemplate(WhatsAppTemplate $template): array;
+    public function submitTemplate(WhatsAppTemplate $template): TemplateSubmissionResult;
 
     /**
      * Sync template status from provider.
@@ -258,14 +259,8 @@ interface WhatsAppProviderInterface
      * Get all available templates.
      *
      * @param  int  $gymId  The gym ID
-     * @return array{
-     *     success: bool,
-     *     templates?: array,
-     *     count?: int,
-     *     error?: string
-     * }
      */
-    public function getTemplates(int $gymId): array;
+    public function getTemplates(int $gymId): TemplateCollectionResult;
 
     // =========================
     // Credit Management

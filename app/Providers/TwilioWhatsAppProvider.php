@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Interfaces\AccountManagementInterface;
 use App\Interfaces\CreditManagementInterface;
 use App\Interfaces\MessagingInterface;
@@ -9,6 +14,7 @@ use App\Interfaces\PhoneNumberManagementInterface;
 use App\Interfaces\TemplateManagementInterface;
 use App\Interfaces\TestMessagingInterface;
 use App\Models\Gym;
+use App\Models\WhatsAppTemplate;
 use App\Services\Twilio\TwilioAccountService;
 use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioMessagingService;
@@ -181,22 +187,22 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
     // TemplateManagementInterface - Delegation
     // =========================
 
-    public function createTemplate(int $gymId, array $data): \App\Models\WhatsAppTemplate
+    public function createTemplate(int $gymId, CreateTemplateData $data): \App\Models\WhatsAppTemplate
     {
         return $this->templates()->createTemplate($gymId, $data);
     }
 
-    public function submitTemplate(\App\Models\WhatsAppTemplate $template): array
+    public function submitTemplate(?WhatsAppTemplate $template = null): TemplateSubmissionResult
     {
         return $this->templates()->submitTemplate($template);
     }
 
-    public function syncTemplateStatus(\App\Models\WhatsAppTemplate $template): void
+    public function syncTemplateStatus(WhatsAppTemplate $template): void
     {
         $this->templates()->syncTemplateStatus($template);
     }
 
-    public function getTemplates(int $gymId): array
+    public function getTemplates(int $gymId): TemplateCollectionResult
     {
         return $this->templates()->getTemplates($gymId);
     }

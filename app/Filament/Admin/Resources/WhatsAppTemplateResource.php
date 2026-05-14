@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -18,6 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 
 class WhatsAppTemplateResource extends Resource
@@ -643,10 +646,11 @@ class WhatsAppTemplateResource extends Resource
                                     ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
                                     ->send();
                             } else {
+                                Log::info('Template submission failed', ['error' => $result['error']]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Submission Failed')
-                                    ->body($result['error'] ?? 'Unknown error occurred.')
+                                    ->body($result['error'] ?? 'Your template has not been submitted for Meta approval.')
                                     ->send();
                             }
                         }),
@@ -677,10 +681,11 @@ class WhatsAppTemplateResource extends Resource
                                     ->body('Your template has been resubmitted for approval.')
                                     ->send();
                             } else {
+                                Log::info('Template resubmission failed', ['error' => $result['error']]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Resubmission Failed')
-                                    ->body($result['error'] ?? 'Unknown error occurred.')
+                                    ->body($result['error'] ?? 'Your updated template has not been submitted for Meta approval.')
                                     ->send();
                             }
                         }),

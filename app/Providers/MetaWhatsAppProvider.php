@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Interfaces\CreditManagementInterface;
 use App\Interfaces\EmbeddedSignupInterface;
 use App\Interfaces\MessagingInterface;
@@ -120,12 +125,12 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
     // TemplateManagementInterface - Delegation
     // =========================
 
-    public function createTemplate(int $gymId, array $data): WhatsAppTemplate
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
         return $this->templates()->createTemplate($gymId, $data);
     }
 
-    public function submitTemplate(WhatsAppTemplate $template): array
+    public function submitTemplate(?WhatsAppTemplate $template = null): TemplateSubmissionResult
     {
         return $this->templates()->submitTemplate($template);
     }
@@ -135,7 +140,7 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         $this->templates()->syncTemplateStatus($template);
     }
 
-    public function getTemplates(int $gymId): array
+    public function getTemplates(int $gymId): TemplateCollectionResult
     {
         return $this->templates()->getTemplates($gymId);
     }

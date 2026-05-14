@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Interfaces;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Models\WhatsAppTemplate;
 
 /**
@@ -18,22 +21,16 @@ interface TemplateManagementInterface
      * Create a new WhatsApp template.
      *
      * @param  int  $gymId  The gym ID
-     * @param  array<string, mixed>  $data  Template data
+     * @param  CreateTemplateData  $data  Template data
      */
-    public function createTemplate(int $gymId, array $data): WhatsAppTemplate;
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate;
 
     /**
-     * Submit a template for verification/approval.
+     * Submit a template for approval.
      *
-     * @param  WhatsAppTemplate  $template  The template to submit
-     * @return array{
-     *     success: bool,
-     *     status?: string,
-     *     sid?: string,
-     *     error?: string
-     * }
+     * @param  WhatsAppTemplate|null  $template  Template to submit
      */
-    public function submitTemplate(WhatsAppTemplate $template): array;
+    public function submitTemplate(?WhatsAppTemplate $template = null): TemplateSubmissionResult;
 
     /**
      * Sync template status from provider.
@@ -43,15 +40,9 @@ interface TemplateManagementInterface
     public function syncTemplateStatus(WhatsAppTemplate $template): void;
 
     /**
-     * Get all available templates.
+     * Get all templates for a gym.
      *
      * @param  int  $gymId  The gym ID
-     * @return array{
-     *     success: bool,
-     *     templates?: array,
-     *     count?: int,
-     *     error?: string
-     * }
      */
-    public function getTemplates(int $gymId): array;
+    public function getTemplates(int $gymId): TemplateCollectionResult;
 }

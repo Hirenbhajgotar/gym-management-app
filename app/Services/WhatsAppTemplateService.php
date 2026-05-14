@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\UpdateTemplateData;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
@@ -18,50 +22,56 @@ class WhatsAppTemplateService
         $templates = WhatsAppTemplate::getDefaults();
 
         foreach ($templates as $template) {
-            $this->createTemplate($gymId, $template->toArray());
+            $this->createTemplate($gymId, CreateTemplateData::fromArray($template->toArray()));
         }
 
         Log::info("Default WhatsApp templates created for gym: {$gymId}");
     }
 
-    public function createTemplate(int $gymId, array $data): WhatsAppTemplate
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
-        $variables = TemplateVariableHelper::extractVariables($data['body']);
+        $variables = TemplateVariableHelper::extractVariables($data->body);
 
         $template = WhatsAppTemplate::create([
             'gym_id' => $gymId,
-            'name' => $data['name'],
-            'display_name' => $data['display_name'],
-            'body' => $data['body'],
-            'category' => $data['category'] ?? 'utility',
+            'name' => $data->name,
+            'display_name' => $data->display_name,
+            'body' => $data->body,
+            'category' => $data->category,
             'variables' => $variables,
             'variable_count' => count($variables),
-            'variable_placeholder' => $data['variable_placeholder'] ?? TemplateVariableHelper::generateDefaultPlaceholders($variables),
+            'variable_placeholder' => $data->variable_placeholder ?? TemplateVariableHelper::generateDefaultPlaceholders($variables),
             'status' => WhatsAppTemplateStatusEnum::DRAFT,
             'is_active' => true,
         ]);
 
-        // system fields
         if ($template) {
-            $template->is_default = $data['is_default'] ?? false;
+            $template->is_default = $data->is_default ?? false;
             $template->save();
         }
 
         return $template;
     }
 
-    public function updateTemplate(WhatsAppTemplate $template, array $data): ?WhatsAppTemplate
+    public function updateTemplate(WhatsAppTemplate $template, UpdateTemplateData $data): ?WhatsAppTemplate
     {
-        if (isset($data['body'])) {
-            $data['variables'] = TemplateVariableHelper::extractVariables($data['body']);
-            $data['variable_count'] = count($data['variables']);
+        $updateData = $data->toArray();
 
-            if (! isset($data['variable_placeholder'])) {
-                $data['variable_placeholder'] = TemplateVariableHelper::generateDefaultPlaceholders($data['variables']);
+        if (isset($updateData['body'])) {
+            $updateData['variables'] = TemplateVariableHelper::extractVariables($updateData['body']);
+            $updateData['variable_count'] = count($updateData['variables']);
+
+            if (! isset($updateData['variable_placeholder'])) {
+                $updateData['variable_placeholder'] = TemplateVariableHelper::generateDefaultPlaceholders($updateData['variables']);
             }
         }
 
-        $template->update($data);
+        $template->update($updateData);
+
+        if ($template && $data->is_default !== null) {
+            $template->is_default = $data->is_default;
+            $template->save();
+        }
 
         return $template->fresh();
     }
@@ -135,7 +145,6 @@ class WhatsAppTemplateService
         $token = $whatsAppAccount->twilio_auth_token;
 
         try {
-            // Step 1: Create content template
             $createResponse = Http::withBasicAuth($sid, $token)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post('https://content.twilio.com/v1/Content', [
@@ -152,16 +161,15 @@ class WhatsAppTemplateService
                 $error = $createResponse->json('message') ?? $createResponse->body();
                 Log::error('Twilio content create failed', ['error' => $error, 'template_id' => $template->id]);
 
-                return ['success' => false, 'error' => $error];
+                return ['success' => false, 'error' => 'Template submission failed. Please try again later.'];
             }
 
             $contentSid = $createResponse->json('sid');
 
-            // Step 2: Submit for WhatsApp approval
             $approvalResponse = Http::withBasicAuth($sid, $token)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post("https://content.twilio.com/v1/Content/{$contentSid}/ApprovalRequests/whatsapp", [
-                    'name' => $template->name, // lowercase_underscored
+                    'name' => $template->name,
                     'category' => strtoupper($template->category ?? 'UTILITY'),
                 ]);
 
@@ -169,7 +177,7 @@ class WhatsAppTemplateService
                 $error = $approvalResponse->json('message') ?? $approvalResponse->body();
                 Log::error('Twilio approval submit failed', ['error' => $error, 'template_id' => $template->id]);
 
-                return ['success' => false, 'error' => $error];
+                return ['success' => false, 'error' => 'Template approval failed. Please try again later.'];
             }
 
             $template->twilio_template_sid = $contentSid;
@@ -183,7 +191,7 @@ class WhatsAppTemplateService
                 'error' => $e->getMessage(),
             ]);
 
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => 'Template submission failed. Please try again later.'];
         }
     }
 
@@ -224,10 +232,10 @@ class WhatsAppTemplateService
             $rawStatus = strtoupper($whatsapp['status'] ?? '');
 
             $statusMap = [
-                'PENDING' => 'pending',
-                'APPROVED' => 'approved',
-                'REJECTED' => 'rejected',
-                'DISABLED' => 'disabled',
+                'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
+                'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
+                'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
+                'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
             ];
 
             $newStatus = $statusMap[$rawStatus] ?? $template->status;
@@ -394,7 +402,6 @@ class WhatsAppTemplateService
                 try {
                     $types = $record->types;
 
-                    // Extract body from supported types
                     $body = null;
                     if (isset($types['twilio/text'])) {
                         $body = $types['twilio/text']['body'];
@@ -414,7 +421,6 @@ class WhatsAppTemplateService
                     $variableCount = count($variables);
                     $placeholders = $this->generateDefaultPlaceholders($variables);
 
-                    // Fetch approval status to get correct category and status
                     $whatsapp = [];
                     try {
                         $approvalFetch = $masterClient->content->v1->contents($record->sid)->approvalFetch()->fetch();
@@ -440,7 +446,7 @@ class WhatsAppTemplateService
                     ];
 
                     $values = [
-                        'name' => $record->friendlyName, // Twilio friendly name as internal name
+                        'name' => $record->friendlyName,
                         'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
                         'body' => $body,
                         'category' => $category,
@@ -456,7 +462,6 @@ class WhatsAppTemplateService
                     try {
                         $templateRecord = WhatsAppTemplate::updateOrCreate($attributes, $values);
                     } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
-                        // Concurrent sync caused a duplicate key error, fallback to explicit update
                         $templateRecord = WhatsAppTemplate::where($attributes)->first();
                     } catch (\Illuminate\Database\QueryException $e) {
                         if ($e->getCode() === '23000') {
@@ -466,7 +471,6 @@ class WhatsAppTemplateService
                         }
                     }
 
-                    // System fields updated explicitly (not mass-assignment)
                     if ($templateRecord) {
                         $templateRecord->twilio_template_sid = $record->sid;
                         $templateRecord->rejection_reason = $rejectionReason;

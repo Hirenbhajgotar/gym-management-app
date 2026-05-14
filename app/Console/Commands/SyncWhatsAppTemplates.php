@@ -37,10 +37,10 @@ class SyncWhatsAppTemplates extends Command
                 $templateManager = new \App\Services\WhatsAppTemplateManager($gym->id);
                 $result = $templateManager->syncTemplatesToDatabase();
 
-                if ($result['success']) {
-                    $this->info("Synced {$result['synced']} templates successfully!");
+                if ($result->success) {
+                    $this->info("Synced {$result->synced} templates successfully!");
                 } else {
-                    $this->error("Failed to fetch templates for Gym ID: {$result['error']}");
+                    $this->error("Failed to fetch templates for Gym ID: {$result->error}");
                 }
             }
         });
