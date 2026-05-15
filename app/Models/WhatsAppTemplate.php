@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -70,6 +71,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';

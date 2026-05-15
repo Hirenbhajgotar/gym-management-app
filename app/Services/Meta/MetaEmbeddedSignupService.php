@@ -116,11 +116,11 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
     protected function getMetaAppConfig(): array
     {
         return [
-            'app_id' => config('services.twilio.meta.app_id', ''),
-            'app_secret' => config('services.twilio.meta.app_secret', ''),
-            'api_version' => config('services.twilio.meta.api_version', 'v25.0'),
-            'redirect_uri' => config('services.twilio.meta.redirect_uri', ''),
-            'config_id' => config('services.twilio.meta.config_id', ''),
+            'app_id' => config('services.meta.app_id', ''),
+            'app_secret' => config('services.meta.app_secret', ''),
+            'api_version' => config('services.meta.api_version', 'v25.0'),
+            'redirect_uri' => config('services.meta.redirect_uri', ''),
+            'config_id' => config('services.meta.config_id', ''),
         ];
     }
 
@@ -207,9 +207,9 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
 
     public function isEnabled(): bool
     {
-        $metaAppId = config('services.twilio.meta.app_id', '');
-        $metaAppSecret = config('services.twilio.meta.app_secret', '');
-        $configId = config('services.twilio.meta.config_id', '');
+        $metaAppId = config('services.meta.app_id', '');
+        $metaAppSecret = config('services.meta.app_secret', '');
+        $configId = config('services.meta.config_id', '');
 
         return ! empty($metaAppId)
             && ! empty($metaAppSecret)

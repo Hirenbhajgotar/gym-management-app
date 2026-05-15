@@ -30,22 +30,15 @@ class EmbeddedSignupService
 
     private string $metaConfigId;
 
-    private string $masterAccountSid;
-
-    private string $masterAuthToken;
-
     private bool $embeddedSignupEnabled;
 
     public function __construct()
     {
-        $this->metaAppId = config('services.twilio.meta.app_id', '');
-        $this->metaAppSecret = config('services.twilio.meta.app_secret', '');
-        $this->metaApiVersion = config('services.twilio.meta.api_version', 'v19.0');
-        $this->metaRedirectUri = config('services.twilio.meta.redirect_uri', '');
-        $this->metaConfigId = config('services.twilio.meta.config_id', '');
-
-        $this->masterAccountSid = config('services.twilio.master_sid', '');
-        $this->masterAuthToken = config('services.twilio.master_token', '');
+        $this->metaAppId = (string) config('services.meta.app_id', '');
+        $this->metaAppSecret = config('services.meta.app_secret', '');
+        $this->metaApiVersion = config('services.meta.api_version', 'v19.0');
+        $this->metaRedirectUri = config('services.meta.redirect_uri', '');
+        $this->metaConfigId = config('services.meta.config_id', '');
 
         $this->embeddedSignupEnabled = config('services.twilio.embedded_signup_enabled', false);
     }
@@ -100,10 +93,6 @@ class EmbeddedSignupService
         }
 
         $tokenData = $this->exchangeCodeForToken($code);
-
-        Log::info('Embedded Signup token exchange', [
-            'token_data' => $tokenData,
-        ]);
 
         if (! $tokenData['success']) {
             $session->markAsFailed();
@@ -276,7 +265,8 @@ class EmbeddedSignupService
             'gym_id' => $gymId,
             'waba_id' => $wabaId,
             'phone_number' => $phoneNumber,
-            'account' => $account->toArray(),
+            'account_id' => $account->id,
+            'provider_type' => $account->provider_type,
         ]);
 
         try {

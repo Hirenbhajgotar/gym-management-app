@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WhatsAppTemplate;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,6 +25,7 @@ class WhatsAppTemplateRejectedNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
+        $gymSlug = $this->template->gym?->slug ?? 'admin';
         $reason = $this->template->rejection_reason ?? 'No specific reason provided.';
 
         return (new MailMessage)
@@ -38,17 +40,25 @@ class WhatsAppTemplateRejectedNotification extends Notification implements Shoul
             ->line('2. For **utility templates**: Remove any emojis, promotional language, or call-to-action selling')
             ->line("3. For **marketing templates**: Ensure content complies with Meta's commerce policy")
             ->line('4. Edit your template and resubmit for approval')
-            ->action('Edit & Resubmit', route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $this->template->gym->slug, 'record' => $this->template->id]))
+            ->action('Edit & Resubmit', route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $gymSlug, 'record' => $this->template->id]))
             ->salutation('Don\'t worry — most templates get approved after a quick fix!');
     }
 
     public function toDatabase(object $notifiable): array
     {
+        $gymSlug = $this->template->gym?->slug ?? 'admin';
+        $reason = $this->template->rejection_reason ?? 'No specific reason provided.';
+
         return FilamentNotification::make()
             ->danger()
             ->icon('heroicon-o-x-circle')
             ->title('Template Rejected: ' . $this->template->display_name)
-            ->body("Your WhatsApp template was rejected. Reason: \"{$this->template->rejection_reason}\". Click to edit and resubmit.")
+            ->body("Your WhatsApp template was rejected. Reason: \"{$reason}\". Click to edit and resubmit.")
+            ->actions([
+                Action::make('view')
+                    ->label('View Template')
+                    ->url(route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $gymSlug, 'record' => $this->template->id])),
+            ])
             ->getDatabaseMessage();
     }
 }

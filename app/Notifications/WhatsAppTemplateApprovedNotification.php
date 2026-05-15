@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WhatsAppTemplate;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,6 +25,8 @@ class WhatsAppTemplateApprovedNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
+        $gymSlug = $this->template->gym?->slug ?? 'admin';
+
         return (new MailMessage)
             ->subject('✅ WhatsApp Template Approved — ' . $this->template->display_name)
             ->greeting("Hello {$notifiable->name},")
@@ -33,17 +36,24 @@ class WhatsAppTemplateApprovedNotification extends Notification implements Shoul
             ->line("- **Name:** {$this->template->display_name}")
             ->line('- **Category:** ' . ucfirst($this->template->category))
             ->line('- **Status:** ✅ Approved')
-            ->action('Go to Templates', route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $this->template->gym->slug, 'record' => $this->template->id]))
+            ->action('Go to Templates', route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $gymSlug, 'record' => $this->template->id]))
             ->salutation('Happy messaging! 🎉');
     }
 
     public function toDatabase(object $notifiable): array
     {
+        $gymSlug = $this->template->gym?->slug ?? 'admin';
+
         return FilamentNotification::make()
             ->success()
             ->icon('heroicon-o-check-circle')
             ->title('Template Approved: ' . $this->template->display_name)
             ->body("Your WhatsApp template \"{$this->template->display_name}\" has been approved by Meta. You can now use it for broadcasts.")
+            ->actions([
+                Action::make('view')
+                    ->label('View Template')
+                    ->url(route('filament.admin.resources.whats-app-templates.edit', ['tenant' => $gymSlug, 'record' => $this->template->id])),
+            ])
             ->getDatabaseMessage();
     }
 }

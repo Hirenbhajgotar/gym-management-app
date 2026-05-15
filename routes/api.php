@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\RazorpayWebhookController;
 use App\Http\Controllers\Api\TwilioWebhookController;
 use App\Http\Controllers\Api\WebhookTestController;
 use App\Http\Controllers\Api\WhatsAppLeadController;
+use App\Http\Controllers\Api\WhatsAppTemplateWebhookController;
 use App\Http\Controllers\ReportApiController;
 use App\Http\Middleware\AuthenticateBiometricDevice;
 use Filament\Facades\Filament;
@@ -42,9 +43,19 @@ Route::prefix('webhooks')->group(function () {
     Route::post('/instagram/leads', [InstagramLeadController::class, 'handleWebhook'])
         ->name('api.webhooks.instagram.leads');
 
-    // WhatsApp Business API Webhook
-    Route::post('/whatsapp/messages', [WhatsAppLeadController::class, 'handleWebhook'])
-        ->name('api.webhooks.whatsapp.messages');
+    Route::prefix('/whatsapp')->group(function () {
+        // WhatsApp Template Status Webhook
+        Route::get('/templates', [WhatsAppTemplateWebhookController::class, 'verifyMetaWebhook'])
+            ->name('api.webhooks.whatsapp.templates.verify');
+
+        Route::post('/templates', [WhatsAppTemplateWebhookController::class, 'handleTemplateStatusWebhook'])
+            ->name('api.webhooks.whatsapp.templates.status')
+            ->middleware('throttle:60,1');
+
+        // WhatsApp Business API Webhook
+        Route::post('/messages', [WhatsAppLeadController::class, 'handleWebhook'])
+            ->name('api.webhooks.whatsapp.messages');
+    });
 
     // IndiaMart Lead Webhook
     // Route::post('/indiamart/leads', [IndiaMartLeadController::class, 'handleWebhook'])

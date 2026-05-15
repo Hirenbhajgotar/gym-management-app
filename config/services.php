@@ -51,18 +51,6 @@ return [
         'business_account_id' => env('INSTAGRAM_BUSINESS_ACCOUNT_ID'),
     ],
 
-    'whatsapp' => [
-        // Provider selection: 'twilio' or 'waba' (Meta WhatsApp Business API)
-        'default_provider' => env('WHATSAPP_DEFAULT_PROVIDER', 'waba'),
-
-        'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
-        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
-        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
-        'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
-        'api_version' => env('META_API_VERSION', 'v25.0'),
-        'welcome_credits' => env('WHATSAPP_WELCOME_CREDITS', 50),
-    ],
-
     'indiamart' => [
         'client_id' => env('INDIAMART_CLIENT_ID'),
         'client_secret' => env('INDIAMART_CLIENT_SECRET'),
@@ -78,6 +66,27 @@ return [
         'webhook_secret' => env('JUSTDIAL_WEBHOOK_SECRET'),
     ],
 
+    'whatsapp' => [
+        // Provider selection: 'twilio' or 'waba' (Meta WhatsApp Business API)
+        'default_provider' => env('WHATSAPP_DEFAULT_PROVIDER', 'waba'),
+
+        'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'api_version' => env('META_API_VERSION', 'v25.0'),
+        'welcome_credits' => env('WHATSAPP_WELCOME_CREDITS', 50),
+        'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+    ],
+
+    'meta' => [
+        'app_id' => env('META_APP_ID'),
+        'app_secret' => (string) env('META_APP_SECRET'),
+        'api_version' => env('META_API_VERSION', 'v25.0'),
+        'redirect_uri' => rtrim(config('app.url'), '/') . '/' . ltrim(env('META_REDIRECT_URI', '') ?: '/whatsapp/embedded-signup/callback', '/'),
+        'config_id' => env('META_CONFIG_ID'),
+        'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+    ],
+
     'twilio' => [
         'master_sid' => env('TWILIO_ACCOUNT_SID'),
         'master_token' => env('TWILIO_AUTH_TOKEN'),
@@ -88,15 +97,6 @@ return [
         // Feature Flags
         'use_individual_waba' => env('TWILIO_USE_INDIVIDUAL_WABA', false),
         'embedded_signup_enabled' => env('TWILIO_EMBEDDED_SIGNUP_ENABLED', false),
-
-        // Meta/Facebook Integration for Embedded Signup
-        'meta' => [
-            'app_id' => env('META_APP_ID'),
-            'app_secret' => env('META_APP_SECRET'),
-            'api_version' => env('META_API_VERSION', 'v25.0'),
-            'redirect_uri' => env('APP_URL') . env('META_REDIRECT_URI'),
-            'config_id' => env('META_CONFIG_ID'),
-        ],
 
         // Sandbox Settings
         'use_sandbox' => env('TWILIO_USE_SANDBOX', false),
