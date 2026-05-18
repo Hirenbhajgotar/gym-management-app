@@ -97,6 +97,7 @@ return [
         // Feature Flags
         'use_individual_waba' => env('TWILIO_USE_INDIVIDUAL_WABA', false),
         'embedded_signup_enabled' => env('TWILIO_EMBEDDED_SIGNUP_ENABLED', false),
+        'webhook_verify_token' => env('TWILIO_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
 
         // Sandbox Settings
         'use_sandbox' => env('TWILIO_USE_SANDBOX', false),

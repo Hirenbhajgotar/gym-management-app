@@ -5,6 +5,12 @@ namespace App\Console\Commands;
 use App\Models\Gym;
 use Illuminate\Console\Command;
 
+/**
+ * @deprecated Use real-time webhooks instead. Template sync is now handled via:
+ *             - Meta: WhatsAppTemplateWebhookController (POST /api/webhooks/whatsapp/templates)
+ *             - Twilio: TwilioTemplateWebhookController (POST /api/webhooks/twilio/templates)
+ *             This polling command will be removed in a future release.
+ */
 class SyncWhatsAppTemplates extends Command
 {
     /**
@@ -19,13 +25,19 @@ class SyncWhatsAppTemplates extends Command
      *
      * @var string
      */
-    protected $description = 'Syncs WhatsApp message templates from Twilio to the local database for all gyms.';
+    protected $description = '[DEPRECATED] Syncs WhatsApp message templates from Twilio to the local database. Use webhooks instead.';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
+        $this->warn('WARNING: This command is deprecated. Template sync is now handled via real-time webhooks.');
+        $this->warn('Use the webhook endpoints instead:');
+        $this->warn('  - Meta: POST /api/webhooks/whatsapp/templates-status');
+        $this->warn('  - Twilio: POST /api/webhooks/twilio/templates-status');
+        $this->newLine();
+
         // Get all gyms with active and verified WhatsApp configurations
         Gym::whereHas('whatsAppAccount', function ($query) {
             $query->where('is_active', true)

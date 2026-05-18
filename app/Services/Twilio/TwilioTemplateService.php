@@ -13,6 +13,7 @@ use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use App\Services\Support\TemplateVariableHelper;
+use App\Services\Support\WhatsAppTemplateStatusMapper;
 use App\Services\WhatsAppTemplateService as BaseTemplateService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -154,8 +155,8 @@ class TwilioTemplateService implements TemplateManagementInterface
             }
 
             $whatsapp = $response->json('whatsapp', []);
-            $rawStatus = strtoupper($whatsapp['status'] ?? '');
-            $newStatus = $this->mapStatus($rawStatus);
+            $rawStatus = $whatsapp['status'] ?? '';
+            $newStatus = WhatsAppTemplateStatusMapper::mapStatus($rawStatus);
 
             if (! $newStatus) {
                 return;
@@ -441,17 +442,6 @@ class TwilioTemplateService implements TemplateManagementInterface
             }
             $record->save();
         }
-    }
-
-    private function mapStatus(string $rawStatus): ?WhatsAppTemplateStatusEnum
-    {
-        return match ($rawStatus) {
-            'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
-            'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
-            'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
-            'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
-            default => null,
-        };
     }
 
     private function templatesCacheKey(int $gymId): string

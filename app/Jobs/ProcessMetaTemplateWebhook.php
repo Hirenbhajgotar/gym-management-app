@@ -10,6 +10,7 @@ use App\Models\WhatsAppTemplate;
 use App\Notifications\WhatsAppTemplateApprovedNotification;
 use App\Notifications\WhatsAppTemplateRejectedNotification;
 use App\Notifications\WhatsAppTemplateStatusChangedNotification;
+use App\Services\Support\WhatsAppTemplateStatusMapper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -96,7 +97,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
         }
 
         // Map Meta event to WhatsAppTemplateStatusEnum
-        $newStatus = $this->mapStatus($this->event);
+        $newStatus = WhatsAppTemplateStatusMapper::mapStatus($this->event);
 
         if (! $newStatus) {
             Log::warning('ProcessMetaTemplateWebhook: unknown event type', [
@@ -152,7 +153,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $template->loadMissing(['gym.owner']);
+        $template->loadMissing('gym');
 
         $owner = $template->gym?->owner();
 
@@ -184,23 +185,6 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * Map Meta event string to WhatsAppTemplateStatusEnum.
-     */
-    private function mapStatus(string $event): ?WhatsAppTemplateStatusEnum
-    {
-        return match (strtoupper($event)) {
-            'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
-            'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
-            'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
-            'PENDING_DELETION' => WhatsAppTemplateStatusEnum::PENDING,
-            'FLAGGED' => WhatsAppTemplateStatusEnum::REJECTED,
-            'PAUSED' => WhatsAppTemplateStatusEnum::DISABLED,
-            'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
-            default => null,
-        };
     }
 
     /**
