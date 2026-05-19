@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\WhatsApp;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Providers\MetaWhatsAppProvider;
 use Illuminate\Http\RedirectResponse;
@@ -124,6 +125,11 @@ class EmbeddedSignupController extends Controller
                 ->route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 2])
                 ->with('error', $result['error']);
         }
+
+        // Import existing Meta templates as DRAFT records
+        $job = new ImportWhatsAppTemplatesJob($gym->id);
+        $job->onQueue('whatsapp-templates');
+        dispatch($job);
 
         return redirect()
             ->route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 3])

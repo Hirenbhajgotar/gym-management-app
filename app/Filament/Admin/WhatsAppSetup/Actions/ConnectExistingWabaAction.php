@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use App\Jobs\ImportWhatsAppTemplatesJob;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -41,6 +42,11 @@ class ConnectExistingWabaAction
             $businessData = ['business_name' => $data['business_name'] ?? $user?->name, 'business_email' => $data['business_email'] ?? $user?->email];
             $result = $this->page->getProvider()->connectManualWaba($gymId, $data['waba_id'], $data['manual_phone_number'], $data['meta_access_token'], $data['waba_phone_number_id'], $businessData);
             if ($result['success']) {
+                // Import existing Meta templates as DRAFT records
+                $job = new ImportWhatsAppTemplatesJob($gymId);
+                $job->onQueue('whatsapp-templates');
+                dispatch($job);
+
                 $this->page->refresh();
                 Notification::make()->title('WABA Connected')->success()->send();
             } else {
