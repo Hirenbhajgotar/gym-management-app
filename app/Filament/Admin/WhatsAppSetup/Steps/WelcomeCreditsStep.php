@@ -13,7 +13,7 @@ class WelcomeCreditsStep
     {
         return Step::make('Welcome Credits')
             ->schema([
-                Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.welcome-credits'))),
+                Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.welcome-credits')->render())),
                 \Filament\Forms\Components\Actions::make([
                     Action::make('claimWelcome')
                         ->label($page->welcomeCreditsClaimed ? 'Credits Claimed' : 'Claim Welcome Credits')

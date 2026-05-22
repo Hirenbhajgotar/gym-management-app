@@ -14,7 +14,7 @@ class TemplatesStep
         return Step::make('Templates')
             ->visible(fn () => ! $page->isExistWhatsAppTemplates)
             ->schema([
-                Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.templates-info'))),
+                Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.templates-info')->render())),
                 \Filament\Forms\Components\Actions::make([
                     Action::make('createTemplates')->label('Create Templates')->color('primary')
                         ->url(route('filament.admin.resources.whats-app-templates.index', ['tenant' => $page->getTenantSlug()]))

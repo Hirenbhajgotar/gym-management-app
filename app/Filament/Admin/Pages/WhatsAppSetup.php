@@ -35,6 +35,13 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
 
     protected static ?int $navigationSort = 2;
 
+    /**
+     * Cached provider instance for lazy loading.
+     *
+     * @var MetaWhatsAppProvider|TwilioWhatsAppProvider|null
+     */
+    protected $cachedProvider = null;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -60,12 +67,14 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     public function refresh(): void
     {
         $this->initializeFormData();
+        $this->cachedProvider = null;
         $this->data = array_merge($this->data, ['provider_type' => $this->selectedProvider]);
     }
 
     public function refreshWizard(): void
     {
         $this->selectedProvider = is_string($this->data['provider_type'] ?? null) ? $this->data['provider_type'] : $this->selectedProvider;
+        $this->cachedProvider = null;
         $this->form->fill();
     }
 
@@ -73,20 +82,26 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         if ($value) {
             $this->selectedProvider = $value;
+            $this->cachedProvider = null;
         }
     }
 
     /**
      * Get the WhatsApp provider instance for the current gym.
+     * Uses cached instance for performance.
      */
     public function getProvider(): MetaWhatsAppProvider|TwilioWhatsAppProvider|null
     {
-        $gymId = $this->getGymId();
+        if ($this->cachedProvider === null) {
+            $gymId = $this->getGymId();
 
-        return match ($this->selectedProvider) {
-            WhatsAppProviderTypeEnum::TWILIO->value => new TwilioWhatsAppProvider((int) $gymId),
-            WhatsAppProviderTypeEnum::WABA->value => new MetaWhatsAppProvider((int) $gymId),
-            default => null,
-        };
+            $this->cachedProvider = match ($this->selectedProvider) {
+                WhatsAppProviderTypeEnum::TWILIO->value => new TwilioWhatsAppProvider((int) $gymId),
+                WhatsAppProviderTypeEnum::WABA->value => new MetaWhatsAppProvider((int) $gymId),
+                default => null,
+            };
+        }
+
+        return $this->cachedProvider;
     }
 }

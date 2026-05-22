@@ -107,6 +107,7 @@ return [
         'cost_per_message' => env('TWILIO_COST_PER_MESSAGE', 1.53),
         'number_cost' => env('TWILIO_NUMBER_COST', 136.41),
         'margin_percentage' => env('TWILIO_MARGIN_PERCENTAGE', 0.10),
+        'exchange_rate' => env('TWILIO_EXCHANGE_RATE', 90.0),
 
         // Pre-approved Template SIDs
         'whatsapp_integration_active_v5_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V5_TEMPLATE_SID', 'HX8285885c2d7330f26cb8c97a4b586d1a'),
@@ -121,7 +122,7 @@ return [
     'razorpay' => [
         'key_id' => env('RAZORPAY_KEY_ID'),
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
-        'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+        'webhook_secret' => (string) env('RAZORPAY_WEBHOOK_SECRET'),
     ],
 
     'otp' => [

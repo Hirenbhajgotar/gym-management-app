@@ -335,6 +335,32 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
         }
     }
 
+    public function getPhoneNumberPricing(string $country = 'US'): ?array
+    {
+        try {
+            $countryData = $this->context->getMasterClient()
+                ->pricing->v1->phoneNumbers->countries($country)->fetch();
+
+            return [
+                'country' => $countryData->country,
+                'iso_country' => $countryData->isoCountry,
+                'price_unit' => $countryData->priceUnit,
+                'phone_number_prices' => array_map(fn ($price) => [
+                    'number_type' => $price['number_type'],
+                    'base_price' => (float) $price['base_price'],
+                    'current_price' => (float) $price['current_price'],
+                ], $countryData->phone_number_prices),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch Twilio phone number pricing', [
+                'country' => $country,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     // =========================================================
     // PRIVATE HELPERS
     // =========================================================

@@ -15,7 +15,7 @@ class OnboardingSchema
             Section::make('WhatsApp Business Integration')
                 ->description('Connect your gym with members through WhatsApp')
                 ->schema([
-                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.onboarding-hero'))),
+                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.onboarding-hero')->render())),
                     \Filament\Forms\Components\Actions::make([
                         Action::make('start_setup')
                             ->label('Start Setup')

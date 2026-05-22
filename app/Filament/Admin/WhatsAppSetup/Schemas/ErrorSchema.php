@@ -15,7 +15,7 @@ class ErrorSchema
             Section::make('Setup Incomplete')
                 ->description('There was an issue with your WhatsApp setup.')
                 ->schema([
-                    Placeholder::make('error_message')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.error-state'))),
+                    Placeholder::make('error_message')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.error-state')->render())),
                     \Filament\Forms\Components\Actions::make([
                         Action::make('retry')->label('Retry Setup')->color('primary')->action('startSetupAction'),
                     ])->alignCenter(),

@@ -33,14 +33,14 @@ class WabaAccountStep
                         ->default('embedded_signup')->live()
                         ->disabled($page->accountStatus !== null),
 
-                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-connection-info')))
+                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-connection-info')->render()))
                         ->visible(fn (Get $get) => $get('waba_connection_method') === 'embedded_signup' && ! $page->isWabaConnected()),
 
                     Placeholder::make('waba_pending_message')->hiddenLabel()->content(fn () => new HtmlString(
-                        view('filament.admin.whatsapp-setup.waba-pending-message')
+                        view('filament.admin.whatsapp-setup.waba-pending-message')->render()
                     ))->visible(fn () => $page->isWabaPending()),
 
-                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-success-message')))
+                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-success-message')->render()))
                         ->visible(fn () => session()->has('success')),
 
                     \Filament\Forms\Components\Actions::make([
@@ -54,7 +54,7 @@ class WabaAccountStep
                             ->visible(fn (Get $get) => $get('waba_connection_method') === 'embedded_signup' && ! $page->isWabaConnected()),
                     ]),
 
-                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-error-message')))
+                    Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-error-message')->render()))
                         ->visible(fn () => session()->has('error')),
 
                     // Manual Connect Section
@@ -92,12 +92,12 @@ class WabaAccountStep
                     ])->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
 
                     Section::make('How to Find Your WABA Details')->schema([
-                        Placeholder::make('waba_instructions')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-instructions'))),
+                        Placeholder::make('waba_instructions')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-instructions')->render())),
                     ])->collapsible()->collapsed(true)->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
                 ])->visible(fn () => ! $page->isWabaConnected()),
 
                 Placeholder::make('waba_connected')->hiddenLabel()->content(fn () => new HtmlString(
-                    view('filament.admin.whatsapp-setup.waba-connected', ['verificationStatus' => $page->verificationStatus])
+                    view('filament.admin.whatsapp-setup.waba-connected', ['verificationStatus' => $page->verificationStatus])->render()
                 ))->visible(fn () => $page->isWabaConnected()),
             ])
             ->afterValidation(function () use ($page) {

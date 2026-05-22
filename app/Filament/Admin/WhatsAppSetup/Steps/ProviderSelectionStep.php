@@ -18,7 +18,7 @@ class ProviderSelectionStep
                 Section::make('Choose Your WhatsApp Provider')
                     ->description('Select how you want to set up WhatsApp messaging')
                     ->schema([
-                        Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.provider-cards', ['selectedProvider' => $page->selectedProvider]))),
+                        Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.provider-cards', ['selectedProvider' => $page->selectedProvider])->render())),
 
                         Radio::make('provider_type')
                             ->label('')

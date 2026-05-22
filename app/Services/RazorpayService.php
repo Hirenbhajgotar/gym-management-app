@@ -287,7 +287,13 @@ class RazorpayService
     public function verifyWebhookSignature(string $payload, string $signature): bool
     {
         try {
-            $expectedSignature = hash_hmac('sha256', $payload, config('services.razorpay.webhook_secret'));
+            $secret = config('services.razorpay.webhook_secret');
+            if (empty($secret)) {
+                Log::error('Razorpay webhook secret not configured');
+                return false;
+            }
+
+            $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
             return hash_equals($expectedSignature, $signature);
         } catch (\Exception $e) {
