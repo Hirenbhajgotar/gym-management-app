@@ -6,8 +6,9 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
+use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppTemplate;
-use App\Services\WhatsAppTemplateService;
+use App\Providers\WhatsAppProviderFactory;
 use App\Services\WhatsAppVariableResolver;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -636,21 +637,30 @@ class WhatsAppTemplateResource extends Resource
                         ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
                         ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT && $record->gym_id === Filament::getTenant()?->id)
                         ->action(function (WhatsAppTemplate $record) {
-                            $service = app(WhatsAppTemplateService::class);
-                            $result = $service->submitForVerification($record);
+                            try {
+                                $provider = self::getTemplateProvider($record->gym_id);
+                                $result = $provider->submitTemplate($record->fresh());
 
-                            if ($result['success']) {
-                                Notification::make()
-                                    ->success()
-                                    ->title('Template Submitted!')
-                                    ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
-                                    ->send();
-                            } else {
-                                Log::info('Template submission failed', ['error' => $result['error']]);
+                                if ($result->success) {
+                                    Notification::make()
+                                        ->success()
+                                        ->title('Template Submitted!')
+                                        ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
+                                        ->send();
+                                } else {
+                                    Log::info('Template submission failed', ['template_id' => $record->id, 'error' => $result->error]);
+                                    Notification::make()
+                                        ->danger()
+                                        ->title('Submission Failed')
+                                        ->body($result->error ?? 'Your template has not been submitted for Meta approval.')
+                                        ->send();
+                                }
+                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                                Log::error('Template submission failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Submission Failed')
-                                    ->body($result['error'] ?? 'Your template has not been submitted for Meta approval.')
+                                    ->body($e->getMessage())
                                     ->send();
                             }
                         }),
@@ -671,21 +681,30 @@ class WhatsAppTemplateResource extends Resource
                                 'rejection_reason' => null,
                             ]);
 
-                            $service = app(WhatsAppTemplateService::class);
-                            $result = $service->submitForVerification($record);
+                            try {
+                                $provider = self::getTemplateProvider($record->gym_id);
+                                $result = $provider->submitTemplate($record->fresh());
 
-                            if ($result['success']) {
-                                Notification::make()
-                                    ->success()
-                                    ->title('Template Resubmitted!')
-                                    ->body('Your template has been resubmitted for approval.')
-                                    ->send();
-                            } else {
-                                Log::info('Template resubmission failed', ['error' => $result['error']]);
+                                if ($result->success) {
+                                    Notification::make()
+                                        ->success()
+                                        ->title('Template Resubmitted!')
+                                        ->body('Your template has been resubmitted for approval.')
+                                        ->send();
+                                } else {
+                                    Log::info('Template resubmission failed', ['template_id' => $record->id, 'error' => $result->error]);
+                                    Notification::make()
+                                        ->danger()
+                                        ->title('Resubmission Failed')
+                                        ->body($result->error ?? 'Your updated template has not been submitted for Meta approval.')
+                                        ->send();
+                                }
+                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                                Log::error('Template resubmission failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Resubmission Failed')
-                                    ->body($result['error'] ?? 'Your updated template has not been submitted for Meta approval.')
+                                    ->body($e->getMessage())
                                     ->send();
                             }
                         }),
@@ -700,15 +719,24 @@ class WhatsAppTemplateResource extends Resource
                         ->modalHeading('Sync Template Status')
                         ->modalDescription('This will fetch the latest status from Meta/WhatsApp. Use this if your template is stuck in "pending" status.')
                         ->action(function (WhatsAppTemplate $record) {
-                            $service = app(WhatsAppTemplateService::class);
-                            $service->syncTemplateStatus($record);
-                            $record->refresh();
+                            try {
+                                $provider = self::getTemplateProvider($record->gym_id);
+                                $provider->syncTemplateStatus($record);
+                                $record->refresh();
 
-                            Notification::make()
-                                ->info()
-                                ->title('Status Synced')
-                                ->body("Template status: {$record->status}")
-                                ->send();
+                                Notification::make()
+                                    ->info()
+                                    ->title('Status Synced')
+                                    ->body("Template status: {$record->status}")
+                                    ->send();
+                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                                Log::error('Template status sync failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Status Sync Failed')
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
                         }),
 
                     Tables\Actions\EditAction::make()
@@ -757,6 +785,17 @@ class WhatsAppTemplateResource extends Resource
         }
 
         return $options;
+    }
+
+    private static function getTemplateProvider(?int $gymId = null): TemplateManagementInterface
+    {
+        $gymId ??= Filament::getTenant()?->id;
+
+        if (! $gymId) {
+            throw new \RuntimeException('No tenant context available for provider resolution');
+        }
+
+        return WhatsAppProviderFactory::create($gymId)->templates();
     }
 
     /**

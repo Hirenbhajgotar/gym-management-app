@@ -6,7 +6,7 @@ namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
-use App\Services\WhatsAppTemplateService;
+use App\Providers\WhatsAppProviderFactory;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -38,21 +38,30 @@ class EditWhatsAppTemplate extends EditRecord
                         'rejection_reason' => null,
                     ]);
 
-                    $service = app(WhatsAppTemplateService::class);
-                    $result = $service->submitForVerification($this->record);
+                    try {
+                        $provider = WhatsAppProviderFactory::create($this->record->gym_id)->templates();
+                        $result = $provider->submitTemplate($this->record->fresh());
 
-                    if ($result['success']) {
-                        Notification::make()
-                            ->success()
-                            ->title('Template Resubmitted!')
-                            ->body('Your updated template has been resubmitted for Meta approval.')
-                            ->send();
-                    } else {
-                        Log::info('Template resubmission failed', ['error' => $result['error']]);
+                        if ($result->success) {
+                            Notification::make()
+                                ->success()
+                                ->title('Template Resubmitted!')
+                                ->body('Your updated template has been resubmitted for Meta approval.')
+                                ->send();
+                        } else {
+                            Log::info('Template resubmission failed', ['template_id' => $this->record->id, 'error' => $result->error]);
+                            Notification::make()
+                                ->danger()
+                                ->title('Resubmission Failed')
+                                ->body('Your updated template has not been submitted for Meta approval.')
+                                ->send();
+                        }
+                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                        Log::error('Template resubmission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()
                             ->title('Resubmission Failed')
-                            ->body('Your updated template has not been submitted for Meta approval.')
+                            ->body($e->getMessage())
                             ->send();
                     }
                 }),
@@ -70,21 +79,30 @@ class EditWhatsAppTemplate extends EditRecord
                     // Save changes first
                     $this->save();
 
-                    $service = app(WhatsAppTemplateService::class);
-                    $result = $service->submitForVerification($this->record);
+                    try {
+                        $provider = WhatsAppProviderFactory::create($this->record->gym_id)->templates();
+                        $result = $provider->submitTemplate($this->record->fresh());
 
-                    if ($result['success']) {
-                        Notification::make()
-                            ->success()
-                            ->title('Template Submitted!')
-                            ->body('Your template has been submitted for Meta approval.')
-                            ->send();
-                    } else {
-                        Log::info('Template submission failed', ['error' => $result['error']]);
+                        if ($result->success) {
+                            Notification::make()
+                                ->success()
+                                ->title('Template Submitted!')
+                                ->body('Your template has been submitted for Meta approval.')
+                                ->send();
+                        } else {
+                            Log::info('Template submission failed', ['template_id' => $this->record->id, 'error' => $result->error]);
+                            Notification::make()
+                                ->danger()
+                                ->title('Submission Failed')
+                                ->body('Your template has not been submitted for Meta approval.')
+                                ->send();
+                        }
+                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                        Log::error('Template submission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()
                             ->title('Submission Failed')
-                            ->body('Your template has not been submitted for Meta approval.')
+                            ->body($e->getMessage())
                             ->send();
                     }
                 }),
