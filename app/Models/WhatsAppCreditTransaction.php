@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\WhatsAppMessageCredit|null $credit
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppPackage|null $package
+ * @property-read numeric|null $phone_number_surcharge
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction query()
@@ -41,6 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereWhatsappMessageCreditId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppCreditTransaction whereWhatsappPackageId($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppCreditTransaction extends Model
@@ -56,6 +59,7 @@ class WhatsAppCreditTransaction extends Model
         'balance_before',
         'balance_after',
         'amount',
+        'phone_number_surcharge',
         'payment_reference',
         'description',
         'admin_id',
@@ -68,6 +72,7 @@ class WhatsAppCreditTransaction extends Model
             'balance_before' => 'integer',
             'balance_after' => 'integer',
             'amount' => 'decimal:2',
+            'phone_number_surcharge' => 'decimal:2',
             'type' => WhatsAppCreditTransactionEnum::class,
         ];
     }

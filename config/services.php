@@ -104,10 +104,11 @@ return [
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
         'sandbox_recipient_number' => env('TWILIO_SANDBOX_RECIPIENT_NUMBER'),
 
-        'cost_per_message' => env('TWILIO_COST_PER_MESSAGE', 1.53),
-        'number_cost' => env('TWILIO_NUMBER_COST', 136.41),
-        'margin_percentage' => env('TWILIO_MARGIN_PERCENTAGE', 0.10),
-        'exchange_rate' => env('TWILIO_EXCHANGE_RATE', 90.0),
+        'cost_per_message' => (float) env('TWILIO_COST_PER_MESSAGE', 1.53),
+        'number_cost' => (float) env('TWILIO_NUMBER_COST', 136.41),
+        'margin_percentage' => (float) env('TWILIO_MARGIN_PERCENTAGE', 0.10),
+        'exchange_rate' => (float) env('TWILIO_EXCHANGE_RATE', 90.0),
+        'number_surcharge_days' => (int) env('TWILIO_NUMBER_SURCHARGE_DAYS', 30),
 
         // Pre-approved Template SIDs
         'whatsapp_integration_active_v5_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V5_TEMPLATE_SID', 'HX8285885c2d7330f26cb8c97a4b586d1a'),

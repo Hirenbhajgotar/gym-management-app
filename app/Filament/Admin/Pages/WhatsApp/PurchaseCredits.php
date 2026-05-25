@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Models\Gym;
+use App\Models\Payment;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
+use App\Models\WhatsAppPhoneNumber;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -12,6 +17,8 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
 class PurchaseCredits extends Page implements HasActions
@@ -40,6 +47,12 @@ class PurchaseCredits extends Page implements HasActions
 
     public bool $isProcessingPayment = false;
 
+    public float $phoneNumberSurcharge = 0.0;
+
+    public bool $showSurcharge = false;
+
+    public ?int $loadingPackageId = null;
+
     public function mount(): void
     {
         $this->loadData();
@@ -55,13 +68,46 @@ class PurchaseCredits extends Page implements HasActions
             ->ordered()
             ->get()
             ->toArray();
+
+        $this->loadSurchargeData();
+    }
+
+    private function loadSurchargeData(): void
+    {
+        $billingService = new WhatsAppBillingService(new RazorpayService);
+        $surcharge = $billingService->getTwilioNumberSurcharge($this->getGymId());
+
+        $this->showSurcharge = (bool) $surcharge['eligible'];
+        $this->phoneNumberSurcharge = (float) $surcharge['amount'];
     }
 
     public function selectPackage(int $packageId): void
     {
-        $this->selectedPackageId = $packageId;
-        $this->showPaymentModal = true;
-        $this->initiatePayment();
+        $gymId = $this->getGymId();
+        $lockKey = "billing:whatsapp-package:select:{$gymId}";
+
+        // Use Cache::lock() to prevent concurrent package selections / rapid double-clicks
+        $lock = Cache::lock($lockKey, 30);
+
+        if (! $lock->get()) {
+            Log::info('Lock not acquired');
+            // Lock not acquired - another selection is already in progress
+            Notification::make()
+                ->title('Please wait')
+                ->body('Another payment is being processed. Please try again in a moment.')
+                ->info()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $this->selectedPackageId = $packageId;
+            $this->showPaymentModal = true;
+            $this->initiatePayment();
+        } finally {
+            $lock->release();
+        }
     }
 
     public function initiatePayment(): void
@@ -78,20 +124,29 @@ class PurchaseCredits extends Page implements HasActions
 
             $razorpayService = new RazorpayService;
 
+            $totalAmount = $package->selling_price;
+
+            $notes = [
+                'package_id' => $package->id,
+                'package_name' => $package->name,
+                'message_count' => $package->message_count,
+                'gym_id' => $gym->id,
+                'gym_name' => $gym->name,
+            ];
+
+            if ($this->showSurcharge && $this->phoneNumberSurcharge > 0) {
+                $totalAmount += $this->phoneNumberSurcharge;
+                $notes['phone_number_surcharge'] = $this->phoneNumberSurcharge;
+            }
+
             $order = $razorpayService->createOrder([
-                'amount' => $package->selling_price,
+                'amount' => $totalAmount,
                 'currency' => 'INR',
                 'receipt' => 'WA-' . $gym->id . '-' . uniqid(),
                 'payment_type' => 'whatsapp_package',
                 'gym_id' => $gym->id,
                 'user_id' => $user?->id,
-                'notes' => [
-                    'package_id' => $package->id,
-                    'package_name' => $package->name,
-                    'message_count' => $package->message_count,
-                    'gym_id' => $gym->id,
-                    'gym_name' => $gym->name,
-                ],
+                'notes' => $notes,
                 'description' => "WhatsApp Package: {$package->name} ({$package->message_count} messages)",
             ]);
 
@@ -112,20 +167,41 @@ class PurchaseCredits extends Page implements HasActions
                 'message_count' => $package->message_count,
             ]);
         } catch (\Exception $e) {
+            Log::info('Payment Init Failed: ' . $e->getMessage());
             Notification::make()
                 ->title('Payment Init Failed')
-                ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
     }
 
     #[On('handle-payment-verify')]
-    public function handlePaymentVerify(string $razorpayPaymentId, string $razorpaySignature): void
+    public function handlePaymentVerify(string $razorpayPaymentId, string $razorpaySignature, string $razorpayOrderId = ''): void
     {
         $this->isProcessingPayment = true;
 
         try {
+            // Reconstruct component state from Payment DB record if lost
+            // (e.g., user navigated away mid-payment and came back)
+            if (empty($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
+                $paymentRecord = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+
+                if (! $paymentRecord) {
+                    throw new \Exception('Payment session expired. Please try again.');
+                }
+
+                $this->razorpayOrder = [
+                    'order_id' => $paymentRecord->razorpay_order_id,
+                ];
+                $this->selectedPackageId = (int) ($paymentRecord->metadata['package_id'] ?? 0);
+                $this->phoneNumberSurcharge = (float) ($paymentRecord->metadata['phone_number_surcharge'] ?? 0.0);
+            }
+
+            // Guard: verify we have the required state before proceeding
+            if (empty($this->razorpayOrder['order_id']) || ! $this->selectedPackageId) {
+                throw new \Exception('Payment session data is missing. Please try again.');
+            }
+
             $razorpayService = new RazorpayService;
 
             $payment = $razorpayService->verifyPayment(
@@ -140,10 +216,22 @@ class PurchaseCredits extends Page implements HasActions
                 $result = $whatsAppBillingService->purchasePackage(
                     $this->getGymId(),
                     $this->selectedPackageId,
-                    $razorpayPaymentId
+                    $razorpayPaymentId,
+                    null,
+                    $this->phoneNumberSurcharge
                 );
 
                 if ($result['success']) {
+                    if ($this->phoneNumberSurcharge > 0) {
+                        $phone = WhatsAppPhoneNumber::whereHas('account', function ($query) {
+                            $query->where('gym_id', $this->getGymId());
+                        })->first();
+
+                        if ($phone) {
+                            $phone->update(['last_number_cost_charged_at' => now()]);
+                        }
+                    }
+
                     Notification::make()
                         ->title('Payment Successful!')
                         ->body("You've received {$result['message_count']} message credits.")
@@ -163,6 +251,11 @@ class PurchaseCredits extends Page implements HasActions
                 $this->razorpayOrder = [];
             }
         } catch (\Exception $e) {
+            Log::error('Payment verification failed', [
+                'error' => $e->getMessage(),
+                'razorpay_order_id' => $this->razorpayOrder['order_id'] ?? 'N/A',
+                'razorpay_package_id' => $this->selectedPackageId,
+            ]);
             Notification::make()
                 ->title('Payment Verification Failed')
                 ->body($e->getMessage())
@@ -195,7 +288,10 @@ class PurchaseCredits extends Page implements HasActions
 
             $this->loadData();
 
-            redirect()->to(route('filament.admin.pages.whatsapp-dashboard', ['tenant' => $this->getTenantSlug()]));
+            $this->redirect(
+                route('filament.admin.pages.whatsapp-dashboard', ['tenant' => $this->getTenantSlug()]),
+                navigate: true
+            );
 
         } catch (\Exception $e) {
             Notification::make()
@@ -229,16 +325,27 @@ class PurchaseCredits extends Page implements HasActions
 
     protected function getGymId(): int
     {
-        return Filament::getTenant()->id;
+        return $this->getGym()->id;
     }
 
-    protected function getGym()
+    protected function getGym(): Gym
     {
-        return Filament::getTenant();
+        $tenant = Filament::getTenant();
+
+        if (! $tenant instanceof Gym) {
+            throw new \Exception('No gym tenant context available.');
+        }
+
+        return $tenant;
     }
 
     public function getTenantSlug(): string
     {
         return $this->getGym()->slug;
+    }
+
+    public function getFormattedSurcharge(): string
+    {
+        return number_format($this->phoneNumberSurcharge, 2);
     }
 }

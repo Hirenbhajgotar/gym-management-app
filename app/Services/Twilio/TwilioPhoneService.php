@@ -107,6 +107,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
                         'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
                         'type' => WhatsAppPhoneNumberTypesEnum::LOCAL,
                         'purchased_at' => now(),
+                        'number_cost' => (float) ($incomingNumber->price ?: config('services.twilio.number_cost', 136.41)),
                     ]);
 
                     $account->update([

@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppPhoneNumber> $phoneNumber
+ * @property-read \App\Models\WhatsAppPhoneNumber|null $phoneNumber
  * @property-read int|null $phone_number_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppTemplate> $templates
  * @property-read int|null $templates_count
@@ -319,5 +319,29 @@ class WhatsAppAccount extends Model
     public function setProvider(WhatsAppProviderTypeEnum $provider): void
     {
         $this->update(['provider_type' => $provider]);
+    }
+
+    public function isTwilioWithActiveNumber(): bool
+    {
+        if (! $this->isTwilioProvider()) {
+            return false;
+        }
+
+        $phoneNumber = $this->phoneNumber;
+
+        if (! $phoneNumber) {
+            return false;
+        }
+
+        return $phoneNumber->isActive();
+    }
+
+    public function isPhoneSurchargeDue(): bool
+    {
+        if (! $this->isTwilioWithActiveNumber()) {
+            return false;
+        }
+
+        return $this->phoneNumber->isSurchargeDue();
     }
 }

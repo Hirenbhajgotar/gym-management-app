@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\WhatsAppAccount|null $account
+ * @property-read \Illuminate\Support\Carbon|null $last_number_cost_charged_at
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newQuery()
@@ -76,6 +77,7 @@ class WhatsAppPhoneNumber extends Model
             'monthly_cost' => 'decimal:2',
             'number_cost' => 'decimal:2',
             'purchased_at' => 'datetime',
+            'last_number_cost_charged_at' => 'datetime',
             'status' => WhatsAppPhoneNumberStatusEnum::class,
             'type' => WhatsAppPhoneNumberTypesEnum::class,
         ];
@@ -180,5 +182,23 @@ class WhatsAppPhoneNumber extends Model
         return ! $hasLegacyIssue
            && ($phoneNumberSidValid || empty($this->phone_number_sid))
            && ($channelSenderSidValid || empty($this->channel_sender_sid));
+    }
+
+    public function isSurchargeDue(): bool
+    {
+        if ($this->last_number_cost_charged_at === null) {
+            return true;
+        }
+
+        return $this->last_number_cost_charged_at->lte(now()->subDays(config('services.twilio.number_surcharge_days', 30)));
+    }
+
+    public function getSurchargeAmount(): float
+    {
+        if ($this->number_cost === null || (float) $this->number_cost <= 0) {
+            return config('services.twilio.number_cost', 136.41);
+        }
+
+        return (float) $this->number_cost;
     }
 }

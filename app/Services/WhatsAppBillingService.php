@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\WhatsAppCreditTransactionEnum;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppCreditTransaction;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
@@ -26,7 +27,7 @@ class WhatsAppBillingService
         $this->razorpayService = $razorpayService;
     }
 
-    public function purchasePackage(int $gymId, int $packageId, string $paymentReference, ?int $userId = null): array
+    public function purchasePackage(int $gymId, int $packageId, string $paymentReference, ?int $userId = null, float $phoneNumberSurcharge = 0.0): array
     {
         $package = WhatsAppPackage::findOrFail($packageId);
 
@@ -40,8 +41,8 @@ class WhatsAppBillingService
         $lockKey = "billing:whatsapp-package:purchase:{$gymId}";
 
         try {
-            return Cache::lock($lockKey, self::LOCK_TIMEOUT)->block(self::BLOCK_TIMEOUT, function () use ($gymId, $package, $paymentReference) {
-                return DB::transaction(function () use ($gymId, $package, $paymentReference) {
+            return Cache::lock($lockKey, self::LOCK_TIMEOUT)->block(self::BLOCK_TIMEOUT, function () use ($gymId, $package, $paymentReference, $phoneNumberSurcharge) {
+                return DB::transaction(function () use ($gymId, $package, $paymentReference, $phoneNumberSurcharge) {
                     $credit = $this->getOrCreateCredit($gymId, $package->selling_price / $package->message_count);
                     $balanceBefore = $credit->remaining_credits;
 
@@ -59,6 +60,7 @@ class WhatsAppBillingService
                         'balance_before' => $balanceBefore,
                         'balance_after' => $credit->remaining_credits,
                         'amount' => $package->selling_price,
+                        'phone_number_surcharge' => $phoneNumberSurcharge > 0 ? $phoneNumberSurcharge : 0.00,
                         'payment_reference' => $paymentReference,
                         'description' => "Purchased {$package->name} package",
                         'admin_id' => null,
@@ -70,6 +72,7 @@ class WhatsAppBillingService
                         'message_count' => $package->message_count,
                         'total_credits' => $credit->total_credits,
                         'remaining_credits' => $credit->remaining_credits,
+                        'phone_number_surcharge' => $phoneNumberSurcharge,
                     ];
                 });
             });
@@ -80,6 +83,35 @@ class WhatsAppBillingService
 
             return ['success' => false, 'error' => 'Failed to process package purchase.'];
         }
+    }
+
+    public function getTwilioNumberSurcharge(int $gymId): array
+    {
+        $account = WhatsAppAccount::where('gym_id', $gymId)->with('phoneNumber')->first();
+
+        if (! $account || ! $account->isTwilioWithActiveNumber()) {
+            return [
+                'eligible' => false,
+                'amount' => 0.0,
+                'phone' => null,
+            ];
+        }
+
+        $phone = $account->phoneNumber;
+
+        if (! $phone->isSurchargeDue()) {
+            return [
+                'eligible' => false,
+                'amount' => 0.0,
+                'phone' => $phone,
+            ];
+        }
+
+        return [
+            'eligible' => true,
+            'amount' => $phone->getSurchargeAmount(),
+            'phone' => $phone,
+        ];
     }
 
     public function addWelcomeCredits(int $gymId): void
