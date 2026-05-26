@@ -263,7 +263,8 @@ class WhatsAppTemplate extends Model
 
     public static function getDefaults(): Collection
     {
-        return self::whereNull('gym_id')->isDefault()->get();
+        // Added withoutGlobalScopes() to get templates where tenant id is null.
+        return self::withoutGlobalScopes()->whereNull('gym_id')->isDefault()->get();
     }
 
     public static function isExistsForGym(int $gymId): bool

@@ -86,4 +86,12 @@ class TemplateVariableHelper
 
         return null;
     }
+
+    /**
+     * Get default variable data.
+     */
+    public static function getDefaultVariableData(): array
+    {
+        return self::DEFAULT_PLACEHOLDERS;
+    }
 }

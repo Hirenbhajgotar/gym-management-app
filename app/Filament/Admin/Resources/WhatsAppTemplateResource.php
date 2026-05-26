@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppTemplate;
 use App\Providers\WhatsAppProviderFactory;
+use App\Services\Support\TemplateVariableHelper;
 use App\Services\WhatsAppVariableResolver;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -645,14 +646,14 @@ class WhatsAppTemplateResource extends Resource
                                     Notification::make()
                                         ->success()
                                         ->title('Template Submitted!')
-                                        ->body('Your template has been submitted for Meta approval. You\'ll be notified of the result.')
+                                        ->body('Your template has been submitted for approval. You\'ll be notified of the result.')
                                         ->send();
                                 } else {
                                     Log::info('Template submission failed', ['template_id' => $record->id, 'error' => $result->error]);
                                     Notification::make()
                                         ->danger()
                                         ->title('Submission Failed')
-                                        ->body($result->error ?? 'Your template has not been submitted for Meta approval.')
+                                        ->body('Your template has not been submitted for approval.')
                                         ->send();
                                 }
                             } catch (\InvalidArgumentException|\RuntimeException $e) {
@@ -660,7 +661,7 @@ class WhatsAppTemplateResource extends Resource
                                 Notification::make()
                                     ->danger()
                                     ->title('Submission Failed')
-                                    ->body($e->getMessage())
+                                    ->body('Template submission failed. Please try again later.')
                                     ->send();
                             }
                         }),
@@ -696,7 +697,7 @@ class WhatsAppTemplateResource extends Resource
                                     Notification::make()
                                         ->danger()
                                         ->title('Resubmission Failed')
-                                        ->body($result->error ?? 'Your updated template has not been submitted for Meta approval.')
+                                        ->body('Your updated template has not been submitted for approval.')
                                         ->send();
                                 }
                             } catch (\InvalidArgumentException|\RuntimeException $e) {
@@ -704,7 +705,7 @@ class WhatsAppTemplateResource extends Resource
                                 Notification::make()
                                     ->danger()
                                     ->title('Resubmission Failed')
-                                    ->body($e->getMessage())
+                                    ->body('Your updated template has not been submitted for approval. Please try again later.')
                                     ->send();
                             }
                         }),
@@ -727,14 +728,14 @@ class WhatsAppTemplateResource extends Resource
                                 Notification::make()
                                     ->info()
                                     ->title('Status Synced')
-                                    ->body("Template status: {$record->status}")
+                                    ->body('Template status: ' . ($record->status?->getLabel() ?? 'Unknown'))
                                     ->send();
                             } catch (\InvalidArgumentException|\RuntimeException $e) {
                                 Log::error('Template status sync failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Status Sync Failed')
-                                    ->body($e->getMessage())
+                                    ->body('Failed to sync template status. Please try again later.')
                                     ->send();
                             }
                         }),
@@ -787,7 +788,7 @@ class WhatsAppTemplateResource extends Resource
         return $options;
     }
 
-    private static function getTemplateProvider(?int $gymId = null): TemplateManagementInterface
+    public static function getTemplateProvider(?int $gymId = null): TemplateManagementInterface
     {
         $gymId ??= Filament::getTenant()?->id;
 
@@ -795,7 +796,7 @@ class WhatsAppTemplateResource extends Resource
             throw new \RuntimeException('No tenant context available for provider resolution');
         }
 
-        return WhatsAppProviderFactory::create($gymId)->templates();
+        return WhatsAppProviderFactory::create($gymId);
     }
 
     /**
@@ -814,14 +815,7 @@ class WhatsAppTemplateResource extends Resource
 
         $data['variable_count'] = count($uniqueNumbers);
 
-        $defaultData = [
-            '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text', 'source' => 'member.name'],
-            '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text', 'source' => 'gym.name'],
-            '3' => ['placeholder' => 'Date', 'name' => 'date', 'example' => 'January 15, 2026', 'type' => 'text', 'source' => 'member.membership_end'],
-            '4' => ['placeholder' => 'Amount', 'name' => 'amount', 'example' => '₹1,499', 'type' => 'number', 'source' => 'payment.formatted_amount'],
-            '5' => ['placeholder' => 'Time', 'name' => 'time', 'example' => '7:00 AM', 'type' => 'text', 'source' => 'custom'],
-            '6' => ['placeholder' => 'Plan Name', 'name' => 'plan_name', 'example' => 'Premium Plan', 'type' => 'text', 'source' => 'plan.name'],
-        ];
+        $defaultData = TemplateVariableHelper::getDefaultVariableData();
 
         $sources = WhatsAppVariableResolver::getAvailableDataSources();
         $variablePlaceholder = $data['variable_placeholder'] ?? [];

@@ -6,7 +6,6 @@ namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
-use App\Providers\WhatsAppProviderFactory;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -39,7 +38,7 @@ class EditWhatsAppTemplate extends EditRecord
                     ]);
 
                     try {
-                        $provider = WhatsAppProviderFactory::create($this->record->gym_id)->templates();
+                        $provider = WhatsAppTemplateResource::getTemplateProvider($this->record->gym_id);
                         $result = $provider->submitTemplate($this->record->fresh());
 
                         if ($result->success) {
@@ -61,7 +60,7 @@ class EditWhatsAppTemplate extends EditRecord
                         Notification::make()
                             ->danger()
                             ->title('Resubmission Failed')
-                            ->body($e->getMessage())
+                            ->body('Template resubmission failed. Please try again later.')
                             ->send();
                     }
                 }),
@@ -80,7 +79,7 @@ class EditWhatsAppTemplate extends EditRecord
                     $this->save();
 
                     try {
-                        $provider = WhatsAppProviderFactory::create($this->record->gym_id)->templates();
+                        $provider = WhatsAppTemplateResource::getTemplateProvider($this->record->gym_id);
                         $result = $provider->submitTemplate($this->record->fresh());
 
                         if ($result->success) {
@@ -102,7 +101,7 @@ class EditWhatsAppTemplate extends EditRecord
                         Notification::make()
                             ->danger()
                             ->title('Submission Failed')
-                            ->body($e->getMessage())
+                            ->body('Template submission failed. Please try again later.')
                             ->send();
                     }
                 }),
