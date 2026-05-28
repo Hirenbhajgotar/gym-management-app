@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\City> $cities
  * @property-read int|null $cities_count
  * @property-read \App\Models\Country|null $country
+ *
  * @method static Builder<static>|State active()
  * @method static \Database\Factories\StateFactory factory($count = null, $state = [])
  * @method static Builder<static>|State inactive()
@@ -34,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|State whereSlug($value)
  * @method static Builder<static>|State whereStatus($value)
  * @method static Builder<static>|State whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([StateObserver::class])]

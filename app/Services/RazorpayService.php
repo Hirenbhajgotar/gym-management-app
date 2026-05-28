@@ -290,6 +290,7 @@ class RazorpayService
             $secret = config('services.razorpay.webhook_secret');
             if (empty($secret)) {
                 Log::error('Razorpay webhook secret not configured');
+
                 return false;
             }
 

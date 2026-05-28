@@ -190,6 +190,7 @@ class ExchangeRateService
     public function convert(float $usdAmount, string $currency): float
     {
         $rate = $this->getRate($currency);
+
         return (float) round($usdAmount * $rate, 4);
     }
 
@@ -201,7 +202,7 @@ class ExchangeRateService
     {
         $currency = strtoupper($currency);
         $rates = $this->getAllRates();
-        
+
         return (float) ($rates[$currency] ?? $this->getFallbackRate($currency));
     }
 

@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read mixed $cost_per_message
  * @property-read mixed $margin_percentage
  * @property-read mixed $your_profit
+ *
  * @method static Builder<static>|WhatsAppPackage active()
  * @method static Builder<static>|WhatsAppPackage newModelQuery()
  * @method static Builder<static>|WhatsAppPackage newQuery()
@@ -49,6 +50,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static Builder<static>|WhatsAppPackage whereTwilioNumberCost($value)
  * @method static Builder<static>|WhatsAppPackage whereUpdatedAt($value)
  * @method static Builder<static>|WhatsAppPackage whereValidityDays($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy(WhatsAppPackageObserver::class)]

@@ -42,6 +42,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property-read \App\Models\Gym $gym
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialMediaWebhookLog> $webhookLogs
  * @property-read int|null $webhook_logs_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig byPlatform($platform)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newModelQuery()
@@ -73,6 +74,7 @@ use Illuminate\Support\Facades\Crypt;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereTokenExpiresAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereWebhookVerifyToken($value)
+ *
  * @mixin \Eloquent
  */
 class TenantSocialConfig extends Model

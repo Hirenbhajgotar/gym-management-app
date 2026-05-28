@@ -63,14 +63,12 @@ class RegisterGymTest extends TestCase
         return $method->invokeArgs($object, $parameters);
     }
 
-    
     public function guest_is_redirected_to_login(): void
     {
         $this->get(filament()->getTenantRegistrationUrl())
             ->assertRedirect(route('filament.admin.auth.login'));
     }
 
-    
     public function authenticated_user_without_tenant_cannot_see_register_page(): void
     {
         $plainUser = User::factory()->create();
@@ -80,7 +78,6 @@ class RegisterGymTest extends TestCase
             ->assertForbidden();   // 403 – Filament default behaviour
     }
 
-    
     public function gym_owner_of_existing_tenant_can_visit_register_page(): void
     {
         $this->actingAs($this->gymOwner)
@@ -89,7 +86,6 @@ class RegisterGymTest extends TestCase
             ->assertSee('Register Gym');
     }
 
-    
     public function gym_owner_can_successfully_create_new_gym(): void
     {
         $this->actingAs($this->gymOwner);
@@ -140,7 +136,6 @@ class RegisterGymTest extends TestCase
         // });
     }
 
-    
     public function has_reached_gym_limit_returns_true_when_limit_reached()
     {
         // Arrange: Create a user and attach 10 gyms
@@ -158,7 +153,6 @@ class RegisterGymTest extends TestCase
         $this->assertTrue($result);
     }
 
-    
     public function validation_rules_are_applied(): void
     {
         $this->actingAs($this->gymOwner);
@@ -169,7 +163,6 @@ class RegisterGymTest extends TestCase
             ->assertHasErrors(['data.slug']);
     }
 
-    
     public function validation_slug_rules_are_applied(): void
     {
         $this->actingAs($this->gymOwner);
@@ -190,7 +183,6 @@ class RegisterGymTest extends TestCase
             ->assertHasErrors(['data.address.city_id']);
     }
 
-    
     public function form_fields_are_present(): void
     {
         Livewire::test(RegisterGym::class)
@@ -199,7 +191,6 @@ class RegisterGymTest extends TestCase
             ->assertFormFieldExists('address');
     }
 
-    
     public function slug_is_generated_from_name_when_name_changes(): void
     {
         Livewire::test(RegisterGym::class)
@@ -207,7 +198,6 @@ class RegisterGymTest extends TestCase
             ->assertSet('data.slug', 'my-awesome-gym');
     }
 
-    
     public function slug_is_kept_unique_in_real_time(): void
     {
         Gym::factory()->create(['slug' => 'taken-slug']);
@@ -218,7 +208,7 @@ class RegisterGymTest extends TestCase
             ->assertHasErrors('data.slug');
     }
 
-    // 
+    //
     // public function a_gym_can_be_registered_successfully(): void
     // {
     //     $this->partialMock(RolesAndPermissionsService::class, function ($mock) {
@@ -260,7 +250,7 @@ class RegisterGymTest extends TestCase
     //     $this->assertTrue($this->user->fresh()->hasRole(DefaultRole::GYM_OWNER->value));
     // }
 
-    // 
+    //
     // public function user_cannot_exceed_maximum_gyms_allowed(): void
     // {
     //     Gym::factory()->count(10)->create();
@@ -276,7 +266,7 @@ class RegisterGymTest extends TestCase
     //     $this->assertCount(10, Gym::all());
     // }
 
-    // 
+    //
     // public function remaining_count_shown_on_success_notification(): void
     // {
     //     Gym::factory()->count(8)->create(['owner_id' => $this->user->id]);
@@ -291,7 +281,7 @@ class RegisterGymTest extends TestCase
     //         );
     // }
 
-    // 
+    //
     // public function user_without_gyms_sees_full_allowance(): void
     // {
     //     Livewire::test(RegisterGym::class)

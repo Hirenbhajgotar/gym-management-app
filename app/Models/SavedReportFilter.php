@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter forReport($reportType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter forUser($userId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter newModelQuery()
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereReportType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class SavedReportFilter extends Model

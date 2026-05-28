@@ -41,6 +41,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property-read Attribute $full_path
  * @property-read \App\Models\Gym|null $gym
  * @property-read ExpenseCategory|null $parent
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory availableForGym(int $gymId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory customForGym(int $gymId)
@@ -64,6 +65,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereOrder($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereParentId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([ExpenseCategoryObserver::class])]

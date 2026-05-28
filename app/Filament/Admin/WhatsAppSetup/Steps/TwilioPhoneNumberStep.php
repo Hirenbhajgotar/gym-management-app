@@ -39,7 +39,7 @@ class TwilioPhoneNumberStep
 
                     Placeholder::make('results')->hiddenLabel()->visible(fn () => $page->availableNumbersLoaded)
                         ->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.search-results', [
-                            'numbers' => $page->availableNumbers
+                            'numbers' => $page->availableNumbers,
                         ])->render())),
                 ]),
             ]);
