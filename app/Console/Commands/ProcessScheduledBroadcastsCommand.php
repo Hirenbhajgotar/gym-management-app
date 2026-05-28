@@ -13,6 +13,14 @@ class ProcessScheduledBroadcastsCommand extends Command
 
     protected $description = 'Process WhatsApp broadcasts that are scheduled and due for sending';
 
+    /**
+     * Execute the console command.
+     *
+     * Dispatches SendBroadcastJob for each broadcast that is due.
+     * The job uses ShouldBeUnique (keyed by broadcast ID) so if the same
+     * broadcast is already pending on the queue, the duplicate dispatch
+     * is silently dropped — no risk of double-processing.
+     */
     public function handle(): int
     {
         $broadcasts = WhatsAppBroadcast::where('status', 'scheduled')

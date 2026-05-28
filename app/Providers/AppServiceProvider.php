@@ -8,20 +8,9 @@ use App\Listeners\HandleConsentRevoked;
 use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
-use App\Models\Attendances;
-use App\Models\Expense;
 use App\Models\Gym;
-use App\Models\MemberPayment;
-use App\Models\ReportGoal;
-use App\Models\Subscription;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
-use App\Observers\AttendanceObserver;
-use App\Observers\ExpenseObserver;
-use App\Observers\GymObserver;
-use App\Observers\MemberPaymentObserver;
-use App\Observers\ReportGoalObserver;
-use App\Observers\SubscriptionObserver;
 use App\Permissions\TeamPermissionRegistrar;
 use Filament\Events\TenantSet;
 use Filament\Support\Colors\Color;
@@ -70,13 +59,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PermissionRegistrar::class, function ($app) {
             return new TeamPermissionRegistrar($app['cache']);
         });
-
-        Gym::observe(GymObserver::class);
-        Subscription::observe(SubscriptionObserver::class);
-        Expense::observe(ExpenseObserver::class);
-        ReportGoal::observe(ReportGoalObserver::class);
-        Attendances::observe(AttendanceObserver::class);
-        MemberPayment::observe(MemberPaymentObserver::class);
 
         FacadesEvent::listen(
             TenantSet::class,

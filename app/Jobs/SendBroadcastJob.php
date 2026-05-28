@@ -4,11 +4,12 @@ namespace App\Jobs;
 
 use App\Models\WhatsAppBroadcast;
 use App\Providers\WhatsAppProviderFactory;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-class SendBroadcastJob implements ShouldQueue
+class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -19,6 +20,19 @@ class SendBroadcastJob implements ShouldQueue
     public int $timeout = 3600;
 
     public function __construct(public int $broadcastId, public int $gymId) {}
+
+    /**
+     * The unique ID of the job.
+     *
+     * Prevents duplicate SendBroadcastJob instances for the same broadcast
+     * from being queued simultaneously. The job already guards against
+     * re-processing completed/cancelled broadcasts in handle(), but this
+     * avoids wasting queue capacity on known-duplicate dispatches.
+     */
+    public function uniqueId(): string
+    {
+        return "send-broadcast:{$this->broadcastId}";
+    }
 
     public function handle(): void
     {

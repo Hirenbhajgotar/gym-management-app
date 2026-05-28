@@ -4,13 +4,15 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Enums\SubscriptionStatus;
-use Carbon\Carbon;
+use App\Observers\SubscriptionObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -34,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $features_count
  * @property-read \App\Models\Plan $plan
  * @property-read \App\Models\User $user
+ *
  * @method static Builder<static>|Subscription active()
  * @method static Builder<static>|Subscription cancelled()
  * @method static Builder<static>|Subscription expired()
@@ -57,8 +60,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Subscription whereTrialEndsAt($value)
  * @method static Builder<static>|Subscription whereUpdatedAt($value)
  * @method static Builder<static>|Subscription whereUserId($value)
+ *
  * @mixin \Eloquent
  */
+#[ObservedBy([SubscriptionObserver::class])]
 class Subscription extends Model
 {
     use HasFactory;
@@ -201,7 +206,7 @@ class Subscription extends Model
             return 0;
         }
 
-        return Carbon::now()->diffInDays($this->trial_ends_at, false);
+        return (int) Carbon::now()->diffInDays($this->trial_ends_at, false);
     }
 
     public function daysUntilExpiry(): int
@@ -210,7 +215,7 @@ class Subscription extends Model
             return 0;
         }
 
-        return Carbon::now()->diffInDays($this->current_period_end, false);
+        return (int) Carbon::now()->diffInDays($this->current_period_end, false);
     }
 
     public function getCurrentPrice(): float
