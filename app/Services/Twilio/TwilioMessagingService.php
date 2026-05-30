@@ -3,14 +3,10 @@
 namespace App\Services\Twilio;
 
 use App\Interfaces\MessagingInterface;
-use App\Models\GymMember;
-use App\Models\WhatsAppBroadcast;
-use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
@@ -35,8 +31,7 @@ class TwilioMessagingService implements MessagingInterface
      */
     private function getBroadcastService(): WhatsAppBroadcastService
     {
-        // Pass $this so the broadcast service can call sendTemplateMessage()
-        return $this->broadcastService ??= new WhatsAppBroadcastService($this, $this->context->gymId);
+        return $this->broadcastService ??= new WhatsAppBroadcastService($this->context->gymId);
     }
 
     /**
@@ -209,9 +204,9 @@ class TwilioMessagingService implements MessagingInterface
     /**
      * Send a broadcast to multiple recipients.
      */
-    public function sendBroadcast(int $broadcastId): array
+    public function sendBroadcast(int $broadcastId): void
     {
-        return $this->getBroadcastService()->processBroadcast($broadcastId);
+        $this->getBroadcastService()->dispatchBroadcast($broadcastId);
     }
 
     /**
@@ -242,20 +237,6 @@ class TwilioMessagingService implements MessagingInterface
     // =========================
     // Private Helpers
     // =========================
-
-    /**
-     * Prepare variables for broadcast message.
-     */
-    private function prepareBroadcastVariables(WhatsAppBroadcast $broadcast, WhatsAppBroadcastRecipient $recipient): array
-    {
-        $member = GymMember::with(['gym', 'membershipPlan', 'trainer', 'latestPayment'])
-            ->find($recipient->member_id);
-
-        return app(WhatsAppVariableResolver::class)->resolve(
-            $broadcast->template,
-            ['member' => $member, 'custom' => $broadcast->message_variables ?? []]
-        );
-    }
 
     private function findTemplate(string $templateName): ?WhatsAppTemplate
     {

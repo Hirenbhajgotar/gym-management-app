@@ -93,6 +93,10 @@ class WhatsAppMessageCredit extends Model
 
     public function getWelcomeCreditsRemaining(): int
     {
+        if (! $this->welcome_credits_claimed) {
+            return 0;
+        }
+
         $welcomeCredits = (int) config('services.whatsapp.welcome_credits', 50);
 
         return max(0, $welcomeCredits - $this->welcome_credits_used);

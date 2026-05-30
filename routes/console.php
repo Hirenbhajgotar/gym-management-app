@@ -34,7 +34,9 @@ Schedule::command('leads:send-pending-reminders')->daily();
 Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
 
 // Process scheduled WhatsApp broadcasts every minute
-Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
+Schedule::command('whatsapp:process-scheduled')
+    ->everyTwoMinutes()
+    ->withoutOverlapping();
 
 // Check for gyms with low WhatsApp credits daily at 8 AM
 Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
+use Illuminate\Bus\Batch;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Bus;
 
 /**
  * @property int $id
@@ -29,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppBroadcastRecipient> $recipients
  * @property-read int|null $recipients_count
  * @property-read \App\Models\WhatsAppTemplate $template
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast query()
@@ -49,10 +53,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereWhatsappTemplateId($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppBroadcast extends Model
 {
+    use HasFactory;
+
     protected $table = 'whatsapp_broadcasts';
 
     protected $fillable = [
@@ -63,6 +70,7 @@ class WhatsAppBroadcast extends Model
         'target_filters',
         'target_count',
         'status',
+        'batch_id',
         'scheduled_at',
         'started_at',
         'completed_at',
@@ -155,7 +163,7 @@ class WhatsAppBroadcast extends Model
     public function incrementSentCount(): void
     {
         $this->increment('sent_count');
-        $this->increment('credits_used');
+        // $this->increment('credits_used');
     }
 
     public function incrementFailedCount(): void
@@ -172,5 +180,29 @@ class WhatsAppBroadcast extends Model
         }
 
         return ($this->sent_count / $total) * 100;
+    }
+
+    public function batch(): ?Batch
+    {
+        return $this->batch_id ? Bus::findBatch($this->batch_id) : null;
+    }
+
+    /**
+     * @return array{total: int, pending: int, failed: int, progress: int}|null
+     */
+    public function getProgressAttribute(): ?array
+    {
+        $batch = $this->batch();
+
+        if (! $batch) {
+            return null;
+        }
+
+        return [
+            'total' => $batch->totalJobs,
+            'pending' => $batch->pendingJobs,
+            'failed' => $batch->failedJobs,
+            'progress' => $batch->progress(),
+        ];
     }
 }

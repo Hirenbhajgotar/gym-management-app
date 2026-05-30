@@ -2,6 +2,7 @@
 
 namespace App\Services\WhatsApp;
 
+use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\GymMember;
 use App\Models\WhatsAppBroadcast;
@@ -43,6 +44,7 @@ class BroadcastOrchestrator
             $scheduleType = $data['schedule_type'] ?? 'now';
             $scheduledAt = $data['scheduled_at'] ?? null;
             $filters = $data['filters'] ?? [];
+            $creditsDeducted = false;
 
             /** @var WhatsAppTemplate|null $template */
             $template = WhatsAppTemplate::find($templateId);
@@ -63,7 +65,6 @@ class BroadcastOrchestrator
                 throw new \Exception('Please select at least one member from the filtered results.');
             }
 
-            // Rate limiting check (atomic)
             if (! $this->rateLimiter->canSend($gymId)) {
                 $quota = $this->rateLimiter->getQuota($gymId);
                 $cooldown = $this->rateLimiter->getCooldown($gymId);
@@ -79,10 +80,47 @@ class BroadcastOrchestrator
                 throw new \Exception('Unable to send broadcast at this time. Please try again.');
             }
 
-            $creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+            // === Upfront credit deduction ===
+            // Deduct all required credits atomically within a lock-protected
+            // transaction to prevent race conditions across concurrent broadcasts.
+            DB::beginTransaction();
 
-            if (! $creditBalance || ! $creditBalance->canSendMessage($targetCount)) {
-                throw new \Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+            try {
+                /** @var WhatsAppMessageCredit|null $creditRecord */
+                $creditRecord = WhatsAppMessageCredit::where('gym_id', $gymId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $creditRecord || ! $creditRecord->canSendMessage($targetCount)) {
+                    throw new \Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+                }
+
+                // Handle welcome credits first, then bulk deduction
+                $welcomeAvailable = $creditRecord->getWelcomeCreditsRemaining();
+                $bulkDeduction = $targetCount;
+
+                if ($welcomeAvailable > 0) {
+                    $welcomeToUse = min($welcomeAvailable, $targetCount);
+                    // Using welcome credits: track usage and grant free credits to remaining_credits
+                    $creditRecord->increment('welcome_credits_used', $welcomeToUse);
+                    $creditRecord->increment('remaining_credits', $welcomeToUse);
+                    $bulkDeduction = $targetCount - $welcomeToUse;
+                }
+
+                DB::table('whatsapp_message_credits')
+                    ->where('gym_id', $gymId)
+                    ->update([
+                        'used_credits' => DB::raw('used_credits + ' . $bulkDeduction),
+                        'remaining_credits' => DB::raw('remaining_credits - ' . $bulkDeduction),
+                        'last_used_at' => now(),
+                    ]);
+
+                $creditsDeducted = true;
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                throw $e;
             }
 
             DB::beginTransaction();
@@ -96,12 +134,13 @@ class BroadcastOrchestrator
                         ? $filters
                         : ['type' => 'all'],
                     'target_count' => $targetCount,
+                    'credits_used' => $targetCount,
                     'status' => $scheduleType === 'now' ? 'sending' : 'scheduled',
                     'scheduled_at' => $scheduleType === 'later' ? $scheduledAt : null,
                     'message_variables' => $variables,
                 ]);
 
-                $memberQuery = GymMember::where('gym_id', $gymId);
+                $memberQuery = GymMember::where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
 
                 if ($recipientType !== 'all') {
                     $memberQuery->whereIn('id', $selectedMemberIds);
@@ -122,7 +161,7 @@ class BroadcastOrchestrator
                             'member_id' => $member->id,
                             'phone_number' => $member->phone,
                             'member_name' => $member->name ?? 'Member',
-                            'status' => 'pending',
+                            'status' => WhatsAppBroadcastRecipientStatusEnum::PENDING->value,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -142,7 +181,11 @@ class BroadcastOrchestrator
 
             // Dispatch job for immediate broadcasts
             if ($scheduleType === 'now') {
-                SendBroadcastJob::dispatch($broadcast->id, $gymId);
+                SendBroadcastJob::dispatch(
+                    $broadcast->id,
+                    $gymId,
+                    skipCreditDeduction: $creditsDeducted,
+                );
             }
 
             return $broadcast;

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\WhatsAppBroadcast;
 use Illuminate\Console\Command;
@@ -13,53 +14,74 @@ class ProcessScheduledBroadcastsCommand extends Command
 
     protected $description = 'Process WhatsApp broadcasts that are scheduled and due for sending';
 
+    private const MAX_BROADCASTS_PER_RUN = 100;
+
     /**
      * Execute the console command.
      *
-     * Dispatches SendBroadcastJob for each broadcast that is due.
-     * The job uses ShouldBeUnique (keyed by broadcast ID) so if the same
-     * broadcast is already pending on the queue, the duplicate dispatch
-     * is silently dropped — no risk of double-processing.
+     * Atomically claims each scheduled broadcast (status → 'sending') before
+     * dispatching SendBroadcastJob with skipCreditDeduction=true, because
+     * credits were already deducted upfront by BroadcastOrchestrator.
      */
     public function handle(): int
     {
-        $broadcasts = WhatsAppBroadcast::where('status', 'scheduled')
+        $broadcasts = WhatsAppBroadcast::where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
             ->where('scheduled_at', '<=', now())
-            ->get();
+            ->limit(self::MAX_BROADCASTS_PER_RUN)
+            ->lazy();
 
-        if ($broadcasts->isEmpty()) {
-            $this->info('No scheduled broadcasts to process.');
-
-            return self::SUCCESS;
-        }
-
-        $this->info("Found {$broadcasts->count()} broadcast(s) to process.");
+        $processed = 0;
 
         foreach ($broadcasts as $broadcast) {
+            $claimed = WhatsAppBroadcast::where('id', $broadcast->id)
+                ->where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
+                ->update([
+                    'status' => WhatsAppBroadcastStatusEnum::SENDING->value,
+                    'started_at' => now(),
+                ]);
+
+            if ($claimed === 0) {
+                $this->warn("Broadcast #{$broadcast->id} was already claimed by another process, skipping.");
+
+                continue;
+            }
+
             try {
-                SendBroadcastJob::dispatch($broadcast->id, $broadcast->gym_id);
+                SendBroadcastJob::dispatch(
+                    $broadcast->id,
+                    $broadcast->gym_id,
+                    skipCreditDeduction: true,
+                );
 
-                $this->info("Queued broadcast #{$broadcast->id}: {$broadcast->title}");
+                $this->info("Dispatched broadcast #{$broadcast->id}: {$broadcast->title}");
 
-                Log::info('Scheduled broadcast queued for processing', [
+                Log::info('Scheduled broadcast dispatched', [
                     'broadcast_id' => $broadcast->id,
                     'gym_id' => $broadcast->gym_id,
                     'title' => $broadcast->title,
                     'scheduled_at' => $broadcast->scheduled_at,
                 ]);
-            } catch (\Exception $e) {
-                $broadcast->update(['status' => 'failed']);
 
-                Log::error('Failed to queue scheduled broadcast', [
+                $processed++;
+            } catch (\Exception $e) {
+                $broadcast->update(['status' => WhatsAppBroadcastStatusEnum::FAILED->value]);
+
+                Log::error('Failed to dispatch scheduled broadcast', [
                     'broadcast_id' => $broadcast->id,
                     'error' => $e->getMessage(),
                 ]);
 
-                $this->error("Failed to queue broadcast #{$broadcast->id}: {$e->getMessage()}");
+                $this->error("Failed to dispatch broadcast #{$broadcast->id}: {$e->getMessage()}");
             }
         }
 
-        $this->info('Scheduled broadcast processing complete.');
+        if ($processed === 0) {
+            $this->info('No scheduled broadcasts to process.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Dispatched {$processed} broadcast(s).");
 
         return self::SUCCESS;
     }

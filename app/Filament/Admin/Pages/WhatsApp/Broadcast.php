@@ -308,7 +308,7 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                                 Forms\Components\ToggleButtons::make('recipient_type')
                                     ->label('Send to')
                                     ->options([
-                                        'all' => 'All Members (' . $this->getAllMemberCount() . ')',
+                                        'all' => 'All Members (' . $this->targetCount . ')',
                                         'filtered' => 'Filter & Select Members',
                                     ])
                                     ->colors([

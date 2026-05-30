@@ -3,13 +3,9 @@
 namespace App\Services\Meta;
 
 use App\Interfaces\MessagingInterface;
-use App\Models\GymMember;
-use App\Models\WhatsAppBroadcast;
-use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use App\Services\WhatsAppVariableResolver;
 
 /**
  * Meta Messaging Service.
@@ -29,7 +25,7 @@ class MetaMessagingService implements MessagingInterface
 
     private function getBroadcastService(): WhatsAppBroadcastService
     {
-        return $this->broadcastService ??= new WhatsAppBroadcastService($this, $this->context->gymId);
+        return $this->broadcastService ??= new WhatsAppBroadcastService($this->context->gymId);
     }
 
     /**
@@ -233,9 +229,9 @@ class MetaMessagingService implements MessagingInterface
     /**
      * Send a broadcast to multiple recipients.
      */
-    public function sendBroadcast(int $broadcastId): array
+    public function sendBroadcast(int $broadcastId): void
     {
-        return $this->getBroadcastService()->processBroadcast($broadcastId);
+        $this->getBroadcastService()->dispatchBroadcast($broadcastId);
     }
 
     /**
@@ -244,24 +240,5 @@ class MetaMessagingService implements MessagingInterface
     public function getMessageStatus(string $messageId): array
     {
         return $this->api->get("/{$messageId}");
-    }
-
-    /**
-     * Prepare variables for template messages.
-     */
-    protected function prepareVariables(WhatsAppBroadcast $broadcast, WhatsAppBroadcastRecipient $recipient): array
-    {
-        $template = $broadcast->template;
-        $customVariables = $broadcast->message_variables ?? [];
-
-        $member = GymMember::with(['gym', 'membershipPlan', 'trainer', 'latestPayment'])
-            ->find($recipient->member_id);
-
-        $resolver = app(WhatsAppVariableResolver::class);
-
-        return $resolver->resolve($template, [
-            'member' => $member,
-            'custom' => $customVariables,
-        ]);
     }
 }

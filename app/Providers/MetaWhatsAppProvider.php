@@ -63,9 +63,14 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         return $this->messaging ??= new MetaMessagingService($this->context, $this->api, $this->credits());
     }
 
-    protected function credits(): WhatsAppCreditService
+    public function credits(): WhatsAppCreditService
     {
         return $this->credits;
+    }
+
+    public function getContext(): MetaContext
+    {
+        return $this->context;
     }
 
     protected function templates(): MetaTemplateService
@@ -101,9 +106,9 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         return $this->messaging()->sendTemplateMessage($to, $templateName, $variables);
     }
 
-    public function sendBroadcast(int $broadcastId): array
+    public function sendBroadcast(int $broadcastId): void
     {
-        return $this->messaging()->sendBroadcast($broadcastId);
+        $this->messaging()->sendBroadcast($broadcastId);
     }
 
     public function getMessageStatus(string $messageId): array

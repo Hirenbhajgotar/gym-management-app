@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 
 class BroadcastRateLimiter
 {
-    private const LOCK_TIMEOUT = 5;
+    private const LOCK_TIMEOUT = 10;
 
     public function getQuota(int $gymId): array
     {

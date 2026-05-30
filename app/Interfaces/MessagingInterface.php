@@ -60,14 +60,11 @@ interface MessagingInterface
     /**
      * Send a broadcast to multiple recipients.
      *
+     * Dispatches the broadcast asynchronously via a queued job.
+     *
      * @param  int  $broadcastId  The broadcast ID
-     * @return array{
-     *     total: int,
-     *     sent: int,
-     *     failed: int
-     * }
      */
-    public function sendBroadcast(int $broadcastId): array;
+    public function sendBroadcast(int $broadcastId): void;
 
     /**
      * Get the status of a sent message.

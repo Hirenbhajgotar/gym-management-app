@@ -16,9 +16,24 @@ use Exception;
  */
 class WhatsAppCreditService implements CreditManagementInterface
 {
+    /**
+     * When true, checkAndDeduct is a no-op. Used by broadcast flows
+     * where credits are deducted upfront at the orchestration layer.
+     */
+    private bool $skipDeduction = false;
+
     public function __construct(
         protected int $gymId
     ) {}
+
+    /**
+     * Enable or disable skip-deduction mode.
+     * When enabled, checkAndDeduct() becomes a no-op.
+     */
+    public function setSkipDeduction(bool $skip = true): void
+    {
+        $this->skipDeduction = $skip;
+    }
 
     public function getCreditBalance(): array
     {
@@ -62,9 +77,14 @@ class WhatsAppCreditService implements CreditManagementInterface
 
     /**
      * Check and deduct credits. Throws exception if insufficient.
+     * No-op when skipDeduction is true (broadcast flow with upfront deduction).
      */
     public function checkAndDeduct(int $count = 1): void
     {
+        if ($this->skipDeduction) {
+            return;
+        }
+
         $credit = WhatsAppMessageCredit::where('gym_id', $this->gymId)->first();
 
         if (! $credit || ! $credit->canSendMessage($count)) {

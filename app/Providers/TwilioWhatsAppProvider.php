@@ -69,7 +69,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         return $this->account ??= new TwilioAccountService($this->context);
     }
 
-    protected function credits(): WhatsAppCreditService
+    public function credits(): WhatsAppCreditService
     {
         return $this->credits;
     }
@@ -106,9 +106,9 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         return $this->messaging()->sendTestMessage($to, $message);
     }
 
-    public function sendBroadcast(int $broadcastId): array
+    public function sendBroadcast(int $broadcastId): void
     {
-        return $this->messaging()->sendBroadcast($broadcastId);
+        $this->messaging()->sendBroadcast($broadcastId);
     }
 
     public function getMessageStatus(string $messageId): array

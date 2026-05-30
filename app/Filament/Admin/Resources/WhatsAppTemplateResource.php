@@ -518,8 +518,6 @@ class WhatsAppTemplateResource extends Resource
                     ->label('Rejection Reason')
                     ->limit(40)
                     ->tooltip(fn (WhatsAppTemplate $record) => $record->rejection_reason)
-                    ->visible(fn () => WhatsAppTemplate::where('gym_id', Filament::getTenant()?->id)
-                        ->where('status', WhatsAppTemplateStatusEnum::REJECTED)->exists())
                     ->color('danger'),
 
                 Tables\Columns\TextColumn::make('variable_count')
