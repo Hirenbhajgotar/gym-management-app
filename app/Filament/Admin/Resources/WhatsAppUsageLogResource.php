@@ -29,6 +29,18 @@ class WhatsAppUsageLogResource extends Resource
         return false;
     }
 
+    // Temporarily disable access to this resource
+    public static function canAccess(array $parameters = []): bool
+    {
+        return false;
+    }
+
+    // Temporarily disable access to this resource
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // This will hide it from the menu
+    }
+
     public static function table(Table $table): Table
     {
         return $table

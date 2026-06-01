@@ -3,8 +3,8 @@ table: gym_members
 last_updated: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-checkin-flow.md
-  - ../features/biometric-consent-system.md
+  - ../feature/biometric-checkin-flow.md
+  - ../feature/biometric-consent-system.md
 ---
 
 # `gym_members` — Field Reference
@@ -65,9 +65,9 @@ Stores gym members/participants. This is the primary entity for biometric operat
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [Biometric Check-in Flow](../features/biometric-checkin-flow.md) | All fields | — | Uses canAccessGym(), isFrozen(), isCurrentlyCheckedIn() |
-| [Biometric Consent System](../features/biometric-consent-system.md) | `email`, `gym` | — | Triggers consent email on creation |
-| [Door Access Control](../features/door-access-control.md) | — | — | Referenced in door events |
+| [Biometric Check-in Flow](../feature/biometric-checkin-flow.md) | All fields | — | Uses canAccessGym(), isFrozen(), isCurrentlyCheckedIn() |
+| [Biometric Consent System](../feature/biometric-consent-system.md) | `email`, `gym` | — | Triggers consent email on creation |
+| [Door Access Control](../feature/door-access-control.md) | — | — | Referenced in door events |
 
 ## Key Methods
 

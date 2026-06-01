@@ -40,6 +40,12 @@ class TenantSocialConfigResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
+    // Temporarily disable access to this resource
+    public static function canAccess(array $parameters = []): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         /**
