@@ -5,7 +5,7 @@ status: accepted
 date: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-consent-system.md
+  - ../feature/biometric-consent-system.md
 ---
 
 # ADR-003: Consent Before Enrollment

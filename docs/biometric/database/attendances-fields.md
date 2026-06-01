@@ -3,8 +3,8 @@ table: attendances
 last_updated: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-checkin-flow.md
-  - ../features/door-access-control.md
+  - ../feature/biometric-checkin-flow.md
+  - ../feature/door-access-control.md
 ---
 
 # `attendances` — Field Reference
@@ -75,8 +75,8 @@ Records member check-in/check-out events. Uses polymorphic relationship (`attend
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [Biometric Check-in Flow](../features/biometric-checkin-flow.md) | All fields | All biometric + door fields | Creates attendance on successful check-in |
-| [Door Access Control](../features/door-access-control.md) | door_status, door_unlocked_at | door_status, door_unlocked_at | Updates door status on existing attendance |
+| [Biometric Check-in Flow](../feature/biometric-checkin-flow.md) | All fields | All biometric + door fields | Creates attendance on successful check-in |
+| [Door Access Control](../feature/door-access-control.md) | door_status, door_unlocked_at | door_status, door_unlocked_at | Updates door status on existing attendance |
 
 ## Key Methods / Scopes
 

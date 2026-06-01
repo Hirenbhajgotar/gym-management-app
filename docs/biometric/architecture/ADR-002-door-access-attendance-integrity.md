@@ -5,8 +5,8 @@ status: accepted
 date: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-checkin-flow.md
-  - ../features/door-access-control.md
+  - ../feature/biometric-checkin-flow.md
+  - ../feature/door-access-control.md
 ---
 
 # ADR-002: Door Access Attendance Integrity
