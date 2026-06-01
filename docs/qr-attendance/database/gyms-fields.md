@@ -3,7 +3,7 @@ table: gyms
 last_updated: 2026-04-13
 author: docs-agent
 related_features:
-  - ../features/qr-code-attendance.md
+  - ../feature/qr-code-attendance.md
 ---
 
 # `gyms` — Field Reference
@@ -55,9 +55,9 @@ The `gyms` table is the central tenant model representing each gym location in t
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [QR Code Attendance](../features/qr-code-attendance.md) | `id, qr_code_token, qr_code_checkout_token` | `qr_code_token, qr_code_checkout_token` | Used for generating and validating QR code URLs |
-| [Biometric Check-in Flow](../features/biometric-checkin-flow.md) | `id, name` | — | Used for gym identification in biometric attendance |
-| [Door Access Control](../features/door-access-control.md) | `id, name` | — | Used for gym context in door events |
+| [QR Code Attendance](../feature/qr-code-attendance.md) | `id, qr_code_token, qr_code_checkout_token` | `qr_code_token, qr_code_checkout_token` | Used for generating and validating QR code URLs |
+| [Biometric Check-in Flow](../../biometric/feature/biometric-checkin-flow.md) | `id, name` | — | Used for gym identification in biometric attendance |
+| [Door Access Control](../../biometric/feature/door-access-control.md) | `id, name` | — | Used for gym context in door events |
 
 ## Migration History
 

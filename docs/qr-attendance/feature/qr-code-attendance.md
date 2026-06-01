@@ -162,6 +162,6 @@ Gym owner visits Admin Panel → Settings → QR Code page to generate QR codes.
 
 | Feature | Relationship |
 |---|---|
-| [Biometric Check-in Flow](./biometric-checkin-flow.md) | Alternative check-in method using biometrics |
-| [Door Access Control](./door-access-control.md) | Can be used alongside QR attendance for door unlock |
-| [Attendances](./attendance-system.md) | Core attendance records updated by this feature |
+| [Biometric Check-in Flow](../../biometric/feature/biometric-checkin-flow.md) | Alternative check-in method using biometrics |
+| [Door Access Control](../../biometric/feature/door-access-control.md) | Can be used alongside QR attendance for door unlock |
+| [Attendances](../../biometric/database/attendances-fields.md) | Core attendance records updated by this feature |

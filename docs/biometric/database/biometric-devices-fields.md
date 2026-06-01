@@ -3,9 +3,9 @@ table: biometric_devices
 last_updated: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-provider-abstraction.md
-  - ../features/biometric-checkin-flow.md
-  - ../features/door-access-control.md
+  - ../feature/biometric-provider-abstraction.md
+  - ../feature/biometric-checkin-flow.md
+  - ../feature/door-access-control.md
 ---
 
 # `biometric_devices` — Field Reference
@@ -70,9 +70,9 @@ Stores biometric hardware devices deployed at gym locations. Each device has a p
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [Biometric Provider Abstraction](../features/biometric-provider-abstraction.md) | provider_type, provider_config | provider_type, provider_config | Resolves provider at check-in |
-| [Biometric Check-in Flow](../features/biometric-checkin-flow.md) | All fields | — | Uses purpose to branch logic |
-| [Door Access Control](../features/door-access-control.md) | door_control_type, door_controller_url, etc. | — | Controls door unlock behavior |
+| [Biometric Provider Abstraction](../feature/biometric-provider-abstraction.md) | provider_type, provider_config | provider_type, provider_config | Resolves provider at check-in |
+| [Biometric Check-in Flow](../feature/biometric-checkin-flow.md) | All fields | — | Uses purpose to branch logic |
+| [Door Access Control](../feature/door-access-control.md) | door_control_type, door_controller_url, etc. | — | Controls door unlock behavior |
 
 ## Key Methods
 

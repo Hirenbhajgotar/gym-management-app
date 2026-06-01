@@ -5,7 +5,7 @@ status: accepted
 date: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/biometric-provider-abstraction.md
+  - ../feature/biometric-provider-abstraction.md
 ---
 
 # ADR-001: Biometric Provider Abstraction

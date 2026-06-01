@@ -5,7 +5,7 @@ status: accepted
 date: 2026-04-13
 author: docs-agent
 related_features:
-  - ../features/qr-code-attendance.md
+  - ../feature/qr-code-attendance.md
 ---
 
 # ADR-004: QR Code Attendance Architecture
@@ -61,5 +61,5 @@ We implemented a token-based QR code attendance system with the following archit
 
 ## Related Decisions
 
-- [ADR-002](./ADR-002-door-access-attendance-integrity.md) — Door access + attendance integration when using biometric devices
-- [ADR-001](./ADR-001-biometric-provider-abstraction.md) — Biometric provider abstraction (alternative to QR attendance)
+- [ADR-002](../../biometric/architecture/ADR-002-door-access-attendance-integrity.md) — Door access + attendance integration when using biometric devices
+- [ADR-001](../../biometric/architecture/ADR-001-biometric-provider-abstraction.md) — Biometric provider abstraction (alternative to QR attendance)

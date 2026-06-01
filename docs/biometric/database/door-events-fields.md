@@ -3,8 +3,8 @@ table: door_events
 last_updated: 2026-04-03
 author: docs-agent
 related_features:
-  - ../features/door-access-control.md
-  - ../features/biometric-checkin-flow.md
+  - ../feature/door-access-control.md
+  - ../feature/biometric-checkin-flow.md
 ---
 
 # `door_events` — Field Reference
@@ -55,8 +55,8 @@ Audit log for all door lock/unlock attempts. Every door event (granted, denied, 
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [Biometric Check-in Flow](../features/biometric-checkin-flow.md) | — | All fields | Logs every door attempt from check-in |
-| [Door Access Control](../features/door-access-control.md) | All fields | All fields | Main write source for this table |
+| [Biometric Check-in Flow](../feature/biometric-checkin-flow.md) | — | All fields | Logs every door attempt from check-in |
+| [Door Access Control](../feature/door-access-control.md) | All fields | All fields | Main write source for this table |
 
 ## Event Types
 
