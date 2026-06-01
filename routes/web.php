@@ -173,7 +173,11 @@ Route::get('/{filename}.xml', function (string $filename) {
 // WhatsApp Embedded Signup Routes
 Route::middleware(['auth'])->prefix('whatsapp/embedded-signup')->name('whatsapp.embedded-signup.')->group(function () {
     Route::get('/redirect/{tenant}', [EmbeddedSignupController::class, 'redirect'])->name('redirect');
-    Route::get('/callback', [EmbeddedSignupController::class, 'callback'])->name('callback');
+
+    Route::get('/callback', [EmbeddedSignupController::class, 'callback'])
+        ->name('callback')
+        ->middleware('throttle:5,1'); // 5 attempts per minute per IP
+
     Route::post('/manual-connect/{tenant}', [EmbeddedSignupController::class, 'manualConnect'])->name('manual-connect');
 });
 

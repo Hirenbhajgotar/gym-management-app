@@ -146,4 +146,6 @@ return [
             'value' => '94%',
         ],
     ],
+
+    'transaction_deadlock_max_attempts' => (int) env('TRANSACTION_DEADLOCK_MAX_ATTEMPTS', 3),
 ];

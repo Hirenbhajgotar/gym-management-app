@@ -182,10 +182,10 @@ return [
         'logs' => false, // Add the latest log messages
         'files' => false, // Show the included files
         'config' => false, // Display config settings
-        'cache' => false, // Display cache events
+        'cache' => true, // Display cache events
         'models' => true,  // Display models
         'livewire' => true,  // Display Livewire (when available)
-        'jobs' => false, // Display dispatched jobs
+        'jobs' => true, // Display dispatched jobs
         'pennant' => false, // Display Pennant feature flags
     ],
 

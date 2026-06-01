@@ -3,13 +3,17 @@
 use App\Http\Controllers\Api\BiometricCheckInController;
 use App\Http\Controllers\Api\BiometricDeviceController;
 use App\Http\Controllers\Api\BiometricEnrollController;
+use App\Http\Controllers\Api\BiometricOfflineSyncController;
+use App\Http\Controllers\Api\BiometricWebhookController;
 use App\Http\Controllers\Api\FacebookLeadController;
 use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\JustDialLeadController;
 use App\Http\Controllers\Api\RazorpayWebhookController;
+use App\Http\Controllers\Api\TwilioTemplateWebhookController;
 use App\Http\Controllers\Api\TwilioWebhookController;
 use App\Http\Controllers\Api\WebhookTestController;
 use App\Http\Controllers\Api\WhatsAppLeadController;
+use App\Http\Controllers\Api\WhatsAppTemplateWebhookController;
 use App\Http\Controllers\ReportApiController;
 use App\Http\Middleware\AuthenticateBiometricDevice;
 use Filament\Facades\Filament;
@@ -42,9 +46,25 @@ Route::prefix('webhooks')->group(function () {
     Route::post('/instagram/leads', [InstagramLeadController::class, 'handleWebhook'])
         ->name('api.webhooks.instagram.leads');
 
-    // WhatsApp Business API Webhook
-    Route::post('/whatsapp/messages', [WhatsAppLeadController::class, 'handleWebhook'])
-        ->name('api.webhooks.whatsapp.messages');
+    Route::prefix('/whatsapp')->group(function () {
+        // WhatsApp Template Status Webhook
+        Route::get('/templates-status', [WhatsAppTemplateWebhookController::class, 'verifyMetaWebhook']);
+
+        Route::post('/templates-status', [WhatsAppTemplateWebhookController::class, 'handleTemplateStatusWebhook'])
+            ->middleware('throttle:60,1');
+
+        // WhatsApp Business API Webhook
+        Route::post('/messages', [WhatsAppLeadController::class, 'handleWebhook']);
+    });
+
+    Route::prefix('/twilio')->group(function () {
+        // Twilio Delivery Status Webhook
+        Route::post('/status', [TwilioWebhookController::class, 'handleStatusCallback']);
+
+        // Twilio Template Status Webhook
+        Route::post('/templates-status', [TwilioTemplateWebhookController::class, 'handleTemplateStatusWebhook'])
+            ->middleware('throttle:60,1');
+    });
 
     // IndiaMart Lead Webhook
     // Route::post('/indiamart/leads', [IndiaMartLeadController::class, 'handleWebhook'])
@@ -55,16 +75,8 @@ Route::prefix('webhooks')->group(function () {
     //     ->name('api.webhooks.justdial.leads');
 
     // Razorpay Payment Webhook
-    Route::post('/razorpay/payment', [
-        RazorpayWebhookController::class,
-        'handlePaymentWebhook',
-    ])->name('api.webhooks.razorpay.payment');
-
-    // Twilio Delivery Status Webhook
-    Route::post('/twilio/status', [
-        TwilioWebhookController::class,
-        'handleStatusCallback',
-    ])->name('api.webhooks.twilio.status');
+    Route::post('/razorpay/payment', [RazorpayWebhookController::class, 'handlePaymentWebhook'])
+        ->name('api.webhooks.razorpay.payment');
 
     // Webhook Verification Routes (GET)
     Route::get('/facebook/leads', [FacebookLeadController::class, 'verifyWebhook'])
@@ -225,13 +237,12 @@ Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])-
         ->name('api.biometric.config');
     Route::get('/device/test', [BiometricDeviceController::class, 'testConnection'])
         ->name('api.biometric.test');
+
+    // Offline sync route (uses biometric device auth)
+    Route::post('/offline-sync', [BiometricOfflineSyncController::class, 'sync'])
+        ->name('api.biometric.offline-sync');
 });
 
-// Offline sync route (uses biometric device auth)
-Route::post('/v1/biometric/offline-sync', [App\Http\Controllers\Api\BiometricOfflineSyncController::class, 'sync'])
-    ->middleware(AuthenticateBiometricDevice::class)
-    ->name('api.biometric.offline-sync');
-
 // Vendor webhook routes (token verified inside controller)
-Route::post('/v1/biometric/webhook/{token}', [App\Http\Controllers\Api\BiometricWebhookController::class, 'handle'])
+Route::post('/v1/biometric/webhook/{token}', [BiometricWebhookController::class, 'handle'])
     ->name('api.biometric.webhook');

@@ -228,11 +228,9 @@ class ExpenseCategoryResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return Cache::flexible(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
-            $count = static::getModel()::customForGym($gym?->id ?? 0)->count();
-
-            return $count > 0 ? $count : null;
-        });
+        return Cache::flexible(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {
+            return (string) static::getModel()::customForGym($gym?->id ?? 0)->count();
+        }) ?: null;
     }
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder

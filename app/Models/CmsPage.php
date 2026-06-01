@@ -23,6 +23,7 @@ use Spatie\Sitemap\Tags\Url;
  * @property string|null $meta_keywords
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Database\Factories\CmsPageFactory factory($count = null, $state = [])
  * @method static Builder<static>|CmsPage newModelQuery()
  * @method static Builder<static>|CmsPage newQuery()
@@ -38,6 +39,7 @@ use Spatie\Sitemap\Tags\Url;
  * @method static Builder<static>|CmsPage whereSlug($value)
  * @method static Builder<static>|CmsPage whereTitle($value)
  * @method static Builder<static>|CmsPage whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class CmsPage extends Model implements Sitemapable

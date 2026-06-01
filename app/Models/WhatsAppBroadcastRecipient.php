@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\WhatsAppBroadcast $broadcast
  * @property-read \App\Models\GymMember $member
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient query()
@@ -36,10 +38,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereTwilioMessageSid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcastRecipient whereWhatsappBroadcastId($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppBroadcastRecipient extends Model
 {
+    use HasFactory;
+
     protected $table = 'whatsapp_broadcast_recipients';
 
     protected $fillable = [

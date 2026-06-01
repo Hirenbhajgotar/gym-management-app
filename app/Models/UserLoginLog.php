@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Gym $gym
  * @property-read mixed $session_duration
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog forUser(int $userId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog newModelQuery()
@@ -41,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserAgent($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class UserLoginLog extends Model

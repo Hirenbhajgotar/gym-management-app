@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Helpers\ParserHelper;
 use App\Models\WhatsAppTemplate;
+use Illuminate\Support\Facades\Cache;
 
 class WhatsAppTemplateObserver
 {
@@ -49,9 +49,7 @@ class WhatsAppTemplateObserver
 
     private function clearCache(WhatsAppTemplate $whatsAppTemplate): void
     {
-        ParserHelper::clearCache([
-            WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $whatsAppTemplate->gym_id,
-            WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY,
-        ]);
+        Cache::forget(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $whatsAppTemplate->gym_id);
+        Cache::forget(WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY);
     }
 }

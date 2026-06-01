@@ -30,17 +30,13 @@ Schedule::command('followups:send-reminders')->daily();
 // Send pending lead reminders daily
 Schedule::command('leads:send-pending-reminders')->daily();
 
-// Sync WhatsApp templates to database daily at 3 AM
-Schedule::command('app:sync-whats-app-templates')->dailyAt('03:00');
-
 // Cleanup soft-deleted templates older than 15 days
 Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
 
 // Process scheduled WhatsApp broadcasts every minute
-Schedule::command('whatsapp:process-scheduled')->everyTwoMinutes();
-
-// Sync pending WhatsApp template statuses every 2 hours
-Schedule::command('whatsapp:sync-template-statuses')->everyTwoHours();
+Schedule::command('whatsapp:process-scheduled')
+    ->everyTwoMinutes()
+    ->withoutOverlapping();
 
 // Check for gyms with low WhatsApp credits daily at 8 AM
 Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');
@@ -85,3 +81,12 @@ Schedule::call(function () {
 
 // Generate sitemap daily at midnight
 Schedule::command('sitemap:generate')->dailyAt('00:00');
+
+// Sync WABA status twice daily at 3am and 3pm
+Schedule::command('whatsapp:sync-waba-status')->twiceDailyAt(3, 15);
+
+// Import templates for gyms daily at 11:22pm
+Schedule::command('whatsapp:import-templates')
+    ->dailyAt('23:22')
+    ->withoutOverlapping(10)  // 10 min lock
+    ->onOneServer();

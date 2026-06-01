@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppAccount $whatsappAccount
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration query()
@@ -42,6 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereWhatsappAccountId($value)
+ *
  * @mixin \Eloquent
  */
 class WabaMigration extends Model

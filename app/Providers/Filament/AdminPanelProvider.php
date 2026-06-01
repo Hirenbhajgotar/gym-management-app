@@ -164,32 +164,32 @@ class AdminPanelProvider extends PanelProvider
                 PhosphorIcons::make(),
 
                 // ActivitylogPlugin::make(),
-            ])
-            ->renderHook(
-                'panels::body.end',
-                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
-                    ? ''
-                    : view('filament.hooks.feedback-popup')
-            )
-            ->renderHook(
-                'panels::body.end',
-                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
-                    ? ''
-                    : view('filament.hooks.error-report')
-            )
-            ->renderHook(
-                'panels::body.end',
-                fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
-                    ? ''
-                    : view('filament.hooks.floating-feedback-button')
-            );
+            ]);
+        // ->renderHook(
+        //     'panels::body.end',
+        //     fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+        //         ? ''
+        //         : view('filament.hooks.feedback-popup')
+        // )
+        // ->renderHook(
+        //     'panels::body.end',
+        //     fn () => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+        //         ? ''
+        //         : view('filament.hooks.floating-feedback-button')
+        // )
+        // ->renderHook(
+        //     'panels::body.end',
+        //     fn() => request()->routeIs(['filament.*.auth.*', 'login', 'password.*', 'register', 'gym.register', 'filament.*.tenant.*'])
+        //         ? ''
+        //         : view('filament.hooks.error-report')
+        // )
     }
 
     public function boot(): void
     {
         // Register the Livewire component
-        Livewire::component('feedback-popup', FeedbackPopup::class);
-        Livewire::component('feedback-trigger', FeedbackTrigger::class);
-        Livewire::component('error-report-modal', ErrorReportModal::class);
+        // Livewire::component('feedback-popup', FeedbackPopup::class);
+        // Livewire::component('feedback-trigger', FeedbackTrigger::class);
+        // Livewire::component('error-report-modal', ErrorReportModal::class);
     }
 }

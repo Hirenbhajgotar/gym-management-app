@@ -70,6 +70,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read int|null $payments_count
  * @property-read \App\Models\Trainer|null $trainer
  * @property-read \App\Models\User|null $user
+ *
  * @method static \Database\Factories\GymMemberFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember frozen()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember hasTrainer()
@@ -102,6 +103,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereTrainerId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class GymMember extends Model

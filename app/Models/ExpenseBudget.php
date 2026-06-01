@@ -37,6 +37,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read mixed $formatted_remaining_amount
  * @property-read mixed $formatted_spent_amount
  * @property-read \App\Models\Gym $gym
+ *
  * @method static Builder<static>|ExpenseBudget active()
  * @method static Builder<static>|ExpenseBudget current()
  * @method static Builder<static>|ExpenseBudget forCategory(int $categoryId)
@@ -59,6 +60,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static>|ExpenseBudget wherePeriod($value)
  * @method static Builder<static>|ExpenseBudget whereStartDate($value)
  * @method static Builder<static>|ExpenseBudget whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([ExpenseBudgetObserver::class])]

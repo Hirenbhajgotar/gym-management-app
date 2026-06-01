@@ -3,14 +3,16 @@
 namespace App\Services;
 
 use App\Enums\WabaMigrationStatusEnum;
-use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
+use App\Enums\WhatsAppAccountStatusEnum;
 use App\Jobs\MigrateTenantToIndividualWaba;
 use App\Models\WabaMigration;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @deprecated This service is no longer in use. All WABA migrations have been completed.
+ */
 class WabaMigrationService
 {
     public function __construct(
@@ -25,10 +27,7 @@ class WabaMigrationService
 
     public function getGymsNeedingMigration(): array
     {
-        return WhatsAppAccount::where('waba_mode', WabaModeEnum::SHARED)
-            ->orWhereNull('waba_mode')
-            ->pluck('gym_id')
-            ->toArray();
+        return [];
     }
 
     public function createMigrationForGym(int $gymId): ?WabaMigration
@@ -41,7 +40,7 @@ class WabaMigrationService
             return null;
         }
 
-        if ($account->hasIndividualWaba() || $account->hasManualWaba()) {
+        if ($account->isWabaProvider() && filled($account->waba_id)) {
             Log::info("Gym {$gymId} already has individual/manual WABA, skipping migration");
 
             return null;
@@ -64,7 +63,7 @@ class WabaMigrationService
             $gymId,
             $account->id,
             $account->waba_id ?? 'unknown',
-            $account->waba_mode?->value ?? WabaModeEnum::SHARED->value
+            'shared'
         );
     }
 
@@ -170,18 +169,11 @@ class WabaMigrationService
 
             $account->update([
                 'waba_id' => $newWabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::ACTIVE->value,
+                'status' => WhatsAppAccountStatusEnum::ACTIVE,
                 'embedded_signup_completed' => true,
             ]);
 
-            $migration->markAsCompleted($newWabaId, WabaModeEnum::INDIVIDUAL->value);
-
-            Log::info('Migration completed successfully', [
-                'migration_id' => $migration->id,
-                'gym_id' => $migration->gym_id,
-                'new_waba_id' => $newWabaId,
-            ]);
+            $migration->markAsCompleted($newWabaId, 'individual');
 
             return true;
         } catch (\Exception $e) {

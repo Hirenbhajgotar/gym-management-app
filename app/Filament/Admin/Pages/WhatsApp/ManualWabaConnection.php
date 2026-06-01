@@ -197,8 +197,7 @@ class ManualWabaConnection extends Page implements HasActions, HasForms
 
         $this->whatsappAccount->update([
             'waba_id' => null,
-            'waba_mode' => null,
-            'waba_status' => null,
+            'status' => null,
             'meta_access_token' => null,
             'embedded_signup_completed' => false,
         ]);

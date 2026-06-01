@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PlanFeature> $features
  * @property-read int|null $features_count
+ *
  * @method static Builder<static>|Plan active()
  * @method static Builder<static>|Plan newModelQuery()
  * @method static Builder<static>|Plan newQuery()
@@ -46,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|Plan whereSlug($value)
  * @method static Builder<static>|Plan whereTrialDays($value)
  * @method static Builder<static>|Plan whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([PlanObserver::class])]

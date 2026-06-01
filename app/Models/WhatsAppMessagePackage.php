@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<array-key, mixed>|null $features
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static>|WhatsAppMessagePackage active()
  * @method static Builder<static>|WhatsAppMessagePackage newModelQuery()
  * @method static Builder<static>|WhatsAppMessagePackage newQuery()
@@ -42,6 +43,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static Builder<static>|WhatsAppMessagePackage whereTwilioNumberCost($value)
  * @method static Builder<static>|WhatsAppMessagePackage whereUpdatedAt($value)
  * @method static Builder<static>|WhatsAppMessagePackage whereValidityDays($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppMessagePackage extends Model

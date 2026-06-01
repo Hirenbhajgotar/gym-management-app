@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppTemplateService;
@@ -171,7 +172,7 @@ class WhatsAppTemplateServiceTest extends TestCase
             ],
         ];
 
-        $template = $this->templateService->createTemplate($this->gym->id, $templateData);
+        $template = $this->templateService->createTemplate($this->gym->id, CreateTemplateData::fromArray($templateData));
 
         $this->assertInstanceOf(WhatsAppTemplate::class, $template);
         $this->assertEquals('custom_notification', $template->name);

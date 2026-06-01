@@ -10,6 +10,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Cache;
 
 class ListWhatsAppTemplates extends ListRecords
 {
@@ -102,6 +103,8 @@ class ListWhatsAppTemplates extends ListRecords
             ])->toArray();
 
             WhatsAppTemplate::insert($importData);
+
+            Cache::forget(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id);
         }
 
         if ($importedCount > 0) {

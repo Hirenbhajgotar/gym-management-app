@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -35,6 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read mixed $formatted_body
  * @property-read \App\Models\Gym|null $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isActive()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate isDefault()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate newModelQuery()
@@ -63,11 +65,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate whereVariables($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppTemplate withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
@@ -77,23 +81,24 @@ class WhatsAppTemplate extends Model
     protected $table = 'whatsapp_templates';
 
     protected $fillable = [
+        // Core form fields (both Admin and SuperAdmin panels)
         'gym_id',
         'name',
         'display_name',
         'body',
         'category',
+        // Computed/derived fields (explicitly set by services, not from form input)
         'variables',
         'variable_count',
         'variable_placeholder',
-        'twilio_template_sid',
-        'meta_template_id',
-        'status',
-        'rejection_reason',
-        'is_default',
-        'is_active',
-        'usage_count',
-        'last_used_at',
+        // Form-submitted fields
+        'status',      // SuperAdmin panel can set status on create/edit
+        'is_active',   // Admin panel toggles this in Settings section
     ];
+
+    // System/Internal fields (NOT fillable)
+    // twilio_template_sid, meta_template_id, rejection_reason, is_default, usage_count, last_used_at
+    // These are updated explicitly via direct property assignment (e.g., $record->field = value).
 
     protected function casts(): array
     {
@@ -199,25 +204,24 @@ class WhatsAppTemplate extends Model
 
     public function markAsApproved(string $twilioSid, string $metaId): void
     {
-        $this->update([
-            'status' => WhatsAppTemplateStatusEnum::APPROVED,
-            'twilio_template_sid' => $twilioSid,
-            'meta_template_id' => $metaId,
-        ]);
+        $this->status = WhatsAppTemplateStatusEnum::APPROVED;
+        $this->twilio_template_sid = $twilioSid;
+        $this->meta_template_id = $metaId;
+        $this->save();
     }
 
     public function markAsRejected(string $reason): void
     {
-        $this->update([
-            'status' => WhatsAppTemplateStatusEnum::REJECTED,
-            'rejection_reason' => $reason,
-        ]);
+        $this->status = WhatsAppTemplateStatusEnum::REJECTED;
+        $this->rejection_reason = $reason;
+        $this->save();
     }
 
     public function incrementUsage(): void
     {
         $this->increment('usage_count');
-        $this->update(['last_used_at' => now()]);
+        $this->last_used_at = now();
+        $this->save();
     }
 
     public function getVariableNames(): array
@@ -259,7 +263,8 @@ class WhatsAppTemplate extends Model
 
     public static function getDefaults(): Collection
     {
-        return self::whereNull('gym_id')->isDefault()->get();
+        // Added withoutGlobalScopes() to get templates where tenant id is null.
+        return self::withoutGlobalScopes()->whereNull('gym_id')->isDefault()->get();
     }
 
     public static function isExistsForGym(int $gymId): bool

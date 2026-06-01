@@ -7,10 +7,10 @@ use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\WhatsAppBroadcast;
-use App\Models\WhatsAppBroadcastRecipient;
-use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
-use App\Services\TwilioWhatsAppService;
+use App\Providers\WhatsAppProviderFactory;
+use App\Services\WhatsApp\BroadcastOrchestrator;
+use App\Services\WhatsApp\BroadcastRateLimiter;
 use App\Services\WhatsAppVariableResolver;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -27,7 +27,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 
 class Broadcast extends Page implements HasActions, HasForms, HasTable
@@ -75,8 +74,11 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
     public array $availableTrainers = [];
 
+    protected BroadcastOrchestrator $broadcastOrchestrator;
+
     public function mount(): void
     {
+        $this->broadcastOrchestrator = app(BroadcastOrchestrator::class);
         $this->loadTemplates();
         $this->initializeForm();
     }
@@ -126,7 +128,7 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
 
     private function getFilteredMembers(): Builder
     {
-        $query = GymMember::query();
+        $query = GymMember::query()->whereNotNull('phone')->where('phone', '!=', '');
 
         $data = $this->data;
 
@@ -191,7 +193,8 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
         $this->resetTableSearch();
         $this->resetTable();
         $this->targetCount = $this->getAllMemberCount();
-        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+        // $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+        $this->selectedMemberIds = [];
     }
 
     public function updatedRecipientType(): void
@@ -216,254 +219,262 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
     {
         return $form
             ->schema([
-                // Rate Limit Quota Display
-                Forms\Components\Section::make('Broadcast Quota')
-                    ->schema([
-                        Forms\Components\Placeholder::make('quota_info')
-                            ->label('')
-                            ->content(function () {
-                                $gymId = $this->getGymId();
-                                $todayCount = WhatsAppBroadcast::where('gym_id', $gymId)
-                                    ->whereDate('created_at', today())
-                                    ->count();
-                                $remaining = max(0, 2 - $todayCount);
-
-                                $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
-                                    ->latest()
-                                    ->first();
-
-                                $cooldownText = '';
-                                if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
-                                    $nextAllowed = $lastBroadcast->created_at->addHour();
-                                    $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
-                                    $cooldownText = "<div class='text-amber-600 dark:text-amber-400 text-xs mt-1'>⏱ Next broadcast available in {$minutesLeft} minute(s)</div>";
-                                }
-
-                                $statusColor = $remaining > 0 ? 'emerald' : 'red';
-
-                                return new HtmlString("
-                                    <div class='flex items-center gap-4'>
-                                        <div class='flex items-center gap-2'>
-                                            <span class='text-sm text-gray-600 dark:text-gray-400'>Today's Quota:</span>
-                                            <span class='font-bold text-{$statusColor}-600 dark:text-{$statusColor}-400'>{$remaining}/2 remaining</span>
-                                        </div>
-                                    </div>
-                                    {$cooldownText}
-                                ");
-                            }),
-                    ])
-                    ->compact(),
-
-                Forms\Components\Section::make('Select Template')
-                    ->schema([
+                Forms\Components\Split::make([
+                    Forms\Components\Section::make([
                         Forms\Components\Select::make('template_id')
                             ->label('Choose Template')
                             ->options(fn () => collect($this->templates)->pluck('display_name', 'id'))
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
-                    ]),
 
-                // Variable Inputs (only for custom source variables)
-                Forms\Components\Section::make('Message Variables')
-                    ->description('Some variables are auto-filled from member data. Only custom variables need your input.')
-                    ->schema(function () {
-                        $templateId = $this->data['template_id'] ?? null;
+                        // Variable Inputs (only for custom source variables)
+                        Forms\Components\Section::make('Message Variables')
+                            ->description('Some variables are auto-filled from member data. Only custom variables need your input.')
+                            ->schema(function () {
+                                $templateId = $this->data['template_id'] ?? null;
 
-                        if (! $templateId) {
-                            return [];
-                        }
+                                if (! $templateId) {
+                                    return [];
+                                }
 
-                        $template = WhatsAppTemplate::find($templateId);
+                                $template = WhatsAppTemplate::find($templateId);
 
-                        if (! $template) {
-                            return [];
-                        }
+                                if (! $template) {
+                                    return [];
+                                }
 
-                        $placeholders = $template->getVariablePlaceholders();
+                                $placeholders = $template->getVariablePlaceholders();
 
-                        if (empty($placeholders)) {
-                            return [];
-                        }
+                                if (empty($placeholders)) {
+                                    return [];
+                                }
 
-                        $fields = [];
-                        $hasAutoResolved = false;
-                        $autoResolvedLabels = [];
+                                $fields = [];
+                                $hasAutoResolved = false;
+                                $autoResolvedLabels = [];
 
-                        foreach ($placeholders as $key => $placeholder) {
-                            $source = $placeholder['source'] ?? 'custom';
-                            $label = $placeholder['placeholder'] ?? 'Variable ' . $key;
+                                foreach ($placeholders as $key => $placeholder) {
+                                    $source = $placeholder['source'] ?? 'custom';
+                                    $label = $placeholder['placeholder'] ?? 'Variable ' . $key;
 
-                            if ($source !== 'custom') {
-                                $hasAutoResolved = true;
-                                $sources = WhatsAppVariableResolver::getAvailableDataSources();
-                                $sourceLabel = $sources[$source]['label'] ?? $source;
-                                $autoResolvedLabels[] = '{{' . $key . '}} ' . $label . ' — ' . $sourceLabel;
+                                    if ($source !== 'custom') {
+                                        $hasAutoResolved = true;
+                                        $sources = WhatsAppVariableResolver::getAvailableDataSources();
+                                        $sourceLabel = $sources[$source]['label'] ?? $source;
+                                        $autoResolvedLabels[] = '{{' . $key . '}} ' . $label . ' — ' . $sourceLabel;
 
-                                continue;
-                            }
+                                        continue;
+                                    }
 
-                            $fields[] = Forms\Components\TextInput::make('variables.' . $key)
-                                ->label('{{' . $key . '}} — ' . $label)
-                                ->placeholder($placeholder['example'] ?? '')
-                                ->required()
-                                ->helperText('This value will be the same for all recipients.');
-                        }
+                                    $fields[] = Forms\Components\TextInput::make('variables.' . $key)
+                                        ->label('{{' . $key . '}} — ' . $label)
+                                        ->placeholder($placeholder['example'] ?? '')
+                                        ->required()
+                                        ->helperText('This value will be the same for all recipients.');
+                                }
 
-                        if ($hasAutoResolved) {
-                            $autoList = collect($autoResolvedLabels)
-                                ->map(fn ($item) => '<li>' . e($item) . '</li>')
-                                ->implode('');
+                                if ($hasAutoResolved) {
+                                    $autoList = collect($autoResolvedLabels)
+                                        ->map(fn ($item) => '<li>' . e($item) . '</li>')
+                                        ->implode('');
 
-                            array_unshift($fields, Forms\Components\Placeholder::make('auto_resolved_info')
-                                ->label('')
-                                ->content(new HtmlString('
-                                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-xs space-y-1">
-                                        <div class="font-semibold text-emerald-700 dark:text-emerald-400">Auto-filled variables (from member data):</div>
-                                        <ul class="text-emerald-600 dark:text-emerald-400 space-y-0.5 list-disc list-inside">' . $autoList . '</ul>
-                                    </div>
-                                ')));
-                        }
+                                    array_unshift($fields, Forms\Components\Placeholder::make('auto_resolved_info')
+                                        ->label('')
+                                        ->content(new HtmlString('
+                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-xs space-y-1">
+                                            <div class="font-semibold text-emerald-700 dark:text-emerald-400">Auto-filled variables (from member data):</div>
+                                            <ul class="text-emerald-600 dark:text-emerald-400 space-y-0.5 list-disc list-inside">' . $autoList . '</ul>
+                                        </div>
+                                    ')));
+                                }
 
-                        if (empty($fields)) {
-                            $fields[] = Forms\Components\Placeholder::make('all_auto_resolved')
-                                ->label('')
-                                ->content(new HtmlString('
-                                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-sm text-emerald-700 dark:text-emerald-400">
-                                        All variables in this template are auto-filled from member data. No manual input needed.
-                                    </div>
-                                '));
-                        }
+                                if (empty($fields)) {
+                                    $fields[] = Forms\Components\Placeholder::make('all_auto_resolved')
+                                        ->label('')
+                                        ->content(new HtmlString('
+                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                                            All variables in this template are auto-filled from member data. No manual input needed.
+                                        </div>
+                                    '));
+                                }
 
-                        return $fields;
-                    })
-                    ->visible(fn () => ! empty($this->data['template_id']) && ! empty($this->selectedTemplate)),
+                                return $fields;
+                            })
+                            ->visible(fn () => ! empty($this->data['template_id']) && ! empty($this->selectedTemplate)),
 
-                Forms\Components\Section::make('Recipients')
-                    ->schema([
-                        Forms\Components\Radio::make('recipient_type')
-                            ->label('Send to')
-                            ->options([
-                                'all' => 'All Members (' . $this->getAllMemberCount() . ')',
-                                'filtered' => 'Filter & Select Members',
-                            ])
-                            ->default('all')
-                            ->inline()
-                            ->inlineLabel(false)
-                            ->live()
-                            ->afterStateUpdated(fn () => $this->updatedRecipientType()),
-
-                        Forms\Components\Group::make()
-                            ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'filtered')
+                        Forms\Components\Section::make('Recipients')
                             ->schema([
-                                Forms\Components\Grid::make(2)
-                                    ->schema([
-                                        Forms\Components\Select::make('filters.plans')
-                                            ->label('Membership Plan')
-                                            ->options(fn () => collect($this->availablePlans)->pluck('name', 'id'))
-                                            ->placeholder('All Plans')
-                                            ->live(),
+                                Forms\Components\ToggleButtons::make('recipient_type')
+                                    ->label('Send to')
+                                    ->options([
+                                        'all' => 'All Members (' . $this->targetCount . ')',
+                                        'filtered' => 'Filter & Select Members',
+                                    ])
+                                    ->colors([
+                                        'all' => 'info',
+                                        'filtered' => 'info',
+                                    ])
+                                    // ->default('all')
+                                    ->inline()
+                                    ->inlineLabel(false)
+                                    ->live()
+                                    ->afterStateUpdated(fn () => $this->updatedRecipientType()),
 
-                                        Forms\Components\Select::make('filters.trainers')
-                                            ->label('Trainer')
-                                            ->options(fn () => collect($this->availableTrainers)->pluck('name', 'id'))
-                                            ->placeholder('All Trainers')
-                                            ->live(),
+                                Forms\Components\Group::make()
+                                    ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'filtered')
+                                    ->schema([
+                                        Forms\Components\Grid::make(2)
+                                            ->schema([
+                                                Forms\Components\Select::make('filters.plans')
+                                                    ->label('Membership Plan')
+                                                    ->options(fn () => collect($this->availablePlans)->pluck('name', 'id'))
+                                                    ->placeholder('All Plans')
+                                                    ->live(),
+
+                                                Forms\Components\Select::make('filters.trainers')
+                                                    ->label('Trainer')
+                                                    ->options(fn () => collect($this->availableTrainers)->pluck('name', 'id'))
+                                                    ->placeholder('All Trainers')
+                                                    ->live(),
+                                            ]),
+
+                                        Forms\Components\Grid::make(2)
+                                            ->schema([
+                                                Forms\Components\Select::make('filters.membership_type')
+                                                    ->label('Active / Inactive')
+                                                    ->options([
+                                                        'active' => 'Active (Membership Valid)',
+                                                        'inactive' => 'Inactive (Membership Expired)',
+                                                    ])
+                                                    ->placeholder('All Members')
+                                                    ->live(),
+
+                                                Forms\Components\Select::make('filters.payment_status')
+                                                    ->label('Payment Status')
+                                                    ->options([
+                                                        'pending' => 'Pending',
+                                                        'completed' => 'Completed',
+                                                        'failed' => 'Failed',
+                                                        'expired' => 'Expired',
+                                                    ])
+                                                    ->placeholder('All Payment Statuses')
+                                                    ->live(),
+                                            ]),
+
+                                        Forms\Components\Grid::make(2)
+                                            ->schema([
+                                                Forms\Components\Actions::make([
+                                                    Forms\Components\Actions\Action::make('clearFilters')
+                                                        ->label('Clear Filters')
+                                                        ->color('gray')
+                                                        ->icon('heroicon-o-x-mark')
+                                                        ->action(fn () => $this->clearFilters()),
+
+                                                    Forms\Components\Actions\Action::make('updateFilters')
+                                                        ->label('Apply Filters')
+                                                        ->icon('heroicon-o-funnel')
+                                                        ->action(fn () => $this->updatedFilters()),
+                                                ]),
+                                            ]),
+
+                                        ViewField::make('results_table')
+                                            ->view('filament.tenant.pages.components.member-checklist')
+                                            ->visible(fn () => $this->filtersApplied),
                                     ]),
 
-                                Forms\Components\Grid::make(2)
-                                    ->schema([
-                                        Forms\Components\Select::make('filters.membership_type')
-                                            ->label('Active / Inactive')
-                                            ->options([
-                                                'active' => 'Active (Membership Valid)',
-                                                'inactive' => 'Inactive (Membership Expired)',
-                                            ])
-                                            ->placeholder('All Members')
-                                            ->live(),
-
-                                        Forms\Components\Select::make('filters.payment_status')
-                                            ->label('Payment Status')
-                                            ->options([
-                                                'pending' => 'Pending',
-                                                'completed' => 'Completed',
-                                                'failed' => 'Failed',
-                                                'expired' => 'Expired',
-                                            ])
-                                            ->placeholder('All Payment Statuses')
-                                            ->live(),
-                                    ]),
-
-                                Forms\Components\Grid::make(2)
-                                    ->schema([
-                                        Forms\Components\Actions::make([
-                                            Forms\Components\Actions\Action::make('clearFilters')
-                                                ->label('Clear Filters')
-                                                ->color('gray')
-                                                ->icon('heroicon-o-x-mark')
-                                                ->action(fn () => $this->clearFilters()),
-
-                                            Forms\Components\Actions\Action::make('updateFilters')
-                                                ->label('Apply Filters')
-                                                ->icon('heroicon-o-funnel')
-                                                ->action(fn () => $this->updatedFilters()),
-                                        ]),
-                                    ]),
-
-                                ViewField::make('results_table')
-                                    ->view('filament.tenant.pages.components.member-checklist')
-                                    ->visible(fn () => $this->filtersApplied),
+                                Forms\Components\Placeholder::make('target_count')
+                                    ->label('Estimated Recipients')
+                                    ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'all')
+                                    ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> members')),
                             ]),
 
-                        Forms\Components\Placeholder::make('target_count')
-                            ->label('Estimated Recipients')
-                            ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'all')
-                            ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> members')),
-                    ]),
+                        Forms\Components\Section::make('Schedule')
+                            ->schema([
+                                Forms\Components\Radio::make('schedule_type')
+                                    ->label('When to send')
+                                    ->options([
+                                        'now' => 'Send Now',
+                                        'later' => 'Schedule for Later',
+                                    ])
+                                    ->default('now')
+                                    ->inline()
+                                    ->inlineLabel(false)
+                                    ->live(),
 
-                Forms\Components\Section::make('Schedule')
-                    ->schema([
-                        Forms\Components\Radio::make('schedule_type')
-                            ->label('When to send')
-                            ->options([
-                                'now' => 'Send Now',
-                                'later' => 'Schedule for Later',
+                                Forms\Components\DateTimePicker::make('scheduled_at')
+                                    ->label('Schedule Date & Time')
+                                    ->visible(fn (callable $get) => $get('schedule_type') === 'later')
+                                    ->minDate(now())
+                                    ->required(fn (callable $get) => $get('schedule_type') === 'later'),
+                            ]),
+                        Forms\Components\Section::make('Confirm')
+                            ->schema([
+                                Forms\Components\Placeholder::make('credits_info')
+                                    ->label('Credits Required')
+                                    ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
+
+                                Forms\Components\Actions::make([
+                                    Forms\Components\Actions\Action::make('sendTestMessage')
+                                        ->label('Send Message')
+                                        ->color('info')
+                                        ->icon('heroicon-o-phone')
+                                        ->visible(fn () => config('services.twilio.use_sandbox'))
+                                        ->action(function () {
+                                            $this->sendTestMessage();
+                                        }),
+                                    Forms\Components\Actions\Action::make('sendBroadcast')
+                                        ->label('Send Broadcast')
+                                        ->visible(fn () => ! config('services.twilio.use_sandbox'))
+                                        ->action(function () {
+                                            $this->form->validate();
+                                            $this->sendBroadcast();
+                                        }),
+                                ]),
+                            ]),
+                    ]),
+                    Forms\Components\Section::make([
+                        // Rate Limit Quota Display
+                        Forms\Components\Section::make('Broadcast Quota')
+                            ->schema([
+                                Forms\Components\Placeholder::make('quota_info')
+                                    ->label('')
+                                    ->content(function () {
+                                        $gymId = $this->getGymId();
+
+                                        $rateLimiter = app(BroadcastRateLimiter::class);
+
+                                        $quota = $rateLimiter->getQuota($gymId);
+
+                                        $remaining = $quota['remaining'];
+
+                                        $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
+                                            ->latest()
+                                            ->first();
+
+                                        $cooldownText = '';
+                                        if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
+                                            $nextAllowed = $lastBroadcast->created_at->addHour();
+                                            $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
+                                            $cooldownText = "<div class='text-amber-600 dark:text-amber-400 text-xs mt-1'>⏱ Next broadcast available in {$minutesLeft} minute(s)</div>";
+                                        }
+
+                                        $statusColor = $remaining > 0 ? 'emerald' : 'red';
+
+                                        return new HtmlString("
+                                            <div class='flex items-center gap-4'>
+                                                <div class='flex items-center gap-2'>
+                                                    <span class='text-sm text-gray-600 dark:text-gray-400'>Today's Quota:</span>
+                                                    <span class='font-bold text-{$statusColor}-600 dark:text-{$statusColor}-400'>{$remaining}/2 remaining</span>
+                                                </div>
+                                            </div>
+                                            {$cooldownText}
+                                        ");
+                                    }),
                             ])
-                            ->default('now')
-                            ->inline()
-                            ->inlineLabel(false)
-                            ->live(),
-
-                        Forms\Components\DateTimePicker::make('scheduled_at')
-                            ->label('Schedule Date & Time')
-                            ->visible(fn (callable $get) => $get('schedule_type') === 'later')
-                            ->minDate(now())
-                            ->required(fn (callable $get) => $get('schedule_type') === 'later'),
-                    ]),
-                Forms\Components\Section::make('Confirm')
-                    ->schema([
-                        Forms\Components\Placeholder::make('credits_info')
-                            ->label('Credits Required')
-                            ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
-
-                        Forms\Components\Actions::make([
-                            Forms\Components\Actions\Action::make('sendTestMessage')
-                                ->label('Send Message')
-                                ->color('info')
-                                ->icon('heroicon-o-phone')
-                                ->visible(fn () => config('services.twilio.use_sandbox'))
-                                ->action(function () {
-                                    $this->sendTestMessage();
-                                }),
-                            Forms\Components\Actions\Action::make('sendBroadcast')
-                                ->label('Send Broadcast')
-                                ->visible(fn () => ! config('services.twilio.use_sandbox'))
-                                ->action(function () {
-                                    $this->form->validate();
-                                    $this->sendBroadcast();
-                                }),
-                        ]),
-                    ]),
+                            ->compact(),
+                    ])->grow(false),
+                ]),
             ])
             ->statePath('data');
     }
@@ -524,104 +535,30 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
     private function sendBroadcast(): void
     {
         try {
-            $templateId = $this->data['template_id'] ?? null;
-            $variables = $this->data['variables'] ?? [];
+            $this->form->validate();
+
+            $data = [
+                'template_id' => $this->data['template_id'],
+                'variables' => $this->data['variables'] ?? [],
+                'recipient_type' => $this->data['recipient_type'] ?? 'all',
+                'schedule_type' => $this->data['schedule_type'] ?? 'now',
+                'scheduled_at' => $this->data['scheduled_at'] ?? null,
+                'filters' => $this->data['filters'] ?? [],
+            ];
+
             $scheduleType = $this->data['schedule_type'] ?? 'now';
-            $scheduledAt = $this->data['scheduled_at'] ?? null;
 
-            if (! $templateId) {
-                throw new \Exception('Please select a template');
-            }
-
-            if ($this->targetCount === 0) {
-                throw new \Exception('No recipients found. Please select members or change recipient type.');
-            }
-
-            if (($this->data['recipient_type'] ?? 'all') === 'filtered' && empty($this->selectedMemberIds)) {
-                throw new \Exception('Please select at least one member from the filtered results.');
-            }
-
-            // ── Rate Limiting ──────────────────────────────────
-            $gymId = $this->getGymId();
-            $todayCount = WhatsAppBroadcast::where('gym_id', $gymId)
-                ->whereDate('created_at', today())
-                ->count();
-
-            if ($todayCount >= config('app.whatsapp_broadcast_limit_per_day')) {
-                throw new \Exception('Daily broadcast limit reached. You can send a maximum of ' . config('app.whatsapp_broadcast_limit_per_day') . ' broadcasts per day. Try again tomorrow.');
-            }
-
-            $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
-                ->latest()
-                ->first();
-
-            if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
-                $nextAllowed = $lastBroadcast->created_at->addHour();
-                $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
-                throw new \Exception("Please wait {$minutesLeft} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
-            }
-            // ── End Rate Limiting ──────────────────────────────
-
-            $creditBalance = WhatsAppMessageCredit::where('gym_id', $this->getGymId())->first();
-
-            if (! $creditBalance || ! $creditBalance->canSendMessage($this->targetCount)) {
-                throw new \Exception('Insufficient credits. You need ' . number_format($this->targetCount) . ' credits.');
-            }
-
-            $template = WhatsAppTemplate::findOrFail($templateId);
-
-            DB::beginTransaction();
-
-            $broadcast = WhatsAppBroadcast::create([
-                'gym_id' => $this->getGymId(),
-                'whatsapp_template_id' => $templateId,
-                'title' => 'Broadcast: ' . $template->display_name,
-                'target_filters' => $this->data['recipient_type'] === 'filtered'
-                    ? $this->filters
-                    : ['type' => 'all'],
-                'target_count' => $this->targetCount,
-                'status' => $scheduleType === 'now' ? 'sending' : 'scheduled',
-                'scheduled_at' => $scheduleType === 'later' ? $scheduledAt : null,
-                'message_variables' => $variables,
-            ]);
-
-            $recipientType = $this->data['recipient_type'] ?? 'all';
-
-            $memberQuery = GymMember::where('gym_id', $this->getGymId());
-
-            if ($recipientType !== 'all') {
-                $memberQuery->whereIn('id', $this->selectedMemberIds);
-            }
-
-            $now = now();
-
-            $memberQuery->chunk(500, function ($members) use ($broadcast, $now) {
-                $recipients = [];
-                foreach ($members as $member) {
-                    $recipients[] = [
-                        'whatsapp_broadcast_id' => $broadcast->id,
-                        'member_id' => $member->id,
-                        'phone_number' => $member->phone ?? '',
-                        'member_name' => $member->name ?? 'Member',
-                        'status' => 'pending',
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ];
-                }
-                WhatsAppBroadcastRecipient::insert($recipients);
-            });
-
-            DB::commit();
-
-            if ($scheduleType === 'now') {
-                $this->processBroadcast($broadcast);
-            }
+            $broadcast = $this->broadcastOrchestrator->createAndDispatch(
+                $data,
+                $this->getGymId(),
+                $this->selectedMemberIds,
+            );
 
             Notification::make()
                 ->title($scheduleType === 'now' ? 'Broadcast Started!' : 'Broadcast Scheduled!')
                 ->body($scheduleType === 'now'
-                    ? 'Sending messages to ' . number_format($this->targetCount) . ' members.'
-                    : 'Scheduled for ' . $scheduledAt->format('M d, Y g:i A'))
+                    ? 'Sending messages to ' . number_format($broadcast->target_count) . ' members.'
+                    : 'Scheduled for ' . ($broadcast->scheduled_at?->format('M d, Y g:i A') ?? ''))
                 ->success()
                 ->send();
 
@@ -629,8 +566,6 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
             $this->loadTemplates();
 
         } catch (\Exception $e) {
-            DB::rollBack();
-
             Notification::make()
                 ->title('Broadcast Failed')
                 ->body($e->getMessage())
@@ -642,21 +577,22 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
     private function sendTestMessage(): void
     {
         try {
-            // Check if sandbox is enabled
             if (! config('services.twilio.use_sandbox', false)) {
                 throw new \Exception('Sandbox mode is not enabled. Please enable it in services.php configuration.');
             }
 
-            // Use hardcoded test number - send TO this number, FROM sandbox sender
             $testPhoneNumber = config('services.twilio.sandbox_recipient_number');
-            $testMessage = 'This is a test message to demonstrate your broadcast ability to send message.';
 
             if (! $testPhoneNumber) {
                 throw new \Exception('No test phone number configured for this gym');
             }
 
-            $service = new TwilioWhatsAppService((string) $this->getGymId());
-            $result = $service->sendTemplateTestMessage($testPhoneNumber);
+            $provider = WhatsAppProviderFactory::create((int) $this->getGymId());
+
+            $result = $provider->sendTestWhatsAppMessage(
+                (int) $this->getGymId(),
+                $testPhoneNumber,
+            );
 
             if ($result['success']) {
                 Notification::make()
@@ -674,11 +610,6 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
                 ->danger()
                 ->send();
         }
-    }
-
-    private function processBroadcast(WhatsAppBroadcast $broadcast): void
-    {
-        \App\Jobs\SendBroadcastJob::dispatch($broadcast->id, $this->getGymId());
     }
 
     public function refresh(): void

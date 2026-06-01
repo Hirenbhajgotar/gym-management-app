@@ -15,11 +15,11 @@
             </div>
             <button 
                 type="button"
-                wire:click="selectNumber('{{ $number['phoneNumber'] ?? $number['phone_number'] }}')"
+                wire:click="selectNumber('{{ e($number['phoneNumber'] ?? $number['phone_number']) }}')"
                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
             >
-                <x-loading-icon target="selectNumber('{{ $number['phoneNumber'] ?? $number['phone_number'] }}')" variant="icon" name="Loading" />
-                <span wire:loading.remove wire:target="selectNumber('{{ $number['phoneNumber'] ?? $number['phone_number'] }}')">
+                <x-loading-icon target="selectNumber('{{ e($number['phoneNumber'] ?? $number['phone_number']) }}')" variant="icon" name="Loading" />
+                <span wire:loading.remove wire:target="selectNumber('{{ e($number['phoneNumber'] ?? $number['phone_number']) }}')">
                     Select
                 </span>
             </button>

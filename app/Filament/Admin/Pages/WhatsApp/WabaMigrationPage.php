@@ -146,7 +146,7 @@ class WabaMigrationPage extends Page implements HasActions, HasForms, HasTable
             return;
         }
 
-        if ($this->whatsappAccount->hasIndividualWaba()) {
+        if ($this->whatsappAccount->isWabaProvider() && $this->whatsappAccount->isEmbeddedSignupComplete()) {
             Notification::make()
                 ->title('Already Migrated')
                 ->body('Your account is already using individual WABA.')

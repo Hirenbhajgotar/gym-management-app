@@ -23,7 +23,7 @@
                 Migrate from shared WABA to individual WABA for complete isolation
             </x-slot>
 
-            @if($whatsappAccount?->hasIndividualWaba())
+            @if($whatsappAccount && $whatsappAccount->isWabaProvider() && $whatsappAccount->isEmbeddedSignupComplete())
                 <div class="flex items-start gap-4 p-4 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
                     <div class="p-2 bg-success-100 dark:bg-success-900/40 rounded-full">
                         <x-heroicon-o-check-circle class="w-6 h-6 text-success-600 dark:text-success-400" />

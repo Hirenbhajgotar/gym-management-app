@@ -2,14 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Enums\WabaStatusEnum;
+use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
-use App\Services\EmbeddedSignupService;
+use App\Providers\WhatsAppProviderFactory;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-class SyncWabaStatus implements ShouldQueue
+class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -21,29 +24,30 @@ class SyncWabaStatus implements ShouldQueue
         public int $whatsAppAccountId
     ) {}
 
-    public function handle(EmbeddedSignupService $embeddedSignupService): void
+    public function handle(): void
     {
         $account = WhatsAppAccount::find($this->whatsAppAccountId);
 
-        if (! $account) {
-            Log::error("WhatsApp account not found: {$this->whatsAppAccountId}");
+        if (! $account || ! $account->waba_id || ! $account->meta_access_token) {
+            Log::warning('SyncWabaStatus skipped: Invalid account data', [
+                'account_id' => $this->whatsAppAccountId,
+            ]);
 
             return;
         }
 
-        if (! $account->waba_id) {
-            Log::info("No WABA ID for account: {$this->whatsAppAccountId}");
-
+        // Only WABA provider supports WABA status sync
+        if ($account->provider_type !== WhatsAppProviderTypeEnum::WABA) {
             return;
         }
 
-        if (! $account->meta_access_token) {
-            Log::info("No Meta access token for account: {$this->whatsAppAccountId}");
+        // Use provider factory to get the MetaWhatsAppProvider
+        $provider = WhatsAppProviderFactory::create(
+            gymId: (int) $account->gym_id,
+            providerType: $account->provider_type?->value
+        );
 
-            return;
-        }
-
-        $wabaDetails = $embeddedSignupService->getWabaDetails(
+        $wabaDetails = $provider->getWabaDetails(
             $account->waba_id,
             $account->metaAccessToken
         );
@@ -55,31 +59,38 @@ class SyncWabaStatus implements ShouldQueue
                 'error' => $wabaDetails['error'] ?? 'Unknown error',
             ]);
 
-            return;
+            // Throwing exception here triggers the $tries and $backoff retry mechanism
+            throw new \Exception($wabaDetails['error'] ?? 'Meta API fetch failed');
         }
 
         $data = $wabaDetails['data'];
         $reviewStatus = $data['account_review_status'] ?? null;
+        $verificationStatus = $data['business_verification_status'] ?? null;
 
-        $statusMap = [
-            'PENDING' => WabaStatusEnum::PENDING,
-            'APPROVED' => WabaStatusEnum::ACTIVE,
-            'RESTRICTED' => WabaStatusEnum::RESTRICTED,
-            'REJECTED' => WabaStatusEnum::BANNED,
-            'BANNED' => WabaStatusEnum::BANNED,
-        ];
+        if ($reviewStatus === null && $verificationStatus === null) {
+            Log::warning('Meta API response missing both status fields, skipping update', [
+                'account_id' => $this->whatsAppAccountId,
+                'waba_id' => $account->waba_id,
+                'review_status' => $reviewStatus,
+                'verification_status' => $verificationStatus,
+                'has_name' => isset($data['name']),
+            ]);
 
-        $newStatus = $statusMap[$reviewStatus] ?? WabaStatusEnum::PENDING;
+            return;
+        }
 
         $account->update([
-            'waba_status' => $newStatus->value,
             'waba_name' => $data['name'] ?? $account->waba_name,
+            'status' => WhatsAppAccountStatusEnum::fromMetaReviewStatus($reviewStatus),
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::fromMetaVerificationStatus($verificationStatus),
+            'waba_status_synced_at' => now(),
         ]);
 
-        Log::info('WABA status synced', [
+        Log::info('WABA status synced successfully', [
             'account_id' => $this->whatsAppAccountId,
             'waba_id' => $account->waba_id,
-            'status' => $newStatus->value,
+            'status' => $reviewStatus,
+            'verification_status' => $verificationStatus,
         ]);
     }
 
@@ -87,7 +98,8 @@ class SyncWabaStatus implements ShouldQueue
     {
         Log::error('SyncWabaStatus job failed', [
             'whatsapp_account_id' => $this->whatsAppAccountId,
-            'error' => $exception?->getMessage(),
+            'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
         ]);
     }
 }

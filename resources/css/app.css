@@ -82,6 +82,19 @@
     --color-info-900: 12, 74, 110;
     --color-info-950: 8, 47, 73;
 
+    /* Filament Orange Color */
+    --color-orange-50: 255, 247, 237;
+    --color-orange-100: 255, 237, 213;
+    --color-orange-200: 254, 215, 170;
+    --color-orange-300: 253, 186, 116;
+    --color-orange-400: 251, 146, 60;
+    --color-orange-500: 249, 115, 22;
+    --color-orange-600: 234, 88, 12;
+    --color-orange-700: 194, 65, 12;
+    --color-orange-800: 154, 52, 18;
+    --color-orange-900: 124, 45, 18;
+    --color-orange-950: 67, 20, 7;
+
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);

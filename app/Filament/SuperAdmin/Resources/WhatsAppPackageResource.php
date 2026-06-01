@@ -36,11 +36,9 @@ class WhatsAppPackageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(WhatsAppPackage::NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(10), now()->addHour()], function () {
-            $count = static::getModel()::where('is_active', true)->count();
-
-            return $count > 0 ? (string) $count : null;
-        });
+        return Cache::flexible(WhatsAppPackage::NAVIGATION_BADGE_CACHE_KEY, [600, 3600], function () {
+            return (string) static::getModel()::where('is_active', true)->count();
+        }) ?: null;
     }
 
     public static function updateSellingPrice(Get $get, Set $set): void

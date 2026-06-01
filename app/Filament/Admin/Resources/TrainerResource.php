@@ -41,14 +41,9 @@ class TrainerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(Trainer::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [now()->addHours(6), now()->addWeek()], function () {
-            $modelClass = static::$model;
-            $query = $modelClass::query();
-
-            $count = $query->count();
-
-            return $count > 0 ? $count : null;
-        });
+        return Cache::flexible(Trainer::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [21600, 604800], function () {
+            return (string) (static::$model)::query()->count();
+        }) ?: null;
     }
 
     // public static function getEloquentQuery(): Builder

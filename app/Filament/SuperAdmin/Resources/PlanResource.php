@@ -30,11 +30,9 @@ class PlanResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(Plan::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            $count = static::getModel()::count();
-
-            return $count > 0 ? $count : null;
-        });
+        return Cache::flexible(Plan::NAVIGATION_BADGE_CACHE_KEY, [21600, 604800], function () {
+            return (string) static::getModel()::count();
+        }) ?: null;
     }
 
     public static function form(Form $form): Form

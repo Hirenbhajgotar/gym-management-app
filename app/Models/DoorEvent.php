@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\BiometricDevice $device
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\GymMember|null $gymMember
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent query()
@@ -43,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent whereUnlockDurationSeconds($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent whereUnlockedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DoorEvent whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class DoorEvent extends Model

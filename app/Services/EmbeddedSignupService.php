@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
@@ -11,6 +9,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
 
+/**
+ * EmbeddedSignupService - Legacy service for WhatsApp embedded signup.
+ *
+ * @deprecated Use MetaWhatsAppProvider::startEmbeddedSignup() and ::handleEmbeddedSignupCallback() instead.
+ *             This service is kept for backward compatibility with existing route handlers.
+ *             Methods delegate to provider implementation where applicable.
+ * @see \App\Providers\MetaWhatsAppProvider::startEmbeddedSignup()
+ * @see \App\Providers\MetaWhatsAppProvider::handleEmbeddedSignupCallback()
+ */
 class EmbeddedSignupService
 {
     private string $metaAppId;
@@ -23,22 +30,15 @@ class EmbeddedSignupService
 
     private string $metaConfigId;
 
-    private string $masterAccountSid;
-
-    private string $masterAuthToken;
-
     private bool $embeddedSignupEnabled;
 
     public function __construct()
     {
-        $this->metaAppId = config('services.twilio.meta.app_id', '');
-        $this->metaAppSecret = config('services.twilio.meta.app_secret', '');
-        $this->metaApiVersion = config('services.twilio.meta.api_version', 'v19.0');
-        $this->metaRedirectUri = config('services.twilio.meta.redirect_uri', '');
-        $this->metaConfigId = config('services.twilio.meta.config_id', '');
-
-        $this->masterAccountSid = config('services.twilio.master_sid', '');
-        $this->masterAuthToken = config('services.twilio.master_token', '');
+        $this->metaAppId = (string) config('services.meta.app_id', '');
+        $this->metaAppSecret = config('services.meta.app_secret', '');
+        $this->metaApiVersion = config('services.meta.api_version', 'v19.0');
+        $this->metaRedirectUri = config('services.meta.redirect_uri', '');
+        $this->metaConfigId = config('services.meta.config_id', '');
 
         $this->embeddedSignupEnabled = config('services.twilio.embedded_signup_enabled', false);
     }
@@ -50,6 +50,9 @@ class EmbeddedSignupService
             && ! empty($this->metaAppSecret);
     }
 
+    /**
+     * @deprecated Use MetaWhatsAppProvider::startEmbeddedSignup() instead.
+     */
     public function getLoginUrl(int $gymId): string
     {
         $session = WabaSetupSession::createForGym($gymId);
@@ -66,16 +69,12 @@ class EmbeddedSignupService
         return "https://www.facebook.com/{$this->metaApiVersion}/dialog/oauth?{$params}";
     }
 
+    /**
+     * @deprecated Use MetaWhatsAppProvider::handleEmbeddedSignupCallback() instead.
+     */
     public function handleCallback(string $code, string $state): array
     {
         $session = WabaSetupSession::where('session_id', $state)->first();
-
-        Log::info('Embedded Signup callback', [
-            'code' => $code,
-            'state' => $state,
-            'session' => $session->toArray(),
-            'session_is_expired' => $session->isExpired(),
-        ]);
 
         if (! $session) {
             return [
@@ -94,10 +93,6 @@ class EmbeddedSignupService
         }
 
         $tokenData = $this->exchangeCodeForToken($code);
-
-        Log::info('Embedded Signup token exchange', [
-            'token_data' => $tokenData,
-        ]);
 
         if (! $tokenData['success']) {
             $session->markAsFailed();
@@ -229,7 +224,7 @@ class EmbeddedSignupService
     {
         $response = Http::withToken($accessToken)
             ->get("https://graph.facebook.com/{$this->metaApiVersion}/{$wabaId}", [
-                'fields' => 'id,name,account_review_status,ownership_tier,currency,timezone_id',
+                'fields' => 'id,name,account_review_status,business_verification_status,ownership_tier,currency,timezone_id',
             ]);
 
         if ($response->failed()) {
@@ -259,20 +254,20 @@ class EmbeddedSignupService
     ): array {
         $account = WhatsAppAccount::where('gym_id', $gymId)->first();
 
-        Log::info('Connecting WABA to subaccount', [
-            'gym_id' => $gymId,
-            'waba_id' => $wabaId,
-            'phone_number' => $phoneNumber,
-            'meta_access_token' => $metaAccessToken,
-            'account' => $account->toArray(),
-        ]);
-
         if (! $account) {
             return [
                 'success' => false,
                 'error' => 'WhatsApp account not found for gym',
             ];
         }
+
+        Log::info('Connecting WABA to subaccount', [
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'phone_number' => $phoneNumber,
+            'account_id' => $account->id,
+            'provider_type' => $account->provider_type,
+        ]);
 
         try {
             $sid = $account->twilio_account_sid;
@@ -332,17 +327,9 @@ class EmbeddedSignupService
 
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
                 'meta_access_token' => $metaAccessToken,
                 'embedded_signup_completed' => true,
-                'status' => WhatsAppAccountStatusEnum::PENDING->value,
-            ]);
-
-            Log::info('WABA connected to subaccount', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'sender_sid' => $senderSid,
+                'status' => WhatsAppAccountStatusEnum::PENDING,
             ]);
 
             return [
@@ -396,8 +383,6 @@ class EmbeddedSignupService
 
             $updateData = [
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::MANUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
                 'embedded_signup_completed' => false,
                 'status' => WhatsAppAccountStatusEnum::PENDING->value,
             ];
@@ -407,12 +392,6 @@ class EmbeddedSignupService
             }
 
             $account->update($updateData);
-
-            Log::info('Manual WABA connected to subaccount', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'sender_sid' => $sender->sid,
-            ]);
 
             return [
                 'success' => true,
