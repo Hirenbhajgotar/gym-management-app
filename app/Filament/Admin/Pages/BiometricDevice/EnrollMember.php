@@ -38,6 +38,12 @@ class EnrollMember extends Page
         $this->form->fill();
     }
 
+    // Temporarily disable access to this resource
+    public static function canAccess(array $parameters = []): bool
+    {
+        return false;
+    }
+
     public function getDevices(): array
     {
         $tenant = Filament::getTenant();

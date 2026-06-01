@@ -61,6 +61,9 @@ class BiometricDeviceResource extends Resource
 
     public static function canAccess(array $parameters = []): bool
     {
+        // Temporarily disable access to this resource
+        return false;
+
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
