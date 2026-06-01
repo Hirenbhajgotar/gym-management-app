@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\BiometricDevicePurpose;
+use App\Observers\BiometricDeviceObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -78,9 +80,12 @@ use Illuminate\Support\Facades\Hash;
  *
  * @mixin \Eloquent
  */
+#[ObservedBy([BiometricDeviceObserver::class])]
 class BiometricDevice extends Model
 {
     use HasFactory;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'nav_badge:biometric_device:tenant_id:';
 
     protected $fillable = [
         'gym_id',

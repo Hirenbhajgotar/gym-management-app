@@ -238,17 +238,14 @@ class ExpenseBudgetResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return Cache::flexible(ExpenseBudget::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
-            // Count budgets that have exceeded threshold
-            $exceededCount = static::getModel()::where('gym_id', $gym?->id)
+        return Cache::flexible(ExpenseBudget::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {
+            return (string) static::getModel()::where('gym_id', $gym?->id)
                 ->active()
                 ->current()
                 ->get()
                 ->filter(fn ($budget) => $budget->isThresholdExceeded())
                 ->count();
-
-            return $exceededCount > 0 ? (string) $exceededCount : null;
-        });
+        }) ?: null;
     }
 
     public static function getNavigationBadgeColor(): ?string

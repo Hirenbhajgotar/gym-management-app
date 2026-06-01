@@ -73,7 +73,7 @@ class ExpenseCategory extends Model implements Sortable
 {
     use HasFactory, LogsActivity, SortableTrait;
 
-    public const NAVIGATION_BADGE_CACHE_KEY = 'expense_category_navigation_badge_count_';
+    public const NAVIGATION_BADGE_CACHE_KEY = 'nav_badge:expense_category:tenant_id:';
 
     protected $fillable = [
         'gym_id',

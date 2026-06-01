@@ -63,27 +63,22 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
 
     private function getUsageStats(): array
     {
-        $gymId = $this->getGymId();
-        $startOfMonth = now()->startOfMonth();
+        $stats = WhatsAppUsageLog::where('gym_id', $this->getGymId())
+            ->where('sent_at', '>=', now()->startOfMonth())
+            ->selectRaw('
+                COUNT(*) as messages_this_month,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as failed
+            ', ['delivered', 'failed'])
+            ->first();
 
-        $messages = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->count();
-
-        $delivered = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->where('status', 'delivered')
-            ->count();
-
-        $failed = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->where('status', 'failed')
-            ->count();
+        $messages = (int) $stats->messages_this_month;
+        $delivered = (int) $stats->delivered;
 
         return [
             'messages_this_month' => $messages,
             'delivered' => $delivered,
-            'failed' => $failed,
+            'failed' => (int) $stats->failed,
             'delivery_rate' => $messages > 0 ? round(($delivered / $messages) * 100, 1) : 0,
         ];
     }

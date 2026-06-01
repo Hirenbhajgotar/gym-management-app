@@ -35,11 +35,9 @@ class WhatsAppTemplateResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(30), now()->addHour()], function () {
-            $count = static::getModel()::whereNull('gym_id')->isDefault()->count();
-
-            return $count > 0 ? (string) $count : null;
-        });
+        return Cache::flexible(WhatsAppTemplate::SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY, [1800, 3600], function () {
+            return (string) static::getModel()::whereNull('gym_id')->isDefault()->count();
+        }) ?: null;
     }
 
     public static function getEloquentQuery(): Builder

@@ -18,8 +18,11 @@ use Filament\Support\Facades\FilamentColor;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -38,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Model::preventLazyLoading(! app()->isProduction());
+
         FilamentColor::register([
             'primary' => Color::Amber,
             'success' => Color::Green,
@@ -58,6 +63,13 @@ class AppServiceProvider extends ServiceProvider
         // This loads only current gym's permissions (~500) instead of all (35k+)
         $this->app->singleton(PermissionRegistrar::class, function ($app) {
             return new TeamPermissionRegistrar($app['cache']);
+        });
+
+        // Global Rate Limiter for WhatsApp messages
+        // Limit per second: 30 messages
+        // Key: whatsapp-outbound-limit
+        RateLimiter::for('whatsapp-outbound-limit', function (object $job) {
+            return Limit::perSecond(30)->by('whatsapp-gateway');
         });
 
         FacadesEvent::listen(

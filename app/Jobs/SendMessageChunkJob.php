@@ -9,6 +9,7 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Queue\Middleware\RateLimitedWithRedis;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +52,11 @@ class SendMessageChunkJob implements ShouldQueue
     public function backoff(): array
     {
         return [2, 4, 8, 16, 30, $this->maxBackoff];
+    }
+
+    public function middleware(): array
+    {
+        return [new RateLimitedWithRedis('whatsapp-outbound-limit')];
     }
 
     /**

@@ -47,19 +47,16 @@ class WhatsAppTemplateResource extends Resource
             return null;
         }
 
-        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addMinutes(30), now()->addHour()], function () use ($tenant) {
-            $query = static::getModel()::query()
+        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [1800, 3600], function () use ($tenant) {
+            return (string) static::getModel()::query()
                 ->where(function ($query) use ($tenant) {
                     $query->where('gym_id', $tenant->id);
                     if (config('services.twilio.use_sandbox')) {
                         $query->orWhereNull('gym_id');
                     }
-                });
-
-            $count = $query->count();
-
-            return $count > 0 ? (string) $count : null;
-        });
+                })
+                ->count();
+        }) ?: null;
     }
 
     public static function isScopedToTenant(): bool
