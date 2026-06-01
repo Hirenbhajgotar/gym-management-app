@@ -41,13 +41,15 @@ services:
     container_name: gym-db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE} # Changed to match your previous database name
+      MYSQL_DATABASE: ${DB_DATABASE} # Changed to match your previous database name
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_TEST_DATABASE: ${MYSQL_TEST_DATABASE:-gym_app_test}
     ports:
       - "3307:3306"
     volumes:
       - db-data:/var/lib/mysql
+      - ./docker/mysql-test-init:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
 
