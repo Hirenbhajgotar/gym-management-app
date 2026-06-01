@@ -33,6 +33,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Js;
 
 class BiometricDeviceResource extends Resource
@@ -53,9 +54,9 @@ class BiometricDeviceResource extends Resource
             return null;
         }
 
-        $count = BiometricDevice::where('gym_id', $tenant->id)->count();
-
-        return $count > 0 ? $count : null;
+        return Cache::flexible(BiometricDevice::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [1800, 3600], function () use ($tenant) {
+            return (string) static::getModel()::where('gym_id', $tenant->id)->count();
+        }) ?: null;
     }
 
     public static function canAccess(array $parameters = []): bool

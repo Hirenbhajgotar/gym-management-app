@@ -222,7 +222,7 @@ class Gym extends Model
     /**
      * Get the gym owner user
      */
-    public function owner()
+    public function owner(): ?User
     {
         return $this->users()
             ->wherePivot('role', DefaultRole::GYM_OWNER->value)

@@ -222,11 +222,9 @@ class ErrorReportResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(ErrorReport::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            $count = self::getBadgeData()['count'];
-
-            return $count > 0 ? (string) $count : null;
-        });
+        return Cache::flexible(ErrorReport::NAVIGATION_BADGE_CACHE_KEY, [21600, 604800], function () {
+            return (string) self::getBadgeData()['count'];
+        }) ?: null;
     }
 
     public static function getNavigationBadgeColor(): ?string

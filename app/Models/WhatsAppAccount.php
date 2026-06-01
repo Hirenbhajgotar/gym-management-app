@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Observers\WhatsAppAccountObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -21,8 +21,6 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $twilio_auth_token
  * @property string|null $waba_id
  * @property string|null $waba_name
- * @property WabaStatusEnum|null $waba_status
- * @property WabaModeEnum|null $waba_mode
  * @property string|null $messaging_service_sid
  * @property string|null $verify_service_sid
  * @property string|null $meta_business_portfolio_id
@@ -34,11 +32,12 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $business_name
  * @property string|null $business_email
  * @property string|null $business_description
+ * @property WhatsAppProviderTypeEnum|null $provider_type
  * @property \Illuminate\Support\Carbon|null $verified_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppPhoneNumber> $phoneNumber
+ * @property-read \App\Models\WhatsAppPhoneNumber|null $phoneNumber
  * @property-read int|null $phone_number_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppTemplate> $templates
  * @property-read int|null $templates_count
@@ -65,16 +64,10 @@ use Illuminate\Support\Facades\Crypt;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifyServiceSid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaMode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaStatus($value)
  * @method bool isActive()
  * @method bool isVerified()
  * @method bool hasPhoneNumber()
- * @method \App\Models\WhatsAppPhoneNumber|null getPhoneNumber()
- * @method bool hasIndividualWaba()
- * @method bool hasSharedWaba()
- * @method bool hasManualWaba()
  * @method bool isEmbeddedSignupComplete()
  * @method bool isWabaActive()
  * @method bool isWabaRestricted()
@@ -95,8 +88,6 @@ class WhatsAppAccount extends Model
         'twilio_auth_token',
         'waba_id',
         'waba_name',
-        'waba_status',
-        'waba_mode',
         'messaging_service_sid',
         'verify_service_sid',
         'meta_business_portfolio_id',
@@ -109,6 +100,7 @@ class WhatsAppAccount extends Model
         'business_email',
         'business_description',
         'verified_at',
+        'provider_type',
     ];
 
     protected $hidden = [
@@ -121,10 +113,10 @@ class WhatsAppAccount extends Model
         return [
             'status' => WhatsAppAccountStatusEnum::class,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::class,
-            'waba_status' => WabaStatusEnum::class,
-            'waba_mode' => WabaModeEnum::class,
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
+            'provider_type' => WhatsAppProviderTypeEnum::class,
+            'waba_status_synced_at' => 'datetime',
         ];
     }
 
@@ -137,9 +129,9 @@ class WhatsAppAccount extends Model
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
-    public function phoneNumber(): HasMany
+    public function phoneNumber(): HasOne
     {
-        return $this->hasMany(WhatsAppPhoneNumber::class, 'whatsapp_account_id');
+        return $this->hasOne(WhatsAppPhoneNumber::class, 'whatsapp_account_id');
     }
 
     public function templates(): HasMany
@@ -185,29 +177,19 @@ class WhatsAppAccount extends Model
         return $this->verification_status === WhatsAppAccountVerificationStatusEnum::VERIFIED;
     }
 
+    public function isInReview(): bool
+    {
+        return $this->verification_status === WhatsAppAccountVerificationStatusEnum::IN_REVIEW;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->verification_status === WhatsAppAccountVerificationStatusEnum::REJECTED;
+    }
+
     public function hasPhoneNumber(): bool
     {
         return $this->phoneNumber()->exists();
-    }
-
-    public function getPhoneNumber(): ?WhatsAppPhoneNumber
-    {
-        return $this->phoneNumber()->first();
-    }
-
-    public function hasIndividualWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::INDIVIDUAL;
-    }
-
-    public function hasSharedWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::SHARED;
-    }
-
-    public function hasManualWaba(): bool
-    {
-        return $this->waba_mode === WabaModeEnum::MANUAL;
     }
 
     public function isEmbeddedSignupComplete(): bool
@@ -217,20 +199,149 @@ class WhatsAppAccount extends Model
 
     public function isWabaActive(): bool
     {
-        return $this->waba_status === WabaStatusEnum::ACTIVE;
+        return $this->status === WhatsAppAccountStatusEnum::ACTIVE;
     }
 
     public function isWabaRestricted(): bool
     {
-        return $this->waba_status === WabaStatusEnum::RESTRICTED
-            || $this->waba_status === WabaStatusEnum::BANNED;
+        return $this->status === WhatsAppAccountStatusEnum::RESTRICTED
+            || $this->status === WhatsAppAccountStatusEnum::BANNED;
+    }
+
+    public function isWabaSuspended(): bool
+    {
+        return $this->status === WhatsAppAccountStatusEnum::SUSPENDED;
+    }
+
+    public function isWabaBlocked(): bool
+    {
+        return $this->status === WhatsAppAccountStatusEnum::BLOCKED;
     }
 
     public function isSetupComplete(): bool
     {
-        return $this->isActive()
-            && $this->twilio_account_sid
-            && $this->twilio_auth_token
-            && $this->messaging_service_sid;
+        if (! $this->isActive()) {
+            return false;
+        }
+
+        if ($this->isWabaProvider()) {
+            return $this->waba_id !== null
+                && $this->isVerified()
+                && $this->hasPhoneNumber();
+        }
+
+        if ($this->isTwilioProvider()) {
+            return $this->twilio_account_sid !== null
+                && $this->twilio_auth_token !== null
+                && $this->hasPhoneNumber();
+        }
+
+        return false;
+    }
+
+    // =========================
+    // Provider Helper Methods (Per-Tenant)
+    // =========================
+
+    /**
+     * Get the provider type for this account.
+     * Defaults to WABA for backward compatibility.
+     */
+    public function getProvider(): WhatsAppProviderTypeEnum
+    {
+        return $this->provider_type ?? WhatsAppProviderTypeEnum::WABA;
+    }
+
+    /**
+     * Check if this account uses Twilio provider.
+     */
+    public function isTwilioProvider(): bool
+    {
+        return $this->getProvider() === WhatsAppProviderTypeEnum::TWILIO;
+    }
+
+    /**
+     * Check if this account uses WABA provider.
+     */
+    public function isWabaProvider(): bool
+    {
+        return $this->getProvider() === WhatsAppProviderTypeEnum::WABA;
+    }
+
+    /**
+     * Check if provider type has been set.
+     */
+    public function hasProvider(): bool
+    {
+        return $this->provider_type !== null;
+    }
+
+    /**
+     * Get the primary phone number ID based on provider.
+     * Uses the whatsapp_phone_numbers table relationship.
+     */
+    public function getPhoneNumberId(): ?string
+    {
+        $phoneNumber = $this->phoneNumber;
+
+        if (! $phoneNumber) {
+            return null;
+        }
+
+        // For Twilio, use phone_number_sid; for WABA, could use channel_sender_sid
+        return $this->isTwilioProvider()
+            ? $phoneNumber->phone_number_sid
+            : $phoneNumber->waba_phone_number_id;
+    }
+
+    /**
+     * Check if WABA setup is required.
+     * (WABA provider selected but no WABA configured yet)
+     */
+    public function requiresWabaSetup(): bool
+    {
+        return $this->isWabaProvider() && empty($this->waba_id);
+    }
+
+    /**
+     * Check if Twilio setup is required.
+     * (Twilio provider selected, no subaccount or no phone number)
+     */
+    public function requiresTwilioSetup(): bool
+    {
+        return $this->isTwilioProvider()
+            && (empty($this->twilio_account_sid) || ! $this->hasPhoneNumber());
+    }
+
+    /**
+     * Set provider type and save.
+     */
+    public function setProvider(WhatsAppProviderTypeEnum $provider): void
+    {
+        $this->update(['provider_type' => $provider]);
+    }
+
+    public function isTwilioWithActiveNumber(): bool
+    {
+        if (! $this->isTwilioProvider()) {
+            return false;
+        }
+
+        $phoneNumber = $this->phoneNumber;
+
+        if (! $phoneNumber) {
+            return false;
+        }
+
+        return $phoneNumber->isActive();
+    }
+
+    public function isPhoneSurchargeDue(): bool
+    {
+        if (! $this->isTwilioWithActiveNumber()) {
+            return false;
+        }
+
+        return $this->phoneNumber->isSurchargeDue();
     }
 }

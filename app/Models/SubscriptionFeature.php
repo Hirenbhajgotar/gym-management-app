@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\PlanFeature $planFeature
  * @property-read \App\Models\Subscription $subscription
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature query()
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature whereSubscriptionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionFeature whereValue($value)
+ *
  * @mixin \Eloquent
  */
 class SubscriptionFeature extends Model

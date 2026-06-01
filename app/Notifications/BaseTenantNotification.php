@@ -17,6 +17,17 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
     protected Gym $gym;
 
     /**
+     * Determine if this is a system message sent by super-admin.
+     *
+     * When true, the WhatsApp provider will use Twilio instead of owner's WABA.
+     * Override in specific notifications for system-level messages.
+     */
+    public function isSystemMessage(): bool
+    {
+        return false;
+    }
+
+    /**
      * Get the notification's delivery channels.
      */
     public function via(object $notifiable): array
@@ -45,7 +56,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getGymWhatsAppConfig(): ?array
     {
-        $whatsAppAccount = $this->gym->whatsAppAccount;
+        $whatsAppAccount = $this->gym?->whatsAppAccount;
 
         if (! $whatsAppAccount) {
             return null;
@@ -56,8 +67,8 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
         }
 
         return [
-            'from_number' => $whatsAppAccount->getPhoneNumber()->phone_number,
-            'provider' => 'twilio',
+            'from_number' => $whatsAppAccount->phoneNumber?->phone_number ?? null,
+            'provider' => $whatsAppAccount->getProvider(),
         ];
     }
 
@@ -74,7 +85,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getWhatsAppTemplate(string $name): ?object
     {
-        $templateManager = new WhatsAppTemplateManager($this->gym->id);
+        $templateManager = new WhatsAppTemplateManager((string) $this->gym->id);
 
         return $templateManager->getTemplate($name);
     }

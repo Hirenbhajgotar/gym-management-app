@@ -8,20 +8,9 @@ use App\Listeners\HandleConsentRevoked;
 use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
-use App\Models\Attendances;
-use App\Models\Expense;
 use App\Models\Gym;
-use App\Models\MemberPayment;
-use App\Models\ReportGoal;
-use App\Models\Subscription;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
-use App\Observers\AttendanceObserver;
-use App\Observers\ExpenseObserver;
-use App\Observers\GymObserver;
-use App\Observers\MemberPaymentObserver;
-use App\Observers\ReportGoalObserver;
-use App\Observers\SubscriptionObserver;
 use App\Permissions\TeamPermissionRegistrar;
 use Filament\Events\TenantSet;
 use Filament\Support\Colors\Color;
@@ -29,8 +18,11 @@ use Filament\Support\Facades\FilamentColor;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -49,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Model::preventLazyLoading(! app()->isProduction());
+
         FilamentColor::register([
             'primary' => Color::Amber,
             'success' => Color::Green,
@@ -71,12 +65,12 @@ class AppServiceProvider extends ServiceProvider
             return new TeamPermissionRegistrar($app['cache']);
         });
 
-        Gym::observe(GymObserver::class);
-        Subscription::observe(SubscriptionObserver::class);
-        Expense::observe(ExpenseObserver::class);
-        ReportGoal::observe(ReportGoalObserver::class);
-        Attendances::observe(AttendanceObserver::class);
-        MemberPayment::observe(MemberPaymentObserver::class);
+        // Global Rate Limiter for WhatsApp messages
+        // Limit per second: 30 messages
+        // Key: whatsapp-outbound-limit
+        RateLimiter::for('whatsapp-outbound-limit', function (object $job) {
+            return Limit::perSecond(30)->by('whatsapp-gateway');
+        });
 
         FacadesEvent::listen(
             TenantSet::class,

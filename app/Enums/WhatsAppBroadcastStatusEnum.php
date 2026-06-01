@@ -12,6 +12,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
     case SENDING = 'sending';
     case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';
+    case FAILED = 'failed';
 
     public function getLabel(): ?string
     {
@@ -21,6 +22,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
             self::SENDING => 'Sending',
             self::COMPLETED => 'Completed',
             self::CANCELLED => 'Cancelled',
+            self::FAILED => 'Failed',
         };
     }
 
@@ -32,6 +34,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
             self::SENDING => 'warning',
             self::COMPLETED => 'success',
             self::CANCELLED => 'danger',
+            self::FAILED => 'danger',
         };
     }
 }

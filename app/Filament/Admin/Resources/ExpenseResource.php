@@ -410,11 +410,11 @@ class ExpenseResource extends Resource
         /** @var \App\Models\Gym $gym */
         $gym = Filament::getTenant();
 
-        return Cache::flexible(Expense::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [now()->addHour(), now()->addDay()], function () use ($gym) {
+        return Cache::flexible(Expense::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {
             return (string) static::getModel()::where('gym_id', $gym?->id)
                 ->where('status', ExpenseStatus::PENDING)
-                ->count() ?: null;
-        });
+                ->count();
+        }) ?: null;
     }
 
     public static function getNavigationBadgeColor(): ?string

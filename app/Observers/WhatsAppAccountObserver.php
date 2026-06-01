@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\WhatsAppAccount;
+use App\Providers\WhatsAppProviderFactory;
 
 class WhatsAppAccountObserver
 {
@@ -13,6 +14,7 @@ class WhatsAppAccountObserver
     public function created(WhatsAppAccount $whatsAppAccount): void
     {
         $this->clearCache($whatsAppAccount);
+        $this->clearFactoryCache($whatsAppAccount);
     }
 
     /**
@@ -21,6 +23,7 @@ class WhatsAppAccountObserver
     public function updated(WhatsAppAccount $whatsAppAccount): void
     {
         $this->clearCache($whatsAppAccount);
+        $this->clearFactoryCache($whatsAppAccount);
     }
 
     /**
@@ -29,6 +32,7 @@ class WhatsAppAccountObserver
     public function deleted(WhatsAppAccount $whatsAppAccount): void
     {
         $this->clearCache($whatsAppAccount);
+        $this->clearFactoryCache($whatsAppAccount);
     }
 
     /**
@@ -37,6 +41,7 @@ class WhatsAppAccountObserver
     public function restored(WhatsAppAccount $whatsAppAccount): void
     {
         $this->clearCache($whatsAppAccount);
+        $this->clearFactoryCache($whatsAppAccount);
     }
 
     /**
@@ -45,6 +50,7 @@ class WhatsAppAccountObserver
     public function forceDeleted(WhatsAppAccount $whatsAppAccount): void
     {
         $this->clearCache($whatsAppAccount);
+        $this->clearFactoryCache($whatsAppAccount);
     }
 
     private function clearCache(WhatsAppAccount $whatsAppAccount): void
@@ -52,5 +58,11 @@ class WhatsAppAccountObserver
         ParserHelper::clearCache([
             WhatsAppAccount::NAVIGATION_BADGE_CACHE_KEY,
         ]);
+    }
+
+    private function clearFactoryCache(WhatsAppAccount $whatsAppAccount): void
+    {
+        // Clear provider factory cache when account changes
+        WhatsAppProviderFactory::invalidateProviderCache($whatsAppAccount->gym_id);
     }
 }

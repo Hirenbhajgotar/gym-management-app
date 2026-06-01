@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\WabaModeEnum;
-use App\Enums\WabaStatusEnum;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Helpers\ParserHelper;
@@ -18,6 +16,9 @@ use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 use Twilio\Rest\Messaging\V2\ChannelsSenderModels;
 
+/**
+ * @deprecated: This class is deprecated and will be removed in a future version.
+ */
 class TwilioAccountManager
 {
     protected Client $masterClient;
@@ -161,7 +162,6 @@ class TwilioAccountManager
         if (! $account->waba_id) {
             $account->update([
                 'waba_id' => $this->sharedWabaId,
-                'waba_mode' => WabaModeEnum::SHARED->value,
             ]);
         }
 
@@ -178,17 +178,10 @@ class TwilioAccountManager
             ]);
         }
 
-        Log::info('Shared WABA setup completed', [
-            'gym_id' => $gymId,
-            'waba_id' => $account->waba_id,
-            'messaging_service_sid' => $account->messaging_service_sid,
-        ]);
-
         return [
             'success' => true,
             'waba_id' => $account->waba_id,
             'messaging_service_sid' => $account->messaging_service_sid,
-            'waba_mode' => 'shared',
             'message' => 'Shared WABA created successfully',
         ];
     }
@@ -196,8 +189,7 @@ class TwilioAccountManager
     protected function createIndividualWaba(WhatsAppAccount $account, int $gymId, Client $subClient, array $businessProfile): array
     {
         $account->update([
-            'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-            'waba_status' => WabaStatusEnum::PENDING->value,
+            'status' => WhatsAppAccountStatusEnum::PENDING,
         ]);
 
         if (! $account->messaging_service_sid) {
@@ -213,16 +205,9 @@ class TwilioAccountManager
             ]);
         }
 
-        Log::info('Individual WABA setup initiated', [
-            'gym_id' => $gymId,
-            'messaging_service_sid' => $account->messaging_service_sid,
-            'requires_embedded_signup' => true,
-        ]);
-
         return [
             'success' => true,
             'messaging_service_sid' => $account->messaging_service_sid,
-            'waba_mode' => 'individual',
             'requires_embedded_signup' => true,
             'message' => 'Please complete Embedded Signup to connect your WABA',
         ];
@@ -251,20 +236,13 @@ class TwilioAccountManager
 
             $account->update([
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::INDIVIDUAL->value,
-                'waba_status' => WabaStatusEnum::PENDING->value,
+                'status' => WhatsAppAccountStatusEnum::PENDING,
                 'embedded_signup_completed' => true,
             ]);
 
             if ($metaAccessToken) {
                 $account->update(['meta_access_token' => $metaAccessToken]);
             }
-
-            Log::info('Individual WABA connected', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'sender_sid' => $senderSid,
-            ]);
 
             return [
                 'success' => true,
@@ -287,7 +265,7 @@ class TwilioAccountManager
         }
     }
 
-    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null): array
+    public function connectManualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null, ?string $phoneNumberId = null, ?array $businessData = null): array
     {
         try {
             $account = $this->getAccountOrFail($gymId);
@@ -336,8 +314,6 @@ class TwilioAccountManager
             // 5. Update account details
             $updateData = [
                 'waba_id' => $wabaId,
-                'waba_mode' => WabaModeEnum::MANUAL,
-                'waba_status' => WabaStatusEnum::PENDING,
                 'embedded_signup_completed' => false,
                 'status' => WhatsAppAccountStatusEnum::PENDING,
             ];
@@ -347,13 +323,6 @@ class TwilioAccountManager
             }
 
             $account->update($updateData);
-
-            Log::info('Manual WABA and Phone Number connected', [
-                'gym_id' => $gymId,
-                'waba_id' => $wabaId,
-                'phone_number' => $phoneNumber,
-                'sender_sid' => $senderSid,
-            ]);
 
             return [
                 'success' => true,
@@ -376,17 +345,6 @@ class TwilioAccountManager
         }
     }
 
-    public function getWabaMode(int $gymId): string
-    {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
-
-        if (! $account) {
-            return 'not_created';
-        }
-
-        return $account->waba_mode?->value ?? 'shared';
-    }
-
     public function requiresEmbeddedSignup(int $gymId): bool
     {
         $account = WhatsAppAccount::where('gym_id', $gymId)->first();
@@ -395,7 +353,7 @@ class TwilioAccountManager
             return false;
         }
 
-        return $account->hasIndividualWaba() && ! $account->isEmbeddedSignupComplete();
+        return $account->isWabaProvider() && ! $account->isEmbeddedSignupComplete();
     }
 
     public function searchNumbers(string $country, string $type = 'local', int $limit = 5): array
@@ -808,7 +766,6 @@ class TwilioAccountManager
         Log::info('Starting Twilio resource cleanup for gym', [
             'gym_id' => $gymId,
             'twilio_account_sid' => $account->twilio_account_sid,
-            'waba_mode' => $account->waba_mode?->value,
         ]);
 
         // Step 1: Remove phone numbers from messaging service and release them

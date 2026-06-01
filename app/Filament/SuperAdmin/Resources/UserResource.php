@@ -48,8 +48,8 @@ class UserResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return cache()->flexible(User::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            $count = static::getModel()::query()
+        return cache()->flexible(User::NAVIGATION_BADGE_CACHE_KEY, [21600, 604800], function () {
+            return (string) static::getModel()::query()
                 ->whereExists(function ($query) {
                     $query
                         ->select(DB::raw(1))
@@ -73,9 +73,7 @@ class UserResource extends Resource
                         ->where('roles.name', '=', 'gym_owner');
                 })
                 ->count();
-
-            return $count > 0 ? $count : null;
-        });
+        }) ?: null;
     }
 
     public static function form(Form $form): Form

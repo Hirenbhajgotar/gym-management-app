@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
+/**
+ * @deprecated: This class is deprected and will be removed in future version.
+ */
 class TwilioWhatsAppService implements WhatsAppServiceInterface
 {
     private string $tenantId;
@@ -300,7 +303,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
         return new Client(
             $account->twilio_account_sid,
-            $account->getRawOriginal('twilio_auth_token'),
+            $account->twilio_auth_token,
         );
     }
 

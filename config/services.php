@@ -51,14 +51,6 @@ return [
         'business_account_id' => env('INSTAGRAM_BUSINESS_ACCOUNT_ID'),
     ],
 
-    'whatsapp' => [
-        'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
-        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
-        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
-        'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
-        'api_version' => env('WHATSAPP_API_VERSION', 'v18.0'),
-    ],
-
     'indiamart' => [
         'client_id' => env('INDIAMART_CLIENT_ID'),
         'client_secret' => env('INDIAMART_CLIENT_SECRET'),
@@ -74,6 +66,27 @@ return [
         'webhook_secret' => env('JUSTDIAL_WEBHOOK_SECRET'),
     ],
 
+    'whatsapp' => [
+        // Provider selection: 'twilio' or 'waba' (Meta WhatsApp Business API)
+        'default_provider' => env('WHATSAPP_DEFAULT_PROVIDER', 'waba'),
+
+        'business_account_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'api_version' => env('META_API_VERSION', 'v25.0'),
+        'welcome_credits' => env('WHATSAPP_WELCOME_CREDITS', 50),
+        'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+    ],
+
+    'meta' => [
+        'app_id' => env('META_APP_ID'),
+        'app_secret' => (string) env('META_APP_SECRET'),
+        'api_version' => env('META_API_VERSION', 'v25.0'),
+        'redirect_uri' => rtrim(config('app.url'), '/') . '/' . ltrim(env('META_REDIRECT_URI', '') ?: '/whatsapp/embedded-signup/callback', '/'),
+        'config_id' => env('META_CONFIG_ID'),
+        'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+    ],
+
     'twilio' => [
         'master_sid' => env('TWILIO_ACCOUNT_SID'),
         'master_token' => env('TWILIO_AUTH_TOKEN'),
@@ -84,24 +97,18 @@ return [
         // Feature Flags
         'use_individual_waba' => env('TWILIO_USE_INDIVIDUAL_WABA', false),
         'embedded_signup_enabled' => env('TWILIO_EMBEDDED_SIGNUP_ENABLED', false),
-
-        // Meta/Facebook Integration for Embedded Signup
-        'meta' => [
-            'app_id' => env('META_APP_ID'),
-            'app_secret' => env('META_APP_SECRET'),
-            'api_version' => env('META_API_VERSION', 'v19.0'),
-            'redirect_uri' => env('APP_URL') . env('META_REDIRECT_URI'),
-            'config_id' => env('META_CONFIG_ID'),
-        ],
+        'webhook_verify_token' => env('TWILIO_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
 
         // Sandbox Settings
         'use_sandbox' => env('TWILIO_USE_SANDBOX', false),
         'sandbox_number' => env('TWILIO_SANDBOX_NUMBER', '+15557626186'),
         'sandbox_recipient_number' => env('TWILIO_SANDBOX_RECIPIENT_NUMBER'),
 
-        'cost_per_message' => env('TWILIO_COST_PER_MESSAGE', 1.53),
-        'number_cost' => env('TWILIO_NUMBER_COST', 136.41),
-        'margin_percentage' => env('TWILIO_MARGIN_PERCENTAGE', 0.10),
+        'cost_per_message' => (float) env('TWILIO_COST_PER_MESSAGE', 1.53),
+        'number_cost' => (float) env('TWILIO_NUMBER_COST', 136.41),
+        'margin_percentage' => (float) env('TWILIO_MARGIN_PERCENTAGE', 0.10),
+        'exchange_rate' => (float) env('TWILIO_EXCHANGE_RATE', 90.0),
+        'number_surcharge_days' => (int) env('TWILIO_NUMBER_SURCHARGE_DAYS', 30),
 
         // Pre-approved Template SIDs
         'whatsapp_integration_active_v5_template_sid' => env('TWILIO_WHATSAPP_INTEGRATION_ACTIVE_V5_TEMPLATE_SID', 'HX8285885c2d7330f26cb8c97a4b586d1a'),
@@ -116,7 +123,7 @@ return [
     'razorpay' => [
         'key_id' => env('RAZORPAY_KEY_ID'),
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
-        'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+        'webhook_secret' => (string) env('RAZORPAY_WEBHOOK_SECRET'),
     ],
 
     'otp' => [

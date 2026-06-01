@@ -15,6 +15,11 @@
     "skills": [
         "fluxui-development",
         "volt-development",
-        "tailwindcss-development"
+        "tailwindcss-development",
+        "frontend-design",
+        "laravel-best-practices",
+        "laravel-security",
+        "laravel-specialist",
+        "phpunit-best-practices"
     ]
 }

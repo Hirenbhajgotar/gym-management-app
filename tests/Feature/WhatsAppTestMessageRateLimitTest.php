@@ -91,7 +91,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
         parent::tearDown();
     }
 
-    
     public function user_can_send_test_message(): void
     {
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -111,7 +110,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
             ->assertNotified('Test Message Sent!');
     }
 
-    
     public function user_can_send_multiple_test_messages(): void
     {
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -133,7 +131,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
         }
     }
 
-    
     public function failed_test_message_shows_error_notification(): void
     {
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -152,7 +149,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
             ->assertNotified('Failed to Send');
     }
 
-    
     public function test_message_requires_phone_number(): void
     {
         Livewire::actingAs($this->user)
@@ -161,7 +157,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
             ->assertNotified('Failed to Send');
     }
 
-    
     public function test_message_handles_exception_from_service(): void
     {
         $mock = Mockery::mock(TwilioWhatsAppService::class);
@@ -177,7 +172,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
             ->assertNotified('Failed to Send');
     }
 
-    
     public function different_users_can_send_test_messages_independently(): void
     {
         $anotherUser = User::factory()
@@ -210,7 +204,6 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
             ->assertNotified('Test Message Sent!');
     }
 
-    
     public function test_message_only_available_on_active_account(): void
     {
         // Account is in onboarding state (no account at all)

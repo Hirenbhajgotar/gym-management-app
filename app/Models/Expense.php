@@ -53,6 +53,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read mixed $formatted_amount
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\User $user
+ *
  * @method static Builder<static>|Expense approved()
  * @method static Builder<static>|Expense draft()
  * @method static Builder<static>|Expense dueSoon(int $days = 7)
@@ -94,6 +95,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static>|Expense whereUserId($value)
  * @method static Builder<static>|Expense whereVendorContact($value)
  * @method static Builder<static>|Expense whereVendorName($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([ExpenseObserver::class])]

@@ -39,11 +39,9 @@ class WhatsAppAccountResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(WhatsAppAccount::NAVIGATION_BADGE_CACHE_KEY, [now()->addMinutes(30), now()->addHour()], function () {
-            $count = static::getModel()::count();
-
-            return $count > 0 ? (string) $count : null;
-        });
+        return Cache::flexible(WhatsAppAccount::NAVIGATION_BADGE_CACHE_KEY, [1800, 3600], function () {
+            return (string) static::getModel()::count();
+        }) ?: null;
     }
 
     public static function table(Table $table): Table

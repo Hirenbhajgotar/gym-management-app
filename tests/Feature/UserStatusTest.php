@@ -11,7 +11,6 @@ class UserStatusTest extends TestCase
 {
     use RefreshDatabase;
 
-    
     public function user_is_active_is_synced_from_status_on_creation()
     {
         $user = User::factory()->create([
@@ -30,7 +29,6 @@ class UserStatusTest extends TestCase
         $this->assertEquals(UserStatus::INACTIVE, $inactiveUser->status);
     }
 
-    
     public function user_is_active_is_synced_from_status_on_update()
     {
         $user = User::factory()->create([
@@ -51,7 +49,6 @@ class UserStatusTest extends TestCase
         $this->assertTrue($user->fresh()->is_active);
     }
 
-    
     public function active_scope_queries_status_column()
     {
         $activeUser = User::factory()->create(['status' => UserStatus::ACTIVE, 'email' => 'active@test.com']);
@@ -63,7 +60,6 @@ class UserStatusTest extends TestCase
         $this->assertFalse($activeUsers->contains($inactiveUser));
     }
 
-    
     public function is_active_accessor_works_correctly()
     {
         $user = User::factory()->create(['status' => UserStatus::ACTIVE]);

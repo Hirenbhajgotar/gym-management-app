@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'redis'),
 
     /*
     |--------------------------------------------------------------------------
@@ -73,6 +73,18 @@ return [
         ],
 
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Named Queues
+    |--------------------------------------------------------------------------
+    |
+    | Pre-configured queue names for specific job types.
+    | Used by jobs via config('queue.broadcast_queue').
+    |
+    */
+
+    'broadcast_queue' => env('BROADCAST_QUEUE', 'broadcast'),
 
     /*
     |--------------------------------------------------------------------------

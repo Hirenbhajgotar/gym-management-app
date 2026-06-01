@@ -63,27 +63,22 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
 
     private function getUsageStats(): array
     {
-        $gymId = $this->getGymId();
-        $startOfMonth = now()->startOfMonth();
+        $stats = WhatsAppUsageLog::where('gym_id', $this->getGymId())
+            ->where('sent_at', '>=', now()->startOfMonth())
+            ->selectRaw('
+                COUNT(*) as messages_this_month,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as failed
+            ', ['delivered', 'failed'])
+            ->first();
 
-        $messages = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->count();
-
-        $delivered = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->where('status', 'delivered')
-            ->count();
-
-        $failed = WhatsAppUsageLog::where('gym_id', $gymId)
-            ->where('sent_at', '>=', $startOfMonth)
-            ->where('status', 'failed')
-            ->count();
+        $messages = (int) $stats->messages_this_month;
+        $delivered = (int) $stats->delivered;
 
         return [
             'messages_this_month' => $messages,
             'delivered' => $delivered,
-            'failed' => $failed,
+            'failed' => (int) $stats->failed,
             'delivery_rate' => $messages > 0 ? round(($delivered / $messages) * 100, 1) : 0,
         ];
     }
@@ -150,59 +145,59 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
             ->statePath('data');
     }
 
-    public function sendTestMessageAction(): Action
-    {
-        return Action::make('sendTestMessage')
-            ->label('Send Test Message')
-            ->color('info')
-            ->form([
-                PhoneInput::make('phone_number')
-                    ->label('Phone Number')
-                    ->required()
-                    ->defaultCountry('IN')
-                    ->placeholder('+91 XXXXX XXXXX'),
-            ])
-            ->action(fn (array $data) => $this->sendTestMessage($data));
-    }
+    // public function sendTestMessageAction(): Action
+    // {
+    //     return Action::make('sendTestMessage')
+    //         ->label('Send Test Message')
+    //         ->color('info')
+    //         ->form([
+    //             PhoneInput::make('phone_number')
+    //                 ->label('Phone Number')
+    //                 ->required()
+    //                 ->defaultCountry('IN')
+    //                 ->placeholder('+91 XXXXX XXXXX'),
+    //         ])
+    //         ->action(fn (array $data) => $this->sendTestMessage($data));
+    // }
 
-    private function sendTestMessage(array $data): void
-    {
-        try {
-            $phoneNumber = $data['phone_number'] ?? null;
+    // private function sendTestMessage(array $data): void
+    // {
+    //     try {
+    //         $phoneNumber = $data['phone_number'] ?? null;
 
-            if (! $phoneNumber) {
-                throw new \Exception('Phone number is required');
-            }
+    //         if (! $phoneNumber) {
+    //             throw new \Exception('Phone number is required');
+    //         }
 
-            $service = new \App\Services\TwilioWhatsAppService((string) $this->getGymId());
+    //         $service = new \App\Services\TwilioWhatsAppService((string) $this->getGymId());
 
-            $result = $service->sendTemplateMessage(
-                $phoneNumber,
-                'welcome_message',
-                [
-                    '1' => $this->getGym()?->name ?? 'Gym',
-                    '2' => Auth::user()?->name ?? 'User',
-                    '3' => 'Premium',
-                    '4' => now()->addDays(30)->format('F j, Y'),
-                ]
-            );
+    //         $result = $service->sendTemplateMessage(
+    //             $phoneNumber,
+    //             'welcome_message',
+    //             [
+    //                 '1' => $this->getGym()?->name ?? 'Gym',
+    //                 '2' => Auth::user()?->name ?? 'User',
+    //                 '3' => 'Premium',
+    //                 '4' => now()->addDays(30)->format('F j, Y'),
+    //             ]
+    //         );
 
-            if ($result['success']) {
-                Notification::make()
-                    ->title('Test Message Sent!')
-                    ->success()
-                    ->send();
-            } else {
-                throw new \Exception($result['error'] ?? 'Failed to send');
-            }
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title('Failed to Send')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
+    //         if ($result['success']) {
+    //             Notification::make()
+    //                 ->title('Test Message Sent!')
+    //                 ->success()
+    //                 ->send();
+    //         } else {
+    //             throw new \Exception($result['error'] ?? 'Failed to send');
+    //         }
+    //     } catch (\Exception $e) {
+    //         Notification::make()
+    //             ->title('Failed to Send')
+    //             ->body($e->getMessage())
+    //             ->danger()
+    //             ->send();
+    //     }
+    // }
 
     public function refresh(): void
     {

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport query()
@@ -40,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport whereTimezone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduledReport whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class ScheduledReport extends Model

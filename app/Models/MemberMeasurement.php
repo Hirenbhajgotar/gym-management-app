@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\GymMember $gymMember
  * @property-read mixed $status
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement query()
@@ -35,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement whereWeight($value)
+ *
  * @mixin \Eloquent
  */
 class MemberMeasurement extends Model

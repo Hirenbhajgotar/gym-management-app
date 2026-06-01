@@ -24,6 +24,7 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @property string|null $admin_notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact contacted()
  * @method static \Database\Factories\RequestContactFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact newModelQuery()
@@ -45,6 +46,7 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact wherePhone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUserAgent($value)
+ *
  * @mixin \Eloquent
  */
 #[ObservedBy([RequestContactObserver::class])]

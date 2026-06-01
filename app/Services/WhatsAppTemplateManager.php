@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\DTOs\WhatsAppTemplates\TemplateDbSyncResult;
+use App\DTOs\WhatsAppTemplates\TemplateFetchResult;
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Cache;
@@ -60,25 +65,25 @@ class WhatsAppTemplateManager
         );
     }
 
-    public function fetchTemplates(): array
+    public function fetchTemplates(): TemplateFetchResult
     {
         try {
             if ($this->isSystemTenant()) {
-                return [
-                    'success' => false,
-                    'error' => 'Templates are not available for system tenant',
-                    'templates' => [],
-                ];
+                return new TemplateFetchResult(
+                    success: false,
+                    error: 'Templates are not available for system tenant',
+                    templates: [],
+                );
             }
 
             $client = $this->getClient();
 
             if (! $client) {
-                return [
-                    'success' => false,
-                    'error' => 'No WhatsApp account found',
-                    'templates' => [],
-                ];
+                return new TemplateFetchResult(
+                    success: false,
+                    error: 'No WhatsApp account found',
+                    templates: [],
+                );
             }
 
             $contents = $client->content->v1->contents->read();
@@ -100,22 +105,22 @@ class WhatsAppTemplateManager
                 }
             }
 
-            return [
-                'success' => true,
-                'templates' => $templates,
-                'count' => count($templates),
-            ];
+            return new TemplateFetchResult(
+                success: true,
+                templates: $templates,
+                count: count($templates),
+            );
         } catch (\Exception $e) {
             Log::error('Failed to fetch WhatsApp templates', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,
             ]);
 
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'templates' => [],
-            ];
+            return new TemplateFetchResult(
+                success: false,
+                error: $e->getMessage(),
+                templates: [],
+            );
         }
     }
 
@@ -126,11 +131,11 @@ class WhatsAppTemplateManager
         return Cache::remember($cacheKey, now()->addHours(24), function () use ($templateName) {
             $result = $this->fetchTemplates();
 
-            if (! $result['success']) {
+            if (! $result->success) {
                 return null;
             }
 
-            foreach ($result['templates'] as $template) {
+            foreach (($result->templates ?? []) as $template) {
                 if ($template['friendly_name'] === $templateName) {
                     return $template;
                 }
@@ -140,55 +145,60 @@ class WhatsAppTemplateManager
         });
     }
 
-    public function syncTemplatesToDatabase(): array
+    public function syncTemplatesToDatabase(): TemplateDbSyncResult
     {
         try {
             if ($this->isSystemTenant()) {
-                return [
-                    'success' => false,
-                    'error' => 'Templates are not available for system tenant',
-                ];
+                return new TemplateDbSyncResult(
+                    success: false,
+                    error: 'Templates are not available for system tenant',
+                );
             }
 
             $result = $this->fetchTemplates();
 
-            if (! $result['success']) {
-                return $result;
+            if (! $result->success) {
+                return new TemplateDbSyncResult(
+                    success: false,
+                    error: $result->error,
+                );
             }
 
             $synced = 0;
-            foreach ($result['templates'] as $template) {
-                WhatsAppTemplate::updateOrCreate(
+            foreach (($result->templates ?? []) as $template) {
+                $record = WhatsAppTemplate::updateOrCreate(
                     [
                         'gym_id' => $this->tenantId,
                         'name' => $template['friendly_name'],
                     ],
                     [
-                        'twilio_template_sid' => $template['sid'],
-                        'language' => $template['language'],
                         'variables' => $template['variables'],
-                        'status' => 'approved',
+                        'status' => WhatsAppTemplateStatusEnum::APPROVED,
                         'is_active' => true,
                     ],
                 );
+                if ($record) {
+                    $record->twilio_template_sid = (string) ($template['sid'] ?? '');
+                    $record->save();
+                }
                 $synced++;
             }
 
-            return [
-                'success' => true,
-                'synced' => $synced,
-                'message' => "Successfully synced {$synced} templates",
-            ];
+            return new TemplateDbSyncResult(
+                success: true,
+                synced: $synced,
+                message: "Successfully synced {$synced} templates",
+            );
         } catch (\Exception $e) {
             Log::error('Failed to sync templates to database', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,
             ]);
 
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
+            return new TemplateDbSyncResult(
+                success: false,
+                error: $e->getMessage(),
+            );
         }
     }
 

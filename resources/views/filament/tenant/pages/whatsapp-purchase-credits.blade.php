@@ -252,6 +252,27 @@
             color: #36e27b;
         }
 
+        .wa-surcharge-info {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .dark .wa-surcharge-info {
+            border-color: #374151;
+        }
+
+        .wa-surcharge-info .surcharge-note {
+            font-size: 0.7rem;
+            color: #f59e0b;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .dark .wa-surcharge-info .surcharge-note {
+            color: #fbbf24;
+        }
+
         .wa-features {
             list-style: none;
             padding: 0;
@@ -556,7 +577,7 @@
                         <span wire:target="claimWelcomeCredits" wire:loading class="animate-spin">
                             <x-heroicon-m-arrow-path style="width: 20px; height: 20px;" />
                         </span>
-                        <span wire:target="claimWelcomeCredits" wire:loading>Claiming...</span>
+                        <span wire:target="claimWelcomeCredits" wire:loading>Loading...</span>
                         <span wire:target="claimWelcomeCredits" wire:loading.remove>Claim Free Credits</span>
                     </button>
                 @endif
@@ -599,6 +620,15 @@
                                     <span class="per-message">₹{{ number_format($package['selling_price'] / $package['message_count'], 2) }}</span>
                                 </div>
                             @endif --}}
+                            @if($this->showSurcharge)
+                                <div class="wa-surcharge-info">
+                                    <div class="row">
+                                        <span class="label">Phone Number <small>(monthly)</small></span>
+                                        <span class="value">{{ $this->getFormattedSurcharge() }}</span>
+                                    </div>
+                                    <div class="surcharge-note">One-time charge for your Twilio phone number. Charged every 30 days.</div>
+                                </div>
+                            @endif
                         </div>
 
                         <ul class="wa-features">
@@ -627,6 +657,8 @@
 
                         <button id="rzp-purchase-credits-button"
                             wire:click="selectPackage({{ $package['id'] }})"
+                            wire:loading.attr="disabled"
+                            wire:loading.class="opacity-40 pointer-events-none"
                             class="wa-btn-select {{ $isPopular ? 'primary' : 'secondary' }}">
                             <x-loading-icon target="selectPackage({{ $package['id'] }})" variant="text" name="Loading" />
 
@@ -674,64 +706,74 @@
         </div>
 
         {{-- Stats Section --}}
-        @if($creditBalance)
-            <div class="wa-stats-card">
-                <h3>Your Credit Balance</h3>
+        <div class="wa-stats-card">
+            <h3>Your Credit Balance</h3>
+            
+            <div class="wa-stats-grid">
+                <div class="wa-stat-box">
+                    <div class="label">Total Purchased</div>
+                    <div class="value">{{ number_format($creditBalance?->total_credits ?? 0) }}</div>
+                </div>
                 
-                <div class="wa-stats-grid">
-                    <div class="wa-stat-box">
-                        <div class="label">Total Purchased</div>
-                        <div class="value">{{ number_format($creditBalance->total_credits) }}</div>
+                <div class="wa-stat-box highlight">
+                    <div class="label">Available Now</div>
+                    <div class="value">{{ number_format($creditBalance?->remaining_credits ?? 0) }}</div>
+                </div>
+                
+                <div class="wa-stat-box">
+                    <div class="label">Used</div>
+                    <div class="value">{{ number_format($creditBalance?->used_credits ?? 0) }}</div>
+                </div>
+            </div>
+
+            @if($creditBalance && $creditBalance->total_credits > 0)
+                <div class="wa-progress">
+                    <div class="progress-label">
+                        <span class="label">Usage</span>
+                        <span class="value">{{ number_format($creditBalance->getUsagePercentage(), 1) }}%</span>
                     </div>
-                    
-                    <div class="wa-stat-box highlight">
-                        <div class="label">Available Now</div>
-                        <div class="value">{{ number_format($creditBalance->remaining_credits) }}</div>
-                    </div>
-                    
-                    <div class="wa-stat-box">
-                        <div class="label">Used</div>
-                        <div class="value">{{ number_format($creditBalance->used_credits) }}</div>
+                    <div class="wa-progress-bar">
+                        <div class="wa-progress-fill" style="width: {{ $creditBalance->getUsagePercentage() }}%"></div>
                     </div>
                 </div>
-
-                @if($creditBalance->total_credits > 0)
-                    <div class="wa-progress">
-                        <div class="progress-label">
-                            <span class="label">Usage</span>
-                            <span class="value">{{ number_format($creditBalance->getUsagePercentage(), 1) }}%</span>
-                        </div>
-                        <div class="wa-progress-bar">
-                            <div class="wa-progress-fill" style="width: {{ $creditBalance->getUsagePercentage() }}%"></div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 
     {{-- Razorpay Script --}}
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('open-razorpay', (data) => {
-                // Check if Razorpay is loaded
-                if (typeof Razorpay !== 'undefined') {
+        (function () {
+            function registerRazorpayListener() {
+                // Clean up previous listern to prevent duplicates
+                if (window._razorpayListenerCleanup) {
+                    window._razorpayListenerCleanup();
+                    window._razorpayListenerCleanup = null;
+                }
+
+                window._razorpayListenerCleanup = Livewire.on('open-razorpay', (data) => {
+                    console.log('Razorpay script called');
+
+                    if (typeof Razorpay === 'undefined') {
+                        console.error('Razorpay script not loaded');
+                        return;
+                    }
+
+                    console.log('Razorpay script loaded');
                     const razorpayData = data[0];
+
                     const options = {
                         key: razorpayData.key,
                         amount: razorpayData.amount * 100,
                         currency: 'INR',
-                        name: 'WhatsApp Credits',
+                        name: razorpayData.package_name,
                         description: razorpayData.package_name + ' - ' + razorpayData.message_count + ' messages',
                         order_id: razorpayData.order_id,
                         prefill: {
                             name: '{{ auth()->user()->name ?? "" }}',
                             email: '{{ auth()->user()->email ?? "" }}',
                         },
-                        theme: {
-                            color: '#36e27b'
-                        },
+                        theme: { color: '#36e27b' },
                         handler: function (response) {
                             Livewire.dispatch('handle-payment-verify', {
                                 razorpayPaymentId: response.razorpay_payment_id,
@@ -740,25 +782,25 @@
                             });
                         },
                         modal: {
-                            ondismiss: function() {
+                            ondismiss: function () {
                                 console.log('Payment modal closed by user');
                             }
                         },
-                        
                     };
-    
+
                     const rzp = new Razorpay(options);
                     rzp.open();
-                } else {
-                    console.error('Razorpay script not loaded');
-                }
-            });
+                });
+            }
 
-            // Listen for payment verification completion
-            Livewire.on('payment-verified', () => {
-                console.log('Payment verification completed');
-            });
-        });
+            // If livewire already initialized (navigated case) then directly register
+            if (window.Livewire) {
+                registerRazorpayListener();
+            }
+
+            document.addEventListener('livewire:init', registerRazorpayListener);
+            document.addEventListener('livewire:navigated', registerRazorpayListener);
+        })();
     </script>
 
 </x-filament-panels::page>

@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\WhatsAppTemplate|null $template
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog query()
@@ -38,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereTwilioMessageSid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereWhatsappTemplateId($value)
+ *
  * @mixin \Eloquent
  */
 class WhatsAppUsageLog extends Model

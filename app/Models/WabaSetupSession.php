@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession query()
@@ -34,6 +35,7 @@ use Illuminate\Support\Str;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereWabaId($value)
+ *
  * @mixin \Eloquent
  */
 class WabaSetupSession extends Model
@@ -76,7 +78,7 @@ class WabaSetupSession extends Model
         return self::create([
             'gym_id' => $gymId,
             'session_id' => Str::uuid()->toString(),
-            'status' => WabaSetupSessionStatusEnum::PENDING->value,
+            'status' => WabaSetupSessionStatusEnum::PENDING,
             'expires_at' => now()->addHours(1),
         ]);
     }

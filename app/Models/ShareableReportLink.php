@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newQuery()
@@ -36,6 +37,7 @@ use Illuminate\Support\Str;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class ShareableReportLink extends Model

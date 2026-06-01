@@ -4,6 +4,7 @@ namespace App\Livewire\Frontend;
 
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
+use App\Providers\WhatsAppProviderFactory;
 use App\Rules\ValidEmailDomain;
 use App\Services\TwilioWhatsAppService;
 use Illuminate\Support\Facades\Log;
@@ -215,33 +216,35 @@ class RequestDemo extends Component
             // or create a system tenant ID configuration
             $tenantId = config('app.system_tenant_id', 'system');
 
-            $whatsappService = new TwilioWhatsAppService($tenantId);
+            // $whatsappService = new TwilioWhatsAppService($tenantId);
 
-            $result = $whatsappService->sendMessage($adminPhone, $message, [
-                'template_sid' => config(
-                    'services.twilio.demo_request_template_sid',
-                ),
-                'template_variables' => [
-                    '1' => $requestContact->name,
-                    '2' => $requestContact->email,
-                    '3' => $requestContact->phone,
-                    '4' => $requestContact->gym_size,
-                    '5' => $requestContact->message,
-                    '6' => $requestContact->created_at->format('M d, Y H:i A'),
-                ],
-            ]);
+            // $provider = WhatsAppProviderFactory::create($tenantId);
 
-            if ($result['success']) {
-                Log::info('Demo request WhatsApp sent successfully', [
-                    'request_id' => $requestContact->id,
-                    'message_id' => $result['message_id'] ?? null,
-                ]);
-            } else {
-                Log::warning('Demo request WhatsApp failed', [
-                    'request_id' => $requestContact->id,
-                    'error' => $result['error'] ?? 'Unknown error',
-                ]);
-            }
+            // $result = $provider->sendMessage($adminPhone, $message, [
+            //     'template_sid' => config(
+            //         'services.twilio.demo_request_template_sid',
+            //     ),
+            //     'template_variables' => [
+            //         '1' => $requestContact->name,
+            //         '2' => $requestContact->email,
+            //         '3' => $requestContact->phone,
+            //         '4' => $requestContact->gym_size,
+            //         '5' => $requestContact->message,
+            //         '6' => $requestContact->created_at->format('M d, Y H:i A'),
+            //     ],
+            // ]);
+
+            // if ($result['success']) {
+            //     Log::info('Demo request WhatsApp sent successfully', [
+            //         'request_id' => $requestContact->id,
+            //         'message_id' => $result['message_id'] ?? null,
+            //     ]);
+            // } else {
+            //     Log::warning('Demo request WhatsApp failed', [
+            //         'request_id' => $requestContact->id,
+            //         'error' => $result['error'] ?? 'Unknown error',
+            //     ]);
+            // }
         } catch (\Exception $e) {
             Log::error('WhatsApp notification error', [
                 'error' => $e->getMessage(),

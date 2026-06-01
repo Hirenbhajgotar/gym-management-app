@@ -205,10 +205,8 @@ class BlogResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Cache::flexible(Blog::NAVIGATION_BADGE_CACHE_KEY, [now()->addHours(6), now()->addWeek()], function () {
-            $count = static::getModel()::where('is_published', true)->count();
-
-            return $count > 0 ? $count : null;
-        });
+        return Cache::flexible(Blog::NAVIGATION_BADGE_CACHE_KEY, [21600, 604800], function () {
+            return (string) static::getModel()::where('is_published', true)->count();
+        }) ?: null;
     }
 }

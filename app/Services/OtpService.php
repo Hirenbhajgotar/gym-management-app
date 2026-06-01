@@ -35,7 +35,7 @@ class OtpService
 
         return new Client(
             $account->twilio_account_sid,
-            $account->getRawOriginal('twilio_auth_token'),
+            $account->twilio_auth_token,
         );
     }
 
@@ -52,9 +52,9 @@ class OtpService
      */
     public function isWhatsAppConfigured(Gym $gym): bool
     {
-        $account = $gym->whatsAppAccount;
+        $account = $gym?->whatsAppAccount;
 
-        return $account && $account->isActive() && $account->isVerified();
+        return $account && $account?->isActive() && $account?->isVerified();
     }
 
     /**

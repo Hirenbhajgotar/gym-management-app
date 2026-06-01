@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read mixed $days_left
  * @property-read \App\Models\Gym $gym
  * @property-read mixed $progress
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal current()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal newModelQuery()
@@ -49,6 +50,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal wherePeriodStart($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereTargetValue($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ReportGoal whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class ReportGoal extends Model
@@ -155,7 +157,7 @@ class ReportGoal extends Model
     protected function daysLeft(): Attribute
     {
         return Attribute::make(
-            get: fn () => (int) ceil(now()->floatDiffInDays($this->period_end, false)),
+            get: fn () => (int) ceil(now()->diffInDays($this->period_end, false)),
         );
     }
 
@@ -262,6 +264,7 @@ class ReportGoal extends Model
             'moderate' => 'warning',
             'behind' => 'warning',
             'critical' => 'danger',
+            default => 'gray',
         };
     }
 

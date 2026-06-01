@@ -55,14 +55,9 @@ class GymMemberResource extends Resource
             return null;
         }
 
-        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [now()->addHours(6), now()->addWeek()], function () {
-            $modelClass = static::$model;
-            $query = $modelClass::query();
-
-            $count = $query->count();
-
-            return $count > 0 ? $count : null;
-        });
+        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [21600, 604800], function () {
+            return (string) (static::$model)::query()->count();
+        }) ?: null;
     }
 
     // Restrict to admins or gym owners with gyms
