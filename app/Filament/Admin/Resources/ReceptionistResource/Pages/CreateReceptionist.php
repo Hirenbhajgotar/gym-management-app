@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Enums\DefaultRole;
+use App\Enums\UserStatus;
 use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
 use App\Models\User;
@@ -41,6 +42,9 @@ class CreateReceptionist extends CreateRecord
         $plainPassword = $data['password'];
 
         $data['email_verified_at'] = $data['email_verified_at'] ? now() : null;
+
+        // Activate account on creation
+        $data['status'] = UserStatus::ACTIVE;
 
         if (is_null($data['profile_photo']) || empty($data['profile_photo'])) {
             $data['profile_photo'] = app(AvatarService::class)->generate($data['name']);
