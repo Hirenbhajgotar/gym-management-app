@@ -90,6 +90,8 @@ abstract class BaseEmployeeResource extends Resource
                     ->searchable(),
                 TextColumn::make('email')
                     ->searchable()
+                    ->copyable()
+                    ->copyMessage('Email copied successfully')
                     ->icon('heroicon-o-envelope'),
 
                 Tables\Columns\ToggleColumn::make('email_verified_at')
