@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
 use App\Enums\DefaultRole;
+use App\Enums\UserStatus;
 use App\Filament\Admin\Resources\ManagerResource;
 use App\Models\EmployeeDetail;
 use App\Models\Gym;
@@ -110,6 +111,9 @@ class CreateManager extends CreateRecord
     {
         // Handle email verification
         $data['email_verified_at'] = $data['email_verified_at'] ? now() : null;
+
+        // Activate account on creation
+        $data['status'] = UserStatus::ACTIVE;
 
         // Generate avatar if not provided
         if (empty($data['profile_photo'])) {

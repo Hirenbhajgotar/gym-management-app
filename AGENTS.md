@@ -1,10 +1,68 @@
 # Agent Guidelines for Gym Management App
 
+## 🚨 TESTING DATABASE SAFETY RULES (READ FIRST)
+
+**The main database is `gym_app`. The test database is `gym_app_test`. NEVER run destructive commands against `gym_app` while testing.**
+
+### ❌ NEVER run these against the main database during a testing workflow
+
+```bash
+# WRONG - nukes gym_app (the main/production-ish database)
+docker-compose exec app php artisan migrate:fresh
+docker-compose exec app php artisan migrate:fresh --seed
+docker-compose exec app php artisan migrate:reset
+docker-compose exec app php artisan db:seed
+docker-compose exec app php artisan migrate:rollback
+
+# WRONG - hits gym_app because the OS env var DB_DATABASE=gym_app is inherited
+php artisan migrate:fresh
+php artisan db:seed
+```
+
+### ✅ ALWAYS use one of these for test-database operations
+
+```bash
+# Preferred: composer scripts (auto-pass --env=testing and use the safety command)
+docker-compose exec app composer test:db:reset         # migrate:fresh on gym_app_test
+docker-compose exec app composer test:db:reset:seed    # migrate:fresh --seed on gym_app_test
+docker-compose exec app composer test:fresh            # reset + run phpunit
+docker-compose exec app composer test:fresh:seed       # reset --seed + run phpunit
+docker-compose exec app composer test                  # run phpunit (already uses gym_app_test)
+
+# Acceptable: pass --env=testing explicitly
+docker-compose exec app php artisan migrate:fresh --env=testing
+docker-compose exec app php artisan migrate:fresh --env=testing --seed
+docker-compose exec app php artisan db:seed --env=testing
+
+# Acceptable: safe custom artisan command
+docker-compose exec app php artisan app:test-db-fresh --env=testing
+docker-compose exec app php artisan app:test-db-fresh --env=testing --seed
+```
+
+### Defense-in-depth: existing safety mechanisms
+
+- `tests/TestCase.php::setUp()` **aborts the test run with `$this->fail()`** if `database.connections.mysql.database` resolves to `gym_app`.
+- `app/Console/Commands/TestDbFresh.php` **refuses to run** if the resolved database is `gym_app`.
+- `phpunit.xml` overrides `DB_DATABASE` to `gym_app_test` with `force="true"`.
+- `.env.testing` is loaded when `--env=testing` is passed.
+- The MySQL container auto-creates `gym_app_test` on first boot via `docker/mysql-test-init/01-create-test-db.sh`.
+
+### Mental model
+
+- `composer test` / `php artisan test` → safe (uses gym_app_test via phpunit.xml).
+- `composer test:fresh` / `composer test:db:reset` → safe (forces --env=testing, runs safety command).
+- `php artisan migrate:fresh` (no flag) → DANGEROUS, hits gym_app.
+- `php artisan migrate:fresh --env=testing` → safe (loads .env.testing).
+
+**When in doubt, use the composer scripts. They are the safest path.**
+
 ## Build/Lint/Test Commands
 - **Build**: `npm run build` (Vite) or `composer run dev` (full stack)
 - **Lint**: `vendor/bin/pint --dirty` (PHP formatting)
-- **Test**: `composer run test` or `php artisan test`
-- **Single test**: `php artisan test --filter=TestName`
+- **Test**: `composer run test` or `docker-compose exec app php artisan test`
+- **Test DB reset**: `docker-compose exec app composer test:db:reset` (uses --env=testing, hits gym_app_test)
+- **Test + reset**: `docker-compose exec app composer test:fresh` (reset test DB, then run phpunit)
+- **Single test**: `docker-compose exec app php artisan test --filter=TestName`
 
 ## Code Style Guidelines
 - **PHP**: Laravel 12, PHP 8.2, constructor property promotion, explicit return types, PHPDoc blocks

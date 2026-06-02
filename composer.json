@@ -94,6 +94,24 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "test:db:reset": [
+            "@php artisan config:clear --ansi",
+            "@php artisan app:test-db-fresh --env=testing --no-interaction"
+        ],
+        "test:db:reset:seed": [
+            "@php artisan config:clear --ansi",
+            "@php artisan app:test-db-fresh --env=testing --seed --no-interaction"
+        ],
+        "test:fresh": [
+            "@php artisan config:clear --ansi",
+            "@php artisan app:test-db-fresh --env=testing --no-interaction",
+            "@php artisan test"
+        ],
+        "test:fresh:seed": [
+            "@php artisan config:clear --ansi",
+            "@php artisan app:test-db-fresh --env=testing --seed --no-interaction",
+            "@php artisan test"
         ]
     },
     "extra": {

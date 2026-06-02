@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\Admin\Resources\LeadResource;
 use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Http\Middleware\ApplyTenantScopes;
@@ -47,22 +48,39 @@ class StaffPanelProvider extends PanelProvider
             ], isPersistent: true)
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('CRM')
+                    ->icon('phosphor-funnel'),
+
+                NavigationGroup::make()
                     ->label('Users')
                     ->icon('heroicon-o-users'),
+
                 NavigationGroup::make()
                     ->label('Gym Management')
                     ->icon('heroicon-o-building-storefront'),
+
                 NavigationGroup::make()
                     ->label('Expense Management')
                     ->icon('phosphor-invoice'),
+
+                NavigationGroup::make()
+                    ->label('WhatsApp')
+                    ->icon('phosphor-messenger-logo'),
+
+                NavigationGroup::make()
+                    ->label('Device Management')
+                    ->icon('heroicon-o-finger-print'),
+
                 NavigationGroup::make()
                     ->label('Settings')
-                    ->icon('heroicon-o-wrench-screwdriver'),
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->collapsed(true),
             ])
             ->resources([
                 MembershipPlanResource::class,
                 GymMemberResource::class,
                 TrainerResource::class,
+                LeadResource::class,
             ])
             ->discoverResources(in: app_path('Filament/Staff/Resources'), for: 'App\\Filament\\Staff\\Resources')
             ->discoverPages(in: app_path('Filament/Staff/Pages'), for: 'App\\Filament\\Staff\\Pages')
