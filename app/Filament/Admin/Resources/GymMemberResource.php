@@ -60,25 +60,6 @@ class GymMemberResource extends Resource
         }) ?: null;
     }
 
-    // Restrict to admins or gym owners with gyms
-    public static function canAccess(array $parameters = []): bool
-    {
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        if (filament()?->getId() === 'admin') {
-            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } elseif (filament()?->getId() === 'staff') {
-            return true;
-        }
-
-        return false;
-    }
-
     public static function form(Form $form): Form
     {
         return $form

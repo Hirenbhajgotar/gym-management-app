@@ -16,6 +16,18 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ManagerResource extends BaseEmployeeResource
 {
+    // Only access super_admin, admin and gym_owner
+    public static function canAccess(array $parameters = []): bool
+    {
+        $user = auth()->user();
+
+        return $user?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
+
     public static function getLabel(): string
     {
         return 'Manager';

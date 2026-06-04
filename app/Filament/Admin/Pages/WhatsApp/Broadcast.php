@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
@@ -38,6 +39,25 @@ class Broadcast extends Page implements HasActions, HasForms, HasTable
     protected static ?string $navigationLabel = 'Bulk SMS';
 
     protected static ?string $title = 'Bulk SMS';
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ])) {
+            return true;
+        }
+
+        return $user->can('send_broadcast');
+    }
 
     protected static ?string $navigationGroup = 'WhatsApp';
 

@@ -1,0 +1,179 @@
+<?php
+
+/**
+ * One-shot script: strip FK constraints from ALL migration files
+ * in database/migrations/ to make `RefreshDatabase` work.
+ *
+ * Pattern replacements (applied in order):
+ *   foreignId('x')->constrained('table')->onDelete('cascade')
+ *     → unsignedBigInteger('x')->index()
+ *   foreignId('x')->constrained('table')
+ *     → unsignedBigInteger('x')->index()
+ *   foreignId('x')->constrained()->cascadeOnDelete()
+ *     → unsignedBigInteger('x')->index()
+ *   foreignId('x')->constrained()->nullOnDelete()
+ *     → unsignedBigInteger('x')->nullable()->index()
+ *   foreignId('x')->constrained()
+ *     → unsignedBigInteger('x')->index()
+ *   foreign('x')->references('id')->on('table')   (entire line removed)
+ *
+ * Nullable variants: foreignId('x')->nullable()->constrained(...)  → unsignedBigInteger('x')->nullable()->index()
+ *
+ * Down() blocks: $table->dropForeign(['x'])  → removed
+ *
+ * Idempotent: safe to re-run.
+ *
+ * Usage: docker-compose exec -T app php /var/www/html/fix-fk-migrations.php
+ */
+
+$migrationsDir = __DIR__ . '/database/migrations';
+$files = glob($migrationsDir . '/*.php');
+
+$stats = ['files_scanned' => 0, 'files_modified' => 0, 'replacements' => 0];
+
+foreach ($files as $file) {
+    $stats['files_scanned']++;
+    $original = file_get_contents($file);
+    $modified = $original;
+
+    // Pattern 1: foreignId('x')->nullable()->constrained('table')->onDelete('cascade')
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->nullable\\(\\)->constrained\\('[^']*'\\)->onDelete\\('cascade'\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 2: foreignId('x')->constrained('table')->onDelete('cascade')
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->constrained\\('[^']*'\\)->onDelete\\('cascade'\\);/",
+        "\$table->unsignedBigInteger('$1')->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 3: foreignId('x')->nullable()->constrained('table')
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->nullable\\(\\)->constrained\\('[^']*'\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 4: foreignId('x')->constrained('table')
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->constrained\\('[^']*'\\);/",
+        "\$table->unsignedBigInteger('$1')->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 5: foreignId('x')->nullable()->constrained()->cascadeOnDelete()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->nullable\\(\\)->constrained\\(\\)->cascadeOnDelete\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 6: foreignId('x')->constrained()->cascadeOnDelete()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->constrained\\(\\)->cascadeOnDelete\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 7: foreignId('x')->nullable()->constrained()->nullOnDelete()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->nullable\\(\\)->constrained\\(\\)->nullOnDelete\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 8: foreignId('x')->constrained()->nullOnDelete()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->constrained\\(\\)->nullOnDelete\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 9: foreignId('x')->nullable()->constrained()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->nullable\\(\\)->constrained\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->nullable()->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 10: foreignId('x')->constrained()
+    $count = 0;
+    $modified = preg_replace(
+        "/\\\$table->foreignId\\('([^']+)'\\)->constrained\\(\\);/",
+        "\$table->unsignedBigInteger('$1')->index();",
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 11: Remove ->foreign('x')->references('id')->on('table') lines
+    $count = 0;
+    $modified = preg_replace(
+        "/^[ \t]*\\\$table->foreign\\('[^']+'\\)->references\\('[^']+'\\)->on\\('[^']+'\\);[ \t]*\\r?\\n/m",
+        '',
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    // Pattern 12: Remove $table->dropForeign(['x']) lines
+    $count = 0;
+    $modified = preg_replace(
+        "/^[ \t]*\\\$table->dropForeign\\(\\['[^']+'\\]\\);[ \t]*\\r?\\n/m",
+        '',
+        $modified,
+        -1,
+        $count
+    );
+    $stats['replacements'] += $count;
+
+    if ($modified !== $original) {
+        file_put_contents($file, $modified);
+        $stats['files_modified']++;
+    }
+}
+
+echo "Scanned: {$stats['files_scanned']} files\n";
+echo "Modified: {$stats['files_modified']} files\n";
+echo "Replacements: {$stats['replacements']}\n";

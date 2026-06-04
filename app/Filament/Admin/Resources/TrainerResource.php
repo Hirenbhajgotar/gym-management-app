@@ -29,16 +29,6 @@ class TrainerResource extends Resource
 
     protected static ?string $navigationGroup = 'Users';
 
-    public static function canAccess(array $parameters = []): bool
-    {
-        if (filament()->getId() === 'admin' || filament()->getId() === 'staff') {
-            // return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-            return true;
-        }
-
-        return false;
-    }
-
     public static function getNavigationBadge(): ?string
     {
         return Cache::flexible(Trainer::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [21600, 604800], function () {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
@@ -37,6 +38,26 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected static string $model = Lead::class;
 
     protected static string $statusEnum = LeadStatus::class;
+
+    // Authorization handled by Policies
+    // public static function canAccess(): bool
+    // {
+    //     $user = auth()->user();
+
+    //     if (! $user) {
+    //         return false;
+    //     }
+
+    //     if ($user->hasAnyRole([
+    //         DefaultRole::SUPER_ADMIN->value,
+    //         DefaultRole::ADMIN->value,
+    //         DefaultRole::GYM_OWNER->value,
+    //     ])) {
+    //         return true;
+    //     }
+
+    //     return $user->can('view_any_lead');
+    // }
 
     protected static string $recordTitleAttribute = 'name';
 

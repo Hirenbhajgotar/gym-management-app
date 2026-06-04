@@ -2,10 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Admin\Resources\GymMemberResource;
-use App\Filament\Admin\Resources\LeadResource;
-use App\Filament\Admin\Resources\MembershipPlanResource;
-use App\Filament\Admin\Resources\TrainerResource;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Http\Middleware\TeamsPermission;
 use App\Models\Gym;
@@ -48,40 +44,30 @@ class StaffPanelProvider extends PanelProvider
             ], isPersistent: true)
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->label('CRM')
-                    ->icon('phosphor-funnel'),
+                    ->label('CRM'),
 
                 NavigationGroup::make()
-                    ->label('Users')
-                    ->icon('heroicon-o-users'),
+                    ->label('Users'),
 
                 NavigationGroup::make()
-                    ->label('Gym Management')
-                    ->icon('heroicon-o-building-storefront'),
+                    ->label('Gym Management'),
 
                 NavigationGroup::make()
-                    ->label('Expense Management')
-                    ->icon('phosphor-invoice'),
+                    ->label('Expense Management'),
 
                 NavigationGroup::make()
-                    ->label('WhatsApp')
-                    ->icon('phosphor-messenger-logo'),
+                    ->label('WhatsApp'),
 
                 NavigationGroup::make()
-                    ->label('Device Management')
-                    ->icon('heroicon-o-finger-print'),
+                    ->label('Device Management'),
 
                 NavigationGroup::make()
                     ->label('Settings')
-                    ->icon('heroicon-o-wrench-screwdriver')
                     ->collapsed(true),
             ])
-            ->resources([
-                MembershipPlanResource::class,
-                GymMemberResource::class,
-                TrainerResource::class,
-                LeadResource::class,
-            ])
+            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
+            ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
+            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->discoverResources(in: app_path('Filament/Staff/Resources'), for: 'App\\Filament\\Staff\\Resources')
             ->discoverPages(in: app_path('Filament/Staff/Pages'), for: 'App\\Filament\\Staff\\Pages')
             ->pages([
@@ -103,7 +89,7 @@ class StaffPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                // TeamsPermission::class,
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

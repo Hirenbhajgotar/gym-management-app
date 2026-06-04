@@ -61,7 +61,7 @@ class BiometricDeviceResource extends Resource
 
     public static function canAccess(array $parameters = []): bool
     {
-        // Temporarily disable access to this resource
+        // Temporary disabled this resource.
         return false;
 
         /** @var \App\Models\User $user */
@@ -71,17 +71,15 @@ class BiometricDeviceResource extends Resource
             return false;
         }
 
-        if (filament()?->getId() === 'admin') {
-            return $user->hasAnyRole([
-                DefaultRole::SUPER_ADMIN->value,
-                DefaultRole::GYM_OWNER->value,
-                DefaultRole::MANAGER->value,
-            ]);
-        } elseif (filament()?->getId() === 'staff') {
+        if ($user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ])) {
             return true;
         }
 
-        return false;
+        return $user->can('view_any_biometric_device');
     }
 
     public static function getEloquentQuery(): Builder

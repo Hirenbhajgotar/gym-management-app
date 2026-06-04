@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\WhatsAppMessageCredit;
@@ -34,6 +35,16 @@ class PurchaseCredits extends Page implements HasActions
     protected static string $view = 'filament.tenant.pages.whatsapp-purchase-credits';
 
     protected static ?int $navigationSort = 3;
+
+    // Only access for super_admin, admin and gym_owner
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public ?WhatsAppMessageCredit $creditBalance = null;
 

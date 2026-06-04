@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasFormInitialization;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasSetupState;
@@ -46,7 +47,19 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
     {
         $user = auth()->user();
 
-        return $user !== null && $user->hasRole('gym_owner');
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ])) {
+            return true;
+        }
+
+        return $user->can('access_whatsapp_setup');
     }
 
     public function mount(): void

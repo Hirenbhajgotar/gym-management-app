@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -27,6 +28,17 @@ class QRCodeManager extends Page implements HasActions, HasForms
     protected static ?string $slug = 'qr-code';
 
     protected ?string $heading = 'QR Code Attendance';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+            DefaultRole::RECEPTIONIST->value,
+        ]) ?? false;
+    }
 
     public ?array $data = [];
 

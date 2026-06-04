@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Models\GymSetting;
 use App\Models\Payment;
 use App\Traits\HasTenantAccess;
@@ -30,6 +31,15 @@ class GymSettings extends Page implements HasActions, HasForms
     protected static ?string $slug = 'settings';
 
     protected ?string $heading = 'Settings';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public ?array $data = [];
 

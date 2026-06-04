@@ -21,7 +21,6 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
@@ -35,11 +34,6 @@ abstract class BaseEmployeeResource extends Resource
     protected static ?string $navigationGroup = 'Users';
 
     protected static ?string $tenantOwnershipRelationshipName = 'gyms';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::check() && Auth::user()->hasAnyRole(['gym_owner']);
-    }
 
     /**
      * @return Builder<User>

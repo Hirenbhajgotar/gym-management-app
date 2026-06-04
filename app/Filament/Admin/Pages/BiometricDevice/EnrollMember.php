@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages\BiometricDevice;
 
 use App\Enums\BiometricTypeEnum;
+use App\Enums\DefaultRole;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
@@ -38,10 +39,24 @@ class EnrollMember extends Page
         $this->form->fill();
     }
 
-    // Temporarily disable access to this resource
     public static function canAccess(array $parameters = []): bool
     {
-        return false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ])) {
+            return true;
+        }
+
+        return $user->can('view_any_gym_member')
+            || $user->can('manage_biometric');
     }
 
     public function getDevices(): array

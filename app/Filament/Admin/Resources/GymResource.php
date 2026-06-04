@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymResource\Pages;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
@@ -21,9 +22,16 @@ class GymResource extends Resource
 
     protected static bool $isDiscovered = false;
 
+    // Only access super_admin, admin and gym_owner
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()->hasRole('gym_owner') || auth()->user()->hasRole('super_admin');
+        $user = auth()->user();
+
+        return $user?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
     }
 
     public static function form(Form $form): Form

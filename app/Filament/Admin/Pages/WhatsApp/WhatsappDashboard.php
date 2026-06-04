@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Enums\DefaultRole;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppUsageLog;
@@ -31,6 +32,16 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
     protected static ?string $navigationGroup = 'WhatsApp';
 
     protected static string $view = 'filament.tenant.pages.whatsapp-dashboard';
+
+    // Only access for super_admin, admin and gym_owner
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public ?WhatsAppAccount $whatsappAccount = null;
 

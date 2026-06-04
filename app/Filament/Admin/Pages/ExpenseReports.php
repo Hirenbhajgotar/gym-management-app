@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
@@ -32,6 +33,16 @@ class ExpenseReports extends Page implements HasForms
     protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.pages.expense-reports';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]) ?? false;
+    }
 
     public ?array $filters = [];
 
