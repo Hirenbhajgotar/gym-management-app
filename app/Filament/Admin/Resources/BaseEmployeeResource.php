@@ -54,7 +54,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canViewAny(): bool
     {
-        return auth()->user()?->can('view_any_' . static::getPermissionLabel());
+        return auth()->user()?->can('view_any_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -62,7 +62,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canView(mixed $record): bool
     {
-        return auth()->user()?->can('view_' . static::getPermissionLabel());
+        return auth()->user()?->can('view_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -70,7 +70,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canCreate(): bool
     {
-        return auth()->user()?->can('create_' . static::getPermissionLabel());
+        return auth()->user()?->can('create_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -78,7 +78,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canUpdate(mixed $record): bool
     {
-        return auth()->user()?->can('update_' . static::getPermissionLabel());
+        return auth()->user()?->can('update_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -86,7 +86,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canDelete(mixed $record): bool
     {
-        return auth()->user()?->can('delete_' . static::getPermissionLabel());
+        return auth()->user()?->can('delete_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -94,7 +94,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canDeleteAny(): bool
     {
-        return auth()->user()?->can('delete_any_' . static::getPermissionLabel());
+        return auth()->user()?->can('delete_any_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -102,7 +102,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canForceDelete(mixed $record): bool
     {
-        return auth()->user()?->can('force_delete_' . static::getPermissionLabel());
+        return auth()->user()?->can('force_delete_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -110,7 +110,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canForceDeleteAny(): bool
     {
-        return auth()->user()?->can('force_delete_any_' . static::getPermissionLabel());
+        return auth()->user()?->can('force_delete_any_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -118,7 +118,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canRestore(mixed $record): bool
     {
-        return auth()->user()?->can('restore_' . static::getPermissionLabel());
+        return auth()->user()?->can('restore_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -126,7 +126,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canRestoreAny(): bool
     {
-        return auth()->user()?->can('restore_any_' . static::getPermissionLabel());
+        return auth()->user()?->can('restore_any_' . static::getPermissionLabel()) ?? false;
     }
 
     /**
@@ -134,7 +134,7 @@ abstract class BaseEmployeeResource extends Resource
      */
     public static function canReplicate(mixed $record): bool
     {
-        return auth()->user()?->can('replicate_' . static::getPermissionLabel());
+        return auth()->user()?->can('replicate_' . static::getPermissionLabel()) ?? false;
     }
 
     public static function form(Form $form): Form

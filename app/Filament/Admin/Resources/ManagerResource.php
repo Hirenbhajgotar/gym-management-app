@@ -107,10 +107,9 @@ class ManagerResource extends BaseEmployeeResource
             ExportAction::make()
                 ->label('Export ' . static::getPluralLabel())
                 ->exporter(ManagerExporter::class)
-                ->modifyQueryUsing(function (Builder $query) {
-                    /** @var Builder<User> $query */
-                    $query->role(static::getEmployeeRole());
-                }),
+                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole()))
+                ->visible(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel())),
 
             ImportAction::make()
                 ->label('Import Managers')
@@ -121,7 +120,9 @@ class ManagerResource extends BaseEmployeeResource
                     urlOrData: url('import/templates/xls/employee-sample.xlsx'),
                     fileName: 'manager-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
-                ),
+                )
+                ->visible(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel())),
 
             Actions\CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
