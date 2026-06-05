@@ -16,6 +16,8 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class ReceptionistsImport extends BaseImporter implements ShouldQueue, WithColumnFormatting
 {
+    protected static ?string $model = User::class;
+
     protected array $dateColumns = [
         'date_of_birth',
         'hire_date',

@@ -11,6 +11,11 @@ abstract class BasePolicy
 
     protected static string $tableName;
 
+    public static function getTableName(): string
+    {
+        return static::$tableName;
+    }
+
     /**
      * Get the permission name for a given action
      */

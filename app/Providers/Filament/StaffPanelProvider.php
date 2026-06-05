@@ -37,6 +37,12 @@ class StaffPanelProvider extends PanelProvider
             ->brandLogo(asset('fluxfitness-logo.svg'))
             ->brandLogoHeight('3rem')
             ->spa()
+            ->spaUrlExceptions(fn (): array => [
+                // Allow all files in the import/templates directory
+                // Allow the download of the sample file
+                url('import/templates/*'),
+                '/import/templates/*',
+            ])
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 ApplyTenantScopes::class,
@@ -65,6 +71,9 @@ class StaffPanelProvider extends PanelProvider
                     ->label('Settings')
                     ->collapsed(true),
             ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling(null)
+            ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')

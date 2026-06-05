@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
+use App\Filament\Actions\ExportBulkAction;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
 use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
@@ -15,7 +16,6 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -263,7 +263,6 @@ class TrainerResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     ExportBulkAction::make()
                         ->label('Export Trainers')
-                        ->icon('heroicon-o-arrow-up-tray')
                         ->exporter(TrainerExporter::class)
                         ->formats([ExportFormat::Xlsx]),
 
