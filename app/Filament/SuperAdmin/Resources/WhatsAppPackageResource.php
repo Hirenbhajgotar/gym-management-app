@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\CreateWhatsAppPackage;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\EditWhatsAppPackage;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\ListWhatsAppPackages;
@@ -16,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppPackageResource extends Resource
+class WhatsAppPackageResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppPackage::class;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CountryResource\Pages;
 use App\Models\Country;
@@ -11,7 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class CountryResource extends Resource
+class CountryResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Country::class;
 

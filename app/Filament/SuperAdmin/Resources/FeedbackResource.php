@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
 use Filament\Forms;
@@ -18,7 +19,7 @@ use Mokhosh\FilamentRating\Columns\RatingColumn;
 use Mokhosh\FilamentRating\Components\Rating;
 use Mokhosh\FilamentRating\Entries\RatingEntry;
 
-class FeedbackResource extends Resource
+class FeedbackResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Feedback::class;
 

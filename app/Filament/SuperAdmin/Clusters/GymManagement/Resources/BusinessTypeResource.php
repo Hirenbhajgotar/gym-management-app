@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Clusters\GymManagement;
 use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
 use App\Models\BusinessType;
@@ -14,7 +15,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
-class BusinessTypeResource extends Resource
+class BusinessTypeResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = BusinessType::class;
 

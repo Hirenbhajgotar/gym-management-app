@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
@@ -19,7 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Permission;
 
-class PermissionsResource extends Resource
+class PermissionsResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = ModelsPermission::class;
 

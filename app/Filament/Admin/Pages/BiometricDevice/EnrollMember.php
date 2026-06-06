@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\BiometricDevice;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
 use App\Models\BiometricDevice;
@@ -14,7 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 
-class EnrollMember extends Page
+class EnrollMember extends Page implements HasFilamentPermissions
 {
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 

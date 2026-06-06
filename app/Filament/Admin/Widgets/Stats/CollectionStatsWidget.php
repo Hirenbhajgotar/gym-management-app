@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets\Stats;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\PaymentStatus;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\MemberPayment;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Dashboard card that shows daily / weekly / monthly / yearly collections.
  */
-class CollectionStatsWidget extends BaseWidget
+class CollectionStatsWidget extends BaseWidget implements HasFilamentPermissions
 {
     protected static ?string $pollingInterval = null;
 

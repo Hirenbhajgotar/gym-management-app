@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Traits\HasTenantAccess;
@@ -15,7 +16,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
 use LaraZeus\Qr\Facades\Qr;
 
-class QRCodeManager extends Page implements HasActions, HasForms
+class QRCodeManager extends Page implements HasActions, HasFilamentPermissions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets\LoginActivityStatsWidget;
 use App\Models\Gym;
 use App\Services\LoginActivityService;
@@ -13,7 +14,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Carbon;
 
-class LoginActivity extends Page implements HasTable
+class LoginActivity extends Page implements HasFilamentPermissions, HasTable
 {
     use Tables\Concerns\InteractsWithTable;
 

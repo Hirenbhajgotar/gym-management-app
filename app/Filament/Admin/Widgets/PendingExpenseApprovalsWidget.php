@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\ExpenseStatus;
 use App\Models\Expense;
@@ -13,7 +14,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 /**
  * Dashboard widget showing expenses pending approval for managers/owners.
  */
-class PendingExpenseApprovalsWidget extends BaseWidget
+class PendingExpenseApprovalsWidget extends BaseWidget implements HasFilamentPermissions
 {
     protected static ?int $sort = 6;
 

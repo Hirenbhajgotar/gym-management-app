@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\User;
 use App\Traits\HasTenantAccess;
 use Filament\Facades\Filament;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Spatie\Permission\Models\Role;
 
-class RolePermissionsStatsWidget extends BaseWidget
+class RolePermissionsStatsWidget extends BaseWidget implements HasFilamentPermissions
 {
     use HasTenantAccess;
 

@@ -2,11 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
 
-class RealtimeAttendanceWidget extends Widget
+class RealtimeAttendanceWidget extends Widget implements HasFilamentPermissions
 {
     protected static string $view = 'filament.clusters.reports.widgets.realtime-attendance-widget';
 

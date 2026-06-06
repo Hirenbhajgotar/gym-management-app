@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Resources\ReportGoalResource\Pages;
 use App\Models\ReportGoal;
@@ -13,7 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class ReportGoalResource extends Resource
+class ReportGoalResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = ReportGoal::class;
 

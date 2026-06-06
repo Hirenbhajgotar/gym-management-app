@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
@@ -9,7 +10,7 @@ use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class MemberGrowthChart extends ChartWidget
+class MemberGrowthChart extends ChartWidget implements HasFilamentPermissions
 {
     use HasReportFilters;
 

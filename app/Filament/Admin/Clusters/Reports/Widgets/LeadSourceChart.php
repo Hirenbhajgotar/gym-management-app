@@ -2,13 +2,14 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class LeadSourceChart extends ChartWidget
+class LeadSourceChart extends ChartWidget implements HasFilamentPermissions
 {
     protected static ?string $heading = 'Leads by Source';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
-class ExpenseResource extends Resource
+class ExpenseResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Expense::class;
 

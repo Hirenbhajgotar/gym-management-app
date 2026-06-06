@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\ExpenseStatus;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\Expense;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Dashboard widget showing expense statistics (today, week, month, year).
  */
-class ExpenseStatsWidget extends BaseWidget
+class ExpenseStatsWidget extends BaseWidget implements HasFilamentPermissions
 {
     protected static ?string $pollingInterval = null;
 

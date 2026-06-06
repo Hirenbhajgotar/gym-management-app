@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\Admin\Clusters\Reports;
 use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
@@ -11,7 +12,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class MemberLifetimeValueReports extends Page implements ShareableReport
+class MemberLifetimeValueReports extends Page implements HasFilamentPermissions, ShareableReport
 {
     use HasReportFilters;
 

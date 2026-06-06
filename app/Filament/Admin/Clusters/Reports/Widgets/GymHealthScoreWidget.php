@@ -2,11 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Services\GymHealthScoreService;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
 
-class GymHealthScoreWidget extends Widget
+class GymHealthScoreWidget extends Widget implements HasFilamentPermissions
 {
     protected static string $view = 'filament.clusters.reports.widgets.gym-health-score-widget';
 

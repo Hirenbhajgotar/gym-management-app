@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
@@ -16,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class ErrorReportResource extends Resource
+class ErrorReportResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = ErrorReport::class;
 

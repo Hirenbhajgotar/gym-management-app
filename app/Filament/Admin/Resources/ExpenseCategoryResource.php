@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\FilamentColor;
 use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
 use App\Models\ExpenseCategory;
@@ -13,7 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class ExpenseCategoryResource extends Resource
+class ExpenseCategoryResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = ExpenseCategory::class;
 

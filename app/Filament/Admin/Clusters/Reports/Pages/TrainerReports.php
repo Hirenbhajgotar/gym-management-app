@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
@@ -15,7 +16,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerReports extends Page implements ShareableReport
+class TrainerReports extends Page implements HasFilamentPermissions, ShareableReport
 {
     use HasReportFilters;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadStatus;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
@@ -23,7 +24,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-class ReportsDashboard extends Page implements ShareableReport
+class ReportsDashboard extends Page implements HasFilamentPermissions, ShareableReport
 {
     use HasReportFilters;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
@@ -18,7 +19,7 @@ use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class PermissionSettingResource extends Resource
+class PermissionSettingResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = PermissionSetting::class;
 

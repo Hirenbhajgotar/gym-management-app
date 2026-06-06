@@ -61,62 +61,23 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->displaySummary();
     }
 
-    /**
-     * Create all permissions (resource + filament specific)
-     */
     private function createAllPermissions(): array
     {
         $permissions = [];
 
-        // Resource permissions
-        $resources = [
-            'user', 'city', 'state', 'country', 'plan', 'gym_member',
-            'gym', 'membership_plan', 'trainer', 'receptionist', 'manager',
-            'attendance', 'payment', 'permission', 'lead',
-            'expense', 'expense_category', 'expense_budget',
-        ];
+        $guardName = config('filament-permissions.guard_name', 'web');
 
-        $actions = [
-            'view_any', 'view', 'create', 'update', 'delete', 'delete_any',
-            'force_delete', 'force_delete_any', 'restore', 'replicate',
-            'reorder', 'export', 'import', 'approve',
-        ];
+        $discoveredPermissions = $this->rolesService->discoverFilamentPermissions();
 
-        foreach ($resources as $resource) {
-            foreach ($actions as $action) {
-                $permissionName = $action . '_' . $resource;
-                $permission = ModelsPermission::firstOrCreate([
-                    'name' => $permissionName,
-                    'guard_name' => 'web',
-                ]);
-                $permissions[] = $permission;
-            }
-        }
-
-        // Filament-specific permissions
-        $filamentPermissions = [
-            'access_admin_panel',
-            'view_dashboard', 'page_dashboard', 'page_edit_gym_profile',
-            'page_register_gym', 'page_settings', 'page_reports',
-            'page_analytics', 'page_backup', 'page_system_health',
-            'widget_gym_revenue_chart', 'widget_gym_stats_overview',
-            'widget_membership_expiry_alerts_chart', 'widget_recent_activity',
-            'widget_todays_birthdays', 'widget_trainer_performance',
-            'manage_settings', 'view_analytics', 'export_data', 'import_data',
-            'manage_backups', 'view_system_logs', 'clear_cache', 'run_commands',
-            'send_notifications', 'send_bulk_emails', 'manage_announcements',
-            'bulk_actions', 'advanced_search', 'manage_integrations', 'api_access',
-            'view_financial_reports', 'view_member_reports',
-            'view_trainer_reports', 'view_equipment_reports', 'export_reports',
-        ];
-
-        foreach ($filamentPermissions as $permissionName) {
+        foreach ($discoveredPermissions as $permissionName) {
             $permission = ModelsPermission::firstOrCreate([
                 'name' => $permissionName,
-                'guard_name' => 'web',
+                'guard_name' => $guardName,
             ]);
             $permissions[] = $permission;
         }
+
+        $this->info('   📋 Discovered ' . count($discoveredPermissions) . ' permissions from Filament classes');
 
         return $permissions;
     }

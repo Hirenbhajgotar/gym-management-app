@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Enums\DurationMonth;
 use App\Filament\Admin\Resources\MembershipPlanResource\Pages;
@@ -13,7 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class MembershipPlanResource extends Resource
+class MembershipPlanResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = MembershipPlan::class;
 

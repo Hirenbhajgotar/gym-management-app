@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\PlanResource\Pages\CreatePlan;
 use App\Filament\SuperAdmin\Resources\PlanResource\Pages\EditPlan;
 use App\Filament\SuperAdmin\Resources\PlanResource\Pages\ListPlans;
@@ -14,7 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
-class PlanResource extends Resource
+class PlanResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Plan::class;
 

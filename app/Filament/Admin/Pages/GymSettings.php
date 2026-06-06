@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Models\GymSetting;
 use App\Models\Payment;
@@ -18,7 +19,7 @@ use Filament\Pages\Page;
 /**
  * @property Form $form
  */
-class GymSettings extends Page implements HasActions, HasForms
+class GymSettings extends Page implements HasActions, HasFilamentPermissions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 

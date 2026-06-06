@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ListWhatsAppAccounts;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ViewWhatsAppAccount;
 use App\Models\WhatsAppAccount;
@@ -15,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class WhatsAppAccountResource extends Resource
+class WhatsAppAccountResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppAccount::class;
 

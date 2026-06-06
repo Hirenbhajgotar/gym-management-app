@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class LeadResource extends Resource
+class LeadResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Lead::class;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberDemographicsChart;
@@ -23,7 +24,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class MemberReports extends Page implements HasForms, ShareableReport
+class MemberReports extends Page implements HasFilamentPermissions, HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;

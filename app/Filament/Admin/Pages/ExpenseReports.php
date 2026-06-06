@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
@@ -20,7 +21,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ExpenseReports extends Page implements HasForms
+class ExpenseReports extends Page implements HasFilamentPermissions, HasForms
 {
     use InteractsWithForms;
 
@@ -36,12 +37,17 @@ class ExpenseReports extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-            DefaultRole::MANAGER->value,
-        ]) ?? false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(DefaultRole::getAdminAndOwnerRoles())) {
+            return true;
+        }
+
+        return $user->can('page_expense_reports');
     }
 
     public ?array $filters = [];

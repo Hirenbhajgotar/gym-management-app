@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseCache;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseQueues;
@@ -16,7 +17,7 @@ use Filament\Pages\Dashboard\Concerns\HasFiltersAction;
 use Filament\Pages\Page;
 use Filament\Support\Enums\ActionSize;
 
-class PulseDashboard extends Page
+class PulseDashboard extends Page implements HasFilamentPermissions
 {
     use HasFiltersAction;
 

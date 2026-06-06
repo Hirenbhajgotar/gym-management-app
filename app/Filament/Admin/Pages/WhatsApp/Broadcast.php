@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\GymMember;
@@ -30,7 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
-class Broadcast extends Page implements HasActions, HasForms, HasTable
+class Broadcast extends Page implements HasActions, HasFilamentPermissions, HasForms, HasTable
 {
     use InteractsWithActions, InteractsWithForms, InteractsWithTable;
 

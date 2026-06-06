@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 use App\Interfaces\TemplateManagementInterface;
@@ -25,7 +26,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppTemplateResource extends Resource
+class WhatsAppTemplateResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppTemplate::class;
 

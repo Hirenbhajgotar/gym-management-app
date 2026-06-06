@@ -2,12 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\ReportGoal;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Cache;
 
-class GoalProgressWidget extends Widget
+class GoalProgressWidget extends Widget implements HasFilamentPermissions
 {
     protected static string $view = 'filament.clusters.reports.widgets.goal-progress-widget';
 

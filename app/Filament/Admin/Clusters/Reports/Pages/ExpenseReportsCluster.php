@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Filament\Admin\Clusters\Reports;
@@ -23,7 +25,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ExpenseReportsCluster extends Page implements HasForms, ShareableReport
+class ExpenseReportsCluster extends Page implements HasFilamentPermissions, HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -39,6 +41,21 @@ class ExpenseReportsCluster extends Page implements HasForms, ShareableReport
     protected static ?string $cluster = Reports::class;
 
     protected static string $view = 'filament.clusters.reports.pages.expense-reports';
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(DefaultRole::getAdminAndOwnerRoles())) {
+            return true;
+        }
+
+        return $user->can('page_expense_reports');
+    }
 
     /**
      * Get Livewire listeners for real-time updates via Echo.

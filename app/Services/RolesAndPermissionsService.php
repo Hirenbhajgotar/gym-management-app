@@ -333,4 +333,110 @@ class RolesAndPermissionsService
     {
         return PermissionCategory::tryFrom($permissionName)->value ?? null;
     }
+
+    public function discoverFilamentPermissions(): array
+    {
+        $permissions = [];
+        $panelIds = config('filament-permissions.panels', []);
+        $actions = config('filament-permissions.resource_actions', []);
+
+        foreach (Filament::getPanels() as $id => $panel) {
+            if (! in_array($id, $panelIds, true)) {
+                continue;
+            }
+
+            foreach ($panel->getResources() as $resourceClass) {
+                $reflection = $this->safeReflection($resourceClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Resource');
+                $permissions = array_merge($permissions, $this->generateResourcePermissions($prefix, $actions));
+            }
+
+            foreach ($panel->getPages() as $pageClass) {
+                $reflection = $this->safeReflection($pageClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Page');
+                $permissions[] = $this->generatePagePermission($prefix);
+            }
+
+            foreach ($panel->getWidgets() as $widgetClass) {
+                $reflection = $this->safeReflection($widgetClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Widget');
+                $permissions[] = $this->generateWidgetPermission($prefix);
+            }
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    private function safeReflection(string $className): ?\ReflectionClass
+    {
+        try {
+            return new \ReflectionClass($className);
+        } catch (\ReflectionException) {
+            return null;
+        }
+    }
+
+    public function generateResourcePermissions(string $prefix, ?array $actions = null): array
+    {
+        $actions ??= config('filament-permissions.resource_actions', []);
+        $guard = config('filament-permissions.guard_name', 'web');
+
+        return array_map(
+            fn (string $action) => "{$action}_{$prefix}",
+            $actions,
+        );
+    }
+
+    public function generatePagePermission(string $slug): string
+    {
+        $prefix = config('filament-permissions.page_prefix', 'page_');
+
+        return "{$prefix}{$slug}";
+    }
+
+    public function generateWidgetPermission(string $slug): string
+    {
+        $prefix = config('filament-permissions.widget_prefix', 'widget_');
+
+        return "{$prefix}{$slug}";
+    }
+
+    public function deriveSlugFromClassName(string $className, string $suffix): string
+    {
+        $name = preg_replace('/' . preg_quote($suffix, '/') . '$/', '', $className);
+
+        // split on word boudaries (handles acronyms like QR, CRM)
+        $name = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $name);
+        $name = preg_replace('/([a-z\d])([A-Z])/', '$1_$2', $name);
+        // $name = preg_replace('/(?<!^)[A-Z]/', '_$0', $name);
+
+        return strtolower(trim($name, '_'));
+    }
 }

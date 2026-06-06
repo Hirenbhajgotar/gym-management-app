@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricDoorControlType;
@@ -36,7 +37,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Js;
 
-class BiometricDeviceResource extends Resource
+class BiometricDeviceResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = BiometricDevice::class;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages;
 use App\Models\CmsPage;
 use Filament\Forms;
@@ -12,7 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
-class CmsPageResource extends Resource
+class CmsPageResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = CmsPage::class;
 

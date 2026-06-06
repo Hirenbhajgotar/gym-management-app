@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -39,7 +40,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class GymMemberResource extends Resource
+class GymMemberResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = GymMember::class;
 

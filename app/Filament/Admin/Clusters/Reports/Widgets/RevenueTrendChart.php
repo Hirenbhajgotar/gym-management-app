@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\PaymentStatus;
 use App\Models\MemberPayment;
 use App\Services\ReportCacheService;
@@ -9,7 +10,7 @@ use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class RevenueTrendChart extends ChartWidget
+class RevenueTrendChart extends ChartWidget implements HasFilamentPermissions
 {
     protected static ?string $heading = 'Monthly Revenue Trend';
 

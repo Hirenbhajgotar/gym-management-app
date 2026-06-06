@@ -2,9 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use Filament\Pages\Page;
 
-class FeedbackPage extends Page
+class FeedbackPage extends Page implements HasFilamentPermissions
 {
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CityResource\Pages;
 use App\Models\City;
@@ -17,7 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
-class CityResource extends Resource
+class CityResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = City::class;
 

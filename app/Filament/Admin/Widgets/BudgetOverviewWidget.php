@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\ExpenseBudget;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
@@ -9,7 +10,7 @@ use Filament\Widgets\Widget;
 /**
  * Dashboard widget showing budget usage overview with progress bars.
  */
-class BudgetOverviewWidget extends Widget
+class BudgetOverviewWidget extends Widget implements HasFilamentPermissions
 {
     protected static string $view = 'filament.widgets.budget-overview';
 

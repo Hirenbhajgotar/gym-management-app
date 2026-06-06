@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
@@ -9,7 +10,7 @@ use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerUtilizationWidget extends ChartWidget
+class TrainerUtilizationWidget extends ChartWidget implements HasFilamentPermissions
 {
     protected static ?string $heading = 'Trainer Utilization Overview';
 

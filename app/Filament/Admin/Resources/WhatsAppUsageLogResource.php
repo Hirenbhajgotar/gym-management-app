@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\WhatsAppUsageLogStatusEnum;
 use App\Models\WhatsAppUsageLog;
 use Filament\Facades\Filament;
@@ -10,7 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class WhatsAppUsageLogResource extends Resource
+class WhatsAppUsageLogResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppUsageLog::class;
 

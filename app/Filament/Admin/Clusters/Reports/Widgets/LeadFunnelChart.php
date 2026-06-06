@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
@@ -9,7 +10,7 @@ use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class LeadFunnelChart extends ChartWidget
+class LeadFunnelChart extends ChartWidget implements HasFilamentPermissions
 {
     protected static ?string $heading = 'Lead Status Distribution';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasFormInitialization;
@@ -22,7 +23,7 @@ use Filament\Pages\Page;
  * WhatsApp Setup page — thin orchestrator (~60 lines).
  * All state, schemas, and actions are delegated to traits.
  */
-class WhatsAppSetup extends Page implements HasActions, HasForms
+class WhatsAppSetup extends Page implements HasActions, HasFilamentPermissions, HasForms
 {
     use HasFormInitialization, HasSetupState, HasTenantAccess, InteractsWithActions, InteractsWithForms, SetupActions;
 

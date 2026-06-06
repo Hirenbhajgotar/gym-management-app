@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\WhatsAppCreditTransactionEnum;
 use App\Models\WhatsAppCreditTransaction;
 use Filament\Facades\Filament;
@@ -12,7 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class WhatsAppTransactionResource extends Resource
+class WhatsAppTransactionResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppCreditTransaction::class;
 

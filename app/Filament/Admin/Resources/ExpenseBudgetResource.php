@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
 use App\Models\ExpenseBudget;
@@ -14,7 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class ExpenseBudgetResource extends Resource
+class ExpenseBudgetResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = ExpenseBudget::class;
 

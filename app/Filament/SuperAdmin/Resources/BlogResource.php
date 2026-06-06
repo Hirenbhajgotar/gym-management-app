@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\BlogCategoryEnum;
 use App\Filament\SuperAdmin\Resources\BlogResource\Pages;
 use App\Models\Blog;
@@ -13,7 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
-class BlogResource extends Resource
+class BlogResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Blog::class;
 

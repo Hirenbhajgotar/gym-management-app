@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
@@ -25,7 +26,7 @@ use libphonenumber\PhoneNumberType;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class UserResource extends Resource
+class UserResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = User::class;
 

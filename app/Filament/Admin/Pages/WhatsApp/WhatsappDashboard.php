@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
@@ -19,7 +20,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class WhatsappDashboard extends Page implements HasActions, HasForms
+class WhatsappDashboard extends Page implements HasActions, HasFilamentPermissions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
 

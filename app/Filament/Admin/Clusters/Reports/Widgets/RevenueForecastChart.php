@@ -2,11 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Services\ForecastService;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 
-class RevenueForecastChart extends ChartWidget
+class RevenueForecastChart extends ChartWidget implements HasFilamentPermissions
 {
     protected static ?string $heading = 'Revenue Forecast (Next 3 Months)';
 

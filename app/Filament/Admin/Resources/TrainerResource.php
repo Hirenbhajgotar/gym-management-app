@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Filament\Actions\ExportBulkAction;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class TrainerResource extends Resource
+class TrainerResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Trainer::class;
 

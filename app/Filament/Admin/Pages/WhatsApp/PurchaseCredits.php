@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Payment;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
-class PurchaseCredits extends Page implements HasActions
+class PurchaseCredits extends Page implements HasActions, HasFilamentPermissions
 {
     use InteractsWithActions;
 

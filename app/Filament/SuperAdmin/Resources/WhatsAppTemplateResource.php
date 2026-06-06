@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 use App\Jobs\PushWhatsAppTemplateToGymJob;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppTemplateResource extends Resource
+class WhatsAppTemplateResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = WhatsAppTemplate::class;
 

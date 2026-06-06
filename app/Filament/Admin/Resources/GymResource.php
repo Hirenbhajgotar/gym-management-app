@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymResource\Pages;
 use App\Forms\Components\AddressForm;
@@ -12,7 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class GymResource extends Resource
+class GymResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = Gym::class;
 

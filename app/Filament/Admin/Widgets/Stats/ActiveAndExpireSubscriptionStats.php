@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets\Stats;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
 use App\Services\DashboardCacheService;
@@ -11,7 +12,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 
-class ActiveAndExpireSubscriptionStats extends BaseWidget
+class ActiveAndExpireSubscriptionStats extends BaseWidget implements HasFilamentPermissions
 {
     protected static ?string $pollingInterval = null;
 

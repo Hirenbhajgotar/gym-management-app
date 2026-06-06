@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages;
 use App\Models\RequestContact;
 use Filament\Forms;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class RequestContactResource extends Resource
+class RequestContactResource extends Resource implements HasFilamentPermissions
 {
     protected static ?string $model = RequestContact::class;
 

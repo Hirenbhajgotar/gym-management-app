@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentStatus;
 use App\Exports\RevenueReportExport;
@@ -27,7 +28,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class RevenueReports extends Page implements HasForms, ShareableReport
+class RevenueReports extends Page implements HasFilamentPermissions, HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
