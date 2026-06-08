@@ -28,63 +28,76 @@ class RolesAndPermissionsService
             return;
         }
 
-        // Get all tenant-specific roles
-        $roles = DefaultRole::tenantRoles();
+        $guardName = config('filament-permissions.guard_name', 'web');
 
-        $roleData = array_map(fn ($role) => [
-            'name' => $role->value,
-            'guard_name' => 'web',
-            'gym_id' => $tenant->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ], $roles);
+        DB::transaction(function () use ($tenant, $guardName) {
+            // Get all tenant-specific roles
+            $roles = DefaultRole::tenantRoles();
 
-        // Use bulk insert to minimize DB queries
-        Role::insert($roleData);
+            // Idempotent check: If roles already exist, skip.
+            $existingCount = Role::where('gym_id', $tenant->id)
+                ->whereIn('name', array_column($roles, 'value'))
+                ->count();
 
-        // Fetch the created role IDs mapped by name
-        $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
-            ->where('gym_id', $tenant->id)
-            ->pluck('id', 'name');
-
-        $permissionInsertData = [];
-
-        // Now assign permissions to each role using PermissionSetting or Fallback
-        foreach ($roles as $role) {
-            if (! isset($createdRoles[$role->value])) {
-                continue;
+            if ($existingCount > 0) {
+                return;
             }
 
-            // Set the role context for the trait logic
-            $this->setDefaultRole($role->value);
+            $roleData = array_map(fn ($role) => [
+                'name' => $role->value,
+                'guard_name' => $guardName,
+                'gym_id' => $tenant->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], $roles);
 
-            // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
-            $permissionsToAssign = $this->getDefaultPermissions($role->value);
+            // Use bulk insert to minimize DB queries
+            Role::insert($roleData);
 
-            if (! empty($permissionsToAssign)) {
-                // Fetch IDs for these permission names efficiently
-                $permissionIds = Permission::whereIn('name', $permissionsToAssign)->pluck('id');
-                $roleId = $createdRoles[$role->value];
+            // Fetch the created role IDs mapped by name
+            $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+                ->where('gym_id', $tenant->id)
+                ->pluck('id', 'name');
 
-                foreach ($permissionIds as $permissionId) {
-                    $permissionInsertData[] = [
-                        'permission_id' => $permissionId,
-                        'role_id' => $roleId,
-                    ];
+            $permissionInsertData = [];
+
+            // Now assign permissions to each role using PermissionSetting or Fallback
+            foreach ($roles as $role) {
+                if (! isset($createdRoles[$role->value])) {
+                    continue;
+                }
+
+                // Set the role context for the trait logic
+                $this->setDefaultRole($role->value);
+
+                // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
+                $permissionsToAssign = $this->getDefaultPermissions($role->value);
+
+                if (! empty($permissionsToAssign)) {
+                    // Fetch IDs for these permission names efficiently
+                    $permissionIds = Permission::whereIn('name', $permissionsToAssign)->pluck('id');
+                    $roleId = $createdRoles[$role->value];
+
+                    foreach ($permissionIds as $permissionId) {
+                        $permissionInsertData[] = [
+                            'permission_id' => $permissionId,
+                            'role_id' => $roleId,
+                        ];
+                    }
                 }
             }
-        }
 
-        if (! empty($permissionInsertData)) {
-            // Bulk insert all permissions
-            // Optimize chunk size if necessary, but for valid roles this is safe enough
-            foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
-                DB::table('role_has_permissions')->insert($chunk);
+            if (! empty($permissionInsertData)) {
+                // Bulk insert all permissions
+                // Optimize chunk size if necessary, but for valid roles this is safe enough
+                foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
+                    DB::table('role_has_permissions')->insert($chunk);
+                }
+
+                // Forget cache only once at the end
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
             }
-
-            // Forget cache only once at the end
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
-        }
+        });
     }
 
     /**
@@ -183,9 +196,9 @@ class RolesAndPermissionsService
     protected function getRoleAllowedResourcesList(string $role): array
     {
         return match ($role) {
-            DefaultRole::MANAGER->value => config('default-roles-and-permissions.' . DefaultRole::MANAGER->value),
-            DefaultRole::RECEPTIONIST->value => config('default-roles-and-permissions.' . DefaultRole::RECEPTIONIST->value),
-            DefaultRole::TRAINER->value => config('default-roles-and-permissions.' . DefaultRole::TRAINER->value),
+            DefaultRole::MANAGER->value => (array) config('default-roles-and-permissions.' . DefaultRole::MANAGER->value),
+            DefaultRole::RECEPTIONIST->value => (array) config('default-roles-and-permissions.' . DefaultRole::RECEPTIONIST->value),
+            DefaultRole::TRAINER->value => (array) config('default-roles-and-permissions.' . DefaultRole::TRAINER->value),
             default => [],
         };
     }
@@ -233,6 +246,10 @@ class RolesAndPermissionsService
                 'view_receptionist', 'update_receptionist', // Own profile
                 'send_notifications',
             ]),
+            // Trainers need base panel access plus their resource permissions
+            // (attendance, gym_member from config). They don't get management
+            // widgets or settings — those are manager-only.
+            DefaultRole::TRAINER->value => $common,
             default => [],
         };
     }
@@ -287,6 +304,18 @@ class RolesAndPermissionsService
     /**
      * Assigns a role to a user for a given gym.
      *
+     * When Spatie teams are enabled, assignRole() reads
+     * getPermissionsTeamId() to write the team foreign key (gym_id)
+     * into the model_has_roles pivot. The roles() relationship also
+     * filters by this value. We therefore set the team ID for the
+     * duration of the assignment and restore it afterward.
+     *
+     * This is safe under sequential execution (HTTP requests, queue
+     * workers) because PHP is single-threaded and try/finally
+     * guarantees the restore. Under Laravel Octane, each worker
+     * process has its own static copy, so there is no cross-request
+     * contamination.
+     *
      * @throws \Exception If the role does not exist for the given gym.
      */
     public function assignRoleToTenant(?Gym $tenant, User $user, DefaultRole $roleName): void
@@ -300,22 +329,19 @@ class RolesAndPermissionsService
             ->where('gym_id', $tenant->id)
             ->first();
 
-        if ($role) {
-            $permissionRegistrar = app(PermissionRegistrar::class);
-
-            $permissionRegistrar->forgetCachedPermissions();
-
-            setPermissionsTeamId($tenant->id);
-
-            // Reload user's roles to ensure role checks use the updated team context
-            $user->load('roles');
-
-            // Assign the role to the user
-            $user->assignRole($role);
-
-            // setPermissionsTeamId(Filament::getTenantId());
-        } else {
+        if (! $role) {
             throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
+        }
+
+        // Set the team ID so Spatie writes the correct gym_id to the
+        // pivot and the roles() relationship can see the role.
+        // try/finally guarantees restore even on exceptions.
+        $previousTeamId = getPermissionsTeamId();
+        try {
+            setPermissionsTeamId($tenant->id);
+            $user->assignRole($role);
+        } finally {
+            setPermissionsTeamId($previousTeamId);
         }
     }
 
@@ -331,7 +357,9 @@ class RolesAndPermissionsService
 
     public function getPermissionCategory(string $permissionName): ?string
     {
-        return PermissionCategory::tryFrom($permissionName)->value ?? null;
+        $category = PermissionCategory::tryFrom($permissionName);
+
+        return $category?->value;
     }
 
     public function discoverFilamentPermissions(): array
@@ -356,7 +384,12 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Resource');
+                // Derive slug from the MODEL class name, not the Resource class name.
+                // This matches how BasePolicy generates permission names via $tableName.
+                // e.g. WhatsAppTransactionResource → model WhatsAppCreditTransaction → whatsapp_credit_transaction
+                $modelClass = $this->resolveResourceModel($reflection);
+                $prefix = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
+
                 $permissions = array_merge($permissions, $this->generateResourcePermissions($prefix, $actions));
             }
 
@@ -432,11 +465,125 @@ class RolesAndPermissionsService
     {
         $name = preg_replace('/' . preg_quote($suffix, '/') . '$/', '', $className);
 
-        // split on word boudaries (handles acronyms like QR, CRM)
+        // split on word boundaries (handles acronyms like QR, CRM)
         $name = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $name);
         $name = preg_replace('/([a-z\d])([A-Z])/', '$1_$2', $name);
-        // $name = preg_replace('/(?<!^)[A-Z]/', '_$0', $name);
 
         return strtolower(trim($name, '_'));
+    }
+
+    /**
+     * Derive permission slug from the Model class name when available,
+     * falling back to the Resource class name.
+     *
+     * This ensures generated permissions match BasePolicy's $tableName convention
+     * (e.g. WhatsAppCreditTransaction → whatsapp_credit_transaction, not whatsapp_transaction).
+     */
+    private function deriveSlugFromModelOrResource(?string $modelClass, \ReflectionClass $resourceReflection): string
+    {
+        if ($modelClass !== null) {
+            // Prefer the policy's $tableName — it's the source of truth for permission naming.
+            $tableName = $this->resolvePolicyTableName($modelClass);
+
+            if ($tableName !== null) {
+                return $tableName;
+            }
+
+            // Fallback to deriving from model class name
+            $modelReflection = $this->safeReflection($modelClass);
+
+            if ($modelReflection !== null) {
+                return $this->deriveSlugFromClassName($modelReflection->getShortName(), '');
+            }
+        }
+
+        return $this->deriveSlugFromClassName($resourceReflection->getShortName(), 'Resource');
+    }
+
+    /**
+     * Resolve the model class name from a Resource's static $model property.
+     * Uses reflection because direct static property access via string variable
+     * returns null in PHP.
+     */
+    private function resolveResourceModel(\ReflectionClass $resourceReflection): ?string
+    {
+        if (! $resourceReflection->hasProperty('model')) {
+            return null;
+        }
+
+        $prop = $resourceReflection->getProperty('model');
+        $prop->setAccessible(true);
+
+        return $prop->getValue();
+    }
+
+    /**
+     * Get the $tableName from a model's policy class.
+     * Policies that extend BasePolicy set $tableName which is used for permission naming.
+     *
+     * Tries multiple naming patterns to handle policy classes that don't follow
+     * the Laravel convention (e.g. WhatsAppTransactionPolicy for WhatsAppCreditTransaction model).
+     */
+    private function resolvePolicyTableName(string $modelClass): ?string
+    {
+        $modelName = class_basename($modelClass);
+
+        // Try standard convention: {Model}Policy
+        $tableName = $this->getTableNameFromPolicy('App\\Policies\\' . $modelName . 'Policy');
+
+        if ($tableName !== null) {
+            return $tableName;
+        }
+
+        // Try common variations where policy name differs from model name.
+        // e.g. WhatsAppCreditTransaction → WhatsAppTransactionPolicy
+        $prefixes = ['WhatsApp'];
+
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($modelName, $prefix) && strlen($modelName) > strlen($prefix)) {
+                $shortName = substr($modelName, strlen($prefix));
+                $candidatePolicy = 'App\\Policies\\' . $prefix . 'TransactionPolicy';
+
+                // Only try if the short name contains "Transaction" or similar patterns
+                if (str_contains($shortName, 'Credit')) {
+                    $tableName = $this->getTableNameFromPolicy($candidatePolicy);
+
+                    if ($tableName !== null) {
+                        return $tableName;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get $tableName from a specific policy class if it extends BasePolicy.
+     */
+    private function getTableNameFromPolicy(string $policyClass): ?string
+    {
+        if (! class_exists($policyClass)) {
+            return null;
+        }
+
+        $policyReflection = $this->safeReflection($policyClass);
+
+        if ($policyReflection === null || $policyReflection->isAbstract()) {
+            return null;
+        }
+
+        if (! $policyReflection->isSubclassOf('App\\Policies\\BasePolicy')) {
+            return null;
+        }
+
+        if (! $policyReflection->hasProperty('tableName')) {
+            return null;
+        }
+
+        $prop = $policyReflection->getProperty('tableName');
+        $prop->setAccessible(true);
+
+        return $prop->getValue();
     }
 }

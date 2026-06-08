@@ -67,11 +67,6 @@ class ImportDefaultPermissionsJob implements ShouldQueue
     {
         $recipient = User::where('id', $this->userId)->first();
 
-        Log::info('Notification user ');
-        Log::info($recipient);
-        Log::info($this->userId);
-        Log::info('Notification user ');
-
         if (! $recipient) {
             return;
         }

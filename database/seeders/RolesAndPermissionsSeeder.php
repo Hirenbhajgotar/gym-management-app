@@ -37,9 +37,6 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Reset cached roles and permissions
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
         $this->info('🔄 Creating permissions...');
 
         // Create all permissions
@@ -54,6 +51,9 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create per-gym roles efficiently
         $this->info('🔄 Creating per-gym roles...');
         $this->createPerGymRoles();
+
+        // Flush cache AFTER all inserts are complete
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->info('✅ Roles and permissions seeded successfully!');
 
@@ -87,9 +87,10 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function createSuperAdminRole(array $allPermissions): void
     {
+        $guardName = config('filament-permissions.guard_name', 'web');
         $superAdminRole = Role::firstOrCreate([
             'name' => DefaultRole::SUPER_ADMIN->value,
-            'guard_name' => 'web',
+            'guard_name' => $guardName,
         ]);
 
         // Use sync for super_admin since it's only one role
@@ -104,78 +105,84 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function createPerGymRoles(): void
     {
-        $gyms = Gym::all();
-
-        if ($gyms->isEmpty()) {
-            $this->info('   ⚠️ No gyms found. Skipping per-gym roles.');
-
-            return;
-        }
-
         // Get all tenant-specific roles
         $tenantRoles = DefaultRole::tenantRoles();
+        $requiredRoles = collect(DefaultRole::tenantRoles())->pluck('value')->toArray();
 
+        $guardName = config('filament-permissions.guard_name', 'web');
         $rolesCreated = 0;
         $permissionsAssigned = 0;
 
-        foreach ($gyms as $gym) {
-            // Check if roles already exist for this gym
-            $existingRoles = Role::where('gym_id', $gym->id)->count();
+        Gym::chunk(50, function ($gyms) use ($tenantRoles, $requiredRoles, $guardName, &$rolesCreated, &$permissionsAssigned) {
+            if ($gyms->isEmpty()) {
+                $this->info('   ⚠️ No gyms found. Skipping per-gym roles.');
 
-            if ($existingRoles > 0) {
-                continue; // Skip gyms that already have roles
+                return;
             }
 
-            // Create roles for this gym
-            $roleData = array_map(fn ($role) => [
-                'name' => $role->value,
-                'guard_name' => 'web',
-                'gym_id' => $gym->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ], $tenantRoles);
+            foreach ($gyms as $gym) {
+                // Check if roles already exist for this gym
+                $existingRoles = Role::where('gym_id', $gym->id)
+                    ->whereIn('name', $requiredRoles)
+                    ->pluck('name')
+                    ->toArray();
 
-            // Bulk insert roles
-            Role::insert($roleData);
-            $rolesCreated += count($roleData);
-
-            // Fetch the created role IDs
-            $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
-                ->where('gym_id', $gym->id)
-                ->pluck('id', 'name');
-
-            // Assign default permissions to roles
-            $permissionInsertData = [];
-
-            foreach ($tenantRoles as $role) {
-                if (! isset($createdRoles[$role->value])) {
-                    continue;
+                $missingRoles = array_diff($requiredRoles, $existingRoles);
+                if (empty($missingRoles)) {
+                    continue; // Skip gyms that already have all roles
                 }
 
-                // Get default permissions for this role from service
-                $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($role->value);
+                // Create roles for this gym
+                $roleData = array_map(fn ($role) => [
+                    'name' => $role,
+                    'guard_name' => $guardName,
+                    'gym_id' => $gym->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $missingRoles);
 
-                if (! empty($defaultPermissions)) {
-                    $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id');
-                    $roleId = $createdRoles[$role->value];
+                // Bulk insert roles
+                Role::insert($roleData);
+                $rolesCreated += count($roleData);
 
-                    foreach ($permissionIds as $permissionId) {
-                        $permissionInsertData[] = [
-                            'permission_id' => $permissionId,
-                            'role_id' => $roleId,
-                        ];
+                // Fetch the created role IDs
+                $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+                    ->where('gym_id', $gym->id)
+                    ->pluck('id', 'name');
+
+                // Assign default permissions to roles
+                $permissionInsertData = [];
+
+                foreach ($tenantRoles as $role) {
+                    if (! isset($createdRoles[$role->value])) {
+                        continue;
+                    }
+
+                    // Get default permissions for this role from service
+                    $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($role->value);
+
+                    if (! empty($defaultPermissions)) {
+                        $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id');
+                        $roleId = $createdRoles[$role->value];
+
+                        foreach ($permissionIds as $permissionId) {
+                            $permissionInsertData[] = [
+                                'permission_id' => $permissionId,
+                                'role_id' => $roleId,
+                            ];
+                        }
                     }
                 }
-            }
 
-            // Bulk insert permissions for this gym's roles
-            if (! empty($permissionInsertData)) {
-                foreach (array_chunk($permissionInsertData, 500) as $chunk) {
-                    DB::table('role_has_permissions')->insert($chunk);
+                // Bulk insert permissions for this gym's roles
+                if (! empty($permissionInsertData)) {
+                    foreach (array_chunk($permissionInsertData, 500) as $chunk) {
+                        DB::table('role_has_permissions')->insertOrIgnore($chunk);
+                    }
+                    $permissionsAssigned += count($permissionInsertData);
                 }
-                $permissionsAssigned += count($permissionInsertData);
             }
-        }
+        });
 
         $this->info("   📊 Created {$rolesCreated} roles with {$permissionsAssigned} permission assignments");
     }

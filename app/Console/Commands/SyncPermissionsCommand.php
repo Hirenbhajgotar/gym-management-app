@@ -61,24 +61,14 @@ class SyncPermissionsCommand extends Command
         // Step 4: Sync other tenant roles (manager, receptionist, trainer)
         $otherRolesStats = $this->syncOtherTenantRoles($gymId, $dryRun, $force);
 
-        // Clear permission cache for affected gyms
+        // Clear permission cache — always flush globally since permission names are unique
+        // and the cache is not team-scoped. The setPermissionsTeamId() approach was removed
+        // because it mutates global state, which is unsafe under concurrent execution
+        // (Octane, queue workers) and leaks team context across requests.
         if (! $dryRun) {
             $registrar = app(PermissionRegistrar::class);
-
-            if ($gymId) {
-                // Clear cache for specific gym only
-                if (method_exists($registrar, 'forgetCachedPermissionsForGym')) {
-                    $registrar->forgetCachedPermissionsForGym($gymId);
-                } else {
-                    setPermissionsTeamId($gymId);
-                    $registrar->forgetCachedPermissions();
-                }
-                $this->info("   🗑️ Cleared permission cache for gym #{$gymId}");
-            } else {
-                // Clear base cache (super_admin uses this)
-                $registrar->forgetCachedPermissions();
-                $this->info('   🗑️ Cleared global permission cache');
-            }
+            $registrar->forgetCachedPermissions();
+            $this->info('   🗑️ Cleared global permission cache');
         }
 
         $this->newLine();
@@ -260,17 +250,13 @@ class SyncPermissionsCommand extends Command
                 $query->where('gym_id', $gymId);
             }
 
-            $roles = $query->get();
+            // Use cursor() to process roles lazily — avoids loading all roles
+            // into memory at once (critical for large multi-tenant installations)
+            foreach ($query->cursor() as $role) {
+                // Get default permissions for this role
+                $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($roleName);
+                $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
 
-            if ($roles->isEmpty()) {
-                continue;
-            }
-
-            // Get default permissions for this role
-            $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($roleName);
-            $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
-
-            foreach ($roles as $role) {
                 $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
                 $missingPermissionIds = array_diff($permissionIds, $currentPermissionIds);
 
