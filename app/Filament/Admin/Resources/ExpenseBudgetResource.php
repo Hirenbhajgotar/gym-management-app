@@ -2,20 +2,20 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\ExpenseBudget;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class ExpenseBudgetResource extends Resource implements HasFilamentPermissions
+class ExpenseBudgetResource extends BaseResource
 {
     protected static ?string $model = ExpenseBudget::class;
 
@@ -26,6 +26,20 @@ class ExpenseBudgetResource extends Resource implements HasFilamentPermissions
     protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'reorder',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => ['view', 'view_any'],
+            DefaultRole::TRAINER->value => ['view', 'view_any'],
+        ];
+    }
 
     public static function form(Form $form): Form
     {

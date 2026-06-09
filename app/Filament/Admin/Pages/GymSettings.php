@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\GymSetting;
 use App\Models\Payment;
 use App\Traits\HasTenantAccess;
@@ -14,12 +14,11 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 
 /**
  * @property Form $form
  */
-class GymSettings extends Page implements HasActions, HasFilamentPermissions, HasForms
+class GymSettings extends BasePage implements HasActions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
@@ -33,15 +32,6 @@ class GymSettings extends Page implements HasActions, HasFilamentPermissions, Ha
 
     protected ?string $heading = 'Settings';
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-        ]) ?? false;
-    }
-
     public ?array $data = [];
 
     private const NOTIFICATION_KEYS = [
@@ -53,6 +43,20 @@ class GymSettings extends Page implements HasActions, HasFilamentPermissions, Ha
         'lead_reminders_notifications',
         'qr_checkin_otp_enabled',
     ];
+
+    public function defaultRolePermissions(): array
+    {
+        return [];
+    }
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public function mount(): void
     {

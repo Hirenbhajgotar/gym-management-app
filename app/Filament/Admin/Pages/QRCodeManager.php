@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\Gym;
 use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -12,11 +12,10 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
 use LaraZeus\Qr\Facades\Qr;
 
-class QRCodeManager extends Page implements HasActions, HasFilamentPermissions, HasForms
+class QRCodeManager extends BasePage implements HasActions, HasForms
 {
     use HasTenantAccess, InteractsWithActions, InteractsWithForms;
 
@@ -30,17 +29,6 @@ class QRCodeManager extends Page implements HasActions, HasFilamentPermissions, 
 
     protected ?string $heading = 'QR Code Attendance';
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-            DefaultRole::MANAGER->value,
-            DefaultRole::RECEPTIONIST->value,
-        ]) ?? false;
-    }
-
     public ?array $data = [];
 
     public Gym $gym;
@@ -48,6 +36,15 @@ class QRCodeManager extends Page implements HasActions, HasFilamentPermissions, 
     public bool $hasCheckInQrCode = false;
 
     public bool $hasCheckoutQrCode = false;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => ['page'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public function mount(): void
     {

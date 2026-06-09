@@ -17,7 +17,7 @@ class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
 
-    public static function canAccess(): bool
+    public static function canAccess(array $parameters = []): bool
     {
         return auth()->user()?->hasAnyRole([
             DefaultRole::SUPER_ADMIN->value,

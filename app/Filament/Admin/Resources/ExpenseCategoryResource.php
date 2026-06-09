@@ -2,19 +2,19 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\FilamentColor;
 use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class ExpenseCategoryResource extends Resource implements HasFilamentPermissions
+class ExpenseCategoryResource extends BaseResource
 {
     protected static ?string $model = ExpenseCategory::class;
 
@@ -25,6 +25,20 @@ class ExpenseCategoryResource extends Resource implements HasFilamentPermissions
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'reorder',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public static function form(Form $form): Form
     {

@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
 use App\Filament\Actions\ExportBulkAction;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
@@ -15,7 +15,6 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class TrainerResource extends Resource implements HasFilamentPermissions
+class TrainerResource extends BaseResource
 {
     protected static ?string $model = Trainer::class;
 

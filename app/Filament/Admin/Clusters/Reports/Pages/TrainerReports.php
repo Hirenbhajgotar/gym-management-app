@@ -2,21 +2,21 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerReports extends Page implements HasFilamentPermissions, ShareableReport
+class TrainerReports extends BasePage implements ShareableReport
 {
     use HasReportFilters;
 
@@ -31,6 +31,15 @@ class TrainerReports extends Page implements HasFilamentPermissions, ShareableRe
     protected static ?string $cluster = Reports::class;
 
     protected static string $view = 'filament.clusters.reports.pages.trainer-reports';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => ['page'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     /**
      * Get Livewire listeners for real-time updates via Echo.

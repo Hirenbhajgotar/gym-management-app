@@ -2,9 +2,8 @@
 
 namespace App\Filament\Admin\Pages\BiometricDevice;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\BiometricTypeEnum;
-use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
@@ -12,13 +11,10 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 
-class EnrollMember extends Page implements HasFilamentPermissions
+class EnrollMember extends BasePage
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
     protected static string $view = 'filament.admin.pages.biometric-device.enroll-member';
 
     protected static ?string $navigationGroup = 'Device Management';
@@ -38,26 +34,6 @@ class EnrollMember extends Page implements HasFilamentPermissions
     public function mount(): void
     {
         $this->form->fill();
-    }
-
-    public static function canAccess(array $parameters = []): bool
-    {
-        $user = auth()->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-        ])) {
-            return true;
-        }
-
-        return $user->can('view_any_gym_member')
-            || $user->can('manage_biometric');
     }
 
     public function getDevices(): array

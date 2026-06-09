@@ -2,8 +2,9 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
 use App\Models\Permission as ModelsPermission;
@@ -13,14 +14,13 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Permission;
 
-class PermissionsResource extends Resource implements HasFilamentPermissions
+class PermissionsResource extends BaseResource
 {
     protected static ?string $model = ModelsPermission::class;
 
@@ -184,7 +184,12 @@ class PermissionsResource extends Resource implements HasFilamentPermissions
 
     public static function canAccess(): bool
     {
-        // Check if user has gym_owner role for this specific gym
-        return auth()->user()->hasRole('super_admin');
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 }

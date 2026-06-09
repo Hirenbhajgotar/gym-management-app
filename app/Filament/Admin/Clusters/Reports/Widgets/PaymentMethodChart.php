@@ -2,15 +2,14 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\PaymentStatus;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\MemberPayment;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class PaymentMethodChart extends ChartWidget implements HasFilamentPermissions
+class PaymentMethodChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Revenue by Payment Method';
 

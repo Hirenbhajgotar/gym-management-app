@@ -2,13 +2,13 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricDoorControlType;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\BiometricDevice;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Js;
 
-class BiometricDeviceResource extends Resource implements HasFilamentPermissions
+class BiometricDeviceResource extends BaseResource
 {
     protected static ?string $model = BiometricDevice::class;
 
@@ -60,6 +60,28 @@ class BiometricDeviceResource extends Resource implements HasFilamentPermissions
         }) ?: null;
     }
 
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'create',
+                'delete',
+                'delete_any',
+                'update',
+                'restore',
+                'replicate',
+                'reorder',
+                'export',
+                'import',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
+
     public static function canAccess(array $parameters = []): bool
     {
         // Temporary disabled this resource.
@@ -80,7 +102,9 @@ class BiometricDeviceResource extends Resource implements HasFilamentPermissions
             return true;
         }
 
-        return $user->can('view_any_biometric_device');
+        $slug = (new static)->getPermissionSlug();
+
+        return $user->can("view_any_{$slug}");
     }
 
     public static function getEloquentQuery(): Builder

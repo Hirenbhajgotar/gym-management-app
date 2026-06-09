@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\Currency;
+use App\Enums\DefaultRole;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
@@ -11,6 +11,7 @@ use App\Filament\Admin\Resources\GymMemberResource\Pages;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\BiometricTemplatesRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
+use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
@@ -30,7 +31,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -40,7 +40,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class GymMemberResource extends Resource implements HasFilamentPermissions
+class GymMemberResource extends BaseResource
 {
     protected static ?string $model = GymMember::class;
 
@@ -59,6 +59,28 @@ class GymMemberResource extends Resource implements HasFilamentPermissions
         return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [21600, 604800], function () {
             return (string) (static::$model)::query()->count();
         }) ?: null;
+    }
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'create',
+                'delete',
+                'delete_any',
+                'update',
+                'restore',
+                'replicate',
+                'reorder',
+                'export',
+                'import',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => ['view', 'view_any', 'create', 'update', 'replicate', 'reorder', 'export', 'import'],
+            DefaultRole::TRAINER->value => ['view', 'view_any', 'create', 'update', 'replicate', 'reorder', 'export', 'import'],
+        ];
     }
 
     public static function form(Form $form): Form

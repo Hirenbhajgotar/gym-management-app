@@ -86,4 +86,39 @@ return [
     */
     'full_access_roles' => ['super_admin', 'gym_owner'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-Discover Default Roles
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the discovery service collects defaultRolePermissions() declarations
+    | from Resources, Pages, and Widgets that implement HasFilamentPermissions.
+    | These are merged with fallback_default_roles for role-permission assignment.
+    |
+    */
+    'discover_default_roles' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fallback Default Roles
+    |--------------------------------------------------------------------------
+    |
+    | Fallback role-to-resource mappings used when discover_default_roles is
+    | disabled, or when a resource/page/widget does not declare defaultRolePermissions().
+    | Mirrors the structure of config/default-roles-and-permissions.php.
+    |
+    */
+    'fallback_default_roles' => [
+        'manager' => [
+            'user', 'trainer', 'receptionist', 'gym_member', 'gym',
+            'membership_plan', 'attendance', 'payment', 'lead',
+        ],
+        'receptionist' => [
+            'gym_member', 'membership_plan', 'attendance', 'payment', 'lead',
+        ],
+        'trainer' => [
+            'attendance', 'gym_member',
+        ],
+    ],
+
 ];

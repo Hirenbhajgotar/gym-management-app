@@ -2,7 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\CreateWhatsAppPackage;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\EditWhatsAppPackage;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\ListWhatsAppPackages;
@@ -11,13 +12,12 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppPackageResource extends Resource implements HasFilamentPermissions
+class WhatsAppPackageResource extends BaseResource
 {
     protected static ?string $model = WhatsAppPackage::class;
 
@@ -34,6 +34,17 @@ class WhatsAppPackageResource extends Resource implements HasFilamentPermissions
     const TWILIO_COST_PER_MESSAGE = 1.53;
 
     const TWILIO_NUMBER_COST = 136.41;
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function getNavigationBadge(): ?string
     {

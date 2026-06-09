@@ -243,6 +243,8 @@ class SyncPermissionsCommand extends Command
 
         $stats = ['synced' => 0, 'permissions_added' => 0];
 
+        $discoveredAssignments = $this->rolesService->getDiscoveredDefaultRoleAssignments();
+
         foreach ($rolesToSync as $roleName) {
             $query = Role::where('name', $roleName)->whereNotNull('gym_id');
 
@@ -250,11 +252,9 @@ class SyncPermissionsCommand extends Command
                 $query->where('gym_id', $gymId);
             }
 
-            // Use cursor() to process roles lazily — avoids loading all roles
-            // into memory at once (critical for large multi-tenant installations)
             foreach ($query->cursor() as $role) {
-                // Get default permissions for this role
-                $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($roleName);
+                $defaultPermissions = $discoveredAssignments[$roleName]
+                    ?? $this->rolesService->getDynamicDefaultPermissions($roleName);
                 $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
 
                 $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
@@ -271,7 +271,6 @@ class SyncPermissionsCommand extends Command
                     continue;
                 }
 
-                // Add only missing permissions (don't remove existing ones)
                 $insertData = array_map(fn ($permissionId) => [
                     'permission_id' => $permissionId,
                     'role_id' => $role->id,

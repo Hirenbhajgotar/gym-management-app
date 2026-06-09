@@ -2,15 +2,14 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadStatus;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class LeadConversionChart extends ChartWidget implements HasFilamentPermissions
+class LeadConversionChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Monthly Lead Conversion';
 

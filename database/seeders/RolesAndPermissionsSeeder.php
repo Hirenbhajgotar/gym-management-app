@@ -105,7 +105,6 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function createPerGymRoles(): void
     {
-        // Get all tenant-specific roles
         $tenantRoles = DefaultRole::tenantRoles();
         $requiredRoles = collect(DefaultRole::tenantRoles())->pluck('value')->toArray();
 
@@ -113,7 +112,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $rolesCreated = 0;
         $permissionsAssigned = 0;
 
-        Gym::chunk(50, function ($gyms) use ($tenantRoles, $requiredRoles, $guardName, &$rolesCreated, &$permissionsAssigned) {
+        $discoveredAssignments = $this->rolesService->getDiscoveredDefaultRoleAssignments();
+
+        Gym::chunk(50, function ($gyms) use ($tenantRoles, $requiredRoles, $guardName, &$rolesCreated, &$permissionsAssigned, $discoveredAssignments) {
             if ($gyms->isEmpty()) {
                 $this->info('   ⚠️ No gyms found. Skipping per-gym roles.');
 
@@ -121,7 +122,6 @@ class RolesAndPermissionsSeeder extends Seeder
             }
 
             foreach ($gyms as $gym) {
-                // Check if roles already exist for this gym
                 $existingRoles = Role::where('gym_id', $gym->id)
                     ->whereIn('name', $requiredRoles)
                     ->pluck('name')
@@ -129,10 +129,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
                 $missingRoles = array_diff($requiredRoles, $existingRoles);
                 if (empty($missingRoles)) {
-                    continue; // Skip gyms that already have all roles
+                    continue;
                 }
 
-                // Create roles for this gym
                 $roleData = array_map(fn ($role) => [
                     'name' => $role,
                     'guard_name' => $guardName,
@@ -141,16 +140,13 @@ class RolesAndPermissionsSeeder extends Seeder
                     'updated_at' => now(),
                 ], $missingRoles);
 
-                // Bulk insert roles
                 Role::insert($roleData);
                 $rolesCreated += count($roleData);
 
-                // Fetch the created role IDs
                 $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
                     ->where('gym_id', $gym->id)
                     ->pluck('id', 'name');
 
-                // Assign default permissions to roles
                 $permissionInsertData = [];
 
                 foreach ($tenantRoles as $role) {
@@ -158,8 +154,8 @@ class RolesAndPermissionsSeeder extends Seeder
                         continue;
                     }
 
-                    // Get default permissions for this role from service
-                    $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($role->value);
+                    $defaultPermissions = $discoveredAssignments[$role->value]
+                        ?? $this->rolesService->getDynamicDefaultPermissions($role->value);
 
                     if (! empty($defaultPermissions)) {
                         $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id');
@@ -174,7 +170,6 @@ class RolesAndPermissionsSeeder extends Seeder
                     }
                 }
 
-                // Bulk insert permissions for this gym's roles
                 if (! empty($permissionInsertData)) {
                     foreach (array_chunk($permissionInsertData, 500) as $chunk) {
                         DB::table('role_has_permissions')->insertOrIgnore($chunk);

@@ -2,22 +2,20 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppCreditTransactionEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\WhatsAppCreditTransaction;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class WhatsAppTransactionResource extends Resource implements HasFilamentPermissions
+class WhatsAppTransactionResource extends BaseResource
 {
     protected static ?string $model = WhatsAppCreditTransaction::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?string $navigationGroup = 'WhatsApp';
 
@@ -35,6 +33,19 @@ class WhatsAppTransactionResource extends Resource implements HasFilamentPermiss
     public static function canUpdate(): bool
     {
         return false;
+    }
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => ['view', 'view_any'],
+            DefaultRole::TRAINER->value => ['view', 'view_any'],
+        ];
     }
 
     public static function table(Table $table): Table

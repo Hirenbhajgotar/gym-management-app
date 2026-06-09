@@ -7,7 +7,9 @@ use App\Enums\PermissionCategory;
 use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\User;
+use App\Traits\ConvertsToSnakeCase;
 use App\Traits\DefaultPermissionResourceTrait;
+use App\Traits\ResolvesPolicyTableName;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -15,9 +17,11 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsService
 {
+    use ConvertsToSnakeCase;
     use DefaultPermissionResourceTrait {
         getDefaultPermissions as traitGetDefaultPermissions;
     }
+    use ResolvesPolicyTableName;
 
     /**
      * Create default roles for a gym tenant.
@@ -404,7 +408,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Page');
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
                 $permissions[] = $this->generatePagePermission($prefix);
             }
 
@@ -419,7 +423,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                $prefix = $this->deriveSlugFromClassName($reflection->getShortName(), 'Widget');
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
                 $permissions[] = $this->generateWidgetPermission($prefix);
             }
         }
@@ -427,13 +431,139 @@ class RolesAndPermissionsService
         return array_values(array_unique($permissions));
     }
 
-    private function safeReflection(string $className): ?\ReflectionClass
+    /**
+     * Collect default role assignments from all discovered Filament classes.
+     *
+     * Scans panels for Resources, Pages, and Widgets implementing HasFilamentPermissions,
+     * calls defaultRolePermissions() on each, and groups permissions by role.
+     *
+     * @return array<string, string[]> role name => permission names
+     */
+    public function getDiscoveredDefaultRoleAssignments(): array
     {
-        try {
-            return new \ReflectionClass($className);
-        } catch (\ReflectionException) {
-            return null;
+        $assignments = [];
+        $panelIds = config('filament-permissions.panels', []);
+        $actions = config('filament-permissions.resource_actions', []);
+        $discoverEnabled = config('filament-permissions.discover_default_roles', true);
+
+        if (! $discoverEnabled) {
+            return $this->getFallbackDefaultRoleAssignments();
         }
+
+        foreach (Filament::getPanels() as $id => $panel) {
+            if (! in_array($id, $panelIds, true)) {
+                continue;
+            }
+
+            foreach ($panel->getResources() as $resourceClass) {
+                $reflection = $this->safeReflection($resourceClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $modelClass = $this->resolveResourceModel($reflection);
+                $prefix = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    foreach ($actions as $action) {
+                        $assignments[$roleName][] = "{$action}_{$prefix}";
+                    }
+                }
+            }
+
+            foreach ($panel->getPages() as $pageClass) {
+                $reflection = $this->safeReflection($pageClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    if (! empty($actions)) {
+                        $assignments[$roleName][] = "page_{$prefix}";
+                    }
+                }
+            }
+
+            foreach ($panel->getWidgets() as $widgetClass) {
+                $reflection = $this->safeReflection($widgetClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    if (! empty($actions)) {
+                        $assignments[$roleName][] = "widget_{$prefix}";
+                    }
+                }
+            }
+        }
+
+        foreach ($assignments as $role => $perms) {
+            $assignments[$role] = array_values(array_unique($perms));
+        }
+
+        $fallback = $this->getFallbackDefaultRoleAssignments();
+
+        foreach ($fallback as $role => $resourceSlugs) {
+            if (! isset($assignments[$role])) {
+                $resourceActions = config('filament-permissions.resource_actions', []);
+                $generatedPermissions = [];
+
+                foreach ($resourceSlugs as $slug) {
+                    foreach ($resourceActions as $action) {
+                        $generatedPermissions[] = "{$action}_{$slug}";
+                    }
+                }
+
+                $assignments[$role] = $generatedPermissions;
+            }
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * Get fallback role-to-resource mappings from config.
+     *
+     * @return array<string, string[]>
+     */
+    protected function getFallbackDefaultRoleAssignments(): array
+    {
+        return (array) config('filament-permissions.fallback_default_roles', []);
     }
 
     public function generateResourcePermissions(string $prefix, ?array $actions = null): array
@@ -461,17 +591,6 @@ class RolesAndPermissionsService
         return "{$prefix}{$slug}";
     }
 
-    public function deriveSlugFromClassName(string $className, string $suffix): string
-    {
-        $name = preg_replace('/' . preg_quote($suffix, '/') . '$/', '', $className);
-
-        // split on word boundaries (handles acronyms like QR, CRM)
-        $name = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $name);
-        $name = preg_replace('/([a-z\d])([A-Z])/', '$1_$2', $name);
-
-        return strtolower(trim($name, '_'));
-    }
-
     /**
      * Derive permission slug from the Model class name when available,
      * falling back to the Resource class name.
@@ -493,11 +612,11 @@ class RolesAndPermissionsService
             $modelReflection = $this->safeReflection($modelClass);
 
             if ($modelReflection !== null) {
-                return $this->deriveSlugFromClassName($modelReflection->getShortName(), '');
+                return $this->convertFromClassName($modelReflection->getShortName(), '');
             }
         }
 
-        return $this->deriveSlugFromClassName($resourceReflection->getShortName(), 'Resource');
+        return $this->convertFromClassName($resourceReflection->getShortName(), 'Resource');
     }
 
     /**
@@ -512,76 +631,6 @@ class RolesAndPermissionsService
         }
 
         $prop = $resourceReflection->getProperty('model');
-        $prop->setAccessible(true);
-
-        return $prop->getValue();
-    }
-
-    /**
-     * Get the $tableName from a model's policy class.
-     * Policies that extend BasePolicy set $tableName which is used for permission naming.
-     *
-     * Tries multiple naming patterns to handle policy classes that don't follow
-     * the Laravel convention (e.g. WhatsAppTransactionPolicy for WhatsAppCreditTransaction model).
-     */
-    private function resolvePolicyTableName(string $modelClass): ?string
-    {
-        $modelName = class_basename($modelClass);
-
-        // Try standard convention: {Model}Policy
-        $tableName = $this->getTableNameFromPolicy('App\\Policies\\' . $modelName . 'Policy');
-
-        if ($tableName !== null) {
-            return $tableName;
-        }
-
-        // Try common variations where policy name differs from model name.
-        // e.g. WhatsAppCreditTransaction → WhatsAppTransactionPolicy
-        $prefixes = ['WhatsApp'];
-
-        foreach ($prefixes as $prefix) {
-            if (str_starts_with($modelName, $prefix) && strlen($modelName) > strlen($prefix)) {
-                $shortName = substr($modelName, strlen($prefix));
-                $candidatePolicy = 'App\\Policies\\' . $prefix . 'TransactionPolicy';
-
-                // Only try if the short name contains "Transaction" or similar patterns
-                if (str_contains($shortName, 'Credit')) {
-                    $tableName = $this->getTableNameFromPolicy($candidatePolicy);
-
-                    if ($tableName !== null) {
-                        return $tableName;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get $tableName from a specific policy class if it extends BasePolicy.
-     */
-    private function getTableNameFromPolicy(string $policyClass): ?string
-    {
-        if (! class_exists($policyClass)) {
-            return null;
-        }
-
-        $policyReflection = $this->safeReflection($policyClass);
-
-        if ($policyReflection === null || $policyReflection->isAbstract()) {
-            return null;
-        }
-
-        if (! $policyReflection->isSubclassOf('App\\Policies\\BasePolicy')) {
-            return null;
-        }
-
-        if (! $policyReflection->hasProperty('tableName')) {
-            return null;
-        }
-
-        $prop = $policyReflection->getProperty('tableName');
         $prop->setAccessible(true);
 
         return $prop->getValue();

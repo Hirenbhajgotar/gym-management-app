@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\SocialPlatform;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\TenantSocialConfig;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
@@ -23,7 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
-class TenantSocialConfigResource extends Resource implements HasFilamentPermissions
+class TenantSocialConfigResource extends BaseResource
 {
     protected static ?string $model = TenantSocialConfig::class;
 

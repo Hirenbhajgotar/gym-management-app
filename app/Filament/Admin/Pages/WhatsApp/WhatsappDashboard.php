@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppUsageLog;
@@ -16,11 +16,10 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class WhatsappDashboard extends Page implements HasActions, HasFilamentPermissions, HasForms
+class WhatsappDashboard extends BasePage implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
 
@@ -34,16 +33,6 @@ class WhatsappDashboard extends Page implements HasActions, HasFilamentPermissio
 
     protected static string $view = 'filament.tenant.pages.whatsapp-dashboard';
 
-    // Only access for super_admin, admin and gym_owner
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-        ]) ?? false;
-    }
-
     public ?WhatsAppAccount $whatsappAccount = null;
 
     public ?WhatsAppMessageCredit $creditBalance = null;
@@ -55,6 +44,21 @@ class WhatsappDashboard extends Page implements HasActions, HasFilamentPermissio
     public ?array $data = [];
 
     public bool $hasWhatsAppSetup = false;
+
+    public function defaultRolePermissions(): array
+    {
+        return [];
+    }
+
+    // Only access for super_admin, admin and gym_owner
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public function mount(): void
     {

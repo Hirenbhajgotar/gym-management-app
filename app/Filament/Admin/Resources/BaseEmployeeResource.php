@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\Currency;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Models\User;
 use App\Rules\ValidEmailDomain;
@@ -16,7 +17,6 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Pages\Concerns\HasWizard;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-abstract class BaseEmployeeResource extends Resource
+abstract class BaseEmployeeResource extends BaseResource
 {
     use HasWizard;
 

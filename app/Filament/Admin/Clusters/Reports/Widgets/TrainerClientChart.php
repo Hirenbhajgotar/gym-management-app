@@ -2,18 +2,27 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class TrainerClientChart extends ChartWidget implements HasFilamentPermissions
+class TrainerClientChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Clients per Trainer';
 
     protected static ?string $pollingInterval = null;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => ['widget'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     /**
      * Get Livewire listeners for real-time updates via Echo.

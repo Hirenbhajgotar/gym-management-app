@@ -2,12 +2,11 @@
 
 namespace App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Services\LoginActivityService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class LoginActivityStatsWidget extends BaseWidget implements HasFilamentPermissions
+class LoginActivityStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {

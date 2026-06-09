@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use Filament\Facades\Filament;
@@ -10,7 +9,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 
-class CRMStatsWidget extends BaseWidget implements HasFilamentPermissions
+class CRMStatsWidget extends BaseWidget
 {
     protected static ?string $pollingInterval = null;
 

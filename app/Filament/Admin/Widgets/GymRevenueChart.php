@@ -2,16 +2,15 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use App\Traits\HasTenantAccess;
-use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 use Illuminate\Support\Facades\Cache;
 
-class GymRevenueChart extends ChartWidget implements HasFilamentPermissions
+class GymRevenueChart extends BaseChartWidget
 {
     use HasTenantAccess;
 

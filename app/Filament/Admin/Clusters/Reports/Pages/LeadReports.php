@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Exports\LeadReportExport;
@@ -10,6 +9,7 @@ use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadConversionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadFunnelChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\LeadSourceChart;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
@@ -19,10 +19,9 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class LeadReports extends Page implements HasFilamentPermissions, HasForms, ShareableReport
+class LeadReports extends BasePage implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;

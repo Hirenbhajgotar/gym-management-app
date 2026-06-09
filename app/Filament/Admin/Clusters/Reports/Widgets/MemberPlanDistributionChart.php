@@ -2,14 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class MemberPlanDistributionChart extends ChartWidget implements HasFilamentPermissions
+class MemberPlanDistributionChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Members by Membership Plan';
 

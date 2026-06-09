@@ -2,17 +2,17 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CountryResource\Pages;
 use App\Models\Country;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class CountryResource extends Resource implements HasFilamentPermissions
+class CountryResource extends BaseResource
 {
     protected static ?string $model = Country::class;
 
@@ -22,12 +22,16 @@ class CountryResource extends Resource implements HasFilamentPermissions
 
     protected static ?int $navigationSort = 3;
 
-    // public static function canAccess(array $parameters = []): bool
-    // {
-    //     $user = auth()->user();
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
 
-    //     return $user->hasRole('super_admin');
-    // }
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function getFormSchema()
     {

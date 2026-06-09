@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppTemplate;
 use App\Providers\WhatsAppProviderFactory;
@@ -16,7 +17,6 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
@@ -26,11 +26,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppTemplateResource extends Resource implements HasFilamentPermissions
+class WhatsAppTemplateResource extends BaseResource
 {
     protected static ?string $model = WhatsAppTemplate::class;
-
-    protected static ?string $navigationIcon = 'phosphor-chat-text';
 
     protected static ?string $navigationGroup = 'WhatsApp';
 
@@ -39,6 +37,20 @@ class WhatsAppTemplateResource extends Resource implements HasFilamentPermission
     protected static ?string $navigationLabel = 'Templates';
 
     protected static ?string $modelLabel = 'Template';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'reorder',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public static function getNavigationBadge(): ?string
     {

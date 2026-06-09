@@ -2,7 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\Location;
 use App\Filament\SuperAdmin\Resources\CityResource\Pages;
 use App\Models\City;
@@ -11,14 +12,13 @@ use App\Models\State;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
-class CityResource extends Resource implements HasFilamentPermissions
+class CityResource extends BaseResource
 {
     protected static ?string $model = City::class;
 
@@ -28,12 +28,16 @@ class CityResource extends Resource implements HasFilamentPermissions
 
     protected static ?int $navigationSort = 1;
 
-    // public static function canAccess(array $parameters = []): bool
-    // {
-    //     $user = auth()->user();
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
 
-    //     return $user->hasRole('super_admin');
-    // }
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function getEloquentQuery(): Builder
     {

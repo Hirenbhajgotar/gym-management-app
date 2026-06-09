@@ -2,7 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ListWhatsAppAccounts;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ViewWhatsAppAccount;
 use App\Models\WhatsAppAccount;
@@ -11,12 +12,11 @@ use Filament\Forms;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
-class WhatsAppAccountResource extends Resource implements HasFilamentPermissions
+class WhatsAppAccountResource extends BaseResource
 {
     protected static ?string $model = WhatsAppAccount::class;
 
@@ -36,6 +36,17 @@ class WhatsAppAccountResource extends Resource implements HasFilamentPermissions
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         return false;
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 
     public static function getNavigationBadge(): ?string

@@ -2,7 +2,8 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\ExpenseBudget;
 use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
@@ -10,7 +11,7 @@ use Filament\Widgets\Widget;
 /**
  * Dashboard widget showing budget usage overview with progress bars.
  */
-class BudgetOverviewWidget extends Widget implements HasFilamentPermissions
+class BudgetOverviewWidget extends BaseWidget
 {
     protected static string $view = 'filament.widgets.budget-overview';
 
@@ -19,6 +20,15 @@ class BudgetOverviewWidget extends Widget implements HasFilamentPermissions
     protected int|string|array $columnSpan = 'full';
 
     protected static ?string $pollingInterval = null;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     protected function getListeners(): array
     {

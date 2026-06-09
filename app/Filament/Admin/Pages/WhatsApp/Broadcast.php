@@ -2,9 +2,8 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
-use App\Contracts\HasFilamentPermissions;
-use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
+use App\Filament\BasePages\BasePage;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
@@ -23,7 +22,6 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -31,7 +29,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
-class Broadcast extends Page implements HasActions, HasFilamentPermissions, HasForms, HasTable
+class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 {
     use InteractsWithActions, InteractsWithForms, InteractsWithTable;
 
@@ -40,25 +38,6 @@ class Broadcast extends Page implements HasActions, HasFilamentPermissions, HasF
     protected static ?string $navigationLabel = 'Bulk SMS';
 
     protected static ?string $title = 'Bulk SMS';
-
-    public static function canAccess(): bool
-    {
-        $user = auth()->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-        ])) {
-            return true;
-        }
-
-        return $user->can('send_broadcast');
-    }
 
     protected static ?string $navigationGroup = 'WhatsApp';
 
@@ -102,6 +81,11 @@ class Broadcast extends Page implements HasActions, HasFilamentPermissions, HasF
         $this->broadcastOrchestrator = app(BroadcastOrchestrator::class);
         $this->loadTemplates();
         $this->initializeForm();
+    }
+
+    public function defaultRolePermissions(): array
+    {
+        return [];
     }
 
     private function loadTemplates(): void

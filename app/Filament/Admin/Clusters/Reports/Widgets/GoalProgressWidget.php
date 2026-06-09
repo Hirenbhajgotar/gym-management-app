@@ -2,19 +2,28 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
+use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\ReportGoal;
 use Filament\Facades\Filament;
-use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Cache;
 
-class GoalProgressWidget extends Widget implements HasFilamentPermissions
+class GoalProgressWidget extends BaseWidget
 {
     protected static string $view = 'filament.clusters.reports.widgets.goal-progress-widget';
 
     protected int|string|array $columnSpan = 'full';
 
     protected static ?string $pollingInterval = null;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     protected function getListeners(): array
     {

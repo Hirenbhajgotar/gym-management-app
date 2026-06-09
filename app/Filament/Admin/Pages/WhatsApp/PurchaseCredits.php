@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\Gym;
 use App\Models\Payment;
 use App\Models\WhatsAppMessageCredit;
@@ -17,13 +17,12 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
-class PurchaseCredits extends Page implements HasActions, HasFilamentPermissions
+class PurchaseCredits extends BasePage implements HasActions
 {
     use InteractsWithActions;
 
@@ -37,8 +36,13 @@ class PurchaseCredits extends Page implements HasActions, HasFilamentPermissions
 
     protected static ?int $navigationSort = 3;
 
+    public function defaultRolePermissions(): array
+    {
+        return [];
+    }
+
     // Only access for super_admin, admin and gym_owner
-    public static function canAccess(): bool
+    public static function canAccess(array $parameters = []): bool
     {
         return auth()->user()?->hasAnyRole([
             DefaultRole::SUPER_ADMIN->value,

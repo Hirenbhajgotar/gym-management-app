@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Enums\LeadStatus;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
@@ -10,6 +9,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\CohortRetentionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\GoalProgressWidget;
 use App\Filament\Admin\Clusters\Reports\Widgets\GymHealthScoreWidget;
 use App\Filament\Admin\Clusters\Reports\Widgets\RealtimeAttendanceWidget;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Models\GymMember;
@@ -20,11 +20,10 @@ use App\Services\InsightsService;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-class ReportsDashboard extends Page implements HasFilamentPermissions, ShareableReport
+class ReportsDashboard extends BasePage implements ShareableReport
 {
     use HasReportFilters;
 

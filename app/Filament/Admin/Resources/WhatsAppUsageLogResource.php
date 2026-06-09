@@ -2,8 +2,9 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppUsageLogStatusEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\WhatsAppUsageLog;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -11,7 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class WhatsAppUsageLogResource extends Resource implements HasFilamentPermissions
+class WhatsAppUsageLogResource extends BaseResource
 {
     protected static ?string $model = WhatsAppUsageLog::class;
 
@@ -34,6 +35,19 @@ class WhatsAppUsageLogResource extends Resource implements HasFilamentPermission
     public static function canAccess(array $parameters = []): bool
     {
         return false;
+    }
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
     }
 
     // Temporarily disable access to this resource

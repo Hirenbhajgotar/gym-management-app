@@ -50,25 +50,32 @@ class StaffPanelProvider extends PanelProvider
             ], isPersistent: true)
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->label('CRM'),
+                    ->label('CRM')
+                    ->icon('phosphor-funnel'),
 
                 NavigationGroup::make()
-                    ->label('Users'),
+                    ->label('Users')
+                    ->icon('heroicon-o-users'),
 
                 NavigationGroup::make()
-                    ->label('Gym Management'),
+                    ->label('Gym Management')
+                    ->icon('heroicon-o-building-storefront'),
 
                 NavigationGroup::make()
-                    ->label('Expense Management'),
+                    ->label('Expense Management')
+                    ->icon('phosphor-invoice'),
 
                 NavigationGroup::make()
-                    ->label('WhatsApp'),
+                    ->label('WhatsApp')
+                    ->icon('phosphor-messenger-logo'),
 
                 NavigationGroup::make()
-                    ->label('Device Management'),
+                    ->label('Device Management')
+                    ->icon('heroicon-o-finger-print'),
 
                 NavigationGroup::make()
                     ->label('Settings')
+                    ->icon('heroicon-o-wrench-screwdriver')
                     ->collapsed(true),
             ])
             ->databaseNotifications()

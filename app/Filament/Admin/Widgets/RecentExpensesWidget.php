@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Contracts\HasFilamentPermissions;
 use App\Models\Expense;
 use Filament\Facades\Filament;
 use Filament\Tables;
@@ -12,7 +11,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 /**
  * Dashboard widget showing recent expenses for quick review.
  */
-class RecentExpensesWidget extends BaseWidget implements HasFilamentPermissions
+class RecentExpensesWidget extends BaseWidget
 {
     protected static ?int $sort = 6;
 
