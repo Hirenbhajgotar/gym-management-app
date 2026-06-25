@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
+ * @deprecated No longer used by the permission management UI. The UI now auto-discovers
+ *             Resources, Pages, and Widgets via {@see \App\Services\PermissionDiscoveryService}.
+ *             This model is retained only for backward-compatible seeding via
+ *             {@see \App\Services\RolesAndPermissionsService}. Will be removed once seeding
+ *             switches to the new discovery service.
+ *
  * @property int $id
  * @property DefaultRole|null $role
  * @property mixed|null $default_resources

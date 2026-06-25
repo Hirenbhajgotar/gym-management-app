@@ -26,6 +26,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Panels to Scan for owners to manager permissions
+    |--------------------------------------------------------------------------
+    |
+    | List of Filament panel IDs whose Resources, Pages, and Widgets should
+    | be scanned for HasFilamentPermissions implementations.
+    |
+    | The 'staff' panel shares admin resources, so only admin panel permissions
+    | are discovered. Staff panel uses the same permissions via role assignment.
+    |
+    | This panel is used for owners to manage permissions for other users.
+    |
+    */
+    'permissions_panels' => ['admin', 'staff'],
+
+    /*
+    |--------------------------------------------------------------------------
     | Resource Actions
     |--------------------------------------------------------------------------
     |

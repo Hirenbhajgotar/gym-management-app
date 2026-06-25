@@ -2,14 +2,25 @@
 
 namespace App\Filament\BaseWidgets;
 
+use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use App\Services\AttendanceService;
 use App\Traits\HasTenantAccess;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-abstract class BaseAttendanceStats extends BaseWidget
+abstract class BaseAttendanceStats extends BaseWidget implements HasFilamentPermissions
 {
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => ['widget'],
+            DefaultRole::TRAINER->value => ['widget'],
+        ];
+    }
+
     use HasTenantAccess;
 
     abstract protected function getAttendanceableType(): string;

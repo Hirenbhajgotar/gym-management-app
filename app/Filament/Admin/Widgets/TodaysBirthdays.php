@@ -2,15 +2,15 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Facades\Cache;
 
-class TodaysBirthdays extends BaseWidget
+class TodaysBirthdays extends BaseTableWidget
 {
     protected static ?string $heading = 'Today\'s Birthdays';
 
@@ -20,7 +20,9 @@ class TodaysBirthdays extends BaseWidget
 
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'refreshWidget',
@@ -50,10 +52,20 @@ class TodaysBirthdays extends BaseWidget
             ->columns([
                 \Filament\Tables\Columns\TextColumn::make('name')
                     ->label('Name')
-                    ->description(fn (GymMember $record) => $record->dob->format('F j, Y')),
+                    ->description(function (GymMember $record) {
+                        /** @var \Carbon\Carbon $dob */
+                        $dob = $record->dob;
+
+                        return $dob->format('F j, Y');
+                    }),
                 \Filament\Tables\Columns\TextColumn::make('dob')
                     ->label('Age')
-                    ->getStateUsing(fn (GymMember $record) => $record->dob->age . ' Years Old'),
+                    ->getStateUsing(function (GymMember $record) {
+                        /** @var \Carbon\Carbon $dob */
+                        $dob = $record->dob;
+
+                        return $dob->age . ' Years Old';
+                    }),
             ])
             ->actions([
                 \Filament\Tables\Actions\Action::make('wish')

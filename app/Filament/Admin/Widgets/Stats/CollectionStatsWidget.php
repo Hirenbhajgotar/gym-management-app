@@ -2,27 +2,39 @@
 
 namespace App\Filament\Admin\Widgets\Stats;
 
+use App\Enums\DefaultRole;
 use App\Enums\PaymentStatus;
+use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 
 /**
  * Dashboard card that shows daily / weekly / monthly / yearly collections.
  */
-class CollectionStatsWidget extends BaseWidget
+class CollectionStatsWidget extends BaseStatsOverviewWidget
 {
     protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 1;
 
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
+
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.RevenueStatsUpdated" => '$refresh',
@@ -31,7 +43,9 @@ class CollectionStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         if (! $gymId) {
             return [];
@@ -91,7 +105,9 @@ class CollectionStatsWidget extends BaseWidget
      */
     public function render(): \Illuminate\Contracts\View\View
     {
-        if (Filament::getTenant()?->id === null) {
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        if ($tenant?->id === null) {
             return view()->make('filament-widgets::blank');
         }
 

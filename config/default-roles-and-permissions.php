@@ -1,5 +1,8 @@
 <?php
 
+// NOTE: This file is no longer the source of truth. Role-permission mappings come from
+// HasFilamentPermissions::defaultRolePermissions() on each Filament class. Keep for reference only.
+
 use App\Enums\DefaultRole;
 
 return [

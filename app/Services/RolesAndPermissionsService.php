@@ -7,9 +7,8 @@ use App\Enums\PermissionCategory;
 use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\User;
-use App\Traits\ConvertsToSnakeCase;
 use App\Traits\DefaultPermissionResourceTrait;
-use App\Traits\ResolvesPolicyTableName;
+use App\Traits\DerivesPermissionsSlug;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -17,11 +16,10 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsService
 {
-    use ConvertsToSnakeCase;
     use DefaultPermissionResourceTrait {
         getDefaultPermissions as traitGetDefaultPermissions;
     }
-    use ResolvesPolicyTableName;
+    use DerivesPermissionsSlug;
 
     /**
      * Create default roles for a gym tenant.
@@ -408,8 +406,9 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
-                $permissions[] = $this->generatePagePermission($prefix);
+                $permissions[] = $this->derivePageSlug($reflection);
+                // $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
+                // $permissions[] = $this->generatePagePermission($prefix);
             }
 
             foreach ($panel->getWidgets() as $widgetClass) {
@@ -423,8 +422,9 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
-                $permissions[] = $this->generateWidgetPermission($prefix);
+                $permissions[] = $this->deriveWidgetSlug($reflection);
+                // $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
+                // $permissions[] = $this->generateWidgetPermission($prefix);
             }
         }
 
@@ -577,62 +577,62 @@ class RolesAndPermissionsService
         );
     }
 
-    public function generatePagePermission(string $slug): string
-    {
-        $prefix = config('filament-permissions.page_prefix', 'page_');
+    // public function generatePagePermission(string $slug): string
+    // {
+    //     $prefix = config('filament-permissions.page_prefix', 'page_');
 
-        return "{$prefix}{$slug}";
-    }
+    //     return "{$prefix}{$slug}";
+    // }
 
-    public function generateWidgetPermission(string $slug): string
-    {
-        $prefix = config('filament-permissions.widget_prefix', 'widget_');
+    // public function generateWidgetPermission(string $slug): string
+    // {
+    //     $prefix = config('filament-permissions.widget_prefix', 'widget_');
 
-        return "{$prefix}{$slug}";
-    }
+    //     return "{$prefix}{$slug}";
+    // }
 
-    /**
-     * Derive permission slug from the Model class name when available,
-     * falling back to the Resource class name.
-     *
-     * This ensures generated permissions match BasePolicy's $tableName convention
-     * (e.g. WhatsAppCreditTransaction → whatsapp_credit_transaction, not whatsapp_transaction).
-     */
-    private function deriveSlugFromModelOrResource(?string $modelClass, \ReflectionClass $resourceReflection): string
-    {
-        if ($modelClass !== null) {
-            // Prefer the policy's $tableName — it's the source of truth for permission naming.
-            $tableName = $this->resolvePolicyTableName($modelClass);
+    // /**
+    //  * Derive permission slug from the Model class name when available,
+    //  * falling back to the Resource class name.
+    //  *
+    //  * This ensures generated permissions match BasePolicy's $tableName convention
+    //  * (e.g. WhatsAppCreditTransaction → whatsapp_credit_transaction, not whatsapp_transaction).
+    //  */
+    // private function deriveSlugFromModelOrResource(?string $modelClass, \ReflectionClass $resourceReflection): string
+    // {
+    //     if ($modelClass !== null) {
+    //         // Prefer the policy's $tableName — it's the source of truth for permission naming.
+    //         $tableName = $this->resolvePolicyTableName($modelClass);
 
-            if ($tableName !== null) {
-                return $tableName;
-            }
+    //         if ($tableName !== null) {
+    //             return $tableName;
+    //         }
 
-            // Fallback to deriving from model class name
-            $modelReflection = $this->safeReflection($modelClass);
+    //         // Fallback to deriving from model class name
+    //         $modelReflection = $this->safeReflection($modelClass);
 
-            if ($modelReflection !== null) {
-                return $this->convertFromClassName($modelReflection->getShortName(), '');
-            }
-        }
+    //         if ($modelReflection !== null) {
+    //             return $this->convertFromClassName($modelReflection->getShortName(), '');
+    //         }
+    //     }
 
-        return $this->convertFromClassName($resourceReflection->getShortName(), 'Resource');
-    }
+    //     return $this->convertFromClassName($resourceReflection->getShortName(), 'Resource');
+    // }
 
-    /**
-     * Resolve the model class name from a Resource's static $model property.
-     * Uses reflection because direct static property access via string variable
-     * returns null in PHP.
-     */
-    private function resolveResourceModel(\ReflectionClass $resourceReflection): ?string
-    {
-        if (! $resourceReflection->hasProperty('model')) {
-            return null;
-        }
+    // /**
+    //  * Resolve the model class name from a Resource's static $model property.
+    //  * Uses reflection because direct static property access via string variable
+    //  * returns null in PHP.
+    //  */
+    // private function resolveResourceModel(\ReflectionClass $resourceReflection): ?string
+    // {
+    //     if (! $resourceReflection->hasProperty('model')) {
+    //         return null;
+    //     }
 
-        $prop = $resourceReflection->getProperty('model');
-        $prop->setAccessible(true);
+    //     $prop = $resourceReflection->getProperty('model');
+    //     $prop->setAccessible(true);
 
-        return $prop->getValue();
-    }
+    //     return $prop->getValue();
+    // }
 }

@@ -2,16 +2,17 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Expense;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 
 /**
  * Dashboard widget showing recent expenses for quick review.
  */
-class RecentExpensesWidget extends BaseWidget
+class RecentExpensesWidget extends BaseTableWidget
 {
     protected static ?int $sort = 6;
 
@@ -21,9 +22,20 @@ class RecentExpensesWidget extends BaseWidget
 
     protected static ?string $pollingInterval = null;
 
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => ['widget'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
+
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
@@ -32,7 +44,7 @@ class RecentExpensesWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var \App\Models\Gym|null $gym */
         $gym = Filament::getTenant();
 
         return $table
@@ -55,7 +67,7 @@ class RecentExpensesWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
-                    ->color(fn ($record) => $record->category?->color ?? 'gray'),
+                    ->color(fn ($record) => $record->category->color ?? 'gray'),
 
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency ?? 'INR')

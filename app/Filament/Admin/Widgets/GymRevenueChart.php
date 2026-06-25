@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Gym;
 use App\Models\MemberPayment;
@@ -21,6 +22,15 @@ class GymRevenueChart extends BaseChartWidget
     protected static ?int $sort = 4;
 
     // protected int|string|array $columnSpan = 'full';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     protected function getListeners(): array
     {

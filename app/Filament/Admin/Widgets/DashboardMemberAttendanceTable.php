@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use Carbon\Carbon;
@@ -10,9 +11,10 @@ use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 
-class DashboardMemberAttendanceTable extends BaseWidget
+// use Filament\Widgets\TableWidget as BaseWidget;
+
+class DashboardMemberAttendanceTable extends BaseTableWidget
 {
     protected static ?string $heading = 'Today\'s Member Attendance';
 
@@ -24,7 +26,9 @@ class DashboardMemberAttendanceTable extends BaseWidget
 
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.AttendanceStatsUpdated" => 'refreshWidget',

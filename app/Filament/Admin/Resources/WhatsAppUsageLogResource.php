@@ -50,16 +50,15 @@ class WhatsAppUsageLogResource extends BaseResource
         ];
     }
 
-    // Temporarily disable access to this resource
-    public static function shouldRegisterNavigation(): bool
-    {
-        return false; // This will hide it from the menu
-    }
-
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->where('gym_id', Filament::getTenant()?->id))
+            ->modifyQueryUsing(function ($query) {
+                /** @var \App\Models\Gym|null $tenant */
+                $tenant = Filament::getTenant();
+
+                return $query->where('gym_id', $tenant?->id);
+            })
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('sent_at')

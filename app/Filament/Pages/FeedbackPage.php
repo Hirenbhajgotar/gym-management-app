@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Pages;
 
 use App\Contracts\HasFilamentPermissions;
+use App\Enums\DefaultRole;
 use Filament\Pages\Page;
 
 class FeedbackPage extends Page implements HasFilamentPermissions
@@ -18,6 +21,15 @@ class FeedbackPage extends Page implements HasFilamentPermissions
     protected static string $view = 'filament.pages.feedback-page';
 
     protected static bool $shouldRegisterNavigation = true;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => ['page'],
+            DefaultRole::TRAINER->value => ['page'],
+        ];
+    }
 
     public function mount(): void
     {

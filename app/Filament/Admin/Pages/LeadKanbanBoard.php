@@ -80,6 +80,8 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
         return [
             \Filament\Actions\CreateAction::make()
                 ->model(Lead::class)
+                ->visible(fn () => auth()->user()?->can('create_lead'))
+                ->authorize(fn () => auth()->user()?->can('create_lead'))
                 ->form([
                     \Filament\Forms\Components\Section::make()
                         ->schema([
