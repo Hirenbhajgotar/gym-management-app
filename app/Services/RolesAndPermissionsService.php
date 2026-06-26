@@ -21,6 +21,17 @@ class RolesAndPermissionsService
     }
     use DerivesPermissionsSlug;
 
+    protected ?PermissionDiscoveryService $discoveryService = null;
+
+    protected function getDiscoveryService(): PermissionDiscoveryService
+    {
+        if ($this->discoveryService === null) {
+            $this->discoveryService = app(PermissionDiscoveryService::class);
+        }
+
+        return $this->discoveryService;
+    }
+
     /**
      * Create default roles for a gym tenant.
      */
@@ -61,44 +72,24 @@ class RolesAndPermissionsService
                 ->where('gym_id', $tenant->id)
                 ->pluck('id', 'name');
 
-            $permissionInsertData = [];
-
             // Now assign permissions to each role using PermissionSetting or Fallback
             foreach ($roles as $role) {
                 if (! isset($createdRoles[$role->value])) {
                     continue;
                 }
 
-                // Set the role context for the trait logic
-                $this->setDefaultRole($role->value);
+                $defaultPermissions = $this->getDiscoveryService()->getDefaultPermissionsForRole($role);
 
-                // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
-                $permissionsToAssign = $this->getDefaultPermissions($role->value);
+                $roleModel = Role::firstOrCreate(
+                    ['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]
+                );
 
-                if (! empty($permissionsToAssign)) {
-                    // Fetch IDs for these permission names efficiently
-                    $permissionIds = Permission::whereIn('name', $permissionsToAssign)->pluck('id');
-                    $roleId = $createdRoles[$role->value];
-
-                    foreach ($permissionIds as $permissionId) {
-                        $permissionInsertData[] = [
-                            'permission_id' => $permissionId,
-                            'role_id' => $roleId,
-                        ];
-                    }
+                if (! empty($defaultPermissions)) {
+                    $roleModel->syncPermissions($defaultPermissions);
                 }
             }
-
-            if (! empty($permissionInsertData)) {
-                // Bulk insert all permissions
-                // Optimize chunk size if necessary, but for valid roles this is safe enough
-                foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
-                    DB::table('role_has_permissions')->insert($chunk);
-                }
-
-                // Forget cache only once at the end
-                app(PermissionRegistrar::class)->forgetCachedPermissions();
-            }
+            // Forget cache only once at the end
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
     }
 
@@ -576,63 +567,4 @@ class RolesAndPermissionsService
             $actions,
         );
     }
-
-    // public function generatePagePermission(string $slug): string
-    // {
-    //     $prefix = config('filament-permissions.page_prefix', 'page_');
-
-    //     return "{$prefix}{$slug}";
-    // }
-
-    // public function generateWidgetPermission(string $slug): string
-    // {
-    //     $prefix = config('filament-permissions.widget_prefix', 'widget_');
-
-    //     return "{$prefix}{$slug}";
-    // }
-
-    // /**
-    //  * Derive permission slug from the Model class name when available,
-    //  * falling back to the Resource class name.
-    //  *
-    //  * This ensures generated permissions match BasePolicy's $tableName convention
-    //  * (e.g. WhatsAppCreditTransaction → whatsapp_credit_transaction, not whatsapp_transaction).
-    //  */
-    // private function deriveSlugFromModelOrResource(?string $modelClass, \ReflectionClass $resourceReflection): string
-    // {
-    //     if ($modelClass !== null) {
-    //         // Prefer the policy's $tableName — it's the source of truth for permission naming.
-    //         $tableName = $this->resolvePolicyTableName($modelClass);
-
-    //         if ($tableName !== null) {
-    //             return $tableName;
-    //         }
-
-    //         // Fallback to deriving from model class name
-    //         $modelReflection = $this->safeReflection($modelClass);
-
-    //         if ($modelReflection !== null) {
-    //             return $this->convertFromClassName($modelReflection->getShortName(), '');
-    //         }
-    //     }
-
-    //     return $this->convertFromClassName($resourceReflection->getShortName(), 'Resource');
-    // }
-
-    // /**
-    //  * Resolve the model class name from a Resource's static $model property.
-    //  * Uses reflection because direct static property access via string variable
-    //  * returns null in PHP.
-    //  */
-    // private function resolveResourceModel(\ReflectionClass $resourceReflection): ?string
-    // {
-    //     if (! $resourceReflection->hasProperty('model')) {
-    //         return null;
-    //     }
-
-    //     $prop = $resourceReflection->getProperty('model');
-    //     $prop->setAccessible(true);
-
-    //     return $prop->getValue();
-    // }
 }

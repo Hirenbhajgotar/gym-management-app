@@ -561,7 +561,6 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $role = $this->getOrCreateRole();
 
             $role->syncPermissions($defaultPermissions);
-            $this->updateRoleUsers($role, $this->getGym());
             DB::commit();
 
             $this->rolePermissions = null;
