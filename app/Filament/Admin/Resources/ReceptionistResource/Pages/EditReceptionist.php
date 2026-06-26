@@ -83,7 +83,7 @@ class EditReceptionist extends EditRecord
                 $record->employeeDetails->update($data['employeeDetails']);
             } else {
                 $data['employeeDetails']['user_id'] = $record->id;
-                EmployeeDetail::create($data['employeeDetails']);
+                EmployeeDetail::query()->create($data['employeeDetails']);
             }
         }
 

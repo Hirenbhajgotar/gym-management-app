@@ -108,9 +108,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
             $this->markTestSkipped('No permissions found for manager resources');
         }
 
-        Permission::firstOrCreate(
-            ['name' => $permToCheck, 'guard_name' => 'web']
-        );
+        Permission::query()->firstOrCreate(['name' => $permToCheck, 'guard_name' => 'web']);
 
         Livewire::test(ManagerPermissionsPage::class)
             ->set('data', array_merge(
@@ -123,7 +121,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
         // Verify the permission-to-role assignment via raw DB to avoid Spatie cache issues.
         setPermissionsTeamId($this->gymId);
 
-        $role = Role::where('name', 'manager')
+        $role = Role::query()->where('name', 'manager')
             ->where('gym_id', $this->gymId)
             ->first();
 
@@ -156,9 +154,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
             $this->markTestSkipped('No permissions found for manager resources');
         }
 
-        Permission::firstOrCreate(
-            ['name' => $permToCheck, 'guard_name' => 'web']
-        );
+        Permission::query()->firstOrCreate(['name' => $permToCheck, 'guard_name' => 'web']);
 
         Livewire::test(ManagerPermissionsPage::class)
             ->set('data', array_merge(
@@ -174,7 +170,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
         resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $defaultPerms = $service->getDefaultPermissionsForRole(DefaultRole::MANAGER);
-        $role = Role::where('name', 'manager')
+        $role = Role::query()->where('name', 'manager')
             ->where('gym_id', $this->gymId)
             ->first();
 
@@ -197,13 +193,9 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
         $this->actingAs($this->gymOwner);
 
         $customPermName = 'custom_unmatched_permission_' . fake()->unique()->numerify();
-        $permission = Permission::firstOrCreate(
-            ['name' => $customPermName, 'guard_name' => 'web']
-        );
+        $permission = Permission::query()->firstOrCreate(['name' => $customPermName, 'guard_name' => 'web']);
 
-        $role = Role::firstOrCreate(
-            ['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $this->gymId]
-        );
+        $role = Role::query()->firstOrCreate(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $this->gymId]);
         $role->givePermissionTo($permission);
 
         $service = resolve(PermissionDiscoveryService::class);

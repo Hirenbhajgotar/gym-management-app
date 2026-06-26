@@ -223,7 +223,7 @@ class TwilioMessagingService implements MessagingInterface
 
     private function logUsage(string $recipient, WhatsAppTemplate $template, string $messageSid): void
     {
-        WhatsAppUsageLog::create([
+        WhatsAppUsageLog::query()->create([
             'gym_id' => $this->context->gymId,
             'whatsapp_template_id' => $template->id,
             'twilio_message_sid' => $messageSid,

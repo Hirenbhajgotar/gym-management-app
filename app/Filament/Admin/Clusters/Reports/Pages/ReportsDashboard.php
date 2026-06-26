@@ -65,17 +65,17 @@ class ReportsDashboard extends BasePage implements ShareableReport
         $cacheKey = ReportCacheService::MEMBER_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $totalMembers = GymMember::where('gym_id', $gymId)->count();
-            $activeMembers = GymMember::where('gym_id', $gymId)->membershipActive()->count();
-            $expiredMembers = GymMember::where('gym_id', $gymId)->membershipExpired()->count();
+            $totalMembers = GymMember::query()->where('gym_id', $gymId)->count();
+            $activeMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
+            $expiredMembers = GymMember::query()->where('gym_id', $gymId)->membershipExpired()->count();
 
             // New members this month vs last month
-            $newThisMonth = GymMember::where('gym_id', $gymId)
+            $newThisMonth = GymMember::query()->where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count();
 
-            $newLastMonth = GymMember::where('gym_id', $gymId)
+            $newLastMonth = GymMember::query()->where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->subMonth()->month)
                 ->whereYear('created_at', now()->subMonth()->year)
                 ->count();
@@ -108,21 +108,21 @@ class ReportsDashboard extends BasePage implements ShareableReport
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             // MTD Revenue
-            $mtdRevenue = MemberPayment::where('gym_id', $gymId)
+            $mtdRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereMonth('payment_date', now()->month)
                 ->whereYear('payment_date', now()->year)
                 ->sum('amount');
 
             // Last month's total revenue
-            $lastMonthRevenue = MemberPayment::where('gym_id', $gymId)
+            $lastMonthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereMonth('payment_date', now()->subMonth()->month)
                 ->whereYear('payment_date', now()->subMonth()->year)
                 ->sum('amount');
 
             // YTD Revenue
-            $ytdRevenue = MemberPayment::where('gym_id', $gymId)
+            $ytdRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereYear('payment_date', now()->year)
                 ->sum('amount');
@@ -130,7 +130,7 @@ class ReportsDashboard extends BasePage implements ShareableReport
             $revenueChange = $this->calculatePercentageChange($mtdRevenue, $lastMonthRevenue);
 
             // Today's collection
-            $todayCollection = MemberPayment::where('gym_id', $gymId)
+            $todayCollection = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereDate('payment_date', today())
                 ->sum('amount');
@@ -166,20 +166,20 @@ class ReportsDashboard extends BasePage implements ShareableReport
         $cacheKey = ReportCacheService::LEAD_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $totalLeads = Lead::where('gym_id', $gymId)->count();
-            $newLeads = Lead::where('gym_id', $gymId)->where('status', LeadStatus::NEW)->count();
-            $activeLeads = Lead::where('gym_id', $gymId)
+            $totalLeads = Lead::query()->where('gym_id', $gymId)->count();
+            $newLeads = Lead::query()->where('gym_id', $gymId)->where('status', LeadStatus::NEW)->count();
+            $activeLeads = Lead::query()->where('gym_id', $gymId)
                 ->whereNotIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
                 ->count();
 
             // Conversion rate (this month)
-            $convertedThisMonth = Lead::where('gym_id', $gymId)
+            $convertedThisMonth = Lead::query()->where('gym_id', $gymId)
                 ->where('status', LeadStatus::CONVERTED)
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)
                 ->count();
 
-            $totalThisMonth = Lead::where('gym_id', $gymId)
+            $totalThisMonth = Lead::query()->where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count();
@@ -211,13 +211,13 @@ class ReportsDashboard extends BasePage implements ShareableReport
         $cacheKey = ReportCacheService::TRAINER_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $totalTrainers = Trainer::where('gym_id', $gymId)->count();
+            $totalTrainers = Trainer::query()->where('gym_id', $gymId)->count();
 
             $averageClients = $totalTrainers > 0
-                ? round(GymMember::where('gym_id', $gymId)->whereNotNull('trainer_id')->count() / $totalTrainers, 1)
+                ? round(GymMember::query()->where('gym_id', $gymId)->whereNotNull('trainer_id')->count() / $totalTrainers, 1)
                 : 0;
 
-            $trainersWithClients = Trainer::where('gym_id', $gymId)
+            $trainersWithClients = Trainer::query()->where('gym_id', $gymId)
                 ->whereHas('members')
                 ->count();
 
@@ -244,12 +244,12 @@ class ReportsDashboard extends BasePage implements ShareableReport
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(30)], function () use ($gymId) {
             // Today's check-ins
-            $todayCheckIns = Attendances::where('gym_id', $gymId)
+            $todayCheckIns = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->count();
 
             // Currently checked in
-            $currentlyIn = Attendances::where('gym_id', $gymId)
+            $currentlyIn = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->where('status', 'checked_in')
                 ->count();
@@ -257,14 +257,14 @@ class ReportsDashboard extends BasePage implements ShareableReport
             // This week's average
             $weekStart = now()->startOfWeek();
             $daysInWeek = now()->diffInDays($weekStart) + 1;
-            $weeklyTotal = Attendances::where('gym_id', $gymId)
+            $weeklyTotal = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$weekStart, now()])
                 ->count();
 
             $weeklyAverage = $daysInWeek > 0 ? round($weeklyTotal / $daysInWeek, 0) : 0;
 
             // Peak hour (most common check-in hour today)
-            $peakHour = Attendances::where('gym_id', $gymId)
+            $peakHour = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
                 ->groupBy('hour')

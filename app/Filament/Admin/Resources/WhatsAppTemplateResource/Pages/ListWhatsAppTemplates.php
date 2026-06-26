@@ -74,7 +74,7 @@ class ListWhatsAppTemplates extends ListRecords
 
         $globalDefaults = WhatsAppTemplate::getDefaults();
 
-        $existingNames = WhatsAppTemplate::where('gym_id', $tenant->id)
+        $existingNames = WhatsAppTemplate::query()->where('gym_id', $tenant->id)
             ->pluck('name')
             ->toArray();
 
@@ -103,7 +103,7 @@ class ListWhatsAppTemplates extends ListRecords
                 'updated_at' => now(),
             ])->all();
 
-            WhatsAppTemplate::insert($importData);
+            WhatsAppTemplate::query()->insert($importData);
 
             Cache::forget(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id);
         }

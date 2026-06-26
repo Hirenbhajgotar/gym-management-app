@@ -84,6 +84,6 @@ class NotificationChannelResolver
 
     private static function getSetting(int $gymId)
     {
-        return GymSetting::where('gym_id', $gymId)->get()->keyBy('key');
+        return GymSetting::query()->where('gym_id', $gymId)->get()->keyBy('key');
     }
 }

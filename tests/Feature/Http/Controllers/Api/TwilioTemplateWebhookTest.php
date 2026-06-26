@@ -27,7 +27,7 @@ class TwilioTemplateWebhookTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_twilio_sid',
             'twilio_auth_token' => 'test_twilio_auth_token',

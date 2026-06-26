@@ -20,7 +20,7 @@ class ForecastService
     {
         // Get last 6 months of actual data
         $historicalData = Trend::query(
-            MemberPayment::where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
+            MemberPayment::query()->where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
         )
             ->between(
                 start: now()->subMonths(6),
@@ -40,7 +40,7 @@ class ForecastService
         // Get last 6 months of active member counts
         // Note: This is an approximation using created_at count for growth trend
         $historicalData = Trend::query(
-            GymMember::where('gym_id', $gymId)
+            GymMember::query()->where('gym_id', $gymId)
         )
             ->between(
                 start: now()->subMonths(6),
@@ -121,7 +121,7 @@ class ForecastService
     {
         if ($metric === 'revenue') {
             $historical = Trend::query(
-                MemberPayment::where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
+                MemberPayment::query()->where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
             )
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()
@@ -131,7 +131,7 @@ class ForecastService
 
         } else {
             $historical = Trend::query(
-                GymMember::where('gym_id', $gymId)
+                GymMember::query()->where('gym_id', $gymId)
             )
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()

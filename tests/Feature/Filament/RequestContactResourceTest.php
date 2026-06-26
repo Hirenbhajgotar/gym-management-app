@@ -27,7 +27,7 @@ class RequestContactResourceTest extends TestCase
         parent::setUp();
 
         // Create roles
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
 
         // Create super admin user
         $this->superAdmin = User::factory()->create([

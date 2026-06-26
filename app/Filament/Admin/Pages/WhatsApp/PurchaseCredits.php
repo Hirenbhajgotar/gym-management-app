@@ -79,7 +79,7 @@ class PurchaseCredits extends BasePage implements HasActions
     {
         $gymId = $this->getGymId();
 
-        $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
         $this->packages = WhatsAppPackage::query()->active()
             ->ordered()
@@ -130,7 +130,7 @@ class PurchaseCredits extends BasePage implements HasActions
     public function initiatePayment(): void
     {
         try {
-            $package = WhatsAppPackage::find($this->selectedPackageId);
+            $package = WhatsAppPackage::query()->find($this->selectedPackageId);
 
             throw_unless($package, \Exception::class, 'Package not found');
 
@@ -199,7 +199,7 @@ class PurchaseCredits extends BasePage implements HasActions
             // Reconstruct component state from Payment DB record if lost
             // (e.g., user navigated away mid-payment and came back)
             if (blank($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
-                $paymentRecord = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+                $paymentRecord = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
 
                 throw_unless($paymentRecord, \Exception::class, 'Payment session expired. Please try again.');
 
@@ -234,7 +234,7 @@ class PurchaseCredits extends BasePage implements HasActions
 
                 if ($result['success']) {
                     if ($this->phoneNumberSurcharge > 0) {
-                        $phone = WhatsAppPhoneNumber::whereHas('account', function (Builder $query) {
+                        $phone = WhatsAppPhoneNumber::query()->whereHas('account', function (Builder $query) {
                             $query->where('gym_id', $this->getGymId());
                         })->first();
 

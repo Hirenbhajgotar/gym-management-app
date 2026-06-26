@@ -7,6 +7,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -109,7 +110,7 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     private function roleExists(string $roleName, ?int $gymId = null): bool
     {
-        return Role::where('name', $roleName)
+        return Role::query()->where('name', $roleName)
             ->where('guard_name', 'web')
             ->when($gymId, fn ($q) => $q->where('gym_id', $gymId), fn ($q) => $q->whereNull('gym_id'))
             ->exists();
@@ -122,7 +123,7 @@ class UserRoleAssignmentSeeder extends Seeder
     {
         $role = DefaultRole::tryFrom($roleName);
 
-        $query = Role::where('name', $roleName)->where('guard_name', 'web');
+        $query = Role::query()->where('name', $roleName)->where('guard_name', 'web');
 
         if ($role?->isTenantRole() && $gymId) {
             $query->where('gym_id', $gymId);
@@ -155,7 +156,7 @@ class UserRoleAssignmentSeeder extends Seeder
             return;
         }
 
-        if (User::where('email', $email)->exists()) {
+        if (User::query()->where('email', $email)->exists()) {
             $this->command->fail("User with email '{$email}' already exists.");
 
             return;
@@ -178,7 +179,7 @@ class UserRoleAssignmentSeeder extends Seeder
         try {
             DB::beginTransaction();
 
-            $superAdmin = User::create([
+            $superAdmin = User::query()->create([
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($password),
@@ -275,7 +276,7 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     private function getAvailableGyms(): array
     {
-        return Gym::select('id', 'name')->get()->toArray();
+        return Gym::query()->select('id', 'name')->get()->toArray();
     }
 
     /**
@@ -397,8 +398,8 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->ensureRolesExist($gymId);
 
         // Get users without roles for this gym
-        $usersWithoutRoles = User::doesntHave('roles')
-            ->whereHas('gyms', fn ($q) => $q->where('gyms.id', $gymId))
+        $usersWithoutRoles = User::query()->doesntHave('roles')
+            ->whereHas('gyms', fn (Builder $q) => $q->where('gyms.id', $gymId))
             ->get();
 
         if ($usersWithoutRoles->isEmpty()) {
@@ -440,13 +441,13 @@ class UserRoleAssignmentSeeder extends Seeder
             $gymId = $gym['id'];
         }
 
-        $usersWithRoles = User::has('roles')
+        $usersWithRoles = User::query()->has('roles')
             ->with(['roles', 'gyms'])
-            ->when($gymId, fn ($q) => $q->whereHas('gyms', fn ($gq) => $gq->where('gyms.id', $gymId)))
+            ->when($gymId, fn ($q) => $q->whereHas('gyms', fn (Builder $gq) => $gq->where('gyms.id', $gymId)))
             ->get();
 
         if ($usersWithRoles->isEmpty()) {
-            $this->command->info('ℹ️  No users with roles found.');
+            $this->command->info('No users with roles found.');
 
             return;
         }
@@ -527,7 +528,7 @@ class UserRoleAssignmentSeeder extends Seeder
         DB::beginTransaction();
         try {
             foreach ($emails as $email) {
-                $user = User::where('email', $email)->first();
+                $user = User::query()->where('email', $email)->first();
                 if (! $user) {
                     $this->command->warn("User not found: {$email}");
 
@@ -550,8 +551,8 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     private function getRoleChoices(?int $gymId): array
     {
-        return Role::where('guard_name', 'web')
-            ->where(fn ($q) => $q->where('gym_id', $gymId)->orWhereNull('gym_id'))
+        return Role::query()->where('guard_name', 'web')
+            ->where(fn (Builder $q) => $q->where('gym_id', $gymId)->orWhereNull('gym_id'))
             ->pluck('name')
             ->toArray();
     }
@@ -623,14 +624,11 @@ class UserRoleAssignmentSeeder extends Seeder
      */
     private function createOrUpdateUser(array $userData): User
     {
-        $user = User::firstOrCreate(
-            ['email' => $userData['email']],
-            [
-                'name' => $userData['name'],
-                'password' => 'password',
-                'email_verified_at' => now(),
-            ],
-        );
+        $user = User::query()->firstOrCreate(['email' => $userData['email']], [
+            'name' => $userData['name'],
+            'password' => 'password',
+            'email_verified_at' => now(),
+        ]);
 
         $isNew = $user->wasRecentlyCreated;
         $isNew ? $this->stats['users_created']++ : $this->stats['users_updated']++;
@@ -669,16 +667,13 @@ class UserRoleAssignmentSeeder extends Seeder
     private function createTrainerProfile(User $user, array $profileData, int $gymId): void
     {
         if (class_exists(Trainer::class)) {
-            Trainer::firstOrCreate(
-                ['user_id' => $user->id, 'gym_id' => $gymId],
-                array_merge([
-                    'user_id' => $user->id,
-                    'gym_id' => $gymId,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'status' => 'active',
-                ], $profileData),
-            );
+            Trainer::query()->firstOrCreate(['user_id' => $user->id, 'gym_id' => $gymId], array_merge([
+                'user_id' => $user->id,
+                'gym_id' => $gymId,
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => 'active',
+            ], $profileData));
         }
     }
 
@@ -688,16 +683,13 @@ class UserRoleAssignmentSeeder extends Seeder
     private function createMemberProfile(User $user, array $profileData, int $gymId): void
     {
         if (class_exists(GymMember::class)) {
-            GymMember::firstOrCreate(
-                ['user_id' => $user->id, 'gym_id' => $gymId],
-                array_merge([
-                    'user_id' => $user->id,
-                    'gym_id' => $gymId,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'status' => 'active',
-                ], $profileData),
-            );
+            GymMember::query()->firstOrCreate(['user_id' => $user->id, 'gym_id' => $gymId], array_merge([
+                'user_id' => $user->id,
+                'gym_id' => $gymId,
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => 'active',
+            ], $profileData));
         }
     }
 
@@ -734,7 +726,7 @@ class UserRoleAssignmentSeeder extends Seeder
         $gyms = $this->getAvailableGyms();
 
         // Global users summary
-        $globalUsers = User::has('roles')
+        $globalUsers = User::query()->has('roles')
             ->doesntHave('gyms')
             ->with('roles')
             ->get();
@@ -769,14 +761,14 @@ class UserRoleAssignmentSeeder extends Seeder
                     $this->command->info("  🔹 {$row->role}: {$row->count} users");
                 }
             } else {
-                $this->command->info('  ℹ️  No users assigned');
+                $this->command->info('No users assigned');
             }
             $this->command->newLine();
         }
 
         // Overall totals
-        $totalUsers = User::count();
-        $usersWithRoles = User::has('roles')->count();
+        $totalUsers = User::query()->count();
+        $usersWithRoles = User::query()->has('roles')->count();
         $usersWithoutRoles = $totalUsers - $usersWithRoles;
 
         $this->command->info(str_repeat('-', 80));

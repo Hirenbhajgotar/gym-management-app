@@ -101,7 +101,7 @@ trait HasSetupState
         $gymId = $this->getGymId();
         $this->whatsappAccount = WhatsAppAccount::with('phoneNumber')->where('gym_id', $gymId)->first();
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber;
-        $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
         $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
         $this->isExistWhatsAppTemplates = WhatsAppTemplate::isExistsForGym((int) $gymId);
 
@@ -199,7 +199,7 @@ trait HasSetupState
         }
 
         // Both: Templates step
-        $defaultTemplates = WhatsAppTemplate::where('gym_id', $this->getGymId())->count();
+        $defaultTemplates = WhatsAppTemplate::query()->where('gym_id', $this->getGymId())->count();
         if ($defaultTemplates === 0) {
             return $provider === WhatsAppProviderTypeEnum::WABA ? SetupWizardSchema::WABA_TEMPLATES_STEP : SetupWizardSchema::TWILIO_TEMPLATES_STEP; // TemplatesStep
         }

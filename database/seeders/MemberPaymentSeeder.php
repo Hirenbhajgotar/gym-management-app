@@ -23,7 +23,7 @@ class MemberPaymentSeeder extends Seeder
 
         $payments = [];
 
-        $gyms = Gym::get()->keyBy('id');
+        $gyms = Gym::query()->get()->keyBy('id');
 
         foreach ($members as $member) {
             // How many payments per member (1 to 3)
@@ -62,7 +62,7 @@ class MemberPaymentSeeder extends Seeder
 
         // Chunk insert for speed
         collect($payments)->chunk(500)->each(
-            fn ($chunk) => MemberPayment::insert($chunk->all())
+            fn ($chunk) => MemberPayment::query()->insert($chunk->all())
         );
 
         $this->command->info('✅ Seeded ' . count($payments) . ' payments for ' . $members->count() . ' members.');

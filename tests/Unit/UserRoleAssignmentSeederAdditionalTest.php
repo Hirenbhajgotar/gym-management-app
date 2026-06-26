@@ -45,7 +45,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_assign_roles_to_existing_users_with_global_context()
     {
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -80,10 +80,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_assign_roles_to_existing_users_with_gym_context()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -121,7 +121,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_handles_no_users_without_roles_scenario()
     {
         // Create a user with a role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -149,7 +149,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_update_existing_user_roles_global_context()
     {
         // Create a user with a global role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -192,7 +192,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_remove_all_global_roles()
     {
         // Create a user with a global role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -229,10 +229,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_update_tenant_roles_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user with a tenant role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -280,10 +280,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_remove_tenant_roles_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user with a tenant role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -345,8 +345,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_creates_demo_users_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for all gyms...');
         $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 1');
@@ -387,10 +387,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_updates_existing_user_instead_of_creating_new_one()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create existing user
-        $existingUser = User::create([
+        $existingUser = User::query()->create([
             'name' => 'Old Name',
             'email' => 'john.trainer.gym1@gym.com',
             'password' => Hash::make('oldpassword'),
@@ -428,8 +428,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_skips_profile_creation_when_no_profile_data()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
-        $user = User::create([
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -470,7 +470,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_displays_summary_with_no_global_users()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
@@ -496,7 +496,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_displays_warning_for_users_without_roles()
     {
         // Create a user without any roles
-        User::create([
+        User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),

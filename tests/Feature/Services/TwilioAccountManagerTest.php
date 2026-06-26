@@ -24,7 +24,7 @@ class TwilioAccountManagerTest extends TestCase
     {
         parent::setUp();
         $this->gym = Gym::factory()->create();
-        $this->account = WhatsAppAccount::create([
+        $this->account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -92,7 +92,7 @@ class TwilioAccountManagerTest extends TestCase
         // Assertions
         $this->assertTrue($result['success']);
 
-        $phoneNumberRecord = WhatsAppPhoneNumber::where('phone_number', '+14155551234')->first();
+        $phoneNumberRecord = WhatsAppPhoneNumber::query()->where('phone_number', '+14155551234')->first();
         $this->assertNotNull($phoneNumberRecord);
         $this->assertEquals('PN123', $phoneNumberRecord->phone_number_sid);
         $this->assertEquals('XE123', $phoneNumberRecord->channel_sender_sid); // Should store Sender SID

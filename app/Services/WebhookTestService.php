@@ -97,7 +97,7 @@ class WebhookTestService
             }
 
             // Add gym_id to sample data
-            $gym = Gym::where('tenant_id', $config->tenant_id)->first();
+            $gym = Gym::query()->where('tenant_id', $config->tenant_id)->first();
             if (! $gym) {
                 return [
                     'success' => false,
@@ -168,7 +168,7 @@ class WebhookTestService
      */
     private function generateTestData(string $platform, TenantSocialConfig $config): array
     {
-        $gym = Gym::where('tenant_id', $config->tenant_id)->first();
+        $gym = Gym::query()->where('tenant_id', $config->tenant_id)->first();
 
         throw_unless($gym, \Exception::class, 'No gym found for tenant');
 
@@ -272,7 +272,7 @@ class WebhookTestService
             $simulations = Cache::get("webhook_simulations_{$configId}", []);
 
             // Get from file storage as well
-            $config = TenantSocialConfig::find($configId);
+            $config = TenantSocialConfig::query()->find($configId);
             if ($config) {
                 $logFile = "webhooks/tenant_{$config->tenant_id}/simulations.log";
                 if (Storage::disk('local')->exists($logFile)) {

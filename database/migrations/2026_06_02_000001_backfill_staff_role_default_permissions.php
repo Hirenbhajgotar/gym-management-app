@@ -147,7 +147,7 @@ return new class extends Migration
     {
         $roleName = $role->name;
 
-        $users = User::whereHas('roles', function (Builder $query) use ($roleName, $gym) {
+        $users = User::query()->whereHas('roles', function (Builder $query) use ($roleName, $gym) {
             $query
                 ->where('name', $roleName)
                 ->where('roles.gym_id', $gym->id);

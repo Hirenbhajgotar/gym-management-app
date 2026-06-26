@@ -31,7 +31,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shareable_report_link_can_be_created(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -47,13 +47,13 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shareable_report_link_generates_unique_token(): void
     {
-        $link1 = ShareableReportLink::create([
+        $link1 = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
         ]);
 
-        $link2 = ShareableReportLink::create([
+        $link2 = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => RevenueReports::class,
@@ -64,7 +64,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shareable_report_link_can_expire(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -77,7 +77,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shareable_report_link_can_be_deactivated(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -90,7 +90,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shareable_report_link_returns_shareable_url(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -102,7 +102,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shared_report_controller_shows_valid_link(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -127,7 +127,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shared_report_controller_returns_404_for_expired_link(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -141,7 +141,7 @@ class ShareableReportLinkTest extends TestCase
 
     public function test_shared_report_controller_returns_404_for_inactive_link(): void
     {
-        $link = ShareableReportLink::create([
+        $link = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
@@ -156,20 +156,20 @@ class ShareableReportLinkTest extends TestCase
     public function test_shareable_report_link_scopes(): void
     {
         // Create active links
-        $activeLink1 = ShareableReportLink::create([
+        $activeLink1 = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => MemberReports::class,
         ]);
 
-        $activeLink2 = ShareableReportLink::create([
+        $activeLink2 = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => RevenueReports::class,
         ]);
 
         // Create inactive link
-        $inactiveLink = ShareableReportLink::create([
+        $inactiveLink = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => LeadReports::class,
@@ -177,7 +177,7 @@ class ShareableReportLinkTest extends TestCase
         ]);
 
         // Create expired link
-        $expiredLink = ShareableReportLink::create([
+        $expiredLink = ShareableReportLink::query()->create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
             'report_type' => AttendanceReports::class,

@@ -8,6 +8,7 @@ use App\Events\LeadCreated;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -44,8 +45,8 @@ abstract class SocialMediaLeadProcessor
      */
     protected function getTenantConfig(string $identifier): ?TenantSocialConfig
     {
-        return TenantSocialConfig::where('platform', $this->platform)
-            ->where(function ($query) use ($identifier) {
+        return TenantSocialConfig::query()->where('platform', $this->platform)
+            ->where(function (Builder $query) use ($identifier) {
                 $query->where('page_id', $identifier)
                     ->orWhere('form_id', $identifier)
                     ->orWhere('phone_number_id', $identifier);
@@ -79,8 +80,8 @@ abstract class SocialMediaLeadProcessor
             }
 
             // Check for duplicate leads (same email or phone within 30 days)
-            $existingLead = Lead::where('gym_id', $leadData['gym_id'])
-                ->where(function ($query) use ($leadData) {
+            $existingLead = Lead::query()->where('gym_id', $leadData['gym_id'])
+                ->where(function (Builder $query) use ($leadData) {
                     if (filled($leadData['email'])) {
                         $query->where('email', $leadData['email']);
                     }
@@ -108,7 +109,7 @@ abstract class SocialMediaLeadProcessor
             }
 
             // Create new lead
-            $lead = Lead::create([
+            $lead = Lead::query()->create([
                 'name' => $leadData['name'],
                 'email' => $leadData['email'] ?? null,
                 'phone' => $this->formatPhoneNumber($leadData['phone'] ?? ''),

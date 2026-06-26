@@ -124,7 +124,7 @@ class ExpenseResource extends BaseResource
                                     ->default(false),
                             ])
                             ->createOptionUsing(function (array $data) use ($gym) {
-                                return ExpenseCategory::create([
+                                return ExpenseCategory::query()->create([
                                     'gym_id' => $gym->id,
                                     'name' => $data['name'],
                                     'is_active' => true,

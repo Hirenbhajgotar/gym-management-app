@@ -156,7 +156,7 @@ class RegisterGym extends RegisterTenant
 
         $user = auth()->user();
 
-        $gym = Gym::create($data);
+        $gym = Gym::query()->create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
         $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);

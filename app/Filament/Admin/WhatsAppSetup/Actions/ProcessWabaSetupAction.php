@@ -51,7 +51,7 @@ class ProcessWabaSetupAction
             $existing->update($accountData);
             $this->page->whatsappAccount = $existing->fresh();
         } else {
-            $whatsappAccount = WhatsAppAccount::create($accountData);
+            $whatsappAccount = WhatsAppAccount::query()->create($accountData);
             $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber']);
         }
         $this->page->accountCreated = true;

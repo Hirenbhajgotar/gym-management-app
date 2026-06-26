@@ -82,7 +82,7 @@ class LogUserLogin
         $userAgent = $request->userAgent();
         $deviceType = $this->detectDeviceType($userAgent);
 
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $user->id,
             'gym_id' => $gym->id,
             'login_at' => now(),
@@ -103,7 +103,7 @@ class LogUserLogin
         }
 
         // Mark the current session as logged out
-        UserLoginLog::where('user_id', $user->id)
+        UserLoginLog::query()->where('user_id', $user->id)
             ->where('is_current_session', true)
             ->whereNull('logged_out_at')
             ->update([
@@ -193,7 +193,7 @@ class LogUserLogin
         }
 
         // Update the current session's gym_id to match the newly active tenant
-        UserLoginLog::where('user_id', $user->id)
+        UserLoginLog::query()->where('user_id', $user->id)
             ->where('is_current_session', true)
             ->whereNull('logged_out_at')
             ->latest('login_at')

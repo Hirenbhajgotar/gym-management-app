@@ -34,7 +34,7 @@ class RolesAndPermissionsSeederTest extends TestCase
 
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
-        $dbCount = Permission::count();
+        $dbCount = Permission::query()->count();
         $this->assertGreaterThanOrEqual(
             $expectedCount,
             $dbCount,
@@ -47,10 +47,10 @@ class RolesAndPermissionsSeederTest extends TestCase
     {
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
-        $superAdminRole = Role::where('name', 'super_admin')->whereNull('gym_id')->first();
+        $superAdminRole = Role::query()->where('name', 'super_admin')->whereNull('gym_id')->first();
         $this->assertNotNull($superAdminRole, 'super_admin role should exist');
 
-        $totalPermissions = Permission::count();
+        $totalPermissions = Permission::query()->count();
         $superAdminPermissions = $superAdminRole->permissions()->count();
 
         $this->assertSame(
@@ -66,7 +66,7 @@ class RolesAndPermissionsSeederTest extends TestCase
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
         $discovered = $this->service->discoverFilamentPermissions();
-        $dbNames = Permission::pluck('name')->toArray();
+        $dbNames = Permission::query()->pluck('name')->toArray();
 
         foreach ($discovered as $permission) {
             $this->assertContains(
@@ -82,8 +82,8 @@ class RolesAndPermissionsSeederTest extends TestCase
     {
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
-        $total = Permission::count();
-        $unique = Permission::distinct('name')->count('name');
+        $total = Permission::query()->count();
+        $unique = Permission::query()->distinct('name')->count('name');
 
         $this->assertSame($total, $unique, 'No duplicate permission names should exist');
     }
@@ -91,11 +91,11 @@ class RolesAndPermissionsSeederTest extends TestCase
     #[Test]
     public function it_seeder_assigns_permissions_to_per_gym_roles(): void
     {
-        Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
-        $gymRoles = Role::whereNotNull('gym_id')->get();
+        $gymRoles = Role::query()->whereNotNull('gym_id')->get();
         $this->assertNotEmpty($gymRoles, 'Per-gym roles should be created');
 
         $rolesWithPermissions = $gymRoles->filter(fn ($role) => $role->permissions()->count() > 0);
@@ -113,7 +113,7 @@ class RolesAndPermissionsSeederTest extends TestCase
 
         $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
 
-        $dbCount = Permission::count();
+        $dbCount = Permission::query()->count();
         $this->assertGreaterThanOrEqual(
             $discoveredCount,
             $dbCount,

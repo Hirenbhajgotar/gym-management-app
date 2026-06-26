@@ -359,7 +359,7 @@ trait HasReportFilters
                             ->label('Set as Default'),
                     ])
                     ->action(function (array $data) {
-                        SavedReportFilter::create([
+                        SavedReportFilter::query()->create([
                             'gym_id' => $this->getGymId(),
                             'user_id' => Auth::id(),
                             'report_type' => static::class,
@@ -381,14 +381,14 @@ trait HasReportFilters
                         Select::make('filter_id')
                             ->label('Select Saved View')
                             ->options(function () {
-                                return SavedReportFilter::where('gym_id', $this->getGymId())
+                                return SavedReportFilter::query()->where('gym_id', $this->getGymId())
                                     ->where('report_type', static::class)
                                     ->pluck('name', 'id');
                             })
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        $savedFilter = SavedReportFilter::find($data['filter_id']);
+                        $savedFilter = SavedReportFilter::query()->find($data['filter_id']);
                         if ($savedFilter) {
                             $this->filters = $savedFilter->filters;
                             $this->dispatch('$refresh');
@@ -422,7 +422,7 @@ trait HasReportFilters
                     $report->gym_id = $this->getGymId();
                     $report->name = static::$title ?? static::$navigationLabel ?? 'Report';
                     $report->filters = $this->filters ?? [];
-                    $report->setRelation('gym', Gym::find($this->getGymId()));
+                    $report->setRelation('gym', Gym::query()->find($this->getGymId()));
 
                     $pdfContent = resolve(ReportPdfGenerator::class)->generate($report);
 
@@ -453,7 +453,7 @@ trait HasReportFilters
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $shareableLink = ShareableReportLink::create([
+                    $shareableLink = ShareableReportLink::query()->create([
                         'gym_id' => $this->getGymId(),
                         'user_id' => Auth::id(),
                         'report_type' => static::class,

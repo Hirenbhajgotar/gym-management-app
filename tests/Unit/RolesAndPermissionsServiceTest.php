@@ -64,7 +64,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Create a permission setting for gym_owner role
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'gym_owner',
             'default_permissions' => $permissions,
         ]);
@@ -83,7 +83,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Assert that permissions were assigned to the gym_owner role
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(count($permissions), $gymOwnerRole->permissions);
     }
@@ -148,7 +148,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         // Create permission settings for all tenant roles
         $tenantRoles = DefaultRole::tenantRoles();
         foreach ($tenantRoles as $role) {
-            PermissionSetting::create([
+            PermissionSetting::query()->create([
                 'role' => $role->value,
                 'default_permissions' => $permissions,
             ]);
@@ -159,7 +159,7 @@ class RolesAndPermissionsServiceTest extends TestCase
 
         // Assert that each role has the correct permissions
         foreach ($tenantRoles as $role) {
-            $roleModel = Role::where('name', $role->value)->where('gym_id', $gym->id)->first();
+            $roleModel = Role::query()->where('name', $role->value)->where('gym_id', $gym->id)->first();
             $this->assertNotNull($roleModel);
             $this->assertCount(count($permissions), $roleModel->permissions);
         }
@@ -179,7 +179,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
 
         // Create a permission setting for only one role
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'manager',
             'default_permissions' => ['view_any_user'],
         ]);
@@ -198,12 +198,12 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Assert that only the manager role has permissions
-        $managerRole = Role::where('name', 'manager')->where('gym_id', $gym->id)->first();
+        $managerRole = Role::query()->where('name', 'manager')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($managerRole);
         $this->assertCount(1, $managerRole->permissions);
 
         // Assert that other roles have no permissions
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(0, $gymOwnerRole->permissions);
     }
@@ -216,7 +216,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gym = Gym::factory()->create();
 
         // Create a permission setting with empty permissions
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'gym_owner',
             'default_permissions' => [],
         ]);
@@ -232,7 +232,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
 
         // Assert that the role has no permissions
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(0, $gymOwnerRole->permissions);
     }

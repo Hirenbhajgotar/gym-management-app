@@ -44,7 +44,7 @@ class TrainerImport extends BaseImporter implements ShouldQueue
             'currency' => $formattedRow['currency'] ?? Currency::INR->value,
         ];
 
-        Trainer::create($data);
+        Trainer::query()->create($data);
     }
 
     public function rules(): array

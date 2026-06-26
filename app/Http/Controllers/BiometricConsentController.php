@@ -49,7 +49,7 @@ class BiometricConsentController extends Controller
 
         // Try to create consent - handle race condition where another request creates first
         try {
-            $consent = BiometricConsent::create([
+            $consent = BiometricConsent::query()->create([
                 'gym_member_id' => $gymMember->id,
                 'gym_id' => $gymMember->gym_id,
                 'ip_address' => $request->ip(),

@@ -27,7 +27,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'waba_id' => 'test_waba_123',
             'status' => 'active',

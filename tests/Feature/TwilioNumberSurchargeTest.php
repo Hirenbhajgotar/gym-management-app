@@ -35,7 +35,7 @@ class TwilioNumberSurchargeTest extends TestCase
 
     protected function createTwilioAccountWithPhone(?string $lastChargedAt = null): WhatsAppAccount
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'provider_type' => WhatsAppProviderTypeEnum::TWILIO,
             'status' => WhatsAppAccountStatusEnum::ACTIVE,
@@ -44,7 +44,7 @@ class TwilioNumberSurchargeTest extends TestCase
             'twilio_auth_token' => 'test_token',
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '1234567890',
             'phone_number_sid' => 'PNtest123',
@@ -61,7 +61,7 @@ class TwilioNumberSurchargeTest extends TestCase
 
     protected function createWabaAccount(): WhatsAppAccount
     {
-        return WhatsAppAccount::create([
+        return WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'provider_type' => WhatsAppProviderTypeEnum::WABA,
             'status' => WhatsAppAccountStatusEnum::ACTIVE,
@@ -114,7 +114,7 @@ class TwilioNumberSurchargeTest extends TestCase
     #[Test]
     public function purchase_package_with_surcharge_records_correctly(): void
     {
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 0,
             'used_credits' => 0,
@@ -123,7 +123,7 @@ class TwilioNumberSurchargeTest extends TestCase
             'selling_price_per_msg' => 0.25,
         ]);
 
-        $package = WhatsAppPackage::create([
+        $package = WhatsAppPackage::query()->create([
             'name' => 'Test Package',
             'message_count' => 200,
             'selling_price' => 500.00,
@@ -143,7 +143,7 @@ class TwilioNumberSurchargeTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals(135.0, $result['phone_number_surcharge']);
 
-        $transaction = WhatsAppCreditTransaction::where('gym_id', $this->gym->id)->first();
+        $transaction = WhatsAppCreditTransaction::query()->where('gym_id', $this->gym->id)->first();
         $this->assertNotNull($transaction);
         $this->assertEquals(135.0, (float) $transaction->phone_number_surcharge);
         $this->assertEquals(500.00, (float) $transaction->amount);
@@ -152,7 +152,7 @@ class TwilioNumberSurchargeTest extends TestCase
     #[Test]
     public function purchase_package_without_surcharge_backward_compatible(): void
     {
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 0,
             'used_credits' => 0,
@@ -161,7 +161,7 @@ class TwilioNumberSurchargeTest extends TestCase
             'selling_price_per_msg' => 0.25,
         ]);
 
-        $package = WhatsAppPackage::create([
+        $package = WhatsAppPackage::query()->create([
             'name' => 'Test Package',
             'message_count' => 200,
             'selling_price' => 500.00,
@@ -179,7 +179,7 @@ class TwilioNumberSurchargeTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals(0.0, $result['phone_number_surcharge']);
 
-        $transaction = WhatsAppCreditTransaction::where('gym_id', $this->gym->id)->first();
+        $transaction = WhatsAppCreditTransaction::query()->where('gym_id', $this->gym->id)->first();
         $this->assertNotNull($transaction);
         $this->assertEquals(0.0, $transaction->phone_number_surcharge);
     }

@@ -45,7 +45,7 @@ class RevenueTrendChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $data = MemberPayment::where('gym_id', $gymId)
+            $data = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereBetween('payment_date', [$startDate, $endDate])
                 ->selectRaw("DATE_FORMAT(payment_date, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as count")
@@ -53,7 +53,7 @@ class RevenueTrendChart extends BaseChartWidget
                 ->orderBy('month')
                 ->get();
 
-            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->all();
             $totals = $data->pluck('total')->toArray();
             $counts = $data->pluck('count')->toArray();
 

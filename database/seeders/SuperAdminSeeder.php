@@ -15,9 +15,9 @@ class SuperAdminSeeder extends Seeder
     public function run(): void
     {
         // Add role for super-admin if not exists
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value]);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value]);
 
-        $superAdmin = User::updateOrCreate([
+        $superAdmin = User::query()->updateOrCreate([
             'email' => 'hiren@fluxfitness.in',
         ], [
             'name' => 'Hiren Super Admin',

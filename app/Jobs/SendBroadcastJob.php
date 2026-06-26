@@ -54,7 +54,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         /** @var WhatsAppBroadcast|null $broadcast */
-        $broadcast = WhatsAppBroadcast::find($this->broadcastId);
+        $broadcast = WhatsAppBroadcast::query()->find($this->broadcastId);
 
         if (! $broadcast) {
             Log::warning('Broadcast not found for batch orchestration', [
@@ -88,7 +88,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         $allJobs = [];
         $totalProcessed = 0;
 
-        WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcastId)
+        WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcastId)
             ->where('status', WhatsAppBroadcastRecipientStatusEnum::PENDING->value)
             ->with([
                 'member:id,gym_id,trainer_id,gym_membership_plan_id,name,phone,email,dob,membership_start,membership_end',
@@ -201,7 +201,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                         $refundCount = (int) $broadcastRecord->failed_count;
 
                         // Atomically refund credits: increment remaining, decrement used
-                        WhatsAppMessageCredit::where('gym_id', $gymId)
+                        WhatsAppMessageCredit::query()->where('gym_id', $gymId)
                             ->update([
                                 'remaining_credits' => DB::raw('remaining_credits + ' . $refundCount),
                                 'used_credits' => DB::raw('GREATEST(used_credits - ' . $refundCount . ', 0)'),
@@ -244,7 +244,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        WhatsAppBroadcast::where('id', $this->broadcastId)
+        WhatsAppBroadcast::query()->where('id', $this->broadcastId)
             ->update(['status' => WhatsAppBroadcastStatusEnum::FAILED]);
     }
 }

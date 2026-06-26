@@ -60,7 +60,7 @@ class AddressForm extends Field
     public function getChildComponents(): array
     {
         // Get India's ID (assuming you have India in your countries table)
-        $indiaId = Country::whereRaw('LOWER(name) = ?', ['india'])->first()?->id;
+        $indiaId = Country::query()->whereRaw('LOWER(name) = ?', ['india'])->first()?->id;
 
         $isMarkedAsRequired = $this->isRequired();
 
@@ -75,7 +75,7 @@ class AddressForm extends Field
                     Select::make('country_id')
                         ->label('Country')
                         ->options(fn () => Cache::flexible(Country::COUNTRIES_LIST_CACHE_KEY, [now()->addDays(7), now()->addDays(14)], function () {
-                            return Country::active()->orderBy('name')->pluck('name', 'id');
+                            return Country::query()->active()->orderBy('name')->pluck('name', 'id');
                         }))
                         ->default($indiaId) // Set India as default
                         ->live()
@@ -94,7 +94,7 @@ class AddressForm extends Field
                             }
 
                             return Cache::flexible(State::STATES_OF_COUNTRY_CACHE_KEY . $countryId, [now()->addDays(7), now()->addDays(14)], function () use ($countryId) {
-                                return State::where('country_id', $countryId)
+                                return State::query()->where('country_id', $countryId)
                                     ->active()
                                     ->orderBy('name', 'asc')
                                     ->pluck('name', 'id');
@@ -114,7 +114,7 @@ class AddressForm extends Field
                             }
 
                             return Cache::flexible(City::CITIES_OF_STATE_CACHE_KEY . $stateId, [now()->addDays(7), now()->addDays(14)], function () use ($stateId) {
-                                return City::where('state_id', $stateId)
+                                return City::query()->where('state_id', $stateId)
                                     ->active()
                                     ->orderBy('name', 'asc')
                                     ->pluck('name', 'id');
@@ -158,7 +158,7 @@ class AddressForm extends Field
                 $component->state($address->toArray());
             } else {
                 // If no address exists, set defaults including India
-                $indiaId = Country::whereRaw('LOWER(name) = ?', ['india'])->first()?->id;
+                $indiaId = Country::query()->whereRaw('LOWER(name) = ?', ['india'])->first()?->id;
 
                 $component->state([
                     'street' => null,

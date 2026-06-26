@@ -128,7 +128,7 @@ class RolePermissionsStatsWidget extends BaseWidget
     {
         $currentTenant = $this->getGym();
 
-        $roleQuery = Role::where('name', $this->role);
+        $roleQuery = Role::query()->where('name', $this->role);
 
         if ($currentTenant) {
             $roleQuery->where('gym_id', $currentTenant->id);
@@ -174,7 +174,7 @@ class RolePermissionsStatsWidget extends BaseWidget
      */
     protected function getActiveUsersCount($currentTenant): int
     {
-        return User::whereHas('roles', function (Builder $query) use ($currentTenant) {
+        return User::query()->whereHas('roles', function (Builder $query) use ($currentTenant) {
             $query->where('name', $this->role);
 
             if ($currentTenant) {

@@ -81,7 +81,7 @@ class RazorpayService
                 ]);
             }
 
-            $payment = Payment::create($paymentData);
+            $payment = Payment::query()->create($paymentData);
 
             Log::info('Razorpay order created', [
                 'order_id' => $razorpayOrder->id,
@@ -121,7 +121,7 @@ class RazorpayService
             $this->api->utility->verifyPaymentSignature($attributes);
 
             // Update payment record
-            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
             if ($payment) {
                 $payment->update([
                     'razorpay_payment_id' => $razorpayPaymentId,
@@ -145,7 +145,7 @@ class RazorpayService
             ]);
 
             // Update payment status to failed
-            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
             if ($payment) {
                 $payment->update([
                     'status' => 'failed',
@@ -185,7 +185,7 @@ class RazorpayService
             'status' => $status,
         ]);
 
-        $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
 
         if (! $payment) {
             Log::warning('Payment not found for webhook', [
@@ -329,7 +329,7 @@ class RazorpayService
             }
 
             // Update local payment record if verified
-            $localPayment = Payment::where('razorpay_order_id', $orderId)->first();
+            $localPayment = Payment::query()->where('razorpay_order_id', $orderId)->first();
             if ($localPayment) {
                 // Only update if not already completed to avoid overwriting newer data
                 if (! $localPayment->isCompleted()) {

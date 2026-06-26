@@ -97,7 +97,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
                 $channelSenderSid = $this->registerWhatsAppSender($subClient, $account, $incomingNumber->phoneNumber);
 
                 return DB::transaction(function () use ($incomingNumber, $channelSenderSid, $account) {
-                    WhatsAppPhoneNumber::create([
+                    WhatsAppPhoneNumber::query()->create([
                         'whatsapp_account_id' => $account->id,
                         'phone_number' => $incomingNumber->phoneNumber,
                         'phone_number_sid' => $incomingNumber->sid,
@@ -181,15 +181,12 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
 
                 $this->attachSenderToMessagingService($subClient, $account, $senderSid);
 
-                WhatsAppPhoneNumber::updateOrCreate(
-                    ['whatsapp_account_id' => $account->id],
-                    [
-                        'phone_number' => $phoneNumber,
-                        'channel_sender_sid' => $senderSid,
-                        'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
-                        'status' => 'purchased',
-                    ]
-                );
+                WhatsAppPhoneNumber::query()->updateOrCreate(['whatsapp_account_id' => $account->id], [
+                    'phone_number' => $phoneNumber,
+                    'channel_sender_sid' => $senderSid,
+                    'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
+                    'status' => 'purchased',
+                ]);
 
                 return [
                     'success' => true,
@@ -240,7 +237,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
             // ->update(['configuration' => ['verification_code' => $otpCode]]);
 
             return DB::transaction(function () use ($account, $senderSid) {
-                WhatsAppPhoneNumber::where('whatsapp_account_id', $account->id)
+                WhatsAppPhoneNumber::query()->where('whatsapp_account_id', $account->id)
                     ->where('phone_number_sid', $senderSid)
                     ->update(['status' => 'active']);
 
@@ -296,7 +293,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
 
             throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
 
-            $phoneNumberRecord = WhatsAppPhoneNumber::where('whatsapp_account_id', $account->id)
+            $phoneNumberRecord = WhatsAppPhoneNumber::query()->where('whatsapp_account_id', $account->id)
                 ->where('phone_number_sid', $senderSid)
                 ->first();
 
@@ -368,7 +365,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
         $key = "twilio:has-active-number:{$phoneNumber}:{$accountId}";
 
         return Cache::flexible($key, [now()->addHour(), now()->addHours(5)], function () use ($accountId, $phoneNumber) {
-            return WhatsAppPhoneNumber::where('whatsapp_account_id', $accountId)
+            return WhatsAppPhoneNumber::query()->where('whatsapp_account_id', $accountId)
                 ->where('phone_number', $phoneNumber)
                 ->exists();
         });

@@ -71,7 +71,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             ->body('Your import is being processed in the background. You will be notified once it is complete.')
             ->send();
 
-        $this->importRecord = Import::create([
+        $this->importRecord = Import::query()->create([
             'completed_at' => null,
             'file_name' => 'import_' . now()->timestamp . '.xlsx',
             'file_path' => 'temp',
@@ -168,7 +168,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 $failedRow = $rowData;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
 
-                FailedImportRow::create([
+                FailedImportRow::query()->create([
                     'import_id' => $this->importRecord->id,
                     'data' => json_encode($failedRow),
                     'validation_error' => $failedRow['error'],
@@ -187,7 +187,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     $this->failedRows++;
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
-                    FailedImportRow::create([
+                    FailedImportRow::query()->create([
                         'import_id' => $this->importRecord->id,
                         'data' => json_encode($failedRow),
                         'validation_error' => $e->getMessage(),
@@ -281,7 +281,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             ]);
 
             // Generate CSV content manually to avoid memory issues
-            $failedRows = FailedImportRow::where('import_id', $this->importRecord->id)->get();
+            $failedRows = FailedImportRow::query()->where('import_id', $this->importRecord->id)->get();
 
             if ($failedRows->isEmpty()) {
                 Log::info('No failed rows to export');
@@ -344,7 +344,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Find the user who initiated the import.
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         // If the user is not found, log a warning and exit.
         if (! $recipient) {
@@ -430,7 +430,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         }
 
         // Find the user who initiated the import.
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         // If the user is found, send a failure notification.
         if ($recipient) {

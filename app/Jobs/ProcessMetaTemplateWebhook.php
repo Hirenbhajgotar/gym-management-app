@@ -72,7 +72,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         $account = Cache::flexible("whatsapp:template:account:waba_id:{$this->wabaId}", [30, 120], function () {
-            return WhatsAppAccount::where('waba_id', $this->wabaId)->first();
+            return WhatsAppAccount::query()->where('waba_id', $this->wabaId)->first();
         });
 
         if (! $account) {
@@ -84,7 +84,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
         }
         // Find the template by Meta's template ID
         $template = Cache::flexible("whatsapp:template:gym_id:{$account->gym_id}:template_id:{$this->metaTemplateId}", [30, 120], function () use ($account) {
-            return WhatsAppTemplate::where('gym_id', $account->gym_id)->where('meta_template_id', $this->metaTemplateId)->first();
+            return WhatsAppTemplate::query()->where('gym_id', $account->gym_id)->where('meta_template_id', $this->metaTemplateId)->first();
         });
 
         if (! $template) {

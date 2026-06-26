@@ -220,7 +220,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
                 return ['success' => false, 'error' => 'WhatsApp account not found or credentials not configured.'];
             }
 
-            $gym = Gym::find($gymId);
+            $gym = Gym::query()->find($gymId);
             $gymName = $gym->name ?? 'Your Gym';
             $recipientNumber = $to ?? $account?->phoneNumber?->phone_number;
 

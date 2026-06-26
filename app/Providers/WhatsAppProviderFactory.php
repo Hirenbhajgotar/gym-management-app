@@ -95,7 +95,7 @@ class WhatsAppProviderFactory
             [self::CACHE_MIN_TTL, self::CACHE_MAX_TTL],
             function () use ($gymId) {
                 // Try to get provider from WhatsAppAccount (per-tenant)
-                $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+                $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
                 if ($account && $account->provider_type) {
                     // Convert enum to string constant

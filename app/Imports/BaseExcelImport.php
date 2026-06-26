@@ -62,7 +62,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
             ->send();
 
         // Create an import record in Filament's imports table
-        $this->importRecord = Import::create([
+        $this->importRecord = Import::query()->create([
             'completed_at' => null,
             'file_name' => 'import_' . now()->timestamp . '.xlsx',
             'file_path' => 'temp',
@@ -93,7 +93,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
                 $failedRow = $data;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
                 $this->failedData[] = $failedRow;
-                FailedImportRow::create([
+                FailedImportRow::query()->create([
                     'import_id' => $this->importRecord->id,
                     'data' => json_encode($failedRow),
                     'validation_error' => $failedRow['error'],
@@ -107,7 +107,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
                     $this->failedData[] = $failedRow;
-                    FailedImportRow::create([
+                    FailedImportRow::query()->create([
                         'import_id' => $this->importRecord->id,
                         'data' => json_encode($failedRow),
                         'validation_error' => $e->getMessage(),
@@ -216,7 +216,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Retrieve the user using the user_id from the Import record
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         if (! $recipient) {
             Log::warning('User not found for import notification.', [
@@ -270,7 +270,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         }
 
         // Retrieve the user using the user_id from the Import record
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         if ($recipient) {
 

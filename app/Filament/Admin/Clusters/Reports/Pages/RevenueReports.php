@@ -109,7 +109,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                         Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->options(
-                                MembershipPlan::where('gym_id', $gym?->id)
+                                MembershipPlan::query()->where('gym_id', $gym?->id)
                                     ->pluck('name', 'id')
                             )
                             ->placeholder('All Plans'),
@@ -163,19 +163,19 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                 ->sum('amount');
 
             // Active members count
-            $activeMembers = GymMember::where('gym_id', $gymId)->membershipActive()->count();
+            $activeMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
 
             // ARPM (Average Revenue Per Member)
             $arpm = $activeMembers > 0 ? round($totalRevenue / $activeMembers, 2) : 0;
 
             // This month vs last month comparison
-            $thisMonthRevenue = MemberPayment::where('gym_id', $gymId)
+            $thisMonthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereMonth('payment_date', now()->month)
                 ->whereYear('payment_date', now()->year)
                 ->sum('amount');
 
-            $lastMonthRevenue = MemberPayment::where('gym_id', $gymId)
+            $lastMonthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereMonth('payment_date', now()->subMonth()->month)
                 ->whereYear('payment_date', now()->subMonth()->year)
@@ -184,7 +184,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
             $monthlyChange = $this->calculatePercentageChange($thisMonthRevenue, $lastMonthRevenue);
 
             // Today's collection
-            $todayCollection = MemberPayment::where('gym_id', $gymId)
+            $todayCollection = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereDate('payment_date', today())
                 ->sum('amount');
@@ -251,13 +251,13 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                 $label = $startOfMonth->format('M Y');
 
                 // Revenue
-                $revenue = MemberPayment::where('gym_id', $gymId)
+                $revenue = MemberPayment::query()->where('gym_id', $gymId)
                     ->where('status', PaymentStatus::COMPLETED)
                     ->whereBetween('payment_date', [$queryStart, $queryEnd])
                     ->sum('amount');
 
                 // Expenses (Approved or Paid)
-                $expenses = Expense::where('gym_id', $gymId)
+                $expenses = Expense::query()->where('gym_id', $gymId)
                     ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                     ->whereBetween('expense_date', [$queryStart, $queryEnd])
                     ->sum('amount');
@@ -339,7 +339,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
             $startDate = $this->filters['start_date'];
             $endDate = $this->filters['end_date'];
 
-            return Expense::where('gym_id', $gymId)
+            return Expense::query()->where('gym_id', $gymId)
                 ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                 ->when($startDate, fn ($q) => $q->whereDate('expense_date', '>=', $startDate))
                 ->when($endDate, fn ($q) => $q->whereDate('expense_date', '<=', $endDate))

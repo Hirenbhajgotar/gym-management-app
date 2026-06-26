@@ -37,7 +37,7 @@ abstract class TwilioService
      */
     protected function loadGymContext(): void
     {
-        $this->whatsAppAccount = WhatsAppAccount::where('gym_id', $this->gymId)->first();
+        $this->whatsAppAccount = WhatsAppAccount::query()->where('gym_id', $this->gymId)->first();
         $this->whatsAppPhoneNumber = $this->whatsAppAccount?->phoneNumber;
     }
 

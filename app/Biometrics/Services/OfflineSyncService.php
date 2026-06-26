@@ -58,7 +58,7 @@ class OfflineSyncService
         }
 
         // Step 2: Load ALL BiometricTemplates for this gym and biometric type
-        $templates = BiometricTemplate::where('gym_id', $device->gym_id)
+        $templates = BiometricTemplate::query()->where('gym_id', $device->gym_id)
             ->where('biometric_type', $event['biometric_type'])
             ->where('is_active', true)
             ->with('gymMember')
@@ -127,7 +127,7 @@ class OfflineSyncService
         }
 
         // Check for existing attendance (prevent duplicates from retry)
-        $existingAttendance = Attendances::where('device_id', $device->id)
+        $existingAttendance = Attendances::query()->where('device_id', $device->id)
             ->where('offline_id', $offlineId)
             ->first();
 

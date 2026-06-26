@@ -67,7 +67,7 @@ class GymSettings extends BasePage implements HasActions, HasForms
 
     public function mount(): void
     {
-        $settings = GymSetting::where('gym_id', $this->getGym()->id)
+        $settings = GymSetting::query()->where('gym_id', $this->getGym()->id)
             ->pluck('value', 'key')
             ->all();
 
@@ -151,7 +151,7 @@ class GymSettings extends BasePage implements HasActions, HasForms
                             ) {
                                 $settings = [];
                                 if ($state) {
-                                    $settings = GymSetting::where('gym_id', $this->getGym()->id)
+                                    $settings = GymSetting::query()->where('gym_id', $this->getGym()->id)
                                         ->whereIn('key', self::NOTIFICATION_KEYS)
                                         ->pluck('value', 'key')
                                         ->all();
@@ -337,15 +337,12 @@ class GymSettings extends BasePage implements HasActions, HasForms
 
     private function saveSetting(int $gymId, string $key, $value): void
     {
-        GymSetting::updateOrCreate(
-            ['gym_id' => $gymId, 'key' => $key],
-            ['value' => $value, 'type' => gettype($value)],
-        );
+        GymSetting::query()->updateOrCreate(['gym_id' => $gymId, 'key' => $key], ['value' => $value, 'type' => gettype($value)]);
     }
 
     public function downloadInvoice(int $paymentId)
     {
-        $payment = Payment::where('gym_id', $this->getGym()->id)
+        $payment = Payment::query()->where('gym_id', $this->getGym()->id)
             ->findOrFail($paymentId);
 
         return resolve(InvoiceService::class)->downloadInvoice($payment);

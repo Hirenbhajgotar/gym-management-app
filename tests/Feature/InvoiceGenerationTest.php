@@ -29,7 +29,7 @@ class InvoiceGenerationTest extends TestCase
             'gym_membership_plan_id' => $plan->id,
         ]);
 
-        $payment = MemberPayment::create([
+        $payment = MemberPayment::query()->create([
             'gym_id' => $gym->id,
             'member_id' => $member->id,
             'membership_plan_id' => $plan->id,

@@ -23,12 +23,12 @@ class GymSettingsTest extends TestCase
         $gym = Gym::factory()->create();
         Filament::setTenant($gym);
 
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'membership_expiry_notifications', 'value' => 'true', 'type' => 'boolean']);
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'birthday_notifications', 'value' => 'false', 'type' => 'boolean']);
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'attendance_reminders', 'value' => 'true', 'type' => 'boolean']);
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'payment_reminders', 'value' => 'false', 'type' => 'boolean']);
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'followup_reminders', 'value' => 'true', 'type' => 'boolean']);
-        GymSetting::create(['gym_id' => $gym->id, 'key' => 'lead_reminders_notifications', 'value' => 'true', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'membership_expiry_notifications', 'value' => 'true', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'birthday_notifications', 'value' => 'false', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'attendance_reminders', 'value' => 'true', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'payment_reminders', 'value' => 'false', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'followup_reminders', 'value' => 'true', 'type' => 'boolean']);
+        GymSetting::query()->create(['gym_id' => $gym->id, 'key' => 'lead_reminders_notifications', 'value' => 'true', 'type' => 'boolean']);
 
         Livewire::test(GymSettings::class)
             ->fillForm([

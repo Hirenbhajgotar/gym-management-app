@@ -14,7 +14,7 @@ class EmbeddedSignupController extends Controller
 {
     public function redirect(Request $request, string $tenant): RedirectResponse
     {
-        $gym = Gym::where('slug', $tenant)->first();
+        $gym = Gym::query()->where('slug', $tenant)->first();
 
         if (! $gym) {
             $route = route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant]);
@@ -96,7 +96,7 @@ class EmbeddedSignupController extends Controller
 
     public function manualConnect(Request $request, string $tenant): RedirectResponse
     {
-        $gym = Gym::where('slug', $tenant)->first();
+        $gym = Gym::query()->where('slug', $tenant)->first();
 
         if (! $gym) {
             return back()->with('error', 'Tenant not found');

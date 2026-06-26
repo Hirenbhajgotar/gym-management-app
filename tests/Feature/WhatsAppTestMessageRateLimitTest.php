@@ -43,7 +43,7 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -59,7 +59,7 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
         $this->user->gyms()->attach($this->gym);
 
         // Create WhatsAppAccount (the new model)
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -68,7 +68,7 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
         ]);
 
         // Create a phone number for the account
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $this->whatsappAccount->id,
             'phone_number' => '+14155551234',
             'formatted_number' => '(415) 555-1234',

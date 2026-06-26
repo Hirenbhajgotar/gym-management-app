@@ -48,7 +48,7 @@ class RolesAndPermissionsService
             $roles = DefaultRole::tenantRoles();
 
             // Idempotent check: If roles already exist, skip.
-            $existingCount = Role::where('gym_id', $tenant->id)
+            $existingCount = Role::query()->where('gym_id', $tenant->id)
                 ->whereIn('name', array_column($roles, 'value'))
                 ->count();
 
@@ -65,10 +65,10 @@ class RolesAndPermissionsService
             ], $roles);
 
             // Use bulk insert to minimize DB queries
-            Role::insert($roleData);
+            Role::query()->insert($roleData);
 
             // Fetch the created role IDs mapped by name
-            $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+            $createdRoles = Role::query()->whereIn('name', array_column($roleData, 'name'))
                 ->where('gym_id', $tenant->id)
                 ->pluck('id', 'name');
 
@@ -80,9 +80,7 @@ class RolesAndPermissionsService
 
                 $defaultPermissions = $this->getDiscoveryService()->getDefaultPermissionsForRole($role);
 
-                $roleModel = Role::firstOrCreate(
-                    ['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]
-                );
+                $roleModel = Role::query()->firstOrCreate(['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]);
 
                 $roleModel->syncPermissions($defaultPermissions);
             }
@@ -314,7 +312,7 @@ class RolesAndPermissionsService
         throw_unless($tenant, \Exception::class, 'Gym not found.');
 
         // Ensure the role exists for the tenant
-        $role = Role::where('name', $roleName->value)
+        $role = Role::query()->where('name', $roleName->value)
             ->where('gym_id', $tenant->id)
             ->first();
 

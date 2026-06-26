@@ -63,7 +63,7 @@ class SubscriptionRenewalJob implements ShouldQueue
                     $this->notifyTrialEnding($subscription);
                 }
             });
-        $count = Subscription::where('status', SubscriptionStatus::TRIAL)
+        $count = Subscription::query()->where('status', SubscriptionStatus::TRIAL)
             ->where('trial_ends_at', '<=', Date::now()->addDays(3))
             ->where('trial_ends_at', '>', Date::now())
             ->count();

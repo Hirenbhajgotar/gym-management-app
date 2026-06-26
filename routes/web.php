@@ -89,7 +89,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('download.failed.rows');
 
     Route::get('/filament/failed-import-download/{importId}', function ($importId) {
-        $import = Import::where('id', $importId)
+        $import = Import::query()->where('id', $importId)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 

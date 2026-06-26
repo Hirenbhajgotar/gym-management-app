@@ -31,8 +31,8 @@ class EditGymProfileTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
 
         $this->superAdmin = User::factory()->create()->assignRole(DefaultRole::SUPER_ADMIN->value);
 

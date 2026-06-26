@@ -21,14 +21,14 @@ class SubscriptionService
     {
         return DB::transaction(function () use ($user, $plan, $options) {
             // Lock user first (consistent order)
-            $lockedUser = User::where('id', $user->id)
+            $lockedUser = User::query()->where('id', $user->id)
                 ->lockForUpdate()
                 ->first();
 
             throw_unless($lockedUser, Exception::class, 'User not found');
 
             // Check if user already has an active subscription
-            $activeSubscription = Subscription::where('user_id', $lockedUser->id)
+            $activeSubscription = Subscription::query()->where('user_id', $lockedUser->id)
                 ->active()
                 ->lockForUpdate()
                 ->first();
@@ -72,7 +72,7 @@ class SubscriptionService
             }
 
             // Create subscription
-            $subscription = Subscription::create([
+            $subscription = Subscription::query()->create([
                 'user_id' => $lockedUser->id,
                 'plan_id' => $lockedPlan->id,
                 'status' => $status,
@@ -113,7 +113,7 @@ class SubscriptionService
             $billingCycle,
         ) {
             // Create subscription with PENDING status
-            $subscription = Subscription::create([
+            $subscription = Subscription::query()->create([
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'status' => SubscriptionStatus::PENDING,
@@ -324,10 +324,7 @@ class SubscriptionService
      */
     public function checkExpiredTrials(): int
     {
-        $expiredTrials = Subscription::where(
-            'status',
-            SubscriptionStatus::TRIAL,
-        )
+        $expiredTrials = Subscription::query()->where('status', SubscriptionStatus::TRIAL)
             ->where('trial_ends_at', '<', Date::now())
             ->get();
 
@@ -387,10 +384,7 @@ class SubscriptionService
     {
         return [
             'total_active' => Subscription::active()->count(),
-            'total_trial' => Subscription::where(
-                'status',
-                SubscriptionStatus::TRIAL,
-            )->count(),
+            'total_trial' => Subscription::query()->where('status', SubscriptionStatus::TRIAL)->count(),
             'total_cancelled' => Subscription::cancelled()->count(),
             'total_expired' => Subscription::expired()->count(),
             'total_suspended' => Subscription::suspended()->count(),
@@ -417,7 +411,7 @@ class SubscriptionService
         ])->all();
 
         if (filled($features)) {
-            SubscriptionFeature::insert($features);
+            SubscriptionFeature::query()->insert($features);
         }
     }
 
@@ -429,7 +423,7 @@ class SubscriptionService
     {
         return DB::transaction(function () use ($user, $plan, $options) {
             // Lock user first to prevent race conditions and consistent locking order (User -> Plan)
-            $lockedUser = User::where('id', $user->id)->lockForUpdate()->first();
+            $lockedUser = User::query()->where('id', $user->id)->lockForUpdate()->first();
 
             throw_unless($lockedUser, \Exception::class, 'User not found');
 
@@ -440,7 +434,7 @@ class SubscriptionService
 
             throw_unless($lockedPlan, \Exception::class, 'Plan not found');
 
-            $activeSubscriptions = Subscription::where('user_id', $lockedUser->id)
+            $activeSubscriptions = Subscription::query()->where('user_id', $lockedUser->id)
                 ->active()
                 ->lockForUpdate()
                 ->get();
@@ -449,7 +443,7 @@ class SubscriptionService
                 $cancelledIds = $activeSubscriptions->pluck('id')->toArray();
 
                 // Cancel any existing active/trial subscriptions
-                Subscription::whereIn('id', $cancelledIds)
+                Subscription::query()->whereIn('id', $cancelledIds)
                     ->update([
                         'status' => SubscriptionStatus::CANCELLED,
                         'cancelled_at' => Date::now(),

@@ -13,7 +13,7 @@ class GenerateGymSlug extends Seeder
      */
     public function run(): void
     {
-        $gyms = Gym::whereNull('slug')->get();
+        $gyms = Gym::query()->whereNull('slug')->get();
 
         foreach ($gyms as $gym) {
             $baseSlug = Str::slug($gym->name);
@@ -21,7 +21,7 @@ class GenerateGymSlug extends Seeder
             $counter = 1;
 
             // Check for uniqueness and append a number if needed
-            while (Gym::where('slug', $slug)->where('id', '!=', $gym->id)->exists()) {
+            while (Gym::query()->where('slug', $slug)->where('id', '!=', $gym->id)->exists()) {
                 $slug = "{$baseSlug}-{$counter}";
                 $counter++;
             }

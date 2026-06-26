@@ -109,7 +109,7 @@ class ManageUserRoleCommand extends Command
                     return [];
                 }
 
-                return User::where('name', 'like', "%{$value}%")
+                return User::query()->where('name', 'like', "%{$value}%")
                     ->orWhere('email', 'like', "%{$value}%")
                     ->limit(10)
                     ->get()
@@ -120,7 +120,7 @@ class ManageUserRoleCommand extends Command
             },
         );
 
-        return User::find($userIdentifier);
+        return User::query()->find($userIdentifier);
     }
 
     /**
@@ -142,7 +142,7 @@ class ManageUserRoleCommand extends Command
             ])->all(),
         );
 
-        return Gym::find($gymId);
+        return Gym::query()->find($gymId);
     }
 
     /**
@@ -343,7 +343,7 @@ class ManageUserRoleCommand extends Command
         DB::beginTransaction();
         try {
             foreach ($emails as $email) {
-                $user = User::where('email', $email)->first();
+                $user = User::query()->where('email', $email)->first();
                 if (! $user) {
                     $this->warn("User not found: {$email}");
                     $failCount++;
@@ -379,8 +379,8 @@ class ManageUserRoleCommand extends Command
 
         // Find user
         $user = is_numeric($userOption)
-            ? User::find($userOption)
-            : User::where('email', $userOption)->first();
+            ? User::query()->find($userOption)
+            : User::query()->where('email', $userOption)->first();
 
         if (! $user) {
             $this->error("User not found: {$userOption}");
@@ -524,7 +524,7 @@ class ManageUserRoleCommand extends Command
             validate: fn (string $value) => filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Invalid email format'
         );
 
-        if (User::where('email', $email)->exists()) {
+        if (User::query()->where('email', $email)->exists()) {
             $this->error("User with email '{$email}' already exists.");
 
             return Command::FAILURE;
@@ -546,7 +546,7 @@ class ManageUserRoleCommand extends Command
         try {
             DB::beginTransaction();
 
-            $user = User::create([
+            $user = User::query()->create([
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($pwd),
@@ -699,7 +699,7 @@ class ManageUserRoleCommand extends Command
     {
         $roleEnum = DefaultRole::tryFrom($roleName);
 
-        $query = Role::where('name', $roleName)->where('guard_name', 'web');
+        $query = Role::query()->where('name', $roleName)->where('guard_name', 'web');
 
         if ($roleEnum?->isTenantRole() && $gymId) {
             $query->where('gym_id', $gymId);
@@ -724,7 +724,7 @@ class ManageUserRoleCommand extends Command
     {
         $roleEnum = DefaultRole::tryFrom($roleName);
 
-        $query = Role::where('name', $roleName)->where('guard_name', 'web');
+        $query = Role::query()->where('name', $roleName)->where('guard_name', 'web');
 
         if ($roleEnum?->isTenantRole() && $gymId) {
             $query->where('gym_id', $gymId);

@@ -41,7 +41,7 @@ class ManagersImport extends BaseImporter implements ShouldQueue, WithColumnForm
         $managerRole = DefaultRole::MANAGER;
 
         // Create a new user with basic information from the imported row.
-        $user = User::create([
+        $user = User::query()->create([
             'name' => $row['name'],
             'email' => $row['email'],
             'password' => $row['password'], // Hash the password for security.
@@ -54,10 +54,10 @@ class ManagersImport extends BaseImporter implements ShouldQueue, WithColumnForm
         $user->gyms()->attach($this->tenantId, ['role' => $managerRole->value]);
 
         // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
-        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $managerRole);
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::query()->find($this->tenantId), $user, $managerRole);
 
         // Create the employee's detailed profile.
-        EmployeeDetail::create([
+        EmployeeDetail::query()->create([
             'user_id' => $user->id, // Link to the created user.
             'date_of_birth' => $row['date_of_birth'] ?? null,
             'gender' => $row['gender'] ?? null,

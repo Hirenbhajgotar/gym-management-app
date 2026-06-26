@@ -25,7 +25,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
         $owner = User::factory()->gymOwner()->create();
         $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
-        $credit = WhatsAppMessageCredit::create([
+        $credit = WhatsAppMessageCredit::query()->create([
             'gym_id' => $gym->id,
             'total_credits' => 100,
             'used_credits' => 80,
@@ -50,7 +50,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
         $owner = User::factory()->gymOwner()->create();
         $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $gym->id,
             'total_credits' => 100,
             'used_credits' => 70,
@@ -73,7 +73,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
         $owner = User::factory()->gymOwner()->create();
         $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $gym->id,
             'total_credits' => 100,
             'used_credits' => 90,
@@ -92,7 +92,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
     {
         $gym = Gym::factory()->create();
 
-        $credit = WhatsAppMessageCredit::create([
+        $credit = WhatsAppMessageCredit::query()->create([
             'gym_id' => $gym->id,
             'total_credits' => 10,
             'used_credits' => 0,

@@ -41,7 +41,7 @@ class BiometricConsentStoreRequest extends FormRequest
                 // Also validate gym matches member
                 function ($attribute, $value, $fail) {
                     $gymMemberId = $this->input('gym_member_id');
-                    $member = GymMember::find($gymMemberId);
+                    $member = GymMember::query()->find($gymMemberId);
                     if ($member && (int) $member->gym_id !== (int) $value) {
                         $fail('The gym does not match the member\'s gym.');
                     }

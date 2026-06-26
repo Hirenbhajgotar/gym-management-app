@@ -26,7 +26,7 @@ class EditWhatsAppTemplate extends EditRecord
                 ->modalHeading('Push Template to All Gyms')
                 ->modalDescription(fn () => "This will copy \"{$this->getRecord()->display_name}\" to all gyms with active users that don't already have a template with the same name. Existing templates with the same name will NOT be overwritten.")
                 ->before(function () {
-                    $gymCount = Gym::whereHas('users', function (Builder $query) {
+                    $gymCount = Gym::query()->whereHas('users', function (Builder $query) {
                         $query->where('users.is_active', true);
                     })->count();
 

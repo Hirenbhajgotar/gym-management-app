@@ -499,7 +499,7 @@ class RequestContactResource extends BaseResource
         if (self::$badgeData === null) {
             /** @var class-string<RequestContact> $modelClass */
             $modelClass = static::getModel();
-            $count = $modelClass::where('is_contacted', false)->count();
+            $count = $modelClass::query()->where('is_contacted', false)->count();
 
             self::$badgeData = [
                 'count' => (int) $count,

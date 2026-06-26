@@ -345,7 +345,7 @@ class UserResource extends BaseResource
                         $subscriptionService = resolve(SubscriptionService::class);
 
                         DB::transaction(function () use ($record, $data, $subscriptionService) {
-                            $plan = Plan::findOrFail($data['plan_id']);
+                            $plan = Plan::query()->findOrFail($data['plan_id']);
                             $subscriptionService->assignPlanToUser($record, $plan, [
                                 'billing_cycle' => $data['billing_cycle'],
                                 'status' => $data['status'], // Pass the selected status
@@ -357,7 +357,7 @@ class UserResource extends BaseResource
                             if (filled($data['generate_invoice'])) {
                                 $amount = $data['billing_cycle'] === 'monthly' ? $plan->price_monthly : $plan->price_yearly;
 
-                                $payment = Payment::create([
+                                $payment = Payment::query()->create([
                                     'user_id' => $record->id,
                                     'amount' => $amount,
                                     'currency' => $plan->currency,
@@ -421,7 +421,7 @@ class UserResource extends BaseResource
                         ])
                         ->action(function (array $data, Collection $records): void {
                             $subscriptionService = resolve(SubscriptionService::class);
-                            $plan = Plan::findOrFail($data['plan_id']);
+                            $plan = Plan::query()->findOrFail($data['plan_id']);
 
                             $records->each(function (User $record) use ($data, $subscriptionService, $plan) {
                                 $subscriptionService->assignPlanToUser($record, $plan, [

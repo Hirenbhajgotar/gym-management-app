@@ -72,7 +72,7 @@ class PermissionDescriptionSeeder extends Seeder
 
                     // dd($permissionName, $displayName, $description, $category);
 
-                    $permission = Permission::updateOrCreate([
+                    $permission = Permission::query()->updateOrCreate([
                         'name' => $permissionName,
                         'guard_name' => 'web',
                     ], [
@@ -138,7 +138,7 @@ class PermissionDescriptionSeeder extends Seeder
 
             foreach ($filamentPermissions as $permissionName => $category) {
                 $description = 'can_' . $permissionName;
-                Permission::updateOrCreate([
+                Permission::query()->updateOrCreate([
                     'name' => $permissionName,
                     'guard_name' => 'web',
                 ], [

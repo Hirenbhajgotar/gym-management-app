@@ -63,7 +63,7 @@ class ReceptionistsImportTest extends TestCase
             'email' => 'john.doe@example.com',
         ]);
 
-        $user = User::where('email', 'john.doe@example.com')->first();
+        $user = User::query()->where('email', 'john.doe@example.com')->first();
         $this->assertNotNull($user);
 
         $this->assertTrue($user->hasRole(DefaultRole::RECEPTIONIST->value));
@@ -73,7 +73,7 @@ class ReceptionistsImportTest extends TestCase
             'monthly_salary' => 50000,
         ]);
 
-        $employeeDetail = EmployeeDetail::where('user_id', $user->id)->first();
+        $employeeDetail = EmployeeDetail::query()->where('user_id', $user->id)->first();
         $this->assertEquals(['communication', 'php'], $employeeDetail->skills);
     }
 

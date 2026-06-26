@@ -49,8 +49,8 @@ class PaymentController extends Controller
         ]);
 
         try {
-            $package = WhatsAppPackage::findOrFail($request->package_id);
-            $gym = Gym::findOrFail($request->gym_id);
+            $package = WhatsAppPackage::query()->findOrFail($request->package_id);
+            $gym = Gym::query()->findOrFail($request->gym_id);
 
             // Check if user has permission to purchase for this gym
             if ($this->getGymId() !== $gym->id) {
@@ -183,7 +183,7 @@ class PaymentController extends Controller
             if (($payload['event'] ?? null) === 'payment.captured') {
                 $paymentEntity = $payload['payment']['entity'] ?? null;
                 if ($paymentEntity) {
-                    $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
+                    $payment = Payment::query()->where('razorpay_order_id', $paymentEntity['order_id'])->first();
                     if ($payment) {
                         if ($payment->payment_type === 'whatsapp_package') {
                             $this->processWhatsAppPackagePurchase($payment);
@@ -198,7 +198,7 @@ class PaymentController extends Controller
             if (($payload['event'] ?? null) === 'payment.failed') {
                 $paymentEntity = $payload['payment']['entity'] ?? null;
                 if ($paymentEntity) {
-                    $payment = Payment::where('razorpay_order_id', $paymentEntity['order_id'])->first();
+                    $payment = Payment::query()->where('razorpay_order_id', $paymentEntity['order_id'])->first();
                     if ($payment) {
                         Log::warning('Payment failed via webhook', [
                             'payment_id' => $payment->id,
@@ -228,11 +228,11 @@ class PaymentController extends Controller
         $paymentId = $request->query('payment_id');
         $tenantId = $request->query('tenant');
 
-        $tenant = Gym::where('id', $tenantId)->firstOrFail();
+        $tenant = Gym::query()->where('id', $tenantId)->firstOrFail();
 
         $payment = null;
         if ($paymentId) {
-            $payment = Payment::where('razorpay_payment_id', $paymentId)->first();
+            $payment = Payment::query()->where('razorpay_payment_id', $paymentId)->first();
         }
 
         return view('payments.success', compact('payment', 'tenant'));
@@ -250,7 +250,7 @@ class PaymentController extends Controller
         $messageCount = $request->query('message_count');
         $tenantId = $request->query('tenantId');
 
-        $tenant = Gym::where('id', $tenantId)->firstOrFail();
+        $tenant = Gym::query()->where('id', $tenantId)->firstOrFail();
 
         abort_if(! $orderId || ! $amount || ! $key, 400, 'Invalid payment parameters');
 
@@ -273,11 +273,11 @@ class PaymentController extends Controller
         $orderId = $request->query('order_id');
         $tenantId = $request->query('tenant');
 
-        $tenant = Gym::where('id', $tenantId)->firstOrFail();
+        $tenant = Gym::query()->where('id', $tenantId)->firstOrFail();
 
         $payment = null;
         if ($orderId) {
-            $payment = Payment::where('razorpay_order_id', $orderId)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
         }
 
         return view('payments.failure', compact('payment', 'tenant'));
@@ -296,7 +296,7 @@ class PaymentController extends Controller
             return;
         }
 
-        $subscription = Subscription::find($subscriptionId);
+        $subscription = Subscription::query()->find($subscriptionId);
         if (! $subscription) {
             Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
 
@@ -348,7 +348,7 @@ class PaymentController extends Controller
     private function processWhatsAppPackagePurchase(Payment $payment): void
     {
         // Check if already processed to prevent double processing
-        $existingTransaction = WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+        $existingTransaction = WhatsAppCreditTransaction::query()->where('payment_reference', $payment->razorpay_payment_id)
             ->where('gym_id', $payment->gym_id)
             ->first();
 
@@ -370,7 +370,7 @@ class PaymentController extends Controller
             return;
         }
 
-        $package = WhatsAppPackage::find($packageId);
+        $package = WhatsAppPackage::query()->find($packageId);
         if (! $package) {
             Log::error('WhatsApp package not found', ['package_id' => $packageId, 'payment_id' => $payment->id]);
 

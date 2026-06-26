@@ -132,12 +132,12 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
     {
         $gymId = $this->getGymId();
 
-        $this->availablePlans = MembershipPlan::where('gym_id', $gymId)
+        $this->availablePlans = MembershipPlan::query()->where('gym_id', $gymId)
             ->isActive()
             ->get()
             ->toArray();
 
-        $this->availableTrainers = Trainer::where('gym_id', $gymId)
+        $this->availableTrainers = Trainer::query()->where('gym_id', $gymId)
             ->get()
             ->toArray();
     }
@@ -180,7 +180,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     private function getAllMemberCount(): int
     {
-        return GymMember::where('gym_id', $this->getGymId())->count();
+        return GymMember::query()->where('gym_id', $this->getGymId())->count();
     }
 
     private function getFilteredMemberCount(): int
@@ -254,7 +254,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                     return [];
                                 }
 
-                                $template = WhatsAppTemplate::find($templateId);
+                                $template = WhatsAppTemplate::query()->find($templateId);
 
                                 if (! $template) {
                                     return [];
@@ -464,7 +464,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
                                         $remaining = $quota['remaining'];
 
-                                        $lastBroadcast = WhatsAppBroadcast::where('gym_id', $gymId)
+                                        $lastBroadcast = WhatsAppBroadcast::query()->where('gym_id', $gymId)
                                             ->latest()
                                             ->first();
 
@@ -536,7 +536,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         $templateId = $this->data['template_id'] ?? null;
 
         if ($templateId) {
-            $template = WhatsAppTemplate::find($templateId);
+            $template = WhatsAppTemplate::query()->find($templateId);
             $templateArray = $template?->toArray() ?? [];
 
             $templateArray['formatted_body'] = $template?->formatted_body ?? $template?->body;

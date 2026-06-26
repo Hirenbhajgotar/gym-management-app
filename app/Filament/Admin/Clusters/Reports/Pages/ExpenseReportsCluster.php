@@ -106,7 +106,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
                         Select::make('category_id')
                             ->label('Category')
                             ->options(
-                                ExpenseCategory::where('gym_id', $gym?->id)
+                                ExpenseCategory::query()->where('gym_id', $gym?->id)
                                     ->active()
                                     ->pluck('name', 'id')
                             )
@@ -157,22 +157,22 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
                 ->count();
 
             // Pending expenses
-            $pendingAmount = Expense::where('gym_id', $gymId)
+            $pendingAmount = Expense::query()->where('gym_id', $gymId)
                 ->where('status', ExpenseStatus::PENDING)
                 ->sum('amount');
 
-            $pendingCount = Expense::where('gym_id', $gymId)
+            $pendingCount = Expense::query()->where('gym_id', $gymId)
                 ->where('status', ExpenseStatus::PENDING)
                 ->count();
 
             // This month vs last month
-            $thisMonthExpenses = Expense::where('gym_id', $gymId)
+            $thisMonthExpenses = Expense::query()->where('gym_id', $gymId)
                 ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                 ->whereMonth('expense_date', now()->month)
                 ->whereYear('expense_date', now()->year)
                 ->sum('amount');
 
-            $lastMonthExpenses = Expense::where('gym_id', $gymId)
+            $lastMonthExpenses = Expense::query()->where('gym_id', $gymId)
                 ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                 ->whereMonth('expense_date', now()->subMonth()->month)
                 ->whereYear('expense_date', now()->subMonth()->year)
@@ -263,7 +263,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
     public function exportToExcel()
     {
         /** @var Gym $gym */
-        $gym = Gym::find($this->getGymId());
+        $gym = Gym::query()->find($this->getGymId());
 
         $filename = 'expense-report-' . $gym->slug . '-' . now()->format('Y-m-d') . '.xlsx';
 
@@ -305,7 +305,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
     public function getBudgetVarianceData(): array
     {
         $gymId = $this->getGymId();
-        $categories = ExpenseCategory::where('gym_id', $gymId)->active()->get();
+        $categories = ExpenseCategory::query()->where('gym_id', $gymId)->active()->get();
 
         // Optimized: Single query to get all filtered expenses grouped by category
         $expensesByCategory = $this->getFilteredExpensesQuery()
@@ -341,7 +341,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        return Expense::where('gym_id', $gymId)
+        return Expense::query()->where('gym_id', $gymId)
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as count")
@@ -355,7 +355,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
                     'count' => $item->count,
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -367,7 +367,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyData = Expense::where('gym_id', $gymId)
+        $monthlyData = Expense::query()->where('gym_id', $gymId)
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")

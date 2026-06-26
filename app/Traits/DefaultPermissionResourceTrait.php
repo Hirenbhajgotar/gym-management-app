@@ -20,7 +20,7 @@ trait DefaultPermissionResourceTrait
     {
         $this->permissionSettingRole = $role;
 
-        $this->permissionSetting = PermissionSetting::where('role', $role)->first();
+        $this->permissionSetting = PermissionSetting::query()->where('role', $role)->first();
 
         return $this;
     }

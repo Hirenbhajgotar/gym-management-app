@@ -49,7 +49,7 @@ class ImportWhatsAppTemplates extends Command
             return self::FAILURE;
         }
 
-        $gym = Gym::find($gymId);
+        $gym = Gym::query()->find($gymId);
 
         if (! $gym) {
             $this->error("Gym with ID {$gymId} not found.");

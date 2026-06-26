@@ -48,13 +48,13 @@ class DeleteOldLeads extends Command
                 $count = count($leadIds);
 
                 // Delete related FollowUps
-                FollowUp::whereIn('lead_id', $leadIds)->delete();
+                FollowUp::query()->whereIn('lead_id', $leadIds)->delete();
 
                 // Delete related LeadConversions
-                LeadConversion::whereIn('lead_id', $leadIds)->delete();
+                LeadConversion::query()->whereIn('lead_id', $leadIds)->delete();
 
                 // Delete Leads
-                Lead::whereIn('id', $leadIds)->delete();
+                Lead::query()->whereIn('id', $leadIds)->delete();
 
                 $totalDeleted += $count;
                 $this->info("Deleted batch of {$count} leads and related data.");

@@ -27,7 +27,7 @@ class BiometricEnrollController extends Controller
         $device = $request->attributes->get('device');
 
         // Scope member lookup to device's gym (prevents cross-gym enrollment)
-        $gymMember = GymMember::where('gym_id', $device->gym_id)
+        $gymMember = GymMember::query()->where('gym_id', $device->gym_id)
             ->findOrFail($request->validated('gym_member_id'));
 
         // Enforce that active consent exists - do not auto-create
@@ -52,7 +52,7 @@ class BiometricEnrollController extends Controller
             $templateRef = $provider->enroll($gymMember, $sample);
 
             // Create BiometricTemplate record
-            $template = BiometricTemplate::create([
+            $template = BiometricTemplate::query()->create([
                 'gym_member_id' => $gymMember->id,
                 'gym_id' => $device->gym_id,
                 'enrolled_by_device_id' => $device->id,
@@ -97,7 +97,7 @@ class BiometricEnrollController extends Controller
             'quality_score' => ['nullable', 'numeric', 'between:0,1'],
         ]);
 
-        $gymMember = GymMember::find($validated['gym_member_id']);
+        $gymMember = GymMember::query()->find($validated['gym_member_id']);
 
         // Consent check — agar nahi hai toh deny karo
         if (! $gymMember->hasActiveBiometricConsent()) {
@@ -108,21 +108,18 @@ class BiometricEnrollController extends Controller
         }
 
         // Sirf record banao — koi provider call nahi
-        BiometricTemplate::updateOrCreate(
-            [
-                'gym_member_id' => $validated['gym_member_id'],
-                'gym_id' => $device->gym_id,
-                'biometric_type' => $validated['biometric_type'],
-            ],
-            [
-                'provider_type' => $device->provider_type,
-                'template_ref' => $validated['template_ref'],
-                'enrolled_by_device_id' => $device->id,
-                'quality_score' => $validated['quality_score'] ?? null,
-                'is_active' => true,
-                'enrolled_at' => now(),
-            ]
-        );
+        BiometricTemplate::query()->updateOrCreate([
+            'gym_member_id' => $validated['gym_member_id'],
+            'gym_id' => $device->gym_id,
+            'biometric_type' => $validated['biometric_type'],
+        ], [
+            'provider_type' => $device->provider_type,
+            'template_ref' => $validated['template_ref'],
+            'enrolled_by_device_id' => $device->id,
+            'quality_score' => $validated['quality_score'] ?? null,
+            'is_active' => true,
+            'enrolled_at' => now(),
+        ]);
 
         return response()->json(['success' => true]);
     }

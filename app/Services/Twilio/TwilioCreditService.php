@@ -24,7 +24,7 @@ class TwilioCreditService implements CreditManagementInterface
      */
     public function getCreditBalance(): array
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->context->gymId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->context->gymId)->first();
 
         if (! $credit) {
             return [
@@ -51,7 +51,7 @@ class TwilioCreditService implements CreditManagementInterface
      */
     public function getMonthlyUsage(int $year, int $month): array
     {
-        $logs = WhatsAppUsageLog::where('gym_id', $this->context->gymId)
+        $logs = WhatsAppUsageLog::query()->where('gym_id', $this->context->gymId)
             ->whereYear('sent_at', $year)
             ->whereMonth('sent_at', $month)
             ->get();
@@ -71,7 +71,7 @@ class TwilioCreditService implements CreditManagementInterface
      */
     public function checkAndDeduct(int $count = 1): void
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->context->gymId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->context->gymId)->first();
 
         throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 

@@ -223,10 +223,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         $roleName = $this->getRoleName();
 
-        return Role::firstOrCreate(
-            ['name' => $roleName, 'guard_name' => 'web', 'gym_id' => $this->getGymId()],
-            ['name' => $roleName, 'guard_name' => 'web', 'gym_id' => $this->getGymId()]
-        );
+        return Role::query()->firstOrCreate(['name' => $roleName, 'guard_name' => 'web', 'gym_id' => $this->getGymId()], ['name' => $roleName, 'guard_name' => 'web', 'gym_id' => $this->getGymId()]);
     }
 
     protected function getRolePermissions(): Collection
@@ -451,7 +448,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
                 // Batch-find all existing Permission records in a single query
                 // instead of looping firstOrCreate (which does N queries for N
                 // permissions — up to 455 for a full-form save).
-                $existingPermissions = Permission::whereIn('name', $submittedPerms)
+                $existingPermissions = Permission::query()->whereIn('name', $submittedPerms)
                     ->where('guard_name', 'web')
                     ->get()
                     ->keyBy('name');
@@ -459,13 +456,13 @@ abstract class BasePermissionsPage extends Page implements HasForms
                 // Determine which permissions don't exist in the DB yet
                 $missingNames = array_values(array_diff(
                     $submittedPerms,
-                    $existingPermissions->keys()->toArray(),
+                    $existingPermissions->keys()->all(),
                 ));
 
                 // Batch-insert all missing permissions at once (1 query total)
                 if (filled($missingNames)) {
                     $now = now();
-                    Permission::insert(array_map(fn (string $name): array => [
+                    Permission::query()->insert(array_map(fn (string $name): array => [
                         'name' => $name,
                         'guard_name' => 'web',
                         'created_at' => $now,
@@ -473,7 +470,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
                     ], $missingNames));
 
                     // Reload the newly created records
-                    $newPermissions = Permission::whereIn('name', $missingNames)
+                    $newPermissions = Permission::query()->whereIn('name', $missingNames)
                         ->where('guard_name', 'web')
                         ->get()
                         ->keyBy('name');
@@ -482,12 +479,12 @@ abstract class BasePermissionsPage extends Page implements HasForms
                 }
 
                 if (filled($toGrant)) {
-                    $grantPermissions = Permission::whereIn('name', $toGrant)->where('guard_name', 'web')->get();
+                    $grantPermissions = Permission::query()->whereIn('name', $toGrant)->where('guard_name', 'web')->get();
                     $role->givePermissionTo($grantPermissions);
                 }
 
                 if (filled($toRevoke)) {
-                    $revokePermissions = Permission::whereIn('name', $toRevoke)->where('guard_name', 'web')->get();
+                    $revokePermissions = Permission::query()->whereIn('name', $toRevoke)->where('guard_name', 'web')->get();
                     $role->revokePermissionTo($revokePermissions);
                 }
 
@@ -520,7 +517,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         $roleName = $this->getRoleName();
 
-        $roleUsers = User::whereHas('roles', function (Builder $query) use ($roleName, $tenant) {
+        $roleUsers = User::query()->whereHas('roles', function (Builder $query) use ($roleName, $tenant) {
             $query->where('name', $roleName)
                 ->where('roles.gym_id', $tenant->id);
         })->get();

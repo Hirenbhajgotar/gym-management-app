@@ -31,7 +31,7 @@ class WhatsAppBillingService
 
     public function purchasePackage(int $gymId, int $packageId, string $paymentReference, ?int $userId = null, float $phoneNumberSurcharge = 0.0): array
     {
-        $package = WhatsAppPackage::findOrFail($packageId);
+        $package = WhatsAppPackage::query()->findOrFail($packageId);
 
         if (! $package->is_active) {
             return [
@@ -53,7 +53,7 @@ class WhatsAppBillingService
 
                     $this->resetLowCreditFlagIfNeeded($credit);
 
-                    WhatsAppCreditTransaction::create([
+                    WhatsAppCreditTransaction::query()->create([
                         'gym_id' => $gymId,
                         'whatsapp_message_credit_id' => $credit->id,
                         'whatsapp_package_id' => $package->id,
@@ -89,7 +89,7 @@ class WhatsAppBillingService
 
     public function getTwilioNumberSurcharge(int $gymId): array
     {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->with('phoneNumber')->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->with('phoneNumber')->first();
 
         if (! $account || ! $account->isTwilioWithActiveNumber()) {
             return [
@@ -140,7 +140,7 @@ class WhatsAppBillingService
                         'is_low_credit_notified' => false,
                     ]);
 
-                    WhatsAppCreditTransaction::create([
+                    WhatsAppCreditTransaction::query()->create([
                         'gym_id' => $gymId,
                         'whatsapp_message_credit_id' => $credit->id,
                         'type' => WhatsAppCreditTransactionEnum::PURCHASE,
@@ -166,7 +166,7 @@ class WhatsAppBillingService
 
     public function hasClaimedWelcomeCredits(int $gymId): bool
     {
-        return WhatsAppMessageCredit::where('gym_id', $gymId)->value('welcome_credits_claimed') ?? false;
+        return WhatsAppMessageCredit::query()->where('gym_id', $gymId)->value('welcome_credits_claimed') ?? false;
     }
 
     public function useCredits(int $gymId, int $credits, string $description): bool
@@ -175,7 +175,7 @@ class WhatsAppBillingService
 
         try {
             return Cache::lock($lockKey, self::LOCK_TIMEOUT)->block(self::BLOCK_TIMEOUT, function () use ($gymId, $credits, $description) {
-                $credit = WhatsAppMessageCredit::where('gym_id', $gymId)->lockForUpdate()->first();
+                $credit = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->lockForUpdate()->first();
 
                 if (! $credit || ! $credit->canSendMessage($credits)) {
                     return false;
@@ -186,7 +186,7 @@ class WhatsAppBillingService
                 $credit->increment('used_credits', $credits);
                 $credit->decrement('remaining_credits', $credits);
 
-                WhatsAppCreditTransaction::create([
+                WhatsAppCreditTransaction::query()->create([
                     'gym_id' => $gymId,
                     'whatsapp_message_credit_id' => $credit->id,
                     'type' => 'usage',
@@ -222,7 +222,7 @@ class WhatsAppBillingService
         try {
             Cache::lock($lockKey, self::LOCK_TIMEOUT)->block(self::BLOCK_TIMEOUT, function () use ($gymId, $credits, $description, $adminId, $type) {
                 DB::transaction(function () use ($gymId, $credits, $description, $adminId, $type) {
-                    $credit = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+                    $credit = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
                     if (! $credit) {
                         return;
@@ -240,7 +240,7 @@ class WhatsAppBillingService
                         $credit->decrement('remaining_credits', abs($credits));
                     }
 
-                    WhatsAppCreditTransaction::create([
+                    WhatsAppCreditTransaction::query()->create([
                         'gym_id' => $gymId,
                         'whatsapp_message_credit_id' => $credit->id,
                         'type' => $type,
@@ -259,7 +259,7 @@ class WhatsAppBillingService
 
     public function getCreditBalance(int $gymId): array
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
         if (! $credit) {
             return [
@@ -283,8 +283,7 @@ class WhatsAppBillingService
 
     public function getTransactionHistory(int $gymId, int $limit = 50): Collection
     {
-        return WhatsAppCreditTransaction::where('gym_id', $gymId)
-            ->orderBy('created_at', 'desc')
+        return WhatsAppCreditTransaction::query()->where('gym_id', $gymId)->latest()
             ->limit($limit)
             ->get();
     }
@@ -294,7 +293,7 @@ class WhatsAppBillingService
         $cacheKey = "billing:usage-report:{$gymId}:" . $startDate->format('Y-m-d') . ':' . $endDate->format('Y-m-d');
 
         return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () use ($gymId, $startDate, $endDate) {
-            $transactions = WhatsAppCreditTransaction::where('gym_id', $gymId)
+            $transactions = WhatsAppCreditTransaction::query()->where('gym_id', $gymId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
 
@@ -322,16 +321,13 @@ class WhatsAppBillingService
 
     private function getOrCreateCredit(int $gymId, float $sellingPrice = 0.25): WhatsAppMessageCredit
     {
-        return WhatsAppMessageCredit::firstOrCreate(
-            ['gym_id' => $gymId],
-            [
-                'total_credits' => 0,
-                'used_credits' => 0,
-                'remaining_credits' => 0,
-                'cost_per_message' => 0.15,
-                'selling_price_per_msg' => $sellingPrice,
-            ]
-        );
+        return WhatsAppMessageCredit::query()->firstOrCreate(['gym_id' => $gymId], [
+            'total_credits' => 0,
+            'used_credits' => 0,
+            'remaining_credits' => 0,
+            'cost_per_message' => 0.15,
+            'selling_price_per_msg' => $sellingPrice,
+        ]);
     }
 
     private function resetLowCreditFlagIfNeeded(WhatsAppMessageCredit $credit): void

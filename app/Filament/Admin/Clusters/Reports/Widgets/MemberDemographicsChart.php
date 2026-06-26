@@ -47,7 +47,7 @@ class MemberDemographicsChart extends BaseChartWidget
                 'Unknown' => 0,
             ];
 
-            $members = GymMember::where('gym_id', $gymId)
+            $members = GymMember::query()->where('gym_id', $gymId)
                 ->select('dob', 'age')
                 ->get();
 

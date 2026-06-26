@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Clusters\Reports\Widgets;
 use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
+use Illuminate\Database\Query\Builder;
 
 class RealtimeAttendanceWidget extends BaseWidget
 {
@@ -33,13 +34,13 @@ class RealtimeAttendanceWidget extends BaseWidget
         $gymId = Filament::getTenant()->id;
 
         // Current check-ins (not checked out)
-        $this->currentlyIn = Attendances::where('gym_id', $gymId)
+        $this->currentlyIn = Attendances::query()->where('gym_id', $gymId)
             ->whereNull('check_out_time')
             ->whereDate('check_in_time', today())
             ->count();
 
         // Total today
-        $this->todayTotal = Attendances::where('gym_id', $gymId)
+        $this->todayTotal = Attendances::query()->where('gym_id', $gymId)
             ->whereDate('check_in_time', today())
             ->count();
 
@@ -53,11 +54,11 @@ class RealtimeAttendanceWidget extends BaseWidget
 
         // Group by hour and count
         for ($hour = 0; $hour < 24; $hour++) {
-            $count = Attendances::where('gym_id', $gymId)
+            $count = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->whereTime('check_in_time', '>=', sprintf('%02d:00:00', $hour))
                 ->whereTime('check_in_time', '<', sprintf('%02d:00:00', $hour + 1))
-                ->where(function ($query) use ($hour) {
+                ->where(function (Builder $query) use ($hour) {
                     $query->whereNull('check_out_time')
                         ->orWhereTime('check_out_time', '>', sprintf('%02d:00:00', $hour));
                 })

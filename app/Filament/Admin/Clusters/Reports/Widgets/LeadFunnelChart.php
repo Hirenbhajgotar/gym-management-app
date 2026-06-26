@@ -51,7 +51,7 @@ class LeadFunnelChart extends BaseChartWidget
             $colors = [];
 
             foreach ($statuses as $statusValue => $config) {
-                $count = Lead::where('gym_id', $gymId)
+                $count = Lead::query()->where('gym_id', $gymId)
                     ->where('status', $statusValue)
                     ->whereBetween('created_at', [$startDate, $endDate])
                     ->count();

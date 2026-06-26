@@ -150,7 +150,7 @@ class WabaMigration extends Model
 
     public static function createForGym(int $gymId, int $whatsappAccountId, string $oldWabaId, string $oldWabaMode): self
     {
-        return self::create([
+        return self::query()->create([
             'gym_id' => $gymId,
             'whatsapp_account_id' => $whatsappAccountId,
             'status' => WabaMigrationStatusEnum::PENDING->value,

@@ -30,7 +30,7 @@ class ClaimWelcomeCreditsAction
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
 
         resolve(WhatsAppBillingService::class)->addWelcomeCredits($this->page->getGymId());
-        $this->page->creditBalance = WhatsAppMessageCredit::where('gym_id', $this->page->getGymId())->first();
+        $this->page->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $this->page->getGymId())->first();
         $this->page->welcomeCreditsClaimed = true;
         if ($this->page->whatsappAccount) {
             $this->page->whatsappAccount->update(['status' => 'active']);

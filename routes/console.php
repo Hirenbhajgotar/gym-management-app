@@ -64,7 +64,7 @@ Schedule::call(function () {
     $currentHeight = now()->format('H:i:00');
 
     // Find active reports scheduled for now
-    $reports = ScheduledReport::where('is_active', true)
+    $reports = ScheduledReport::query()->where('is_active', true)
         ->where('scheduled_time', $currentHeight)
         ->get();
 

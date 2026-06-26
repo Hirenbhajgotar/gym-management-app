@@ -39,7 +39,7 @@ class ErrorReportService
                 resolve(ExceptionStorageService::class)->clearExceptionStorageData($exceptionId);
             }
 
-            return ErrorReport::create([
+            return ErrorReport::query()->create([
                 'user_id' => Auth::id(),
                 'error_type' => $errorType,
                 'error_message' => $errorMessage,
@@ -229,7 +229,7 @@ class ErrorReportService
     {
         $errorHash = $this->generateErrorHash($exception);
 
-        return ErrorReport::where('error_hash', $errorHash)
+        return ErrorReport::query()->where('error_hash', $errorHash)
             ->where('created_at', '>', now()->subHour())
             ->exists();
     }
@@ -256,7 +256,7 @@ class ErrorReportService
     {
         $errorHash = $this->generateErrorHash($exception);
 
-        $errorReport = ErrorReport::where('error_hash', $errorHash)
+        $errorReport = ErrorReport::query()->where('error_hash', $errorHash)
             ->where('created_at', '>', now()->subHour())
             ->first();
 

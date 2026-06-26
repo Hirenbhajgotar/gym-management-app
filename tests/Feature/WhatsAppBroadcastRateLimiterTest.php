@@ -31,7 +31,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -51,7 +51,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
 
     private function createBroadcast(): WhatsAppBroadcast
     {
-        return WhatsAppBroadcast::create([
+        return WhatsAppBroadcast::query()->create([
             'gym_id' => $this->gym->id,
             'whatsapp_template_id' => $this->template->id,
             'title' => 'Test broadcast',
@@ -88,7 +88,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
     {
         $this->createBroadcast();
 
-        WhatsAppBroadcast::where('gym_id', $this->gym->id)->update([
+        WhatsAppBroadcast::query()->where('gym_id', $this->gym->id)->update([
             'created_at' => now()->subDay(),
         ]);
 
@@ -102,7 +102,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
     {
         $this->createBroadcast();
 
-        WhatsAppBroadcast::where('gym_id', $this->gym->id)->update([
+        WhatsAppBroadcast::query()->where('gym_id', $this->gym->id)->update([
             'created_at' => now()->subMinutes(10),
         ]);
 
@@ -121,7 +121,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
     {
         $this->createBroadcast();
 
-        WhatsAppBroadcast::where('gym_id', $this->gym->id)->update([
+        WhatsAppBroadcast::query()->where('gym_id', $this->gym->id)->update([
             'created_at' => now()->subMinutes(70),
         ]);
 

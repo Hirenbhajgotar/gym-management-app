@@ -2,12 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class TrainerUtilizationWidget extends BaseChartWidget
@@ -40,19 +41,19 @@ class TrainerUtilizationWidget extends BaseChartWidget
         $cacheKey = ReportCacheService::WIDGET_TRAINER_UTILIZATION . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $totalTrainers = Trainer::where('gym_id', $gymId)->count();
-            $trainersWithClients = Trainer::where('gym_id', $gymId)
-                ->whereHas('members', fn ($q) => $q->membershipActive())
+            $totalTrainers = Trainer::query()->where('gym_id', $gymId)->count();
+            $trainersWithClients = Trainer::query()->where('gym_id', $gymId)
+                ->whereHas('members', fn (Builder $q) => $q->membershipActive())
                 ->count();
             $trainersWithoutClients = $totalTrainers - $trainersWithClients;
 
             // Member coverage
-            $membersWithTrainer = GymMember::where('gym_id', $gymId)
+            $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)
                 ->membershipActive()
                 ->whereNotNull('trainer_id')
                 ->count();
 
-            $membersWithoutTrainer = GymMember::where('gym_id', $gymId)
+            $membersWithoutTrainer = GymMember::query()->where('gym_id', $gymId)
                 ->membershipActive()
                 ->whereNull('trainer_id')
                 ->count();

@@ -30,7 +30,7 @@ class AttendanceHeatmapChart extends BaseChartWidget
 
             $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            $distribution = Attendances::where('gym_id', $gymId)
+            $distribution = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->selectRaw('DAYOFWEEK(check_in_time) as day, COUNT(*) as count')
                 ->groupBy('day')

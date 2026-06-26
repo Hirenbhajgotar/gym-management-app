@@ -105,7 +105,7 @@ class CreateUser extends CreateRecord
         $gymName = $this->gymData['name'] ?? "{$user->name}'s Gym";
         $slug = Gym::generateUniqueSlug($gymName);
 
-        $gym = Gym::create([
+        $gym = Gym::query()->create([
             'name' => $gymName,
             'slug' => $slug,
         ]);
@@ -145,7 +145,7 @@ class CreateUser extends CreateRecord
 
     protected function notifySuperAdmins(User $user): void
     {
-        $admins = User::role('super_admin')->get();
+        $admins = User::query()->role('super_admin')->get();
         $details = "New gym owner created: {$user->name}\nEmail: {$user->email}";
 
         $admins->each(fn (User $admin) => $admin->notify(new UserActionNotification('created', $user, $details)));
@@ -157,13 +157,13 @@ class CreateUser extends CreateRecord
         setPermissionsTeamId($gym->id);
 
         // Get the gym_owner role for this specific gym
-        $gymOwnerRoleId = Role::where('name', DefaultRole::GYM_OWNER->value)
+        $gymOwnerRoleId = Role::query()->where('name', DefaultRole::GYM_OWNER->value)
             ->where('gym_id', $gym->id)
             ->value('id');
 
         if ($gymOwnerRoleId) {
             // Get ALL permission IDs efficiently
-            $allPermissionIds = Permission::pluck('id');
+            $allPermissionIds = Permission::query()->pluck('id');
 
             $insertData = $allPermissionIds->map(fn ($permId) => [
                 'permission_id' => $permId,

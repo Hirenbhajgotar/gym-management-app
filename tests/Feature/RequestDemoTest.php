@@ -185,7 +185,7 @@ class RequestDemoTest extends TestCase
             ->set('phone', '+1234567890')
             ->call('submitRequest');
 
-        $requestContact = RequestContact::first();
+        $requestContact = RequestContact::query()->first();
 
         $this->assertNotNull($requestContact->ip_address);
         $this->assertNotNull($requestContact->user_agent);

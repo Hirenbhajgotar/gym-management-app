@@ -75,13 +75,13 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
             // For now, we will simulate this based on check-in patterns or assume future schema updates
             // Just placeholder logic for now using existing 'Attendances' model
 
-            $totalCheckIns = Attendances::where('gym_id', $gymId)
+            $totalCheckIns = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', '>=', $this->filters['start_date'])
                 ->whereDate('check_in_time', '<=', $this->filters['end_date'])
                 ->count();
 
             // Peak Hours Analysis
-            $peakHours = Attendances::where('gym_id', $gymId)
+            $peakHours = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', '>=', $this->filters['start_date'])
                 ->whereDate('check_in_time', '<=', $this->filters['end_date'])
                 ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
@@ -115,7 +115,7 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyData = Attendances::where('gym_id', $gymId)
+        $monthlyData = Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
             ->selectRaw("DATE_FORMAT(check_in_time, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')

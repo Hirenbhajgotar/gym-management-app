@@ -44,7 +44,7 @@ class TrainerImporter extends Importer
 
     public function resolveRecord(): ?Trainer
     {
-        $trainer = Trainer::firstOrNew(['email' => $this->data['email']]);
+        $trainer = Trainer::query()->firstOrNew(['email' => $this->data['email']]);
 
         $trainer->fill([
             'name' => $this->data['name'],

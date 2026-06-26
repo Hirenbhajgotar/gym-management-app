@@ -81,7 +81,7 @@ class WabaSetupSession extends Model
 
     public static function createForGym(int $gymId): self
     {
-        return self::create([
+        return self::query()->create([
             'gym_id' => $gymId,
             'session_id' => Str::uuid()->toString(),
             'status' => WabaSetupSessionStatusEnum::PENDING,

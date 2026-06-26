@@ -30,7 +30,7 @@ class WhatsAppBroadcastValidationTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -48,7 +48,7 @@ class WhatsAppBroadcastValidationTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Filament::setTenant($this->gym);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'balance' => 100,
             'total_purchased' => 100,
@@ -82,7 +82,7 @@ class WhatsAppBroadcastValidationTest extends TestCase
 
     public function test_broadcast_fails_when_no_members_selected_in_filtered_mode(): void
     {
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',
@@ -105,7 +105,7 @@ class WhatsAppBroadcastValidationTest extends TestCase
 
     public function test_broadcast_sends_successfully_with_valid_data(): void
     {
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',

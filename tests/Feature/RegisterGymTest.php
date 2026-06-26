@@ -34,8 +34,8 @@ class RegisterGymTest extends TestCase
         parent::setUp();
 
         // Create the required roles once
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
 
         // Super-admin can do anything (panel access is tested elsewhere)
         $this->superAdmin = User::factory()->create();

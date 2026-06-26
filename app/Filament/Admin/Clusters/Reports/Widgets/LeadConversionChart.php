@@ -43,7 +43,7 @@ class LeadConversionChart extends BaseChartWidget
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
             // Get monthly lead creation
-            $newLeads = Lead::where('gym_id', $gymId)
+            $newLeads = Lead::query()->where('gym_id', $gymId)
                 ->whereDate('created_at', '>=', $startDate)
                 ->whereDate('created_at', '<=', $endDate)
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
@@ -52,7 +52,7 @@ class LeadConversionChart extends BaseChartWidget
                 ->pluck('count', 'month');
 
             // Get monthly conversions (based on updated_at when status changed to converted)
-            $conversions = Lead::where('gym_id', $gymId)
+            $conversions = Lead::query()->where('gym_id', $gymId)
                 ->where('status', LeadStatus::CONVERTED)
                 ->whereDate('updated_at', '>=', $startDate)
                 ->whereDate('updated_at', '<=', $endDate)

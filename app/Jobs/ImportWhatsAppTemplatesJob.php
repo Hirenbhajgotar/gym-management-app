@@ -91,7 +91,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     {
         Log::info('ImportWhatsAppTemplatesJob: starting', ['gym_id' => $this->gymId]);
 
-        $account = WhatsAppAccount::where('gym_id', $this->gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $this->gymId)->first();
 
         if (! $account) {
             Log::warning('ImportWhatsAppTemplatesJob: no WhatsApp account found', [
@@ -214,19 +214,16 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
             $providerSid = $this->extractProviderSid($templateData, $providerType);
             $body = $this->extractBody($templateData, $providerType);
 
-            $record = WhatsAppTemplate::updateOrCreate(
-                [
-                    'gym_id' => $this->gymId,
-                    'name' => $templateName,
-                ],
-                [
-                    'display_name' => $templateName,
-                    'body' => $body,
-                    'category' => $this->extractCategory($templateData, $providerType),
-                    'status' => WhatsAppTemplateStatusEnum::DRAFT,
-                    'is_active' => true,
-                ],
-            );
+            $record = WhatsAppTemplate::query()->updateOrCreate([
+                'gym_id' => $this->gymId,
+                'name' => $templateName,
+            ], [
+                'display_name' => $templateName,
+                'body' => $body,
+                'category' => $this->extractCategory($templateData, $providerType),
+                'status' => WhatsAppTemplateStatusEnum::DRAFT,
+                'is_active' => true,
+            ]);
 
             // Set provider-specific ID via direct property assignment
             if ($providerType === WhatsAppProviderTypeEnum::TWILIO) {

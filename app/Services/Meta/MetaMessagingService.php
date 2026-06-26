@@ -122,7 +122,7 @@ class MetaMessagingService implements MessagingInterface
         }
 
         // Find the template
-        $template = WhatsAppTemplate::where('gym_id', $this->context->gymId)
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
             ->where('name', $templateName)
             ->where('status', 'approved')
             ->first();
@@ -219,7 +219,7 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
-        $gym = Gym::find($gymId);
+        $gym = Gym::query()->find($gymId);
         $gymName = $gym?->name ?? 'Your Gym';
 
         $message = "WhatsApp Integration Active!\n\nHello from {$gymName}!";

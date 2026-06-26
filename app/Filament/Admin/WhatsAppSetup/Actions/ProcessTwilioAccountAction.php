@@ -50,7 +50,7 @@ class ProcessTwilioAccountAction
             ]);
             $this->page->whatsappAccount = $existing->fresh();
         } else {
-            $whatsappAccount = WhatsAppAccount::create([
+            $whatsappAccount = WhatsAppAccount::query()->create([
                 'gym_id' => $gymId,
                 'business_name' => $data['business_name'] ?? $gym?->name,
                 'business_email' => $data['business_email'] ?? $user?->email,

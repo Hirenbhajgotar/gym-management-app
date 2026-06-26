@@ -27,7 +27,7 @@ class LeadFactory extends Factory
         return [
             'gym_id' => function () {
                 // Use an existing gym, or create one if none exist
-                $gym = Gym::inRandomOrder()->first();
+                $gym = Gym::query()->inRandomOrder()->first();
                 if (! $gym) {
                     $gym = Gym::factory()->create();
                 }

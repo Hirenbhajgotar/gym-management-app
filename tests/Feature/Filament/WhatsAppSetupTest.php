@@ -35,7 +35,7 @@ class WhatsAppSetupTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
 
         $this->user = User::factory()->create([
             'name' => 'John Doe',
@@ -79,7 +79,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_setup_state_when_account_is_pending(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -95,7 +95,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_active_state_when_account_is_active_with_phone(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -103,7 +103,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -121,7 +121,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_error_state_when_account_active_but_no_phone(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -140,7 +140,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_sets_step_2_when_waba_id_is_missing(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -158,7 +158,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_sets_step_3_when_phone_number_is_missing(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -199,7 +199,7 @@ class WhatsAppSetupTest extends TestCase
         $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
 
         // Pre-create the WhatsAppAccount so loadWhatsAppData finds it
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACnew123',
             'twilio_auth_token' => 'new_token',
@@ -253,7 +253,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_saves_business_profile_and_advances_step(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -281,7 +281,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_creates_waba_successfully(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -308,7 +308,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_waba_creation_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -337,7 +337,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_searches_available_numbers(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -368,7 +368,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_warning_when_no_numbers_found(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -395,7 +395,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_purchases_selected_number_successfully(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -404,7 +404,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -431,7 +431,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_warns_if_no_number_selected_before_purchase(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -451,7 +451,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_creates_default_templates(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -478,7 +478,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_template_creation_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -506,7 +506,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_claims_welcome_credits_and_activates_account(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -524,7 +524,7 @@ class WhatsAppSetupTest extends TestCase
         $this->app->singleton(WhatsAppBillingService::class, fn () => $billingMock);
 
         // Create the credits record the method will look up after calling addWelcomeCredits
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 50,
             'used_credits' => 0,
@@ -546,7 +546,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_welcome_credits_claim_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -572,7 +572,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_sends_test_message_successfully(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -580,7 +580,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -608,7 +608,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_test_message_failure(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -616,7 +616,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -643,7 +643,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_requires_phone_number_for_test_message(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -651,7 +651,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -686,7 +686,7 @@ class WhatsAppSetupTest extends TestCase
             ->assertSet('viewState', 'onboarding');
 
         // Create account in the background
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -694,7 +694,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest123',
@@ -712,7 +712,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_waba_connection_method_options_on_step_2(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -733,7 +733,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_connects_existing_waba_successfully(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -770,7 +770,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_connects_existing_waba_with_access_token(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -808,7 +808,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_error_when_existing_waba_connection_fails(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -841,7 +841,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_error_when_waba_id_missing_on_connect(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -864,7 +864,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_error_when_phone_missing_on_connect(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -887,7 +887,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_exception_during_existing_waba_connection(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -917,7 +917,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_still_creates_new_waba_successfully_after_integration(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -944,7 +944,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_shows_phone_number_source_radio_on_step_3(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -967,7 +967,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_registers_own_phone_number_and_triggers_otp(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1004,7 +1004,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_own_number_registration_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1037,7 +1037,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_exception_during_own_number_registration(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1067,7 +1067,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_warns_when_registering_own_number_without_input(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1092,7 +1092,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_verifies_own_phone_number_otp_successfully(): void
     {
-        $account = WhatsAppAccount::create([
+        $account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1103,7 +1103,7 @@ class WhatsAppSetupTest extends TestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $account->id,
             'phone_number' => '+919876543210',
             'phone_number_sid' => 'SNtest123',
@@ -1136,7 +1136,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_otp_verification_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1170,7 +1170,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_warns_when_verifying_without_otp_code(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1195,7 +1195,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_resends_otp_successfully(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -1228,7 +1228,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_handles_resend_otp_failure(): void
     {
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',

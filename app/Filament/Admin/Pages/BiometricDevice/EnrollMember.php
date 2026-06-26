@@ -57,7 +57,7 @@ class EnrollMember extends BasePage
             return [];
         }
 
-        $device = BiometricDevice::find($this->selectedDeviceId);
+        $device = BiometricDevice::query()->find($this->selectedDeviceId);
         if (! $device) {
             return [];
         }
@@ -134,7 +134,7 @@ class EnrollMember extends BasePage
             return null;
         }
 
-        $device = BiometricDevice::find($this->selectedDeviceId);
+        $device = BiometricDevice::query()->find($this->selectedDeviceId);
 
         return $device?->device_type?->value;
     }
@@ -185,8 +185,8 @@ class EnrollMember extends BasePage
             'rawBiometricData' => 'required',
         ]);
 
-        $device = BiometricDevice::findOrFail($this->selectedDeviceId);
-        $member = GymMember::findOrFail($this->selectedMemberId);
+        $device = BiometricDevice::query()->findOrFail($this->selectedDeviceId);
+        $member = GymMember::query()->findOrFail($this->selectedMemberId);
 
         // Validate biometric data is valid base64
         if (! base64_decode($this->rawBiometricData, true)) {
@@ -208,7 +208,7 @@ class EnrollMember extends BasePage
         ]);
 
         // Create biometric template
-        BiometricTemplate::create([
+        BiometricTemplate::query()->create([
             'gym_member_id' => $member->id,
             'gym_id' => $device->gym_id,
             'enrolled_by_device_id' => $device->id,

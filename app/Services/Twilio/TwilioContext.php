@@ -46,7 +46,7 @@ class TwilioContext
 
         // Eager load account and phone number (skip for global operations without gym context)
         if ($gymId !== null) {
-            $this->account = WhatsAppAccount::where('gym_id', $gymId)->first();
+            $this->account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
             $this->phoneNumber = $this->account?->phoneNumber;
         }
     }

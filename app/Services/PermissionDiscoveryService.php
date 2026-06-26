@@ -312,7 +312,7 @@ class PermissionDiscoveryService
             }
         }
 
-        return Permission::whereIn('name', array_unique($permissionNames))->get();
+        return Permission::query()->whereIn('name', array_unique($permissionNames))->get();
     }
 
     /**

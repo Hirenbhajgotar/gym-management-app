@@ -302,7 +302,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
 
     public function hasUsedTrial(): bool
     {
-        return Subscription::where('user_id', $this->id)
+        return Subscription::query()->where('user_id', $this->id)
             ->where('status', '!=', SubscriptionStatus::TRIAL)
             ->whereNotNull('trial_ends_at')
             ->where('trial_ends_at', '<=', now())

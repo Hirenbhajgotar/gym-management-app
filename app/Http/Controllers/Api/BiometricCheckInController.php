@@ -44,7 +44,7 @@ class BiometricCheckInController extends Controller
         /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
-        $gymMember = GymMember::findOrFail($request->validated('gym_member_id'));
+        $gymMember = GymMember::query()->findOrFail($request->validated('gym_member_id'));
 
         $result = $this->checkInService->processCheckOut($gymMember, $device);
 

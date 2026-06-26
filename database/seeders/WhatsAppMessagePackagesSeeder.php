@@ -127,10 +127,7 @@ class WhatsAppMessagePackagesSeeder extends Seeder
         ];
 
         foreach ($packages as $package) {
-            WhatsAppPackage::updateOrCreate(
-                ['name' => $package['name']],
-                $package
-            );
+            WhatsAppPackage::query()->updateOrCreate(['name' => $package['name']], $package);
         }
     }
 }

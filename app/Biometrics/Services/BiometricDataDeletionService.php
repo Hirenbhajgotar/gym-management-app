@@ -29,7 +29,7 @@ class BiometricDataDeletionService
     public function deleteForGymMember(GymMember $gymMember): void
     {
         // Step 1: Load all BiometricTemplate for this member
-        $templates = BiometricTemplate::where('gym_member_id', $gymMember->id)->get();
+        $templates = BiometricTemplate::query()->where('gym_member_id', $gymMember->id)->get();
 
         // Accumulate errors for throwing after loop
         $errors = [];
@@ -97,7 +97,7 @@ class BiometricDataDeletionService
             ]);
 
         // Step 4: Delete BiometricConsent records
-        BiometricConsent::where('gym_member_id', $gymMember->id)->delete();
+        BiometricConsent::query()->where('gym_member_id', $gymMember->id)->delete();
 
         // Step 5: Log via Spatie activity log
         Activity::on($gymMember)->log('Biometric data deleted per GDPR request');
@@ -118,7 +118,7 @@ class BiometricDataDeletionService
     public function revokeConsent(GymMember $gymMember, bool $deleteData = false): void
     {
         // Revoke all consents
-        BiometricConsent::where('gym_member_id', $gymMember->id)
+        BiometricConsent::query()->where('gym_member_id', $gymMember->id)
             ->whereNull('revoked_at')
             ->update(['revoked_at' => now()]);
 

@@ -68,9 +68,9 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
     {
         $gymId = $this->getGymId();
 
-        $this->whatsappAccount = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $this->whatsappAccount = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
         $this->hasWhatsAppSetup = $this->whatsappAccount?->isSetupComplete() ?? false;
-        $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
         $this->usageStats = $this->getUsageStats();
         $this->recentMessages = $this->getRecentMessages();
@@ -78,7 +78,7 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
 
     private function getUsageStats(): array
     {
-        $stats = WhatsAppUsageLog::where('gym_id', $this->getGymId())
+        $stats = WhatsAppUsageLog::query()->where('gym_id', $this->getGymId())
             ->where('sent_at', '>=', now()->startOfMonth())
             ->selectRaw('
                 COUNT(*) as messages_this_month,
@@ -100,8 +100,8 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
 
     private function getRecentMessages(): array
     {
-        return WhatsAppUsageLog::where('gym_id', $this->getGymId())
-            ->orderBy('sent_at', 'desc')
+        return WhatsAppUsageLog::query()->where('gym_id', $this->getGymId())
+            ->latest('sent_at')
             ->limit(5)
             ->get()
             ->toArray();

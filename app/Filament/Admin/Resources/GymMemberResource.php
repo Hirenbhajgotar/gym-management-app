@@ -834,7 +834,7 @@ class GymMemberResource extends BaseResource
                             $tenant = Filament::getTenant();
                             $gymId = $tenant?->id;
 
-                            return Trainer::where('gym_id', $gymId)
+                            return Trainer::query()->where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option
@@ -862,7 +862,7 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->afterStateUpdated(function ($state, callable $set, $get) {
                     if ($state) {
-                        $plan = MembershipPlan::find($state);
+                        $plan = MembershipPlan::query()->find($state);
                         if ($plan && $plan->duration) {
                             $start = $get('membership_start') ?? now();
                             $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
@@ -894,7 +894,7 @@ class GymMemberResource extends BaseResource
                 ])
                 ->createOptionUsing(function (array $data) {
                     // Create the new state and return its ID
-                    $state = MembershipPlan::create($data);
+                    $state = MembershipPlan::query()->create($data);
 
                     return $state->id;
                 }),
@@ -910,7 +910,7 @@ class GymMemberResource extends BaseResource
                 ->afterStateUpdated(function ($state, callable $set, $get) {
                     $planId = $get('membership_plan_id');
                     if ($planId && $state) {
-                        $plan = MembershipPlan::find($planId);
+                        $plan = MembershipPlan::query()->find($planId);
                         if ($plan && $plan->duration) {
                             $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
                         }

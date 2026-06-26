@@ -75,7 +75,7 @@ class EmbeddedSignupService
      */
     public function handleCallback(string $code, string $state): array
     {
-        $session = WabaSetupSession::where('session_id', $state)->first();
+        $session = WabaSetupSession::query()->where('session_id', $state)->first();
 
         if (! $session) {
             return [
@@ -253,7 +253,7 @@ class EmbeddedSignupService
         string $phoneNumber,
         string $metaAccessToken
     ): array {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
         if (! $account) {
             return [
@@ -358,7 +358,7 @@ class EmbeddedSignupService
         string $phoneNumber,
         ?string $metaAccessToken = null
     ): array {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
         if (! $account) {
             return [
@@ -415,7 +415,7 @@ class EmbeddedSignupService
 
     public function validateSession(string $sessionId, int $gymId): bool
     {
-        $session = WabaSetupSession::where('session_id', $sessionId)
+        $session = WabaSetupSession::query()->where('session_id', $sessionId)
             ->where('gym_id', $gymId)
             ->first();
 

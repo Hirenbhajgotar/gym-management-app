@@ -216,7 +216,7 @@ class ProfileController extends Component
 
     public function downloadInvoice(int $paymentId)
     {
-        $payment = Payment::where('user_id', auth()->id())
+        $payment = Payment::query()->where('user_id', auth()->id())
             ->findOrFail($paymentId);
 
         return resolve(InvoiceService::class)->downloadInvoice($payment);

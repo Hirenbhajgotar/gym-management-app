@@ -43,7 +43,7 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
 
     public function handleEmbeddedSignupCallback(string $code, string $state): array
     {
-        $session = WabaSetupSession::where('session_id', $state)->first();
+        $session = WabaSetupSession::query()->where('session_id', $state)->first();
 
         if (! $session) {
             return [

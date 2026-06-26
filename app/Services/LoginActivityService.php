@@ -27,7 +27,7 @@ class LoginActivityService
      */
     public function getUserIdsByRoles(array $roles): Collection
     {
-        return User::whereHas('gyms', function (Builder $query) use ($roles) {
+        return User::query()->whereHas('gyms', function (Builder $query) use ($roles) {
             $query->whereIn('gym_user.role', $roles);
         })->pluck('users.id');
     }
@@ -37,7 +37,7 @@ class LoginActivityService
      */
     public function getLoginsForUser(int $userId, ?Carbon $from = null, ?Carbon $to = null): Collection
     {
-        $query = UserLoginLog::where('user_id', $userId);
+        $query = UserLoginLog::query()->where('user_id', $userId);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -47,7 +47,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        return $query->orderByDesc('login_at')->get();
+        return $query->latest('login_at')->get();
     }
 
     /**
@@ -62,16 +62,16 @@ class LoginActivityService
         $monthStart = now()->startOfMonth();
 
         return [
-            'today' => UserLoginLog::where('user_id', $userId)
+            'today' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $today)
                 ->count(),
-            'week' => UserLoginLog::where('user_id', $userId)
+            'week' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $weekStart)
                 ->count(),
-            'month' => UserLoginLog::where('user_id', $userId)
+            'month' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $monthStart)
                 ->count(),
-            'all_time' => UserLoginLog::where('user_id', $userId)->count(),
+            'all_time' => UserLoginLog::query()->where('user_id', $userId)->count(),
         ];
     }
 
@@ -80,7 +80,7 @@ class LoginActivityService
      */
     public function getLoginsForGym(int $gymId, ?Carbon $from = null, ?Carbon $to = null): Collection
     {
-        $query = UserLoginLog::where('gym_id', $gymId);
+        $query = UserLoginLog::query()->where('gym_id', $gymId);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -90,7 +90,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        return $query->with('user')->orderByDesc('login_at')->get();
+        return $query->with('user')->latest('login_at')->get();
     }
 
     /**
@@ -104,7 +104,7 @@ class LoginActivityService
             return collect();
         }
 
-        $query = UserLoginLog::whereIn('user_id', $userIds);
+        $query = UserLoginLog::query()->whereIn('user_id', $userIds);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -168,7 +168,7 @@ class LoginActivityService
             ];
         }
 
-        $query = UserLoginLog::whereIn('user_id', $staffUserIds);
+        $query = UserLoginLog::query()->whereIn('user_id', $staffUserIds);
 
         if ($from) {
             $query->where('login_at', '>=', $from);

@@ -223,7 +223,7 @@ class LeadResource extends BaseResource
                                         return [];
                                     }
 
-                                    return Trainer::where('gym_id', $gymId)
+                                    return Trainer::query()->where('gym_id', $gymId)
                                         ->available()
                                         ->pluck('name', 'id')
                                         ->prepend('None', null);

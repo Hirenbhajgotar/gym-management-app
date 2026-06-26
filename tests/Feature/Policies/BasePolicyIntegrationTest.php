@@ -45,7 +45,7 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
     {
         setPermissionsTeamId($this->testGym->id);
         $this->managerUser->revokePermissionTo(
-            Permission::firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
         );
 
         $this->assertFalse(
@@ -60,7 +60,7 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
     {
         setPermissionsTeamId($this->testGym->id);
         $this->managerUser->givePermissionTo(
-            Permission::firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
         );
 
         $this->assertTrue(

@@ -35,7 +35,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
      */
     public function model(array $row)
     {
-        $plan = MembershipPlan::where('gym_id', $this->gymId)
+        $plan = MembershipPlan::query()->where('gym_id', $this->gymId)
             ->where('name', $row['membership_plan_name'])
             ->first();
 
@@ -64,7 +64,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
 
         // Create payment record if payment data exists
         if (isset($row['payment_amount']) && $row['payment_amount'] > 0) {
-            MemberPayment::create([
+            MemberPayment::query()->create([
                 'member_id' => $member->id,
                 'membership_plan_id' => $plan->id,
                 'amount' => $row['payment_amount'],

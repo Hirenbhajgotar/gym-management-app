@@ -41,10 +41,10 @@ class LeadConversionService
             ];
 
             // 1. Create a GymMember from the Lead
-            $gymMember = GymMember::create($memberData);
+            $gymMember = GymMember::query()->create($memberData);
 
             // 2. Create the LeadConversion record
-            LeadConversion::create([
+            LeadConversion::query()->create([
                 'lead_id' => $lockedLead->id,
                 'gym_member_id' => $gymMember->id,
                 'membership_plan_id' => $extraData['membership_plan_id'] ?? null,

@@ -91,7 +91,7 @@ class RazorpayWebhookController
             return;
         }
 
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         if (! $payment) {
             Log::warning('Payment not found for webhook', [
@@ -134,7 +134,7 @@ class RazorpayWebhookController
             return;
         }
 
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         if ($payment && $payment->status !== 'failed') {
             $payment->update([
@@ -176,7 +176,7 @@ class RazorpayWebhookController
             }
 
             // Check if user already exists (idempotency)
-            $existingUser = User::where('email', $email)->first();
+            $existingUser = User::query()->where('email', $email)->first();
 
             if ($existingUser) {
                 Log::info('User already exists, skipping registration', [
@@ -226,7 +226,7 @@ class RazorpayWebhookController
             }
 
             // Check if already processed (idempotency)
-            $existingTransaction = WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+            $existingTransaction = WhatsAppCreditTransaction::query()->where('payment_reference', $payment->razorpay_payment_id)
                 ->where('type', 'purchase')
                 ->first();
 

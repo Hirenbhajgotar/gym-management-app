@@ -20,7 +20,7 @@ class BiometricWebhookController extends Controller
     public function handle(Request $request, string $token): JsonResponse
     {
         // Verify webhook token
-        $device = BiometricDevice::whereNotNull('device_token')
+        $device = BiometricDevice::query()->whereNotNull('device_token')
             ->get()
             ->first(function ($d) use ($token) {
                 return Hash::check($token, $d->device_token);

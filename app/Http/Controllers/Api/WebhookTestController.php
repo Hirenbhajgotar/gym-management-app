@@ -288,14 +288,14 @@ class WebhookTestController extends Controller
     private function getConfig(Request $request, string $platform): ?TenantSocialConfig
     {
         // For testing, we'll use the first available gym's ID
-        $gym = Gym::first();
+        $gym = Gym::query()->first();
         if (! $gym) {
             Log::error('No gym found for testing webhook configuration.');
 
             return null;
         }
 
-        $query = TenantSocialConfig::where('gym_id', $gym->id)
+        $query = TenantSocialConfig::query()->where('gym_id', $gym->id)
             ->where('platform', $platform)
             ->where('is_active', true);
 

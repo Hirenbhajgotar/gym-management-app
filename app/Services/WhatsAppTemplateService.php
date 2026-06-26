@@ -35,7 +35,7 @@ class WhatsAppTemplateService
     {
         $variables = TemplateVariableHelper::extractVariables($data->body);
 
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $gymId,
             'name' => $data->name,
             'display_name' => $data->display_name,
@@ -91,7 +91,7 @@ class WhatsAppTemplateService
 
     public function getApprovedTemplates(int $gymId): Collection
     {
-        return WhatsAppTemplate::where('gym_id', $gymId)
+        return WhatsAppTemplate::query()->where('gym_id', $gymId)
             ->where('status', WhatsAppTemplateStatusEnum::APPROVED->value)
             ->where('is_active', true)
             ->orderBy('display_name')
@@ -118,7 +118,7 @@ class WhatsAppTemplateService
      */
     public function submitForVerification(WhatsAppTemplate $template): array
     {
-        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+        $whatsAppAccount = WhatsAppAccount::query()->where('gym_id', $template->gym_id)->first();
 
         if (! $whatsAppAccount) {
             return ['success' => false, 'error' => 'WhatsApp account not configured for this gym'];
@@ -208,7 +208,7 @@ class WhatsAppTemplateService
             return;
         }
 
-        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+        $whatsAppAccount = WhatsAppAccount::query()->where('gym_id', $template->gym_id)->first();
 
         if (! $whatsAppAccount || ! $whatsAppAccount->isActive()) {
             return;
@@ -273,7 +273,7 @@ class WhatsAppTemplateService
             return false;
         }
 
-        $whatsAppAccount = WhatsAppAccount::where('gym_id', $template->gym_id)->first();
+        $whatsAppAccount = WhatsAppAccount::query()->where('gym_id', $template->gym_id)->first();
 
         if (! $whatsAppAccount) {
             return false;
@@ -463,12 +463,12 @@ class WhatsAppTemplateService
                     ];
 
                     try {
-                        $templateRecord = WhatsAppTemplate::updateOrCreate($attributes, $values);
+                        $templateRecord = WhatsAppTemplate::query()->updateOrCreate($attributes, $values);
                     } catch (UniqueConstraintViolationException $e) {
-                        $templateRecord = WhatsAppTemplate::where($attributes)->first();
+                        $templateRecord = WhatsAppTemplate::query()->where($attributes)->first();
                     } catch (QueryException $e) {
                         if ($e->getCode() === '23000') {
-                            $templateRecord = WhatsAppTemplate::where($attributes)->first();
+                            $templateRecord = WhatsAppTemplate::query()->where($attributes)->first();
                         } else {
                             throw $e;
                         }

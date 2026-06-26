@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\Builder;
 
 #[ObservedBy([ReportGoalObserver::class])]
 /**
@@ -176,25 +177,25 @@ class ReportGoal extends Model
     public function calculateCurrentValue(): float|int
     {
         return match ($this->metric_type) {
-            'revenue' => MemberPayment::where('gym_id', $this->gym_id)
+            'revenue' => MemberPayment::query()->where('gym_id', $this->gym_id)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereBetween('payment_date', [$this->period_start, $this->period_end])
                 ->sum('amount'),
 
-            'members' => GymMember::where('gym_id', $this->gym_id)
+            'members' => GymMember::query()->where('gym_id', $this->gym_id)
                 ->whereBetween('created_at', [$this->period_start, $this->period_end->endOfDay()])
                 ->count(),
 
-            'leads' => Lead::where('gym_id', $this->gym_id)
+            'leads' => Lead::query()->where('gym_id', $this->gym_id)
                 ->whereBetween('created_at', [$this->period_start, $this->period_end->endOfDay()])
                 ->count(),
 
-            'conversions' => Lead::where('gym_id', $this->gym_id)
+            'conversions' => Lead::query()->where('gym_id', $this->gym_id)
                 ->where('status', 'converted')
                 ->whereBetween('updated_at', [$this->period_start, $this->period_end->endOfDay()])
                 ->count(),
 
-            'attendance' => Attendances::where('gym_id', $this->gym_id)
+            'attendance' => Attendances::query()->where('gym_id', $this->gym_id)
                 ->whereBetween('check_in_time', [$this->period_start, $this->period_end->endOfDay()])
                 ->count(),
 
@@ -209,9 +210,9 @@ class ReportGoal extends Model
      */
     protected function calculateRetentionRate(): float
     {
-        $activeAtStart = GymMember::where('gym_id', $this->gym_id)
+        $activeAtStart = GymMember::query()->where('gym_id', $this->gym_id)
             ->where('membership_start', '<=', $this->period_start)
-            ->where(function ($q) {
+            ->where(function (Builder $q) {
                 $q->where('membership_end', '>=', $this->period_start)
                     ->orWhereNull('membership_end');
             })
@@ -221,9 +222,9 @@ class ReportGoal extends Model
             return 0;
         }
 
-        $stillActive = GymMember::where('gym_id', $this->gym_id)
+        $stillActive = GymMember::query()->where('gym_id', $this->gym_id)
             ->where('membership_start', '<=', $this->period_start)
-            ->where(function ($q) {
+            ->where(function (Builder $q) {
                 $q->where('membership_end', '>=', $this->period_end)
                     ->orWhereNull('membership_end');
             })

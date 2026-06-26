@@ -66,7 +66,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function importForSingleGym(int $gymId, bool $sync): int
     {
-        $gym = Gym::find($gymId);
+        $gym = Gym::query()->find($gymId);
 
         if (! $gym) {
             $this->error("Gym with ID {$gymId} not found.");
@@ -204,7 +204,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function getGymsWithWhatsAppAccounts(): Collection
     {
-        return Gym::whereHas('whatsAppAccount', function (Builder $query) {
+        return Gym::query()->whereHas('whatsAppAccount', function (Builder $query) {
             $query->where('is_active', true)
                 ->where('is_verified', true);
         })->with('whatsAppAccount')->orderBy('id')->get();
@@ -215,7 +215,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function getWhatsAppAccount(int $gymId): ?WhatsAppAccount
     {
-        return WhatsAppAccount::where('gym_id', $gymId)
+        return WhatsAppAccount::query()->where('gym_id', $gymId)
             ->where('is_active', true)
             ->where('is_verified', true)
             ->first();

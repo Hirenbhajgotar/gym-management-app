@@ -56,7 +56,7 @@ abstract class StaffPanelTestCase extends TestCase
             'manager' => $this->managerUser,
             'receptionist' => $this->receptionistUser,
         ] as $roleName => $user) {
-            $role = Role::firstOrCreate([
+            $role = Role::query()->firstOrCreate([
                 'name' => $roleName,
                 'guard_name' => 'web',
                 'gym_id' => $this->testGym->id,
@@ -82,7 +82,7 @@ abstract class StaffPanelTestCase extends TestCase
 
     protected function grantPermission(User $user, string $name): Permission
     {
-        $permission = \App\Models\Permission::firstOrCreate([
+        $permission = \App\Models\Permission::query()->firstOrCreate([
             'name' => $name,
             'guard_name' => 'web',
         ]);

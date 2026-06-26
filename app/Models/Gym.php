@@ -238,7 +238,7 @@ class Gym extends Model
         $slug = $baseSlug;
         $counter = 1;
 
-        while (self::where('slug', $slug)->exists()) {
+        while (self::query()->where('slug', $slug)->exists()) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }

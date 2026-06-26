@@ -35,7 +35,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         // Should create 8 default utility templates
         $this->assertGreaterThanOrEqual(8, $templates->count());
@@ -63,7 +63,7 @@ class WhatsAppTemplateServiceTest extends TestCase
             'renewal_reminder',
         ];
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)
             ->pluck('name')
             ->toArray();
 
@@ -77,7 +77,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         $templates->each(function ($template) {
             $this->assertEquals('utility', $template->category);
@@ -89,7 +89,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         $templates->each(function ($template) {
             $this->assertNotNull($template->body);
@@ -100,11 +100,11 @@ class WhatsAppTemplateServiceTest extends TestCase
     public function default_templates_are_idempotent(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
-        $firstCount = WhatsAppTemplate::where('gym_id', $this->gym->id)->count();
+        $firstCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
 
         // Calling again should not duplicate templates
         $this->templateService->createDefaultTemplates($this->gym->id);
-        $secondCount = WhatsAppTemplate::where('gym_id', $this->gym->id)->count();
+        $secondCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
 
         $this->assertEquals($firstCount, $secondCount);
     }
@@ -123,7 +123,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     #[Test]
     public function it_retrieves_approved_templates_for_gym(): void
     {
-        WhatsAppTemplate::create([
+        WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',
@@ -136,7 +136,7 @@ class WhatsAppTemplateServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        WhatsAppTemplate::create([
+        WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'pending_template',
             'display_name' => 'Pending Template',
@@ -186,7 +186,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     #[Test]
     public function it_deletes_a_template(): void
     {
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'to_delete',
             'display_name' => 'To Delete',

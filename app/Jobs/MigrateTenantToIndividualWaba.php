@@ -22,7 +22,7 @@ class MigrateTenantToIndividualWaba implements ShouldQueue
 
     public function handle(WabaMigrationService $migrationService): void
     {
-        $migration = WabaMigration::find($this->migrationId);
+        $migration = WabaMigration::query()->find($this->migrationId);
 
         if (! $migration) {
             Log::error("Migration not found: {$this->migrationId}");
@@ -48,7 +48,7 @@ class MigrateTenantToIndividualWaba implements ShouldQueue
             'error' => $exception?->getMessage(),
         ]);
 
-        $migration = WabaMigration::find($this->migrationId);
+        $migration = WabaMigration::query()->find($this->migrationId);
 
         if ($migration) {
             $migration->markAsFailed($exception?->getMessage() ?? 'Job failed');

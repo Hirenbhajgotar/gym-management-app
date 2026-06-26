@@ -215,7 +215,7 @@ class SubscriptionRelationManager extends RelationManager
                     ->modalDescription('Are you sure you want to regenerate the latest invoice for this plan? This will overwrite existing files.')
                     ->action(function (Subscription $record) {
                         // Find the latest payment for this user and this plan
-                        $payment = Payment::where('user_id', $record->user_id)
+                        $payment = Payment::query()->where('user_id', $record->user_id)
                             ->whereJsonContains('metadata->plan_id', $record->plan_id)
                             ->latest()
                             ->first();

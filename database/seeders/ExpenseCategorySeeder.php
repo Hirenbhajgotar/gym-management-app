@@ -145,19 +145,16 @@ class ExpenseCategorySeeder extends Seeder
             $children = $categoryData['children'] ?? [];
             unset($categoryData['children']);
 
-            $category = ExpenseCategory::firstOrCreate(
-                [
-                    'gym_id' => null,
-                    'name' => $categoryData['name'],
-                    'parent_id' => null,
-                ],
-                [
-                    ...$categoryData,
-                    'order' => $order++,
-                    'is_active' => true,
-                    'is_system' => true,
-                ]
-            );
+            $category = ExpenseCategory::query()->firstOrCreate([
+                'gym_id' => null,
+                'name' => $categoryData['name'],
+                'parent_id' => null,
+            ], [
+                ...$categoryData,
+                'order' => $order++,
+                'is_active' => true,
+                'is_system' => true,
+            ]);
 
             // Ensure is_system is set for existing records
             if (! $category->is_system) {
@@ -167,20 +164,17 @@ class ExpenseCategorySeeder extends Seeder
             // Create child categories
             $childOrder = 0;
             foreach ($children as $childData) {
-                $child = ExpenseCategory::firstOrCreate(
-                    [
-                        'gym_id' => null,
-                        'name' => $childData['name'],
-                        'parent_id' => $category->id,
-                    ],
-                    [
-                        ...$childData,
-                        'description' => null,
-                        'order' => $childOrder++,
-                        'is_active' => true,
-                        'is_system' => true,
-                    ]
-                );
+                $child = ExpenseCategory::query()->firstOrCreate([
+                    'gym_id' => null,
+                    'name' => $childData['name'],
+                    'parent_id' => $category->id,
+                ], [
+                    ...$childData,
+                    'description' => null,
+                    'order' => $childOrder++,
+                    'is_active' => true,
+                    'is_system' => true,
+                ]);
 
                 if (! $child->is_system) {
                     $child->update(['is_system' => true]);

@@ -37,7 +37,7 @@ class WhatsAppTemplateManager
             return null;
         }
 
-        return WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+        return WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
     }
 
     private function getClient(): ?Client
@@ -166,17 +166,14 @@ class WhatsAppTemplateManager
 
             $synced = 0;
             foreach (($result->templates ?? []) as $template) {
-                $record = WhatsAppTemplate::updateOrCreate(
-                    [
-                        'gym_id' => $this->tenantId,
-                        'name' => $template['friendly_name'],
-                    ],
-                    [
-                        'variables' => $template['variables'],
-                        'status' => WhatsAppTemplateStatusEnum::APPROVED,
-                        'is_active' => true,
-                    ],
-                );
+                $record = WhatsAppTemplate::query()->updateOrCreate([
+                    'gym_id' => $this->tenantId,
+                    'name' => $template['friendly_name'],
+                ], [
+                    'variables' => $template['variables'],
+                    'status' => WhatsAppTemplateStatusEnum::APPROVED,
+                    'is_active' => true,
+                ]);
                 if ($record) {
                     $record->twilio_template_sid = (string) ($template['sid'] ?? '');
                     $record->save();
@@ -208,7 +205,7 @@ class WhatsAppTemplateManager
             return null;
         }
 
-        return WhatsAppTemplate::where('gym_id', $this->tenantId)
+        return WhatsAppTemplate::query()->where('gym_id', $this->tenantId)
             ->where('name', $templateName)
             ->where('status', 'approved')
             ->where('is_active', true)

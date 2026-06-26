@@ -49,7 +49,7 @@ class TrainerClientChart extends BaseChartWidget
         $cacheKey = ReportCacheService::WIDGET_TRAINER_CLIENTS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $trainers = Trainer::where('gym_id', $gymId)
+            $trainers = Trainer::query()->where('gym_id', $gymId)
                 ->withCount(['members' => fn ($q) => $q->membershipActive()])
                 ->orderByDesc('members_count')
                 ->limit(10) // Top 10 trainers

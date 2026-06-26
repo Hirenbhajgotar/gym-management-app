@@ -64,7 +64,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create existing consent
-        BiometricConsent::create([
+        BiometricConsent::query()->create([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
             'ip_address' => '127.0.0.1',
@@ -127,7 +127,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create existing consent
-        BiometricConsent::create([
+        BiometricConsent::query()->create([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
             'ip_address' => '127.0.0.1',
@@ -148,7 +148,7 @@ class BiometricConsentTest extends TestCase
         $controller->store($formRequest);
 
         // Should not create a new consent record
-        $this->assertEquals(1, BiometricConsent::where('gym_member_id', $member->id)->count());
+        $this->assertEquals(1, BiometricConsent::query()->where('gym_member_id', $member->id)->count());
     }
 
     public function test_consent_requires_checkbox(): void

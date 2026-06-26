@@ -23,7 +23,7 @@ class PollBiometricDevices extends Command
     ): int {
         $this->info('Starting biometric device polling...');
 
-        $devices = BiometricDevice::where('status', 'active')
+        $devices = BiometricDevice::query()->where('status', 'active')
             ->where('connection_mode', 'poll')
             ->get();
 

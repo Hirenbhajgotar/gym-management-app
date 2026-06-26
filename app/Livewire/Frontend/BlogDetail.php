@@ -25,12 +25,12 @@ class BlogDetail extends Component
 
     protected function loadBlog(): void
     {
-        $this->blog = Blog::where('slug', $this->slug)
+        $this->blog = Blog::query()->where('slug', $this->slug)
             ->where('is_published', true)
             ->firstOrFail();
 
         // Load related articles (same category, excluding current)
-        $this->relatedArticles = Blog::where('is_published', true)
+        $this->relatedArticles = Blog::query()->where('is_published', true)
             ->where('id', '!=', $this->blog->id)
             ->where('category', $this->blog->category)
             ->limit(2)
@@ -43,7 +43,7 @@ class BlogDetail extends Component
                 'readTime' => $blog->read_time ?? '5 min read',
                 'image' => $blog->full_image_url,
                 'slug' => $blog->slug,
-            ])->toArray();
+            ])->all();
     }
 
     /**

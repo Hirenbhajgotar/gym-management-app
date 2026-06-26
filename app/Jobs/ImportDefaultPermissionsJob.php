@@ -65,7 +65,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
 
     private function showNotification(): void
     {
-        $recipient = User::where('id', $this->userId)->first();
+        $recipient = User::query()->where('id', $this->userId)->first();
 
         if (! $recipient) {
             return;
@@ -96,7 +96,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
         $defaultPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions($roleName);
 
         if (filled($defaultPermissions)) {
-            PermissionSetting::updateOrCreate([
+            PermissionSetting::query()->updateOrCreate([
                 'role' => $roleName,
             ], [
                 'default_permissions' => $defaultPermissions,
@@ -114,7 +114,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
         $defaultRolesPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions();
 
         foreach ($defaultRolesPermissions as $role => $permissions) {
-            PermissionSetting::updateOrCreate([
+            PermissionSetting::query()->updateOrCreate([
                 'role' => $role,
             ], [
                 'default_permissions' => $permissions,

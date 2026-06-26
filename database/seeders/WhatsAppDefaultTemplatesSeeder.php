@@ -191,13 +191,10 @@ class WhatsAppDefaultTemplatesSeeder extends Seeder
         ];
 
         foreach ($defaultTemplates as $template) {
-            WhatsAppTemplate::updateOrCreate(
-                [
-                    'name' => $template['name'],
-                    'gym_id' => null, // Global defaults
-                ],
-                $template
-            );
+            WhatsAppTemplate::query()->updateOrCreate([
+                'name' => $template['name'],
+                'gym_id' => null, // Global defaults
+            ], $template);
         }
     }
 }

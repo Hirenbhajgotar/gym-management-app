@@ -427,12 +427,12 @@ class TwilioTemplateService implements TemplateManagementInterface
         $systemFields = array_diff_key($values, $fillableValues);
 
         try {
-            $record = WhatsAppTemplate::updateOrCreate($attributes, $fillableValues);
+            $record = WhatsAppTemplate::query()->updateOrCreate($attributes, $fillableValues);
         } catch (UniqueConstraintViolationException) {
-            $record = WhatsAppTemplate::where($attributes)->first();
+            $record = WhatsAppTemplate::query()->where($attributes)->first();
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                $record = WhatsAppTemplate::where($attributes)->first();
+                $record = WhatsAppTemplate::query()->where($attributes)->first();
             } else {
                 throw $e;
             }

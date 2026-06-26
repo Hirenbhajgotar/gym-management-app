@@ -14,7 +14,7 @@ class LeadScoringService
     public function getScoredLeads(int $gymId, int $limit = 50): Collection
     {
         // Get active leads (not converted/lost)
-        $leads = Lead::where('gym_id', $gymId)
+        $leads = Lead::query()->where('gym_id', $gymId)
             ->whereNotIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
             ->with(['followUps', 'membershipPlan', 'creator'])
             ->get();

@@ -144,7 +144,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 FollowUpsRelationManager::getFollowUpFormSchema(),
             )
             ->action(function (array $data, array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -156,7 +156,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                FollowUp::create([
+                FollowUp::query()->create([
                     'gym_id' => $this->getGym()->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
@@ -195,7 +195,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             )
             ->modalSubmitActionLabel('Convert to Member')
             ->action(function (array $data, array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -239,13 +239,13 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Lost Lead')
             ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 return $record ? "Are you sure you want to mark '{$record->name}' as lost? The lead will be moved to lost status." : 'Lead not found';
             })
             ->modalSubmitActionLabel('Lost Lead')
             ->action(function (array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -282,13 +282,13 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Delete Lead')
             ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 return $record ? "Are you sure you want to delete '{$record->name}'? This action cannot be undone." : 'Lead not found';
             })
             ->modalSubmitActionLabel('Delete Lead')
             ->action(function (array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -315,7 +315,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     public function onStatusChanged(int|string $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
     {
-        $currentLead = Lead::find($recordId);
+        $currentLead = Lead::query()->find($recordId);
 
         if (! $currentLead) {
             Notification::make()

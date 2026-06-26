@@ -62,7 +62,7 @@ class SubscriptionController extends Controller
         $planId = session('renew_plan_id');
 
         $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
 
         // Create Razorpay order for renewal
         $orderData = $this->razorpayService->createOrder([
@@ -98,7 +98,7 @@ class SubscriptionController extends Controller
         $subscriptionId = session('current_subscription_id');
 
         $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $newPlan = Plan::findOrFail($planId);
+        $newPlan = Plan::query()->findOrFail($planId);
 
         // For upgrades, charge the full amount of the new plan
         $upgradeAmount = $newPlan->price_yearly;
@@ -134,7 +134,7 @@ class SubscriptionController extends Controller
     private function handleNewSubscriptionCheckout(): View
     {
         $planId = session('selected_plan_id');
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
         $user = auth()->user();
 
         // Check if user has already used a trial
@@ -235,7 +235,7 @@ class SubscriptionController extends Controller
     private function processRenewal(): void
     {
         $subscriptionId = session('renew_subscription_id');
-        $subscription = Subscription::findOrFail($subscriptionId);
+        $subscription = Subscription::query()->findOrFail($subscriptionId);
 
         $this->subscriptionService->renewSubscription($subscription);
     }
@@ -245,8 +245,8 @@ class SubscriptionController extends Controller
         $planId = session('upgrade_plan_id');
         $subscriptionId = session('current_subscription_id');
 
-        $subscription = Subscription::findOrFail($subscriptionId);
-        $newPlan = Plan::findOrFail($planId);
+        $subscription = Subscription::query()->findOrFail($subscriptionId);
+        $newPlan = Plan::query()->findOrFail($planId);
         $user = $subscription?->user;
 
         // Cancel the current subscription immediately
@@ -262,7 +262,7 @@ class SubscriptionController extends Controller
     private function processNewSubscription(): void
     {
         $planId = session('selected_plan_id');
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
         $user = auth()->user();
 
         $this->subscriptionService->createSubscription($user, $plan, [
@@ -277,14 +277,12 @@ class SubscriptionController extends Controller
         string $orderId,
     ): View|RedirectResponse {
         // Find the payment record
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         abort_if(! $payment || $payment->user_id !== auth()->id(), 404, 'Payment not found');
 
         // Find the subscription
-        $subscription = Subscription::find(
-            $payment->metadata['subscription_id'] ?? null,
-        );
+        $subscription = Subscription::query()->find($payment->metadata['subscription_id'] ?? null);
 
         abort_if(! $subscription || $subscription->user_id !== auth()->id(), 404, 'Subscription not found');
 
@@ -318,7 +316,7 @@ class SubscriptionController extends Controller
                 ->with('error', 'Registration data not found. Please start again.');
         }
 
-        $plan = Plan::findOrFail($registrationData['selected_plan_id']);
+        $plan = Plan::query()->findOrFail($registrationData['selected_plan_id']);
 
         // Create Razorpay order with complete registration data in metadata
         $orderData = $this->razorpayService->createOrder([
@@ -368,7 +366,7 @@ class SubscriptionController extends Controller
             throw_unless($registrationData, \Exception::class, 'Registration data not found');
 
             // Get payment record
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $request->razorpay_order_id)->first();
 
             // Use the reusable method to create gym owner
             $result = $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);

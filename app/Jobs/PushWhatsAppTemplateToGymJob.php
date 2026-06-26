@@ -28,7 +28,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
 
     public function handle(): void
     {
-        $template = WhatsappTemplate::find($this->templateId);
+        $template = WhatsappTemplate::query()->find($this->templateId);
 
         if (! $template) {
             Log::warning('PushWhatsAppTemplateToGymJob: Template not found', [
@@ -63,14 +63,14 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
 
     protected function getActiveGyms(): Collection
     {
-        return Gym::whereHas('users', function (Builder $query) {
+        return Gym::query()->whereHas('users', function (Builder $query) {
             $query->where('users.is_active', true);
         })->get();
     }
 
     protected function pushTemplateToGym(WhatsappTemplate $template, Gym $gym): void
     {
-        $exists = WhatsappTemplate::where('gym_id', $gym->id)
+        $exists = WhatsappTemplate::query()->where('gym_id', $gym->id)
             ->where('name', $template->name)
             ->exists();
 
@@ -84,7 +84,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
             return;
         }
 
-        WhatsappTemplate::create([
+        WhatsappTemplate::query()->create([
             'gym_id' => $gym->id,
             'name' => $template->name,
             'display_name' => $template->display_name,

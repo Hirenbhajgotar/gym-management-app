@@ -20,7 +20,7 @@ class GymOwnerSeeder extends Seeder
     public function run(): void
     {
         // Ensure gym_owner role exists
-        Role::firstOrCreate(['name' => 'gym_owner']);
+        Role::query()->firstOrCreate(['name' => 'gym_owner']);
 
         // Create 5 Gym Owners using UserFactory
         $owners = User::factory()

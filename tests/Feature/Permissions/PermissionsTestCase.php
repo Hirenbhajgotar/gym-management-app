@@ -31,9 +31,7 @@ abstract class PermissionsTestCase extends TestCase
         $this->gym = Gym::factory()->create();
         $this->gymId = $this->gym->id;
 
-        Role::firstOrCreate(
-            ['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $this->gymId]
-        );
+        Role::query()->firstOrCreate(['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $this->gymId]);
 
         $this->gymOwner = User::factory()->create();
 
@@ -52,13 +50,10 @@ abstract class PermissionsTestCase extends TestCase
 
     protected function createRoleWithPermissions(DefaultRole $role, array $permissionNames = []): Role
     {
-        $roleModel = Role::firstOrCreate(
-            ['name' => $role->value, 'gym_id' => $this->gymId],
-            ['guard_name' => 'web']
-        );
+        $roleModel = Role::query()->firstOrCreate(['name' => $role->value, 'gym_id' => $this->gymId], ['guard_name' => 'web']);
 
         if (filled($permissionNames)) {
-            $permissions = Permission::whereIn('name', $permissionNames)->get();
+            $permissions = Permission::query()->whereIn('name', $permissionNames)->get();
             $roleModel->syncPermissions($permissions);
         }
 
@@ -67,7 +62,7 @@ abstract class PermissionsTestCase extends TestCase
 
     protected function getPermissionsForRole(DefaultRole $role): Collection
     {
-        $roleModel = Role::where('name', $role->value)
+        $roleModel = Role::query()->where('name', $role->value)
             ->where('gym_id', $this->gymId)
             ->first();
 

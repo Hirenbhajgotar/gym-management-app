@@ -27,7 +27,7 @@ class OtpService
             );
         }
 
-        $account = WhatsAppAccount::where('gym_id', $tenantId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $tenantId)->first();
 
         throw_unless($account, Exception::class, 'No WhatsApp account found for this gym');
 

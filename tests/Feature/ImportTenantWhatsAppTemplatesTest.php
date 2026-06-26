@@ -32,7 +32,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
             'name' => 'Test Gym',
         ]);
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_feature_sid',
             'twilio_auth_token' => 'test_feature_auth_token',
@@ -104,7 +104,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
 
         // Create additional gyms with WhatsApp accounts
         $gym2 = Gym::factory()->create(['name' => 'Second Gym']);
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $gym2->id,
             'twilio_account_sid' => 'ACtest_gym2_sid',
             'twilio_auth_token' => 'test_gym2_token',
@@ -145,7 +145,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
         Queue::fake();
 
         $inactiveGym = Gym::factory()->create(['name' => 'Inactive Gym']);
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $inactiveGym->id,
             'twilio_account_sid' => 'ACinactive_sid',
             'twilio_auth_token' => 'inactive_token',

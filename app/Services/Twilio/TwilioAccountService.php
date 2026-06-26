@@ -68,7 +68,7 @@ class TwilioAccountService implements AccountManagementInterface
 
                 $messagingService = $subClient->messaging->v1->services->create("Gym_{$gymId}_SERVICE");
 
-                WhatsAppAccount::updateOrCreate([
+                WhatsAppAccount::query()->updateOrCreate([
                     'gym_id' => $gymId,
                 ], [
                     'twilio_account_sid' => $subaccount->sid,
@@ -387,7 +387,7 @@ class TwilioAccountService implements AccountManagementInterface
      */
     public function getAccountOrFail(int $gymId): WhatsAppAccount
     {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
         throw_unless($account, \Exception::class, 'WhatsApp account not found for this gym');
 

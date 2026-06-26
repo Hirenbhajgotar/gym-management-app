@@ -34,7 +34,7 @@ class TwilioTestMessageService implements TestMessagingInterface
     public function sendTestWhatsAppMessage(int $gymId, ?string $to = null): array
     {
         try {
-            $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
             if (! $account) {
                 return [
@@ -50,8 +50,8 @@ class TwilioTestMessageService implements TestMessagingInterface
                 ];
             }
 
-            $gym = Gym::find($gymId);
-            $gym = Gym::find($gymId);
+            $gym = Gym::query()->find($gymId);
+            $gym = Gym::query()->find($gymId);
             $gymName = $gym?->name ?? 'Your Gym';
 
             $phoneNumberRecord = $account->phoneNumber()->first();

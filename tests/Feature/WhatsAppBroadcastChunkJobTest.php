@@ -111,7 +111,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $job->handle();
 
-        $updatedRecipients = WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcast->id)->get();
+        $updatedRecipients = WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcast->id)->get();
         foreach ($updatedRecipients as $recipient) {
             $this->assertEquals('sent', $recipient->status->value);
         }
@@ -200,7 +200,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $job->handle();
 
-        $updatedRecipients = WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcast->id)
+        $updatedRecipients = WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcast->id)
             ->orderBy('id')
             ->get();
 

@@ -151,7 +151,7 @@ class EditManager extends EditRecord
         if ($employeeDetails) {
             $employeeDetails->update($employeeData);
         } else {
-            EmployeeDetail::create([
+            EmployeeDetail::query()->create([
                 ...$employeeData,
                 'user_id' => $record->id,
             ]);

@@ -35,7 +35,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -55,7 +55,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'phone' => '+1234567890',
         ]);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 100,
             'used_credits' => 0,
@@ -139,7 +139,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
     {
         Queue::fake();
 
-        $members = GymMember::where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
+        $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $data = [
             'template_id' => $this->template->id,
@@ -197,7 +197,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(5, $broadcast->credits_used);
 
         // Read credit record
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
 
         $this->assertSame(95, $creditRecord->remaining_credits);
         $this->assertSame(5, $creditRecord->used_credits);
@@ -205,7 +205,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
     public function test_insufficient_credits_throws_exception(): void
     {
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         $creditRecord->update(['remaining_credits' => 2, 'used_credits' => 98]);
 
         $data = [
@@ -258,12 +258,12 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'filters' => [],
         ];
 
-        $members = GymMember::where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
+        $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, $members);
 
         // Verify credits are deducted exactly for the target count
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         $this->assertSame(3, $broadcast->target_count);
         $this->assertSame(97, $creditRecord->remaining_credits);
         $this->assertSame(3, $creditRecord->used_credits);

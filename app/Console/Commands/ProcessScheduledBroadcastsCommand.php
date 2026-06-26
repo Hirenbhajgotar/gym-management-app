@@ -25,7 +25,7 @@ class ProcessScheduledBroadcastsCommand extends Command
      */
     public function handle(): int
     {
-        $broadcasts = WhatsAppBroadcast::where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
+        $broadcasts = WhatsAppBroadcast::query()->where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
             ->where('scheduled_at', '<=', now())
             ->limit(self::MAX_BROADCASTS_PER_RUN)
             ->lazy();
@@ -33,7 +33,7 @@ class ProcessScheduledBroadcastsCommand extends Command
         $processed = 0;
 
         foreach ($broadcasts as $broadcast) {
-            $claimed = WhatsAppBroadcast::where('id', $broadcast->id)
+            $claimed = WhatsAppBroadcast::query()->where('id', $broadcast->id)
                 ->where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
                 ->update([
                     'status' => WhatsAppBroadcastStatusEnum::SENDING->value,

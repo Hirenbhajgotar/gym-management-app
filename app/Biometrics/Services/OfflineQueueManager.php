@@ -603,7 +603,7 @@ class OfflineQueueManager
             $memberId = $event['data']['gym_member_id'] ?? null;
 
             if ($capturedAt && $memberId) {
-                Attendances::where('attendanceable_id', $memberId)
+                Attendances::query()->where('attendanceable_id', $memberId)
                     ->where('attendanceable_type', GymMember::class)
                     ->where('check_in_time', $capturedAt)
                     ->whereNull('synced_at')

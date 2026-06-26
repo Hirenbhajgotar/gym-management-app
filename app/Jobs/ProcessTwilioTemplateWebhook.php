@@ -74,7 +74,7 @@ class ProcessTwilioTemplateWebhook implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         // Find the template by Twilio's Content SID
-        $template = WhatsAppTemplate::where('twilio_template_sid', $this->contentSid)->first();
+        $template = WhatsAppTemplate::query()->where('twilio_template_sid', $this->contentSid)->first();
 
         if (! $template) {
             Log::warning('ProcessTwilioTemplateWebhook: template not found', [

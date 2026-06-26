@@ -28,7 +28,7 @@ class LeadConversionFactory extends Factory
             'gym_member_id' => GymMember::factory(),
             'membership_plan_id' => function () {
                 // Get a gym first, then create a membership plan for that gym
-                $gym = Gym::inRandomOrder()->first() ?? Gym::factory()->create();
+                $gym = Gym::query()->inRandomOrder()->first() ?? Gym::factory()->create();
 
                 return MembershipPlan::factory()->create(['gym_id' => $gym->id])->id;
             },

@@ -105,7 +105,7 @@ class ExpenseReports extends BasePage implements HasForms
                         Select::make('category_id')
                             ->label('Category')
                             ->options(
-                                ExpenseCategory::where('gym_id', $gym?->id)
+                                ExpenseCategory::query()->where('gym_id', $gym?->id)
                                     ->active()
                                     ->pluck('name', 'id')
                             )

@@ -260,7 +260,7 @@ class Attendances extends Model
     // Get today's attendance for a specific member
     public static function getTodayAttendance($memberId, $gymId, $attendanceableType)
     {
-        return static::where('attendanceable_id', $memberId)
+        return static::query()->where('attendanceable_id', $memberId)
             ->where('attendanceable_type', $attendanceableType)
             ->where('gym_id', $gymId)
             ->whereDate('check_in_time', now()->toDateString())
@@ -270,7 +270,7 @@ class Attendances extends Model
     // Check if member is currently checked in
     public static function isCurrentlyCheckedIn($memberId, $gymId, $attendanceableType)
     {
-        return static::where('attendanceable_id', $memberId)
+        return static::query()->where('attendanceable_id', $memberId)
             ->where('attendanceable_type', $attendanceableType)
             ->where('gym_id', $gymId)
             ->active()

@@ -21,7 +21,7 @@ class WabaMigrationService
 
     public function getPendingMigrations(): int
     {
-        return WabaMigration::where('status', WabaMigrationStatusEnum::PENDING)->count();
+        return WabaMigration::query()->where('status', WabaMigrationStatusEnum::PENDING)->count();
     }
 
     public function getGymsNeedingMigration(): array
@@ -31,7 +31,7 @@ class WabaMigrationService
 
     public function createMigrationForGym(int $gymId): ?WabaMigration
     {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
         if (! $account) {
             Log::warning("No WhatsApp account found for gym {$gymId}");
@@ -45,7 +45,7 @@ class WabaMigrationService
             return null;
         }
 
-        $existingMigration = WabaMigration::where('gym_id', $gymId)
+        $existingMigration = WabaMigration::query()->where('gym_id', $gymId)
             ->whereIn('status', [
                 WabaMigrationStatusEnum::PENDING,
                 WabaMigrationStatusEnum::IN_PROGRESS,
@@ -85,7 +85,7 @@ class WabaMigrationService
 
     public function startMigration(int $gymId): array
     {
-        $migration = WabaMigration::where('gym_id', $gymId)
+        $migration = WabaMigration::query()->where('gym_id', $gymId)
             ->where('status', WabaMigrationStatusEnum::PENDING)
             ->first();
 
@@ -156,7 +156,7 @@ class WabaMigrationService
         }
 
         try {
-            $templates = WhatsAppTemplate::where('gym_id', $migration->gym_id)->get();
+            $templates = WhatsAppTemplate::query()->where('gym_id', $migration->gym_id)->get();
 
             $migration->update([
                 'migration_data' => array_merge($migration->migration_data ?? [], [
@@ -189,7 +189,7 @@ class WabaMigrationService
 
     public function getMigrationStatus(int $gymId): ?array
     {
-        $migration = WabaMigration::where('gym_id', $gymId)
+        $migration = WabaMigration::query()->where('gym_id', $gymId)
             ->latest()
             ->first();
 

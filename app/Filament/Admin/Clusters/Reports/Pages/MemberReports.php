@@ -2,14 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
-use Illuminate\Support\Facades\Date;
-use App\Services\ChurnRiskService;
-use App\Exports\MemberReportExport;
-use App\Models\Gym;
 use App\Enums\PaymentStatus;
+use App\Exports\MemberReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberDemographicsChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberGrowthChart;
@@ -17,17 +11,24 @@ use App\Filament\Admin\Clusters\Reports\Widgets\MemberPlanDistributionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberStatusChart;
 use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
+use App\Services\ChurnRiskService;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class MemberReports extends BasePage implements HasForms, ShareableReport
 {
@@ -116,7 +117,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                         Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->options(
-                                MembershipPlan::where('gym_id', $gym?->id)
+                                MembershipPlan::query()->where('gym_id', $gym?->id)
                                     ->pluck('name', 'id')
                             )
                             ->placeholder('All Plans'),
@@ -167,8 +168,8 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                 ->value('avg_days');
 
             // Retention rate (members who renewed at least once)
-            $membersWithMultiplePayments = GymMember::where('gym_id', $gymId)
-                ->whereHas('payments', function ($q) {
+            $membersWithMultiplePayments = GymMember::query()->where('gym_id', $gymId)
+                ->whereHas('payments', function (Builder $q) {
                     $q->where('status', PaymentStatus::COMPLETED);
                 }, '>', 1)
                 ->count();

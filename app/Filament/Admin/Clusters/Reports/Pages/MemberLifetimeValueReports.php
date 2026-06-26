@@ -38,22 +38,22 @@ class MemberLifetimeValueReports extends BasePage implements ShareableReport
         return Cache::flexible($cacheKey, [now()->addHours(2), now()->addHours(6)], function () use ($gymId) {
             // 1. Average Lifetime Value (ALTV)
             // Total Revenue / Total Members (Ever)
-            $totalRevenue = MemberPayment::where('gym_id', $gymId)
+            $totalRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', 'completed')
                 ->sum('amount');
 
-            $totalMembersEver = GymMember::where('gym_id', $gymId)->count();
+            $totalMembersEver = GymMember::query()->where('gym_id', $gymId)->count();
 
             $altv = $totalMembersEver > 0 ? round($totalRevenue / $totalMembersEver, 2) : 0;
 
             // 2. Average Revenue Per User (ARPU) - Monthly
             // Monthly Revenue / Active Members
-            $lastMonthRevenue = MemberPayment::where('gym_id', $gymId)
+            $lastMonthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', 'completed')
                 ->whereMonth('payment_date', now()->subMonth()->month)
                 ->sum('amount');
 
-            $activeMembers = GymMember::where('gym_id', $gymId)
+            $activeMembers = GymMember::query()->where('gym_id', $gymId)
                 ->membershipActive()
                 ->count();
 
@@ -93,13 +93,13 @@ class MemberLifetimeValueReports extends BasePage implements ShareableReport
 
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $monthRevenue = MemberPayment::where('gym_id', $gymId)
+            $monthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', 'completed')
                 ->whereMonth('payment_date', $date->month)
                 ->whereYear('payment_date', $date->year)
                 ->sum('amount');
 
-            $memberCount = GymMember::where('gym_id', $gymId)
+            $memberCount = GymMember::query()->where('gym_id', $gymId)
                 ->whereDate('created_at', '<=', $date->endOfMonth())
                 ->count();
 

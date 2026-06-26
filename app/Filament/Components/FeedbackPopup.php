@@ -91,7 +91,7 @@ class FeedbackPopup extends Component implements HasForms
         $data['submitted_at'] = now();
 
         // Store feedback in database
-        Feedback::create($data);
+        Feedback::query()->create($data);
 
         // Store the user ID in cache to prevent the feedback popup from displaying for a given number of days.
         // This prevents users from getting annoyed by the popup and allows us to only show it every 25 days.

@@ -2,11 +2,11 @@
 
 namespace App\Biometrics\Services;
 
-use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\CheckInResult;
 use App\Biometrics\DTOs\DoorControlResult;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Enums\AttendanceStatus;
 use App\Events\MemberCheckedIn;
@@ -17,6 +17,7 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 
 class CheckInService
 {
@@ -47,7 +48,7 @@ class CheckInService
         // ─────────────────────────────────────────────
         // STEP 3: Load biometric template
         // ─────────────────────────────────────────────
-        $templates = BiometricTemplate::where('gym_id', $device->gym_id)
+        $templates = BiometricTemplate::query()->where('gym_id', $device->gym_id)
             ->where('biometric_type', $sample->type)
             ->where('is_active', true)
             ->with('gymMember')
@@ -130,9 +131,9 @@ class CheckInService
         if ($device->isDoorAccess()) {
             // STEP 8B-1: Check for existing attendance today
             // (prevents duplicate if gym has a separate attendance_only device)
-            $existingAttendance = Attendances::where('gym_id', $device->gym_id)
+            $existingAttendance = Attendances::query()->where('gym_id', $device->gym_id)
                 ->whereHasMorph('attendanceable', [GymMember::class],
-                    fn ($q) => $q->where('id', $gymMember->id)
+                    fn (Builder $q) => $q->where('id', $gymMember->id)
                 )
                 ->whereDate('check_in_time', today())
                 ->where('check_in_result', 'granted')
@@ -302,7 +303,7 @@ class CheckInService
     public function processCheckOut(GymMember $gymMember, BiometricDevice $device): CheckInResult
     {
         // Find active attendance
-        $attendance = Attendances::where('attendanceable_id', $gymMember->id)
+        $attendance = Attendances::query()->where('attendanceable_id', $gymMember->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $device->gym_id)
             ->active()

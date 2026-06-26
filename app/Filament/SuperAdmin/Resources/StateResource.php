@@ -64,13 +64,13 @@ class StateResource extends BaseResource
     {
         return [
             Select::make('country_id')
-                ->options(Country::active()->get()->pluck('name', 'id'))
+                ->options(Country::query()->active()->get()->pluck('name', 'id'))
                 ->required()
                 ->searchable()
                 ->createOptionForm(CountryResource::getFormSchema())
                 ->createOptionUsing(function (array $data) {
                     // Create the new country and return its ID
-                    $country = Country::create($data);
+                    $country = Country::query()->create($data);
 
                     return $country->id;
                 })

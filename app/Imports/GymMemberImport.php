@@ -47,7 +47,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     {
         $membershipPlan = null;
         if (isset($row['membership_plan'])) {
-            $membershipPlan = MembershipPlan::where('name', $row['membership_plan'])->first();
+            $membershipPlan = MembershipPlan::query()->where('name', $row['membership_plan'])->first();
 
             if (! $membershipPlan) {
                 throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
@@ -56,7 +56,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
         $trainer = null;
         if (isset($row['trainer_email'])) {
-            $trainer = Trainer::where('email', $row['trainer_email'])->first();
+            $trainer = Trainer::query()->where('email', $row['trainer_email'])->first();
         }
 
         if (isset($row['dob'])) {
@@ -72,7 +72,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $profileImagePath = resolve(AvatarService::class)->generate($row['name']);
         }
 
-        $gymMember = GymMember::create([
+        $gymMember = GymMember::query()->create([
             'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'profile_photo' => $profileImagePath,
@@ -86,7 +86,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'payment_status' => $row['payment_status'] ?? PaymentStatus::PENDING,
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
-            'user_id' => Gym::find($this->tenantId)?->owner()->id ?? null,
+            'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
         ]);
 
         if ($membershipPlan) {

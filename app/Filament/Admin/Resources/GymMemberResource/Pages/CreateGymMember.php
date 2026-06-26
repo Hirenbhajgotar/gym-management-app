@@ -185,7 +185,7 @@ class CreateGymMember extends CreateRecord
                     Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            return Trainer::where('gym_id', $this->getGymId())
+                            return Trainer::query()->where('gym_id', $this->getGymId())
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option

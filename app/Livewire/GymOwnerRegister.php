@@ -85,14 +85,14 @@ class GymOwnerRegister extends Component
 
     public function getBusinessTypes(): Collection
     {
-        return BusinessType::active()->orderBy('name')->get();
+        return BusinessType::query()->active()->orderBy('name')->get();
     }
 
     #[Computed]
     public function countries()
     {
         return Cache::flexible(Country::COUNTRIES_LIST_CACHE_KEY, [now()->addDays(7), now()->addDays(14)], function () {
-            return Country::active()->orderBy('name')->pluck('name', 'id');
+            return Country::query()->active()->orderBy('name')->pluck('name', 'id');
         });
     }
 
@@ -104,7 +104,7 @@ class GymOwnerRegister extends Component
         }
 
         return Cache::flexible(State::STATES_OF_COUNTRY_CACHE_KEY . $this->address['country_id'], [now()->addDays(7), now()->addDays(14)], function () {
-            return State::where('country_id', $this->address['country_id'])
+            return State::query()->where('country_id', $this->address['country_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');
@@ -119,7 +119,7 @@ class GymOwnerRegister extends Component
         }
 
         return Cache::flexible(City::CITIES_OF_STATE_CACHE_KEY . $this->address['state_id'], [now()->addDays(7), now()->addDays(14)], function () {
-            return City::where('state_id', $this->address['state_id'])
+            return City::query()->where('state_id', $this->address['state_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');

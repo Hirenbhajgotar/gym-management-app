@@ -27,7 +27,7 @@ class CheckLowWhatsAppCreditsCommand extends Command
      */
     public function handle()
     {
-        $credits = WhatsAppMessageCredit::where('is_low_credit_notified', false)->get();
+        $credits = WhatsAppMessageCredit::query()->where('is_low_credit_notified', false)->get();
 
         $count = 0;
         foreach ($credits as $credit) {

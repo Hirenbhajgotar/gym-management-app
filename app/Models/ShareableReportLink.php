@@ -85,7 +85,7 @@ class ShareableReportLink extends Model
 
             $token = Str::random(64);
             $count++;
-        } while (self::where('token', $token)->exists());
+        } while (self::query()->where('token', $token)->exists());
 
         return $token;
     }

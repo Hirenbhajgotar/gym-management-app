@@ -45,12 +45,12 @@ class BroadcastOrchestrator
             $creditsDeducted = false;
 
             /** @var WhatsAppTemplate|null $template */
-            $template = WhatsAppTemplate::find($templateId);
+            $template = WhatsAppTemplate::query()->find($templateId);
 
             throw_unless($template, \Exception::class, 'Please select a template');
 
             $targetCount = $recipientType === 'all'
-                ? GymMember::where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
+                ? GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
                 : count($selectedMemberIds);
 
             throw_if($targetCount === 0, \Exception::class, 'No recipients found. Please select members or change recipient type.');
@@ -77,7 +77,7 @@ class BroadcastOrchestrator
 
             try {
                 /** @var WhatsAppMessageCredit|null $creditRecord */
-                $creditRecord = WhatsAppMessageCredit::where('gym_id', $gymId)
+                $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $gymId)
                     ->lockForUpdate()
                     ->first();
 
@@ -116,7 +116,7 @@ class BroadcastOrchestrator
             DB::beginTransaction();
 
             try {
-                $broadcast = WhatsAppBroadcast::create([
+                $broadcast = WhatsAppBroadcast::query()->create([
                     'gym_id' => $gymId,
                     'whatsapp_template_id' => $templateId,
                     'title' => 'Broadcast: ' . $template->display_name,
@@ -130,7 +130,7 @@ class BroadcastOrchestrator
                     'message_variables' => $variables,
                 ]);
 
-                $memberQuery = GymMember::where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
+                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
 
                 if ($recipientType !== 'all') {
                     $memberQuery->whereIn('id', $selectedMemberIds);
@@ -158,7 +158,7 @@ class BroadcastOrchestrator
                     }
 
                     if (filled($recipients)) {
-                        WhatsAppBroadcastRecipient::insert($recipients);
+                        WhatsAppBroadcastRecipient::query()->insert($recipients);
                     }
                 });
 

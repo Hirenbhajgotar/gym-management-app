@@ -82,14 +82,14 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
             'gym_id' => null,
         ]);
 
-        $user = User::where('email', 'admin@example.com')->first();
+        $user = User::query()->where('email', 'admin@example.com')->first();
         $this->assertTrue($user->hasRole(DefaultRole::SUPER_ADMIN->value));
     }
 
     #[Test]
     public function it_creates_demo_users_for_selected_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('choice')
             ->once()
@@ -153,8 +153,8 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_demo_users_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('choice')
             ->once()
@@ -233,7 +233,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_validates_existing_email()
     {
-        User::create([
+        User::query()->create([
             'name' => 'Existing User',
             'email' => 'existing@example.com',
             'password' => Hash::make('password'),
@@ -331,7 +331,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_ensures_tenant_roles_exist_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
@@ -355,8 +355,8 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_ensures_tenant_roles_exist_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
@@ -382,7 +382,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_trainer_profiles()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
@@ -408,7 +408,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_member_profiles()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
@@ -450,10 +450,10 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_assigns_roles_to_existing_users()
     {
-        Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -513,7 +513,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_uses_default_role_enum_consistently()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 

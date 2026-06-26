@@ -42,7 +42,7 @@ class MemberGrowthChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->subYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $data = GymMember::where('gym_id', $gymId)
+            $data = GymMember::query()->where('gym_id', $gymId)
                 ->whereDate('created_at', '>=', $startDate)
                 ->whereDate('created_at', '<=', $endDate)
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
@@ -50,7 +50,7 @@ class MemberGrowthChart extends BaseChartWidget
                 ->orderBy('month')
                 ->get();
 
-            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->all();
             $counts = $data->pluck('count')->toArray();
 
             // Calculate cumulative total

@@ -47,7 +47,7 @@ class SendSubscriptionExpiryAlerts extends Command
      */
     private function processExpiringTrials(): void
     {
-        $expiringTrials = Subscription::where('status', SubscriptionStatus::TRIAL)
+        $expiringTrials = Subscription::query()->where('status', SubscriptionStatus::TRIAL)
             ->where('trial_ends_at', '<=', Date::now()->addDays(3))
             ->where('trial_ends_at', '>', Date::now())
             ->with('user')
@@ -83,7 +83,7 @@ class SendSubscriptionExpiryAlerts extends Command
      */
     private function processExpiredSubscriptions(): void
     {
-        $expiredSubscriptions = Subscription::where('status', SubscriptionStatus::ACTIVE)
+        $expiredSubscriptions = Subscription::query()->where('status', SubscriptionStatus::ACTIVE)
             ->where('current_period_end', '<=', Date::now())
             ->with('user')
             ->get();

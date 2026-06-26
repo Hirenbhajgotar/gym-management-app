@@ -53,14 +53,14 @@ class CreateReceptionist extends CreateRecord
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 
         // Create the user first
-        $receptionist = User::create($userData);
+        $receptionist = User::query()->create($userData);
 
         // Create employee details if provided
         if (isset($data['employeeDetails']) && is_array($data['employeeDetails'])) {
             $employeeDetailsData = $data['employeeDetails'];
             $employeeDetailsData['user_id'] = $receptionist->id;
 
-            EmployeeDetail::create($employeeDetailsData);
+            EmployeeDetail::query()->create($employeeDetailsData);
         }
 
         $receptionistRole = DefaultRole::RECEPTIONIST->value;

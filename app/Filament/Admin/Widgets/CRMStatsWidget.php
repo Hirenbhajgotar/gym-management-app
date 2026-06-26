@@ -42,13 +42,13 @@ class CRMStatsWidget extends BaseStatsOverviewWidget
 
         return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . $gym->id, [now()->addHour(), now()->addHours(24)], function () {
             return [
-                Stat::make('New Leads', Lead::where('status', 'new')->count())
+                Stat::make('New Leads', Lead::query()->where('status', 'new')->count())
                     ->description('Total new leads')
                     ->color('success'),
-                Stat::make('Leads in Pipeline', Lead::where('status', '!=', LeadStatus::CONVERTED)->where('status', '!=', LeadStatus::LOST)->count())
+                Stat::make('Leads in Pipeline', Lead::query()->where('status', '!=', LeadStatus::CONVERTED)->where('status', '!=', LeadStatus::LOST)->count())
                     ->description('Active leads')
                     ->color('warning'),
-                Stat::make('Closed Won Leads', Lead::where('status', LeadStatus::CONVERTED)->whereMonth('updated_at', now()->month)->count())
+                Stat::make('Closed Won Leads', Lead::query()->where('status', LeadStatus::CONVERTED)->whereMonth('updated_at', now()->month)->count())
                     ->description('This month')
                     ->color('primary'),
             ];

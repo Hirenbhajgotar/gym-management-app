@@ -79,7 +79,7 @@ class RequestDemo extends Component
 
         try {
             // Create the request contact record
-            $requestContact = RequestContact::create([
+            $requestContact = RequestContact::query()->create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],

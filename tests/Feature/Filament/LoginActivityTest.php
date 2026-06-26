@@ -67,7 +67,7 @@ class LoginActivityTest extends TestCase
     public function test_page_shows_login_logs(): void
     {
         // Create some login logs
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->gymOwner->id,
             'gym_id' => $this->gym->id,
             'login_at' => now(),
@@ -77,7 +77,7 @@ class LoginActivityTest extends TestCase
             'login_method' => 'password',
         ]);
 
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->trainer->id,
             'gym_id' => $this->gym->id,
             'login_at' => now()->subDay(),
@@ -96,7 +96,7 @@ class LoginActivityTest extends TestCase
     public function test_filter_by_role_works(): void
     {
         // Create login logs
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->gymOwner->id,
             'gym_id' => $this->gym->id,
             'login_at' => now(),
@@ -105,7 +105,7 @@ class LoginActivityTest extends TestCase
             'login_method' => 'password',
         ]);
 
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->trainer->id,
             'gym_id' => $this->gym->id,
             'login_at' => now(),
@@ -128,7 +128,7 @@ class LoginActivityTest extends TestCase
         $gym2->users()->attach($this->gymOwner->id, ['role' => 'gym_owner', 'active' => true]);
 
         // Create login logs for both gyms
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->gymOwner->id,
             'gym_id' => $this->gym->id,
             'login_at' => now(),
@@ -137,7 +137,7 @@ class LoginActivityTest extends TestCase
             'login_method' => 'password',
         ]);
 
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $this->gymOwner->id,
             'gym_id' => $gym2->id,
             'login_at' => now(),
@@ -163,7 +163,7 @@ class LoginActivityTest extends TestCase
         $this->gym->users()->attach($member->id, ['role' => 'gym_member', 'active' => true]);
 
         // Create login log for member
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $member->id,
             'gym_id' => $this->gym->id,
             'login_at' => now(),

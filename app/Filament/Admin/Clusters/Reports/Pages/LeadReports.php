@@ -140,12 +140,12 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
             $activePipeline = $totalLeads - $convertedLeads - $lostLeads;
 
             // This month stats
-            $thisMonthLeads = Lead::where('gym_id', $gymId)
+            $thisMonthLeads = Lead::query()->where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count();
 
-            $thisMonthConverted = Lead::where('gym_id', $gymId)
+            $thisMonthConverted = Lead::query()->where('gym_id', $gymId)
                 ->where('status', LeadStatus::CONVERTED)
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)
@@ -231,7 +231,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $statusCounts = Lead::where('gym_id', $gymId)
+        $statusCounts = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
@@ -261,14 +261,14 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $newLeads = Lead::where('gym_id', $gymId)
+        $newLeads = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('count', 'month');
 
-        $conversions = Lead::where('gym_id', $gymId)
+        $conversions = Lead::query()->where('gym_id', $gymId)
             ->where('status', LeadStatus::CONVERTED)
             ->whereBetween('updated_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(updated_at, '%Y-%m') as month, COUNT(*) as count")
@@ -299,7 +299,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        return Lead::where('gym_id', $gymId)
+        return Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw('source, COUNT(*) as count')
             ->groupBy('source')
@@ -313,7 +313,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
                     'count' => $item->count,
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -325,7 +325,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyLeads = Lead::where('gym_id', $gymId)
+        $monthlyLeads = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')

@@ -338,7 +338,7 @@ class WhatsAppTemplateResource extends BaseResource
                         ->modalHeading('Push Template to All Gyms')
                         ->modalDescription(fn (WhatsAppTemplate $record) => "This will copy \"{$record->display_name}\" to all gyms with active users that don't already have a template with the same name. Existing templates with the same name will NOT be overwritten.")
                         ->before(function (WhatsAppTemplate $record) {
-                            $gymCount = Gym::whereHas('users', function (Builder $query) {
+                            $gymCount = Gym::query()->whereHas('users', function (Builder $query) {
                                 $query->where('users.is_active', true);
                             })->count();
 
@@ -365,7 +365,7 @@ class WhatsAppTemplateResource extends BaseResource
                         ->modalHeading('Push Templates to All Gyms')
                         ->modalDescription('This will copy selected templates to all gyms with active users that don\'t already have templates with the same names.')
                         ->before(function ($records) {
-                            $gymCount = Gym::whereHas('users', function (Builder $query) {
+                            $gymCount = Gym::query()->whereHas('users', function (Builder $query) {
                                 $query->where('users.is_active', true);
                             })->count();
                             $totalJobs = $gymCount * $records->count();

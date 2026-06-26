@@ -25,7 +25,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         parent::setUp();
 
         // Create the gym_owner role (global, no gym_id) for test usage
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -130,7 +130,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
         // Create WhatsApp resources
-        $whatsappAccount = WhatsAppAccount::create([
+        $whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $gym->id,
             'twilio_account_sid' => 'ACtest_cmd_sid',
             'twilio_auth_token' => 'test_token',
@@ -141,7 +141,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
             'business_email' => 'test@gym.com',
         ]);
 
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $whatsappAccount->id,
             'phone_number' => '+14155551111',
             'phone_number_sid' => 'PNtest_cmd_123',
@@ -232,7 +232,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $gym1->users()->attach($owner1->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
         // Create a WhatsApp account for gym1 that will cause issues
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $gym1->id,
             'twilio_account_sid' => 'ACtest_fail_sid',
             'twilio_auth_token' => 'test_token',

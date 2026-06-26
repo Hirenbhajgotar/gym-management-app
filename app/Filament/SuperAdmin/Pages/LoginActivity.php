@@ -132,7 +132,7 @@ class LoginActivity extends BasePage implements HasTable
 
             SelectFilter::make('gym_id')
                 ->label('Gym')
-                ->options(fn () => Gym::pluck('name', 'id')),
+                ->options(fn () => Gym::query()->pluck('name', 'id')),
 
             Filter::make('date_from')
                 ->label('From Date')

@@ -53,7 +53,7 @@ class GymOwnerRegistrationService
             $plan = $confirmedPlan ?? $this->validateActivePlan($registrationData['selected_plan_id'] ?? null);
 
             // Check if user already exists (idempotency)
-            $existingUser = User::where('email', $registrationData['email'])->first();
+            $existingUser = User::query()->where('email', $registrationData['email'])->first();
 
             if ($existingUser) {
                 Log::info('User already exists, skipping creation', [
@@ -148,7 +148,7 @@ class GymOwnerRegistrationService
         $metadata['subscription_id'] = $subscription->id ?? null;
         $metadata['plan_id'] = $data['plan_id'] ?? null;
 
-        Payment::where('id', $payment->id)->update([
+        Payment::query()->where('id', $payment->id)->update([
             'user_id' => $data['user_id'] ?? null,
             'gym_id' => $data['gym_id'] ?? null,
             'metadata' => $metadata,
@@ -178,7 +178,7 @@ class GymOwnerRegistrationService
      */
     protected function createUser(array $registrationData): User
     {
-        return User::create([
+        return User::query()->create([
             'name' => $registrationData['name'],
             'email' => $registrationData['email'],
             'phone' => $registrationData['phone'],
@@ -192,7 +192,7 @@ class GymOwnerRegistrationService
      */
     protected function createGym(array $registrationData): Gym
     {
-        return Gym::create([
+        return Gym::query()->create([
             'name' => $registrationData['gym_name'],
             'slug' => Gym::generateUniqueSlug($registrationData['gym_name']),
         ]);
@@ -286,7 +286,7 @@ class GymOwnerRegistrationService
         setPermissionsTeamId($gym->id);
 
         // Get the gym_owner role for this specific gym
-        $gymOwnerRole = Role::where('name', DefaultRole::GYM_OWNER->value)
+        $gymOwnerRole = Role::query()->where('name', DefaultRole::GYM_OWNER->value)
             ->where('gym_id', $gym->id)
             ->first();
 
@@ -350,7 +350,7 @@ class GymOwnerRegistrationService
     {
         try {
             $superAdmins = Cache::flexible(User::ALL_SUPER_ADMINS_CACHE_KEY, [86400, 604800], function () {
-                return User::role('super_admin')->get();
+                return User::query()->role('super_admin')->get();
             });
 
             foreach ($superAdmins as $superAdmin) {

@@ -60,7 +60,7 @@ class PermissionSettingResource extends BaseResource
 
                 Select::make('default_permissions')
                     ->multiple()
-                    ->options(fn () => Permission::whereNotNull('category')
+                    ->options(fn () => Permission::query()->whereNotNull('category')
                         ->where('category', '!=', '')
                         ->orderBy('category')
                         ->orderBy('name')
@@ -68,7 +68,7 @@ class PermissionSettingResource extends BaseResource
                         ->groupBy('category')
                         ->mapWithKeys(function ($permissions, $category) {
                             return [$category => $permissions->pluck('name', 'name')->toArray()];
-                        })->toArray())
+                        })->all())
                     ->searchable()
                     ->optionsLimit(300)
                     ->searchingMessage('Searching permissions...')

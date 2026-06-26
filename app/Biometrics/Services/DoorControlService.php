@@ -232,7 +232,7 @@ class DoorControlService
         string $eventType,
         DoorControlResult $result
     ): DoorEvent {
-        return DoorEvent::create([
+        return DoorEvent::query()->create([
             'gym_id' => $device->gym_id,
             'device_id' => $device->id,
             'gym_member_id' => $gymMember?->id,

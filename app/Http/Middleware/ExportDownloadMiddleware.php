@@ -24,7 +24,7 @@ class ExportDownloadMiddleware
             ]);
 
             if ($exportId) {
-                $export = Export::find($exportId);
+                $export = Export::query()->find($exportId);
 
                 if ($export) {
                     // Check authorization

@@ -92,7 +92,7 @@ class QRAttendance extends Component
         $this->checkInVerificationSessionId = config('session.checkin_verification_id', 'qr_checkin_verification');
         $this->checkOutVerificationSessionId = config('session.checkout_verification_id', 'qr_checkout_verification');
 
-        $this->gym = Gym::find($gymId);
+        $this->gym = Gym::query()->find($gymId);
 
         abort_unless($this->gym, 404, 'Gym not found.');
 
@@ -284,7 +284,7 @@ class QRAttendance extends Component
                 return;
             }
 
-            $this->member = GymMember::find($sessionData['member_id']);
+            $this->member = GymMember::query()->find($sessionData['member_id']);
 
             if (! $this->member) {
                 $this->result = [

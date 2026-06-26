@@ -266,7 +266,7 @@ class PaymentsRelationManager extends RelationManager
             return;
         }
 
-        $plan = MembershipPlan::find($state);
+        $plan = MembershipPlan::query()->find($state);
         if (! $plan || ! $plan->duration) {
             return;
         }
@@ -287,7 +287,7 @@ class PaymentsRelationManager extends RelationManager
             return;
         }
 
-        $plan = MembershipPlan::find($planId);
+        $plan = MembershipPlan::query()->find($planId);
         if (! $plan || ! $plan->duration) {
             return;
         }

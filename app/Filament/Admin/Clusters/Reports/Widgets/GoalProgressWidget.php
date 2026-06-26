@@ -50,7 +50,7 @@ class GoalProgressWidget extends BaseWidget
         $cacheKey = ReportGoal::CACHE_KEY_PREFIX . $gym->id;
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(15)], function () use ($gym) {
-            $goals = ReportGoal::where('gym_id', $gym->id)
+            $goals = ReportGoal::query()->where('gym_id', $gym->id)
                 ->active()
                 ->current()
                 ->get();

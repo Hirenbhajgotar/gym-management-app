@@ -66,13 +66,13 @@ class CleanInvalidExportsCommand extends Command
 
     protected function findInvalidExports()
     {
-        return Export::where(function (Builder $query) {
+        return Export::query()->where(function (Builder $query) {
             // Find exports with missing file information
             $query->whereNull('file_name')
                 ->orWhereNull('file_disk')
                 ->orWhere('file_name', '')
                 ->orWhere('file_disk', '');
-        })->orWhere(function ($query) {
+        })->orWhere(function (Builder $query) {
             // Find exports where the file doesn't exist on disk
             $query->whereNotNull('file_name')
                 ->whereNotNull('file_disk')

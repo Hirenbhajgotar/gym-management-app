@@ -99,7 +99,7 @@ class UserObserver
             // 1. Delete all gyms owned by this user
             // Note: GymObserver will handle deletion of gym-related data
             // (members, trainers, settings, social configs, etc.)
-            $ownedGyms = Gym::whereHas('users', function (Builder $query) use ($user) {
+            $ownedGyms = Gym::query()->whereHas('users', function (Builder $query) use ($user) {
                 $query->where('users.id', $user->id)
                     ->where('gym_user.role', DefaultRole::GYM_OWNER->value);
             })->get();

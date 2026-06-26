@@ -127,7 +127,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             throw_unless($contentSid, Exception::class, 'No template SID configured for this gym');
 
-            $gym = Gym::where('id', $this->tenantId)->first();
+            $gym = Gym::query()->where('id', $this->tenantId)->first();
 
             throw_unless($gym, Exception::class, 'No gym found for this tenant ID');
 
@@ -190,7 +190,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             $client = $this->getClient();
 
-            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
             $phoneNumber = $account?->phoneNumber?->phone_number;
 
             if (! $phoneNumber) {
@@ -291,7 +291,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             );
         }
 
-        $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
 
         throw_unless($account, Exception::class, 'No WhatsApp account found for this gym');
 
@@ -338,7 +338,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             $client = $this->getClient();
 
-            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
             $phoneNumber = $account?->phoneNumber?->phone_number;
 
             if (! $phoneNumber) {
@@ -474,7 +474,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     protected function checkAndDeductCredits(int $count = 1): void
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->tenantId)->first();
 
         throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 
@@ -490,7 +490,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         WhatsAppTemplate $template,
         $twilioMessage
     ): void {
-        WhatsAppUsageLog::create([
+        WhatsAppUsageLog::query()->create([
             'gym_id' => $this->tenantId,
             'whatsapp_template_id' => $template->id,
             'twilio_message_sid' => $twilioMessage->sid,
@@ -504,7 +504,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     public function getCreditBalance(): array
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->tenantId)->first();
 
         if (! $credit) {
             return [
@@ -528,7 +528,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     public function getMonthlyUsage(int $year, int $month): array
     {
-        $logs = WhatsAppUsageLog::where('gym_id', $this->tenantId)
+        $logs = WhatsAppUsageLog::query()->where('gym_id', $this->tenantId)
             ->whereYear('sent_at', $year)
             ->whereMonth('sent_at', $month)
             ->get();

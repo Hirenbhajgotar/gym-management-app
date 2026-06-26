@@ -37,7 +37,7 @@ class WhatsAppCreditService implements CreditManagementInterface
 
     public function getCreditBalance(): array
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->gymId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gymId)->first();
 
         if (! $credit) {
             return [
@@ -62,7 +62,7 @@ class WhatsAppCreditService implements CreditManagementInterface
 
     public function getMonthlyUsage(int $year, int $month): array
     {
-        $logs = WhatsAppUsageLog::where('gym_id', $this->gymId)
+        $logs = WhatsAppUsageLog::query()->where('gym_id', $this->gymId)
             ->whereYear('sent_at', $year)
             ->whereMonth('sent_at', $month)
             ->get();
@@ -85,7 +85,7 @@ class WhatsAppCreditService implements CreditManagementInterface
             return;
         }
 
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->gymId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gymId)->first();
 
         throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 
@@ -101,7 +101,7 @@ class WhatsAppCreditService implements CreditManagementInterface
      */
     public function logUsage(string $recipient, ?WhatsAppTemplate $template, ?string $messageId, float $cost = 0): void
     {
-        WhatsAppUsageLog::create([
+        WhatsAppUsageLog::query()->create([
             'gym_id' => $this->gymId,
             'whatsapp_template_id' => $template?->id,
             'twilio_message_sid' => $messageId, // Column name remains for backward compat

@@ -21,7 +21,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     public function it_can_be_called_via_artisan_command()
     {
         // Create a gym first
-        Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Mock the interactive inputs by creating a custom seeder that doesn't require interaction
         $seeder = new class extends UserRoleAssignmentSeeder
@@ -39,7 +39,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $this->callEnsureRolesExist();
 
                 // Create super admin user
-                $superAdmin = User::create([
+                $superAdmin = User::query()->create([
                     'name' => 'Test Super Admin',
                     'email' => 'admin@test.com',
                     'password' => bcrypt('password123'),
@@ -91,7 +91,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify user has the role
-        $user = User::where('email', 'admin@test.com')->first();
+        $user = User::query()->where('email', 'admin@test.com')->first();
         $this->assertTrue($user->hasRole('super_admin'));
     }
 
@@ -139,8 +139,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_creates_tenant_roles_for_existing_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $seeder = new class extends UserRoleAssignmentSeeder
         {
@@ -182,7 +182,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_creates_demo_users_programmatically()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $seeder = new class extends UserRoleAssignmentSeeder
         {
@@ -268,8 +268,8 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_handles_multiple_gyms_correctly()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $seeder = new class extends UserRoleAssignmentSeeder
         {
@@ -350,7 +350,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_does_not_duplicate_roles_when_run_multiple_times()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $seeder = new class extends UserRoleAssignmentSeeder
         {
@@ -382,19 +382,19 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify only one instance of each role exists
-        $this->assertEquals(1, Role::where('name', 'super_admin')->whereNull('gym_id')->count());
-        $this->assertEquals(1, Role::where('name', 'gym_owner')->whereNull('gym_id')->count());
+        $this->assertEquals(1, Role::query()->where('name', 'super_admin')->whereNull('gym_id')->count());
+        $this->assertEquals(1, Role::query()->where('name', 'gym_owner')->whereNull('gym_id')->count());
 
         $tenantRoles = ['manager', 'receptionist', 'trainer', 'member'];
         foreach ($tenantRoles as $role) {
-            $this->assertEquals(1, Role::where('name', $role)->where('gym_id', $gym->id)->count());
+            $this->assertEquals(1, Role::query()->where('name', $role)->where('gym_id', $gym->id)->count());
         }
     }
 
     #[Test]
     public function it_does_not_duplicate_users_when_run_multiple_times()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $seeder = new class extends UserRoleAssignmentSeeder
         {
@@ -448,15 +448,15 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify only one instance of each user exists
-        $this->assertEquals(1, User::where('email', "owner.gym{$gym->id}@gym.com")->count());
-        $this->assertEquals(1, User::where('email', "john.trainer.gym{$gym->id}@gym.com")->count());
-        $this->assertEquals(1, User::where('email', "emma.member.gym{$gym->id}@gmail.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "owner.gym{$gym->id}@gym.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "john.trainer.gym{$gym->id}@gym.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "emma.member.gym{$gym->id}@gmail.com")->count());
 
         // Verify only one trainer profile exists
-        $this->assertEquals(1, Trainer::where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
+        $this->assertEquals(1, Trainer::query()->where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
 
         // Verify only one member profile exists
-        $this->assertEquals(1, GymMember::where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
+        $this->assertEquals(1, GymMember::query()->where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
     }
 
     #[Test]
@@ -504,7 +504,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         // Verify no tenant roles were created
         $tenantRoles = ['manager', 'receptionist', 'trainer', 'member'];
         foreach ($tenantRoles as $role) {
-            $this->assertEquals(0, Role::where('name', $role)->count());
+            $this->assertEquals(0, Role::query()->where('name', $role)->count());
         }
     }
 }

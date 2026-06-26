@@ -59,13 +59,13 @@ class CityResource extends BaseResource
             ->schema([
                 Select::make('state_id')
                     ->relationship('state', 'name')
-                    ->options(State::active()->get()->pluck('name', 'id'))
+                    ->options(State::query()->active()->get()->pluck('name', 'id'))
                     ->required()
                     ->searchable()
                     ->createOptionForm(StateResource::getFormSchema())
                     ->createOptionUsing(function (array $data) {
                         // Create the new state and return its ID
-                        $state = State::create($data);
+                        $state = State::query()->create($data);
 
                         return $state->id;
                     })
@@ -134,7 +134,7 @@ class CityResource extends BaseResource
                                     return [];
                                 }
 
-                                return State::where('country_id', $countryId)->pluck('name', 'id');
+                                return State::query()->where('country_id', $countryId)->pluck('name', 'id');
                             }),
                     ])
                     ->query(function (Builder $query, array $data): Builder {

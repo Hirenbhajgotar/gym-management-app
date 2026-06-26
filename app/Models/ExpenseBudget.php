@@ -289,7 +289,7 @@ class ExpenseBudget extends Model
             $startDate = now()->setYear($year)->setMonth($month)->startOfMonth();
             $endDate = $startDate->copy()->endOfMonth();
 
-            $budgets[] = static::create([
+            $budgets[] = static::query()->create([
                 'gym_id' => $gymId,
                 'expense_category_id' => $categoryId,
                 'name' => "{$name} - " . $startDate->format('F Y'),

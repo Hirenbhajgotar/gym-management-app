@@ -26,7 +26,7 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        $account = WhatsAppAccount::find($this->whatsAppAccountId);
+        $account = WhatsAppAccount::query()->find($this->whatsAppAccountId);
 
         if (! $account || ! $account->waba_id || ! $account->meta_access_token) {
             Log::warning('SyncWabaStatus skipped: Invalid account data', [

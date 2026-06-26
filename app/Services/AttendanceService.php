@@ -40,7 +40,7 @@ class AttendanceService
 
         // For gym members, check if they can access the gym
         if ($userType === GymMember::class) {
-            $member = GymMember::find($userId);
+            $member = GymMember::query()->find($userId);
             if ($member && ! $member->canAccessGym()) {
                 $reason = '';
                 if ($member->isFrozen()) {
@@ -58,7 +58,7 @@ class AttendanceService
         }
 
         // Check if user is already checked in today
-        $existingAttendance = Attendances::where('attendanceable_id', $userId)
+        $existingAttendance = Attendances::query()->where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
             ->where('gym_id', $gymId)
             ->whereDate('check_in_time', now()->toDateString())
@@ -68,7 +68,7 @@ class AttendanceService
         throw_if($existingAttendance, \Exception::class, 'User is already checked in today.');
 
         // Create new attendance record
-        return Attendances::create([
+        return Attendances::query()->create([
             'attendanceable_id' => $userId,
             'attendanceable_type' => $userType,
             'gym_id' => $gymId,
@@ -86,7 +86,7 @@ class AttendanceService
         // Validate user type
         throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
 
-        $attendance = Attendances::where('attendanceable_id', $userId)
+        $attendance = Attendances::query()->where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
             ->where('gym_id', $gymId)
             ->active()
@@ -118,7 +118,7 @@ class AttendanceService
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
 
-        return Attendances::create([
+        return Attendances::query()->create([
             'attendanceable_id' => $userId,
             'attendanceable_type' => $userType,
             'gym_id' => $gymId,
@@ -136,7 +136,7 @@ class AttendanceService
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
 
-        $query = Attendances::where('gym_id', $gymId)
+        $query = Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate]);
 
         $totalRecords = $query->count();
@@ -164,7 +164,7 @@ class AttendanceService
      */
     private static function getUserTypeStats(int $gymId, string $userType, Carbon $startDate, Carbon $endDate): array
     {
-        $query = Attendances::where('gym_id', $gymId)
+        $query = Attendances::query()->where('gym_id', $gymId)
             ->where('attendanceable_type', $userType)
             ->whereBetween('created_at', [$startDate, $endDate]);
 
@@ -181,7 +181,7 @@ class AttendanceService
     {
         $today = Date::today();
 
-        $baseQuery = Attendances::where('gym_id', $gymId)
+        $baseQuery = Attendances::query()->where('gym_id', $gymId)
             ->where('attendanceable_type', $userType);
 
         return [
@@ -243,7 +243,7 @@ class AttendanceService
     {
         $threshold = now()->subHours($hoursThreshold);
 
-        $attendances = Attendances::where('gym_id', $gymId)
+        $attendances = Attendances::query()->where('gym_id', $gymId)
             ->active()
             ->where('check_in_time', '<', $threshold)
             ->get();
@@ -295,11 +295,10 @@ class AttendanceService
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
 
-        $attendances = Attendances::where('attendanceable_id', $userId)
+        $attendances = Attendances::query()->where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
             ->where('gym_id', $gymId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->orderBy('created_at', 'desc')
+            ->whereBetween('created_at', [$startDate, $endDate])->latest()
             ->get();
 
         $totalDays = $startDate->diffInDays($endDate) + 1;
@@ -328,7 +327,7 @@ class AttendanceService
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
 
-        $members = GymMember::where('gym_id', $gymId)->get();
+        $members = GymMember::query()->where('gym_id', $gymId)->get();
         $summary = [];
 
         foreach ($members as $member) {
@@ -354,7 +353,7 @@ class AttendanceService
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
 
-        $trainers = Trainer::where('gym_id', $gymId)->get();
+        $trainers = Trainer::query()->where('gym_id', $gymId)->get();
         $summary = [];
 
         foreach ($trainers as $trainer) {
@@ -378,11 +377,11 @@ class AttendanceService
     private static function validateUserExistsInGym(int $userId, string $userType, int $gymId): void
     {
         if ($userType === GymMember::class) {
-            $user = GymMember::where('id', $userId)->where('gym_id', $gymId)->first();
+            $user = GymMember::query()->where('id', $userId)->where('gym_id', $gymId)->first();
         } elseif ($userType === Trainer::class) {
-            $user = Trainer::where('id', $userId)->where('gym_id', $gymId)->first();
+            $user = Trainer::query()->where('id', $userId)->where('gym_id', $gymId)->first();
         } else {
-            $user = User::find($userId);
+            $user = User::query()->find($userId);
         }
 
         throw_unless($user, \Exception::class, 'User not found or does not belong to this gym.');
@@ -395,12 +394,12 @@ class AttendanceService
     {
         $today = now()->toDateString();
 
-        $checkedInMemberIds = Attendances::where('gym_id', $gymId)
+        $checkedInMemberIds = Attendances::query()->where('gym_id', $gymId)
             ->where('attendanceable_type', GymMember::class)
             ->whereDate('check_in_time', $today)
             ->pluck('attendanceable_id');
 
-        return GymMember::where('gym_id', $gymId)
+        return GymMember::query()->where('gym_id', $gymId)
             ->whereNotIn('id', $checkedInMemberIds)
             ->get();
     }
@@ -412,12 +411,12 @@ class AttendanceService
     {
         $today = now()->toDateString();
 
-        $checkedInTrainerIds = Attendances::where('gym_id', $gymId)
+        $checkedInTrainerIds = Attendances::query()->where('gym_id', $gymId)
             ->where('attendanceable_type', Trainer::class)
             ->whereDate('check_in_time', $today)
             ->pluck('attendanceable_id');
 
-        return Trainer::where('gym_id', $gymId)
+        return Trainer::query()->where('gym_id', $gymId)
             ->whereNotIn('id', $checkedInTrainerIds)
             ->get();
     }

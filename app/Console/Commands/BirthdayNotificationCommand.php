@@ -29,7 +29,7 @@ class BirthdayNotificationCommand extends Command
      */
     public function handle()
     {
-        GymMember::whereMonth('dob', now()->month)
+        GymMember::query()->whereMonth('dob', now()->month)
             ->whereDay('dob', now()->day)
             ->with(['gym', 'gym.users' => function ($query) {
                 $query->wherePivot('role', DefaultRole::GYM_OWNER->value);

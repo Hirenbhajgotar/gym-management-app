@@ -38,7 +38,7 @@ class InsightsService
         if (filled($forecast)) {
             $nextMonthProjection = $forecast[0]['value'];
             // Simple comparison to last month
-            $lastMonthRevenue = MemberPayment::where('gym_id', $gymId)
+            $lastMonthRevenue = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', 'completed')
                 ->whereMonth('payment_date', now()->subMonth()->month)
                 ->sum('amount');
@@ -71,7 +71,7 @@ class InsightsService
         }
 
         // 4. Goal Tracking
-        $faillingGoals = ReportGoal::where('gym_id', $gymId)
+        $faillingGoals = ReportGoal::query()->where('gym_id', $gymId)
             ->active()
             ->current()
             ->get()

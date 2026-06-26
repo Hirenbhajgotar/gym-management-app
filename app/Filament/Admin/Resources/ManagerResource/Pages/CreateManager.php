@@ -83,7 +83,7 @@ class CreateManager extends CreateRecord
         $userData = $this->prepareUserData($data);
 
         // Create the manager user
-        $manager = User::create($userData);
+        $manager = User::query()->create($userData);
 
         // Create associated employee details if provided
         $this->createEmployeeDetails($manager, $data);
@@ -146,7 +146,7 @@ class CreateManager extends CreateRecord
             return;
         }
 
-        EmployeeDetail::create([
+        EmployeeDetail::query()->create([
             ...$employeeData,
             'user_id' => $manager->id,
         ]);

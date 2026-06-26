@@ -28,7 +28,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         setPermissionsTeamId($this->testGym->id);
 
         $this->managerUser->givePermissionTo(
-            Permission::firstOrCreate(['name' => 'view_any_lead', 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => 'view_any_lead', 'guard_name' => 'web']),
         );
 
         $this->assertTrue(
@@ -44,7 +44,7 @@ class LeadPolicyTest extends StaffPanelTestCase
 
         setPermissionsTeamId($this->testGym->id);
         $bareUser->assignRole(
-            Role::firstOrCreate([
+            Role::query()->firstOrCreate([
                 'name' => 'manager',
                 'guard_name' => 'web',
                 'gym_id' => $this->testGym->id,

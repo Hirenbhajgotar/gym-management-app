@@ -100,7 +100,7 @@ class InstagramLeadController extends Controller
 
             if ($hubMode === 'subscribe' && $hubVerifyToken) {
                 // Find configuration by verify token
-                $config = TenantSocialConfig::where('platform', 'instagram')
+                $config = TenantSocialConfig::query()->where('platform', 'instagram')
                     ->where('webhook_verify_token', $hubVerifyToken)
                     ->first();
 
@@ -144,21 +144,21 @@ class InstagramLeadController extends Controller
         $appId = $data['app_id'] ?? null;
 
         if ($pageId) {
-            return TenantSocialConfig::where('platform', 'instagram')
+            return TenantSocialConfig::query()->where('platform', 'instagram')
                 ->where('page_id', $pageId)
                 ->where('is_active', true)
                 ->first();
         }
 
         if ($appId) {
-            return TenantSocialConfig::where('platform', 'instagram')
+            return TenantSocialConfig::query()->where('platform', 'instagram')
                 ->whereJsonContains('additional_config->app_id', $appId)
                 ->where('is_active', true)
                 ->first();
         }
 
         // Fallback: get first active Instagram configuration
-        return TenantSocialConfig::where('platform', 'instagram')
+        return TenantSocialConfig::query()->where('platform', 'instagram')
             ->where('is_active', true)
             ->first();
     }

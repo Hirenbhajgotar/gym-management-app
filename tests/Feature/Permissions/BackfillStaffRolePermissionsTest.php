@@ -50,13 +50,13 @@ class BackfillStaffRolePermissionsTest extends TestCase
 
     private function seedGymWithManagerAndReceptionist(): Gym
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Pre-create the gym_owner + manager + receptionist roles for this gym.
         // (The migration is a backfill, not a role bootstrap.)
-        Role::firstOrCreate(['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $gym->id]);
-        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
-        Role::firstOrCreate(['name' => 'receptionist', 'guard_name' => 'web', 'gym_id' => $gym->id]);
+        Role::query()->firstOrCreate(['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $gym->id]);
+        Role::query()->firstOrCreate(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
+        Role::query()->firstOrCreate(['name' => 'receptionist', 'guard_name' => 'web', 'gym_id' => $gym->id]);
 
         $owner = User::factory()->create();
         setPermissionsTeamId($gym->id);
@@ -79,7 +79,7 @@ class BackfillStaffRolePermissionsTest extends TestCase
         $this->seedGymWithManagerAndReceptionist();
 
         // Sanity: before migration, the manager role has no permissions.
-        $managerRole = Role::where('name', 'manager')->first();
+        $managerRole = Role::query()->where('name', 'manager')->first();
         $this->assertEquals(0, $managerRole->permissions()->count());
 
         Artisan::call('migrate', [
@@ -88,8 +88,8 @@ class BackfillStaffRolePermissionsTest extends TestCase
         ]);
 
         // Reload to pick up DB changes.
-        $managerRole = Role::where('name', 'manager')->where('guard_name', 'web')->first();
-        $receptionistRole = Role::where('name', 'receptionist')->where('guard_name', 'web')->first();
+        $managerRole = Role::query()->where('name', 'manager')->where('guard_name', 'web')->first();
+        $receptionistRole = Role::query()->where('name', 'receptionist')->where('guard_name', 'web')->first();
 
         $managerPermissionNames = $managerRole->permissions->pluck('name')->all();
         $receptionistPermissionNames = $receptionistRole->permissions->pluck('name')->all();
@@ -108,7 +108,7 @@ class BackfillStaffRolePermissionsTest extends TestCase
         // All 24 permission rows should exist in the permissions table.
         $this->assertSame(
             count(self::QUICK_SETUP_PERMISSIONS),
-            Permission::whereIn('name', self::QUICK_SETUP_PERMISSIONS)->count(),
+            Permission::query()->whereIn('name', self::QUICK_SETUP_PERMISSIONS)->count(),
             'All 24 quick-setup permissions should exist in the permissions table',
         );
     }
@@ -127,8 +127,8 @@ class BackfillStaffRolePermissionsTest extends TestCase
             '--force' => true,
         ]);
 
-        $managerRole = Role::where('name', 'manager')->where('guard_name', 'web')->first();
-        $receptionistRole = Role::where('name', 'receptionist')->where('guard_name', 'web')->first();
+        $managerRole = Role::query()->where('name', 'manager')->where('guard_name', 'web')->first();
+        $receptionistRole = Role::query()->where('name', 'receptionist')->where('guard_name', 'web')->first();
 
         // Each role has exactly 24 permission rows, not 48.
         $this->assertCount(
@@ -151,7 +151,7 @@ class BackfillStaffRolePermissionsTest extends TestCase
         // Admin pre-configured a custom permission set for `manager`.
         // Only 2 perms (subset of the hardcoded list).
         $override = ['view_any_gym_member', 'view_payment'];
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'manager',
             'default_resources' => ['gym_member', 'payment'],
             'default_permissions' => $override,
@@ -162,8 +162,8 @@ class BackfillStaffRolePermissionsTest extends TestCase
             '--force' => true,
         ]);
 
-        $managerRole = Role::where('name', 'manager')->where('guard_name', 'web')->first();
-        $receptionistRole = Role::where('name', 'receptionist')->where('guard_name', 'web')->first();
+        $managerRole = Role::query()->where('name', 'manager')->where('guard_name', 'web')->first();
+        $receptionistRole = Role::query()->where('name', 'receptionist')->where('guard_name', 'web')->first();
 
         // Manager should use the override (2 perms), not the hardcoded list.
         $this->assertEqualsCanonicalizing(
