@@ -5,15 +5,15 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\Currency;
 use App\Enums\DurationMonth;
 use App\Filament\Admin\Resources\MembershipPlanResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\MembershipPlan;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class MembershipPlanResource extends Resource
+class MembershipPlanResource extends BaseResource
 {
     protected static ?string $model = MembershipPlan::class;
 

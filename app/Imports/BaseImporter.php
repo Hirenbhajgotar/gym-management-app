@@ -34,9 +34,26 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
 
     protected int $failedRows = 0;
 
-    protected $importRecord;
+    protected ?Import $importRecord = null;
 
     protected ?string $failedFilePath = null;
+
+    /**
+     * The Eloquent model class this importer writes to.
+     *
+     * Concrete importers MUST override this. It is used by
+     * {@see \App\Filament\Actions\ImportAction} and {@see \App\Policies\ImportPolicy}
+     * to resolve the import permission from the model's policy.
+     */
+    protected static ?string $model = null;
+
+    /**
+     * Return the Eloquent model class associated with this importer.
+     */
+    public static function getModel(): ?string
+    {
+        return static::$model;
+    }
 
     /**
      * BaseImporter constructor.

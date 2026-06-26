@@ -5,6 +5,10 @@ namespace App\Casts;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @deprecated Only used by the deprecated {@see \App\Models\PermissionSetting} model.
+ *             Will be removed when PermissionSetting is deleted.
+ */
 class DefaultResourcesCast implements CastsAttributes
 {
     /**

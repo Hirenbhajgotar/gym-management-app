@@ -251,14 +251,22 @@ class RolesAndPermissionsServiceTest extends TestCase
         // Act: Call the method
         $this->service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
-        // Assert: Check that user has the role assigned
-        $this->assertTrue($user->hasRole($role->name));
-
-        // Or check the pivot table directly if you prefer
+        // Assert: Check the pivot table directly (most reliable)
+        // We cannot use hasRole() here because the global team ID is
+        // restored to null after assignRoleToTenant() returns, so
+        // Spatie's roles() relationship won't find the role.
         $this->assertDatabaseHas('model_has_roles', [
             'role_id' => $role->id,
             'model_type' => User::class,
             'model_id' => $user->id,
+        ]);
+
+        // Assert: The team foreign key (gym_id) is set correctly
+        $this->assertDatabaseHas('model_has_roles', [
+            'role_id' => $role->id,
+            'model_type' => User::class,
+            'model_id' => $user->id,
+            'gym_id' => $gym->id,
         ]);
     }
 

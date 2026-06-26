@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Pages;
 
+use App\Filament\BasePages\BasePage;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseCache;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions;
 use Dotswan\FilamentLaravelPulse\Widgets\PulseQueues;
@@ -13,10 +14,9 @@ use Dotswan\FilamentLaravelPulse\Widgets\PulseUsage;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Pages\Dashboard\Concerns\HasFiltersAction;
-use Filament\Pages\Page;
 use Filament\Support\Enums\ActionSize;
 
-class PulseDashboard extends Page
+class PulseDashboard extends BasePage
 {
     use HasFiltersAction;
 

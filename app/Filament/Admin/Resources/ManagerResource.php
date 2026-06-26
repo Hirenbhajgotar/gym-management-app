@@ -4,7 +4,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
-use App\Filament\Actions\Imports\ExcelImportAction;
+use App\Filament\Actions\ExportAction;
+use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Resources\ManagerResource\Pages;
 use App\Filament\Exports\ManagerExporter;
@@ -16,6 +17,23 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ManagerResource extends BaseEmployeeResource
 {
+    // Only access super_admin, admin and gym_owner
+    public static function canAccess(array $parameters = []): bool
+    {
+        $user = auth()->user();
+
+        return $user?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
+
+    public static function getPermissionLabel(): string
+    {
+        return 'manager';
+    }
+
     public static function getLabel(): string
     {
         return 'Manager';
@@ -77,28 +95,23 @@ class ManagerResource extends BaseEmployeeResource
     public static function getCommonHeaderActions(): array
     {
         return [
-            // Permissions action
             Actions\Action::make('managePermissions')
                 ->label('Manage Permissions')
                 ->color('info')
                 ->icon('heroicon-o-key')
                 ->outlined()
-                ->url(fn (): string => ManagerPermissionsPage::getUrl()),
+                ->url(fn (): string => ManagerPermissionsPage::getUrl())
+                ->visible(fn (): bool => auth()->user()->hasAnyRole([DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::GYM_OWNER]))
+                ->authorize(fn (): bool => auth()->user()->hasAnyRole([DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::GYM_OWNER])),
 
-            // Export action
-            Actions\ExportAction::make()
+            ExportAction::make()
                 ->label('Export ' . static::getPluralLabel())
-                ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ManagerExporter::class)
-                ->modifyQueryUsing(function (Builder $query) {
-                    /**
-                     * @var Builder<User> $query
-                     */
-                    $query->role(static::getEmployeeRole());
-                }),
+                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole()))
+                ->visible(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel())),
 
-            // Import action
-            ExcelImportAction::make()
+            ImportAction::make()
                 ->label('Import Managers')
                 ->importer(ManagersImport::class)
                 ->use(User::class)
@@ -107,9 +120,10 @@ class ManagerResource extends BaseEmployeeResource
                     urlOrData: url('import/templates/xls/employee-sample.xlsx'),
                     fileName: 'manager-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
-                ),
+                )
+                ->visible(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel())),
 
-            // Create action
             Actions\CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),

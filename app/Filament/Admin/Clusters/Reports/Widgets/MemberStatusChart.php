@@ -2,13 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class MemberStatusChart extends ChartWidget
+class MemberStatusChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Membership Status Distribution';
 

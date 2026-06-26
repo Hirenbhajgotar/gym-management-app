@@ -3,13 +3,13 @@
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\PaymentStatus;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\MemberPayment;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class RevenueByPlanChart extends ChartWidget
+class RevenueByPlanChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Revenue by Membership Plan';
 

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppUsageLogStatusEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\WhatsAppUsageLog;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -10,7 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class WhatsAppUsageLogResource extends Resource
+class WhatsAppUsageLogResource extends BaseResource
 {
     protected static ?string $model = WhatsAppUsageLog::class;
 
@@ -35,16 +37,28 @@ class WhatsAppUsageLogResource extends Resource
         return false;
     }
 
-    // Temporarily disable access to this resource
-    public static function shouldRegisterNavigation(): bool
+    public function defaultRolePermissions(): array
     {
-        return false; // This will hide it from the menu
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->where('gym_id', Filament::getTenant()?->id))
+            ->modifyQueryUsing(function ($query) {
+                /** @var \App\Models\Gym|null $tenant */
+                $tenant = Filament::getTenant();
+
+                return $query->where('gym_id', $tenant?->id);
+            })
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('sent_at')

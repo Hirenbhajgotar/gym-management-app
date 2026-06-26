@@ -2,15 +2,16 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use App\Traits\HasTenantAccess;
-use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 use Illuminate\Support\Facades\Cache;
 
-class GymRevenueChart extends ChartWidget
+class GymRevenueChart extends BaseChartWidget
 {
     use HasTenantAccess;
 
@@ -21,6 +22,15 @@ class GymRevenueChart extends ChartWidget
     protected static ?int $sort = 4;
 
     // protected int|string|array $columnSpan = 'full';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     protected function getListeners(): array
     {

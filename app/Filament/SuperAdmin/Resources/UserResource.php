@@ -2,8 +2,10 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
@@ -16,7 +18,6 @@ use App\Services\SubscriptionService;
 use Filament\Forms;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ use libphonenumber\PhoneNumberType;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class UserResource extends Resource
+class UserResource extends BaseResource
 {
     protected static ?string $model = User::class;
 
@@ -34,12 +35,16 @@ class UserResource extends Resource
     protected static ?int $navigationSort = 1;
 
     // Restrict to admins or gym owners with gyms
-    // public static function canAccess(array $parameters = []): bool
-    // {
-    //     $user = auth()->user();
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
 
-    //     return $user->hasRole('super_admin');
-    // }
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function getMiddleware(): array
     {

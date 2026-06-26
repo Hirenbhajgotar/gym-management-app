@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Enums\DefaultRole;
+use App\Filament\BasePages\BasePage;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppUsageLog;
@@ -14,11 +16,10 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class WhatsappDashboard extends Page implements HasActions, HasForms
+class WhatsappDashboard extends BasePage implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
 
@@ -43,6 +44,21 @@ class WhatsappDashboard extends Page implements HasActions, HasForms
     public ?array $data = [];
 
     public bool $hasWhatsAppSetup = false;
+
+    public function defaultRolePermissions(): array
+    {
+        return [];
+    }
+
+    // Only access for super_admin, admin and gym_owner
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     public function mount(): void
     {

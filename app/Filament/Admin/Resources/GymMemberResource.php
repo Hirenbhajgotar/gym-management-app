@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
+use App\Enums\DefaultRole;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exports\MembersExport;
@@ -10,6 +11,7 @@ use App\Filament\Admin\Resources\GymMemberResource\Pages;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\BiometricTemplatesRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
+use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Imports\GymMembersImport;
 use App\Models\GymMember;
@@ -29,7 +31,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -39,7 +40,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class GymMemberResource extends Resource
+class GymMemberResource extends BaseResource
 {
     protected static ?string $model = GymMember::class;
 
@@ -60,23 +61,26 @@ class GymMemberResource extends Resource
         }) ?: null;
     }
 
-    // Restrict to admins or gym owners with gyms
-    public static function canAccess(array $parameters = []): bool
+    public function defaultRolePermissions(): array
     {
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'create',
+                'delete',
+                'delete_any',
+                'update',
+                'restore',
+                'replicate',
+                'reorder',
+                'export',
+                'import',
+            ],
 
-        if (! $user) {
-            return false;
-        }
-
-        if (filament()?->getId() === 'admin') {
-            return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-        } elseif (filament()?->getId() === 'staff') {
-            return true;
-        }
-
-        return false;
+            DefaultRole::RECEPTIONIST->value => ['view', 'view_any', 'create', 'update', 'replicate', 'reorder', 'export', 'import'],
+            DefaultRole::TRAINER->value => ['view', 'view_any', 'create', 'update', 'replicate', 'reorder', 'export', 'import'],
+        ];
     }
 
     public static function form(Form $form): Form

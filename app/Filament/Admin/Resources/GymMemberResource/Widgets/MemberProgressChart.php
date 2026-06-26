@@ -2,14 +2,14 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Widgets;
 
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Helpers\BmiHelper;
 use App\Models\GymMember;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
 
-class MemberProgressChart extends ChartWidget
+class MemberProgressChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Health Score Progress';
 

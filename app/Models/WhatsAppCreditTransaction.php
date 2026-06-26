@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\WhatsAppCreditTransactionEnum;
+use App\Policies\WhatsAppTransactionPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -46,6 +48,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @mixin \Eloquent
  */
+#[UsePolicy(WhatsAppTransactionPolicy::class)]
 class WhatsAppCreditTransaction extends Model
 {
     protected $table = 'whatsapp_credit_transactions';

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Jobs\SendMembershipExpiryNotificationJob;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
@@ -10,9 +12,8 @@ use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 
-class MembershipExpiryAlerts extends BaseWidget
+class MembershipExpiryAlerts extends BaseTableWidget
 {
     protected static ?string $heading = 'Membership Expiry Alerts';
 
@@ -22,9 +23,20 @@ class MembershipExpiryAlerts extends BaseWidget
 
     protected static ?int $sort = 3;
 
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => ['widget'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
+
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.MemberStatsUpdated" => 'refreshWidget',

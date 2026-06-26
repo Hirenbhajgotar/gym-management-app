@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
@@ -38,6 +39,26 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     protected static string $statusEnum = LeadStatus::class;
 
+    // Authorization handled by Policies
+    // public static function canAccess(): bool
+    // {
+    //     $user = auth()->user();
+
+    //     if (! $user) {
+    //         return false;
+    //     }
+
+    //     if ($user->hasAnyRole([
+    //         DefaultRole::SUPER_ADMIN->value,
+    //         DefaultRole::ADMIN->value,
+    //         DefaultRole::GYM_OWNER->value,
+    //     ])) {
+    //         return true;
+    //     }
+
+    //     return $user->can('view_any_lead');
+    // }
+
     protected static string $recordTitleAttribute = 'name';
 
     protected static string $recordStatusAttribute = 'status';
@@ -59,6 +80,8 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
         return [
             \Filament\Actions\CreateAction::make()
                 ->model(Lead::class)
+                ->visible(fn () => auth()->user()?->can('create_lead'))
+                ->authorize(fn () => auth()->user()?->can('create_lead'))
                 ->form([
                     \Filament\Forms\Components\Section::make()
                         ->schema([

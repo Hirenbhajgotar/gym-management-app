@@ -3,13 +3,13 @@
 namespace App\Filament\Admin\Pages\ExpenseReports\Widgets;
 
 use App\Enums\ExpenseStatus;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Expense;
 use Filament\Facades\Filament;
 use Filament\Support\RawJs;
-use Filament\Widgets\ChartWidget;
 use Livewire\Attributes\Reactive;
 
-class ExpenseCategoryChart extends ChartWidget
+class ExpenseCategoryChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Expenses by Category';
 

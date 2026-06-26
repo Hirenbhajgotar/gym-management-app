@@ -3,15 +3,15 @@
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class MemberLifetimeValueReports extends Page implements ShareableReport
+class MemberLifetimeValueReports extends BasePage implements ShareableReport
 {
     use HasReportFilters;
 

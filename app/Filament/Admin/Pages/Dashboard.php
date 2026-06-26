@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -15,6 +16,15 @@ use Illuminate\Support\Facades\Auth;
 class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]) ?? false;
+    }
 
     // public function filtersForm(Form $form): Form
     // {

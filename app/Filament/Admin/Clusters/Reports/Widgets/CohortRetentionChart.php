@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Filament\BaseWidgets\BaseWidget;
 use App\Traits\HasReportFilters;
-use Filament\Widgets\Widget;
 
-class CohortRetentionChart extends Widget
+class CohortRetentionChart extends BaseWidget
 {
     use HasReportFilters;
 

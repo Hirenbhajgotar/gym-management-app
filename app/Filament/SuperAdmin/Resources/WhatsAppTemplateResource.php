@@ -2,7 +2,9 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 use App\Jobs\PushWhatsAppTemplateToGymJob;
 use App\Models\Gym;
@@ -10,7 +12,6 @@ use App\Models\WhatsAppTemplate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
-class WhatsAppTemplateResource extends Resource
+class WhatsAppTemplateResource extends BaseResource
 {
     protected static ?string $model = WhatsAppTemplate::class;
 
@@ -27,6 +28,17 @@ class WhatsAppTemplateResource extends Resource
     protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'WhatsApp Templates';
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function getNavigationGroup(): string
     {

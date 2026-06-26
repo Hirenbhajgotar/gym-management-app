@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
+use App\Filament\Actions\ExportBulkAction;
 use App\Filament\Admin\Resources\TrainerResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
@@ -13,9 +15,7 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -23,21 +23,11 @@ use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class TrainerResource extends Resource
+class TrainerResource extends BaseResource
 {
     protected static ?string $model = Trainer::class;
 
     protected static ?string $navigationGroup = 'Users';
-
-    public static function canAccess(array $parameters = []): bool
-    {
-        if (filament()->getId() === 'admin' || filament()->getId() === 'staff') {
-            // return $user->hasRole('super_admin') || ($user->hasRole('gym_owner'));
-            return true;
-        }
-
-        return false;
-    }
 
     public static function getNavigationBadge(): ?string
     {
@@ -273,7 +263,6 @@ class TrainerResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     ExportBulkAction::make()
                         ->label('Export Trainers')
-                        ->icon('heroicon-o-arrow-up-tray')
                         ->exporter(TrainerExporter::class)
                         ->formats([ExportFormat::Xlsx]),
 

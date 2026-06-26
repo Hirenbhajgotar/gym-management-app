@@ -2,20 +2,32 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
 use App\Enums\LeadStatus;
+use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
 use App\Models\Lead;
 use Filament\Facades\Filament;
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 
-class CRMStatsWidget extends BaseWidget
+class CRMStatsWidget extends BaseStatsOverviewWidget
 {
     protected static ?string $pollingInterval = null;
 
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => ['widget'],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
+
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.LeadStatsUpdated" => '$refresh',
@@ -24,7 +36,10 @@ class CRMStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . Filament::getTenant()->id, [now()->addHour(), now()->addHours(24)], function () {
+        /** @var \App\Models\Gym $gym */
+        $gym = Filament::getTenant();
+
+        return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . $gym->id, [now()->addHour(), now()->addHours(24)], function () {
             return [
                 Stat::make('New Leads', Lead::where('status', 'new')->count())
                     ->description('Total new leads')

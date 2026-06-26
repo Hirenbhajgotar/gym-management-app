@@ -2,10 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Admin\Resources\GymMemberResource;
-use App\Filament\Admin\Resources\LeadResource;
-use App\Filament\Admin\Resources\MembershipPlanResource;
-use App\Filament\Admin\Resources\TrainerResource;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Http\Middleware\TeamsPermission;
 use App\Models\Gym;
@@ -41,6 +37,12 @@ class StaffPanelProvider extends PanelProvider
             ->brandLogo(asset('fluxfitness-logo.svg'))
             ->brandLogoHeight('3rem')
             ->spa()
+            ->spaUrlExceptions(fn (): array => [
+                // Allow all files in the import/templates directory
+                // Allow the download of the sample file
+                url('import/templates/*'),
+                '/import/templates/*',
+            ])
             ->tenant(Gym::class, slugAttribute: 'slug')
             ->tenantMiddleware([
                 ApplyTenantScopes::class,
@@ -76,12 +78,12 @@ class StaffPanelProvider extends PanelProvider
                     ->icon('heroicon-o-wrench-screwdriver')
                     ->collapsed(true),
             ])
-            ->resources([
-                MembershipPlanResource::class,
-                GymMemberResource::class,
-                TrainerResource::class,
-                LeadResource::class,
-            ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling(null)
+            ->sidebarCollapsibleOnDesktop()
+            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
+            ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
+            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->discoverResources(in: app_path('Filament/Staff/Resources'), for: 'App\\Filament\\Staff\\Resources')
             ->discoverPages(in: app_path('Filament/Staff/Pages'), for: 'App\\Filament\\Staff\\Pages')
             ->pages([
@@ -103,7 +105,7 @@ class StaffPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                // TeamsPermission::class,
+                TeamsPermission::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

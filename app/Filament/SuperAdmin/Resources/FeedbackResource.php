@@ -2,6 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
 use Filament\Forms;
@@ -18,11 +20,22 @@ use Mokhosh\FilamentRating\Columns\RatingColumn;
 use Mokhosh\FilamentRating\Components\Rating;
 use Mokhosh\FilamentRating\Entries\RatingEntry;
 
-class FeedbackResource extends Resource
+class FeedbackResource extends BaseResource
 {
     protected static ?string $model = Feedback::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-ellipsis';
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function form(Form $form): Form
     {

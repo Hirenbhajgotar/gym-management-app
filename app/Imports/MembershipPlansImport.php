@@ -9,6 +9,8 @@ use Illuminate\Validation\Rule;
 
 class MembershipPlansImport extends BaseImporter implements ShouldQueue
 {
+    protected static ?string $model = MembershipPlan::class;
+
     public function __construct(public string $tenantId)
     {
         parent::__construct();

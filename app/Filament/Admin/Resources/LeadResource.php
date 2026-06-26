@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
 use App\Filament\Admin\Resources\LeadResource\Pages;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Rules\ValidEmailDomain;
@@ -16,7 +18,6 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -24,11 +25,35 @@ use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class LeadResource extends Resource
+class LeadResource extends BaseResource
 {
     protected static ?string $model = Lead::class;
 
     protected static ?string $navigationGroup = 'CRM';
+
+    public function defaultRolePermissions(): array
+    {
+        $fullPermissions = [
+            'view',
+            'view_any',
+            'create',
+            'delete',
+            'delete_any',
+            'update',
+            'restore',
+            'restore_any',
+            'replicate',
+            'reorder',
+            'export',
+            'import',
+        ];
+
+        return [
+            DefaultRole::MANAGER->value => $fullPermissions,
+            DefaultRole::RECEPTIONIST->value => $fullPermissions,
+            DefaultRole::TRAINER->value => $fullPermissions,
+        ];
+    }
 
     public static function getNavigationBadge(): ?string
     {

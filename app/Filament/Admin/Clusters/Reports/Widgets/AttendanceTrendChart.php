@@ -2,12 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class AttendanceTrendChart extends ChartWidget
+class AttendanceTrendChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Daily Attendance Trend';
 

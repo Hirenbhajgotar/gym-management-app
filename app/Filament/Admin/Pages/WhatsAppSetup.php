@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasFormInitialization;
 use App\Filament\Admin\WhatsAppSetup\Concerns\HasSetupState;
 use App\Filament\Admin\WhatsAppSetup\Concerns\SetupActions;
 use App\Filament\Admin\WhatsAppSetup\Schemas\SetupSchema;
+use App\Filament\BasePages\BasePage;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Traits\HasTenantAccess;
@@ -21,7 +23,7 @@ use Filament\Pages\Page;
  * WhatsApp Setup page — thin orchestrator (~60 lines).
  * All state, schemas, and actions are delegated to traits.
  */
-class WhatsAppSetup extends Page implements HasActions, HasForms
+class WhatsAppSetup extends BasePage implements HasActions, HasForms
 {
     use HasFormInitialization, HasSetupState, HasTenantAccess, InteractsWithActions, InteractsWithForms, SetupActions;
 
@@ -42,11 +44,24 @@ class WhatsAppSetup extends Page implements HasActions, HasForms
      */
     protected $cachedProvider = null;
 
-    public static function canAccess(): bool
+    public function defaultRolePermissions(): array
+    {
+        return [];
+    }
+
+    public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
 
-        return $user !== null && $user->hasRole('gym_owner');
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+        ]);
     }
 
     public function mount(): void

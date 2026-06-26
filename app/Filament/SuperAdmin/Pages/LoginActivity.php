@@ -2,10 +2,10 @@
 
 namespace App\Filament\SuperAdmin\Pages;
 
+use App\Filament\BasePages\BasePage;
 use App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets\LoginActivityStatsWidget;
 use App\Models\Gym;
 use App\Services\LoginActivityService;
-use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
@@ -13,7 +13,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Carbon;
 
-class LoginActivity extends Page implements HasTable
+class LoginActivity extends BasePage implements HasTable
 {
     use Tables\Concerns\InteractsWithTable;
 

@@ -3,13 +3,13 @@
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\LeadStatus;
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
 
-class LeadFunnelChart extends ChartWidget
+class LeadFunnelChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Lead Status Distribution';
 
