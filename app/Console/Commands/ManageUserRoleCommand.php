@@ -44,7 +44,7 @@ class ManageUserRoleCommand extends Command
     public function handle(): int
     {
         // Reset permission cache
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Handle flags first
         if ($this->option('create-super-admin')) {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Models\User;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricDoorControlType;
@@ -87,7 +88,7 @@ class BiometricDeviceResource extends BaseResource
 
     public static function canAccess(array $parameters = []): bool
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         if (! $user) {

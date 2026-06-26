@@ -85,6 +85,10 @@ class ExportPolicy
             return null;
         }
 
+        if (! method_exists($exporterClass, 'getModel')) {
+            return null;
+        }
+
         // 1. Get the model class from exporter
         $modelClass = $exporterClass::getModel();
 

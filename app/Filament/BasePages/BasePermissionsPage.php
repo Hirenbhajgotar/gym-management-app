@@ -481,13 +481,19 @@ abstract class BasePermissionsPage extends Page implements HasForms
                     $existingPermissions = $existingPermissions->merge($newPermissions);
                 }
 
-                $grantPermissions = Permission::whereIn('name', $toGrant)->where('guard_name', 'web')->get();
-                $revokePermissions = Permission::whereIn('name', $toRevoke)->where('guard_name', 'web')->get();
+                if (filled($toGrant)) {
+                    $grantPermissions = Permission::whereIn('name', $toGrant)->where('guard_name', 'web')->get();
+                    $role->givePermissionTo($grantPermissions);
+                }
 
-                $role->givePermissionTo($grantPermissions);
-                $role->revokePermissionTo($revokePermissions);
+                if (filled($toRevoke)) {
+                    $revokePermissions = Permission::whereIn('name', $toRevoke)->where('guard_name', 'web')->get();
+                    $role->revokePermissionTo($revokePermissions);
+                }
 
-                resolve(PermissionRegistrar::class)->forgetCachedPermissions();
+                if (filled($toGrant) || filled($toRevoke)) {
+                    resolve(PermissionRegistrar::class)->forgetCachedPermissions();
+                }
             }
 
             DB::commit();

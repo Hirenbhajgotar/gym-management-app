@@ -32,7 +32,7 @@ class UserRoleAssignmentSeeder extends Seeder
     public function run(): void
     {
         // Reset permission cache
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $choices = [
             'Create only super-admin user',

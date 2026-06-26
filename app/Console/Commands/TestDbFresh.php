@@ -29,7 +29,7 @@ final class TestDbFresh extends Command
         $_ENV['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
         $_SERVER['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
 
-        $this->laravel['config']->set('database.connections.mysql.database', self::EXPECTED_TEST_DATABASE_NAME);
+        $this->laravel->make('config')->set('database.connections.mysql.database', self::EXPECTED_TEST_DATABASE_NAME);
 
         $database = (string) config('database.connections.mysql.database');
         $environment = (string) $this->laravel->environment();
