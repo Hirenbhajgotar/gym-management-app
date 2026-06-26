@@ -14,7 +14,7 @@ class NotificationHelper
         $exceptionId = null;
 
         if ($exception) {
-            $exceptionStorage = app(ExceptionStorageService::class);
+            $exceptionStorage = resolve(ExceptionStorageService::class);
             $exceptionId = $exceptionStorage->store($exception);
         }
 

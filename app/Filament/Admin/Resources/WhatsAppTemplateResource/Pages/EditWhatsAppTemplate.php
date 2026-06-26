@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
-use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ class EditWhatsAppTemplate extends EditRecord
     {
         return [
             // Resubmit for Approval (only for rejected templates)
-            Actions\Action::make('resubmit')
+            Action::make('resubmit')
                 ->label('Resubmit for Approval')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
@@ -66,7 +67,7 @@ class EditWhatsAppTemplate extends EditRecord
                 }),
 
             // Submit for Approval (only for draft templates)
-            Actions\Action::make('submit')
+            Action::make('submit')
                 ->label('Submit for Approval')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('primary')
@@ -106,7 +107,7 @@ class EditWhatsAppTemplate extends EditRecord
                     }
                 }),
 
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->visible(fn () => ! $this->record->is_default && ! $this->record->isApproved()),
         ];
     }

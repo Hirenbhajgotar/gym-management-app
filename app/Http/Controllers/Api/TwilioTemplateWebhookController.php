@@ -63,12 +63,7 @@ class TwilioTemplateWebhookController extends Controller
             ]);
 
             // Dispatch job for async processing
-            ProcessTwilioTemplateWebhook::dispatch(
-                $contentSid,
-                $status,
-                $errorCode,
-                $errorMessage
-            );
+            dispatch(new ProcessTwilioTemplateWebhook($contentSid, $status, $errorCode, $errorMessage));
 
             return response()->json(['status' => 'success'], 200);
         } catch (\Exception $e) {

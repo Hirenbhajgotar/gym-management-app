@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Facades\Filament;
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
@@ -136,8 +138,8 @@ class TrainerReports extends BasePage implements ShareableReport
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    /** @var \App\Models\Gym $gym */
-                    $gym = \Filament\Facades\Filament::getTenant();
+                    /** @var Gym $gym */
+                    $gym = Filament::getTenant();
 
                     return new TrainerReportExport($gym?->id, $this->filters);
                 }),

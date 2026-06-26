@@ -2,14 +2,20 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Admin\Resources\GymResource\Pages\ListGyms;
 use App\Enums\DefaultRole;
-use App\Filament\Admin\Resources\GymResource\Pages;
 use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 
 class GymResource extends BaseResource
@@ -43,11 +49,11 @@ class GymResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Gym Details')
+                Section::make('Gym Details')
                     ->icon('heroicon-o-building-office')
                     ->description('Enter details for the gym')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Fitness Hub')
@@ -57,7 +63,7 @@ class GymResource extends BaseResource
                         AddressForm::make('address')
                             ->columnSpan('full'),
 
-                        Forms\Components\Hidden::make('owner_id')
+                        Hidden::make('owner_id')
                             ->default(auth()->id()),
                     ])
                     ->collapsible()
@@ -70,20 +76,20 @@ class GymResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('address.fullAddress')
+                TextColumn::make('address.fullAddress')
                     ->limit(50)
                     ->tooltip(fn ($state) => $state)
                     ->wrap(),
-                Tables\Columns\TextColumn::make('owner.name')
+                TextColumn::make('owner.name')
                     ->label('Owner')
                     ->searchable()
                     ->visible(fn () => auth()->user()->hasRole('super_admin'))
                     ->badge()
                     ->color('gray'),
-                Tables\Columns\TextColumn::make('members_count')
+                TextColumn::make('members_count')
                     ->counts('members')
                     ->label('Members')
                     ->badge()
@@ -94,17 +100,17 @@ class GymResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->successNotification(null),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->modifyQueryUsing(function ($query) {
@@ -128,7 +134,7 @@ class GymResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGyms::route('/'),
+            'index' => ListGyms::route('/'),
             // 'create' => Pages\CreateGym::route('/create'),
             // 'edit' => Pages\EditGym::route('/{record}/edit'),
         ];

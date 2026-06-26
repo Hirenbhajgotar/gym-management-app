@@ -49,21 +49,13 @@ abstract class BaseResource extends Resource implements HasFilamentPermissions
     public function getPermissionSlug(): string
     {
         $modelClass = static::getModel();
-
-        if ($modelClass !== null) {
-            // Check the policy's $tableName first — it's the source of truth.
-            $tableName = $this->resolvePolicyTableName($modelClass);
-
-            if ($tableName !== null) {
-                return $tableName;
-            }
-
-            // Fallback to deriving from model class name.
-            return $this->convertFromClassName(class_basename($modelClass));
+        // Check the policy's $tableName first — it's the source of truth.
+        $tableName = $this->resolvePolicyTableName($modelClass);
+        if ($tableName !== null) {
+            return $tableName;
         }
-
-        // Last resort: derive from Resource class name.
-        return $this->convertFromClassName(class_basename(static::class), 'Resource');
+        // Fallback to deriving from model class name.
+        return $this->convertFromClassName(class_basename($modelClass));
     }
 
     public static function canAccess(): bool

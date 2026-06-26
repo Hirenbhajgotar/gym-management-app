@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Notifications\BirthdayNotification;
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
 use Illuminate\Console\Command;
@@ -42,7 +43,7 @@ class BirthdayNotificationCommand extends Command
                     }
 
                     $member->notify(
-                        new \App\Notifications\BirthdayNotification($member),
+                        new BirthdayNotification($member),
                     );
 
                     Cache::put($cacheKey, true, now()->endOfDay());

@@ -16,8 +16,7 @@ use Illuminate\Support\Facades\Log;
 class WabaMigrationService
 {
     public function __construct(
-        private EmbeddedSignupService $embeddedSignupService,
-        private TwilioAccountManager $accountManager
+        private EmbeddedSignupService $embeddedSignupService
     ) {}
 
     public function getPendingMigrations(): int
@@ -97,7 +96,7 @@ class WabaMigrationService
             ];
         }
 
-        MigrateTenantToIndividualWaba::dispatch($migration->id);
+        dispatch(new MigrateTenantToIndividualWaba($migration->id));
 
         return [
             'success' => true,

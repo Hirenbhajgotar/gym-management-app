@@ -61,27 +61,25 @@ class TwilioNumberSurchargeTest extends TestCase
 
     protected function createWabaAccount(): WhatsAppAccount
     {
-        $account = WhatsAppAccount::create([
+        return WhatsAppAccount::create([
             'gym_id' => $this->gym->id,
             'provider_type' => WhatsAppProviderTypeEnum::WABA,
             'status' => WhatsAppAccountStatusEnum::ACTIVE,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
         ]);
-
-        return $account;
     }
 
     #[Test]
     public function surcharge_is_detected_for_eligible_twilio_tenant(): void
     {
-        $account = $this->createTwilioAccountWithPhone(null);
+        $account = $this->createTwilioAccountWithPhone();
 
         $this->assertTrue($account->isTwilioWithActiveNumber());
         $this->assertTrue($account->isPhoneSurchargeDue());
         $this->assertTrue($account->phoneNumber->isSurchargeDue());
         $this->assertEquals(136.41, config('services.twilio.number_cost'));
 
-        $billingService = app(WhatsAppBillingService::class);
+        $billingService = resolve(WhatsAppBillingService::class);
         $surcharge = $billingService->getTwilioNumberSurcharge($this->gym->id);
 
         $this->assertTrue($surcharge['eligible']);
@@ -94,7 +92,7 @@ class TwilioNumberSurchargeTest extends TestCase
     {
         $this->createTwilioAccountWithPhone(now()->subDays(5));
 
-        $billingService = app(WhatsAppBillingService::class);
+        $billingService = resolve(WhatsAppBillingService::class);
         $surcharge = $billingService->getTwilioNumberSurcharge($this->gym->id);
 
         $this->assertFalse($surcharge['eligible']);
@@ -106,7 +104,7 @@ class TwilioNumberSurchargeTest extends TestCase
     {
         $this->createWabaAccount();
 
-        $billingService = app(WhatsAppBillingService::class);
+        $billingService = resolve(WhatsAppBillingService::class);
         $surcharge = $billingService->getTwilioNumberSurcharge($this->gym->id);
 
         $this->assertFalse($surcharge['eligible']);
@@ -116,7 +114,7 @@ class TwilioNumberSurchargeTest extends TestCase
     #[Test]
     public function purchase_package_with_surcharge_records_correctly(): void
     {
-        $credit = WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::create([
             'gym_id' => $this->gym->id,
             'total_credits' => 0,
             'used_credits' => 0,
@@ -133,7 +131,7 @@ class TwilioNumberSurchargeTest extends TestCase
             'sort_order' => 1,
         ]);
 
-        $billingService = app(WhatsAppBillingService::class);
+        $billingService = resolve(WhatsAppBillingService::class);
         $result = $billingService->purchasePackage(
             $this->gym->id,
             $package->id,
@@ -171,7 +169,7 @@ class TwilioNumberSurchargeTest extends TestCase
             'sort_order' => 1,
         ]);
 
-        $billingService = app(WhatsAppBillingService::class);
+        $billingService = resolve(WhatsAppBillingService::class);
         $result = $billingService->purchasePackage(
             $this->gym->id,
             $package->id,

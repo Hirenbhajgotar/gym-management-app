@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GymMember>
+ * @extends Factory<GymMember>
  */
 class GymMemberFactory extends Factory
 {
@@ -17,7 +18,7 @@ class GymMemberFactory extends Factory
         $membershipStart = $this->faker->dateTimeBetween('-1 year', 'now');
 
         return [
-            'gym_id' => \App\Models\Gym::factory(),
+            'gym_id' => Gym::factory(),
             'name' => $this->faker->name(),
             'profile_photo' => $this->faker->imageUrl(200, 200, 'people'),
             'email' => $this->faker->unique()->safeEmail(),

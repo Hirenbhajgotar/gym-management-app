@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Trainer;
+use App\Models\GymMember;
 use App\Models\Gym;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
@@ -65,7 +67,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         };
 
         // Register the custom seeder
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -112,7 +114,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -156,7 +158,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -187,7 +189,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (! empty($gyms)) {
+                if (filled($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -220,7 +222,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -307,7 +309,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -366,7 +368,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -399,7 +401,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (! empty($gyms)) {
+                if (filled($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -432,7 +434,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -451,10 +453,10 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $this->assertEquals(1, User::where('email', "emma.member.gym{$gym->id}@gmail.com")->count());
 
         // Verify only one trainer profile exists
-        $this->assertEquals(1, \App\Models\Trainer::where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
+        $this->assertEquals(1, Trainer::where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
 
         // Verify only one member profile exists
-        $this->assertEquals(1, \App\Models\GymMember::where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
+        $this->assertEquals(1, GymMember::where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
     }
 
     #[Test]
@@ -478,7 +480,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 

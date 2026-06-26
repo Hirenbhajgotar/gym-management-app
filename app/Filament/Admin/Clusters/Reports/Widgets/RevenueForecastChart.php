@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Services\ForecastService;
 use Filament\Facades\Filament;
@@ -32,28 +33,24 @@ class RevenueForecastChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         if (! $gym) {
             return [];
         }
 
-        $service = app(ForecastService::class);
+        $service = resolve(ForecastService::class);
         $chartData = $service->getChartData($gym->id, 'revenue', 3);
 
         $labels = array_column($chartData, 'date');
-        $values = array_column($chartData, 'value');
-        $types = array_column($chartData, 'type');
 
         // Create two datasets: Actual and Forecast
         // We pad the arrays so they line up correctly on the chart
         $actualData = [];
         $forecastData = [];
-        $backgroundColors = [];
-        $borderColors = [];
 
-        foreach ($chartData as $index => $point) {
+        foreach ($chartData as $point) {
             if ($point['type'] === 'actual') {
                 $actualData[] = $point['value'];
                 $forecastData[] = null; // No forecast data for actual months

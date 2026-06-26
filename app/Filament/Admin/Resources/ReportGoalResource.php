@@ -2,14 +2,31 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Set;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Get;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Admin\Resources\ReportGoalResource\Pages\ListReportGoals;
+use App\Filament\Admin\Resources\ReportGoalResource\Pages\CreateReportGoal;
+use App\Filament\Admin\Resources\ReportGoalResource\Pages\EditReportGoal;
+use App\Models\Gym;
 use App\Filament\Admin\Clusters\Reports;
-use App\Filament\Admin\Resources\ReportGoalResource\Pages;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\ReportGoal;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -33,21 +50,21 @@ class ReportGoalResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Goal Details')
+                Section::make('Goal Details')
                     ->schema([
-                        Forms\Components\Select::make('metric_type')
+                        Select::make('metric_type')
                             ->label('Metric')
                             ->options(ReportGoal::getMetricTypes())
                             ->required()
                             ->native(false),
 
-                        Forms\Components\Select::make('period')
+                        Select::make('period')
                             ->label('Period Type')
                             ->options(ReportGoal::getPeriodTypes())
                             ->required()
                             ->native(false)
                             ->reactive()
-                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            ->afterStateUpdated(function ($state, Set $set) {
                                 // Auto-set period dates based on selection
                                 $now = now();
                                 match ($state) {
@@ -60,29 +77,29 @@ class ReportGoalResource extends BaseResource
                                 };
                             }),
 
-                        Forms\Components\TextInput::make('target_value')
+                        TextInput::make('target_value')
                             ->label('Target Value')
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->prefix(fn (Forms\Get $get) => $get('metric_type') === 'revenue' ? '₹' : null)
-                            ->suffix(fn (Forms\Get $get) => $get('metric_type') === 'retention' ? '%' : null),
+                            ->prefix(fn (Get $get) => $get('metric_type') === 'revenue' ? '₹' : null)
+                            ->suffix(fn (Get $get) => $get('metric_type') === 'retention' ? '%' : null),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->label('Active')
                             ->default(true)
                             ->helperText('Only active goals are tracked'),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Period')
+                Section::make('Period')
                     ->schema([
-                        Forms\Components\DatePicker::make('period_start')
+                        DatePicker::make('period_start')
                             ->label('Start Date')
                             ->required()
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('period_end')
+                        DatePicker::make('period_end')
                             ->label('End Date')
                             ->required()
                             ->native(false)
@@ -90,9 +107,9 @@ class ReportGoalResource extends BaseResource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Notes')
+                Section::make('Notes')
                     ->schema([
-                        Forms\Components\Textarea::make('notes')
+                        Textarea::make('notes')
                             ->label('Notes (Optional)')
                             ->rows(3)
                             ->placeholder('Add any notes about this goal...'),
@@ -105,13 +122,13 @@ class ReportGoalResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('metric_type')
+                TextColumn::make('metric_type')
                     ->label('Metric')
                     ->formatStateUsing(fn ($state) => ReportGoal::getMetricTypes()[$state] ?? $state)
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('target_value')
+                TextColumn::make('target_value')
                     ->label('Target')
                     ->formatStateUsing(function ($state, ReportGoal $record) {
                         if ($record->metric_type === 'revenue') {
@@ -125,23 +142,23 @@ class ReportGoalResource extends BaseResource
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('period')
+                TextColumn::make('period')
                     ->label('Period')
                     ->formatStateUsing(fn ($state) => ReportGoal::getPeriodTypes()[$state] ?? $state)
                     ->badge()
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('period_start')
+                TextColumn::make('period_start')
                     ->label('Start')
                     ->date('M d, Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('period_end')
+                TextColumn::make('period_end')
                     ->label('End')
                     ->date('M d, Y')
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('is_active')
+                IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean()
                     ->trueIcon('phosphor-check-circle-fill')
@@ -149,30 +166,30 @@ class ReportGoalResource extends BaseResource
                     ->trueColor('success')
                     ->falseColor('danger'),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime('M d, Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('metric_type')
+                SelectFilter::make('metric_type')
                     ->label('Metric')
                     ->options(ReportGoal::getMetricTypes()),
 
-                Tables\Filters\SelectFilter::make('period')
+                SelectFilter::make('period')
                     ->options(ReportGoal::getPeriodTypes()),
 
-                Tables\Filters\TernaryFilter::make('is_active')
+                TernaryFilter::make('is_active')
                     ->label('Active Status'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('period_start', 'desc');
@@ -186,15 +203,15 @@ class ReportGoalResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListReportGoals::route('/'),
-            'create' => Pages\CreateReportGoal::route('/create'),
-            'edit' => Pages\EditReportGoal::route('/{record}/edit'),
+            'index' => ListReportGoals::route('/'),
+            'create' => CreateReportGoal::route('/create'),
+            'edit' => EditReportGoal::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return parent::getEloquentQuery()

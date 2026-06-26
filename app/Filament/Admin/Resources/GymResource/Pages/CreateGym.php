@@ -5,7 +5,6 @@ namespace App\Filament\Admin\Resources\GymResource\Pages;
 use App\Filament\Admin\Resources\GymResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Validation\ValidationException;
 
 class CreateGym extends CreateRecord
 {
@@ -20,7 +19,7 @@ class CreateGym extends CreateRecord
     {
         $user = auth()->user();
 
-        $maxGyms = $user?->getMaxGyms() ?? 0;
+        $user?->getMaxGyms() ?? 0;
 
         // dd($user->gyms()->count());
 

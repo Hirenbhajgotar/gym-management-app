@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Services\LoginActivityService;
 use App\Filament\SuperAdmin\Pages\LoginActivity;
 use App\Models\Gym;
 use App\Models\User;
@@ -172,7 +173,7 @@ class LoginActivityTest extends TestCase
         ]);
 
         // Service should exclude non-staff
-        $service = app(\App\Services\LoginActivityService::class);
+        $service = resolve(LoginActivityService::class);
         $stats = $service->getAggregateStats();
 
         // Member logins should not be counted

@@ -2,6 +2,13 @@
 
 namespace App\Services;
 
+use Illuminate\Database\QueryException;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Illuminate\Queue\MaxAttemptsExceededException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
 use Exception;
@@ -166,7 +173,7 @@ class ErrorReportService
             }
 
             // Critical database errors
-            if ($exception instanceof \Illuminate\Database\QueryException) {
+            if ($exception instanceof QueryException) {
                 // Check for specific critical database errors
                 $errorCode = $exception->getCode();
                 if (in_array($errorCode, ['HY000', '42000', '42S02'])) {
@@ -177,7 +184,7 @@ class ErrorReportService
             }
 
             // High priority errors
-            if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+            if ($exception instanceof HttpException) {
                 return $exception->getStatusCode() >= 500 ? ErrorPriority::HIGH->value : ErrorPriority::MEDIUM->value;
             }
 
@@ -187,12 +194,12 @@ class ErrorReportService
             }
 
             // Mail errors
-            if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportException) {
+            if ($exception instanceof TransportException) {
                 return ErrorPriority::HIGH->value;
             }
 
             // Queue failures
-            if ($exception instanceof \Illuminate\Queue\MaxAttemptsExceededException) {
+            if ($exception instanceof MaxAttemptsExceededException) {
                 return ErrorPriority::HIGH->value;
             }
 
@@ -273,7 +280,7 @@ class ErrorReportService
 
         // Report database errors
         if (
-            $exception instanceof \Illuminate\Database\QueryException ||
+            $exception instanceof QueryException ||
             $exception instanceof \PDOException
         ) {
             return true;
@@ -295,12 +302,12 @@ class ErrorReportService
         }
 
         // Report mail errors
-        if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportException) {
+        if ($exception instanceof TransportException) {
             return true;
         }
 
         // Report queue job failures
-        if ($exception instanceof \Illuminate\Queue\MaxAttemptsExceededException) {
+        if ($exception instanceof MaxAttemptsExceededException) {
             return true;
         }
 
@@ -328,12 +335,12 @@ class ErrorReportService
         }
 
         // Skip authentication errors
-        if ($exception instanceof \Illuminate\Auth\AuthenticationException) {
+        if ($exception instanceof AuthenticationException) {
             return true;
         }
 
         // Skip authorization errors
-        if ($exception instanceof \Illuminate\Auth\Access\AuthorizationException) {
+        if ($exception instanceof AuthorizationException) {
             return true;
         }
 
@@ -343,12 +350,12 @@ class ErrorReportService
         // }
 
         // Skip throttling errors
-        if ($exception instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException) {
+        if ($exception instanceof ThrottleRequestsException) {
             return true;
         }
 
         // Skip model not found (404 errors)
-        if ($exception instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+        if ($exception instanceof ModelNotFoundException) {
             return true;
         }
 

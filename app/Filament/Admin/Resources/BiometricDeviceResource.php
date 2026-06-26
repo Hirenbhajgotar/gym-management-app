@@ -7,11 +7,12 @@ use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricDoorControlType;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
-use App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
+use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\CreateBiometricDevice;
+use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\EditBiometricDevice;
+use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\ListBiometricDevices;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\BiometricDevice;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Components\Actions\Action as ComponentsActionsAction;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
@@ -26,10 +27,12 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Actions\Action as ActionsAction;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -84,9 +87,6 @@ class BiometricDeviceResource extends BaseResource
 
     public static function canAccess(array $parameters = []): bool
     {
-        // Temporary disabled this resource.
-        return false;
-
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
@@ -218,7 +218,7 @@ class BiometricDeviceResource extends BaseResource
                                     ->content(fn () => 'Auto-generated: flux_gym_' . Filament::getTenant()->id)
                                     ->helperText('Collection is automatically created in AWS when first member enrolls'),
                             ])
-                            ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'rekognition')
+                            ->visible(fn (Get $get): bool => $get('provider_type') === 'rekognition')
                             ->columns(2),
 
                         // Azure Face Configuration
@@ -250,7 +250,7 @@ class BiometricDeviceResource extends BaseResource
                                     ->label('Person Group ID')
                                     ->content(fn () => 'Auto-generated: flux_gym-' . Filament::getTenant()->id),
                             ])
-                            ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'azure_face')
+                            ->visible(fn (Get $get): bool => $get('provider_type') === 'azure_face')
                             ->columns(2),
 
                         // BioID Configuration
@@ -288,7 +288,7 @@ class BiometricDeviceResource extends BaseResource
                                     ->default(true)
                                     ->live(),
                             ])
-                            ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'bioid')
+                            ->visible(fn (Get $get): bool => $get('provider_type') === 'bioid')
                             ->columns(2),
 
                         // On-Premise/Local Configuration
@@ -317,7 +317,7 @@ class BiometricDeviceResource extends BaseResource
                                     ->default(30)
                                     ->live(),
                             ])
-                            ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'on_premise')
+                            ->visible(fn (Get $get): bool => $get('provider_type') === 'on_premise')
                             ->columns(2),
 
                         // Custom API Configuration
@@ -423,7 +423,7 @@ class BiometricDeviceResource extends BaseResource
                                     ->collapsible()
                                     ->collapsed(),
                             ])
-                            ->visible(fn (Forms\Get $get): bool => $get('provider_type') === 'custom')
+                            ->visible(fn (Get $get): bool => $get('provider_type') === 'custom')
                             ->columns(2),
                     ]),
 
@@ -453,7 +453,7 @@ class BiometricDeviceResource extends BaseResource
                             ->options(BiometricDoorControlType::toSelectOptions())
                             ->required()
                             ->live()
-                            ->helperText(fn (Forms\Get $get) => $get('door_control_type')
+                            ->helperText(fn (Get $get) => $get('door_control_type')
                                 ? BiometricDoorControlType::from($get('door_control_type'))->getShortDescription()
                                 : ''),
 
@@ -462,14 +462,14 @@ class BiometricDeviceResource extends BaseResource
                             ->placeholder('http://192.168.1.200:8080/door/unlock')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
+                            ->visible(fn (Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
 
                         TextInput::make('door_controller_token')
                             ->label('Door Controller Token')
                             ->password()
                             ->revealable()
                             ->nullable()
-                            ->visible(fn (Forms\Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
+                            ->visible(fn (Get $get): bool => $get('door_control_type') === BiometricDoorControlType::Api->value),
 
                         TextInput::make('unlock_duration_seconds')
                             ->label('Unlock Duration (seconds)')
@@ -501,7 +501,7 @@ class BiometricDeviceResource extends BaseResource
                             ->default(60)
                             ->minValue(10)
                             ->maxValue(300)
-                            ->visible(fn (Forms\Get $get): bool => $get('connection_mode') === 'poll')
+                            ->visible(fn (Get $get): bool => $get('connection_mode') === 'poll')
                             ->helperText('How often FluxFitness checks the device for new events'),
                     ])
                     ->columns(2)
@@ -704,13 +704,13 @@ class BiometricDeviceResource extends BaseResource
                         ->modalHeading('Generate Webhook Secret')
                         ->modalDescription('This will generate a new webhook secret. The old secret will no longer work. Make sure to update your device configuration.'),
 
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -719,9 +719,9 @@ class BiometricDeviceResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBiometricDevices::route('/'),
-            'create' => Pages\CreateBiometricDevice::route('/create'),
-            'edit' => Pages\EditBiometricDevice::route('/{record}/edit'),
+            'index' => ListBiometricDevices::route('/'),
+            'create' => CreateBiometricDevice::route('/create'),
+            'edit' => EditBiometricDevice::route('/{record}/edit'),
         ];
     }
 

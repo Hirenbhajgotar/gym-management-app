@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\Gym;
-use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Console\Command;
@@ -454,8 +453,8 @@ class UserRoleAssignmentSeederTest extends TestCase
     #[Test]
     public function it_gets_available_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         // Use reflection to call private method
         $reflection = new \ReflectionClass($this->seeder);

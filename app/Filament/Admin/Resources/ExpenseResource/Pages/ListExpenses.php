@@ -2,9 +2,10 @@
 
 namespace App\Filament\Admin\Resources\ExpenseResource\Pages;
 
+use Filament\Actions\CreateAction;
+use Filament\Facades\Filament;
 use App\Enums\ExpenseStatus;
 use App\Filament\Admin\Resources\ExpenseResource;
-use Filament\Actions;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +17,7 @@ class ListExpenses extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('phosphor-plus')
                 ->label('New Expense'),
         ];
@@ -32,7 +33,7 @@ class ListExpenses extends ListRecords
                 ->icon('phosphor-hourglass')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', ExpenseStatus::PENDING))
                 ->badge(fn () => $this->getModel()::query()
-                    ->where('gym_id', \Filament\Facades\Filament::getTenant()?->id)
+                    ->where('gym_id', Filament::getTenant()?->id)
                     ->where('status', ExpenseStatus::PENDING)
                     ->count() ?: null)
                 ->badgeColor('warning'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ImportController extends Controller
@@ -23,7 +24,7 @@ class ImportController extends Controller
             ['John Doe', 'john.doe@example.com', 'password', '123 Main St', '1234567890', 'male', '1990-01-01'],
         ];
 
-        $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromArray
+        $export = new class($data) implements FromArray
         {
             public function __construct(private readonly array $data) {}
 

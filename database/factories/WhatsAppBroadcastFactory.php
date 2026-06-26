@@ -11,7 +11,7 @@ use App\Models\WhatsAppTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WhatsAppBroadcast>
+ * @extends Factory<WhatsAppBroadcast>
  */
 class WhatsAppBroadcastFactory extends Factory
 {

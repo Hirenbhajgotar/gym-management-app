@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Database\Factories\PermissionSettingFactory;
+use Illuminate\Database\Eloquent\Builder;
 use App\Casts\DefaultResourcesCast;
 use App\Enums\DefaultRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,19 +21,19 @@ use Illuminate\Database\Eloquent\Model;
  * @property DefaultRole|null $role
  * @property mixed|null $default_resources
  * @property array<array-key, mixed>|null $default_permissions
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  *
- * @method static \Database\Factories\PermissionSettingFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereDefaultPermissions($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereDefaultResources($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereRole($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PermissionSetting whereUpdatedAt($value)
+ * @method static PermissionSettingFactory factory($count = null, $state = [])
+ * @method static Builder<static>|PermissionSetting newModelQuery()
+ * @method static Builder<static>|PermissionSetting newQuery()
+ * @method static Builder<static>|PermissionSetting query()
+ * @method static Builder<static>|PermissionSetting whereCreatedAt($value)
+ * @method static Builder<static>|PermissionSetting whereDefaultPermissions($value)
+ * @method static Builder<static>|PermissionSetting whereDefaultResources($value)
+ * @method static Builder<static>|PermissionSetting whereId($value)
+ * @method static Builder<static>|PermissionSetting whereRole($value)
+ * @method static Builder<static>|PermissionSetting whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  */

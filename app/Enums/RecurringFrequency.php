@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Date;
 use Filament\Support\Contracts\HasLabel;
 
 enum RecurringFrequency: string implements HasLabel
@@ -34,7 +35,7 @@ enum RecurringFrequency: string implements HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 
     /**
@@ -58,7 +59,7 @@ enum RecurringFrequency: string implements HasLabel
      */
     public function getNextDueDate(\DateTimeInterface $fromDate): \DateTimeInterface
     {
-        $date = \Carbon\Carbon::parse($fromDate);
+        $date = Date::parse($fromDate);
 
         return match ($this) {
             self::DAILY => $date->addDay(),

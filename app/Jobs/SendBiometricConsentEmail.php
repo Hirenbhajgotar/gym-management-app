@@ -35,7 +35,7 @@ class SendBiometricConsentEmail implements ShouldQueue
         }
 
         // Skip if no email
-        if (empty($this->gymMember->email)) {
+        if (blank($this->gymMember->email)) {
             return;
         }
 

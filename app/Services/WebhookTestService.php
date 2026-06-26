@@ -170,9 +170,7 @@ class WebhookTestService
     {
         $gym = Gym::where('tenant_id', $config->tenant_id)->first();
 
-        if (! $gym) {
-            throw new \Exception('No gym found for tenant');
-        }
+        throw_unless($gym, \Exception::class, 'No gym found for tenant');
 
         $baseData = [
             'gym_id' => $gym->id,

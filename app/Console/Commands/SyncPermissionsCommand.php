@@ -66,7 +66,7 @@ class SyncPermissionsCommand extends Command
         // because it mutates global state, which is unsafe under concurrent execution
         // (Octane, queue workers) and leaks team context across requests.
         if (! $dryRun) {
-            $registrar = app(PermissionRegistrar::class);
+            $registrar = resolve(PermissionRegistrar::class);
             $registrar->forgetCachedPermissions();
             $this->info('   🗑️ Cleared global permission cache');
         }
@@ -90,7 +90,7 @@ class SyncPermissionsCommand extends Command
         $existingPermissions = Permission::pluck('name')->toArray();
         $missingPermissions = array_diff($discoveredPermissions, $existingPermissions);
 
-        if (empty($missingPermissions)) {
+        if (blank($missingPermissions)) {
             $this->info('   ✅ All permissions already exist');
 
             return 0;
@@ -194,7 +194,7 @@ class SyncPermissionsCommand extends Command
             $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
             $missingPermissionIds = array_diff($allPermissionIds, $currentPermissionIds);
 
-            if (empty($missingPermissionIds) && ! $force) {
+            if (blank($missingPermissionIds) && ! $force) {
                 continue;
             }
 
@@ -213,7 +213,7 @@ class SyncPermissionsCommand extends Command
                 'role_id' => $role->id,
             ], $missingPermissionIds);
 
-            if (! empty($insertData)) {
+            if (filled($insertData)) {
                 DB::table('role_has_permissions')->insertOrIgnore($insertData);
             }
         }
@@ -260,7 +260,7 @@ class SyncPermissionsCommand extends Command
                 $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
                 $missingPermissionIds = array_diff($permissionIds, $currentPermissionIds);
 
-                if (empty($missingPermissionIds) && ! $force) {
+                if (blank($missingPermissionIds) && ! $force) {
                     continue;
                 }
 
@@ -276,7 +276,7 @@ class SyncPermissionsCommand extends Command
                     'role_id' => $role->id,
                 ], $missingPermissionIds);
 
-                if (! empty($insertData)) {
+                if (filled($insertData)) {
                     DB::table('role_has_permissions')->insertOrIgnore($insertData);
                 }
             }

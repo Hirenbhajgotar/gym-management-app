@@ -40,7 +40,7 @@ final class TestDbFresh extends Command
 
         $this->line("  Environment : <info>{$environment}</info>");
         $this->line("  Database    : <info>{$database}</info>");
-        $this->line('  Host        : <info>' . (string) config('database.connections.mysql.host') . '</info>');
+        $this->line('  Host        : <info>' . config('database.connections.mysql.host') . '</info>');
         $this->newLine();
 
         if ($database === self::PRODUCTION_DATABASE_NAME) {

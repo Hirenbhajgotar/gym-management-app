@@ -97,7 +97,7 @@ class CleanDeletedGymOwnersCommand extends Command
 
         $this->info("Successfully deleted {$deletedCount} gym owner(s).");
 
-        if (! empty($errors)) {
+        if (filled($errors)) {
             $this->error('Some deletions failed:');
             foreach ($errors as $error) {
                 $this->error("  - {$error}");

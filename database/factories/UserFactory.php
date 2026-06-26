@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -19,7 +20,7 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'password' => Hash::make('password'),
-            'status' => \App\Enums\UserStatus::ACTIVE,
+            'status' => UserStatus::ACTIVE,
             'is_active' => true, // Explicitly keeping it true as well, though observer would sync it.
         ];
     }

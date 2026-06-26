@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Services;
 
+use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\CheckInResult;
@@ -64,7 +65,7 @@ class CheckInService
         $verificationResult = null;
 
         foreach ($templates as $template) {
-            $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
+            $templateRef = TemplateRef::fromJson($template->template_ref);
             $verificationResult = $provider->verify($sample, $templateRef);
 
             if ($verificationResult->matched && $verificationResult->confidence >= $confidenceThreshold) {

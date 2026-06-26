@@ -2,13 +2,15 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Illuminate\Support\Facades\Date;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -43,14 +45,14 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->startOfMonth())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
@@ -98,8 +100,8 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
 
     protected function calculateAvgDailyTraffic(int $total): int
     {
-        $days = \Carbon\Carbon::parse($this->filters['start_date'])
-            ->diffInDays(\Carbon\Carbon::parse($this->filters['end_date'])) + 1;
+        $days = Date::parse($this->filters['start_date'])
+            ->diffInDays(Date::parse($this->filters['end_date'])) + 1;
 
         return $days > 0 ? round($total / $days) : 0;
     }
@@ -139,7 +141,7 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

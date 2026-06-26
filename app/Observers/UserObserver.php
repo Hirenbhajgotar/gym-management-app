@@ -9,6 +9,10 @@ use App\Enums\UserStatus;
 use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\User;
+use App\Notifications\AccountActivatedNotification;
+use App\Notifications\AccountDeactivatedNotification;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +33,7 @@ class UserObserver
      */
     public function created(User $user): void
     {
-        $this->clearCache($user);
+        $this->clearCache();
     }
 
     /**
@@ -37,7 +41,7 @@ class UserObserver
      */
     public function updated(User $user): void
     {
-        $this->clearCache($user);
+        $this->clearCache();
 
         if ($user->wasChanged('status')) {
             $this->handleAccountStatusChange($user);
@@ -49,7 +53,7 @@ class UserObserver
      */
     public function deleted(User $user): void
     {
-        $this->clearCache($user);
+        $this->clearCache();
     }
 
     /**
@@ -57,7 +61,7 @@ class UserObserver
      */
     public function restored(User $user): void
     {
-        $this->clearCache($user);
+        $this->clearCache();
     }
 
     /**
@@ -77,7 +81,7 @@ class UserObserver
      */
     public function forceDeleting(User $user): void
     {
-        $this->clearCache($user);
+        $this->clearCache();
 
         // Only cascade delete if user is a gym_owner
         if (! $user->hasRole(DefaultRole::GYM_OWNER->value)) {
@@ -95,7 +99,7 @@ class UserObserver
             // 1. Delete all gyms owned by this user
             // Note: GymObserver will handle deletion of gym-related data
             // (members, trainers, settings, social configs, etc.)
-            $ownedGyms = Gym::whereHas('users', function ($query) use ($user) {
+            $ownedGyms = Gym::whereHas('users', function (Builder $query) use ($user) {
                 $query->where('users.id', $user->id)
                     ->where('gym_user.role', DefaultRole::GYM_OWNER->value);
             })->get();
@@ -223,7 +227,7 @@ class UserObserver
         }
     }
 
-    private function clearCache(User $user): void
+    private function clearCache(): void
     {
         ParserHelper::clearCache(User::NAVIGATION_BADGE_CACHE_KEY);
         ParserHelper::clearCache(User::ALL_SUPER_ADMINS_CACHE_KEY);
@@ -231,7 +235,7 @@ class UserObserver
 
     private function handleAccountStatusChange(User $user): void
     {
-        $isGymOwner = $user->gyms()->wherePivot('role', \App\Enums\DefaultRole::GYM_OWNER->value)->exists();
+        $isGymOwner = $user->gyms()->wherePivot('role', DefaultRole::GYM_OWNER->value)->exists();
 
         if (! $isGymOwner) {
             return;
@@ -248,15 +252,15 @@ class UserObserver
     {
         if ($user) {
             try {
-                $user->notify(new \App\Notifications\AccountActivatedNotification($user));
-                \Filament\Notifications\Notification::make()
+                $user->notify(new AccountActivatedNotification($user));
+                Notification::make()
                     ->success()
                     ->title('Account Activated')
                     ->body('User has been notified.')
                     ->send();
             } catch (\Exception $e) {
                 Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                \Filament\Notifications\Notification::make()
+                Notification::make()
                     ->danger()
                     ->title('Failed to send notification')
                     ->body($e->getMessage())
@@ -269,15 +273,15 @@ class UserObserver
     {
         if ($user) {
             try {
-                $user->notify(new \App\Notifications\AccountDeactivatedNotification($user));
-                \Filament\Notifications\Notification::make()
+                $user->notify(new AccountDeactivatedNotification($user));
+                Notification::make()
                     ->warning()
                     ->title('Account Deactivated')
                     ->body('User has been notified.')
                     ->send();
             } catch (\Exception $e) {
                 Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                \Filament\Notifications\Notification::make()
+                Notification::make()
                     ->danger()
                     ->title('Failed to send notification')
                     ->body($e->getMessage())

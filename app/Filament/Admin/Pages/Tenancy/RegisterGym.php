@@ -162,12 +162,12 @@ class RegisterGym extends RegisterTenant
         $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
 
         // Create default roles and permissions for the gym
-        app(
+        resolve(
             RolesAndPermissionsService::class,
         )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
         // Assign the gym to the user
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(
             $gym,
             $user,
             DefaultRole::GYM_OWNER,

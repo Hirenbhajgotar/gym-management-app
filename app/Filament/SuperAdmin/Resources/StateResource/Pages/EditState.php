@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources\StateResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Resources\StateResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditState extends EditRecord
@@ -13,7 +13,7 @@ class EditState extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

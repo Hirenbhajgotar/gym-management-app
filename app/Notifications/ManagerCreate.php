@@ -131,19 +131,6 @@ class ManagerCreate extends Notification implements ShouldQueue
     }
 
     /**
-     * Mask password for security (show partial).
-     */
-    private function maskPassword(): string
-    {
-        $length = strlen($this->password);
-        if ($length <= 4) {
-            return str_repeat('*', $length);
-        }
-
-        return substr($this->password, 0, 2) . str_repeat('*', $length - 4) . substr($this->password, -2);
-    }
-
-    /**
      * Get security notice.
      */
     private function getSecurityNotice(): string

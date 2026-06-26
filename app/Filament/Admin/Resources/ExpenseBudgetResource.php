@@ -2,16 +2,35 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages\ListExpenseBudgets;
+use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages\CreateExpenseBudget;
+use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages\EditExpenseBudget;
+use App\Models\Gym;
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
-use App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\ExpenseBudget;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
@@ -43,25 +62,25 @@ class ExpenseBudgetResource extends BaseResource
 
     public static function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Budget Details')
+                Section::make('Budget Details')
                     ->icon('phosphor-chart-pie-slice')
                     ->description('Create or edit expense budget')
                     ->schema([
-                        Forms\Components\Hidden::make('gym_id')
+                        Hidden::make('gym_id')
                             ->default($gym->id),
 
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Monthly Utilities Budget')
                             ->autofocus(),
 
-                        Forms\Components\Select::make('expense_category_id')
+                        Select::make('expense_category_id')
                             ->label('Category (Optional)')
                             ->options(fn () => ExpenseCategory::query()
                                 ->availableForGym($gym->id)
@@ -79,15 +98,15 @@ class ExpenseBudgetResource extends BaseResource
                             ->placeholder('All Categories')
                             ->helperText('Leave empty for overall budget'),
 
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->maxLength(500)
                             ->placeholder('Optional description')
                             ->rows(2)
                             ->columnSpanFull(),
 
-                        Forms\Components\Grid::make(3)
+                        Grid::make(3)
                             ->schema([
-                                Forms\Components\TextInput::make('amount')
+                                TextInput::make('amount')
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
@@ -95,13 +114,13 @@ class ExpenseBudgetResource extends BaseResource
                                     ->prefix(fn ($get) => Currency::tryFrom($get('currency') ?? 'INR')?->getSymbol() ?? '₹')
                                     ->placeholder('0.00'),
 
-                                Forms\Components\Select::make('currency')
+                                Select::make('currency')
                                     ->options(Currency::toSelectOptions())
                                     ->default('INR')
                                     ->required()
                                     ->reactive(),
 
-                                Forms\Components\Select::make('period')
+                                Select::make('period')
                                     ->options([
                                         'monthly' => 'Monthly',
                                         'quarterly' => 'Quarterly',
@@ -111,23 +130,23 @@ class ExpenseBudgetResource extends BaseResource
                                     ->required(),
                             ]),
 
-                        Forms\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
-                                Forms\Components\DatePicker::make('start_date')
+                                DatePicker::make('start_date')
                                     ->required()
                                     ->default(now()->startOfMonth())
                                     ->native(false),
 
-                                Forms\Components\DatePicker::make('end_date')
+                                DatePicker::make('end_date')
                                     ->required()
                                     ->default(now()->endOfMonth())
                                     ->native(false)
                                     ->afterOrEqual('start_date'),
                             ]),
 
-                        Forms\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
-                                Forms\Components\TextInput::make('alert_threshold')
+                                TextInput::make('alert_threshold')
                                     ->label('Alert at (%)')
                                     ->numeric()
                                     ->minValue(1)
@@ -136,7 +155,7 @@ class ExpenseBudgetResource extends BaseResource
                                     ->suffix('%')
                                     ->helperText('Send alert when budget usage reaches this percentage'),
 
-                                Forms\Components\Toggle::make('is_active')
+                                Toggle::make('is_active')
                                     ->label('Active')
                                     ->default(true)
                                     ->onColor('success')
@@ -151,66 +170,66 @@ class ExpenseBudgetResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('category.name')
+                TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
                     ->color(fn ($record) => $record->category?->color ?? 'gray')
                     ->placeholder('All Categories'),
 
-                Tables\Columns\TextColumn::make('period')
+                TextColumn::make('period')
                     ->badge()
                     ->color('gray')
                     ->formatStateUsing(fn ($state) => ucfirst($state)),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->label('Budget')
                     ->money(fn ($record) => $record->currency ?? 'INR')
                     ->sortable(),
 
-                Tables\Columns\ViewColumn::make('progress')
+                ViewColumn::make('progress')
                     ->label('Usage')
                     ->view('filament.tables.columns.budget-progress'),
 
-                Tables\Columns\TextColumn::make('start_date')
+                TextColumn::make('start_date')
                     ->label('Period')
                     ->formatStateUsing(fn ($record) => $record->start_date->format('d M') . ' - ' . $record->end_date->format('d M Y'))
                     ->sortable(),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active')
                     ->onColor('success')
                     ->offColor('danger'),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
+                TernaryFilter::make('is_active')
                     ->label('Status')
                     ->placeholder('All')
                     ->trueLabel('Active only')
                     ->falseLabel('Inactive only'),
 
-                Tables\Filters\SelectFilter::make('period')
+                SelectFilter::make('period')
                     ->options([
                         'monthly' => 'Monthly',
                         'quarterly' => 'Quarterly',
                         'yearly' => 'Yearly',
                     ]),
 
-                Tables\Filters\SelectFilter::make('expense_category_id')
+                SelectFilter::make('expense_category_id')
                     ->label('Category')
                     ->relationship('category', 'name')
                     ->preload(),
 
-                Tables\Filters\Filter::make('current')
+                Filter::make('current')
                     ->label('Current Period Only')
                     ->query(fn ($query) => $query->where('start_date', '<=', now())->where('end_date', '>=', now()))
                     ->toggle(),
 
-                Tables\Filters\Filter::make('exceeded')
+                Filter::make('exceeded')
                     ->label('Exceeded Budgets')
                     ->query(function ($query) {
                         return $query->get()->filter(fn ($budget) => $budget->isExceeded());
@@ -218,14 +237,14 @@ class ExpenseBudgetResource extends BaseResource
                     ->toggle(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('phosphor-pencil'),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('phosphor-trash'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('start_date', 'desc')
@@ -242,15 +261,15 @@ class ExpenseBudgetResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListExpenseBudgets::route('/'),
-            'create' => Pages\CreateExpenseBudget::route('/create'),
-            'edit' => Pages\EditExpenseBudget::route('/{record}/edit'),
+            'index' => ListExpenseBudgets::route('/'),
+            'create' => CreateExpenseBudget::route('/create'),
+            'edit' => EditExpenseBudget::route('/{record}/edit'),
         ];
     }
 
     public static function getNavigationBadge(): ?string
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return Cache::flexible(ExpenseBudget::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {

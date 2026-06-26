@@ -83,7 +83,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
     {
         return $this->templates ??= new TwilioTemplateService(
             $this->context,
-            app(WhatsAppTemplateService::class)
+            resolve(WhatsAppTemplateService::class)
         );
     }
 
@@ -187,7 +187,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
     // TemplateManagementInterface - Delegation
     // =========================
 
-    public function createTemplate(int $gymId, CreateTemplateData $data): \App\Models\WhatsAppTemplate
+    public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
         return $this->templates()->createTemplate($gymId, $data);
     }
@@ -216,7 +216,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         try {
             $account = $this->context->getAccount();
 
-            if (! $account || empty($account->twilio_account_sid) || empty($account->twilio_auth_token)) {
+            if (! $account || blank($account->twilio_account_sid) || blank($account->twilio_auth_token)) {
                 return ['success' => false, 'error' => 'WhatsApp account not found or credentials not configured.'];
             }
 

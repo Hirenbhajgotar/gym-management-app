@@ -27,9 +27,7 @@ class ProcessLogo extends Command
     public function handle(): int
     {
         try {
-            if (! extension_loaded('gd')) {
-                throw new RuntimeException('GD extension is required but not loaded.');
-            }
+            throw_unless(extension_loaded('gd'), RuntimeException::class, 'GD extension is required but not loaded.');
 
             $sourcePath = $this->resolveSourcePath();
             $this->info("Using source: {$sourcePath}");
@@ -45,9 +43,7 @@ class ProcessLogo extends Command
             // 2. Generate SVG from the transparent image
             $this->info('Generating SVG wrapper...');
             $transparentContent = file_get_contents($transparentImagePath);
-            if ($transparentContent === false) {
-                throw new RuntimeException("Failed to read transparent image file: {$transparentImagePath}");
-            }
+            throw_if($transparentContent === false, RuntimeException::class, "Failed to read transparent image file: {$transparentImagePath}");
             $this->generateSvg($transparentContent, $imageInfo['width'], $imageInfo['height'], 'image/png');
 
             $this->info('Logo processing completed successfully!');
@@ -83,17 +79,13 @@ class ProcessLogo extends Command
     {
         $info = @getimagesize($path);
 
-        if (! $info) {
-            throw new RuntimeException('Could not get image info.');
-        }
+        throw_unless($info, RuntimeException::class, 'Could not get image info.');
 
         $width = $info[0];
         $height = $info[1];
         $mime = $info['mime'];
 
-        if (! in_array($mime, ['image/png', 'image/jpeg'])) {
-            throw new RuntimeException("Source file must be a PNG or JPEG image. Found: {$mime}");
-        }
+        throw_unless(in_array($mime, ['image/png', 'image/jpeg']), RuntimeException::class, "Source file must be a PNG or JPEG image. Found: {$mime}");
 
         return ['width' => $width, 'height' => $height, 'mime' => $mime];
     }
@@ -106,9 +98,7 @@ class ProcessLogo extends Command
             $im = @imagecreatefromjpeg($sourcePath);
         }
 
-        if (! $im) {
-            throw new RuntimeException('Failed to load image.');
-        }
+        throw_unless($im, RuntimeException::class, 'Failed to load image.');
 
         $width = imagesx($im);
         $height = imagesy($im);
@@ -120,9 +110,6 @@ class ProcessLogo extends Command
 
         // Copy original image
         imagecopy($transparentImage, $im, 0, 0, 0, 0, $width, $height);
-
-        // Get background colors from corners
-        $bgColorTL = imagecolorat($transparentImage, 0, 0);
         $bgColorTR = imagecolorat($transparentImage, $width - 1, 0);
         $bgColorBL = imagecolorat($transparentImage, 0, $height - 1);
         $bgColorBR = imagecolorat($transparentImage, $width - 1, $height - 1);
@@ -170,9 +157,7 @@ class ProcessLogo extends Command
 </svg>
 SVG;
 
-        if (file_put_contents($dest, $svg) === false) {
-            throw new RuntimeException("Failed to write SVG to {$dest}");
-        }
+        throw_if(file_put_contents($dest, $svg) === false, RuntimeException::class, "Failed to write SVG to {$dest}");
 
         $this->info("Generated {$dest}");
     }

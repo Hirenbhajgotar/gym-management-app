@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources\BlogResource\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Filament\SuperAdmin\Resources\BlogResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListBlogs extends ListRecords
@@ -13,7 +13,7 @@ class ListBlogs extends ListRecords
     public function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LeadStatus;
 use App\Models\Lead;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -14,7 +15,7 @@ class LeadScoringService
     {
         // Get active leads (not converted/lost)
         $leads = Lead::where('gym_id', $gymId)
-            ->whereNotIn('status', [\App\Enums\LeadStatus::CONVERTED, \App\Enums\LeadStatus::LOST])
+            ->whereNotIn('status', [LeadStatus::CONVERTED, LeadStatus::LOST])
             ->with(['followUps', 'membershipPlan', 'creator'])
             ->get();
 
@@ -68,7 +69,7 @@ class LeadScoringService
         if ($lead->membership_plan_id) {
             $score += 10;
         } // Known desired plan
-        if (! empty($lead->interest)) {
+        if (filled($lead->interest)) {
             $score += 10;
         } // Specific interests
         if ($lead->phone && $lead->email) {

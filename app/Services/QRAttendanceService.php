@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\AttendanceStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
-use Carbon\Carbon;
 
 class QRAttendanceService
 {
@@ -45,7 +45,7 @@ class QRAttendanceService
         $existingAttendance = Attendances::where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->lockForUpdate()
             ->first();
 
@@ -92,7 +92,7 @@ class QRAttendanceService
         return Attendances::where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->first();
     }
 
@@ -105,7 +105,7 @@ class QRAttendanceService
             'attendanceable_id' => $member->id,
             'attendanceable_type' => GymMember::class,
             'gym_id' => $gymId,
-            'check_in_time' => Carbon::now(),
+            'check_in_time' => Date::now(),
             'status' => AttendanceStatus::Present,
             'check_in_method' => 'qr_code',
         ]);
@@ -154,7 +154,7 @@ class QRAttendanceService
         $attendance = Attendances::where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->lockForUpdate()
             ->first();
 
@@ -176,7 +176,7 @@ class QRAttendanceService
         }
 
         // Update attendance with check-out time
-        $attendance->check_out_time = Carbon::now();
+        $attendance->check_out_time = Date::now();
         $attendance->status = AttendanceStatus::Completed;
         $attendance->save();
 

@@ -8,6 +8,8 @@ use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Import WhatsApp templates from Meta/Twilio for tenant gyms.
@@ -198,11 +200,11 @@ class ImportTenantWhatsAppTemplates extends Command
     /**
      * Get all gyms with active WhatsApp accounts.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Gym>
+     * @return Collection<int, Gym>
      */
-    private function getGymsWithWhatsAppAccounts(): \Illuminate\Database\Eloquent\Collection
+    private function getGymsWithWhatsAppAccounts(): Collection
     {
-        return Gym::whereHas('whatsAppAccount', function ($query) {
+        return Gym::whereHas('whatsAppAccount', function (Builder $query) {
             $query->where('is_active', true)
                 ->where('is_verified', true);
         })->with('whatsAppAccount')->orderBy('id')->get();

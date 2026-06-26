@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Spatie\Activitylog\Models\Activity;
+use Database\Factories\ExpenseFactory;
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
@@ -28,7 +32,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $description
  * @property numeric $amount
  * @property string $currency
- * @property \Illuminate\Support\Carbon|null $expense_date
+ * @property Carbon|null $expense_date
  * @property ExpensePaymentMethod $payment_method
  * @property ExpenseStatus $status
  * @property string|null $vendor_name
@@ -38,26 +42,26 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property array<array-key, mixed>|null $metadata
  * @property bool|null $is_recurring
  * @property RecurringFrequency|null $recurring_frequency
- * @property \Illuminate\Support\Carbon|null $next_due_date
- * @property \Illuminate\Support\Carbon|null $submitted_at
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property Carbon|null $next_due_date
+ * @property Carbon|null $submitted_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $rejected_at
  * @property string|null $rejection_reason
- * @property \Illuminate\Support\Carbon|null $paid_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
- * @property-read \App\Models\User|null $approvedBy
- * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read User|null $approvedBy
+ * @property-read ExpenseCategory|null $category
  * @property-read mixed $formatted_amount
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\User $user
+ * @property-read Gym $gym
+ * @property-read User $user
  *
  * @method static Builder<static>|Expense approved()
  * @method static Builder<static>|Expense draft()
  * @method static Builder<static>|Expense dueSoon(int $days = 7)
- * @method static \Database\Factories\ExpenseFactory factory($count = null, $state = [])
+ * @method static ExpenseFactory factory($count = null, $state = [])
  * @method static Builder<static>|Expense forGym(int $gymId)
  * @method static Builder<static>|Expense forUser(int $userId)
  * @method static Builder<static>|Expense inPeriod($startDate, $endDate)
@@ -182,22 +186,33 @@ class Expense extends Model
     // ========================================
     // Relationships
     // ========================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<ExpenseCategory, $this>
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_id');
@@ -208,55 +223,55 @@ class Expense extends Model
     // ========================================
 
     #[Scope]
-    public function draft(Builder $query): void
+    protected function draft(Builder $query): void
     {
         $query->where('status', ExpenseStatus::DRAFT);
     }
 
     #[Scope]
-    public function pending(Builder $query): void
+    protected function pending(Builder $query): void
     {
         $query->where('status', ExpenseStatus::PENDING);
     }
 
     #[Scope]
-    public function approved(Builder $query): void
+    protected function approved(Builder $query): void
     {
         $query->where('status', ExpenseStatus::APPROVED);
     }
 
     #[Scope]
-    public function rejected(Builder $query): void
+    protected function rejected(Builder $query): void
     {
         $query->where('status', ExpenseStatus::REJECTED);
     }
 
     #[Scope]
-    public function paid(Builder $query): void
+    protected function paid(Builder $query): void
     {
         $query->where('status', ExpenseStatus::PAID);
     }
 
     #[Scope]
-    public function forGym(Builder $query, int $gymId): void
+    protected function forGym(Builder $query, int $gymId): void
     {
         $query->where('gym_id', $gymId);
     }
 
     #[Scope]
-    public function forUser(Builder $query, int $userId): void
+    protected function forUser(Builder $query, int $userId): void
     {
         $query->where('user_id', $userId);
     }
 
     #[Scope]
-    public function recurring(Builder $query): void
+    protected function recurring(Builder $query): void
     {
         $query->where('is_recurring', true);
     }
 
     #[Scope]
-    public function dueSoon(Builder $query, int $days = 7): void
+    protected function dueSoon(Builder $query, int $days = 7): void
     {
         $query->recurring()
             ->whereNotNull('next_due_date')
@@ -264,7 +279,7 @@ class Expense extends Model
     }
 
     #[Scope]
-    public function inPeriod(Builder $query, $startDate, $endDate): void
+    protected function inPeriod(Builder $query, $startDate, $endDate): void
     {
         $query->whereBetween('expense_date', [$startDate, $endDate]);
     }

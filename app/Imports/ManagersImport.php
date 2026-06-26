@@ -54,7 +54,7 @@ class ManagersImport extends BaseImporter implements ShouldQueue, WithColumnForm
         $user->gyms()->attach($this->tenantId, ['role' => $managerRole->value]);
 
         // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $managerRole);
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $managerRole);
 
         // Create the employee's detailed profile.
         EmployeeDetail::create([

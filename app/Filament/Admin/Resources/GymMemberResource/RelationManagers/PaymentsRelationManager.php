@@ -2,6 +2,22 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Actions\CreateAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Illuminate\Support\Facades\Date;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -9,14 +25,11 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Traits\HasTenantAccess;
-use Carbon\Carbon;
-use Filament\Forms;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
@@ -33,17 +46,17 @@ class PaymentsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Payment Details')
+                Section::make('Payment Details')
                     ->icon('heroicon-o-credit-card')
                     ->description('Record a payment for this member')
                     ->schema([
-                        Forms\Components\Hidden::make('member_id')
+                        Hidden::make('member_id')
                             ->default(fn ($livewire) => $livewire->ownerRecord->id),
 
-                        Forms\Components\Hidden::make('gym_id')
+                        Hidden::make('gym_id')
                             ->default(fn ($livewire) => $this->getGymId()),
 
-                        Forms\Components\Select::make('membership_plan_id')
+                        Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->placeholder('Select a membership plan')
                             ->reactive()
@@ -52,7 +65,7 @@ class PaymentsRelationManager extends RelationManager
                             ->options(fn () => $this->getActiveMembershipPlans())
                             ->dehydrated(true),
 
-                        Forms\Components\TextInput::make('amount')
+                        TextInput::make('amount')
                             ->numeric()
                             ->required()
                             ->prefix(fn ($get) => $this->getCurrencySymbol($get))
@@ -60,18 +73,18 @@ class PaymentsRelationManager extends RelationManager
                             ->step(0.01)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
-                        Forms\Components\Select::make('currency')
+                        Select::make('currency')
                             ->options(Currency::class)
                             ->required()
                             ->default(Currency::INR->value)
                             ->reactive(),
 
-                        Forms\Components\Select::make('payment_method')
+                        Select::make('payment_method')
                             ->options(PaymentMethod::toSelectOptions())
                             ->required()
                             ->default(PaymentMethod::CASH->value),
 
-                        Forms\Components\DatePicker::make('membership_start')
+                        DatePicker::make('membership_start')
                             ->placeholder('Select start date')
                             ->native(false)
                             ->closeOnDateSelection(true)
@@ -81,23 +94,23 @@ class PaymentsRelationManager extends RelationManager
                             ->reactive()
                             ->afterStateUpdated(fn ($state, callable $set, $get) => $this->updateEndDate($state, $set, $get)),
 
-                        Forms\Components\DatePicker::make('membership_end')
+                        DatePicker::make('membership_end')
                             ->placeholder('Auto-calculated based on plan')
                             ->native(false)
                             ->closeOnDateSelection(true)
                             ->required(),
 
-                        Forms\Components\ToggleButtons::make('status')
+                        ToggleButtons::make('status')
                             ->inline()
                             ->options(PaymentStatus::class)
                             ->required(),
 
-                        Forms\Components\Textarea::make('notes')
+                        Textarea::make('notes')
                             ->maxLength(65535)
                             ->placeholder('e.g., Paid via UPI ID: user@upi')
                             ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
-                        Forms\Components\DatePicker::make('payment_date')
+                        DatePicker::make('payment_date')
                             ->native(false)
                             ->closeOnDateSelection(true)
                             ->required()
@@ -113,35 +126,35 @@ class PaymentsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->columns([
-                Tables\Columns\TextColumn::make('membershipPlan.name')
+                TextColumn::make('membershipPlan.name')
                     ->label('Plan')
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency->value)
-                    ->summarize(Tables\Columns\Summarizers\Sum::make()),
+                    ->summarize(Sum::make()),
 
-                Tables\Columns\TextColumn::make('payment_method')
+                TextColumn::make('payment_method')
                     ->badge()
                     ->color('info'),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('payment_date')
+                TextColumn::make('payment_date')
                     ->date()
                     ->badge()
                     ->color('gray'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('payment_method')
+                SelectFilter::make('payment_method')
                     ->options(PaymentMethod::toSelectOptions()),
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options(PaymentStatus::toSelectOptions()),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->steps([
                         $this->getPasswordConfirmationStep(),
                         $this->getPaymentDetailsStep('Enter payment information'),
@@ -149,7 +162,7 @@ class PaymentsRelationManager extends RelationManager
                     ->action(fn (array $data) => $this->handleCreatePayment($data)),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
                     ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
@@ -161,7 +174,7 @@ class PaymentsRelationManager extends RelationManager
                     ])
                     ->action(fn (array $data, $record) => $this->handleUpdatePayment($data, $record)),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->visible(fn ($record) => $this->canDeletePayment($record))
@@ -172,8 +185,8 @@ class PaymentsRelationManager extends RelationManager
                     ->form([$this->getPasswordField()]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->modifyQueryUsing(fn (Builder $query) => $this->sortPayments($query));
@@ -204,9 +217,9 @@ class PaymentsRelationManager extends RelationManager
     /**
      * Get password input field with validation
      */
-    protected function getPasswordField(): Forms\Components\TextInput
+    protected function getPasswordField(): TextInput
     {
-        return Forms\Components\TextInput::make('password')
+        return TextInput::make('password')
             ->label('Your Password')
             ->helperText('Please enter your password to confirm this action.')
             ->revealable()
@@ -259,7 +272,7 @@ class PaymentsRelationManager extends RelationManager
         }
 
         $start = $get('membership_start') ?? now();
-        $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+        $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
         $set('amount', $plan->price);
     }
 
@@ -279,7 +292,7 @@ class PaymentsRelationManager extends RelationManager
             return;
         }
 
-        $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+        $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
     }
 
     /**
@@ -354,7 +367,7 @@ class PaymentsRelationManager extends RelationManager
         return $this->getRelationship()
             ->where('member_id', $memberId)
             ->where('status', PaymentStatus::COMPLETED->value)
-            ->orderBy('payment_date', 'desc')
+            ->latest('payment_date')
             ->first();
     }
 
@@ -401,8 +414,7 @@ class PaymentsRelationManager extends RelationManager
     {
         return $query
             ->orderByRaw("CASE WHEN status = 'completed' THEN 0 ELSE 1 END")
-            ->orderBy('payment_date', 'desc')
-            ->orderBy('created_at', 'desc');
+            ->latest('payment_date')->latest();
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
@@ -94,7 +95,7 @@ class ForecastService
 
         // Generate forecast
         $forecast = [];
-        $lastDate = \Carbon\Carbon::parse($historicalData->last()->date);
+        $lastDate = Date::parse($historicalData->last()->date);
 
         for ($i = 1; $i <= $monthsToForecast; $i++) {
             $nextIndex = $n - 1 + $i; // Continue 'x' sequence
@@ -140,10 +141,10 @@ class ForecastService
         }
 
         $formattedHistory = $historical->map(fn (TrendValue $val) => [
-            'date' => \Carbon\Carbon::parse($val->date)->format('M Y'),
+            'date' => Date::parse($val->date)->format('M Y'),
             'value' => $val->aggregate,
             'type' => 'actual',
-        ])->values()->toArray();
+        ])->values()->all();
 
         return array_merge($formattedHistory, $forecast);
     }

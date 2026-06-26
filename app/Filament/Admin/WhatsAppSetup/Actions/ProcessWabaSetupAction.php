@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Filament\Notifications\Notification;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
@@ -54,6 +55,6 @@ class ProcessWabaSetupAction
             $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber']);
         }
         $this->page->accountCreated = true;
-        \Filament\Notifications\Notification::make()->title('WABA Configured')->success()->send();
+        Notification::make()->title('WABA Configured')->success()->send();
     }
 }

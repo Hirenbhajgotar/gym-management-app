@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Spatie\Activitylog\Models\Activity;
+use Illuminate\Database\Eloquent\Builder;
+use Database\Factories\ExpenseCategoryFactory;
 use App\Enums\FilamentColor;
 use App\Observers\ExpenseCategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -27,44 +32,44 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property bool $is_active
  * @property bool $is_system
  * @property int $order
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ExpenseBudget> $budgets
+ * @property-read Collection<int, ExpenseBudget> $budgets
  * @property-read int|null $budgets_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ExpenseCategory> $children
+ * @property-read Collection<int, ExpenseCategory> $children
  * @property-read int|null $children_count
  * @property-read mixed $css_color
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Expense> $expenses
+ * @property-read Collection<int, Expense> $expenses
  * @property-read int|null $expenses_count
  * @property-read Attribute $full_path
- * @property-read \App\Models\Gym|null $gym
+ * @property-read Gym|null $gym
  * @property-read ExpenseCategory|null $parent
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory availableForGym(int $gymId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory customForGym(int $gymId)
- * @method static \Database\Factories\ExpenseCategoryFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory forGym(int $gymId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory ordered(string $direction = 'asc')
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory root()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory systemDefault()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereColor($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereIcon($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereIsSystem($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereOrder($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereParentId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExpenseCategory whereUpdatedAt($value)
+ * @method static Builder<static>|ExpenseCategory active()
+ * @method static Builder<static>|ExpenseCategory availableForGym(int $gymId)
+ * @method static Builder<static>|ExpenseCategory customForGym(int $gymId)
+ * @method static ExpenseCategoryFactory factory($count = null, $state = [])
+ * @method static Builder<static>|ExpenseCategory forGym(int $gymId)
+ * @method static Builder<static>|ExpenseCategory newModelQuery()
+ * @method static Builder<static>|ExpenseCategory newQuery()
+ * @method static Builder<static>|ExpenseCategory ordered(string $direction = 'asc')
+ * @method static Builder<static>|ExpenseCategory query()
+ * @method static Builder<static>|ExpenseCategory root()
+ * @method static Builder<static>|ExpenseCategory systemDefault()
+ * @method static Builder<static>|ExpenseCategory whereColor($value)
+ * @method static Builder<static>|ExpenseCategory whereCreatedAt($value)
+ * @method static Builder<static>|ExpenseCategory whereDescription($value)
+ * @method static Builder<static>|ExpenseCategory whereGymId($value)
+ * @method static Builder<static>|ExpenseCategory whereIcon($value)
+ * @method static Builder<static>|ExpenseCategory whereId($value)
+ * @method static Builder<static>|ExpenseCategory whereIsActive($value)
+ * @method static Builder<static>|ExpenseCategory whereIsSystem($value)
+ * @method static Builder<static>|ExpenseCategory whereName($value)
+ * @method static Builder<static>|ExpenseCategory whereOrder($value)
+ * @method static Builder<static>|ExpenseCategory whereParentId($value)
+ * @method static Builder<static>|ExpenseCategory whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  */
@@ -123,27 +128,41 @@ class ExpenseCategory extends Model implements Sortable
     // ========================================
     // Relationships
     // ========================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<ExpenseCategory, $this>
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'parent_id');
     }
 
+    /**
+     * @return HasMany<ExpenseCategory, $this>
+     */
     public function children(): HasMany
     {
         return $this->hasMany(ExpenseCategory::class, 'parent_id')->orderBy('order');
     }
 
+    /**
+     * @return HasMany<Expense, $this>
+     */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
     }
 
+    /**
+     * @return HasMany<ExpenseBudget, $this>
+     */
     public function budgets(): HasMany
     {
         return $this->hasMany(ExpenseBudget::class);
@@ -209,7 +228,7 @@ class ExpenseCategory extends Model implements Sortable
     /**
      * Get this category's color as a CSS hex value.
      */
-    public function cssColor(): Attribute
+    protected function cssColor(): Attribute
     {
         return Attribute::make(
             get: fn () => FilamentColor::toHex($this->color ?? 'gray'),

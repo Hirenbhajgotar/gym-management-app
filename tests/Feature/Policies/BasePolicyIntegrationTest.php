@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Policies;
 
-use App\Policies\BaseEmployeePolicy;
 use App\Policies\BiometricDevicePolicy;
 use App\Policies\GymMemberAttendancePolicy;
 use App\Policies\ReportGoalPolicy;

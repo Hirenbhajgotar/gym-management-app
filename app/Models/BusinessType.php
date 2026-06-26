@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,19 +12,19 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $name
  * @property string|null $slug
  * @property bool|null $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereSlug($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessType whereUpdatedAt($value)
+ * @method static Builder<static>|BusinessType active()
+ * @method static Builder<static>|BusinessType newModelQuery()
+ * @method static Builder<static>|BusinessType newQuery()
+ * @method static Builder<static>|BusinessType query()
+ * @method static Builder<static>|BusinessType whereCreatedAt($value)
+ * @method static Builder<static>|BusinessType whereId($value)
+ * @method static Builder<static>|BusinessType whereIsActive($value)
+ * @method static Builder<static>|BusinessType whereName($value)
+ * @method static Builder<static>|BusinessType whereSlug($value)
+ * @method static Builder<static>|BusinessType whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperBusinessType
@@ -46,7 +48,7 @@ class BusinessType extends Model
         return 'slug';
     }
 
-    public function scopeActive($query)
+    protected function scopeActive($query)
     {
         return $query->where('is_active', true);
     }

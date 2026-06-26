@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use Illuminate\Support\Facades\Date;
+use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
@@ -30,7 +32,7 @@ class MemberGrowthChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -48,7 +50,7 @@ class MemberGrowthChart extends BaseChartWidget
                 ->orderBy('month')
                 ->get();
 
-            $labels = $data->map(fn ($item) => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->toArray();
             $counts = $data->pluck('count')->toArray();
 
             // Calculate cumulative total

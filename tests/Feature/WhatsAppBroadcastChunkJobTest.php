@@ -62,15 +62,12 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         // Return null wabaId/accessToken so sendViaHttpPool() falls back to
         // sendSequential(), which calls sendTemplateMessage() on the provider
         // (preserving existing mock expectations).
-        if ($mockProvider instanceof Mockery\LegacyMockInterface) {
-            $contextMock = Mockery::mock(MetaContext::class);
-            $contextMock->shouldReceive('getWabaId')->andReturn(null);
-            $contextMock->shouldReceive('getAccessToken')->andReturn(null);
-            $contextMock->shouldReceive('getApiBaseUrl')->andReturn('https://graph.facebook.com/v22.0');
-            $mockProvider->shouldReceive('getContext')
-                ->andReturn($contextMock);
-        }
-
+        $contextMock = Mockery::mock(MetaContext::class);
+        $contextMock->shouldReceive('getWabaId')->andReturn(null);
+        $contextMock->shouldReceive('getAccessToken')->andReturn(null);
+        $contextMock->shouldReceive('getApiBaseUrl')->andReturn('https://graph.facebook.com/v22.0');
+        $mockProvider->shouldReceive('getContext')
+            ->andReturn($contextMock);
         $job = Mockery::mock(
             SendMessageChunkJob::class . '[resolveProvider]',
             [$broadcastId, $recipientChunk, $templateData, $gymId, $skipCreditDeduction],

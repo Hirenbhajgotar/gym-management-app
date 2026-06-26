@@ -23,7 +23,7 @@ class VerifyOwnNumberAction
     public function __invoke(): void
     {
         $otp = $this->page->data['otp_code'] ?? '';
-        if (empty($otp) || strlen($otp) !== 6) {
+        if (blank($otp) || strlen($otp) !== 6) {
             throw ValidationException::withMessages(['otp_code' => 'Enter valid 6-digit OTP.']);
         }
 

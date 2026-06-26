@@ -16,12 +16,14 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\ActionSize;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +68,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     protected function getDiscoveryService(): PermissionDiscoveryService
     {
         if ($this->discoveryService === null) {
-            $this->discoveryService = app(PermissionDiscoveryService::class);
+            $this->discoveryService = resolve(PermissionDiscoveryService::class);
         }
 
         return $this->discoveryService;
@@ -83,15 +85,15 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
     public function form(Form $form): Form
     {
-        $role = $this->resolveRole();
+        $this->resolveRole();
         $roleEnum = DefaultRole::from($this->getRoleName());
-        $service = $this->getDiscoveryService();
+        $this->getDiscoveryService();
 
         // Protected properties don't persist across Livewire re-renders —
         // mount() only runs on initial page load, so $this->discovered is
         // reset to [] on subsequent requests (e.g. after save/notification).
         // Re-hydrate here to prevent blank resource/page/widget tabs.
-        if (empty($this->discovered)) {
+        if (blank($this->discovered)) {
             $this->loadDiscoveredPermissions();
         }
 
@@ -117,19 +119,19 @@ abstract class BasePermissionsPage extends Page implements HasForms
             ->schema([
                 Tabs::make('Permissions')
                     ->tabs([
-                        Tabs\Tab::make('Resources')
+                        Tab::make('Resources')
                             ->icon('heroicon-o-squares-2x2')
                             ->badge($resourceCount > 0 ? $resourceCount : null)
                             ->badgeColor('primary')
                             ->schema($resourceSections),
 
-                        Tabs\Tab::make('Pages')
+                        Tab::make('Pages')
                             ->icon('heroicon-o-document-text')
                             ->badge($pageCount > 0 ? $pageCount : null)
                             ->badgeColor('success')
                             ->schema($pageSections),
 
-                        Tabs\Tab::make('Widgets')
+                        Tab::make('Widgets')
                             ->icon('heroicon-o-chart-bar')
                             ->badge($widgetCount > 0 ? $widgetCount : null)
                             ->badgeColor('warning')
@@ -168,7 +170,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
             $this->discovered['other'],
         );
 
-        $roleHasAnyPermissions = ! empty($rolePermissions);
+        $roleHasAnyPermissions = filled($rolePermissions);
 
         foreach ($allGroups as $groupKey => $group) {
             $fieldName = $groupKey . '_permissions';
@@ -210,7 +212,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
         }
 
         $result = ['permissions' => $permissions];
-        if (! empty($defaults)) {
+        if (filled($defaults)) {
             $result['default_permissions'] = $defaults;
         }
 
@@ -292,7 +294,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         $pages = $this->discovered['pages'] ?? [];
 
-        if (empty($pages)) {
+        if (blank($pages)) {
             return [
                 Section::make('No Pages Found')
                     ->description('No pages with permissions discovered for this role.')
@@ -336,7 +338,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         $widgets = $this->discovered['widgets'] ?? [];
 
-        if (empty($widgets)) {
+        if (blank($widgets)) {
             return [
                 Section::make('No Widgets Found')
                     ->description('No widgets with permissions discovered for this role.')
@@ -380,7 +382,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
         $options = [];
         $descriptions = [];
 
-        foreach ($otherPerms as $category => $group) {
+        foreach ($otherPerms as $group) {
             foreach ($group['permissions'] as $permName) {
                 $options[$permName] = ucfirst(str_replace('_', ' ', $permName));
                 $descriptions[$permName] = '';
@@ -421,7 +423,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
             $validatedData = $this->validate();
 
-            if (empty($data) && ! empty($validatedData['data'])) {
+            if (blank($data) && filled($validatedData['data'])) {
                 $data = $validatedData['data'];
             }
 
@@ -445,7 +447,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
 
             // dd($toGrant, $toRevoke, array_merge($toGrant, $toRevoke));
 
-            if (! empty($toGrant) || ! empty($toRevoke)) {
+            if (filled($toGrant) || filled($toRevoke)) {
                 // Batch-find all existing Permission records in a single query
                 // instead of looping firstOrCreate (which does N queries for N
                 // permissions — up to 455 for a full-form save).
@@ -461,7 +463,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
                 ));
 
                 // Batch-insert all missing permissions at once (1 query total)
-                if (! empty($missingNames)) {
+                if (filled($missingNames)) {
                     $now = now();
                     Permission::insert(array_map(fn (string $name): array => [
                         'name' => $name,
@@ -485,7 +487,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
                 $role->givePermissionTo($grantPermissions);
                 $role->revokePermissionTo($revokePermissions);
 
-                app(PermissionRegistrar::class)->forgetCachedPermissions();
+                resolve(PermissionRegistrar::class)->forgetCachedPermissions();
             }
 
             DB::commit();
@@ -512,7 +514,7 @@ abstract class BasePermissionsPage extends Page implements HasForms
     {
         $roleName = $this->getRoleName();
 
-        $roleUsers = User::whereHas('roles', function ($query) use ($roleName, $tenant) {
+        $roleUsers = User::whereHas('roles', function (Builder $query) use ($roleName, $tenant) {
             $query->where('name', $roleName)
                 ->where('roles.gym_id', $tenant->id);
         })->get();

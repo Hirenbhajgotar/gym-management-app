@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
+use App\Models\WhatsAppCreditTransaction;
 use App\Models\Payment;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
@@ -174,7 +176,7 @@ class RazorpayWebhookController
             }
 
             // Check if user already exists (idempotency)
-            $existingUser = \App\Models\User::where('email', $email)->first();
+            $existingUser = User::where('email', $email)->first();
 
             if ($existingUser) {
                 Log::info('User already exists, skipping registration', [
@@ -224,7 +226,7 @@ class RazorpayWebhookController
             }
 
             // Check if already processed (idempotency)
-            $existingTransaction = \App\Models\WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+            $existingTransaction = WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
                 ->where('type', 'purchase')
                 ->first();
 

@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource;
-use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -14,7 +14,7 @@ class EditWhatsAppPackage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

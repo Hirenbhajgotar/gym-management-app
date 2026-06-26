@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Models\Subscription;
-use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;

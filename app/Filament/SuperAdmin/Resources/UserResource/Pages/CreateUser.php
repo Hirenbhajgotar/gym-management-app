@@ -2,6 +2,12 @@
 
 namespace App\Filament\SuperAdmin\Resources\UserResource\Pages;
 
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Password;
+use App\Notifications\GymOwnerWelcomeNotification;
+use Spatie\Permission\Models\Role;
+use App\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use App\Enums\DefaultRole;
 use App\Filament\SuperAdmin\Resources\UserResource;
 use App\Helpers\FeedbackHelper;
@@ -24,7 +30,7 @@ class CreateUser extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // If password is not provided, generate a random one
-        if (empty($data['password'])) {
+        if (blank($data['password'])) {
             $data['password'] = Str::password(12);
         }
 
@@ -60,7 +66,7 @@ class CreateUser extends CreateRecord
             // we fire the Registered event to send the verification email.
             // If it WAS set, the model already has it saved, so we don't need to do anything.
             if (! $user->hasVerifiedEmail()) {
-                event(new \Illuminate\Auth\Events\Registered($user));
+                event(new Registered($user));
             }
 
             return $user;
@@ -104,15 +110,15 @@ class CreateUser extends CreateRecord
             'slug' => $slug,
         ]);
 
-        if (! empty($this->gymData['address'])) {
+        if (filled($this->gymData['address'])) {
             $gym->address()->create($this->gymData['address']);
         }
 
         // Create default roles and permissions for the gym
-        app(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
+        resolve(RolesAndPermissionsService::class)->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
         // Assign the gym to the user with proper role
-        app(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);
 
         // Associate user with gym through pivot table
         $gym->users()->attach($user->id, [
@@ -128,10 +134,10 @@ class CreateUser extends CreateRecord
     protected function sendWelcomeNotification(User $user): void
     {
         // Generate password reset token
-        $token = \Illuminate\Support\Facades\Password::broker()->createToken($user);
+        $token = Password::broker()->createToken($user);
 
         // Send welcome email with password reset link
-        $user->notify(new \App\Notifications\GymOwnerWelcomeNotification(
+        $user->notify(new GymOwnerWelcomeNotification(
             $user,
             $token
         ));
@@ -151,13 +157,13 @@ class CreateUser extends CreateRecord
         setPermissionsTeamId($gym->id);
 
         // Get the gym_owner role for this specific gym
-        $gymOwnerRoleId = \Spatie\Permission\Models\Role::where('name', DefaultRole::GYM_OWNER->value)
+        $gymOwnerRoleId = Role::where('name', DefaultRole::GYM_OWNER->value)
             ->where('gym_id', $gym->id)
             ->value('id');
 
         if ($gymOwnerRoleId) {
             // Get ALL permission IDs efficiently
-            $allPermissionIds = \App\Models\Permission::pluck('id');
+            $allPermissionIds = Permission::pluck('id');
 
             $insertData = $allPermissionIds->map(fn ($permId) => [
                 'permission_id' => $permId,
@@ -168,14 +174,14 @@ class CreateUser extends CreateRecord
             DB::table('role_has_permissions')->where('role_id', $gymOwnerRoleId)->delete();
 
             // Bulk insert
-            if (! empty($insertData)) {
+            if (filled($insertData)) {
                 foreach (array_chunk($insertData, 1000) as $chunk) {
                     DB::table('role_has_permissions')->insert($chunk);
                 }
             }
 
             // Clear permission cache to ensure changes take effect immediately
-            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         }
     }
 }

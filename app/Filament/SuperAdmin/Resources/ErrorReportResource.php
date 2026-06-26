@@ -2,16 +2,30 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\KeyValue;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkAction;
+use App\Helpers\ParserHelper;
+use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\ListErrorReports;
+use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\CreateErrorReport;
+use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\EditErrorReport;
 use App\Enums\DefaultRole;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 use App\Models\ErrorReport;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -42,37 +56,37 @@ class ErrorReportResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Error Details')
+                Section::make('Error Details')
                     ->schema([
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options(ErrorStatus::class)
                             ->required(),
 
-                        Forms\Components\Select::make('priority')
+                        Select::make('priority')
                             ->options(ErrorPriority::class)
                             ->required(),
 
-                        Forms\Components\TextInput::make('error_type'),
+                        TextInput::make('error_type'),
 
-                        Forms\Components\Textarea::make('error_message')
+                        Textarea::make('error_message')
                             ->rows(4)
                             ->columnSpanFull(),
 
-                        Forms\Components\Textarea::make('user_description')
+                        Textarea::make('user_description')
                             ->label('User Description')
                             ->rows(4)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Technical Details')
+                Section::make('Technical Details')
                     ->schema([
-                        Forms\Components\Textarea::make('stack_trace')
+                        Textarea::make('stack_trace')
                             ->label('Stack Trace')
                             ->disabled()
                             ->rows(15),
 
-                        Forms\Components\KeyValue::make('context')
+                        KeyValue::make('context')
                             ->disabled(),
                     ])
                     ->collapsible(),
@@ -83,45 +97,45 @@ class ErrorReportResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
+                TextColumn::make('id')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('user.name')
+                TextColumn::make('user.name')
                     ->label('Reporter')
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('priority')
+                TextColumn::make('priority')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('duplicate_count')
+                TextColumn::make('duplicate_count')
                     ->color('danger')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('error_type')
+                TextColumn::make('error_type')
                     ->label('Type')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('error_message')
+                TextColumn::make('error_message')
                     ->label('Error')
                     ->limit(50)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('occurred_at')
+                TextColumn::make('occurred_at')
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options(ErrorStatus::class),
 
-                Tables\Filters\SelectFilter::make('priority')
+                SelectFilter::make('priority')
                     ->options(ErrorPriority::class),
 
-                Tables\Filters\SelectFilter::make('error_type')
+                SelectFilter::make('error_type')
                     ->options([
                         'auto_reported' => 'Auto Reported',
                         'user_reported' => 'User Reported',
@@ -132,7 +146,7 @@ class ErrorReportResource extends BaseResource
             ->actions([
                 ActionGroup::make([
                     self::getCopyToMarkdownAction(),
-                    Tables\Actions\Action::make('markResolved')
+                    Action::make('markResolved')
                         ->label('Mark as Resolved')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -145,14 +159,14 @@ class ErrorReportResource extends BaseResource
                                 ->success()
                                 ->send();
                         }),
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('markResolved')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('markResolved')
                         ->label('Mark as Resolved')
                         ->icon('heroicon-m-check-circle')
                         ->color('success')
@@ -168,7 +182,7 @@ class ErrorReportResource extends BaseResource
                                 ErrorReport::ERROR_REPORT_INVESTIGATING_COUNT_CACHE_KEY,
                                 ErrorReport::ERROR_REPORT_RESOLVED_COUNT_CACHE_KEY,
                             ];
-                            \App\Helpers\ParserHelper::clearCache($keys);
+                            ParserHelper::clearCache($keys);
 
                             Notification::make()
                                 ->title('Marked as resolved')
@@ -181,9 +195,9 @@ class ErrorReportResource extends BaseResource
             ->defaultSort('occurred_at', 'desc');
     }
 
-    public static function getCopyToMarkdownAction(): Tables\Actions\Action
+    public static function getCopyToMarkdownAction(): Action
     {
-        return Tables\Actions\Action::make('copyMarkdown')
+        return Action::make('copyMarkdown')
             ->label('Copy as Markdown')
             ->icon('heroicon-o-clipboard-document')
             ->action(function (ErrorReport $record, $livewire) {
@@ -210,9 +224,9 @@ class ErrorReportResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListErrorReports::route('/'),
-            'create' => Pages\CreateErrorReport::route('/create'),
-            'edit' => Pages\EditErrorReport::route('/{record}/edit'),
+            'index' => ListErrorReports::route('/'),
+            'create' => CreateErrorReport::route('/create'),
+            'edit' => EditErrorReport::route('/{record}/edit'),
         ];
     }
 

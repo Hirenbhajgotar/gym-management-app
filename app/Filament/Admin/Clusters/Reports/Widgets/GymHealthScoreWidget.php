@@ -29,7 +29,7 @@ class GymHealthScoreWidget extends BaseWidget
     public function getHealthData(): array
     {
         $gymId = Filament::getTenant()->id;
-        $service = app(GymHealthScoreService::class);
+        $service = resolve(GymHealthScoreService::class);
 
         return $service->calculateHealthScore($gymId);
     }

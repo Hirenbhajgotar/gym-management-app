@@ -2,10 +2,20 @@
 
 namespace App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 
-use Filament\Forms;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
 use Filament\Tables\Table;
 
 class WebhookLogsRelationManager extends RelationManager
@@ -20,17 +30,17 @@ class WebhookLogsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Webhook Information')
+                Section::make('Webhook Information')
                     ->schema([
-                        Forms\Components\TextInput::make('webhook_id')
+                        TextInput::make('webhook_id')
                             ->label('Webhook ID')
                             ->disabled(),
 
-                        Forms\Components\TextInput::make('platform')
+                        TextInput::make('platform')
                             ->label('Platform')
                             ->disabled(),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label('Status')
                             ->options([
                                 'received' => 'Received',
@@ -41,13 +51,13 @@ class WebhookLogsRelationManager extends RelationManager
                             ])
                             ->disabled(),
 
-                        Forms\Components\DateTimePicker::make('created_at')
+                        DateTimePicker::make('created_at')
                             ->label('Received At')
                             ->native(false)
                             ->closeOnDateSelection(true)
                             ->disabled(),
 
-                        Forms\Components\DateTimePicker::make('processed_at')
+                        DateTimePicker::make('processed_at')
                             ->label('Processed At')
                             ->native(false)
                             ->closeOnDateSelection(true)
@@ -55,9 +65,9 @@ class WebhookLogsRelationManager extends RelationManager
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Payload Data')
+                Section::make('Payload Data')
                     ->schema([
-                        Forms\Components\Textarea::make('payload')
+                        Textarea::make('payload')
                             ->label('Webhook Payload')
                             ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
                             ->rows(10)
@@ -66,9 +76,9 @@ class WebhookLogsRelationManager extends RelationManager
                     ->collapsible()
                     ->collapsed(),
 
-                Forms\Components\Section::make('Response Data')
+                Section::make('Response Data')
                     ->schema([
-                        Forms\Components\Textarea::make('response')
+                        Textarea::make('response')
                             ->label('Processing Response')
                             ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : $state)
                             ->rows(5)
@@ -76,17 +86,17 @@ class WebhookLogsRelationManager extends RelationManager
                     ])
                     ->collapsible()
                     ->collapsed()
-                    ->visible(fn ($record) => ! empty($record?->response)),
+                    ->visible(fn ($record) => filled($record?->response)),
 
-                Forms\Components\Section::make('Error Details')
+                Section::make('Error Details')
                     ->schema([
-                        Forms\Components\Textarea::make('error_message')
+                        Textarea::make('error_message')
                             ->label('Error Message')
                             ->rows(3)
                             ->disabled(),
                     ])
                     ->collapsible()
-                    ->visible(fn ($record) => ! empty($record?->error_message)),
+                    ->visible(fn ($record) => filled($record?->error_message)),
             ]);
     }
 
@@ -95,14 +105,14 @@ class WebhookLogsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('webhook_id')
             ->columns([
-                Tables\Columns\TextColumn::make('webhook_id')
+                TextColumn::make('webhook_id')
                     ->label('Webhook ID')
                     ->searchable()
                     ->copyable()
                     ->limit(30)
                     ->tooltip(fn ($record) => $record->webhook_id),
 
-                Tables\Columns\TextColumn::make('platform')
+                TextColumn::make('platform')
                     ->label('Platform')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -114,7 +124,7 @@ class WebhookLogsRelationManager extends RelationManager
                     })
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -126,20 +136,20 @@ class WebhookLogsRelationManager extends RelationManager
                     })
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Received At')
                     ->dateTime()
                     ->sortable()
                     ->since()
                     ->tooltip(fn ($record) => $record->created_at->format('Y-m-d H:i:s')),
 
-                Tables\Columns\TextColumn::make('processed_at')
+                TextColumn::make('processed_at')
                     ->label('Processed At')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('error_message')
+                TextColumn::make('error_message')
                     ->label('Error')
                     ->limit(50)
                     ->tooltip(fn ($record) => $record->error_message)
@@ -147,7 +157,7 @@ class WebhookLogsRelationManager extends RelationManager
                     ->color('danger'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options([
                         'received' => 'Received',
                         'processing' => 'Processing',
@@ -157,7 +167,7 @@ class WebhookLogsRelationManager extends RelationManager
                     ])
                     ->multiple(),
 
-                Tables\Filters\SelectFilter::make('platform')
+                SelectFilter::make('platform')
                     ->options([
                         'facebook' => 'Facebook',
                         'instagram' => 'Instagram',
@@ -166,15 +176,15 @@ class WebhookLogsRelationManager extends RelationManager
                     ])
                     ->multiple(),
 
-                Tables\Filters\Filter::make('has_error')
+                Filter::make('has_error')
                     ->label('Has Errors')
                     ->query(fn ($query) => $query->whereNotNull('error_message')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
+                ViewAction::make()
                     ->modalWidth('5xl'),
 
-                Tables\Actions\Action::make('view_payload')
+                Action::make('view_payload')
                     ->label('Payload')
                     ->icon('heroicon-o-code-bracket')
                     ->color('info')
@@ -186,8 +196,8 @@ class WebhookLogsRelationManager extends RelationManager
                     ->modalCancelActionLabel('Close'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc')

@@ -7,6 +7,9 @@ use App\Models\Blog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<Blog>
+ */
 class BlogFactory extends Factory
 {
     protected $model = Blog::class;

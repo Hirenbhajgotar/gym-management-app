@@ -13,7 +13,7 @@ class FusionEngine
      */
     public function merge(array $verificationResults): VerificationResult
     {
-        if (empty($verificationResults)) {
+        if (blank($verificationResults)) {
             return new VerificationResult(
                 matched: false,
                 confidence: 0.0,

@@ -4,11 +4,35 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages\ListRequestContacts;
+use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages\CreateRequestContact;
+use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages\EditRequestContact;
+use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages\ViewRequestContact;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Infolists\Components\Split;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Filters\BaseFilter;
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\RequestContactResource\Pages;
 use App\Models\RequestContact;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components;
 use Filament\Infolists\Infolist;
@@ -86,10 +110,10 @@ class RequestContactResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListRequestContacts::route('/'),
-            'create' => Pages\CreateRequestContact::route('/create'),
-            'edit' => Pages\EditRequestContact::route('/{record}/edit'),
-            'view' => Pages\ViewRequestContact::route('/{record}'),
+            'index' => ListRequestContacts::route('/'),
+            'create' => CreateRequestContact::route('/create'),
+            'edit' => EditRequestContact::route('/{record}/edit'),
+            'view' => ViewRequestContact::route('/{record}'),
         ];
     }
 
@@ -116,27 +140,27 @@ class RequestContactResource extends BaseResource
     /**
      * Get contact information form section
      */
-    private static function getContactInformationSection(): Forms\Components\Section
+    private static function getContactInformationSection(): Section
     {
-        return Forms\Components\Section::make('Contact Information')
+        return Section::make('Contact Information')
             ->schema([
-                Forms\Components\TextInput::make('name')
+                TextInput::make('name')
                     ->required()
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('email')
+                TextInput::make('email')
                     ->email()
                     ->required()
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('phone')
+                TextInput::make('phone')
                     ->tel()
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('company_name')
+                TextInput::make('company_name')
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('gym_size')
+                TextInput::make('gym_size')
                     ->numeric()
                     ->suffix('members'),
             ])
@@ -146,11 +170,11 @@ class RequestContactResource extends BaseResource
     /**
      * Get request details form section
      */
-    private static function getRequestDetailsSection(): Forms\Components\Section
+    private static function getRequestDetailsSection(): Section
     {
-        return Forms\Components\Section::make('Request Details')
+        return Section::make('Request Details')
             ->schema([
-                Forms\Components\Textarea::make('message')
+                Textarea::make('message')
                     ->rows(4)
                     ->columnSpanFull(),
             ])
@@ -160,20 +184,20 @@ class RequestContactResource extends BaseResource
     /**
      * Get status form section
      */
-    private static function getStatusSection(): Forms\Components\Section
+    private static function getStatusSection(): Section
     {
-        return Forms\Components\Section::make('Status')
+        return Section::make('Status')
             ->schema([
-                Forms\Components\Toggle::make('is_contacted')
+                Toggle::make('is_contacted')
                     ->label('Contacted')
                     ->inline(false),
 
-                Forms\Components\DateTimePicker::make('contacted_at')
+                DateTimePicker::make('contacted_at')
                     ->native(false)
                     ->closeOnDateSelection(true)
                     ->label('Contacted At'),
 
-                Forms\Components\Textarea::make('admin_notes')
+                Textarea::make('admin_notes')
                     ->label('Admin Notes')
                     ->rows(4)
                     ->columnSpanFull(),
@@ -184,14 +208,14 @@ class RequestContactResource extends BaseResource
     /**
      * Get technical information form section
      */
-    private static function getTechnicalInformationSection(): Forms\Components\Section
+    private static function getTechnicalInformationSection(): Section
     {
-        return Forms\Components\Section::make('Technical Information')
+        return Section::make('Technical Information')
             ->schema([
-                Forms\Components\TextInput::make('ip_address')
+                TextInput::make('ip_address')
                     ->disabled(),
 
-                Forms\Components\Textarea::make('user_agent')
+                Textarea::make('user_agent')
                     ->disabled()
                     ->rows(2),
             ])
@@ -208,33 +232,33 @@ class RequestContactResource extends BaseResource
     private static function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('id')
+            TextColumn::make('id')
                 ->label('ID')
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('name')
+            TextColumn::make('name')
                 ->searchable()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('email')
+            TextColumn::make('email')
                 ->searchable()
                 ->sortable()
                 ->copyable(),
 
-            Tables\Columns\TextColumn::make('phone')
+            TextColumn::make('phone')
                 ->searchable()
                 ->copyable(),
 
-            Tables\Columns\TextColumn::make('company_name')
+            TextColumn::make('company_name')
                 ->searchable()
                 ->toggleable(isToggledHiddenByDefault: true),
 
-            Tables\Columns\IconColumn::make('is_contacted')
+            IconColumn::make('is_contacted')
                 ->label('Contacted')
                 ->boolean()
                 ->sortable(),
 
-            Tables\Columns\TextColumn::make('preferred_contact_method')
+            TextColumn::make('preferred_contact_method')
                 ->badge()
                 ->color(fn (string $state): string => match ($state) {
                     'email' => 'info',
@@ -243,13 +267,13 @@ class RequestContactResource extends BaseResource
                     default => 'gray',
                 }),
 
-            Tables\Columns\TextColumn::make('created_at')
+            TextColumn::make('created_at')
                 ->label('Submitted')
                 ->dateTime()
                 ->sortable()
                 ->toggleable(),
 
-            Tables\Columns\TextColumn::make('contacted_at')
+            TextColumn::make('contacted_at')
                 ->dateTime()
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
@@ -259,24 +283,24 @@ class RequestContactResource extends BaseResource
     /**
      * Get table filters configuration
      *
-     * @return array<Tables\Filters\BaseFilter>
+     * @return array<BaseFilter>
      */
     private static function getTableFilters(): array
     {
         return [
-            Tables\Filters\TernaryFilter::make('is_contacted')
+            TernaryFilter::make('is_contacted')
                 ->label('Contact Status')
                 ->placeholder('All requests')
                 ->trueLabel('Contacted')
                 ->falseLabel('Not contacted'),
 
-            Tables\Filters\Filter::make('created_at')
+            Filter::make('created_at')
                 ->form([
-                    Forms\Components\DatePicker::make('created_from')
+                    DatePicker::make('created_from')
                         ->label('Submitted from')
                         ->native(false)
                         ->closeOnDateSelection(true),
-                    Forms\Components\DatePicker::make('created_until')
+                    DatePicker::make('created_until')
                         ->label('Submitted until')
                         ->native(false)
                         ->closeOnDateSelection(true),
@@ -311,13 +335,13 @@ class RequestContactResource extends BaseResource
     private static function getTableActions(): array
     {
         return [
-            Tables\Actions\Action::make('markAsContacted')
+            Action::make('markAsContacted')
                 ->label('Mark Contacted')
                 ->icon('heroicon-m-check-circle')
                 ->color('success')
                 ->visible(fn (RequestContact $record): bool => ! $record->is_contacted)
                 ->form([
-                    Forms\Components\Textarea::make('admin_notes')
+                    Textarea::make('admin_notes')
                         ->label('Notes (optional)')
                         ->rows(3),
                 ])
@@ -326,23 +350,23 @@ class RequestContactResource extends BaseResource
                 })
                 ->successNotificationTitle('Marked as contacted'),
 
-            Tables\Actions\ViewAction::make(),
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
+            ViewAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 
     /**
      * Get table bulk actions configuration
      *
-     * @return array<Tables\Actions\BulkActionGroup>
+     * @return array<BulkActionGroup>
      */
     private static function getTableBulkActions(): array
     {
         return [
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-                Tables\Actions\BulkAction::make('markAsContacted')
+            BulkActionGroup::make([
+                DeleteBulkAction::make(),
+                BulkAction::make('markAsContacted')
                     ->label('Mark as Contacted')
                     ->icon('heroicon-m-check-circle')
                     ->color('success')
@@ -363,23 +387,23 @@ class RequestContactResource extends BaseResource
     {
         return Components\Section::make('Contact Information')
             ->schema([
-                Components\Split::make([
-                    Components\Grid::make(2)->schema([
-                        Components\Group::make([
-                            Components\TextEntry::make('name')
+                Split::make([
+                    Grid::make(2)->schema([
+                        Group::make([
+                            TextEntry::make('name')
                                 ->icon('heroicon-m-user'),
-                            Components\TextEntry::make('email')
+                            TextEntry::make('email')
                                 ->icon('heroicon-m-envelope')
                                 ->copyable(),
-                            Components\TextEntry::make('phone')
+                            TextEntry::make('phone')
                                 ->icon('heroicon-m-phone')
                                 ->copyable(),
                         ]),
-                        Components\Group::make([
-                            Components\TextEntry::make('company_name')
+                        Group::make([
+                            TextEntry::make('company_name')
                                 ->icon('heroicon-m-building-office')
                                 ->placeholder('N/A'),
-                            Components\TextEntry::make('gym_size')
+                            TextEntry::make('gym_size')
                                 ->suffix(' members')
                                 ->icon('heroicon-m-users')
                                 ->placeholder('N/A'),
@@ -396,7 +420,7 @@ class RequestContactResource extends BaseResource
     {
         return Components\Section::make('Request Details')
             ->schema([
-                Components\TextEntry::make('message')
+                TextEntry::make('message')
                     ->prose()
                     ->markdown()
                     ->columnSpanFull()
@@ -411,19 +435,19 @@ class RequestContactResource extends BaseResource
     {
         return Components\Section::make('Contact Status')
             ->schema([
-                Components\Grid::make(2)->schema([
-                    Components\TextEntry::make('is_contacted')
+                Grid::make(2)->schema([
+                    TextEntry::make('is_contacted')
                         ->label('Status')
                         ->badge()
                         ->formatStateUsing(fn (bool $state): string => $state ? 'Contacted' : 'Not Contacted')
                         ->color(fn (bool $state): string => $state ? 'success' : 'warning'),
 
-                    Components\TextEntry::make('contacted_at')
+                    TextEntry::make('contacted_at')
                         ->dateTime()
                         ->placeholder('Not contacted yet'),
                 ]),
 
-                Components\TextEntry::make('admin_notes')
+                TextEntry::make('admin_notes')
                     ->prose()
                     ->markdown()
                     ->columnSpanFull()
@@ -439,24 +463,24 @@ class RequestContactResource extends BaseResource
     {
         return Components\Section::make('Metadata')
             ->schema([
-                Components\Grid::make(2)->schema([
-                    Components\TextEntry::make('created_at')
+                Grid::make(2)->schema([
+                    TextEntry::make('created_at')
                         ->label('Submitted At')
                         ->dateTime()
                         ->badge()
                         ->color('info'),
 
-                    Components\TextEntry::make('updated_at')
+                    TextEntry::make('updated_at')
                         ->dateTime()
                         ->badge()
                         ->color('gray'),
                 ]),
 
-                Components\TextEntry::make('ip_address')
+                TextEntry::make('ip_address')
                     ->copyable()
                     ->icon('heroicon-m-computer-desktop'),
 
-                Components\TextEntry::make('user_agent')
+                TextEntry::make('user_agent')
                     ->copyable()
                     ->icon('heroicon-m-window')
                     ->columnSpanFull(),

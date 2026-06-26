@@ -2,9 +2,10 @@
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources;
 
-use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\ListGymMemberAttendances;
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\CreateGymMemberAttendance;
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\EditGymMemberAttendance;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
-use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseResources\BaseAttendanceResource;
 use App\Models\GymMember;
 
@@ -47,9 +48,9 @@ class GymMemberAttendanceResource extends BaseAttendanceResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGymMemberAttendances::route('/'),
-            'create' => Pages\CreateGymMemberAttendance::route('/create'),
-            'edit' => Pages\EditGymMemberAttendance::route('/{record}/edit'),
+            'index' => ListGymMemberAttendances::route('/'),
+            'create' => CreateGymMemberAttendance::route('/create'),
+            'edit' => EditGymMemberAttendance::route('/{record}/edit'),
         ];
     }
 

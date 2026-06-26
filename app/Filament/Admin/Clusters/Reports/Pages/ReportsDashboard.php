@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Collection;
 use App\Enums\LeadStatus;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
@@ -20,7 +22,6 @@ use App\Services\InsightsService;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 class ReportsDashboard extends BasePage implements ShareableReport
@@ -277,7 +278,7 @@ class ReportsDashboard extends BasePage implements ShareableReport
                 'today' => $todayCheckIns,
                 'currently_in' => $currentlyIn,
                 'weekly_average' => $weeklyAverage,
-                'peak_hour' => $peakHour?->hour ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
+                'peak_hour' => $peakHour?->hour ? Date::createFromTime($peakHour->hour)->format('g A') : 'N/A',
                 'sparkline' => $sparkline,
             ];
         });
@@ -307,14 +308,14 @@ class ReportsDashboard extends BasePage implements ShareableReport
     /**
      * Get actionable insights for the gym.
      */
-    public function getInsights(): \Illuminate\Support\Collection
+    public function getInsights(): Collection
     {
         $gymId = $this->getGymId();
         // Cache for 2 hours
         $cacheKey = ReportCacheService::INSIGHTS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = app(InsightsService::class);
+            $service = resolve(InsightsService::class);
 
             return $service->getDailyInsights($gymId);
         });

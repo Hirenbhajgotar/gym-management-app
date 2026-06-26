@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Database\Factories\CountryFactory;
 use App\Observers\CountryObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,13 +17,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $name
  * @property string|null $code
  * @property int|null $status 1=Active, 0=Inactive
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\State> $states
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, State> $states
  * @property-read int|null $states_count
  *
  * @method static Builder<static>|Country active()
- * @method static \Database\Factories\CountryFactory factory($count = null, $state = [])
+ * @method static CountryFactory factory($count = null, $state = [])
  * @method static Builder<static>|Country inactive()
  * @method static Builder<static>|Country newModelQuery()
  * @method static Builder<static>|Country newQuery()
@@ -48,6 +51,9 @@ class Country extends Model
         'status',
     ];
 
+    /**
+     * @return HasMany<State, $this>
+     */
     public function states(): HasMany
     {
         return $this->hasMany(State::class);
@@ -56,7 +62,7 @@ class Country extends Model
     /**
      * Scope a query to only include active countries.
      */
-    public function scopeActive(Builder $query): Builder
+    protected function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 1);
     }
@@ -64,7 +70,7 @@ class Country extends Model
     /**
      * Scope a query to only include inactive countries.
      */
-    public function scopeInactive(Builder $query): Builder
+    protected function scopeInactive(Builder $query): Builder
     {
         return $query->where('status', 0);
     }

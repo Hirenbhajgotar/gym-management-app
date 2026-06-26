@@ -37,7 +37,7 @@ class TwilioAccountManagerTest extends TestCase
     public function it_registers_whatsapp_sender_when_purchasing_number(): void
     {
         // Mock Twilio Client and its nested resources
-        $mockClient = Mockery::mock(Client::class);
+        Mockery::mock(Client::class);
         $mockSubClient = Mockery::mock(Client::class);
 
         // Mock IncomingPhoneNumbers

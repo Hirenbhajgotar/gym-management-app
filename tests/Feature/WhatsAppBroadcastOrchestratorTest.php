@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Jobs\SendBroadcastJob;
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Models\Gym;
@@ -61,7 +62,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'remaining_credits' => 100,
         ]);
 
-        $this->orchestrator = app(BroadcastOrchestrator::class);
+        $this->orchestrator = resolve(BroadcastOrchestrator::class);
     }
 
     public function test_creates_broadcast_record(): void
@@ -104,7 +105,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
 
-        Queue::assertPushed(\App\Jobs\SendBroadcastJob::class);
+        Queue::assertPushed(SendBroadcastJob::class);
     }
 
     public function test_schedules_broadcast_for_later(): void
@@ -131,7 +132,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(WhatsAppBroadcastStatusEnum::SCHEDULED, $broadcast->status);
         $this->assertNotNull($broadcast->scheduled_at);
 
-        Queue::assertNotPushed(\App\Jobs\SendBroadcastJob::class);
+        Queue::assertNotPushed(SendBroadcastJob::class);
     }
 
     public function test_creates_broadcast_with_selected_members(): void
@@ -237,7 +238,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
 
-        Queue::assertPushed(function (\App\Jobs\SendBroadcastJob $job): bool {
+        Queue::assertPushed(function (SendBroadcastJob $job): bool {
             return $job->skipCreditDeduction === true;
         });
     }

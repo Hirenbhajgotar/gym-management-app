@@ -2,8 +2,9 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;
-use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -14,8 +15,8 @@ class EditRole extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            ViewAction::make(),
+            DeleteAction::make(),
         ];
     }
 

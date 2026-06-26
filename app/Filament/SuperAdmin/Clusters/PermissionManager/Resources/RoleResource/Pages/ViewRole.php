@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 
+use Filament\Actions\EditAction;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;
-use Filament\Actions;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -18,7 +18,7 @@ class ViewRole extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            EditAction::make(),
         ];
     }
 

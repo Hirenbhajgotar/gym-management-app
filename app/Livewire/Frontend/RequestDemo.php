@@ -2,11 +2,10 @@
 
 namespace App\Livewire\Frontend;
 
+use Illuminate\Validation\ValidationException;
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
-use App\Providers\WhatsAppProviderFactory;
 use App\Rules\ValidEmailDomain;
-use App\Services\TwilioWhatsAppService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -115,7 +114,7 @@ class RequestDemo extends Component
 
             // Optional: Redirect to thank you page or home
             // return redirect()->route('home');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Validation errors are automatically displayed
             $this->dispatch(
                 'show-error',

@@ -103,7 +103,7 @@ trait HasSetupState
         $this->phoneNumber = $this->whatsappAccount?->phoneNumber;
         $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
         $this->welcomeCreditsClaimed = $this->creditBalance?->welcome_credits_claimed ?? false;
-        $this->isExistWhatsAppTemplates = (bool) WhatsAppTemplate::isExistsForGym((int) $gymId);
+        $this->isExistWhatsAppTemplates = WhatsAppTemplate::isExistsForGym((int) $gymId);
 
         // Load WABA status and Verification status for UI state management
         if ($this->whatsappAccount) {
@@ -171,7 +171,7 @@ trait HasSetupState
 
         // Twilio: Account creation step (Step 2)
         if ($provider !== WhatsAppProviderTypeEnum::WABA) {
-            if (empty($this->whatsappAccount?->twilio_account_sid)) {
+            if (blank($this->whatsappAccount?->twilio_account_sid)) {
                 return SetupWizardSchema::TWILIO_ACCOUNT_STEP; // TwilioAccountStep
             }
 
@@ -183,7 +183,7 @@ trait HasSetupState
 
         // WABA: Account setup step (Step 2)
         if ($provider === WhatsAppProviderTypeEnum::WABA) {
-            if (empty($this->whatsappAccount?->waba_id)) {
+            if (blank($this->whatsappAccount?->waba_id)) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
             }
 
@@ -235,7 +235,7 @@ trait HasSetupState
 
             if ($step === SetupWizardSchema::TWILIO_PHONE_NUMBER_STEP) {
                 // Phone number step only allowed if account is connected
-                return ! empty($this->whatsappAccount->twilio_account_sid);
+                return filled($this->whatsappAccount->twilio_account_sid);
             }
 
             if ($step === SetupWizardSchema::TWILIO_TEMPLATES_STEP) {

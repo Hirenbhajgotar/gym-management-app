@@ -2,6 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use App\Services\LeadScoringService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Date;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Exports\LeadReportExport;
@@ -15,7 +21,6 @@ use App\Models\Lead;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -52,7 +57,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->subMonths(6)->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -66,24 +71,24 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->subMonths(6))
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('source')
+                        Select::make('source')
                             ->label('Lead Source')
                             ->options(LeadSource::class)
                             ->placeholder('All Sources'),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label('Lead Status')
                             ->options(LeadStatus::class)
                             ->placeholder('All Status'),
@@ -171,7 +176,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::LEAD_SCORING_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = new \App\Services\LeadScoringService;
+            $service = new LeadScoringService;
             $stats = $service->getLeadStats($gymId);
             $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);
 
@@ -228,7 +233,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
 
         $statusCounts = Lead::where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
 
@@ -276,7 +281,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $data = [];
         foreach ($allMonths as $month) {
             $data[] = [
-                'month' => \Carbon\Carbon::parse($month . '-01')->format('M Y'),
+                'month' => Date::parse($month . '-01')->format('M Y'),
                 'new_leads' => $newLeads->get($month, 0),
                 'converted' => $conversions->get($month, 0),
             ];
@@ -346,7 +351,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

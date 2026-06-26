@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Spatie\Activitylog\Models\Activity;
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
 use App\Observers\PaymentObserver;
@@ -28,18 +31,18 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property PaymentStatus|null $status
  * @property string|null $payment_type
  * @property array<array-key, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $paid_at
- * @property \Illuminate\Support\Carbon|null $refunded_at
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $refunded_at
  * @property numeric|null $refund_amount
  * @property string|null $invoice_number
  * @property string|null $invoice_path
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
  * @property-read mixed $formatted_amount
- * @property-read \App\Models\Gym|null $gym
- * @property-read \App\Models\User|null $user
+ * @property-read Gym|null $gym
+ * @property-read User|null $user
  *
  * @method static Builder<static>|Payment byType(string $type)
  * @method static Builder<static>|Payment completed()
@@ -129,11 +132,17 @@ class Payment extends Model
         };
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -217,7 +226,7 @@ class Payment extends Model
      * Scope for completed payments
      */
     #[Scope]
-    public function completed(Builder $query)
+    protected function completed(Builder $query)
     {
         return $query->where('status', PaymentStatus::COMPLETED);
     }
@@ -226,7 +235,7 @@ class Payment extends Model
      * Scope for pending payments
      */
     #[Scope]
-    public function pending(Builder $query)
+    protected function pending(Builder $query)
     {
         return $query->where('status', PaymentStatus::PENDING);
     }
@@ -235,7 +244,7 @@ class Payment extends Model
      * Scope for failed payments
      */
     #[Scope]
-    public function failed(Builder $query)
+    protected function failed(Builder $query)
     {
         return $query->where('status', PaymentStatus::FAILED);
     }
@@ -244,7 +253,7 @@ class Payment extends Model
      * Scope for payments by type
      */
     #[Scope]
-    public function byType(Builder $query, string $type)
+    protected function byType(Builder $query, string $type)
     {
         return $query->where('payment_type', $type);
     }
@@ -254,6 +263,6 @@ class Payment extends Model
      */
     public function hasValidSignature(): bool
     {
-        return ! empty($this->razorpay_signature);
+        return filled($this->razorpay_signature);
     }
 }

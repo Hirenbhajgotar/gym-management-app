@@ -46,7 +46,7 @@ class ValidatePhoneNumberSidsCommand extends Command
             $issues = [];
 
             // Check phone_number_sid (should be PN... or null)
-            if (! empty($phoneNumber->phone_number_sid)) {
+            if (filled($phoneNumber->phone_number_sid)) {
                 if (! $phoneNumber->isValidIncomingPhoneNumberSid()) {
                     if ($phoneNumber->hasLegacyChannelSenderSidInPhoneNumberField()) {
                         $issues[] = 'phone_number_sid contains Channel Sender SID (CN...)';
@@ -58,7 +58,7 @@ class ValidatePhoneNumberSidsCommand extends Command
             }
 
             // Check channel_sender_sid (should be CN... or null)
-            if (! empty($phoneNumber->channel_sender_sid)) {
+            if (filled($phoneNumber->channel_sender_sid)) {
                 if (! $phoneNumber->isValidChannelSenderSid()) {
                     $issues[] = 'channel_sender_sid has unknown format';
                 }
@@ -68,11 +68,11 @@ class ValidatePhoneNumberSidsCommand extends Command
             $hasIncomingNumberSid = $phoneNumber->isValidIncomingPhoneNumberSid();
             $hasChannelSenderSid = $phoneNumber->isValidChannelSenderSid();
 
-            if ($hasIncomingNumberSid && ! $hasChannelSenderSid && empty($phoneNumber->channel_sender_sid)) {
+            if ($hasIncomingNumberSid && ! $hasChannelSenderSid && blank($phoneNumber->channel_sender_sid)) {
                 $issues[] = 'missing channel_sender_sid (purchased number without WhatsApp sender)';
             }
 
-            if (empty($issues)) {
+            if (blank($issues)) {
                 $validRecords[] = $phoneNumber;
             } else {
                 $invalidRecords[] = [
@@ -86,9 +86,9 @@ class ValidatePhoneNumberSidsCommand extends Command
         $this->displayResults($validRecords, $invalidRecords, $needsMigration);
 
         // Fix if requested
-        if ($this->option('fix') && ! empty($needsMigration)) {
+        if ($this->option('fix') && filled($needsMigration)) {
             $this->fixIssues($needsMigration);
-        } elseif ($this->option('dry-run') && ! empty($needsMigration)) {
+        } elseif ($this->option('dry-run') && filled($needsMigration)) {
             $this->info('');
             $this->info('Dry run mode - no changes were made.');
             $this->info('Run with --fix to automatically correct the issues.');
@@ -100,7 +100,7 @@ class ValidatePhoneNumberSidsCommand extends Command
     protected function displayResults(array $validRecords, array $invalidRecords, array $needsMigration): void
     {
         // Valid records
-        if (! empty($validRecords)) {
+        if (filled($validRecords)) {
             $this->info('✅ Valid Records: ' . count($validRecords));
             foreach ($validRecords as $record) {
                 $this->line("   {$record->phone_number} - PN: " . substr($record->phone_number_sid ?? 'N/A', 0, 20) . '... CN: ' . substr($record->channel_sender_sid ?? 'N/A', 0, 20) . '...');
@@ -109,7 +109,7 @@ class ValidatePhoneNumberSidsCommand extends Command
         }
 
         // Invalid records
-        if (! empty($invalidRecords)) {
+        if (filled($invalidRecords)) {
             $this->error('❌ Records with Issues: ' . count($invalidRecords));
             foreach ($invalidRecords as $item) {
                 $phoneNumber = $item['phone_number'];
@@ -131,7 +131,7 @@ class ValidatePhoneNumberSidsCommand extends Command
         $this->line('   Needs migration: ' . count($needsMigration));
         $this->line('');
 
-        if (! empty($needsMigration)) {
+        if (filled($needsMigration)) {
             $this->warn('⚠️  ' . count($needsMigration) . ' record(s) can be auto-fixed.');
             $this->line('   Run with --fix to correct the SID assignments.');
         }

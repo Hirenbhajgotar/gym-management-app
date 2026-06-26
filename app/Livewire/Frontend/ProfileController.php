@@ -2,11 +2,20 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Enums\SubscriptionStatus;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Subscription;
+use App\Models\User;
+use App\Services\InvoiceService;
+use App\Services\SubscriptionService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\Features\SupportRedirects\Redirector;
 
 class ProfileController extends Component
 {
@@ -21,7 +30,7 @@ class ProfileController extends Component
     public bool $loggingOut = false;
 
     #[Layout('frontend.layouts.profile')]
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         $user = auth()
             ->user()
@@ -71,8 +80,8 @@ class ProfileController extends Component
         // If it's a free trial, create subscription directly without payment
         if ($trialDays > 0) {
             try {
-                $subscriptionService = app(
-                    \App\Services\SubscriptionService::class,
+                $subscriptionService = resolve(
+                    SubscriptionService::class,
                 );
                 $subscriptionService->createSubscription($user, $plan, [
                     'billing_cycle' => 'yearly',
@@ -84,7 +93,7 @@ class ProfileController extends Component
                     "Your {$trialDays}-day free trial has started! You can start using {$plan->name} plan immediately.",
                 );
 
-                return redirect()->route('profile');
+                return to_route('profile');
             } catch (\Exception $e) {
                 session()->flash(
                     'error',
@@ -100,7 +109,7 @@ class ProfileController extends Component
         session(['selected_plan_id' => $plan->id]);
 
         // Redirect to checkout
-        return redirect()->route('subscriptions.checkout');
+        return to_route('subscriptions.checkout');
     }
 
     public function upgradePlan(int $planId): mixed
@@ -139,7 +148,7 @@ class ProfileController extends Component
         ]);
 
         // Redirect to checkout for upgrade
-        return redirect()->route('subscriptions.checkout');
+        return to_route('subscriptions.checkout');
     }
 
     public function renewPlan(): mixed
@@ -147,15 +156,15 @@ class ProfileController extends Component
         $this->renewingPlan = true;
 
         /**
-         * @var \App\Models\User $user
+         * @var User $user
          */
         $user = auth()->user();
         // Get active subscription or expired trial subscription that can be renewed
         $subscription = $user
             ->subscriptions()
-            ->where(function ($query) {
-                $query->whereIn('status', [\App\Enums\SubscriptionStatus::TRIAL, \App\Enums\SubscriptionStatus::ACTIVE])
-                    ->orWhere(function ($q) {
+            ->where(function (QueryBuilder $query) {
+                $query->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE])
+                    ->orWhere(function (QueryBuilder $q) {
                         $q->where('status', 'expired')->whereNotNull(
                             'trial_ends_at',
                         ); // Expired trials can be renewed
@@ -170,7 +179,7 @@ class ProfileController extends Component
             return null;
         }
 
-        /** @var \App\Models\Subscription $subscription */
+        /** @var Subscription $subscription */
         $this->clearSessionData();
 
         // Store renewal information in session
@@ -180,7 +189,7 @@ class ProfileController extends Component
         ]);
 
         // Redirect to subscription checkout for renewal
-        return redirect()->route('subscriptions.checkout');
+        return to_route('subscriptions.checkout');
     }
 
     private function clearSessionData(): void
@@ -194,7 +203,7 @@ class ProfileController extends Component
         ]);
     }
 
-    public function logout(): \Illuminate\Http\RedirectResponse|\Livewire\Features\SupportRedirects\Redirector
+    public function logout(): RedirectResponse|Redirector
     {
         $this->loggingOut = true;
 
@@ -202,14 +211,14 @@ class ProfileController extends Component
         session()->invalidate();
         session()->regenerateToken();
 
-        return redirect()->route('home');
+        return to_route('home');
     }
 
     public function downloadInvoice(int $paymentId)
     {
-        $payment = \App\Models\Payment::where('user_id', auth()->id())
+        $payment = Payment::where('user_id', auth()->id())
             ->findOrFail($paymentId);
 
-        return app(\App\Services\InvoiceService::class)->downloadInvoice($payment);
+        return resolve(InvoiceService::class)->downloadInvoice($payment);
     }
 }

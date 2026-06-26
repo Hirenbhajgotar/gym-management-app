@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
@@ -27,7 +28,7 @@ class MemberStatusChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 

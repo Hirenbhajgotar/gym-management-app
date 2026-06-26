@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Illuminate\Support\Facades\Log;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -64,7 +65,7 @@ class PurchaseNumberAction
                 throw new \Exception($result['error'] ?? 'Failed to purchase number');
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to purchase number', ['error' => $e->getMessage()]);
+            Log::error('Failed to purchase number', ['error' => $e->getMessage()]);
 
             Notification::make()
                 ->title('Purchase Failed')

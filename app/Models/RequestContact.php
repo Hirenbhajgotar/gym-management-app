@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use Propaganistas\LaravelPhone\PhoneNumber;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Database\Factories\RequestContactFactory;
 use App\Observers\RequestContactObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -13,39 +17,39 @@ use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
  * @property int $id
  * @property string $name
  * @property string $email
- * @property \Propaganistas\LaravelPhone\PhoneNumber $phone
+ * @property PhoneNumber $phone
  * @property string|null $company_name
  * @property int|null $gym_size Number of members or size
  * @property string|null $message
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property bool $is_contacted
- * @property \Illuminate\Support\Carbon|null $contacted_at
+ * @property Carbon|null $contacted_at
  * @property string|null $admin_notes
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact contacted()
- * @method static \Database\Factories\RequestContactFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact recent()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact uncontacted()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereAdminNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereCompanyName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereContactedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereGymSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereIpAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereIsContacted($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereMessage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact wherePhone($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestContact whereUserAgent($value)
+ * @method static Builder<static>|RequestContact contacted()
+ * @method static RequestContactFactory factory($count = null, $state = [])
+ * @method static Builder<static>|RequestContact newModelQuery()
+ * @method static Builder<static>|RequestContact newQuery()
+ * @method static Builder<static>|RequestContact query()
+ * @method static Builder<static>|RequestContact recent()
+ * @method static Builder<static>|RequestContact uncontacted()
+ * @method static Builder<static>|RequestContact whereAdminNotes($value)
+ * @method static Builder<static>|RequestContact whereCompanyName($value)
+ * @method static Builder<static>|RequestContact whereContactedAt($value)
+ * @method static Builder<static>|RequestContact whereCreatedAt($value)
+ * @method static Builder<static>|RequestContact whereEmail($value)
+ * @method static Builder<static>|RequestContact whereGymSize($value)
+ * @method static Builder<static>|RequestContact whereId($value)
+ * @method static Builder<static>|RequestContact whereIpAddress($value)
+ * @method static Builder<static>|RequestContact whereIsContacted($value)
+ * @method static Builder<static>|RequestContact whereMessage($value)
+ * @method static Builder<static>|RequestContact whereName($value)
+ * @method static Builder<static>|RequestContact wherePhone($value)
+ * @method static Builder<static>|RequestContact whereUpdatedAt($value)
+ * @method static Builder<static>|RequestContact whereUserAgent($value)
  *
  * @mixin \Eloquent
  */
@@ -86,7 +90,7 @@ class RequestContact extends Model
      * Scope for uncontacted requests
      */
     #[Scope]
-    public function uncontacted($query)
+    protected function uncontacted($query)
     {
         return $query->where('is_contacted', false);
     }
@@ -95,7 +99,7 @@ class RequestContact extends Model
      * Scope for contacted requests
      */
     #[Scope]
-    public function contacted($query)
+    protected function contacted($query)
     {
         return $query->where('is_contacted', true);
     }
@@ -104,7 +108,7 @@ class RequestContact extends Model
      * Scope for recent requests (last 30 days)
      */
     #[Scope]
-    public function recent($query)
+    protected function recent($query)
     {
         return $query->where('created_at', '>=', now()->subDays(30));
     }

@@ -2,14 +2,31 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Set;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\SuperAdmin\Resources\BlogResource\Pages\ListBlogs;
+use App\Filament\SuperAdmin\Resources\BlogResource\Pages\CreateBlog;
+use App\Filament\SuperAdmin\Resources\BlogResource\Pages\EditBlog;
 use App\Enums\BlogCategoryEnum;
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\BlogResource\Pages;
 use App\Models\Blog;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -39,24 +56,24 @@ class BlogResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Blog Details')
+                Section::make('Blog Details')
                     ->schema([
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                            ->afterStateUpdated(fn (string $operation, $state, Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
 
-                        Forms\Components\TextInput::make('slug')
+                        TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(Blog::class, 'slug', ignoreRecord: true),
 
-                        Forms\Components\Textarea::make('excerpt')
+                        Textarea::make('excerpt')
                             ->maxLength(500)
                             ->columnSpanFull(),
 
-                        Forms\Components\RichEditor::make('content')
+                        RichEditor::make('content')
                             ->toolbarButtons([
                                 'attachFiles',
                                 'blockquote',
@@ -76,22 +93,22 @@ class BlogResource extends BaseResource
                             ])
                             ->columnSpanFull(),
 
-                        Forms\Components\Select::make('category')
+                        Select::make('category')
                             ->required()
                             ->options(BlogCategoryEnum::class),
 
-                        Forms\Components\TextInput::make('author')
+                        TextInput::make('author')
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\TextInput::make('author_role')
+                        TextInput::make('author_role')
                             ->maxLength(255),
 
-                        Forms\Components\TextInput::make('read_time')
+                        TextInput::make('read_time')
                             ->maxLength(50)
                             ->helperText('e.g., "5 min read"'),
 
-                        Forms\Components\FileUpload::make('image_url')
+                        FileUpload::make('image_url')
                             ->label('Image')
                             ->disk('public')
                             ->directory('blogs')
@@ -100,51 +117,51 @@ class BlogResource extends BaseResource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Publishing')
+                Section::make('Publishing')
                     ->schema([
-                        Forms\Components\Toggle::make('is_featured')
+                        Toggle::make('is_featured')
                             ->label('Featured')
                             ->default(false),
 
-                        Forms\Components\Toggle::make('is_published')
+                        Toggle::make('is_published')
                             ->label('Published')
                             ->default(false),
 
-                        Forms\Components\DateTimePicker::make('published_at')
+                        DateTimePicker::make('published_at')
                             ->label('Publish Date')
                             ->default(now())
                             ->nullable(),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('SEO')
+                Section::make('SEO')
                     ->schema([
-                        Forms\Components\TextInput::make('meta_title')
+                        TextInput::make('meta_title')
                             ->label('Meta Title')
                             ->maxLength(255),
 
-                        Forms\Components\Textarea::make('meta_description')
+                        Textarea::make('meta_description')
                             ->label('Meta Description')
                             ->maxLength(500)
                             ->rows(3),
 
-                        Forms\Components\Textarea::make('meta_keywords')
+                        Textarea::make('meta_keywords')
                             ->label('Meta Keywords')
                             ->rows(2)
                             ->helperText('Comma-separated keywords for SEO.'),
 
-                        Forms\Components\TextInput::make('og_title')
+                        TextInput::make('og_title')
                             ->label('Open Graph Title')
                             ->maxLength(255)
                             ->helperText('Title for social media sharing. Defaults to meta_title or blog title if empty.'),
 
-                        Forms\Components\Textarea::make('og_description')
+                        Textarea::make('og_description')
                             ->label('Open Graph Description')
                             ->maxLength(500)
                             ->rows(3)
                             ->helperText('Description for social media sharing. Defaults to meta_description or excerpt if empty.'),
 
-                        Forms\Components\TextInput::make('og_image')
+                        TextInput::make('og_image')
                             ->label('Open Graph Image URL')
                             ->maxLength(500)
                             ->url()
@@ -159,42 +176,42 @@ class BlogResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->limit(50),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable()
                     ->limit(30),
-                Tables\Columns\TextColumn::make('category')
+                TextColumn::make('category')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('author')
+                TextColumn::make('author')
                     ->searchable(),
-                Tables\Columns\ToggleColumn::make('is_featured')
+                ToggleColumn::make('is_featured')
                     ->label('Featured'),
-                Tables\Columns\ToggleColumn::make('is_published')
+                ToggleColumn::make('is_published')
                     ->label('Published'),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
+                SelectFilter::make('category')
                     ->options(BlogCategoryEnum::class),
-                Tables\Filters\TernaryFilter::make('is_published'),
-                Tables\Filters\TernaryFilter::make('is_featured'),
+                TernaryFilter::make('is_published'),
+                TernaryFilter::make('is_featured'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -209,9 +226,9 @@ class BlogResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBlogs::route('/'),
-            'create' => Pages\CreateBlog::route('/create'),
-            'edit' => Pages\EditBlog::route('/{record}/edit'),
+            'index' => ListBlogs::route('/'),
+            'create' => CreateBlog::route('/create'),
+            'edit' => EditBlog::route('/{record}/edit'),
         ];
     }
 

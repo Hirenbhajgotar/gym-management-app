@@ -17,6 +17,7 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -131,9 +132,7 @@ class PurchaseCredits extends BasePage implements HasActions
         try {
             $package = WhatsAppPackage::find($this->selectedPackageId);
 
-            if (! $package) {
-                throw new \Exception('Package not found');
-            }
+            throw_unless($package, \Exception::class, 'Package not found');
 
             $gym = $this->getGym();
             $user = Auth::user();
@@ -199,12 +198,10 @@ class PurchaseCredits extends BasePage implements HasActions
         try {
             // Reconstruct component state from Payment DB record if lost
             // (e.g., user navigated away mid-payment and came back)
-            if (empty($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
+            if (blank($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
                 $paymentRecord = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
 
-                if (! $paymentRecord) {
-                    throw new \Exception('Payment session expired. Please try again.');
-                }
+                throw_unless($paymentRecord, \Exception::class, 'Payment session expired. Please try again.');
 
                 $this->razorpayOrder = [
                     'order_id' => $paymentRecord->razorpay_order_id,
@@ -214,9 +211,7 @@ class PurchaseCredits extends BasePage implements HasActions
             }
 
             // Guard: verify we have the required state before proceeding
-            if (empty($this->razorpayOrder['order_id']) || ! $this->selectedPackageId) {
-                throw new \Exception('Payment session data is missing. Please try again.');
-            }
+            throw_if(blank($this->razorpayOrder['order_id']) || ! $this->selectedPackageId, \Exception::class, 'Payment session data is missing. Please try again.');
 
             $razorpayService = new RazorpayService;
 
@@ -239,7 +234,7 @@ class PurchaseCredits extends BasePage implements HasActions
 
                 if ($result['success']) {
                     if ($this->phoneNumberSurcharge > 0) {
-                        $phone = WhatsAppPhoneNumber::whereHas('account', function ($query) {
+                        $phone = WhatsAppPhoneNumber::whereHas('account', function (Builder $query) {
                             $query->where('gym_id', $this->getGymId());
                         })->first();
 
@@ -348,9 +343,7 @@ class PurchaseCredits extends BasePage implements HasActions
     {
         $tenant = Filament::getTenant();
 
-        if (! $tenant instanceof Gym) {
-            throw new \Exception('No gym tenant context available.');
-        }
+        throw_unless($tenant instanceof Gym, \Exception::class, 'No gym tenant context available.');
 
         return $tenant;
     }

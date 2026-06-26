@@ -3,10 +3,20 @@
 namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 
 use App\Enums\WhatsAppProviderTypeEnum;
-use Filament\Forms;
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Get;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\HtmlString;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 /**
  * Form schema building methods for the WhatsApp setup wizard.
@@ -41,10 +51,10 @@ trait HasSetupSchemas
     private function getOnboardingSchema(): array
     {
         return [
-            Forms\Components\Section::make('WhatsApp Business Integration')
+            Section::make('WhatsApp Business Integration')
                 ->description('Connect your gym with members through WhatsApp')
                 ->schema([
-                    Forms\Components\Placeholder::make('')
+                    Placeholder::make('')
                         ->content(new HtmlString('
                             <div class="space-y-6">
                                 <!-- Hero Section -->
@@ -91,8 +101,8 @@ trait HasSetupSchemas
                             </div>
                         ')),
 
-                    Forms\Components\Actions::make([
-                        Forms\Components\Actions\Action::make('start_setup')
+                    Actions::make([
+                        Action::make('start_setup')
                             ->label('Start Setup')
                             ->color('primary')
                             ->size('lg')
@@ -106,7 +116,7 @@ trait HasSetupSchemas
     private function getSetupSchema(): array
     {
         return [
-            Forms\Components\Wizard::make([
+            Wizard::make([
                 $this->getProviderSelectionStep(),
                 $this->getAccountStep(),
                 $this->getPhoneNumberStep(),
@@ -127,15 +137,15 @@ trait HasSetupSchemas
         ];
     }
 
-    private function getProviderSelectionStep(): Forms\Components\Wizard\Step
+    private function getProviderSelectionStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Select Provider')
+        return Step::make('Select Provider')
             ->label('Select Provider')
             ->schema([
-                Forms\Components\Section::make('Choose Your WhatsApp Provider')
+                Section::make('Choose Your WhatsApp Provider')
                     ->description('Select how you want to set up WhatsApp messaging')
                     ->schema([
-                        Forms\Components\Placeholder::make('')
+                        Placeholder::make('')
                             ->content(fn () => new HtmlString('
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                                     <div class="p-4 rounded-lg border-2 ' . ($this->selectedProvider === WhatsAppProviderTypeEnum::WABA->value ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700') . '">
@@ -164,7 +174,7 @@ trait HasSetupSchemas
                                     </div>
                                 </div>
                             ')),
-                        Forms\Components\Radio::make('provider_type')
+                        Radio::make('provider_type')
                             ->label('')
                             ->options(WhatsAppProviderTypeEnum::class)
                             ->descriptions(WhatsAppProviderTypeEnum::toDescriptionsArray())
@@ -195,7 +205,7 @@ trait HasSetupSchemas
             });
     }
 
-    private function getAccountStep(): Forms\Components\Wizard\Step
+    private function getAccountStep(): Step
     {
         $formProvider = $this->data['provider_type'] ?? $this->selectedProvider;
         $providerValue = $formProvider instanceof WhatsAppProviderTypeEnum
@@ -207,7 +217,7 @@ trait HasSetupSchemas
             : $this->getTwilioAccountStep();
     }
 
-    private function getPhoneNumberStep(): Forms\Components\Wizard\Step
+    private function getPhoneNumberStep(): Step
     {
         $formProvider = $this->data['provider_type'] ?? $this->selectedProvider;
         $providerValue = $formProvider instanceof WhatsAppProviderTypeEnum
@@ -219,26 +229,26 @@ trait HasSetupSchemas
             : $this->getTwilioPhoneNumberStep();
     }
 
-    private function getTwilioAccountStep(): Forms\Components\Wizard\Step
+    private function getTwilioAccountStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Twilio Account')
+        return Step::make('Twilio Account')
             ->label('Twilio Account')
             ->schema([
-                Forms\Components\Section::make('Business Information')
+                Section::make('Business Information')
                     ->description('Enter your business details for the Twilio subaccount')
                     ->schema([
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TextInput::make('business_name')
+                        Grid::make(2)->schema([
+                            TextInput::make('business_name')
                                 ->label('Business Name')
                                 ->required()
                                 ->disabled($this->accountCreated),
-                            Forms\Components\TextInput::make('business_email')
+                            TextInput::make('business_email')
                                 ->label('Business Email')
                                 ->email()
                                 ->required()
                                 ->disabled($this->accountCreated),
                         ]),
-                        Forms\Components\Textarea::make('business_description')
+                        Textarea::make('business_description')
                             ->label('Business Description')
                             ->rows(2)
                             ->placeholder('Describe your gym business...'),
@@ -249,20 +259,20 @@ trait HasSetupSchemas
                     $this->processTwilioAccountSetup();
                 } catch (\Exception $e) {
                     $this->handleSetupError($e, 'Failed to process Twilio account setup');
-                    throw new \Filament\Support\Exceptions\Halt;
+                    throw new Halt;
                 }
             });
     }
 
-    private function getTwilioPhoneNumberStep(): Forms\Components\Wizard\Step
+    private function getTwilioPhoneNumberStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Phone Number')
+        return Step::make('Phone Number')
             ->label('Phone Number')
             ->schema([
-                Forms\Components\Section::make('Get a Phone Number')
+                Section::make('Get a Phone Number')
                     ->description('Choose how to get your WhatsApp phone number')
                     ->schema([
-                        Forms\Components\Radio::make('phone_number_source')
+                        Radio::make('phone_number_source')
                             ->label('How would you like to get your phone number?')
                             ->options([
                                 'purchase_twilio' => 'Purchase from Twilio',
@@ -283,15 +293,15 @@ trait HasSetupSchemas
             });
     }
 
-    private function getWabaAccountStep(): Forms\Components\Wizard\Step
+    private function getWabaAccountStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('WhatsApp Business')
+        return Step::make('WhatsApp Business')
             ->label('WhatsApp Business')
             ->schema([
-                Forms\Components\Section::make('Connect Your WhatsApp Business')
+                Section::make('Connect Your WhatsApp Business')
                     ->description('Set up your Meta WhatsApp Business Account')
                     ->schema([
-                        Forms\Components\Radio::make('waba_connection_method')
+                        Radio::make('waba_connection_method')
                             ->label('Connection Method')
                             ->options([
                                 'embedded_signup' => 'Embedded Signup (Recommended)',
@@ -305,7 +315,7 @@ trait HasSetupSchemas
                             ->live()
                             ->visible(fn () => ! $this->isWabaConnected()),
 
-                        Forms\Components\Placeholder::make('')
+                        Placeholder::make('')
                             ->content(new HtmlString('
                                 <div class="mt-4 p-4 bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-blue-400 rounded-lg">
                                     <h4 class="font-medium text-blue-800 dark:text-blue-400 mb-2">Complete WABA Setup</h4>
@@ -314,7 +324,7 @@ trait HasSetupSchemas
                             '))
                             ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'embedded_signup' && ! $this->isWabaConnected()),
 
-                        Forms\Components\Placeholder::make('')
+                        Placeholder::make('')
                             ->content(new HtmlString('
                                 <div class="mt-4 p-4 bg-primary-500 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-lg flex items-start gap-3">
                                     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-800/50 flex items-center justify-center">
@@ -330,8 +340,8 @@ trait HasSetupSchemas
                             '))
                             ->visible(fn (): bool => session()->has('success')),
 
-                        Forms\Components\Actions::make([
-                            Forms\Components\Actions\Action::make('connectViaFacebook')
+                        Actions::make([
+                            Action::make('connectViaFacebook')
                                 ->label('Connect via Facebook')
                                 ->color('success')
                                 ->icon('heroicon-o-arrow-right')
@@ -343,7 +353,7 @@ trait HasSetupSchemas
                                 ]),
                         ]),
 
-                        Forms\Components\Placeholder::make('')
+                        Placeholder::make('')
                             ->content(new HtmlString('
                                 <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
                                     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-800/50 flex items-center justify-center">
@@ -359,11 +369,11 @@ trait HasSetupSchemas
                             '))
                             ->visible(fn (): bool => session()->has('error')),
 
-                        Forms\Components\Section::make('Connect Your Existing WABA')
+                        Section::make('Connect Your Existing WABA')
                             ->description('Enter your WhatsApp Business Account details from Meta Business Manager.')
                             ->schema([
-                                Forms\Components\Grid::make(2)->schema([
-                                    Forms\Components\TextInput::make('waba_id')
+                                Grid::make(2)->schema([
+                                    TextInput::make('waba_id')
                                         ->label('WABA ID')
                                         ->helperText('Your WhatsApp Business Account ID from Meta Business Manager (15 digits)')
                                         ->required()
@@ -374,7 +384,7 @@ trait HasSetupSchemas
                                             'regex' => 'WABA ID must be exactly 15 digits (e.g., 123456789012345)',
                                         ]),
 
-                                    Forms\Components\TextInput::make('manual_phone_number')
+                                    TextInput::make('manual_phone_number')
                                         ->label('WhatsApp Phone Number')
                                         ->tel()
                                         ->helperText('The phone number associated with your WABA (e.g., +1234567890)')
@@ -387,7 +397,7 @@ trait HasSetupSchemas
                                         ]),
                                 ]),
 
-                                Forms\Components\TextInput::make('waba_phone_number_id')
+                                TextInput::make('waba_phone_number_id')
                                     ->label('WhatsApp Phone Number ID')
                                     ->helperText('The Phone Number ID from Meta Business Manager (15 digits, e.g., 123456789012345)')
                                     ->required()
@@ -398,14 +408,14 @@ trait HasSetupSchemas
                                         'regex' => 'Phone Number ID must be exactly 15 digits',
                                     ]),
 
-                                Forms\Components\TextInput::make('meta_access_token')
+                                TextInput::make('meta_access_token')
                                     ->label('Meta Access Token')
                                     ->helperText('Required. Permanent access token from Meta Business Manager to verify your account.')
                                     ->required()
                                     ->password(),
 
-                                Forms\Components\Actions::make([
-                                    Forms\Components\Actions\Action::make('connectExistingWaba')
+                                Actions::make([
+                                    Action::make('connectExistingWaba')
                                         ->label('Connect WABA')
                                         ->color('primary')
                                         ->icon('heroicon-o-link')
@@ -419,9 +429,9 @@ trait HasSetupSchemas
                             ->visible(fn (Get $get): bool => $get('waba_connection_method') === 'manual_connect' && ! $this->isWabaConnected())
                             ->collapsed(false),
 
-                        Forms\Components\Section::make('How to Find Your WABA Details')
+                        Section::make('How to Find Your WABA Details')
                             ->schema([
-                                Forms\Components\Placeholder::make('waba_instructions')
+                                Placeholder::make('waba_instructions')
                                     ->hiddenLabel()
                                     ->content(new HtmlString('
                                         <div class="prose prose-sm dark:prose-invert">
@@ -442,7 +452,7 @@ trait HasSetupSchemas
                     ])
                     ->visible(fn () => ! $this->isWabaConnected()),
 
-                Forms\Components\Placeholder::make('waba_connected')
+                Placeholder::make('waba_connected')
                     ->hiddenLabel()
                     ->content(new HtmlString('
                         <div class="flex flex-col items-center justify-center py-8 px-4 text-center">
@@ -462,17 +472,17 @@ trait HasSetupSchemas
                     $this->processWabaSetup();
                 } catch (\Exception $e) {
                     $this->handleSetupError($e, 'Failed to process WABA setup');
-                    throw new \Filament\Support\Exceptions\Halt;
+                    throw new Halt;
                 }
             });
     }
 
-    private function getWabaPhoneNumberStep(): Forms\Components\Wizard\Step
+    private function getWabaPhoneNumberStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Phone Number')
+        return Step::make('Phone Number')
             ->label('Phone Number')
             ->schema([
-                Forms\Components\Placeholder::make('phone_info')
+                Placeholder::make('phone_info')
                     ->hiddenLabel()
                     ->content(new HtmlString('
                         <div class="py-4">
@@ -483,20 +493,20 @@ trait HasSetupSchemas
             ->visible(fn (Get $get): bool => $get('provider_type') === 'twilio' && ! $this->isWabaConnected());
     }
 
-    private function getTemplatesStep(): Forms\Components\Wizard\Step
+    private function getTemplatesStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Templates')
+        return Step::make('Templates')
             ->label('Default Templates')
             ->schema([
-                Forms\Components\Placeholder::make('')
+                Placeholder::make('')
                     ->content(new HtmlString('
                         <div class="mb-4">
                             <h3 class="font-medium text-gray-900 dark:text-gray-100">Setting up default message templates</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400">We will create 8 utility templates for common gym communications. These will be submitted for Meta approval.</p>
                         </div>
                     ')),
-                Forms\Components\Actions::make([
-                    Forms\Components\Actions\Action::make('createTemplates')
+                Actions::make([
+                    Action::make('createTemplates')
                         ->label('Create Templates')
                         ->color('primary')
                         ->url(route('filament.admin.resources.whats-app-templates.index', ['tenant' => $this->getTenantSlug()]))
@@ -510,12 +520,12 @@ trait HasSetupSchemas
             ->visible(fn () => ! $this->isExistWhatsAppTemplates);
     }
 
-    private function getWelcomeCreditsStep(): Forms\Components\Wizard\Step
+    private function getWelcomeCreditsStep(): Step
     {
-        return Forms\Components\Wizard\Step::make('Welcome Credits')
+        return Step::make('Welcome Credits')
             ->label('Welcome Credits')
             ->schema([
-                Forms\Components\Placeholder::make('')
+                Placeholder::make('')
                     ->content(new HtmlString('
                         <div class="text-center py-6">
                             <div class="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
@@ -525,8 +535,8 @@ trait HasSetupSchemas
                             <p class="text-gray-500 dark:text-gray-400">Claim your 50 free WhatsApp message credits to get started.</p>
                         </div>
                     ')),
-                Forms\Components\Actions::make([
-                    Forms\Components\Actions\Action::make('claimWelcome')
+                Actions::make([
+                    Action::make('claimWelcome')
                         ->label($this->welcomeCreditsClaimed ? 'Credits Claimed' : 'Claim Welcome Credits')
                         ->color('success')
                         ->action('claimWelcomeCredits')
@@ -543,11 +553,11 @@ trait HasSetupSchemas
     private function getActiveSchema(): array
     {
         return [
-            Forms\Components\Section::make('WhatsApp Business Status')
+            Section::make('WhatsApp Business Status')
                 ->description('Your WhatsApp Business integration is active.')
                 ->schema([
-                    Forms\Components\Grid::make(2)->schema([
-                        Forms\Components\Placeholder::make('status')
+                    Grid::make(2)->schema([
+                        Placeholder::make('status')
                             ->label('Account Status')
                             ->content(new HtmlString('
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
@@ -555,31 +565,31 @@ trait HasSetupSchemas
                                 </span>
                             ')),
 
-                        Forms\Components\Placeholder::make('phone_number')
+                        Placeholder::make('phone_number')
                             ->label('WhatsApp Number')
                             ->content($this->phoneNumber?->phone_number ?? 'N/A'),
 
-                        Forms\Components\Placeholder::make('account_created')
+                        Placeholder::make('account_created')
                             ->label('Account Created')
                             ->content($this->whatsappAccount?->created_at?->format('M d, Y g:i A') ?? 'N/A'),
 
-                        Forms\Components\Placeholder::make('credits')
+                        Placeholder::make('credits')
                             ->label('Message Credits')
                             ->content(($this->creditBalance?->remaining_credits ?? 0) . ' remaining'),
                     ]),
 
-                    Forms\Components\Actions::make([
-                        Forms\Components\Actions\Action::make('testMessage')
+                    Actions::make([
+                        Action::make('testMessage')
                             ->label('Send Test Message')
                             ->color('info')
                             ->form([
-                                \Ysfkaya\FilamentPhoneInput\Forms\PhoneInput::make('test_phone')
+                                PhoneInput::make('test_phone')
                                     ->label('Phone Number')
                                     ->required(),
                             ])
                             ->action('sendTestMessage'),
 
-                        Forms\Components\Actions\Action::make('viewTemplates')
+                        Action::make('viewTemplates')
                             ->label('Manage Templates')
                             ->url(route('filament.admin.resources.whats-app-templates.index', ['tenant' => $this->getTenantSlug()])),
                     ]),
@@ -590,10 +600,10 @@ trait HasSetupSchemas
     private function getErrorSchema(): array
     {
         return [
-            Forms\Components\Section::make('Setup Incomplete')
+            Section::make('Setup Incomplete')
                 ->description('There was an issue with your WhatsApp setup.')
                 ->schema([
-                    Forms\Components\Placeholder::make('error_message')
+                    Placeholder::make('error_message')
                         ->content(new HtmlString('
                             <div class="text-center py-8">
                                 <div class="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
@@ -605,8 +615,8 @@ trait HasSetupSchemas
                                 <p class="text-gray-500 dark:text-gray-400 mb-4">Please contact support or try setting up again.</p>
                             </div>
                         ')),
-                    Forms\Components\Actions::make([
-                        Forms\Components\Actions\Action::make('retry')
+                    Actions::make([
+                        Action::make('retry')
                             ->label('Retry Setup')
                             ->color('primary')
                             ->action('retrySetup'),

@@ -2,13 +2,14 @@
 
 namespace App\Biometrics\Services;
 
+use Illuminate\Support\Facades\Date;
+use App\Models\Attendances;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\AttendanceStatus;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
-use Carbon\Carbon;
 
 class OfflineSyncService
 {
@@ -40,7 +41,7 @@ class OfflineSyncService
 
     protected function processEvent(array $event, BiometricDevice $device, $provider): array
     {
-        $capturedAt = Carbon::parse($event['captured_at']);
+        $capturedAt = Date::parse($event['captured_at']);
         $sample = new BiometricSample(
             type: $event['biometric_type'],
             data: $event['data'],
@@ -118,7 +119,7 @@ class OfflineSyncService
         }
 
         // Step 6: Create or update attendance with offline timestamps (idempotent)
-        if (empty($event['offline_id'])) {
+        if (blank($event['offline_id'])) {
             // Derive deterministic ID from event properties
             $offlineId = hash('sha256', $device->id . '|' . $event['captured_at'] . '|' . ($event['biometric_type'] ?? ''));
         } else {
@@ -126,7 +127,7 @@ class OfflineSyncService
         }
 
         // Check for existing attendance (prevent duplicates from retry)
-        $existingAttendance = \App\Models\Attendances::where('device_id', $device->id)
+        $existingAttendance = Attendances::where('device_id', $device->id)
             ->where('offline_id', $offlineId)
             ->first();
 

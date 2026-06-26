@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Enums\LeadStatus;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
@@ -25,7 +26,7 @@ class CRMStatsWidget extends BaseStatsOverviewWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -36,7 +37,7 @@ class CRMStatsWidget extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return Cache::flexible(Lead::DASHBOARD_CRM_STATS_WIDGET . $gym->id, [now()->addHour(), now()->addHours(24)], function () {

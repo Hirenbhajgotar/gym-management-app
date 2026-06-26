@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,34 +17,35 @@ use Illuminate\Support\Str;
  * @property string $token
  * @property string $report_type
  * @property array<array-key, mixed>|null $filters
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $expires_at
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\User $user
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read User $user
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink notExpired()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink valid()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereExpiresAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereFilters($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereReportType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ShareableReportLink whereUserId($value)
+ * @method static Builder<static>|ShareableReportLink active()
+ * @method static Builder<static>|ShareableReportLink newModelQuery()
+ * @method static Builder<static>|ShareableReportLink newQuery()
+ * @method static Builder<static>|ShareableReportLink notExpired()
+ * @method static Builder<static>|ShareableReportLink query()
+ * @method static Builder<static>|ShareableReportLink valid()
+ * @method static Builder<static>|ShareableReportLink whereCreatedAt($value)
+ * @method static Builder<static>|ShareableReportLink whereExpiresAt($value)
+ * @method static Builder<static>|ShareableReportLink whereFilters($value)
+ * @method static Builder<static>|ShareableReportLink whereGymId($value)
+ * @method static Builder<static>|ShareableReportLink whereId($value)
+ * @method static Builder<static>|ShareableReportLink whereIsActive($value)
+ * @method static Builder<static>|ShareableReportLink whereReportType($value)
+ * @method static Builder<static>|ShareableReportLink whereToken($value)
+ * @method static Builder<static>|ShareableReportLink whereUpdatedAt($value)
+ * @method static Builder<static>|ShareableReportLink whereUserId($value)
  *
  * @mixin \Eloquent
  */
 class ShareableReportLink extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'gym_id',
         'user_id',
@@ -66,7 +70,7 @@ class ShareableReportLink extends Model
         parent::boot();
 
         static::creating(function ($link) {
-            if (empty($link->token)) {
+            if (blank($link->token)) {
                 $link->token = self::generateUniqueToken();
             }
         });
@@ -77,9 +81,7 @@ class ShareableReportLink extends Model
         $count = 0;
 
         do {
-            if ($count >= $maxRetries) {
-                throw new \RuntimeException('Failed to generate a unique token after ' . $maxRetries . ' attempts.');
-            }
+            throw_if($count >= $maxRetries, \RuntimeException::class, 'Failed to generate a unique token after ' . $maxRetries . ' attempts.');
 
             $token = Str::random(64);
             $count++;
@@ -91,12 +93,17 @@ class ShareableReportLink extends Model
     // =========================================================================
     // RELATIONSHIPS
     // =========================================================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

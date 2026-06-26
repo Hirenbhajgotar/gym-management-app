@@ -6,7 +6,7 @@ use App\Models\MemberPayment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\MemberPayment>
+ * @extends Factory<MemberPayment>
  */
 class MemberPaymentFactory extends Factory
 {

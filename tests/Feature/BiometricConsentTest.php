@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\BiometricConsentStoreRequest;
+use Illuminate\Support\Facades\Validator;
 use App\Events\BiometricConsentGiven;
 use App\Http\Controllers\BiometricConsentController;
 use App\Jobs\SendBiometricConsentEmail;
@@ -12,7 +14,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
-use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class BiometricConsentTest extends TestCase
@@ -38,7 +39,7 @@ class BiometricConsentTest extends TestCase
 
         $response = $this->get($signedUrl);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSee('Biometric Data Consent');
     }
 
@@ -51,7 +52,7 @@ class BiometricConsentTest extends TestCase
 
         $response = $this->get("/consent/biometric?gym_member_id={$member->id}&gym_id={$gym->id}");
 
-        $response->assertStatus(403);
+        $response->assertForbidden();
     }
 
     public function test_consent_page_shows_already_consented_when_member_has_consent(): void
@@ -82,7 +83,7 @@ class BiometricConsentTest extends TestCase
 
         $response = $this->get($signedUrl);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSee('Consent Already Recorded');
     }
 
@@ -95,7 +96,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance and validate
-        $formRequest = new \App\Http\Requests\BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest;
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -135,7 +136,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance
-        $formRequest = new \App\Http\Requests\BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest;
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -159,7 +160,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Test form request validation directly
-        $formRequest = new \App\Http\Requests\BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest;
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -167,7 +168,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // The validation should fail for 'consented' field
-        $validator = \Illuminate\Support\Facades\Validator::make(
+        $validator = Validator::make(
             $formRequest->all(),
             $formRequest->rules()
         );
@@ -200,7 +201,7 @@ class BiometricConsentTest extends TestCase
         $gym = Gym::factory()->create();
 
         // Create member with empty string email (not null, since DB may require email)
-        $member = GymMember::factory()->create([
+        GymMember::factory()->create([
             'gym_id' => $gym->id,
             'email' => '',
         ]);
@@ -220,7 +221,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance
-        $formRequest = new \App\Http\Requests\BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest;
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,

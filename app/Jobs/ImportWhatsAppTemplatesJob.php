@@ -114,8 +114,8 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         $providerType = $this->providerType ?? $account->provider_type;
 
         $templateResult = match ($providerType) {
-            WhatsAppProviderTypeEnum::TWILIO => $this->importFromTwilio($account),
-            WhatsAppProviderTypeEnum::WABA => $this->importFromMeta($account),
+            WhatsAppProviderTypeEnum::TWILIO => $this->importFromTwilio(),
+            WhatsAppProviderTypeEnum::WABA => $this->importFromMeta(),
             default => $this->importFromProviderFallback($account),
         };
 
@@ -131,7 +131,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $syncedCount = $this->syncTemplatesToDatabase($account, $templateResult->templates, $providerType);
+        $syncedCount = $this->syncTemplatesToDatabase($templateResult->templates, $providerType);
 
         Log::info('ImportWhatsAppTemplatesJob: completed', [
             'gym_id' => $this->gymId,
@@ -143,23 +143,21 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Import templates from Twilio.
      */
-    private function importFromTwilio(WhatsAppAccount $account): TemplateCollectionResult
+    private function importFromTwilio(): TemplateCollectionResult
     {
         $context = new TwilioContext($this->gymId);
-        $templateService = new TwilioTemplateService($context, app(WhatsAppTemplateService::class));
-
+        $templateService = new TwilioTemplateService($context, resolve(WhatsAppTemplateService::class));
         return $templateService->getTemplates($this->gymId);
     }
 
     /**
      * Import templates from Meta.
      */
-    private function importFromMeta(WhatsAppAccount $account): TemplateCollectionResult
+    private function importFromMeta(): TemplateCollectionResult
     {
         $context = new MetaContext($this->gymId);
         $api = new MetaApiClient($context);
         $templateService = new MetaTemplateService($context, $api);
-
         return $templateService->getTemplates($this->gymId);
     }
 
@@ -171,12 +169,12 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     {
         // Try Twilio first if twilio credentials exist
         if (filled($account->twilio_account_sid) && filled($account->twilio_auth_token)) {
-            return $this->importFromTwilio($account);
+            return $this->importFromTwilio();
         }
 
         // Try Meta if waba_id exists
         if (filled($account->waba_id) && filled($account->meta_access_token)) {
-            return $this->importFromMeta($account);
+            return $this->importFromMeta();
         }
 
         Log::warning('ImportWhatsAppTemplatesJob: no provider credentials found', [
@@ -196,7 +194,6 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
      * @param  array<string, mixed>  $templates  Array of template data from API
      */
     private function syncTemplatesToDatabase(
-        WhatsAppAccount $account,
         array $templates,
         ?WhatsAppProviderTypeEnum $providerType,
     ): int {
@@ -240,7 +237,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
 
             // Extract and set variables if available
             $variables = $this->extractVariables($templateData, $body, $providerType);
-            if (! empty($variables)) {
+            if (filled($variables)) {
                 $record->variables = $variables;
                 $record->variable_count = count($variables);
                 $record->variable_placeholder = TemplateVariableHelper::generateDefaultPlaceholders($variables);
@@ -331,7 +328,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         // Try to extract from Twilio variables field
         if ($providerType === WhatsAppProviderTypeEnum::TWILIO) {
             $twilioVars = $templateData['variables'] ?? [];
-            if (is_array($twilioVars) && ! empty($twilioVars)) {
+            if (is_array($twilioVars) && filled($twilioVars)) {
                 return $this->convertTwilioVariables($twilioVars);
             }
         }

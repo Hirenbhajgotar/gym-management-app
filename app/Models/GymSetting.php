@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,20 +15,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $key
  * @property string|null $value
  * @property string|null $type
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|GymSetting whereValue($value)
+ * @method static Builder<static>|GymSetting newModelQuery()
+ * @method static Builder<static>|GymSetting newQuery()
+ * @method static Builder<static>|GymSetting query()
+ * @method static Builder<static>|GymSetting whereCreatedAt($value)
+ * @method static Builder<static>|GymSetting whereGymId($value)
+ * @method static Builder<static>|GymSetting whereId($value)
+ * @method static Builder<static>|GymSetting whereKey($value)
+ * @method static Builder<static>|GymSetting whereType($value)
+ * @method static Builder<static>|GymSetting whereUpdatedAt($value)
+ * @method static Builder<static>|GymSetting whereValue($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperGymSetting
@@ -63,6 +65,9 @@ class GymSetting extends Model
         );
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);

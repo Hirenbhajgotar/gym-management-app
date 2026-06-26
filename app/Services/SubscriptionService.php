@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\SubscriptionStatus;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -24,9 +25,7 @@ class SubscriptionService
                 ->lockForUpdate()
                 ->first();
 
-            if (! $lockedUser) {
-                throw new Exception('User not found');
-            }
+            throw_unless($lockedUser, Exception::class, 'User not found');
 
             // Check if user already has an active subscription
             $activeSubscription = Subscription::where('user_id', $lockedUser->id)
@@ -34,9 +33,7 @@ class SubscriptionService
                 ->lockForUpdate()
                 ->first();
 
-            if ($activeSubscription) {
-                throw new Exception('User already has an active subscription');
-            }
+            throw_if($activeSubscription, Exception::class, 'User already has an active subscription');
 
             // Lock plan and load features (prevent concurrent plan updates)
             $lockedPlan = Plan::with('features')
@@ -44,9 +41,7 @@ class SubscriptionService
                 ->sharedLock()
                 ->first();
 
-            if (! $lockedPlan) {
-                throw new Exception('Plan not found');
-            }
+            throw_unless($lockedPlan, Exception::class, 'Plan not found');
 
             // Check if user can get a free trial
             $hasUsedTrial = $lockedUser->hasUsedTrial();
@@ -72,7 +67,7 @@ class SubscriptionService
             );
 
             $metadata = null;
-            if (isset($options['metadata']) && ! empty($options['metadata'])) {
+            if (isset($options['metadata']) && filled($options['metadata'])) {
                 $metadata = $options['metadata'];
             }
 
@@ -86,10 +81,10 @@ class SubscriptionService
                     ? $lockedPlan->price_yearly
                     : $lockedPlan->price_monthly,
                 'currency' => $lockedPlan->currency,
-                'trial_ends_at' => $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
-                'current_period_start' => Carbon::now(),
+                'trial_ends_at' => $trialDays > 0 ? Date::now()->addDays($trialDays) : null,
+                'current_period_start' => Date::now(),
                 'current_period_end' => $this->calculatePeriodEnd(
-                    Carbon::now(),
+                    Date::now(),
                     $billingCycle,
                 ),
                 'metadata' => $metadata,
@@ -112,7 +107,7 @@ class SubscriptionService
     ): Subscription {
         $billingCycle = $options['billing_cycle'] ?? 'monthly';
 
-        $subscription = DB::transaction(function () use (
+        return DB::transaction(function () use (
             $user,
             $plan,
             $billingCycle,
@@ -128,9 +123,9 @@ class SubscriptionService
                     : $plan->price_monthly,
                 'currency' => $plan->currency,
                 'trial_ends_at' => null, // No trial for pending subscriptions
-                'current_period_start' => Carbon::now(),
+                'current_period_start' => Date::now(),
                 'current_period_end' => $this->calculatePeriodEnd(
-                    Carbon::now(),
+                    Date::now(),
                     $billingCycle,
                 ),
             ]);
@@ -140,8 +135,6 @@ class SubscriptionService
 
             return $subscription;
         });
-
-        return $subscription;
     }
 
     /**
@@ -149,15 +142,13 @@ class SubscriptionService
      */
     public function activateSubscription(Subscription $subscription): bool
     {
-        if ($subscription->status !== SubscriptionStatus::PENDING) {
-            throw new \Exception('Only pending subscriptions can be activated');
-        }
+        throw_if($subscription->status !== SubscriptionStatus::PENDING, \Exception::class, 'Only pending subscriptions can be activated');
 
         return $subscription->update([
             'status' => SubscriptionStatus::ACTIVE,
-            'current_period_start' => Carbon::now(),
+            'current_period_start' => Date::now(),
             'current_period_end' => $this->calculatePeriodEnd(
-                Carbon::now(),
+                Date::now(),
                 $subscription->billing_cycle,
             ),
         ]);
@@ -170,9 +161,7 @@ class SubscriptionService
         Subscription $subscription,
         bool $immediately = false,
     ): bool {
-        if (! $subscription->isActive()) {
-            throw new \Exception('Subscription is not active');
-        }
+        throw_unless($subscription->isActive(), \Exception::class, 'Subscription is not active');
 
         $trialEnd = $subscription->trial_ends_at?->isFuture()
             ? now()
@@ -180,13 +169,13 @@ class SubscriptionService
 
         $updateData = [
             'status' => SubscriptionStatus::CANCELLED,
-            'cancelled_at' => Carbon::now(),
+            'cancelled_at' => Date::now(),
             'trial_ends_at' => $trialEnd ?? null,
         ];
 
         if ($immediately) {
-            $updateData['ends_at'] = Carbon::now();
-            $updateData['current_period_end'] = Carbon::now();
+            $updateData['ends_at'] = Date::now();
+            $updateData['current_period_end'] = Date::now();
         } else {
             $updateData['ends_at'] = $subscription->current_period_end;
         }
@@ -203,7 +192,7 @@ class SubscriptionService
         //     return false;
         // }
 
-        $newPeriodStart = $subscription->current_period_end ?? Carbon::now();
+        $newPeriodStart = $subscription->current_period_end ?? Date::now();
         $newPeriodEnd = $this->calculatePeriodEnd(
             $newPeriodStart,
             $subscription->billing_cycle,
@@ -231,9 +220,7 @@ class SubscriptionService
         Plan $newPlan,
         array $options = [],
     ): Subscription {
-        if (! $subscription->isActive()) {
-            throw new \Exception('Subscription is not active');
-        }
+        throw_unless($subscription->isActive(), \Exception::class, 'Subscription is not active');
 
         $billingCycle =
             $options['billing_cycle'] ?? $subscription->billing_cycle;
@@ -258,7 +245,7 @@ class SubscriptionService
                 $remainingDays = $subscription->daysUntilExpiry();
                 if ($remainingDays > 0) {
                     $newPeriodEnd = $this->calculatePeriodEnd(
-                        Carbon::now(),
+                        Date::now(),
                         $billingCycle,
                         $remainingDays,
                     );
@@ -320,7 +307,7 @@ class SubscriptionService
     public function checkExpiredSubscriptions(): int
     {
         $expiredSubscriptions = Subscription::active()
-            ->where('current_period_end', '<', Carbon::now())
+            ->where('current_period_end', '<', Date::now())
             ->get();
 
         $count = 0;
@@ -341,7 +328,7 @@ class SubscriptionService
             'status',
             SubscriptionStatus::TRIAL,
         )
-            ->where('trial_ends_at', '<', Carbon::now())
+            ->where('trial_ends_at', '<', Date::now())
             ->get();
 
         $count = 0;
@@ -408,7 +395,7 @@ class SubscriptionService
             'total_expired' => Subscription::expired()->count(),
             'total_suspended' => Subscription::suspended()->count(),
             'expiring_soon' => Subscription::active()
-                ->where('current_period_end', '<=', Carbon::now()->addDays(7))
+                ->where('current_period_end', '<=', Date::now()->addDays(7))
                 ->count(),
         ];
     }
@@ -427,9 +414,9 @@ class SubscriptionService
             'order_column' => $planFeature->order_column ?? 1,
             'created_at' => now(),
             'updated_at' => now(),
-        ])->toArray();
+        ])->all();
 
-        if (! empty($features)) {
+        if (filled($features)) {
             SubscriptionFeature::insert($features);
         }
     }
@@ -444,18 +431,14 @@ class SubscriptionService
             // Lock user first to prevent race conditions and consistent locking order (User -> Plan)
             $lockedUser = User::where('id', $user->id)->lockForUpdate()->first();
 
-            if (! $lockedUser) {
-                throw new \Exception('User not found');
-            }
+            throw_unless($lockedUser, \Exception::class, 'User not found');
 
             $lockedPlan = Plan::with('features')
                 ->where('id', $plan->id)
                 ->sharedLock()
                 ->first();
 
-            if (! $lockedPlan) {
-                throw new \Exception('Plan not found');
-            }
+            throw_unless($lockedPlan, \Exception::class, 'Plan not found');
 
             $activeSubscriptions = Subscription::where('user_id', $lockedUser->id)
                 ->active()
@@ -469,8 +452,8 @@ class SubscriptionService
                 Subscription::whereIn('id', $cancelledIds)
                     ->update([
                         'status' => SubscriptionStatus::CANCELLED,
-                        'cancelled_at' => Carbon::now(),
-                        'ends_at' => Carbon::now(),
+                        'cancelled_at' => Date::now(),
+                        'ends_at' => Date::now(),
                         'metadata' => [
                             'cancelled_by' => 'admin',
                             'description' => 'This plan was cancelled because a new plan was assigned manually by a super-admin.',
@@ -486,14 +469,14 @@ class SubscriptionService
 
             // Handle trial if specified
             if (isset($options['trial_ends_at']) && $options['trial_ends_at']) {
-                $trialDays = Carbon::parse($options['trial_ends_at'])->diffInDays(Carbon::now());
+                $trialDays = Date::parse($options['trial_ends_at'])->diffInDays(Date::now());
                 $subscriptionOptions['trial_days'] = $trialDays;
             }
 
             // Add metadata for manual assignment
             $subscriptionOptions['metadata'] = [
                 'assigned_by' => $options['assigned_by'] ?? auth()->id(),
-                'assigned_at' => Carbon::now()->toISOString(),
+                'assigned_at' => Date::now()->toISOString(),
                 'assignment_type' => 'manual',
                 'notes' => $options['notes'] ?? null,
             ];

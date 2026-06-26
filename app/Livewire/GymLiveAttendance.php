@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -46,7 +47,7 @@ final class GymLiveAttendance extends Component
             ->where('attendanceable_type', GymMember::class);
 
         if ($this->search) {
-            $query->whereHas('attendanceable', function ($q) {
+            $query->whereHas('attendanceable', function (Builder $q) {
                 $q->where('name', 'like', "%{$this->search}%");
             });
         }

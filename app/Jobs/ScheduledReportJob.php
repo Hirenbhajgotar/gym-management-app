@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use Illuminate\Support\Facades\Log;
 use App\Models\ScheduledReport;
 use App\Services\ReportPdfGenerator;
 use Illuminate\Bus\Queueable;
@@ -53,7 +54,7 @@ class ScheduledReportJob implements ShouldQueue
 
         } catch (\Exception $e) {
             // Log failure
-            \Illuminate\Support\Facades\Log::error('Scheduled report failed: ' . $e->getMessage());
+            Log::error('Scheduled report failed: ' . $e->getMessage());
             // Optionally notify admin or user
         }
     }

@@ -8,7 +8,6 @@ use App\Models\PermissionSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -147,7 +146,7 @@ class BackfillStaffRolePermissionsTest extends TestCase
     #[Test]
     public function it_uses_permission_setting_override_when_present(): void
     {
-        $gym = $this->seedGymWithManagerAndReceptionist();
+        $this->seedGymWithManagerAndReceptionist();
 
         // Admin pre-configured a custom permission set for `manager`.
         // Only 2 perms (subset of the hardcoded list).

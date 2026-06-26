@@ -35,9 +35,7 @@ class GenerateSvgLogo extends Command
 
             $this->info('Generating SVG wrapper...');
             $content = file_get_contents($sourcePath);
-            if ($content === false) {
-                throw new RuntimeException("Failed to read original image file: {$sourcePath}");
-            }
+            throw_if($content === false, RuntimeException::class, "Failed to read original image file: {$sourcePath}");
 
             $this->generateSvg($content, $imageInfo['width'], $imageInfo['height'], $imageInfo['mime']);
 
@@ -74,17 +72,13 @@ class GenerateSvgLogo extends Command
     {
         $info = @getimagesize($path);
 
-        if (! $info) {
-            throw new RuntimeException('Could not get image info.');
-        }
+        throw_unless($info, RuntimeException::class, 'Could not get image info.');
 
         $width = $info[0];
         $height = $info[1];
         $mime = $info['mime'];
 
-        if (! in_array($mime, ['image/png', 'image/jpeg'])) {
-            throw new RuntimeException("Source file must be a PNG or JPEG image. Found: {$mime}");
-        }
+        throw_unless(in_array($mime, ['image/png', 'image/jpeg']), RuntimeException::class, "Source file must be a PNG or JPEG image. Found: {$mime}");
 
         return ['width' => $width, 'height' => $height, 'mime' => $mime];
     }
@@ -103,9 +97,7 @@ class GenerateSvgLogo extends Command
 </svg>
 SVG;
 
-        if (file_put_contents($dest, $svg) === false) {
-            throw new RuntimeException("Failed to write SVG to {$dest}");
-        }
+        throw_if(file_put_contents($dest, $svg) === false, RuntimeException::class, "Failed to write SVG to {$dest}");
 
         $this->info("Generated {$dest}");
     }

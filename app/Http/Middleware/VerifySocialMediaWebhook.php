@@ -78,7 +78,7 @@ class VerifySocialMediaWebhook
     private function getPlatformFromRequest(Request $request): ?string
     {
         $path = $request->path();
-        $host = $request->getHost();
+        $request->getHost();
 
         // Check path-based routing
         if (str_contains($path, 'facebook')) {

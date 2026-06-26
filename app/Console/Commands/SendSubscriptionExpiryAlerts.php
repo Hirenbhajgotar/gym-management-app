@@ -2,12 +2,13 @@
 
 namespace App\Console\Commands;
 
+use Illuminate\Support\Facades\Date;
+use App\Services\SubscriptionService;
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
 use App\Notifications\PlanExpiryNotification;
 use App\Notifications\SubscriptionExpired;
 use App\Notifications\TrialEndingNotification;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class SendSubscriptionExpiryAlerts extends Command
@@ -47,8 +48,8 @@ class SendSubscriptionExpiryAlerts extends Command
     private function processExpiringTrials(): void
     {
         $expiringTrials = Subscription::where('status', SubscriptionStatus::TRIAL)
-            ->where('trial_ends_at', '<=', Carbon::now()->addDays(3))
-            ->where('trial_ends_at', '>', Carbon::now())
+            ->where('trial_ends_at', '<=', Date::now()->addDays(3))
+            ->where('trial_ends_at', '>', Date::now())
             ->with('user')
             ->get();
 
@@ -65,8 +66,8 @@ class SendSubscriptionExpiryAlerts extends Command
     private function processExpiringSubscriptions(): void
     {
         $expiringSubscriptions = Subscription::active()
-            ->where('current_period_end', '<=', Carbon::now()->addDays(7))
-            ->where('current_period_end', '>', Carbon::now())
+            ->where('current_period_end', '<=', Date::now()->addDays(7))
+            ->where('current_period_end', '>', Date::now())
             ->with('user')
             ->get();
 
@@ -83,7 +84,7 @@ class SendSubscriptionExpiryAlerts extends Command
     private function processExpiredSubscriptions(): void
     {
         $expiredSubscriptions = Subscription::where('status', SubscriptionStatus::ACTIVE)
-            ->where('current_period_end', '<=', Carbon::now())
+            ->where('current_period_end', '<=', Date::now())
             ->with('user')
             ->get();
 
@@ -105,7 +106,7 @@ class SendSubscriptionExpiryAlerts extends Command
      */
     private function processExpiredTrials(): void
     {
-        $expiredCount = app(\App\Services\SubscriptionService::class)->checkExpiredTrials();
+        $expiredCount = resolve(SubscriptionService::class)->checkExpiredTrials();
         $this->info("Expired {$expiredCount} trial subscriptions");
     }
 }

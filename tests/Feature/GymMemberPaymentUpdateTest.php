@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Models\Gym;
 use App\Models\GymMember;
@@ -26,7 +27,7 @@ class GymMemberPaymentUpdateTest extends TestCase
 
         Livewire::test(PaymentsRelationManager::class, [
             'ownerRecord' => $member,
-            'pageClass' => \App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember::class,
+            'pageClass' => EditGymMember::class,
         ])
             ->callTableAction('create', null, [
                 'membership_plan_id' => $plan->id,
@@ -71,7 +72,7 @@ class GymMemberPaymentUpdateTest extends TestCase
 
         Livewire::test(PaymentsRelationManager::class, [
             'ownerRecord' => $member,
-            'pageClass' => \App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember::class,
+            'pageClass' => EditGymMember::class,
         ])
             ->callTableAction('edit', $payment, [
                 'status' => 'completed',

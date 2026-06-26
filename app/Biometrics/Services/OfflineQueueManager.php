@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Services;
 
+use Illuminate\Support\Facades\Date;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use Illuminate\Support\Facades\File;
@@ -244,7 +245,7 @@ class OfflineQueueManager
 
         while (($line = fgets($handle)) !== false) {
             $line = trim($line);
-            if (empty($line)) {
+            if (blank($line)) {
                 continue;
             }
 
@@ -343,7 +344,7 @@ class OfflineQueueManager
 
             while (($line = fgets($handle)) !== false) {
                 $line = trim($line);
-                if (empty($line)) {
+                if (blank($line)) {
                     continue;
                 }
 
@@ -408,7 +409,7 @@ class OfflineQueueManager
     {
         $allFiles = $this->getAllQueueFilePaths();
 
-        if (empty($allFiles)) {
+        if (blank($allFiles)) {
             return [
                 'success' => true,
                 'synced' => 0,
@@ -426,7 +427,7 @@ class OfflineQueueManager
         foreach ($allFiles as $file => $date) {
             $events = $this->getEventsFromFile($file);
 
-            if (empty($events)) {
+            if (blank($events)) {
                 // Empty file - can be safely deleted
                 File::delete($file);
                 $filesDeleted++;
@@ -471,7 +472,7 @@ class OfflineQueueManager
                 // Some failed - remove only successful events, keep failed
                 $remainingEvents = array_values(array_diff_key($events, array_flip($successfulIndices)));
 
-                if (empty($remainingEvents)) {
+                if (blank($remainingEvents)) {
                     // All events synced - delete the file
                     File::delete($file);
                     $filesDeleted++;
@@ -624,7 +625,7 @@ class OfflineQueueManager
         $allFiles = $this->getAllQueueFilePaths();
 
         foreach ($allFiles as $file => $date) {
-            $fileDate = \Carbon\Carbon::parse($date);
+            $fileDate = Date::parse($date);
 
             // Only delete files older than retention policy
             if ($fileDate->lt($cutoffDate)) {

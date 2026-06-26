@@ -2,11 +2,15 @@
 
 namespace App\Filament\Admin\Resources\LeadResource\Pages;
 
+use Filament\Actions\ViewAction;
+use Filament\Actions\Action;
+use Illuminate\Http\RedirectResponse;
+use App\Notifications\Member\WelcomeNotification;
+use Filament\Actions\DeleteAction;
 use App\Enums\LeadStatus;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Models\Lead;
 use App\Services\LeadConversionService;
-use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Notification as FacadesNotification;
@@ -23,19 +27,19 @@ class EditLead extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make()
+            ViewAction::make()
                 ->icon('phosphor-eye'),
 
-            Actions\Action::make('convertToMember')
+            Action::make('convertToMember')
                 ->label('Convert to Member')
                 ->color('success')
                 ->icon('phosphor-user-plus')
                 ->form(LeadResource::getConvertToMemberFormSchema())
-                ->action(function (array $data, Lead $record): \Illuminate\Http\RedirectResponse {
+                ->action(function (array $data, Lead $record): RedirectResponse {
 
-                    $member = app(LeadConversionService::class)->convert($record, $data);
+                    $member = resolve(LeadConversionService::class)->convert($record, $data);
 
-                    FacadesNotification::send($member, new \App\Notifications\Member\WelcomeNotification($member));
+                    FacadesNotification::send($member, new WelcomeNotification($member));
 
                     Notification::make()
                         ->title('Lead converted successfully')
@@ -46,7 +50,7 @@ class EditLead extends EditRecord
                 })
                 ->visible(fn (Lead $record) => $record->status !== LeadStatus::CONVERTED),
 
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
 
         ];
     }

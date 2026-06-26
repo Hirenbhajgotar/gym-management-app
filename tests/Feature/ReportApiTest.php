@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Filament\Facades\Filament;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
@@ -26,7 +27,7 @@ class ReportApiTest extends TestCase
         $this->user->gyms()->attach($this->gym->id, ['role' => 'admin']);
 
         // Set current gym for user context
-        \Filament\Facades\Filament::setTenant($this->gym);
+        Filament::setTenant($this->gym);
 
         Sanctum::actingAs($this->user, ['*']);
     }
@@ -36,7 +37,7 @@ class ReportApiTest extends TestCase
         Sanctum::actingAs(null);
 
         $response = $this->getJson('/api/reports/members');
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
     }
 
     public function test_api_returns_members_report(): void
@@ -46,7 +47,7 @@ class ReportApiTest extends TestCase
 
         $response = $this->getJson('/api/reports/members');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'stats',
                 'growth',
@@ -55,14 +56,14 @@ class ReportApiTest extends TestCase
                 'filters',
                 'generated_at',
             ])
-            ->assertJsonPath('generated_at', fn ($value) => ! empty($value));
+            ->assertJsonPath('generated_at', fn ($value) => filled($value));
     }
 
     public function test_api_returns_revenue_report(): void
     {
         $response = $this->getJson('/api/reports/revenue');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'stats',
                 'pnl',
@@ -77,7 +78,7 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/leads');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'stats',
                 'lead_funnel',
@@ -92,7 +93,7 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/attendance');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'stats',
                 'hourly_distribution',
@@ -107,7 +108,7 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/dashboard');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'member_stats',
                 'revenue_stats',
@@ -123,7 +124,7 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/members?date_range=last_7_days&start_date=2026-01-01&end_date=2026-01-07');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'stats',
                 'filters',
@@ -145,7 +146,7 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/members');
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $this->assertNotEmpty($response->json('generated_at'));
 
         // Verify it's a valid ISO 8601 date
@@ -157,6 +158,6 @@ class ReportApiTest extends TestCase
     {
         $response = $this->getJson('/api/reports/invalid');
 
-        $response->assertStatus(404);
+        $response->assertNotFound();
     }
 }

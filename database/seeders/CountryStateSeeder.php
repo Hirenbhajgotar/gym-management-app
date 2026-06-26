@@ -28,7 +28,7 @@ class CountryStateSeeder extends Seeder
             ['name' => 'Germany', 'code' => 'DE', 'factory' => 'germany'],
         ];
 
-        foreach ($countries as $index => $countryData) {
+        foreach ($countries as $countryData) {
             // Create the country
             $country = Country::factory()->{$countryData['factory']}()->create([
                 // 'id' => $index + 1,

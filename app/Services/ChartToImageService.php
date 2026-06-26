@@ -28,7 +28,7 @@ class ChartToImageService
         $this->drawChart($image, $chartData, $chartType, $width, $height);
 
         // Convert to base64
-        return (string) $image->toPng()->toDataUri();
+        return $image->toPng()->toDataUri();
     }
 
     /**
@@ -52,7 +52,7 @@ class ChartToImageService
      */
     private function drawChart($image, array $chartData, string $chartType, int $width, int $height): void
     {
-        if (empty($chartData)) {
+        if (blank($chartData)) {
             // Draw "No Data Available" background
             $image->drawRectangle(0, 0, function ($rectangle) use ($width, $height) {
                 $rectangle->size($width, $height);
@@ -105,7 +105,7 @@ class ChartToImageService
         $values = $this->extractValues($chartData);
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values)) {
+        if (blank($values)) {
             return;
         }
 
@@ -147,7 +147,7 @@ class ChartToImageService
         $values = $this->extractValues($chartData);
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values) || count($values) < 2) {
+        if (blank($values) || count($values) < 2) {
             return;
         }
 
@@ -201,7 +201,7 @@ class ChartToImageService
         $values = $this->extractValues($chartData);
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values)) {
+        if (blank($values)) {
             return;
         }
 
@@ -222,7 +222,6 @@ class ChartToImageService
         $colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
         $startAngle = 0;
-        $segmentHeight = ($outerRadius - $innerRadius);
 
         foreach ($values as $index => $value) {
             $percentage = $total > 0 ? ($value / $total) * 100 : 0;
@@ -319,7 +318,7 @@ class ChartToImageService
     {
         $text = trim(substr($text, 0, 20));
 
-        if (empty($text)) {
+        if (blank($text)) {
             return;
         }
 
@@ -338,7 +337,7 @@ class ChartToImageService
             }
         }
 
-        $textBox = $image->text($text, $x, $y, function ($font) use ($size, $color, $align, $fontFile) {
+        $image->text($text, $x, $y, function ($font) use ($size, $color, $align, $fontFile) {
             if ($fontFile) {
                 $font->filename($fontFile);
             }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 use App\Observers\WhatsAppPackageObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,8 +25,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_popular
  * @property bool $includes_number
  * @property array<array-key, mixed>|null $features
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read mixed $cost_per_message
  * @property-read mixed $margin_percentage
  * @property-read mixed $your_profit
@@ -56,6 +58,7 @@ use Illuminate\Database\Eloquent\Model;
 #[ObservedBy(WhatsAppPackageObserver::class)]
 class WhatsAppPackage extends Model
 {
+    use HasFactory;
     const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_package_navigation_badge';
 
     protected $table = 'whatsapp_packages';
@@ -117,7 +120,7 @@ class WhatsAppPackage extends Model
     // Accessors
     // =========================
 
-    public function yourProfit(): Attribute
+    protected function yourProfit(): Attribute
     {
         return Attribute::make(
             get: function () {
@@ -129,7 +132,7 @@ class WhatsAppPackage extends Model
         );
     }
 
-    public function marginPercentage(): Attribute
+    protected function marginPercentage(): Attribute
     {
         return Attribute::make(
             get: function () {
@@ -142,7 +145,7 @@ class WhatsAppPackage extends Model
         );
     }
 
-    public function costPerMessage(): Attribute
+    protected function costPerMessage(): Attribute
     {
         return Attribute::make(
             get: function () {

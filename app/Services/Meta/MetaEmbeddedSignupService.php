@@ -188,7 +188,7 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
         foreach ($granularScopes as $scope) {
             if ($scope['scope'] === 'whatsapp_business_management' || $scope['scope'] === 'whatsapp_business_messaging') {
                 $targetIds = $scope['target_ids'] ?? [];
-                if (! empty($targetIds)) {
+                if (filled($targetIds)) {
                     $wabaId = $targetIds[0];
                 }
             }
@@ -211,8 +211,8 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
         $metaAppSecret = config('services.meta.app_secret', '');
         $configId = config('services.meta.config_id', '');
 
-        return ! empty($metaAppId)
-            && ! empty($metaAppSecret)
-            && ! empty($configId);
+        return filled($metaAppId)
+            && filled($metaAppSecret)
+            && filled($configId);
     }
 }

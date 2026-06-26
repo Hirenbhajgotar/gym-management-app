@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Twilio;
 
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\QueryException;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateMasterSyncResult;
@@ -176,7 +178,7 @@ class TwilioTemplateService implements TemplateManagementInterface
                 'error' => $e->getMessage(),
             ]);
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 
@@ -273,7 +275,7 @@ class TwilioTemplateService implements TemplateManagementInterface
 
             return new TemplateMasterSyncResult(success: false, error: $e->getMessage());
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 
@@ -426,9 +428,9 @@ class TwilioTemplateService implements TemplateManagementInterface
 
         try {
             $record = WhatsAppTemplate::updateOrCreate($attributes, $fillableValues);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+        } catch (UniqueConstraintViolationException) {
             $record = WhatsAppTemplate::where($attributes)->first();
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
                 $record = WhatsAppTemplate::where($attributes)->first();
             } else {
@@ -436,7 +438,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             }
         }
 
-        if ($record && ! empty($systemFields)) {
+        if ($record && filled($systemFields)) {
             foreach ($systemFields as $attribute => $value) {
                 $record->{$attribute} = $value;
             }

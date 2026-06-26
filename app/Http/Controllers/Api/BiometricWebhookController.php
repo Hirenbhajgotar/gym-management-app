@@ -36,7 +36,7 @@ class BiometricWebhookController extends Controller
         $signature = $request->header($signatureHeader) ?? $request->header('X-Hub-Signature-256');
 
         // If device has webhook_secret configured, signature is required
-        $hasWebhookSecret = ! empty($device->provider_config['webhook_secret'] ?? '');
+        $hasWebhookSecret = filled($device->provider_config['webhook_secret'] ?? '');
 
         // If signature is required but not provided, reject
         if ($hasWebhookSecret && ! $signature) {
@@ -124,7 +124,7 @@ class BiometricWebhookController extends Controller
 
         // If no secret is configured, reject the request for security
         // This prevents processing unverified webhooks
-        if (empty($secret)) {
+        if (blank($secret)) {
             Log::warning('BiometricWebhook: Webhook secret not configured for device', [
                 'device_id' => $device->id,
                 'device_name' => $device->device_name,

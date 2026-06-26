@@ -2,11 +2,11 @@
 
 namespace App\Filament\BaseWidgets;
 
+use Illuminate\Support\Facades\Date;
 use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Services\AttendanceService;
 use App\Traits\HasTenantAccess;
-use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -31,7 +31,7 @@ abstract class BaseAttendanceStats extends BaseWidget implements HasFilamentPerm
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
+        Date::today();
         $attendanceableType = $this->getAttendanceableType();
         $entityName = $this->getEntityName();
         $entityModel = $this->getEntityModel();

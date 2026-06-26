@@ -14,9 +14,7 @@ class BiometricProviderRegistry
     {
         $class = config("biometrics.providers.{$providerType}");
 
-        if ($class === null) {
-            throw new InvalidArgumentException("Unsupported biometric provider: {$providerType}");
-        }
+        throw_if($class === null, InvalidArgumentException::class, "Unsupported biometric provider: {$providerType}");
 
         return new $class($config);
     }

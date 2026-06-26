@@ -51,7 +51,7 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
@@ -105,7 +105,7 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
@@ -146,7 +146,7 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
@@ -247,7 +247,7 @@ class PermissionDiscoveryService
     public function getDefaultPermissionsForRole(DefaultRole $role): Collection
     {
         $discovered = $this->getDiscoveredClasses();
-        $resourceActions = config('filament-permissions.resource_actions', []);
+        config('filament-permissions.resource_actions', []);
         $permissionNames = [];
         $roleValue = $role->value;
 
@@ -265,7 +265,7 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 foreach ($defaultPerms[$roleValue] as $action) {
                     $permissionNames[] = "{$action}_{$slug}";
                 }
@@ -286,7 +286,7 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 // Slug already includes page_ prefix from derivePageSlug()
                 $permissionNames[] = $slug;
             }
@@ -306,7 +306,7 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 // Slug already includes widget_ prefix from deriveWidgetSlug()
                 $permissionNames[] = $slug;
             }
@@ -330,7 +330,7 @@ class PermissionDiscoveryService
      */
     protected function getDiscoveredClasses(): array
     {
-        if (! empty($this->discoveredCache)) {
+        if (filled($this->discoveredCache)) {
             return $this->discoveredCache;
         }
 

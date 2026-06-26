@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use App\Enums\Currency;
 use App\Observers\PlanObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -23,9 +26,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $badge
  * @property string|null $description
  * @property string|null $brief_description
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PlanFeature> $features
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, PlanFeature> $features
  * @property-read int|null $features_count
  *
  * @method static Builder<static>|Plan active()
@@ -53,6 +56,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[ObservedBy([PlanObserver::class])]
 class Plan extends Model
 {
+    use HasFactory;
     public const NAVIGATION_BADGE_CACHE_KEY = 'plan_navigation_badge_count';
 
     public const ALL_PLANS_FOR_HOME_CACHE_KEY = 'all_plans_for_home';
@@ -84,6 +88,9 @@ class Plan extends Model
         ];
     }
 
+    /**
+     * @return HasMany<PlanFeature, $this>
+     */
     public function features(): HasMany
     {
         return $this->hasMany(PlanFeature::class);

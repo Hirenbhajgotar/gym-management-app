@@ -2,7 +2,7 @@
 
 namespace App\Filament\Actions\Imports;
 
-use App\Models\User;
+use Maatwebsite\Excel\Concerns\FromArray;
 use App\Traits\HasTenantAccess;
 use Closure;
 use Filament\Actions\Action;
@@ -155,7 +155,7 @@ class ExcelImportAction extends Action
             ];
         })->all();
 
-        $export = new class($failedRows) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
+        $export = new class($failedRows) implements FromArray, WithHeadings
         {
             protected array $data;
 
@@ -280,7 +280,7 @@ class ExcelImportAction extends Action
 
             public function headings(): array
             {
-                if (empty($this->data)) {
+                if (blank($this->data)) {
                     return [];
                 }
 

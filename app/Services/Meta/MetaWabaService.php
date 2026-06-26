@@ -247,12 +247,6 @@ class MetaWabaService implements WabaSetupInterface
 
     protected function determinePhoneType(?array $verificationResult): WhatsAppPhoneNumberTypesEnum
     {
-        $codeStatus = $verificationResult['code_verification_status'] ?? null;
-
-        if ($codeStatus === 'VERIFIED') {
-            return WhatsAppPhoneNumberTypesEnum::BUSINESS;
-        }
-
         return WhatsAppPhoneNumberTypesEnum::BUSINESS;
     }
 

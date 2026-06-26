@@ -281,7 +281,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_creates_waba_successfully(): void
     {
-        $account = WhatsAppAccount::create([
+        WhatsAppAccount::create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -917,7 +917,7 @@ class WhatsAppSetupTest extends TestCase
     #[Test]
     public function it_still_creates_new_waba_successfully_after_integration(): void
     {
-        $account = WhatsAppAccount::create([
+        WhatsAppAccount::create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',

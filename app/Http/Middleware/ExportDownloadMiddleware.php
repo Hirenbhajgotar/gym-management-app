@@ -146,15 +146,11 @@ class ExportDownloadMiddleware
 
                     return true;
                 }
-
-                if (! $found) {
-                    Log::error('ExportDownloadMiddleware: File not found in any path', [
-                        'checked_paths' => $pathsToCheck,
-                        'disk_root' => $disk->path(''),
-                    ]);
-
-                    return false;
-                }
+                Log::error('ExportDownloadMiddleware: File not found in any path', [
+                    'checked_paths' => $pathsToCheck,
+                    'disk_root' => $disk->path(''),
+                ]);
+                return false;
             } else {
                 Log::info('ExportDownloadMiddleware: Exact match found');
             }

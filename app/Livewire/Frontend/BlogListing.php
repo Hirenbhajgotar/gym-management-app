@@ -71,7 +71,7 @@ class BlogListing extends Component
             $query->where('category', $this->selectedCategory);
         }
 
-        if (! empty($this->search)) {
+        if (filled($this->search)) {
             $search = '%' . $this->search . '%';
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', $search)
@@ -81,7 +81,7 @@ class BlogListing extends Component
         }
 
         // Exclude featured from main list if there's a featured article
-        if (! empty($this->featuredArticle)) {
+        if (filled($this->featuredArticle)) {
             $query->where('slug', '!=', $this->featuredArticle['slug']);
         }
 

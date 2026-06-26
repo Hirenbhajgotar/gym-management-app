@@ -2,6 +2,9 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Illuminate\Support\Facades\Date;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceHeatmapChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceTrendChart;
@@ -10,9 +13,7 @@ use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
-use Carbon\Carbon;
 use Filament\Actions\Action;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -49,7 +50,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->subMonth()->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -61,14 +62,14 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->subMonth())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
@@ -102,7 +103,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 ->count('attendanceable_id');
 
             // Calculate days in range
-            $daysInRange = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+            $daysInRange = Date::parse($startDate)->diffInDays(Date::parse($endDate)) + 1;
 
             // Average daily check-ins
             $avgDaily = $daysInRange > 0 ? round($totalCheckIns / $daysInRange, 1) : 0;
@@ -146,8 +147,8 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 'avg_daily' => $avgDaily,
                 'today_check_ins' => $todayCheckIns,
                 'currently_in' => $currentlyIn,
-                'peak_hour' => $peakHour?->hour !== null ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
-                'peak_day' => $peakDay?->day ? Carbon::now()->dayOfWeek($peakDay->day - 1)->format('l') : 'N/A',
+                'peak_hour' => $peakHour?->hour !== null ? Date::createFromTime($peakHour->hour)->format('g A') : 'N/A',
+                'peak_day' => $peakDay?->day ? Date::now()->dayOfWeek($peakDay->day - 1)->format('l') : 'N/A',
                 'avg_duration_minutes' => round($avgDuration ?? 0),
             ];
         });
@@ -182,7 +183,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             $counts = [];
 
             for ($h = $startHour; $h <= $endHour; $h++) {
-                $hours[] = Carbon::createFromTime($h)->format('g A');
+                $hours[] = Date::createFromTime($h)->format('g A');
                 $counts[] = $distribution[$h] ?? 0;
             }
 
@@ -252,7 +253,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             ->get()
             ->map(function ($item) {
                 return [
-                    'date' => Carbon::parse($item->date)->format('M d'),
+                    'date' => Date::parse($item->date)->format('M d'),
                     'count' => $item->count,
                 ];
             })
@@ -320,7 +321,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             }
 
             $trends[] = [
-                'month' => Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

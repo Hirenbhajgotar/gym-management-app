@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Database\Factories\TrainerFactory;
 use App\Observers\TrainerObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,17 +29,17 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property numeric|null $basic_salary
  * @property numeric|null $pt_salary_per_member
  * @property string|null $currency
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Attendances> $attendances
  * @property-read int|null $attendances_count
  * @property-read float $total_earnings
- * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
+ * @property-read Gym $gym
+ * @property-read Collection<int, GymMember> $members
  * @property-read int|null $members_count
  *
  * @method static Builder<static>|Trainer available()
- * @method static \Database\Factories\TrainerFactory factory($count = null, $state = [])
+ * @method static TrainerFactory factory($count = null, $state = [])
  * @method static Builder<static>|Trainer newModelQuery()
  * @method static Builder<static>|Trainer newQuery()
  * @method static Builder<static>|Trainer query()
@@ -62,7 +65,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[ObservedBy([TrainerObserver::class])]
 class Trainer extends Model
 {
-    /** @use HasFactory<\Database\Factories\TrainerFactory> */
+    /** @use HasFactory<TrainerFactory> */
     use HasFactory;
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'trainer_navigation_badge_count_';
@@ -89,28 +92,37 @@ class Trainer extends Model
         'pt_salary_per_member' => 'decimal:2',
     ];
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return HasMany<GymMember, $this>
+     */
     public function members(): HasMany
     {
         return $this->hasMany(GymMember::class);
     }
 
-    public function scopeAvailable(Builder $query): Builder
+    protected function scopeAvailable(Builder $query): Builder
     {
         return $query->where('is_available', 1);
     }
 
-    public function getTotalEarningsAttribute(): float
+    protected function getTotalEarningsAttribute(): float
     {
         $assignedMembersCount = $this->members()->count();
 
         return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
     }
 
+    /**
+     * @return MorphMany<Attendances, $this>
+     */
     public function attendances(): MorphMany
     {
         return $this->morphMany(Attendances::class, 'attendanceable');

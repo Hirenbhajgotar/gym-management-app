@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Spatie\Permission\PermissionRegistrar;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission;
@@ -10,7 +11,6 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -27,7 +27,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         parent::setUp();
         $this->service = new RolesAndPermissionsService;
 
-        $this->app->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->app->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Mock the User
         // $this->userMock = Mockery::mock(User::class);
@@ -108,7 +108,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $user = User::factory()->create();
 
         // Call the service method with null gym
-        $this->service->createDefaultTenantRolesAndAssignPermissions($user, null);
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user);
 
         // Assert that no roles were created
         $this->assertDatabaseCount('roles', 0);
@@ -118,7 +118,7 @@ class RolesAndPermissionsServiceTest extends TestCase
     public function it_does_not_create_roles_when_both_user_and_gym_are_null()
     {
         // Call the service method with null user and gym
-        $this->service->createDefaultTenantRolesAndAssignPermissions(null, null);
+        $this->service->createDefaultTenantRolesAndAssignPermissions();
 
         // Assert that no roles were created
         $this->assertDatabaseCount('roles', 0);

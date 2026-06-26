@@ -25,7 +25,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         parent::setUp();
 
         $this->gym = Gym::factory()->create();
-        $this->templateService = app(WhatsAppTemplateService::class);
+        $this->templateService = resolve(WhatsAppTemplateService::class);
     }
 
     // ========== DEFAULT TEMPLATES ==========

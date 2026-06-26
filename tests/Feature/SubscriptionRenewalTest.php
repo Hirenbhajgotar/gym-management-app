@@ -39,7 +39,7 @@ class SubscriptionRenewalTest extends TestCase
         $response = $this->get(route('subscriptions.checkout'));
 
         // Assert that the checkout page loads successfully
-        $response->assertStatus(200);
+        $response->assertOk();
 
         // Assert that the view has the correct data
         $response->assertViewHas('subscription');

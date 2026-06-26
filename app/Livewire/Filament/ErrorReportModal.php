@@ -162,7 +162,7 @@ class ErrorReportModal extends Component implements HasForms
     {
         $this->validate();
 
-        $errorReportService = app(ErrorReportService::class);
+        $errorReportService = resolve(ErrorReportService::class);
 
         $errorReportService->manuallyReportException(
             userDescription: $this->description,

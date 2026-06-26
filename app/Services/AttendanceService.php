@@ -4,6 +4,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\AttendanceStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Attendances;
@@ -32,9 +33,7 @@ class AttendanceService
     public static function checkIn(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (! in_array($userType, self::$attendanceModels)) {
-            throw new \Exception('Invalid user type.');
-        }
+        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -66,9 +65,7 @@ class AttendanceService
             ->whereNull('check_out_time')
             ->first();
 
-        if ($existingAttendance) {
-            throw new \Exception('User is already checked in today.');
-        }
+        throw_if($existingAttendance, \Exception::class, 'User is already checked in today.');
 
         // Create new attendance record
         return Attendances::create([
@@ -87,9 +84,7 @@ class AttendanceService
     public static function checkOut(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (! in_array($userType, self::$attendanceModels)) {
-            throw new \Exception('Invalid user type.');
-        }
+        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
 
         $attendance = Attendances::where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
@@ -97,9 +92,7 @@ class AttendanceService
             ->active()
             ->first();
 
-        if (! $attendance) {
-            throw new \Exception('No active check-in found for this user.');
-        }
+        throw_unless($attendance, \Exception::class, 'No active check-in found for this user.');
 
         // Calculate duration
         $duration = $attendance->check_in_time->diffInMinutes(now());
@@ -120,9 +113,7 @@ class AttendanceService
     public static function markAbsent(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        if (! in_array($userType, [GymMember::class, Trainer::class])) {
-            throw new \Exception('Invalid user type.');
-        }
+        throw_unless(in_array($userType, [GymMember::class, Trainer::class]), \Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -188,7 +179,7 @@ class AttendanceService
 
     public static function getUserTypeStatsForToday(int $gymId, string $userType, string $entityModel): array
     {
-        $today = Carbon::today();
+        $today = Date::today();
 
         $baseQuery = Attendances::where('gym_id', $gymId)
             ->where('attendanceable_type', $userType);
@@ -198,7 +189,7 @@ class AttendanceService
                 ->whereDate('check_in_time', $today)
                 ->whereNull('check_out_time')->count(),
 
-            'absent_count' => app($entityModel)->where('gym_id', $gymId)
+            'absent_count' => resolve($entityModel)->where('gym_id', $gymId)
                 ->whereNotIn(
                     'id',
                     $baseQuery->clone()->whereDate('check_in_time', $today)->pluck('attendanceable_id')
@@ -299,9 +290,7 @@ class AttendanceService
     public static function generateUserReport(int $userId, string $userType, int $gymId, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Validate user type
-        if (! in_array($userType, self::$attendanceModels)) {
-            throw new \Exception('Invalid user type.');
-        }
+        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
 
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
@@ -396,9 +385,7 @@ class AttendanceService
             $user = User::find($userId);
         }
 
-        if (! $user) {
-            throw new \Exception('User not found or does not belong to this gym.');
-        }
+        throw_unless($user, \Exception::class, 'User not found or does not belong to this gym.');
     }
 
     /**

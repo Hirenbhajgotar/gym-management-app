@@ -2,6 +2,30 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\RichEditor;
+use App\Forms\Components\AddressForm;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\Toggle;
+use App\Enums\PaymentStatus;
+use App\Services\InvoiceService;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Forms\Components\Textarea;
+use Illuminate\Support\Collection;
+use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers\SubscriptionRelationManager;
 use App\Enums\DefaultRole;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
@@ -9,16 +33,13 @@ use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\EditUser;
 use App\Filament\SuperAdmin\Resources\UserResource\Pages\ListUsers;
-use App\Filament\SuperAdmin\Resources\UserResource\RelationManagers;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Rules\ValidEmailDomain;
 use App\Services\SubscriptionService;
-use Filament\Forms;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -84,14 +105,14 @@ class UserResource extends BaseResource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Tabs::make('User Creation')
+            Tabs::make('User Creation')
                 ->tabs([
-                    Forms\Components\Tabs\Tab::make('User Information')
+                    Tab::make('User Information')
                         ->schema([
-                            Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->required()
                                 ->maxLength(255),
-                            Forms\Components\TextInput::make('email')
+                            TextInput::make('email')
                                 ->email()
                                 ->rule(new ValidEmailDomain)
                                 ->required()
@@ -107,20 +128,20 @@ class UserResource extends BaseResource
                                     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
                                     lenient: true,
                                 ),
-                            Forms\Components\Select::make('role')
+                            Select::make('role')
                                 ->label('Role')
                                 ->options([
-                                    \App\Enums\DefaultRole::GYM_OWNER->value => \App\Enums\DefaultRole::GYM_OWNER->getLabel(),
+                                    DefaultRole::GYM_OWNER->value => DefaultRole::GYM_OWNER->getLabel(),
                                 ])
-                                ->default(\App\Enums\DefaultRole::GYM_OWNER->value)
+                                ->default(DefaultRole::GYM_OWNER->value)
                                 ->required()
                                 ->visible(fn (string $context): bool => $context === 'create')
                                 ->helperText('Currently only Gym Owner role can be created from SuperAdmin panel'),
-                            Forms\Components\DateTimePicker::make('email_verified_at')
+                            DateTimePicker::make('email_verified_at')
                                 ->native(false)
                                 ->closeOnDateSelection(true)
                                 ->default(now()),
-                            Forms\Components\TextInput::make('password')
+                            TextInput::make('password')
                                 ->password()
                                 ->revealable()
                                 ->maxLength(255)
@@ -136,54 +157,54 @@ class UserResource extends BaseResource
                                 ->inline()
                                 ->required(),
 
-                            Forms\Components\Section::make('Plan Assignment')->schema([
-                                Forms\Components\Grid::make(2)->schema([
-                                    Forms\Components\Select::make('activeSubscription.plan_id')
+                            Section::make('Plan Assignment')->schema([
+                                Grid::make(2)->schema([
+                                    Select::make('activeSubscription.plan_id')
                                         ->label('Assign Plan')
                                         ->options(Plan::active()->pluck('name', 'id'))
                                         ->searchable()
                                         ->preload()
                                         ->placeholder('Select a plan to assign')
                                         ->reactive(),
-                                    Forms\Components\Select::make('activeSubscription.billing_cycle')
+                                    Select::make('activeSubscription.billing_cycle')
                                         ->label('Billing Cycle')
                                         ->options([
                                             'monthly' => 'Monthly',
                                             'yearly' => 'Yearly',
                                         ])
                                         ->default('monthly')
-                                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
-                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                        ->required(fn (callable $get): bool => filled($get('activeSubscription.plan_id')))
+                                        ->visible(fn (callable $get): bool => filled($get('activeSubscription.plan_id'))),
                                 ]),
-                                Forms\Components\Grid::make(2)->schema([
-                                    Forms\Components\DateTimePicker::make('activeSubscription.trial_ends_at')
+                                Grid::make(2)->schema([
+                                    DateTimePicker::make('activeSubscription.trial_ends_at')
                                         ->label('Trial End Date')
                                         ->native(false)
                                         ->closeOnDateSelection(true)
                                         ->placeholder('Optional trial end date')
-                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
-                                    Forms\Components\Select::make('activeSubscription.status')
+                                        ->visible(fn (callable $get): bool => filled($get('activeSubscription.plan_id'))),
+                                    Select::make('activeSubscription.status')
                                         ->label('Subscription Status')
                                         ->options(SubscriptionStatus::class)
                                         ->default(SubscriptionStatus::ACTIVE)
-                                        ->required(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id')))
-                                        ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                        ->required(fn (callable $get): bool => filled($get('activeSubscription.plan_id')))
+                                        ->visible(fn (callable $get): bool => filled($get('activeSubscription.plan_id'))),
                                 ]),
-                                Forms\Components\RichEditor::make('activeSubscription.notes')
+                                RichEditor::make('activeSubscription.notes')
                                     ->label('Assignment Notes')
                                     ->placeholder('Notes about this plan assignment (e.g., offline purchase, manual assignment, etc.)')
-                                    ->visible(fn (callable $get): bool => ! empty($get('activeSubscription.plan_id'))),
+                                    ->visible(fn (callable $get): bool => filled($get('activeSubscription.plan_id'))),
                             ])->visible(fn (string $context): bool => $context === 'edit'),
                         ])->columns(2),
 
-                    Forms\Components\Tabs\Tab::make('Gym Information')
+                    Tab::make('Gym Information')
                         ->visible(fn (string $context): bool => $context === 'create')
                         ->schema([
-                            Forms\Components\TextInput::make('gym_name')
+                            TextInput::make('gym_name')
                                 ->label('Gym Name')
                                 ->required()
                                 ->maxLength(255),
-                            \App\Forms\Components\AddressForm::make('address')
+                            AddressForm::make('address')
                                 ->dehydrated(true),
                         ]),
                 ])
@@ -222,64 +243,64 @@ class UserResource extends BaseResource
                     ->latest(),
             )
             ->columns([
-                Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('name')->searchable(),
+                TextColumn::make('email')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('gyms.name')
+                TextColumn::make('gyms.name')
                     ->label('Gyms')
                     ->badge()
                     ->separator(','),
-                Tables\Columns\TextColumn::make('activeSubscription.plan.name')
+                TextColumn::make('activeSubscription.plan.name')
                     ->label('Current Plan')
                     ->badge()
                     ->color(fn ($record): string => $record->activeSubscription ? 'primary' : 'gray')
                     ->placeholder('No plan assigned'),
-                Tables\Columns\TextColumn::make('activeSubscription.status')
+                TextColumn::make('activeSubscription.status')
                     ->label('Subscription Status')
                     ->badge()
                     ->color(fn ($record): string => $record->activeSubscription?->status->getColor() ?? 'gray'),
-                Tables\Columns\TextColumn::make('activeSubscription.current_period_end')
+                TextColumn::make('activeSubscription.current_period_end')
                     ->label('Expires')
                     ->dateTime()
                     ->formatStateUsing(fn ($state): ?string => $state?->format('M j, Y') ?? null)
                     ->placeholder('N/A'),
 
-                Tables\Columns\SelectColumn::make('status')
+                SelectColumn::make('status')
                     ->options(UserStatus::class),
 
-                Tables\Columns\TextColumn::make('email_verified_at')
+                TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('plan')
+                SelectFilter::make('plan')
                     ->relationship('activeSubscription.plan', 'name')
                     ->label('Filter by Plan'),
 
-                Tables\Filters\SelectFilter::make('subscription_status')
+                SelectFilter::make('subscription_status')
                     ->options(SubscriptionStatus::class)
                     ->label('Filter by Status'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
 
-                Tables\Actions\Action::make('assign_plan')
+                Action::make('assign_plan')
                     ->label('Assign Plan')
                     ->icon('heroicon-o-credit-card')
                     ->form([
-                        Forms\Components\Section::make()
+                        Section::make()
                             ->schema([
-                                Forms\Components\Select::make('plan_id')
+                                Select::make('plan_id')
                                     ->label('Plan')
                                     ->options(Plan::active()->pluck('name', 'id'))
                                     ->default(fn ($record) => $record?->activeSubscription?->plan_id)
@@ -287,7 +308,7 @@ class UserResource extends BaseResource
                                     ->preload()
                                     ->required(),
 
-                                Forms\Components\Select::make('billing_cycle')
+                                Select::make('billing_cycle')
                                     ->label('Billing Cycle')
                                     ->options([
                                         'monthly' => 'Monthly',
@@ -296,24 +317,24 @@ class UserResource extends BaseResource
                                     ->default(fn ($record) => $record?->activeSubscription?->billing_cycle ?? 'monthly')
                                     ->required(),
 
-                                Forms\Components\Select::make('status')
+                                Select::make('status')
                                     ->label('Status')
                                     ->options(SubscriptionStatus::class)
                                     ->default(fn ($record) => $record?->activeSubscription?->status ?? SubscriptionStatus::ACTIVE)
                                     ->required(),
 
-                                Forms\Components\DateTimePicker::make('trial_ends_at')
+                                DateTimePicker::make('trial_ends_at')
                                     ->label('Trial End Date')
                                     ->native(false)
                                     ->closeOnDateSelection(true)
                                     ->helperText('Optional - for trial subscriptions'),
 
-                                Forms\Components\RichEditor::make('notes')
+                                RichEditor::make('notes')
                                     ->label('Notes')
                                     ->placeholder('Add notes about this assignment...')
                                     ->columnSpanFull(),
 
-                                Forms\Components\Toggle::make('generate_invoice')
+                                Toggle::make('generate_invoice')
                                     ->label('Generate Invoice')
                                     ->default(true)
                                     ->columnSpanFull(),
@@ -321,7 +342,7 @@ class UserResource extends BaseResource
 
                     ])
                     ->action(function (User $record, array $data): void {
-                        $subscriptionService = app(SubscriptionService::class);
+                        $subscriptionService = resolve(SubscriptionService::class);
 
                         DB::transaction(function () use ($record, $data, $subscriptionService) {
                             $plan = Plan::findOrFail($data['plan_id']);
@@ -333,14 +354,14 @@ class UserResource extends BaseResource
                                 'notes' => $data['notes'] ?? null,
                             ]);
 
-                            if (! empty($data['generate_invoice'])) {
+                            if (filled($data['generate_invoice'])) {
                                 $amount = $data['billing_cycle'] === 'monthly' ? $plan->price_monthly : $plan->price_yearly;
 
                                 $payment = Payment::create([
                                     'user_id' => $record->id,
                                     'amount' => $amount,
                                     'currency' => $plan->currency,
-                                    'status' => \App\Enums\PaymentStatus::COMPLETED,
+                                    'status' => PaymentStatus::COMPLETED,
                                     'payment_type' => 'manual_assignment',
                                     'razorpay_order_id' => 'MAN-ORD-' . Str::ulid(),
                                     'razorpay_payment_id' => 'MAN-PAY-' . Str::ulid(),
@@ -353,29 +374,29 @@ class UserResource extends BaseResource
                                     'paid_at' => now(),
                                 ]);
 
-                                app(\App\Services\InvoiceService::class)->generateInvoice($payment);
+                                resolve(InvoiceService::class)->generateInvoice($payment);
                             }
                         });
                     })
                     ->successNotificationTitle('Plan assigned successfully')
                     ->color('primary'),
 
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('bulk_assign_plan')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('bulk_assign_plan')
                         ->label('Bulk Assign Plan')
                         ->icon('heroicon-o-credit-card')
                         ->form([
-                            Forms\Components\Select::make('plan_id')
+                            Select::make('plan_id')
                                 ->label('Plan')
                                 ->options(Plan::active()->pluck('name', 'id'))
                                 ->searchable()
                                 ->preload()
                                 ->required(),
-                            Forms\Components\Select::make('billing_cycle')
+                            Select::make('billing_cycle')
                                 ->label('Billing Cycle')
                                 ->options([
                                     'monthly' => 'Monthly',
@@ -383,23 +404,23 @@ class UserResource extends BaseResource
                                 ])
                                 ->default('monthly')
                                 ->required(),
-                            Forms\Components\Select::make('status')
+                            Select::make('status')
                                 ->label('Status')
                                 ->options(SubscriptionStatus::class)
                                 ->default(SubscriptionStatus::ACTIVE)
                                 ->required(),
-                            Forms\Components\DateTimePicker::make('trial_ends_at')
+                            DateTimePicker::make('trial_ends_at')
                                 ->label('Trial End Date')
                                 ->native(false)
                                 ->closeOnDateSelection(true)
                                 ->helperText('Optional - for trial subscriptions'),
-                            Forms\Components\Textarea::make('notes')
+                            Textarea::make('notes')
                                 ->label('Notes')
                                 ->placeholder('Add notes about this assignment...')
                                 ->rows(3),
                         ])
-                        ->action(function (array $data, \Illuminate\Support\Collection $records): void {
-                            $subscriptionService = app(SubscriptionService::class);
+                        ->action(function (array $data, Collection $records): void {
+                            $subscriptionService = resolve(SubscriptionService::class);
                             $plan = Plan::findOrFail($data['plan_id']);
 
                             $records->each(function (User $record) use ($data, $subscriptionService, $plan) {
@@ -421,7 +442,7 @@ class UserResource extends BaseResource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\SubscriptionRelationManager::class,
+            SubscriptionRelationManager::class,
         ];
     }
 

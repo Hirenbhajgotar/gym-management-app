@@ -2,6 +2,19 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use Filament\Forms\Components\Split;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Tables\Columns\TextColumn;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\BasePages\BasePage;
 use App\Models\GymMember;
@@ -16,13 +29,11 @@ use App\Services\WhatsAppVariableResolver;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -78,7 +89,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     public function mount(): void
     {
-        $this->broadcastOrchestrator = app(BroadcastOrchestrator::class);
+        $this->broadcastOrchestrator = resolve(BroadcastOrchestrator::class);
         $this->loadTemplates();
         $this->initializeForm();
     }
@@ -137,7 +148,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
         $data = $this->data;
 
-        if (! isset($data['filters']) || empty($data['filters'])) {
+        if (! isset($data['filters']) || blank($data['filters'])) {
             return $query;
         }
 
@@ -224,9 +235,9 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
     {
         return $form
             ->schema([
-                Forms\Components\Split::make([
-                    Forms\Components\Section::make([
-                        Forms\Components\Select::make('template_id')
+                Split::make([
+                    Section::make([
+                        Select::make('template_id')
                             ->label('Choose Template')
                             ->options(fn () => collect($this->templates)->pluck('display_name', 'id'))
                             ->required()
@@ -234,7 +245,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                             ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
 
                         // Variable Inputs (only for custom source variables)
-                        Forms\Components\Section::make('Message Variables')
+                        Section::make('Message Variables')
                             ->description('Some variables are auto-filled from member data. Only custom variables need your input.')
                             ->schema(function () {
                                 $templateId = $this->data['template_id'] ?? null;
@@ -251,7 +262,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
                                 $placeholders = $template->getVariablePlaceholders();
 
-                                if (empty($placeholders)) {
+                                if (blank($placeholders)) {
                                     return [];
                                 }
 
@@ -272,7 +283,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                         continue;
                                     }
 
-                                    $fields[] = Forms\Components\TextInput::make('variables.' . $key)
+                                    $fields[] = TextInput::make('variables.' . $key)
                                         ->label('{{' . $key . '}} — ' . $label)
                                         ->placeholder($placeholder['example'] ?? '')
                                         ->required()
@@ -284,7 +295,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                         ->map(fn ($item) => '<li>' . e($item) . '</li>')
                                         ->implode('');
 
-                                    array_unshift($fields, Forms\Components\Placeholder::make('auto_resolved_info')
+                                    array_unshift($fields, Placeholder::make('auto_resolved_info')
                                         ->label('')
                                         ->content(new HtmlString('
                                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-xs space-y-1">
@@ -294,8 +305,8 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                     ')));
                                 }
 
-                                if (empty($fields)) {
-                                    $fields[] = Forms\Components\Placeholder::make('all_auto_resolved')
+                                if (blank($fields)) {
+                                    $fields[] = Placeholder::make('all_auto_resolved')
                                         ->label('')
                                         ->content(new HtmlString('
                                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-sm text-emerald-700 dark:text-emerald-400">
@@ -306,11 +317,11 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
                                 return $fields;
                             })
-                            ->visible(fn () => ! empty($this->data['template_id']) && ! empty($this->selectedTemplate)),
+                            ->visible(fn () => filled($this->data['template_id']) && filled($this->selectedTemplate)),
 
-                        Forms\Components\Section::make('Recipients')
+                        Section::make('Recipients')
                             ->schema([
-                                Forms\Components\ToggleButtons::make('recipient_type')
+                                ToggleButtons::make('recipient_type')
                                     ->label('Send to')
                                     ->options([
                                         'all' => 'All Members (' . $this->targetCount . ')',
@@ -326,27 +337,27 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                     ->live()
                                     ->afterStateUpdated(fn () => $this->updatedRecipientType()),
 
-                                Forms\Components\Group::make()
+                                Group::make()
                                     ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'filtered')
                                     ->schema([
-                                        Forms\Components\Grid::make(2)
+                                        Grid::make(2)
                                             ->schema([
-                                                Forms\Components\Select::make('filters.plans')
+                                                Select::make('filters.plans')
                                                     ->label('Membership Plan')
                                                     ->options(fn () => collect($this->availablePlans)->pluck('name', 'id'))
                                                     ->placeholder('All Plans')
                                                     ->live(),
 
-                                                Forms\Components\Select::make('filters.trainers')
+                                                Select::make('filters.trainers')
                                                     ->label('Trainer')
                                                     ->options(fn () => collect($this->availableTrainers)->pluck('name', 'id'))
                                                     ->placeholder('All Trainers')
                                                     ->live(),
                                             ]),
 
-                                        Forms\Components\Grid::make(2)
+                                        Grid::make(2)
                                             ->schema([
-                                                Forms\Components\Select::make('filters.membership_type')
+                                                Select::make('filters.membership_type')
                                                     ->label('Active / Inactive')
                                                     ->options([
                                                         'active' => 'Active (Membership Valid)',
@@ -355,7 +366,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                                     ->placeholder('All Members')
                                                     ->live(),
 
-                                                Forms\Components\Select::make('filters.payment_status')
+                                                Select::make('filters.payment_status')
                                                     ->label('Payment Status')
                                                     ->options([
                                                         'pending' => 'Pending',
@@ -367,16 +378,16 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                                     ->live(),
                                             ]),
 
-                                        Forms\Components\Grid::make(2)
+                                        Grid::make(2)
                                             ->schema([
-                                                Forms\Components\Actions::make([
-                                                    Forms\Components\Actions\Action::make('clearFilters')
+                                                Actions::make([
+                                                    Action::make('clearFilters')
                                                         ->label('Clear Filters')
                                                         ->color('gray')
                                                         ->icon('heroicon-o-x-mark')
                                                         ->action(fn () => $this->clearFilters()),
 
-                                                    Forms\Components\Actions\Action::make('updateFilters')
+                                                    Action::make('updateFilters')
                                                         ->label('Apply Filters')
                                                         ->icon('heroicon-o-funnel')
                                                         ->action(fn () => $this->updatedFilters()),
@@ -388,15 +399,15 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                             ->visible(fn () => $this->filtersApplied),
                                     ]),
 
-                                Forms\Components\Placeholder::make('target_count')
+                                Placeholder::make('target_count')
                                     ->label('Estimated Recipients')
                                     ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'all')
                                     ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> members')),
                             ]),
 
-                        Forms\Components\Section::make('Schedule')
+                        Section::make('Schedule')
                             ->schema([
-                                Forms\Components\Radio::make('schedule_type')
+                                Radio::make('schedule_type')
                                     ->label('When to send')
                                     ->options([
                                         'now' => 'Send Now',
@@ -407,20 +418,20 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                     ->inlineLabel(false)
                                     ->live(),
 
-                                Forms\Components\DateTimePicker::make('scheduled_at')
+                                DateTimePicker::make('scheduled_at')
                                     ->label('Schedule Date & Time')
                                     ->visible(fn (callable $get) => $get('schedule_type') === 'later')
                                     ->minDate(now())
                                     ->required(fn (callable $get) => $get('schedule_type') === 'later'),
                             ]),
-                        Forms\Components\Section::make('Confirm')
+                        Section::make('Confirm')
                             ->schema([
-                                Forms\Components\Placeholder::make('credits_info')
+                                Placeholder::make('credits_info')
                                     ->label('Credits Required')
                                     ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
 
-                                Forms\Components\Actions::make([
-                                    Forms\Components\Actions\Action::make('sendTestMessage')
+                                Actions::make([
+                                    Action::make('sendTestMessage')
                                         ->label('Send Message')
                                         ->color('info')
                                         ->icon('heroicon-o-phone')
@@ -428,7 +439,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                         ->action(function () {
                                             $this->sendTestMessage();
                                         }),
-                                    Forms\Components\Actions\Action::make('sendBroadcast')
+                                    Action::make('sendBroadcast')
                                         ->label('Send Broadcast')
                                         ->visible(fn () => ! config('services.twilio.use_sandbox'))
                                         ->action(function () {
@@ -438,16 +449,16 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                 ]),
                             ]),
                     ]),
-                    Forms\Components\Section::make([
+                    Section::make([
                         // Rate Limit Quota Display
-                        Forms\Components\Section::make('Broadcast Quota')
+                        Section::make('Broadcast Quota')
                             ->schema([
-                                Forms\Components\Placeholder::make('quota_info')
+                                Placeholder::make('quota_info')
                                     ->label('')
                                     ->content(function () {
                                         $gymId = $this->getGymId();
 
-                                        $rateLimiter = app(BroadcastRateLimiter::class);
+                                        $rateLimiter = resolve(BroadcastRateLimiter::class);
 
                                         $quota = $rateLimiter->getQuota($gymId);
 
@@ -489,21 +500,21 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         return $table
             ->query($this->getFilteredMembers())
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('phone')
+                TextColumn::make('phone')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('membership_type')
+                TextColumn::make('membership_type')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
                         'premium' => 'warning',
                         'vip' => 'success',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
                         'active' => 'success',
@@ -511,7 +522,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                         'pending' => 'warning',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Joined')
                     ->date()
                     ->sortable(),
@@ -582,20 +593,16 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
     private function sendTestMessage(): void
     {
         try {
-            if (! config('services.twilio.use_sandbox', false)) {
-                throw new \Exception('Sandbox mode is not enabled. Please enable it in services.php configuration.');
-            }
+            throw_unless(config('services.twilio.use_sandbox', false), \Exception::class, 'Sandbox mode is not enabled. Please enable it in services.php configuration.');
 
             $testPhoneNumber = config('services.twilio.sandbox_recipient_number');
 
-            if (! $testPhoneNumber) {
-                throw new \Exception('No test phone number configured for this gym');
-            }
+            throw_unless($testPhoneNumber, \Exception::class, 'No test phone number configured for this gym');
 
-            $provider = WhatsAppProviderFactory::create((int) $this->getGymId());
+            $provider = WhatsAppProviderFactory::create($this->getGymId());
 
             $result = $provider->sendTestWhatsAppMessage(
-                (int) $this->getGymId(),
+                $this->getGymId(),
                 $testPhoneNumber,
             );
 

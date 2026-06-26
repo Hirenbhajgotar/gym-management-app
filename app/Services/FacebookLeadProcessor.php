@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
 use Illuminate\Support\Facades\Http;
@@ -26,7 +25,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             // Extract lead data from Facebook format
             $leadData = $this->extractLeadData($data);
 
-            if (empty($leadData)) {
+            if (blank($leadData)) {
                 Log::warning('No lead data extracted from Facebook webhook', ['data' => $data]);
 
                 return null;
@@ -78,12 +77,12 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
     {
         try {
             $signature = $headers['x-hub-signature-256'][0] ?? '';
-            if (empty($signature)) {
+            if (blank($signature)) {
                 return false;
             }
 
             $appSecret = config('services.facebook.app_secret');
-            if (empty($appSecret)) {
+            if (blank($appSecret)) {
                 Log::warning('Facebook app secret not configured');
 
                 return false;

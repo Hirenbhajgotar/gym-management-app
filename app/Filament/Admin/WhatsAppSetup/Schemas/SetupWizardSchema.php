@@ -2,7 +2,12 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
-use App\Filament\Admin\WhatsAppSetup\Steps;
+use App\Filament\Admin\WhatsAppSetup\Steps\ProviderSelectionStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\TwilioAccountStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\WabaAccountStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\TwilioPhoneNumberStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\TemplatesStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\WelcomeCreditsStep;
 use Filament\Forms\Components\Wizard;
 
 class SetupWizardSchema
@@ -51,12 +56,12 @@ class SetupWizardSchema
     {
         return [
             Wizard::make([
-                Steps\ProviderSelectionStep::make($page),
-                Steps\TwilioAccountStep::make($page), // Contains logic to swap to WABA internally
-                Steps\WabaAccountStep::make($page),   // Contains logic to swap to Twilio internally
-                Steps\TwilioPhoneNumberStep::make($page),
-                Steps\TemplatesStep::make($page),
-                Steps\WelcomeCreditsStep::make($page),
+                ProviderSelectionStep::make($page),
+                TwilioAccountStep::make($page), // Contains logic to swap to WABA internally
+                WabaAccountStep::make($page),   // Contains logic to swap to Twilio internally
+                TwilioPhoneNumberStep::make($page),
+                TemplatesStep::make($page),
+                WelcomeCreditsStep::make($page),
             ])
                 ->persistStepInQueryString()
                 ->startOnStep($page->setupStep)

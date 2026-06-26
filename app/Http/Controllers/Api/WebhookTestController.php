@@ -43,7 +43,7 @@ class WebhookTestController extends Controller
 
             // Get the processor instance
             $processorClass = $this->processors[$platform];
-            $processor = app($processorClass);
+            $processor = resolve($processorClass);
 
             // Get configuration for the platform
             $config = $this->getConfig($request, $platform);
@@ -134,7 +134,7 @@ class WebhookTestController extends Controller
                 'configured' => true,
                 'is_active' => $config->is_active,
                 'webhook_url' => $this->getWebhookUrl($platform),
-                'verification_status' => $this->checkVerificationStatus($config, $platform),
+                'verification_status' => $this->checkVerificationStatus($config),
                 'config_id' => $config->id,
                 'last_updated' => $config->updated_at,
             ];
@@ -334,13 +334,13 @@ class WebhookTestController extends Controller
     /**
      * Check verification status for platform
      */
-    private function checkVerificationStatus(TenantSocialConfig $config, string $platform): array
+    private function checkVerificationStatus(TenantSocialConfig $config): array
     {
         $status = [
-            'webhook_verify_token' => ! empty($config->webhook_verify_token),
-            'api_key_configured' => ! empty($config->api_key),
-            'webhook_url_configured' => ! empty($config->webhook_url),
-            'page_id_configured' => ! empty($config->page_id),
+            'webhook_verify_token' => filled($config->webhook_verify_token),
+            'api_key_configured' => filled($config->api_key),
+            'webhook_url_configured' => filled($config->webhook_url),
+            'page_id_configured' => filled($config->page_id),
             'app_id_configured' => isset($config->config['app_id']),
         ];
 

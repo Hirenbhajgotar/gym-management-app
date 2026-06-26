@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use App\Models\User;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
 use Filament\Actions\Imports\Models\FailedImportRow;
@@ -18,7 +20,6 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\Row;
 
 abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQueue, ToCollection, WithChunkReading, WithHeadingRow
 {
@@ -52,7 +53,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
             throw new \Exception("Model class {$this->importModel} does not exist in " . static::class);
         }
 
-        parent::__construct($this->importModel, []); // Pass model and attributes to parent
+        parent::__construct($this->importModel); // Pass model and attributes to parent
 
         Notification::make()
             ->info()
@@ -77,7 +78,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     {
         // Filter out empty rows
         $filteredCollection = $collection->filter(function ($row) {
-            return ! empty(array_filter($row->toArray()));
+            return filled(array_filter($row->toArray()));
         });
 
         $this->beforeCollection($filteredCollection);
@@ -140,7 +141,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     protected function beforeCollection(Collection $collection): void
     {
         // Validate headers if expectedHeaders are defined
-        if (! empty($this->expectedHeaders)) {
+        if (filled($this->expectedHeaders)) {
             $this->validateHeaders($this->expectedHeaders, $collection);
         }
 
@@ -164,7 +165,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
         $filePath = 'failed_imports/' . $fileName;
 
-        Excel::store(new class($this->failedData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings
+        Excel::store(new class($this->failedData) implements FromArray, WithHeadings
         {
             protected $data;
 
@@ -180,12 +181,11 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
 
             public function headings(): array
             {
-                if (empty($this->data)) {
+                if (blank($this->data)) {
                     return [];
                 }
-                $keys = array_keys($this->data[0]);
 
-                return $keys; // Includes 'error' column
+                return array_keys($this->data[0]); // Includes 'error' column
             }
         }, $filePath, 'public');
 

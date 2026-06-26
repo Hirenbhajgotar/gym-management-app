@@ -35,9 +35,9 @@ class GymMemberObserver
 
         // Auto-send biometric consent email
         // Only if member has an email address
-        if (! empty($gymMember->email)) {
+        if (filled($gymMember->email)) {
             // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
-            SendBiometricConsentEmail::dispatch($gymMember->load('gym'))
+            dispatch(new SendBiometricConsentEmail($gymMember->load('gym')))
                 ->delay(now()->addMinutes(config('biometrics.biometric_consent_email_delay')))
                 ->afterCommit();
         }

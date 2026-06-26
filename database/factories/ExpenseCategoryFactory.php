@@ -7,7 +7,7 @@ use App\Models\Gym;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ExpenseCategory>
+ * @extends Factory<ExpenseCategory>
  */
 class ExpenseCategoryFactory extends Factory
 {

@@ -49,7 +49,7 @@ class BiometricCheckInTest extends TestCase
             'device_id' => $this->device->device_id,
         ]);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'success',
                 'last_heartbeat_at',
@@ -64,7 +64,7 @@ class BiometricCheckInTest extends TestCase
             'device_id' => 'invalid-device-id',
         ]);
 
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
     }
 
     public function test_biometric_device_can_get_config(): void
@@ -73,7 +73,7 @@ class BiometricCheckInTest extends TestCase
             'Authorization' => 'Bearer ' . $this->plainToken,
         ])->getJson('/api/v1/biometric/device/config');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'device_id',
                 'device_name',

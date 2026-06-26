@@ -6,6 +6,8 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\Gym;
 use App\Models\WhatsappTemplate;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
@@ -59,9 +61,9 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
         ]);
     }
 
-    protected function getActiveGyms(): \Illuminate\Database\Eloquent\Collection
+    protected function getActiveGyms(): Collection
     {
-        return Gym::whereHas('users', function ($query) {
+        return Gym::whereHas('users', function (Builder $query) {
             $query->where('users.is_active', true);
         })->get();
     }

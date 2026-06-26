@@ -93,9 +93,9 @@ class ImportDefaultPermissionsJob implements ShouldQueue
      */
     protected function importPermissionsForRole(string $roleName): void
     {
-        $defaultPermissions = app(RolesAndPermissionsService::class)->getDefaultPermissions($roleName);
+        $defaultPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions($roleName);
 
-        if (! empty($defaultPermissions)) {
+        if (filled($defaultPermissions)) {
             PermissionSetting::updateOrCreate([
                 'role' => $roleName,
             ], [
@@ -111,7 +111,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
      */
     protected function importPermissionsForAllRoles(): void
     {
-        $defaultRolesPermissions = app(RolesAndPermissionsService::class)->getDefaultPermissions();
+        $defaultRolesPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions();
 
         foreach ($defaultRolesPermissions as $role => $permissions) {
             PermissionSetting::updateOrCreate([

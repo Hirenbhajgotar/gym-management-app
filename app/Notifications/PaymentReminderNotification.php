@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Services\WhatsAppVariableResolver;
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
@@ -72,7 +73,7 @@ class PaymentReminderNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, [
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, [
                     'member' => $this->member,
                 ]),
             ];

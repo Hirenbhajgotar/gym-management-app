@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Jobs;
 
+use Illuminate\Support\Sleep;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Jobs\ProcessMetaTemplateWebhook;
 use App\Models\Gym;
@@ -164,7 +165,7 @@ class ProcessMetaTemplateWebhookTest extends TestCase
         $updatedAtBefore = $template->updated_at;
 
         // Sleep briefly to ensure timestamp difference would be detectable
-        usleep(1000);
+        Sleep::usleep(1000);
 
         $job = new ProcessMetaTemplateWebhook('test_waba_123', 'test_same_status', 'APPROVED', null, 'APPROVED');
         $job->handle();

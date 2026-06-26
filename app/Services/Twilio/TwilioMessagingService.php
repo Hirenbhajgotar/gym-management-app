@@ -8,6 +8,7 @@ use App\Models\WhatsAppUsageLog;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 
@@ -243,7 +244,7 @@ class TwilioMessagingService implements MessagingInterface
         return WhatsAppTemplate::query()
             ->where('name', $templateName)
             ->where('status', 'approved')
-            ->where(function ($q) {
+            ->where(function (Builder $q) {
                 $q->where('gym_id', $this->context->gymId);
                 if ($this->context->useSandbox) {
                     $q->orWhereNull('gym_id');

@@ -2,9 +2,24 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkAction;
+use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers\WebhookLogsRelationManager;
+use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages\ListTenantSocialConfigs;
+use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages\CreateTenantSocialConfig;
+use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages\EditTenantSocialConfig;
+use App\Services\SocialMediaCredentialVerifier;
+use Filament\Notifications\Notification;
+use App\Jobs\ProcessSocialMediaLead;
+use App\Models\Gym;
 use App\Enums\SocialPlatform;
-use App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
-use App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\TenantSocialConfig;
 use Filament\Facades\Filament;
@@ -17,8 +32,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
@@ -52,7 +65,7 @@ class TenantSocialConfigResource extends BaseResource
         /**
          * Get the current tenant
          *
-         * @var \App\Models\Gym $tenant
+         * @var Gym $tenant
          */
         $tenant = Filament::getTenant();
 
@@ -95,7 +108,7 @@ class TenantSocialConfigResource extends BaseResource
 
                 Tabs::make('Platform Settings')
                     ->tabs([
-                        Tabs\Tab::make('API Configuration')
+                        Tab::make('API Configuration')
                             ->schema([
                                 Section::make('API Credentials')
                                     ->description('Configure API access for the social media platform')
@@ -151,7 +164,7 @@ class TenantSocialConfigResource extends BaseResource
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Lead Processing')
+                        Tab::make('Lead Processing')
                             ->schema([
                                 Section::make('Lead Processing Settings')
                                     ->description('Configure how leads from this platform are processed')
@@ -240,7 +253,7 @@ class TenantSocialConfigResource extends BaseResource
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Auto Reply')
+                        Tab::make('Auto Reply')
                             ->schema([
                                 Section::make('Automatic Responses')
                                     ->description('Configure automatic responses to leads from this platform')
@@ -285,7 +298,7 @@ class TenantSocialConfigResource extends BaseResource
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Advanced')
+                        Tab::make('Advanced')
                             ->schema([
                                 Section::make('Advanced Settings')
                                     ->description('Advanced configuration options')
@@ -368,17 +381,17 @@ class TenantSocialConfigResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('platform')
+                SelectFilter::make('platform')
                     ->options(SocialPlatform::class),
 
-                Tables\Filters\TernaryFilter::make('is_active')
+                TernaryFilter::make('is_active')
                     ->label('Active')
                     ->boolean(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
 
-                Tables\Actions\Action::make('verify_credentials')
+                Action::make('verify_credentials')
                     ->label('Verify Credentials')
                     ->icon('heroicon-o-shield-check')
                     ->color('success')
@@ -388,7 +401,7 @@ class TenantSocialConfigResource extends BaseResource
                     ->modalDescription('This will verify your credentials against the social media platform API.')
                     ->modalSubmitActionLabel('Verify'),
 
-                Tables\Actions\Action::make('test_webhook')
+                Action::make('test_webhook')
                     ->label('Test Webhook')
                     ->icon('heroicon-o-bolt')
                     ->color('warning')
@@ -398,18 +411,18 @@ class TenantSocialConfigResource extends BaseResource
                     ->modalDescription('This will send a test webhook to verify the configuration.')
                     ->modalSubmitActionLabel('Send Test'),
 
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
 
-                    Tables\Actions\BulkAction::make('toggle_active')
+                    BulkAction::make('toggle_active')
                         ->label('Toggle Active')
                         ->icon('phosphor-toggle-right')
                         ->action(fn ($records) => $records->each->update(['is_active' => true])),
 
-                    Tables\Actions\BulkAction::make('toggle_inactive')
+                    BulkAction::make('toggle_inactive')
                         ->label('Toggle Inactive')
                         ->icon('phosphor-toggle-left')
                         ->action(fn ($records) => $records->each->update(['is_active' => false])),
@@ -421,16 +434,16 @@ class TenantSocialConfigResource extends BaseResource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\WebhookLogsRelationManager::class,
+            WebhookLogsRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListTenantSocialConfigs::route('/'),
-            'create' => Pages\CreateTenantSocialConfig::route('/create'),
-            'edit' => Pages\EditTenantSocialConfig::route('/{record}/edit'),
+            'index' => ListTenantSocialConfigs::route('/'),
+            'create' => CreateTenantSocialConfig::route('/create'),
+            'edit' => EditTenantSocialConfig::route('/{record}/edit'),
         ];
     }
 
@@ -440,24 +453,24 @@ class TenantSocialConfigResource extends BaseResource
     private static function verifyCredentials(TenantSocialConfig $config): void
     {
         try {
-            $verifier = new \App\Services\SocialMediaCredentialVerifier;
+            $verifier = new SocialMediaCredentialVerifier;
             $result = $verifier->verify($config);
 
             if ($result['success']) {
-                \Filament\Notifications\Notification::make()
+                Notification::make()
                     ->title('Credentials verified successfully')
                     ->body($result['message'])
                     ->success()
                     ->send();
             } else {
-                \Filament\Notifications\Notification::make()
+                Notification::make()
                     ->title('Credential verification failed')
                     ->body($result['message'])
                     ->danger()
                     ->send();
             }
         } catch (\Exception $e) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Credential verification failed')
                 ->body($e->getMessage())
                 ->danger()
@@ -475,19 +488,15 @@ class TenantSocialConfigResource extends BaseResource
             $webhookData = self::generateTestWebhookPayload($config);
 
             // Dispatch test job with realistic data
-            \App\Jobs\ProcessSocialMediaLead::dispatch(
-                $webhookData,
-                $config->platform->value,
-                'test_' . uniqid()
-            );
+            dispatch(new ProcessSocialMediaLead($webhookData, $config->platform->value, 'test_' . uniqid()));
 
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Test webhook dispatched')
                 ->body("A test lead for {$config->platform->getLabel()} has been queued for processing. Check the Leads page and Webhook Logs tab.")
                 ->success()
                 ->send();
         } catch (\Exception $e) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Test webhook failed')
                 ->body($e->getMessage())
                 ->danger()
@@ -504,13 +513,13 @@ class TenantSocialConfigResource extends BaseResource
         $uniqueId = uniqid('test_', true);
 
         /**
-         * @var \App\Enums\SocialPlatform $platform
+         * @var SocialPlatform $platform
          */
         $platform = $config->platform;
 
         return match ($platform) {
-            \App\Enums\SocialPlatform::Facebook,
-            \App\Enums\SocialPlatform::Instagram => [
+            SocialPlatform::Facebook,
+            SocialPlatform::Instagram => [
                 'object' => 'page',
                 'entry' => [
                     [
@@ -540,7 +549,7 @@ class TenantSocialConfigResource extends BaseResource
                 ],
             ],
 
-            \App\Enums\SocialPlatform::WhatsApp => [
+            SocialPlatform::WhatsApp => [
                 'object' => 'whatsapp_business_account',
                 'entry' => [
                     [
@@ -578,7 +587,7 @@ class TenantSocialConfigResource extends BaseResource
                 ],
             ],
 
-            \App\Enums\SocialPlatform::YouTube => [
+            SocialPlatform::YouTube => [
                 // YouTube doesn't have lead ads, but we can create a test payload
                 'name' => 'Test User ' . date('His'),
                 'email' => "test.{$uniqueId}@example.com",

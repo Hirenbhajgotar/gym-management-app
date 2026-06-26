@@ -77,7 +77,7 @@ class GymOwnerRegister extends Component
         $plan = Plan::active()->find($planId) ?? Plan::active()->trial()->orderByDesc('trial_days')->orderBy('id')->first();
 
         if (! $plan) {
-            return redirect()->route('home')->with('error', 'Plan not selected');
+            return to_route('home')->with('error', 'Plan not selected');
         }
 
         $this->selectedPlan = $plan;
@@ -235,7 +235,7 @@ class GymOwnerRegister extends Component
         if (! $plan) {
             session()->flash('error', 'Selected plan is no longer available. Please select a new plan.');
 
-            return redirect()->route('home');
+            return to_route('home');
         }
 
         // Update the confirmed active plan
@@ -272,7 +272,7 @@ class GymOwnerRegister extends Component
             );
 
             // Redirect to Razorpay checkout
-            return redirect()->route('gym-owner.checkout');
+            return to_route('gym-owner.checkout');
         } catch (Exception $e) {
             Log::error($e);
             session()->flash(

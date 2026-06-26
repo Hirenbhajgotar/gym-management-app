@@ -23,7 +23,7 @@ class ExpenseObserver
     public function creating(Expense $expense): void
     {
         // Set default currency if not provided
-        if (empty($expense->currency)) {
+        if (blank($expense->currency)) {
             $expense->currency = 'INR';
         }
 

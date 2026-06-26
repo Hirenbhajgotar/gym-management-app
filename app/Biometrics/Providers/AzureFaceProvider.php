@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Providers;
 
+use Illuminate\Http\Client\PendingRequest;
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
@@ -37,7 +38,7 @@ class AzureFaceProvider implements BiometricProvider
         return $this->endpoint;
     }
 
-    protected function http(): \Illuminate\Http\Client\PendingRequest
+    protected function http(): PendingRequest
     {
         return Http::withHeaders([
             'Ocp-Apim-Subscription-Key' => $this->subscriptionKey,
@@ -68,7 +69,7 @@ class AzureFaceProvider implements BiometricProvider
 
         $faceData = $response->json();
 
-        if (empty($faceData['persistedFaceId'])) {
+        if (blank($faceData['persistedFaceId'])) {
             throw new \RuntimeException('Azure Face enrollment failed: ' . json_encode($faceData));
         }
 
@@ -96,7 +97,7 @@ class AzureFaceProvider implements BiometricProvider
 
         $faces = $detectResponse->json();
 
-        if (empty($faces)) {
+        if (blank($faces)) {
             return new VerificationResult(
                 matched: false,
                 confidence: 0.0,
@@ -145,7 +146,7 @@ class AzureFaceProvider implements BiometricProvider
 
         $faces = $response->json();
 
-        if (empty($faces)) {
+        if (blank($faces)) {
             return 0.0;
         }
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -65,7 +66,7 @@ class CleanInvalidExportsCommand extends Command
 
     protected function findInvalidExports()
     {
-        return Export::where(function ($query) {
+        return Export::where(function (Builder $query) {
             // Find exports with missing file information
             $query->whereNull('file_name')
                 ->orWhereNull('file_disk')

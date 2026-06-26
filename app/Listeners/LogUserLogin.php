@@ -2,6 +2,10 @@
 
 namespace App\Listeners;
 
+use Filament\Facades\Filament;
+use App\Services\LoginActivityService;
+use Filament\Events\TenantSet;
+use App\Models\User;
 use App\Models\UserLoginLog;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -23,7 +27,7 @@ class LogUserLogin
 
     public function handleLogin(Login $event): void
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = $event->user;
 
         // Skip if user is null
@@ -49,8 +53,8 @@ class LogUserLogin
         $gym = null;
 
         try {
-            if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::isServing()) {
-                $gym = \Filament\Facades\Filament::getTenant();
+            if (class_exists(Filament::class) && Filament::isServing()) {
+                $gym = Filament::getTenant();
             }
         } catch (\Throwable $th) {
             // Ignore if tenant is not set yet
@@ -72,7 +76,7 @@ class LogUserLogin
         }
 
         // Mark any existing active sessions as logged out using the service
-        $loginService = app(\App\Services\LoginActivityService::class);
+        $loginService = resolve(LoginActivityService::class);
         $loginService->markSessionAsLoggedOut($user->id);
         $ipAddress = $this->getIpAddress($request);
         $userAgent = $request->userAgent();
@@ -127,7 +131,7 @@ class LogUserLogin
      */
     protected function detectDeviceType(?string $userAgent): ?string
     {
-        if (empty($userAgent)) {
+        if (blank($userAgent)) {
             return null;
         }
 
@@ -179,12 +183,12 @@ class LogUserLogin
     /**
      * Handle the tenant set event to update the active session's gym.
      */
-    public function handleTenantSet(\Filament\Events\TenantSet $event): void
+    public function handleTenantSet(TenantSet $event): void
     {
         $user = $event->getUser();
         $tenant = $event->getTenant();
 
-        if (! $user || ! $tenant) {
+        if (! $tenant) {
             return;
         }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DefaultRole;
 use App\Jobs\SendLowWhatsAppCreditNotificationJob;
 use App\Models\Gym;
 use App\Models\User;
@@ -22,7 +23,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
 
         $gym = Gym::factory()->create();
         $owner = User::factory()->gymOwner()->create();
-        $gym->users()->attach($owner->id, ['role' => \App\Enums\DefaultRole::GYM_OWNER->value, 'active' => true]);
+        $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
         $credit = WhatsAppMessageCredit::create([
             'gym_id' => $gym->id,
@@ -47,9 +48,9 @@ class LowWhatsAppCreditNotificationTest extends TestCase
 
         $gym = Gym::factory()->create();
         $owner = User::factory()->gymOwner()->create();
-        $gym->users()->attach($owner->id, ['role' => \App\Enums\DefaultRole::GYM_OWNER->value, 'active' => true]);
+        $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
-        $credit = WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::create([
             'gym_id' => $gym->id,
             'total_credits' => 100,
             'used_credits' => 70,
@@ -70,9 +71,9 @@ class LowWhatsAppCreditNotificationTest extends TestCase
 
         $gym = Gym::factory()->create();
         $owner = User::factory()->gymOwner()->create();
-        $gym->users()->attach($owner->id, ['role' => \App\Enums\DefaultRole::GYM_OWNER->value, 'active' => true]);
+        $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true]);
 
-        $credit = WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::create([
             'gym_id' => $gym->id,
             'total_credits' => 100,
             'used_credits' => 90,
@@ -102,7 +103,7 @@ class LowWhatsAppCreditNotificationTest extends TestCase
         ]);
 
         // Add credits via service
-        $service = app(WhatsAppBillingService::class);
+        $service = resolve(WhatsAppBillingService::class);
         $service->adjustCredits($gym->id, 100, 'Manual Adjustment');
 
         $credit->refresh();

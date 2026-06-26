@@ -21,7 +21,7 @@ class RolesAndPermissionsSeederTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = app(RolesAndPermissionsService::class);
+        $this->service = resolve(RolesAndPermissionsService::class);
     }
 
     #[Test]

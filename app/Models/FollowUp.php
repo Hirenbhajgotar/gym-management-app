@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Database\Factories\FollowUpFactory;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,29 +17,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $gym_id
  * @property int $user_id Staff who performed the follow-up
  * @property InteractionType $type
- * @property \Illuminate\Support\Carbon $scheduled_date
+ * @property Carbon $scheduled_date
  * @property FollowUpStatus $status
  * @property string|null $notes
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\Lead $lead
- * @property-read \App\Models\User $user
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read Lead $lead
+ * @property-read User $user
  *
- * @method static \Database\Factories\FollowUpFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereLeadId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereScheduledDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|FollowUp whereUserId($value)
+ * @method static FollowUpFactory factory($count = null, $state = [])
+ * @method static Builder<static>|FollowUp newModelQuery()
+ * @method static Builder<static>|FollowUp newQuery()
+ * @method static Builder<static>|FollowUp query()
+ * @method static Builder<static>|FollowUp whereCreatedAt($value)
+ * @method static Builder<static>|FollowUp whereGymId($value)
+ * @method static Builder<static>|FollowUp whereId($value)
+ * @method static Builder<static>|FollowUp whereLeadId($value)
+ * @method static Builder<static>|FollowUp whereNotes($value)
+ * @method static Builder<static>|FollowUp whereScheduledDate($value)
+ * @method static Builder<static>|FollowUp whereStatus($value)
+ * @method static Builder<static>|FollowUp whereType($value)
+ * @method static Builder<static>|FollowUp whereUpdatedAt($value)
+ * @method static Builder<static>|FollowUp whereUserId($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperFollowUp
@@ -64,16 +67,25 @@ class FollowUp extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Lead, $this>
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

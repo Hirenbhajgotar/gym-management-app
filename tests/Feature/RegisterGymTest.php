@@ -9,12 +9,9 @@ use App\Models\Country;
 use App\Models\Gym;
 use App\Models\State;
 use App\Models\User;
-use App\Services\RolesAndPermissionsService;
 use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Mockery;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -23,13 +20,13 @@ class RegisterGymTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @var \App\Models\User */
+    /** @var User */
     protected $superAdmin;
 
-    /** @var \App\Models\User */
+    /** @var User */
     protected $gymOwner;
 
-    /** @var \App\Models\Gym */
+    /** @var Gym */
     protected $tenant;
 
     protected function setUp(): void

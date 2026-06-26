@@ -30,7 +30,7 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultResources(): array
     {
-        return isset($this->permissionSetting->default_resources) && ! empty($this->permissionSetting->default_resources)
+        return isset($this->permissionSetting->default_resources) && filled($this->permissionSetting->default_resources)
             ? $this->permissionSetting->default_resources
             : $this->getFallbackResources();
     }
@@ -40,7 +40,7 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultWidgets(): array
     {
-        return isset($this->permissionSetting->default_widgets) && ! empty($this->permissionSetting->default_widgets)
+        return isset($this->permissionSetting->default_widgets) && filled($this->permissionSetting->default_widgets)
             ? $this->permissionSetting->default_widgets
             : $this->getFallbackWidgets();
     }
@@ -50,7 +50,7 @@ trait DefaultPermissionResourceTrait
      */
     public function getDefaultReports(): array
     {
-        return isset($this->permissionSetting->default_reports) && ! empty($this->permissionSetting->default_reports)
+        return isset($this->permissionSetting->default_reports) && filled($this->permissionSetting->default_reports)
             ? $this->permissionSetting->default_reports
             : $this->getFallbackReports();
     }
@@ -60,7 +60,7 @@ trait DefaultPermissionResourceTrait
      */
     public function getOtherDefaultResource(): array
     {
-        return isset($this->permissionSetting->other_default_resources) && ! empty($this->permissionSetting->other_default_resources)
+        return isset($this->permissionSetting->other_default_resources) && filled($this->permissionSetting->other_default_resources)
             ? $this->permissionSetting->other_default_resources
             : $this->getFallbackOtherResources();
     }
@@ -75,7 +75,7 @@ trait DefaultPermissionResourceTrait
     {
         // Alias usage in service: use DefaultPermissionResourceTrait { getDefaultPermissions as traitGetDefaultPermissions; }
 
-        return isset($this->permissionSetting->default_permissions) && ! empty($this->permissionSetting->default_permissions)
+        return isset($this->permissionSetting->default_permissions) && filled($this->permissionSetting->default_permissions)
             ? $this->permissionSetting->default_permissions
             : $this->getFallbackPermissions();
     }
@@ -90,7 +90,7 @@ trait DefaultPermissionResourceTrait
         }
 
         // Delegate to Service for dynamic logic
-        return app(RolesAndPermissionsService::class)->getDynamicDefaultPermissions($this->permissionSettingRole);
+        return resolve(RolesAndPermissionsService::class)->getDynamicDefaultPermissions($this->permissionSettingRole);
     }
 
     // Delegate fallbacks to Service to ensure UI BasePermissionsPage receives valid categories
@@ -104,7 +104,7 @@ trait DefaultPermissionResourceTrait
             return [];
         }
 
-        return app(RolesAndPermissionsService::class)->getRoleResourceCategories($this->permissionSettingRole);
+        return resolve(RolesAndPermissionsService::class)->getRoleResourceCategories($this->permissionSettingRole);
     }
 
     /**
@@ -116,7 +116,7 @@ trait DefaultPermissionResourceTrait
             return [];
         }
 
-        return app(RolesAndPermissionsService::class)->getRoleWidgetCategories($this->permissionSettingRole);
+        return resolve(RolesAndPermissionsService::class)->getRoleWidgetCategories($this->permissionSettingRole);
     }
 
     /**
@@ -128,7 +128,7 @@ trait DefaultPermissionResourceTrait
             return [];
         }
 
-        return app(RolesAndPermissionsService::class)->getRoleReportCategories($this->permissionSettingRole);
+        return resolve(RolesAndPermissionsService::class)->getRoleReportCategories($this->permissionSettingRole);
     }
 
     /**
@@ -140,6 +140,6 @@ trait DefaultPermissionResourceTrait
             return [];
         }
 
-        return app(RolesAndPermissionsService::class)->getRoleOtherCategories($this->permissionSettingRole);
+        return resolve(RolesAndPermissionsService::class)->getRoleOtherCategories($this->permissionSettingRole);
     }
 }

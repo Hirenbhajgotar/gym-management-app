@@ -2,7 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Enums\DefaultRole;
+use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
@@ -78,23 +84,23 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make()
+            CreateAction::make()
                 ->model(Lead::class)
                 ->visible(fn () => auth()->user()?->can('create_lead'))
                 ->authorize(fn () => auth()->user()?->can('create_lead'))
                 ->form([
-                    \Filament\Forms\Components\Section::make()
+                    Section::make()
                         ->schema([
-                            \Filament\Forms\Components\Hidden::make('gym_id')
+                            Hidden::make('gym_id')
                                 ->default($this->getGymId()),
 
-                            \Filament\Forms\Components\Hidden::make('created_by')
+                            Hidden::make('created_by')
                                 ->default(auth()->user()->id),
 
-                            \Filament\Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->required(),
 
-                            \Filament\Forms\Components\TextInput::make('email')
+                            TextInput::make('email')
                                 ->required()
                                 ->email(),
 
@@ -105,10 +111,10 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                                     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
                                 ),
 
-                            \Filament\Forms\Components\Select::make('source')
+                            Select::make('source')
                                 ->options(LeadSource::class),
 
-                            \Filament\Forms\Components\TagsInput::make('interest')
+                            TagsInput::make('interest')
                                 ->splitKeys(['Tab', ','])
                                 ->placeholder(
                                     'Add tags (e.g., High Priority, Referral)',
@@ -116,11 +122,11 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                                 ->suggestions(
                                     collect(LeadTag::cases())
                                         ->map(fn (LeadTag $tag) => $tag->getLabel())
-                                        ->toArray(),
+                                        ->all(),
                                 )
                                 ->columnSpanFull(),
 
-                            \Filament\Forms\Components\Textarea::make('notes')
+                            Textarea::make('notes')
                                 ->columnSpanFull(),
                         ])
                         ->columns(2),
@@ -201,7 +207,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                $member = app(LeadConversionService::class)->convert($record, $data);
+                $member = resolve(LeadConversionService::class)->convert($record, $data);
 
                 // Send welcome notification and generate invoice if payment exists
                 if ($member->latestPayment) {
@@ -210,7 +216,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                         new SendNotificationJob($member, new WelcomeNotification($member)),
                     ])->dispatch();
                 } else {
-                    SendNotificationJob::dispatch($member, new WelcomeNotification($member));
+                    dispatch(new SendNotificationJob($member, new WelcomeNotification($member)));
                 }
 
                 Notification::make()

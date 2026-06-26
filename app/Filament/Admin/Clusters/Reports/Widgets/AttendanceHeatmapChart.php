@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
@@ -17,7 +18,7 @@ class AttendanceHeatmapChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 

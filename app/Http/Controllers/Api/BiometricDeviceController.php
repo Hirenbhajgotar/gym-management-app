@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\BiometricDevice;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,7 @@ class BiometricDeviceController extends Controller
 
     public function heartbeat(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         $device->last_heartbeat_at = now();
@@ -29,7 +30,7 @@ class BiometricDeviceController extends Controller
 
     public function config(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         $provider = $this->registry->resolve($device->provider_type, is_array($device->provider_config) ? $device->provider_config : []);
@@ -63,7 +64,7 @@ class BiometricDeviceController extends Controller
 
     public function testConnection(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         try {

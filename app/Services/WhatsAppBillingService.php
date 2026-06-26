@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Database\Eloquent\Collection;
+use Carbon\Carbon;
 use App\Enums\WhatsAppCreditTransactionEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppCreditTransaction;
@@ -252,8 +254,6 @@ class WhatsAppBillingService
             });
         } catch (LockTimeoutException $e) {
             throw new \Exception('System is busy processing another credit adjustment. Please try again.');
-        } catch (\Exception $e) {
-            throw $e;
         }
     }
 
@@ -281,7 +281,7 @@ class WhatsAppBillingService
         ];
     }
 
-    public function getTransactionHistory(int $gymId, int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getTransactionHistory(int $gymId, int $limit = 50): Collection
     {
         return WhatsAppCreditTransaction::where('gym_id', $gymId)
             ->orderBy('created_at', 'desc')
@@ -289,7 +289,7 @@ class WhatsAppBillingService
             ->get();
     }
 
-    public function getUsageReport(int $gymId, \Carbon\Carbon $startDate, \Carbon\Carbon $endDate): array
+    public function getUsageReport(int $gymId, Carbon $startDate, Carbon $endDate): array
     {
         $cacheKey = "billing:usage-report:{$gymId}:" . $startDate->format('Y-m-d') . ':' . $endDate->format('Y-m-d');
 

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Notifications\Member;
 
+use App\Enums\NotificationType;
+use Illuminate\Support\Facades\Storage;
+use App\Services\WhatsAppVariableResolver;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Notifications\BaseTenantNotification;
@@ -24,7 +27,7 @@ class WelcomeNotification extends BaseTenantNotification
 
     protected function getNotificationType(): string
     {
-        return \App\Enums\NotificationType::WELCOME->value;
+        return NotificationType::WELCOME->value;
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -41,8 +44,8 @@ class WelcomeNotification extends BaseTenantNotification
 
         // Attach invoice if exists on the latest payment
         $latestPayment = $this->member->latestPayment;
-        if ($latestPayment && $latestPayment->invoice_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($latestPayment->invoice_path)) {
-            $mail->attach(\Illuminate\Support\Facades\Storage::disk('local')->path($latestPayment->invoice_path), [
+        if ($latestPayment && $latestPayment->invoice_path && Storage::disk('local')->exists($latestPayment->invoice_path)) {
+            $mail->attach(Storage::disk('local')->path($latestPayment->invoice_path), [
                 'as' => $latestPayment->invoice_number . '.pdf',
                 'mime' => 'application/pdf',
             ]);
@@ -77,7 +80,7 @@ class WelcomeNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (\Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

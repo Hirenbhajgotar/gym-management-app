@@ -43,7 +43,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertArrayHasKey(DefaultRole::RECEPTIONIST->value, $result);
 
         // Assert that each role has an array of permission names
-        foreach ($result as $role => $permissions) {
+        foreach ($result as $permissions) {
             $this->assertIsArray($permissions);
             $this->assertNotEmpty($permissions);
 

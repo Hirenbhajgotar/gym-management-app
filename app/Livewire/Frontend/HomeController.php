@@ -11,7 +11,7 @@ use Livewire\Component;
 #[Title('Gym Management Software for Indian Gyms | FluxFitness')]
 class HomeController extends Component
 {
-    public $selectedPlan = null;
+    public $selectedPlan;
 
     #[Layout('frontend.layouts.app_new')]
     public function render()
@@ -45,7 +45,7 @@ class HomeController extends Component
         session(['selected_plan_id' => $plan->id]);
 
         // Redirect to gym owner registration
-        return redirect()->route('gym.register');
+        return to_route('gym.register');
     }
 
     public function startFreeTrial()
@@ -58,15 +58,15 @@ class HomeController extends Component
         if ($freePlan) {
             session(['selected_plan_id' => $freePlan->id]);
 
-            return redirect()->route('gym.register');
+            return to_route('gym.register');
         }
 
         // If no free plan, redirect to registration anyway
-        return redirect()->route('gym.register');
+        return to_route('gym.register');
     }
 
     public function requestDemo()
     {
-        return redirect()->route('request-demo');
+        return to_route('request-demo');
     }
 }

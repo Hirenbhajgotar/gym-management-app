@@ -2,15 +2,34 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages\ListExpenseCategories;
+use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages\CreateExpenseCategory;
+use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages\EditExpenseCategory;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Enums\FilamentColor;
-use App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
@@ -42,22 +61,22 @@ class ExpenseCategoryResource extends BaseResource
 
     public static function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Category Details')
+                Section::make('Category Details')
                     ->icon('phosphor-folder-open')
                     ->description('Create a custom expense category for your gym')
                     ->schema([
-                        Forms\Components\Hidden::make('gym_id')
+                        Hidden::make('gym_id')
                             ->default($gym->id),
 
-                        Forms\Components\Hidden::make('is_system')
+                        Hidden::make('is_system')
                             ->default(false),
 
-                        Forms\Components\Select::make('parent_id')
+                        Select::make('parent_id')
                             ->label('Parent Category')
                             ->options(fn () => ExpenseCategory::query()
                                 ->availableForGym($gym->id)
@@ -69,33 +88,33 @@ class ExpenseCategoryResource extends BaseResource
                             ->placeholder('None (Root Category)')
                             ->helperText('Leave empty for root category'),
 
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Custom Category')
                             ->autofocus(),
 
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->maxLength(1000)
                             ->placeholder('Optional description for this category')
                             ->rows(3)
                             ->columnSpanFull(),
 
-                        Forms\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
-                                Forms\Components\TextInput::make('icon')
+                                TextInput::make('icon')
                                     ->label('Icon')
                                     ->placeholder('phosphor-tag')
                                     ->default('phosphor-tag')
                                     ->helperText('Use Phosphor icon name'),
 
-                                Forms\Components\Select::make('color')
+                                Select::make('color')
                                     ->label('Badge Color')
                                     ->options(FilamentColor::toSelectOptions())
                                     ->default('gray'),
                             ]),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->label('Active')
                             ->default(true)
                             ->onColor('success')
@@ -110,50 +129,50 @@ class ExpenseCategoryResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('order')
+                TextColumn::make('order')
                     ->label('#')
                     ->sortable()
                     ->alignCenter()
                     ->width(50),
 
-                Tables\Columns\IconColumn::make('icon')
+                IconColumn::make('icon')
                     ->label('')
                     ->icon(fn ($state) => $state ?? 'phosphor-tag')
                     ->color(fn ($record) => $record->color ?? 'gray')
                     ->size('lg'),
 
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->description(fn ($record) => $record->parent?->name),
 
-                Tables\Columns\TextColumn::make('is_system')
+                TextColumn::make('is_system')
                     ->label('Type')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state ? 'System Default' : 'Custom')
                     ->color(fn ($state) => $state ? 'info' : 'success')
                     ->icon(fn ($state) => $state ? 'phosphor-lock-simple' : 'phosphor-user'),
 
-                Tables\Columns\TextColumn::make('description')
+                TextColumn::make('description')
                     ->limit(50)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('color')
+                TextColumn::make('color')
                     ->label('Color')
                     ->badge()
                     ->formatStateUsing(fn ($state) => ucfirst($state ?? 'gray'))
                     ->color(fn ($state) => $state ?? 'gray'),
 
-                Tables\Columns\TextColumn::make('expenses_count')
+                TextColumn::make('expenses_count')
                     ->counts('expenses')
                     ->label('Expenses')
                     ->badge()
                     ->color('primary')
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('children_count')
+                TextColumn::make('children_count')
                     ->counts('children')
                     ->label('Sub-categories')
                     ->badge()
@@ -161,39 +180,39 @@ class ExpenseCategoryResource extends BaseResource
                     ->alignCenter()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active')
                     ->onColor('success')
                     ->offColor('danger')
                     ->disabled(fn ($record) => $record->is_system),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
+                TernaryFilter::make('is_active')
                     ->label('Status')
                     ->placeholder('All')
                     ->trueLabel('Active only')
                     ->falseLabel('Inactive only'),
 
-                Tables\Filters\SelectFilter::make('parent_id')
+                SelectFilter::make('parent_id')
                     ->label('Parent Category')
                     ->relationship('parent', 'name')
                     ->preload()
                     ->placeholder('All categories'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
+                ViewAction::make()
                     ->icon('phosphor-eye')
                     ->color('gray')
                     ->visible(fn ($record) => $record->is_system),
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('phosphor-pencil')
                     ->color('primary')
                     ->visible(fn ($record) => ! $record->is_system),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('phosphor-trash')
                     ->color('danger')
                     ->visible(fn ($record) => ! $record->is_system)
-                    ->before(function (ExpenseCategory $record, Tables\Actions\DeleteAction $action) {
+                    ->before(function (ExpenseCategory $record, DeleteAction $action) {
                         if ($record->expenses()->exists()) {
                             $action->cancel();
                             $action->failureNotificationTitle('Cannot delete category with expenses');
@@ -205,9 +224,9 @@ class ExpenseCategoryResource extends BaseResource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->before(function ($records, Tables\Actions\DeleteBulkAction $action) {
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->before(function ($records, DeleteBulkAction $action) {
                             // Filter out system defaults from bulk delete
                             $customRecords = $records->reject(fn ($record) => $record->is_system);
                             if ($customRecords->isEmpty()) {
@@ -232,15 +251,15 @@ class ExpenseCategoryResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListExpenseCategories::route('/'),
-            'create' => Pages\CreateExpenseCategory::route('/create'),
-            'edit' => Pages\EditExpenseCategory::route('/{record}/edit'),
+            'index' => ListExpenseCategories::route('/'),
+            'create' => CreateExpenseCategory::route('/create'),
+            'edit' => EditExpenseCategory::route('/{record}/edit'),
         ];
     }
 
     public static function getNavigationBadge(): ?string
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return Cache::flexible(ExpenseCategory::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {
@@ -248,9 +267,9 @@ class ExpenseCategoryResource extends BaseResource
         }) ?: null;
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return parent::getEloquentQuery()

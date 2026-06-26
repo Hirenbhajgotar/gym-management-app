@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Components;
 
 use Closure;
 use Filament\Forms\Components\Component;
-use Filament\Forms\Set;
 
 /**
  * Reusable date presets component for quick date range selection.
@@ -26,7 +25,7 @@ class DatePresets extends Component
 
     public static function make(): static
     {
-        return app(static::class)
+        return resolve(static::class)
             ->configure()
             ->registerDefaultPresets();
     }

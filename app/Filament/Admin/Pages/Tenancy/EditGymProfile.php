@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Pages\Tenancy;
 
+use Filament\Forms\Components\Tabs\Tab;
+use Illuminate\Support\Facades\Hash;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use Filament\Forms\Components\Actions\Action;
@@ -29,7 +31,7 @@ class EditGymProfile extends EditTenantProfile
             ->schema([
                 Tabs::make('Tabs')
                     ->tabs([
-                        Tabs\Tab::make('General')
+                        Tab::make('General')
                             ->icon('heroicon-o-building-storefront')
                             ->schema([
                                 FileUpload::make('logo')
@@ -66,7 +68,7 @@ class EditGymProfile extends EditTenantProfile
                             ])
                             ->columns(2),
 
-                        Tabs\Tab::make('Security')
+                        Tab::make('Security')
                             ->icon('heroicon-o-lock-closed')
                             ->schema([
                                 Grid::make()
@@ -79,7 +81,7 @@ class EditGymProfile extends EditTenantProfile
                                             ->requiredWith('new_password')
                                             ->rule(function () {
                                                 return function (string $attribute, $value, \Closure $fail) {
-                                                    if (! \Illuminate\Support\Facades\Hash::check($value, auth()->user()->password)) {
+                                                    if (! Hash::check($value, auth()->user()->password)) {
                                                         $fail('The provided password does not match your current password.');
                                                     }
                                                 };
@@ -120,7 +122,7 @@ class EditGymProfile extends EditTenantProfile
     {
         $data = $this->form->getState();
 
-        if (! empty($data['new_password'])) {
+        if (filled($data['new_password'])) {
             $user = auth()->user();
 
             $user->password = $data['new_password'];

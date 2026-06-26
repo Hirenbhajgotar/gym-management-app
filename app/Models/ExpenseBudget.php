@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Spatie\Activitylog\Models\Activity;
 use App\Observers\ExpenseBudgetObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,20 +26,20 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property numeric $amount
  * @property string $currency
  * @property string $period
- * @property \Illuminate\Support\Carbon $start_date
- * @property \Illuminate\Support\Carbon $end_date
+ * @property Carbon $start_date
+ * @property Carbon $end_date
  * @property int $alert_threshold
  * @property bool $alert_sent
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
- * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read ExpenseCategory|null $category
  * @property-read mixed $formatted_amount
  * @property-read mixed $formatted_remaining_amount
  * @property-read mixed $formatted_spent_amount
- * @property-read \App\Models\Gym $gym
+ * @property-read Gym $gym
  *
  * @method static Builder<static>|ExpenseBudget active()
  * @method static Builder<static>|ExpenseBudget current()
@@ -121,12 +124,17 @@ class ExpenseBudget extends Model
     // ========================================
     // Relationships
     // ========================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<ExpenseCategory, $this>
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');

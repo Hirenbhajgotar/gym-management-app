@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages\ExpenseReports\Widgets;
 
+use App\Models\Gym;
 use App\Enums\ExpenseStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Expense;
@@ -34,7 +35,7 @@ class ExpenseCategoryChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         $expenses = Expense::query()

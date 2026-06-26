@@ -4,6 +4,7 @@ namespace App\Biometrics\Services;
 
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Illuminate\Database\Eloquent\Builder;
 
 class FraudDetector
 {
@@ -25,7 +26,7 @@ class FraudDetector
         $count = Attendances::whereHasMorph(
             'attendanceable',
             [GymMember::class],
-            fn ($q) => $q->where('email', $gymMember->email)
+            fn (Builder $q) => $q->where('email', $gymMember->email)
         )
             ->where('check_in_result', 'granted')
             ->where('check_in_time', '>=', now()->subMinutes(10))

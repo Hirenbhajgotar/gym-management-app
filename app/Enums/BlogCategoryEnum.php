@@ -27,7 +27,7 @@ enum BlogCategoryEnum: string implements HasLabel
     {
         $labels = collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
 
         return array_merge(
             ['' => 'All'],
@@ -44,6 +44,6 @@ enum BlogCategoryEnum: string implements HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 }

@@ -10,7 +10,7 @@ use App\Models\MembershipPlan;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\LeadConversion>
+ * @extends Factory<LeadConversion>
  */
 class LeadConversionFactory extends Factory
 {

@@ -2,9 +2,9 @@
 
 namespace App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use App\Models\ErrorReport;
-use Filament\Actions;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +17,7 @@ class ListErrorReports extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 

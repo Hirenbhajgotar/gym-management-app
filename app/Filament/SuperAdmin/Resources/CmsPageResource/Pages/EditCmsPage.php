@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Resources\CmsPageResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Resources\CmsPageResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditCmsPage extends EditRecord
@@ -13,7 +13,7 @@ class EditCmsPage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

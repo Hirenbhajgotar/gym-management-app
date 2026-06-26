@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\AttendanceStatus;
 use App\Enums\BiometricTypeEnum;
 use App\Observers\AttendanceObserver;
@@ -18,8 +21,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $attendanceable_type
  * @property int $attendanceable_id
  * @property int $gym_id
- * @property \Illuminate\Support\Carbon|null $check_in_time
- * @property \Illuminate\Support\Carbon|null $check_out_time
+ * @property Carbon|null $check_in_time
+ * @property Carbon|null $check_out_time
  * @property AttendanceStatus|null $status
  * @property string|null $note
  * @property int|null $device_id
@@ -34,53 +37,53 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $denial_reason
  * @property string|null $door_status
  * @property string|null $door_denial_reason
- * @property \Illuminate\Support\Carbon|null $door_unlocked_at
- * @property \Illuminate\Support\Carbon|null $synced_at
+ * @property Carbon|null $door_unlocked_at
+ * @property Carbon|null $synced_at
  * @property string|null $check_in_ip
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Model|\Eloquent $attendanceable
- * @property-read \App\Models\BiometricDevice|null $device
- * @property-read \App\Models\DoorEvent|null $doorEvent
+ * @property-read BiometricDevice|null $device
+ * @property-read DoorEvent|null $doorEvent
  * @property-read mixed $duration
  * @property-read mixed $duration_in_minutes
- * @property-read \App\Models\Gym $gym
+ * @property-read Gym $gym
  * @property-read mixed $is_active
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances absent()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances biometric()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byDate($date)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances byGym($gymId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances completed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereAttendanceableType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereBiometricType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInIp($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInMethod($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInResult($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckInTime($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCheckOutTime($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereConfidenceScore($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDenialReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDeviceId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorDenialReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereDoorUnlockedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereFusionScore($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereLivenessScore($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereNote($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereOfflineId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereProviderType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereSyncedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendances whereUpdatedAt($value)
+ * @method static Builder<static>|Attendances absent()
+ * @method static Builder<static>|Attendances active()
+ * @method static Builder<static>|Attendances biometric()
+ * @method static Builder<static>|Attendances byDate($date)
+ * @method static Builder<static>|Attendances byGym($gymId)
+ * @method static Builder<static>|Attendances completed()
+ * @method static Builder<static>|Attendances newModelQuery()
+ * @method static Builder<static>|Attendances newQuery()
+ * @method static Builder<static>|Attendances query()
+ * @method static Builder<static>|Attendances whereAttendanceableId($value)
+ * @method static Builder<static>|Attendances whereAttendanceableType($value)
+ * @method static Builder<static>|Attendances whereBiometricType($value)
+ * @method static Builder<static>|Attendances whereCheckInIp($value)
+ * @method static Builder<static>|Attendances whereCheckInMethod($value)
+ * @method static Builder<static>|Attendances whereCheckInResult($value)
+ * @method static Builder<static>|Attendances whereCheckInTime($value)
+ * @method static Builder<static>|Attendances whereCheckOutTime($value)
+ * @method static Builder<static>|Attendances whereConfidenceScore($value)
+ * @method static Builder<static>|Attendances whereCreatedAt($value)
+ * @method static Builder<static>|Attendances whereDenialReason($value)
+ * @method static Builder<static>|Attendances whereDeviceId($value)
+ * @method static Builder<static>|Attendances whereDoorDenialReason($value)
+ * @method static Builder<static>|Attendances whereDoorStatus($value)
+ * @method static Builder<static>|Attendances whereDoorUnlockedAt($value)
+ * @method static Builder<static>|Attendances whereFusionScore($value)
+ * @method static Builder<static>|Attendances whereGymId($value)
+ * @method static Builder<static>|Attendances whereId($value)
+ * @method static Builder<static>|Attendances whereLivenessScore($value)
+ * @method static Builder<static>|Attendances whereNote($value)
+ * @method static Builder<static>|Attendances whereOfflineId($value)
+ * @method static Builder<static>|Attendances whereProviderType($value)
+ * @method static Builder<static>|Attendances whereStatus($value)
+ * @method static Builder<static>|Attendances whereSyncedAt($value)
+ * @method static Builder<static>|Attendances whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperAttendances
@@ -88,6 +91,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 #[ObservedBy([AttendanceObserver::class])]
 class Attendances extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'attendanceable_id',
         'attendanceable_type',
@@ -131,16 +135,25 @@ class Attendances extends Model
         return $this->morphTo();
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<BiometricDevice, $this>
+     */
     public function device(): BelongsTo
     {
         return $this->belongsTo(BiometricDevice::class, 'device_id');
     }
 
+    /**
+     * @return HasOne<DoorEvent, $this>
+     */
     public function doorEvent(): HasOne
     {
         return $this->hasOne(DoorEvent::class, 'attendance_id');
@@ -174,7 +187,7 @@ class Attendances extends Model
         );
     }
 
-    public function isActive(): Attribute
+    protected function isActive(): Attribute
     {
         return Attribute::make(
             get: function ($value) {

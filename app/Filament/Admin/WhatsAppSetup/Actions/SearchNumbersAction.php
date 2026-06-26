@@ -34,7 +34,7 @@ class SearchNumbersAction
         $this->page->isSearching = true;
         $result = $this->page->getProvider()->getAvailableNumbers($this->page->data['search_country'] ?? 'US', 'local', 5);
         $this->page->isSearching = false;
-        if ($result['success'] && ! empty($result['numbers'])) {
+        if ($result['success'] && filled($result['numbers'])) {
             $this->page->availableNumbers = $result['numbers'];
             $this->page->availableNumbersLoaded = true;
         } else {

@@ -28,7 +28,7 @@ class CohortRetentionChart extends BaseWidget
 
     public function getCohortData(): array
     {
-        return $this->getMemberCohortData($this->months)->toArray();
+        return $this->getMemberCohortData($this->months)->all();
     }
 
     /**
@@ -38,7 +38,7 @@ class CohortRetentionChart extends BaseWidget
     {
         $cohorts = $this->getCohortData();
 
-        if (empty($cohorts)) {
+        if (blank($cohorts)) {
             return 0;
         }
 

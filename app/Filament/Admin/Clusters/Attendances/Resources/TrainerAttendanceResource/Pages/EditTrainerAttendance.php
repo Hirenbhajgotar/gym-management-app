@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTrainerAttendance extends EditRecord
@@ -13,7 +13,7 @@ class EditTrainerAttendance extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

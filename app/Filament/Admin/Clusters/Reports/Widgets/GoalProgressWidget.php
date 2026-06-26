@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\ReportGoal;
@@ -39,7 +40,7 @@ class GoalProgressWidget extends BaseWidget
 
     public function getActiveGoals(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         if (! $gym) {

@@ -40,7 +40,7 @@ class SyncPermissionsCommandTest extends TestCase
     #[Test]
     public function it_creates_missing_permissions(): void
     {
-        $service = app(RolesAndPermissionsService::class);
+        $service = resolve(RolesAndPermissionsService::class);
         $discovered = $service->discoverFilamentPermissions();
 
         $before = Permission::pluck('name')->toArray();

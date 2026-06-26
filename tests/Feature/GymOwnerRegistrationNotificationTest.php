@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Spatie\Permission\Models\Role;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
@@ -20,7 +21,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
     {
         parent::setUp();
         // Manually create necessary roles/permissions to avoid heavy seeder
-        $role = \Spatie\Permission\Models\Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
     }
 
     public function test_registration_completes_even_if_notification_throws_exception()
@@ -52,7 +53,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
             ->with(User::ALL_SUPER_ADMINS_CACHE_KEY, Mockery::any(), Mockery::any())
             ->andReturn(collect([$mockSuperAdmin]));
 
-        $service = app(GymOwnerRegistrationService::class);
+        $service = resolve(GymOwnerRegistrationService::class);
 
         $registrationData = [
             'name' => 'John Doe',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Permissions;
 
+use Illuminate\Support\Collection;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission;
@@ -45,7 +46,7 @@ abstract class PermissionsTestCase extends TestCase
 
     protected function seedPermissions(): void
     {
-        $service = app(RolesAndPermissionsService::class);
+        $service = resolve(RolesAndPermissionsService::class);
         $service->discoverFilamentPermissions();
     }
 
@@ -56,7 +57,7 @@ abstract class PermissionsTestCase extends TestCase
             ['guard_name' => 'web']
         );
 
-        if (! empty($permissionNames)) {
+        if (filled($permissionNames)) {
             $permissions = Permission::whereIn('name', $permissionNames)->get();
             $roleModel->syncPermissions($permissions);
         }
@@ -64,7 +65,7 @@ abstract class PermissionsTestCase extends TestCase
         return $roleModel;
     }
 
-    protected function getPermissionsForRole(DefaultRole $role): \Illuminate\Support\Collection
+    protected function getPermissionsForRole(DefaultRole $role): Collection
     {
         $roleModel = Role::where('name', $role->value)
             ->where('gym_id', $this->gymId)

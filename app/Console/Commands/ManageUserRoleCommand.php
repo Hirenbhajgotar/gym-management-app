@@ -148,7 +148,7 @@ class ManageUserRoleCommand extends Command
     /**
      * Select a role with gym context.
      */
-    private function selectRole(?int $gymId = null): ?string
+    private function selectRole(?int $gymId = null): string
     {
         $roles = [];
 
@@ -280,7 +280,7 @@ class ManageUserRoleCommand extends Command
             ])->all(),
         );
 
-        if (empty($rolesToRemove)) {
+        if (blank($rolesToRemove)) {
             $this->info('No roles selected for removal.');
 
             return Command::SUCCESS;
@@ -319,7 +319,7 @@ class ManageUserRoleCommand extends Command
 
         while (true) {
             $email = text(label: 'Email (or press enter to finish):', default: '');
-            if (empty($email)) {
+            if (blank($email)) {
                 break;
             }
             if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -329,7 +329,7 @@ class ManageUserRoleCommand extends Command
             }
         }
 
-        if (empty($emails)) {
+        if (blank($emails)) {
             $this->info('No emails provided.');
 
             return Command::SUCCESS;

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Database\Factories\StateFactory;
 use App\Observers\StateObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,14 +19,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $name
  * @property string|null $slug
  * @property int|null $status 1=Active, 0=Inactive
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\City> $cities
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, City> $cities
  * @property-read int|null $cities_count
- * @property-read \App\Models\Country|null $country
+ * @property-read Country|null $country
  *
  * @method static Builder<static>|State active()
- * @method static \Database\Factories\StateFactory factory($count = null, $state = [])
+ * @method static StateFactory factory($count = null, $state = [])
  * @method static Builder<static>|State inactive()
  * @method static Builder<static>|State newModelQuery()
  * @method static Builder<static>|State newQuery()
@@ -52,11 +55,17 @@ class State extends Model
         'status',
     ];
 
+    /**
+     * @return BelongsTo<Country, $this>
+     */
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
     }
 
+    /**
+     * @return HasMany<City, $this>
+     */
     public function cities(): HasMany
     {
         return $this->hasMany(City::class);
@@ -65,7 +74,7 @@ class State extends Model
     /**
      * Scope a query to only include active countries.
      */
-    public function scopeActive(Builder $query): Builder
+    protected function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 1);
     }
@@ -73,7 +82,7 @@ class State extends Model
     /**
      * Scope a query to only include inactive countries.
      */
-    public function scopeInactive(Builder $query): Builder
+    protected function scopeInactive(Builder $query): Builder
     {
         return $query->where('status', 0);
     }

@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
+use Illuminate\Support\Facades\Date;
 use App\Models\ErrorReport;
-use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -35,7 +35,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $cutoffDate = Carbon::now()->subDays(15);
+            $cutoffDate = Date::now()->subDays(15);
 
             $deletedCount = ErrorReport::resolved()
                 ->where('updated_at', '<', $cutoffDate)

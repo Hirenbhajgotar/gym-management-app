@@ -43,7 +43,7 @@ class TwilioTestMessageService implements TestMessagingInterface
                 ];
             }
 
-            if (empty($account->twilio_account_sid) || empty($account->twilio_auth_token)) {
+            if (blank($account->twilio_account_sid) || blank($account->twilio_auth_token)) {
                 return [
                     'success' => false,
                     'error' => 'Twilio credentials are not configured.',

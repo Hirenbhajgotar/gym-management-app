@@ -2,9 +2,10 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource;
-use Filament\Actions;
 use Filament\Infolists\Components\Fieldset;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -18,8 +19,8 @@ class ViewPermissionSetting extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 

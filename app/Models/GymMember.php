@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\PaymentStatus;
 use App\Notifications\MemberFrozenNotification;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -158,7 +157,7 @@ class GymMember extends Model
             if ($member->membership_start && $member->gym_membership_plan_id) {
                 $plan = $member->membershipPlan;
                 if ($plan && $plan->duration) {
-                    $member->membership_end = Carbon::parse($member->membership_start)->addMonths($plan->duration);
+                    $member->membership_end = Date::parse($member->membership_start)->addMonths($plan->duration);
                 }
             }
         });
@@ -167,72 +166,113 @@ class GymMember extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return BelongsTo<MembershipPlan, $this>
+     */
     public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class, 'gym_membership_plan_id');
     }
 
+    /**
+     * @return BelongsTo<Trainer, $this>
+     */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(Trainer::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * @return HasMany<MemberPayment, $this>
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(MemberPayment::class, 'member_id', 'id');
     }
 
+    /**
+     * @return HasOne<MemberPayment, $this>
+     */
     public function latestPayment(): HasOne
     {
         return $this->hasOne(MemberPayment::class, 'member_id')->latestOfMany();
     }
 
+    /**
+     * @return MorphOne<Address, $this>
+     */
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
     }
 
+    /**
+     * @return MorphMany<Attendances, $this>
+     */
     public function attendances(): MorphMany
     {
         return $this->morphMany(Attendances::class, 'attendanceable');
     }
 
+    /**
+     * @return MorphOne<Attendances, $this>
+     */
     public function lastAttendance(): MorphOne
     {
         return $this->morphOne(Attendances::class, 'attendanceable')->latestOfMany('check_in_time');
     }
 
+    /**
+     * @return BelongsTo<Lead, $this>
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
     }
 
+    /**
+     * @return HasMany<MemberMeasurement, $this>
+     */
     public function measurements(): HasMany
     {
-        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_at', 'desc');
+        return $this->hasMany(MemberMeasurement::class)->latest('measured_at');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function frozenBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'frozen_by');
     }
 
+    /**
+     * @return HasMany<BiometricTemplate, $this>
+     */
     public function biometricTemplates(): HasMany
     {
         return $this->hasMany(BiometricTemplate::class, 'gym_member_id');
     }
 
+    /**
+     * @return HasMany<BiometricConsent, $this>
+     */
     public function biometricConsents(): HasMany
     {
         return $this->hasMany(BiometricConsent::class, 'gym_member_id');
@@ -282,7 +322,7 @@ class GymMember extends Model
             // Remove timestamps from changes
             unset($changes['updated_at']);
 
-            if (empty($changes)) {
+            if (blank($changes)) {
                 return "{$this->name}'s membership was renewed";
             }
 

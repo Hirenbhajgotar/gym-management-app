@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 /**
  * Service for querying user login activity.
@@ -25,7 +27,7 @@ class LoginActivityService
      */
     public function getUserIdsByRoles(array $roles): Collection
     {
-        return User::whereHas('gyms', function ($query) use ($roles) {
+        return User::whereHas('gyms', function (Builder $query) use ($roles) {
             $query->whereIn('gym_user.role', $roles);
         })->pluck('users.id');
     }
@@ -55,7 +57,7 @@ class LoginActivityService
      */
     public function getLoginStats(int $userId): array
     {
-        $today = now()->startOfDay();
+        $today = today();
         $weekStart = now()->startOfWeek();
         $monthStart = now()->startOfMonth();
 
@@ -122,7 +124,7 @@ class LoginActivityService
     {
         $query = UserLoginLog::with(['user', 'gym']);
 
-        if (! empty($filters['role'])) {
+        if (filled($filters['role'])) {
             $userIds = $this->getUserIdsByRoles([$filters['role']]);
             if ($userIds->isNotEmpty()) {
                 $query->whereIn('user_id', $userIds);
@@ -131,19 +133,19 @@ class LoginActivityService
             }
         }
 
-        if (! empty($filters['gym_id'])) {
+        if (filled($filters['gym_id'])) {
             $query->where('gym_id', $filters['gym_id']);
         }
 
-        if (! empty($filters['from'])) {
-            $query->where('login_at', '>=', Carbon::parse($filters['from']));
+        if (filled($filters['from'])) {
+            $query->where('login_at', '>=', Date::parse($filters['from']));
         }
 
-        if (! empty($filters['to'])) {
-            $query->where('login_at', '<=', Carbon::parse($filters['to']));
+        if (filled($filters['to'])) {
+            $query->where('login_at', '<=', Date::parse($filters['to']));
         }
 
-        return $query->orderByDesc('login_at')->limit($limit)->get();
+        return $query->latest('login_at')->limit($limit)->get();
     }
 
     /**
@@ -176,7 +178,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        $today = now()->startOfDay();
+        $today = today();
         $weekStart = now()->startOfWeek();
         $monthStart = now()->startOfMonth();
 

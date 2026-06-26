@@ -44,7 +44,7 @@ enum BiometricDoorControlType: string implements HasColor, HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getDescriptiveLabel()]
-        )->toArray();
+        )->all();
     }
 
     public function getShortDescription(): string

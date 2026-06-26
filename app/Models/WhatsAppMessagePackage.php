@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -20,8 +22,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_popular
  * @property bool $includes_number
  * @property array<array-key, mixed>|null $features
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  *
  * @method static Builder<static>|WhatsAppMessagePackage active()
  * @method static Builder<static>|WhatsAppMessagePackage newModelQuery()
@@ -48,6 +50,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class WhatsAppMessagePackage extends Model
 {
+    use HasFactory;
     protected $table = 'whatsapp_packages';
 
     protected $fillable = [

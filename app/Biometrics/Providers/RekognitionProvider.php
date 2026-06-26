@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Providers;
 
+use Aws\Exception\AwsException;
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
@@ -45,9 +46,7 @@ class RekognitionProvider implements BiometricProvider
 
         $faceRecords = $result->get('FaceRecords');
 
-        if (empty($faceRecords)) {
-            throw new \Exception('No face detected in the image');
-        }
+        throw_if(blank($faceRecords), \Exception::class, 'No face detected in the image');
 
         $faceId = $faceRecords[0]['Face']['FaceId'];
         $quality = $faceRecords[0]['Face']['Quality'] ?? null;
@@ -76,7 +75,7 @@ class RekognitionProvider implements BiometricProvider
 
         $faceMatches = $result->get('FaceMatches');
 
-        if (empty($faceMatches)) {
+        if (blank($faceMatches)) {
             return new VerificationResult(
                 matched: false,
                 confidence: 0.0,
@@ -124,7 +123,7 @@ class RekognitionProvider implements BiometricProvider
 
         $faceDetails = $result->get('FaceDetails');
 
-        if (empty($faceDetails)) {
+        if (blank($faceDetails)) {
             return 0.0;
         }
 
@@ -182,7 +181,7 @@ class RekognitionProvider implements BiometricProvider
             ]);
 
             return true;
-        } catch (\Aws\Exception\AwsException $e) {
+        } catch (AwsException $e) {
             return false;
         } catch (\Exception $e) {
             return false;

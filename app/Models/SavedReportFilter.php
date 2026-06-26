@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,25 +17,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $report_type
  * @property array<array-key, mixed> $filters
  * @property bool $is_default
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\User $user
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read User $user
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter forReport($reportType)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter forUser($userId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereFilters($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereIsDefault($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereReportType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SavedReportFilter whereUserId($value)
+ * @method static Builder<static>|SavedReportFilter forReport($reportType)
+ * @method static Builder<static>|SavedReportFilter forUser($userId)
+ * @method static Builder<static>|SavedReportFilter newModelQuery()
+ * @method static Builder<static>|SavedReportFilter newQuery()
+ * @method static Builder<static>|SavedReportFilter query()
+ * @method static Builder<static>|SavedReportFilter whereCreatedAt($value)
+ * @method static Builder<static>|SavedReportFilter whereFilters($value)
+ * @method static Builder<static>|SavedReportFilter whereGymId($value)
+ * @method static Builder<static>|SavedReportFilter whereId($value)
+ * @method static Builder<static>|SavedReportFilter whereIsDefault($value)
+ * @method static Builder<static>|SavedReportFilter whereName($value)
+ * @method static Builder<static>|SavedReportFilter whereReportType($value)
+ * @method static Builder<static>|SavedReportFilter whereUpdatedAt($value)
+ * @method static Builder<static>|SavedReportFilter whereUserId($value)
  *
  * @mixin \Eloquent
  */
@@ -55,24 +57,30 @@ class SavedReportFilter extends Model
         'is_default' => 'boolean',
     ];
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     #[Scope]
-    public function forUser($query, $userId)
+    protected function forUser($query, $userId)
     {
         return $query->where('user_id', $userId);
     }
 
     #[Scope]
-    public function forReport($query, $reportType)
+    protected function forReport($query, $reportType)
     {
         return $query->where('report_type', $reportType);
     }

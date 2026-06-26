@@ -2,6 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Date;
+use App\Services\ChurnRiskService;
+use App\Exports\MemberReportExport;
+use App\Models\Gym;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberDemographicsChart;
@@ -16,7 +23,6 @@ use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -82,24 +88,24 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
     public function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->subYear())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label('Membership Status')
                             ->options([
                                 'active' => 'Active',
@@ -107,7 +113,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                             ])
                             ->placeholder('All Status'),
 
-                        Forms\Components\Select::make('membership_plan_id')
+                        Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->options(
                                 MembershipPlan::where('gym_id', $gym?->id)
@@ -125,7 +131,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
      */
     public function getFilteredMembersQuery()
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return GymMember::query()
@@ -211,7 +217,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                 $previousCount = $currentCount;
 
                 return [
-                    'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                    'month' => Date::parse($item->month . '-01')->format('M Y'),
                     'count' => $item->count,
                     'growth_rate' => round($growthRate, 1),
                     'retention_rate' => 100, // Placeholder as we don't have historical retention strictly per month in this query
@@ -275,7 +281,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::CHURN_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = new \App\Services\ChurnRiskService;
+            $service = new ChurnRiskService;
             $stats = $service->getChurnStats($gymId);
             $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5);
 
@@ -293,7 +299,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    return (new \App\Exports\MemberReportExport(
+                    return (new MemberReportExport(
                         gymId: Filament::getTenant()?->id,
                         filters: $this->filters
                     ))->download('member-report-' . now()->format('Y-m-d') . '.xlsx');

@@ -155,7 +155,7 @@ class SendMessageChunkJob implements ShouldQueue
                 ];
 
                 $variables = $recipient['resolved_variables'];
-                if (! empty($variables)) {
+                if (filled($variables)) {
                     $payload['template']['components'] = [
                         [
                             'type' => 'body',
@@ -293,7 +293,7 @@ class SendMessageChunkJob implements ShouldQueue
         array $failureReasons,
         array $messageSids,
     ): void {
-        if (empty($successIds) && empty($failedIds)) {
+        if (blank($successIds) && blank($failedIds)) {
             return;
         }
 

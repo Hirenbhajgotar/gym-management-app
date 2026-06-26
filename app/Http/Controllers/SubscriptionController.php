@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
-use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
@@ -178,9 +178,9 @@ class SubscriptionController extends Controller
     public function verifyPayment(Request $request)
     {
         $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature' => 'required|string',
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
         ]);
 
         try {
@@ -191,9 +191,7 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature,
             );
 
-            if (! $verifiedPayment->isCompleted()) {
-                throw new \Exception('Payment verification failed');
-            }
+            throw_unless($verifiedPayment->isCompleted(), \Exception::class, 'Payment verification failed');
 
             $checkoutType = $this->determineCheckoutType();
 
@@ -217,11 +215,10 @@ class SubscriptionController extends Controller
 
             // Generate invoice
             if ($verifiedPayment->isCompleted()) {
-                GenerateInvoiceJob::dispatch($verifiedPayment);
+                dispatch(new GenerateInvoiceJob($verifiedPayment));
             }
 
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('success', $successMessage);
         } catch (\Exception $e) {
             Log::error('Subscription payment verification failed', [
@@ -230,8 +227,7 @@ class SubscriptionController extends Controller
                 'checkout_type' => $this->determineCheckoutType(),
             ]);
 
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('error', 'Payment failed. Please try again.');
         }
     }
@@ -279,27 +275,22 @@ class SubscriptionController extends Controller
      */
     public function completePendingPayment(
         string $orderId,
-    ): View|\Illuminate\Http\RedirectResponse {
+    ): View|RedirectResponse {
         // Find the payment record
         $payment = Payment::where('razorpay_order_id', $orderId)->first();
 
-        if (! $payment || $payment->user_id !== auth()->id()) {
-            abort(404, 'Payment not found');
-        }
+        abort_if(! $payment || $payment->user_id !== auth()->id(), 404, 'Payment not found');
 
         // Find the subscription
         $subscription = Subscription::find(
             $payment->metadata['subscription_id'] ?? null,
         );
 
-        if (! $subscription || $subscription->user_id !== auth()->id()) {
-            abort(404, 'Subscription not found');
-        }
+        abort_if(! $subscription || $subscription->user_id !== auth()->id(), 404, 'Subscription not found');
 
         // Check if payment is still pending
         if ($payment->status !== 'pending') {
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('info', 'This payment has already been processed.');
         }
 
@@ -318,13 +309,12 @@ class SubscriptionController extends Controller
     /**
      * Handle gym owner registration checkout
      */
-    public function handleGymOwnerCheckout(): View|\Illuminate\Http\RedirectResponse
+    public function handleGymOwnerCheckout(): View|RedirectResponse
     {
         $registrationData = session('gym_owner_registration');
 
         if (! $registrationData || ! isset($registrationData['selected_plan_id'])) {
-            return redirect()
-                ->route('gym.register')
+            return to_route('gym.register')
                 ->with('error', 'Registration data not found. Please start again.');
         }
 
@@ -366,18 +356,16 @@ class SubscriptionController extends Controller
     public function verifyGymOwnerPayment(Request $request)
     {
         $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature' => 'required|string',
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
         ]);
 
         try {
             // Get registration data from session
             $registrationData = session('gym_owner_registration');
 
-            if (! $registrationData) {
-                throw new \Exception('Registration data not found');
-            }
+            throw_unless($registrationData, \Exception::class, 'Registration data not found');
 
             // Get payment record
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
@@ -398,8 +386,7 @@ class SubscriptionController extends Controller
                     : 'Registration completed! Please complete the payment to activate your subscription.';
             }
 
-            return redirect()
-                ->route('thank-you')
+            return to_route('thank-you')
                 ->with('success', $successMessage)
                 ->with('email', $result['user']->email);
         } catch (\Exception $e) {
@@ -408,8 +395,7 @@ class SubscriptionController extends Controller
                 'order_id' => $request->razorpay_order_id ?? null,
             ]);
 
-            return redirect()
-                ->route('gym.register')
+            return to_route('gym.register')
                 ->with('error', 'Payment verification failed. Please try again or contact support.');
         }
     }

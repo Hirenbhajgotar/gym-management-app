@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\RequestDemo;
 use App\Models\RequestContact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +28,7 @@ class RequestDemoTest extends TestCase
     {
         $response = $this->get(route('request-demo'));
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSeeLivewire(RequestDemo::class);
     }
 
@@ -302,9 +303,9 @@ class RequestDemoTest extends TestCase
     {
         $response = $this->get(route('home'));
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSeeLivewire(
-            \App\Livewire\Frontend\HomeController::class,
+            HomeController::class,
         );
     }
 }

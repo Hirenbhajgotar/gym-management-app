@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Auth\Events\Registered;
+use App\Enums\SubscriptionStatus;
+use Spatie\Permission\Models\Role;
+use App\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use App\Helpers\FeedbackHelper;
+use Illuminate\Support\Facades\Cache;
+use App\Notifications\UserActionNotification;
+use Filament\Notifications\Notification;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
+use App\Notifications\GymOwnerWelcomeNotification;
 use App\Enums\DefaultRole;
 use App\Enums\UserStatus;
 use App\Models\Gym;
@@ -31,7 +42,7 @@ class GymOwnerRegistrationService
      * Create gym owner, gym, and subscription from registration data
      * This is the main entry point called by both redirect verification and webhook processing
      *
-     * @return array{user: User, gym: Gym, subscription: \App\Models\Subscription, subscription_status: string, already_exists: bool}
+     * @return array{user: User, gym: Gym, subscription: Subscription, subscription_status: string, already_exists: bool}
      */
     public function createFromRegistrationData(array $registrationData, ?Payment $payment = null, ?Plan $confirmedPlan = null): array
     {
@@ -105,7 +116,7 @@ class GymOwnerRegistrationService
             $this->sendNotifications($user, $gym, $subscriptionResult['status'], $payment);
 
             // Fire registered event to trigger email verification
-            event(new \Illuminate\Auth\Events\Registered($user));
+            event(new Registered($user));
 
             return [
                 'user' => $user,
@@ -153,15 +164,11 @@ class GymOwnerRegistrationService
      */
     protected function validateActivePlan(?int $planId): Plan
     {
-        if (! $planId) {
-            abort(422, 'No plan selected');
-        }
+        abort_unless($planId, 422, 'No plan selected');
 
         $plan = Plan::active()->find($planId);
 
-        if (! $plan) {
-            abort(422, 'Selected plan is no longer available');
-        }
+        abort_unless($plan, 422, 'Selected plan is no longer available');
 
         return $plan;
     }
@@ -194,7 +201,7 @@ class GymOwnerRegistrationService
     /**
      * Create subscription based on payment verification status
      *
-     * @return array{subscription: \App\Models\Subscription, status: string}
+     * @return array{subscription: Subscription, status: string}
      */
     protected function createSubscription(User $user, Plan $plan, ?Payment $payment): array
     {
@@ -202,7 +209,7 @@ class GymOwnerRegistrationService
         if (! $payment) {
             $subscription = $this->subscriptionService->createSubscription($user, $plan, [
                 'billing_cycle' => 'yearly',
-                'force_status' => \App\Enums\SubscriptionStatus::PENDING,
+                'force_status' => SubscriptionStatus::PENDING,
             ]);
 
             return [
@@ -227,7 +234,7 @@ class GymOwnerRegistrationService
             } else {
                 // Fallback: Verify directly with Razorpay API
                 // This handles cases where signature wasn't stored or webhook hasn't arrived yet
-                $verificationResult = app(RazorpayService::class)->verifyPaymentByOrderId($payment->razorpay_order_id);
+                $verificationResult = resolve(RazorpayService::class)->verifyPaymentByOrderId($payment->razorpay_order_id);
                 $isVerified = $verificationResult['verified'];
 
                 if ($isVerified) {
@@ -241,8 +248,8 @@ class GymOwnerRegistrationService
 
         // Create subscription based on verification result
         $subscriptionStatus = $isVerified
-            ? \App\Enums\SubscriptionStatus::ACTIVE
-            : \App\Enums\SubscriptionStatus::PENDING;
+            ? SubscriptionStatus::ACTIVE
+            : SubscriptionStatus::PENDING;
 
         $subscription = $this->subscriptionService->createSubscription($user, $plan, [
             'billing_cycle' => 'yearly',
@@ -279,19 +286,19 @@ class GymOwnerRegistrationService
         setPermissionsTeamId($gym->id);
 
         // Get the gym_owner role for this specific gym
-        $gymOwnerRole = \Spatie\Permission\Models\Role::where('name', DefaultRole::GYM_OWNER->value)
+        $gymOwnerRole = Role::where('name', DefaultRole::GYM_OWNER->value)
             ->where('gym_id', $gym->id)
             ->first();
 
         if ($gymOwnerRole) {
             // Get ALL permissions available in the system
-            $allPermissions = \App\Models\Permission::all();
+            $allPermissions = Permission::all();
 
             // Assign all permissions to the gym_owner role
             $gymOwnerRole->syncPermissions($allPermissions);
 
             // Clear permission cache to ensure changes take effect immediately
-            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         }
     }
 
@@ -333,7 +340,7 @@ class GymOwnerRegistrationService
      */
     protected function storeFeedbackCache(User $user): void
     {
-        \App\Helpers\FeedbackHelper::storeFeedbackCache($user->id, 15);
+        FeedbackHelper::storeFeedbackCache($user->id, 15);
     }
 
     /**
@@ -342,21 +349,21 @@ class GymOwnerRegistrationService
     public function sendNotifications(User $user, Gym $gym, string $subscriptionStatus, ?Payment $payment = null): void
     {
         try {
-            $superAdmins = \Illuminate\Support\Facades\Cache::flexible(User::ALL_SUPER_ADMINS_CACHE_KEY, [86400, 604800], function () {
+            $superAdmins = Cache::flexible(User::ALL_SUPER_ADMINS_CACHE_KEY, [86400, 604800], function () {
                 return User::role('super_admin')->get();
             });
 
             foreach ($superAdmins as $superAdmin) {
                 try {
                     $superAdmin->notify(
-                        new \App\Notifications\UserActionNotification(
+                        new UserActionNotification(
                             'created',
                             $user,
                             "Gym: {$gym->name}",
                         ),
                     );
 
-                    \Filament\Notifications\Notification::make()
+                    Notification::make()
                         ->title('New Business Added - ' . $gym->name)
                         ->body(
                             "A new business '{$gym->name}' has been registered by '{$user->name}'. Subscription status: {$subscriptionStatus}",
@@ -365,7 +372,7 @@ class GymOwnerRegistrationService
                         ->sendToDatabase($superAdmin)
                         ->send();
 
-                    event(new \Filament\Notifications\Events\DatabaseNotificationsSent($superAdmin));
+                    event(new DatabaseNotificationsSent($superAdmin));
                 } catch (\Exception $e) {
                     Log::error('Failed to notify super admin', [
                         'admin_id' => $superAdmin->id,
@@ -376,7 +383,7 @@ class GymOwnerRegistrationService
 
             // Send welcome notification to the new gym owner
             try {
-                $user->notify(new \App\Notifications\GymOwnerWelcomeNotification($user, null, $payment));
+                $user->notify(new GymOwnerWelcomeNotification($user, null, $payment));
             } catch (\Exception $e) {
                 Log::error('Failed to send welcome notification', [
                     'user_id' => $user->id,

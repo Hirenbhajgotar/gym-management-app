@@ -79,7 +79,7 @@ class EmbeddedSignupController extends Controller
                 ->with('error', $result['error']);
         }
 
-        if ($tenantId && ! empty($result['waba_id'])) {
+        if ($tenantId && filled($result['waba_id'])) {
             // Use MetaWabaService to complete embedded signup (save newly created WABA)
             $metaWhatsAppProvider->completeEmbeddedSignup(
                 $tenantId,
@@ -99,7 +99,7 @@ class EmbeddedSignupController extends Controller
         $gym = Gym::where('slug', $tenant)->first();
 
         if (! $gym) {
-            return redirect()->back()->with('error', 'Tenant not found');
+            return back()->with('error', 'Tenant not found');
         }
 
         $validated = $request->validate([
@@ -121,8 +121,7 @@ class EmbeddedSignupController extends Controller
         );
 
         if (! $result['success']) {
-            return redirect()
-                ->route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 2])
+            return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 2])
                 ->with('error', $result['error']);
         }
 
@@ -131,8 +130,7 @@ class EmbeddedSignupController extends Controller
         $job->onQueue('whatsapp-templates');
         dispatch($job);
 
-        return redirect()
-            ->route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 3])
+        return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'step' => 3])
             ->with('success', 'WABA connected manually');
     }
 }

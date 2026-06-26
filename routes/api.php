@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Gym;
+use App\Models\Lead;
+use App\Models\TenantSocialConfig;
 use App\Http\Controllers\Api\BiometricCheckInController;
 use App\Http\Controllers\Api\BiometricDeviceController;
 use App\Http\Controllers\Api\BiometricEnrollController;
@@ -7,7 +10,6 @@ use App\Http\Controllers\Api\BiometricOfflineSyncController;
 use App\Http\Controllers\Api\BiometricWebhookController;
 use App\Http\Controllers\Api\FacebookLeadController;
 use App\Http\Controllers\Api\InstagramLeadController;
-use App\Http\Controllers\Api\JustDialLeadController;
 use App\Http\Controllers\Api\RazorpayWebhookController;
 use App\Http\Controllers\Api\TwilioTemplateWebhookController;
 use App\Http\Controllers\Api\TwilioWebhookController;
@@ -116,12 +118,12 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $gym = \App\Models\Gym::where('id', $tenant->id)->first();
+        $gym = Gym::where('id', $tenant->id)->first();
         if (! $gym) {
             return response()->json(['error' => 'No gym found for tenant'], 404);
         }
 
-        return \App\Models\Lead::where('source', $source)
+        return Lead::where('source', $source)
             ->where('gym_id', $gym->id)
             ->paginate(20);
     })->where('source', 'facebook|instagram|whatsapp|indiamart|justdial|social_media')
@@ -134,7 +136,7 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $gym = \App\Models\Gym::where('tenant_id', $user->tenant_id)->first();
+        $gym = Gym::where('tenant_id', $user->tenant_id)->first();
         if (! $gym) {
             return response()->json(['error' => 'No gym found for tenant'], 404);
         }
@@ -142,19 +144,19 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
         $gymId = $gym->id;
 
         $analytics = [
-            'total_leads' => \App\Models\Lead::where('gym_id', $gymId)->count(),
-            'by_source' => \App\Models\Lead::where('gym_id', $gymId)
+            'total_leads' => Lead::where('gym_id', $gymId)->count(),
+            'by_source' => Lead::where('gym_id', $gymId)
                 ->selectRaw('source, COUNT(*) as count')
                 ->groupBy('source')
                 ->pluck('count', 'source'),
-            'by_status' => \App\Models\Lead::where('gym_id', $gymId)
+            'by_status' => Lead::where('gym_id', $gymId)
                 ->selectRaw('status, COUNT(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status'),
-            'this_month' => \App\Models\Lead::where('gym_id', $gymId)
+            'this_month' => Lead::where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->month)
                 ->count(),
-            'last_7_days' => \App\Models\Lead::where('gym_id', $gymId)
+            'last_7_days' => Lead::where('gym_id', $gymId)
                 ->whereDate('created_at', '>=', now()->subDays(7))
                 ->count(),
         ];
@@ -173,7 +175,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return \App\Models\TenantSocialConfig::where('tenant_id', $user->tenant_id)
+        return TenantSocialConfig::where('tenant_id', $user->tenant_id)
             ->get();
     })->name('api.social-config.index');
 
@@ -184,7 +186,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return \App\Models\TenantSocialConfig::where('tenant_id', $user->tenant_id)
+        return TenantSocialConfig::where('tenant_id', $user->tenant_id)
             ->where('id', $id)
             ->firstOrFail();
     })->name('api.social-config.show');
@@ -196,7 +198,7 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $config = \App\Models\TenantSocialConfig::where('tenant_id', $user->tenant_id)
+        $config = TenantSocialConfig::where('tenant_id', $user->tenant_id)
             ->where('id', $id)
             ->firstOrFail();
 

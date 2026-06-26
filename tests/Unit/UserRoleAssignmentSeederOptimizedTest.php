@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
 use App\Models\Gym;
-use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Console\Command;
@@ -13,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class UserRoleAssignmentSeederOptimizedTest extends TestCase
@@ -452,7 +450,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_assigns_roles_to_existing_users()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user without roles
         $user = User::create([

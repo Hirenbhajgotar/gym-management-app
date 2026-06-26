@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\WhatsAppUsageLogStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,34 +19,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $twilio_cost
  * @property WhatsAppUsageLogStatusEnum|null $status
  * @property string|null $error_message
- * @property \Illuminate\Support\Carbon|null $sent_at
- * @property \Illuminate\Support\Carbon|null $delivered_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\WhatsAppTemplate|null $template
+ * @property Carbon|null $sent_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read WhatsAppTemplate|null $template
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereCreditsUsed($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereDeliveredAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereErrorMessage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereRecipient($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereSentAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereTwilioCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereTwilioMessageSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppUsageLog whereWhatsappTemplateId($value)
+ * @method static Builder<static>|WhatsAppUsageLog newModelQuery()
+ * @method static Builder<static>|WhatsAppUsageLog newQuery()
+ * @method static Builder<static>|WhatsAppUsageLog query()
+ * @method static Builder<static>|WhatsAppUsageLog whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereCreditsUsed($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereDeliveredAt($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereErrorMessage($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereGymId($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereId($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereRecipient($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereSentAt($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereStatus($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereTwilioCost($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereTwilioMessageSid($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereUpdatedAt($value)
+ * @method static Builder<static>|WhatsAppUsageLog whereWhatsappTemplateId($value)
  *
  * @mixin \Eloquent
  */
 class WhatsAppUsageLog extends Model
 {
+    use HasFactory;
     protected $table = 'whatsapp_usage_logs';
 
     protected $fillable = [
@@ -73,12 +77,17 @@ class WhatsAppUsageLog extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return BelongsTo<WhatsAppTemplate, $this>
+     */
     public function template(): BelongsTo
     {
         return $this->belongsTo(WhatsAppTemplate::class, 'whatsapp_template_id');

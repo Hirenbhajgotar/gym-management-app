@@ -6,6 +6,7 @@ use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Notifications\PendingLeadNotification;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 class PendingLeadNotificationCommand extends Command
 {
@@ -34,7 +35,7 @@ class PendingLeadNotificationCommand extends Command
             LeadStatus::CONTACTED,
         ])
             ->where('created_at', '<', now()->subDays(2))
-            ->where(function ($query) {
+            ->where(function (Builder $query) {
                 $query
                     ->whereDoesntHave('followUps')
                     ->orWhere('last_follow_up_date', '<', now()->subDays(2))

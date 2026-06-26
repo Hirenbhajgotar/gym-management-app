@@ -2,6 +2,7 @@
 
 namespace App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource;
 use Filament\Resources\Pages\ListRecords;
 
@@ -12,7 +13,7 @@ class ListWhatsAppPackages extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -47,7 +48,7 @@ class RegisterOwnNumberAction
             if ($result['success']) {
                 $this->page->senderSid = $result['sender_sid'];
                 $this->page->ownNumberRegistered = true;
-                \Filament\Notifications\Notification::make()->title('Verification Code Sent')->success()->send();
+                Notification::make()->title('Verification Code Sent')->success()->send();
             } else {
                 throw new \Exception($result['error'] ?? 'Failed to register phone number');
             }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
+use Filament\Forms\Components\Actions;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
@@ -43,7 +44,7 @@ class WabaAccountStep
                     Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-success-message')->render()))
                         ->visible(fn () => session()->has('success')),
 
-                    \Filament\Forms\Components\Actions::make([
+                    Actions::make([
                         Action::make('connectViaFacebook')->label('Connect via Facebook')->color('success')->icon('heroicon-o-arrow-right')
                             ->action('startEmbeddedSignupAction')
                             ->extraAttributes([
@@ -84,7 +85,7 @@ class WabaAccountStep
                             ->required()
                             ->password(),
 
-                        \Filament\Forms\Components\Actions::make([
+                        Actions::make([
                             Action::make('connectExistingWaba')->label('Connect WABA')->color('primary')->icon('heroicon-o-link')
                                 ->action('connectExistingWabaAction')
                                 ->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),

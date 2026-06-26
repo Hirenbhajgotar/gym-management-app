@@ -21,12 +21,8 @@ return new class extends Migration
         if (! $teams) {
             return;
         }
-        if (empty($tableNames)) {
-            throw new \Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
-        }
-        if (empty($columnNames['team_foreign_key'] ?? null)) {
-            throw new \Exception('Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.');
-        }
+        throw_if(blank($tableNames), \Exception::class, 'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
+        throw_if(blank($columnNames['team_foreign_key'] ?? null), \Exception::class, 'Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.');
 
         if (! Schema::hasColumn($tableNames['roles'], $columnNames['team_foreign_key'])) {
             Schema::table($tableNames['roles'], function (Blueprint $table) use ($columnNames) {
@@ -80,7 +76,7 @@ return new class extends Migration
             });
         }
 
-        app('cache')
+        resolve('cache')
             ->store(config('permission.cache.store') != 'default' ? config('permission.cache.store') : null)
             ->forget(config('permission.cache.key'));
     }

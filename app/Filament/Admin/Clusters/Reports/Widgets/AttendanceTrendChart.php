@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use Illuminate\Support\Facades\Date;
+use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
@@ -17,7 +19,7 @@ class AttendanceTrendChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -34,7 +36,7 @@ class AttendanceTrendChart extends BaseChartWidget
                 ->orderBy('date')
                 ->get();
 
-            $labels = $data->map(fn ($item) => \Carbon\Carbon::parse($item->date)->format('M d'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->date)->format('M d'))->toArray();
             $counts = $data->pluck('count')->toArray();
 
             // Calculate moving average (7-day)

@@ -35,7 +35,7 @@ class MetaTemplateService implements TemplateManagementInterface
         protected MetaApiClient $api,
         protected ?WhatsAppTemplateService $templateService = null,
     ) {
-        $this->templateService ??= app(WhatsAppTemplateService::class);
+        $this->templateService ??= resolve(WhatsAppTemplateService::class);
     }
 
     /**
@@ -46,9 +46,7 @@ class MetaTemplateService implements TemplateManagementInterface
      */
     public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
-        if (! $this->templateService) {
-            throw new \RuntimeException('Template service not available');
-        }
+        throw_unless($this->templateService, \RuntimeException::class, 'Template service not available');
 
         return $this->templateService->createTemplate($gymId, $data);
     }
@@ -122,7 +120,7 @@ class MetaTemplateService implements TemplateManagementInterface
         } catch (LockTimeoutException $e) {
             return new TemplateSubmissionResult(success: false, error: 'Template submission is already in progress. Please wait.');
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 
@@ -167,7 +165,7 @@ class MetaTemplateService implements TemplateManagementInterface
         } catch (\Throwable $e) {
             Log::warning("Failed to sync Meta template status for {$template->id}", ['error' => $e->getMessage()]);
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 

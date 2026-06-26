@@ -44,9 +44,7 @@ class CustomApiProvider implements BiometricProvider
     {
         $endpoint = $this->endpointMap['enroll'] ?? null;
 
-        if (! $endpoint) {
-            throw new \Exception('Enroll endpoint not configured');
-        }
+        throw_unless($endpoint, \Exception::class, 'Enroll endpoint not configured');
 
         $response = Http::timeout($this->timeout)
             ->withHeaders($this->getHeaders())
@@ -77,9 +75,7 @@ class CustomApiProvider implements BiometricProvider
     {
         $endpoint = $this->endpointMap['verify'] ?? null;
 
-        if (! $endpoint) {
-            throw new \Exception('Verify endpoint not configured');
-        }
+        throw_unless($endpoint, \Exception::class, 'Verify endpoint not configured');
 
         $response = Http::timeout($this->timeout)
             ->withHeaders($this->getHeaders())
@@ -143,11 +139,7 @@ class CustomApiProvider implements BiometricProvider
                 "Custom API liveness check failed [{$response->status()}]: " . $response->body()
             );
         }
-        if (! is_array($result)) {
-            throw new \RuntimeException(
-                'Custom API liveness check returned invalid JSON response'
-            );
-        }
+        throw_unless(is_array($result), \RuntimeException::class, 'Custom API liveness check returned invalid JSON response');
 
         return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.0);
     }
@@ -212,11 +204,11 @@ class CustomApiProvider implements BiometricProvider
             'Accept' => 'application/json',
         ];
 
-        if (! empty($this->config['headers'])) {
+        if (filled($this->config['headers'])) {
             $headers = array_merge($headers, $this->config['headers']);
         }
 
-        if (! empty($this->apiKey)) {
+        if (filled($this->apiKey)) {
             $authType = $this->config['auth_type'] ?? 'bearer';
 
             match ($authType) {

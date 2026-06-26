@@ -53,7 +53,7 @@ class InvoiceGenerationTest extends TestCase
     {
         Bus::fake();
 
-        $gym = Gym::factory()->create();
+        Gym::factory()->create();
         $user = User::factory()->create();
         $this->actingAs($user); // Assuming HasTenantAccess uses Auth
 

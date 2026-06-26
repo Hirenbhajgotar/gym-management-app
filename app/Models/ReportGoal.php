@@ -84,12 +84,17 @@ class ReportGoal extends Model
     // =========================================================================
     // RELATIONSHIPS
     // =========================================================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

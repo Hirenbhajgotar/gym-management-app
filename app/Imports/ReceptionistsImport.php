@@ -54,7 +54,7 @@ class ReceptionistsImport extends BaseImporter implements ShouldQueue, WithColum
         $user->gyms()->attach($this->tenantId, ['role' => $receptionistRole->value]);
 
         // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $receptionistRole);
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $receptionistRole);
 
         // Create the employee's detailed profile.
         EmployeeDetail::create([

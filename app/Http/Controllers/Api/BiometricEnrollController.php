@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Enums\BiometricTypeEnum;
@@ -92,8 +93,8 @@ class BiometricEnrollController extends Controller
                     ->where('gym_id', $device->gym_id),
             ],
             'biometric_type' => ['required', Rule::enum(BiometricTypeEnum::class)],
-            'template_ref' => 'required|string|max:255', // device ka internal ID
-            'quality_score' => 'nullable|numeric|between:0,1',
+            'template_ref' => ['required', 'string', 'max:255'], // device ka internal ID
+            'quality_score' => ['nullable', 'numeric', 'between:0,1'],
         ]);
 
         $gymMember = GymMember::find($validated['gym_member_id']);
@@ -142,7 +143,7 @@ class BiometricEnrollController extends Controller
         try {
             $provider = $this->registry->resolve($template->provider_type);
 
-            $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
+            $templateRef = TemplateRef::fromJson($template->template_ref);
 
             if (! $provider->deleteTemplate($templateRef)) {
                 return response()->json([

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\QueryException;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\UpdateTemplateData;
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -86,7 +89,7 @@ class WhatsAppTemplateService
         return $template->restore();
     }
 
-    public function getApprovedTemplates(int $gymId): \Illuminate\Database\Eloquent\Collection
+    public function getApprovedTemplates(int $gymId): Collection
     {
         return WhatsAppTemplate::where('gym_id', $gymId)
             ->where('status', WhatsAppTemplateStatusEnum::APPROVED->value)
@@ -461,9 +464,9 @@ class WhatsAppTemplateService
 
                     try {
                         $templateRecord = WhatsAppTemplate::updateOrCreate($attributes, $values);
-                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    } catch (UniqueConstraintViolationException $e) {
                         $templateRecord = WhatsAppTemplate::where($attributes)->first();
-                    } catch (\Illuminate\Database\QueryException $e) {
+                    } catch (QueryException $e) {
                         if ($e->getCode() === '23000') {
                             $templateRecord = WhatsAppTemplate::where($attributes)->first();
                         } else {

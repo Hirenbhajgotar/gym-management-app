@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use App\Biometrics\DTOs\DoorControlResult;
 use App\Enums\BiometricDoorControlType;
 use App\Events\DoorControllerUnreachable;
@@ -86,7 +87,7 @@ class DoorControlService
                 $response->json() ?? []
             );
 
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             event(new DoorControllerUnreachable($device, $e->getMessage()));
 
             return DoorControlResult::failed('Door controller unreachable');
@@ -123,7 +124,7 @@ class DoorControlService
         $trustedSubnets = array_filter(config('biometrics.trusted_subnets', []));
 
         // If no restrictions configured, deny by default for security
-        if (empty($trustedDomains) && empty($trustedSubnets)) {
+        if (blank($trustedDomains) && blank($trustedSubnets)) {
             return 'No trusted domains or subnets configured';
         }
 
@@ -174,13 +175,13 @@ class DoorControlService
 
         $records = @dns_get_record($host, DNS_A);
 
-        if ($records !== false && ! empty($records)) {
+        if ($records !== false && filled($records)) {
             return $records[0]['ip'] ?? null;
         }
 
         // Try AAAA record for IPv6
         $records = @dns_get_record($host, DNS_AAAA);
-        if ($records !== false && ! empty($records)) {
+        if ($records !== false && filled($records)) {
             return $records[0]['ipv6'] ?? null;
         }
 

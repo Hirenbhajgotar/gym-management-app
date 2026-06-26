@@ -32,7 +32,7 @@ class CleanResolvedErrorReportsCommand extends Command
 
         try {
             // Dispatch the job
-            CleanResolvedErrorReportsJob::dispatch();
+            dispatch(new CleanResolvedErrorReportsJob());
 
             $this->info('The job will process resolved error reports older than 15 days.');
 

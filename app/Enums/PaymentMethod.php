@@ -24,6 +24,6 @@ enum PaymentMethod: string
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 }

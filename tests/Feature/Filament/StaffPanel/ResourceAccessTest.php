@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Filament\StaffPanel;
 
-use App\Policies\BaseEmployeePolicy;
 use App\Policies\BasePolicy;
 use App\Policies\BiometricDevicePolicy;
 use App\Policies\GymMemberAttendancePolicy;
@@ -99,7 +98,7 @@ class ResourceAccessTest extends StaffPanelTestCase
 
         $freshUser = $user->fresh();
         setPermissionsTeamId($this->testGym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         $freshUser->forgetCachedPermissions();
         $freshUser->unsetRelation('permissions');
         $freshUser->unsetRelation('roles');

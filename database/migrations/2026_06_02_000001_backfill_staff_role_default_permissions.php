@@ -1,14 +1,12 @@
 <?php
 
 use App\Models\Gym;
-use App\Models\Permission;
 use App\Models\PermissionSetting;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Backfill manager + receptionist roles per gym with the same default
@@ -57,13 +55,6 @@ return new class extends Migration
         'create_lead',
         'update_lead',
     ];
-
-    /**
-     * Roles this migration backfills.
-     *
-     * @var array<int, string>
-     */
-    private const STAFF_ROLES = ['manager', 'receptionist'];
 
     public function up(): void
     {
@@ -141,7 +132,7 @@ return new class extends Migration
             ->where('role', $roleName)
             ->first();
 
-        if ($setting !== null && ! empty($setting->default_permissions)) {
+        if ($setting !== null && filled($setting->default_permissions)) {
             return array_values($setting->default_permissions);
         }
 
@@ -156,7 +147,7 @@ return new class extends Migration
     {
         $roleName = $role->name;
 
-        $users = User::whereHas('roles', function ($query) use ($roleName, $gym) {
+        $users = User::whereHas('roles', function (Builder $query) use ($roleName, $gym) {
             $query
                 ->where('name', $roleName)
                 ->where('roles.gym_id', $gym->id);

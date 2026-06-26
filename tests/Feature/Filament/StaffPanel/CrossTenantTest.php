@@ -109,7 +109,7 @@ class CrossTenantTest extends StaffPanelTestCase
     protected function switchToGym(Gym $gym): self
     {
         setPermissionsTeamId($gym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->managerUser->forgetCachedPermissions();
         $this->managerUser->load('roles');
 

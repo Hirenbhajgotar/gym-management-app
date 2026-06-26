@@ -8,6 +8,9 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends Factory<BiometricTemplate>
+ */
 class BiometricTemplateFactory extends Factory
 {
     protected $model = BiometricTemplate::class;

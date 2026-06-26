@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\HasTenantAccess;
 use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
 use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
 
 class ReportApiController extends Controller
 {
-    use \App\Traits\HasTenantAccess;
+    use HasTenantAccess;
 
     public function members(Request $request): JsonResponse
     {

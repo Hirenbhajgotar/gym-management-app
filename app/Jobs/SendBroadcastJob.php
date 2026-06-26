@@ -75,7 +75,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 
         $broadcast->markAsSending();
 
-        $resolver = app(WhatsAppVariableResolver::class);
+        $resolver = resolve(WhatsAppVariableResolver::class);
         $customVariables = $broadcast->message_variables ?? [];
         $template = $broadcast->template;
         $templateData = [

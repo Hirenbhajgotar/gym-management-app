@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -64,7 +65,7 @@ class DatabaseDiagnosticTest extends TestCase
 
     public function test_can_insert_and_retrieve_user(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -106,7 +107,7 @@ class DatabaseDiagnosticTest extends TestCase
 
     public function test_tables_are_fresh_after_refresh_database(): void
     {
-        $user = \App\Models\User::factory()->create(['name' => 'Diagnostic User']);
+        User::factory()->create(['name' => 'Diagnostic User']);
 
         $this->assertDatabaseHas('users', ['name' => 'Diagnostic User']);
         $this->assertDatabaseCount('users', 1);

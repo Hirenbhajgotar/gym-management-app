@@ -73,9 +73,7 @@ class MetaCreditService implements CreditManagementInterface
     {
         $credit = WhatsAppMessageCredit::where('gym_id', $this->context->gymId)->first();
 
-        if (! $credit || ! $credit->canSendMessage($count)) {
-            throw new Exception('Insufficient message credits. Please purchase more credits.');
-        }
+        throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 
         if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
             $credit->useWelcomeCredit();

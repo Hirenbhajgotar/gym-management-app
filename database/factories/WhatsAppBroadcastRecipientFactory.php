@@ -11,7 +11,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WhatsAppBroadcastRecipient>
+ * @extends Factory<WhatsAppBroadcastRecipient>
  */
 class WhatsAppBroadcastRecipientFactory extends Factory
 {

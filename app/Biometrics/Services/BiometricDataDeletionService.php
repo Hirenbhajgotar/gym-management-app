@@ -2,6 +2,7 @@
 
 namespace App\Biometrics\Services;
 
+use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Models\BiometricConsent;
 use App\Models\BiometricTemplate;
@@ -43,7 +44,7 @@ class BiometricDataDeletionService
             try {
                 $provider = $this->registry->resolve($template->provider_type);
 
-                $templateRef = new \App\Biometrics\DTOs\TemplateRef(
+                $templateRef = new TemplateRef(
                     provider: $template->provider_type,
                     externalId: $template->template_ref,
                     meta: []
@@ -103,11 +104,10 @@ class BiometricDataDeletionService
 
         // Step 6: Throw aggregated exception if any errors occurred
         // This triggers the listener retry mechanism
-        if (! empty($errors)) {
+        if (filled($errors)) {
             throw new \RuntimeException(
                 'Biometric data deletion failed for ' . count($errors) . ' template(s). See logs for details.',
-                0,
-                null
+                0
             );
         }
     }

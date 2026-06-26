@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\Gym;
-use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Console\Command;
@@ -157,7 +156,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
 
         $oldRole = Role::create(['name' => 'gym_owner', 'guard_name' => 'web']);
-        $newRole = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
         $user->assignRole($oldRole);
 
         $this->mockCommand->shouldReceive('info')->with('🔄 Updating existing user roles...');
@@ -240,7 +239,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
 
         $oldRole = Role::create(['name' => 'trainer', 'guard_name' => 'web', 'gym_id' => $gym->id]);
-        $newRole = Role::create(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
+        Role::create(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
         $user->assignRole($oldRole);
 
         // Add to gym_user pivot

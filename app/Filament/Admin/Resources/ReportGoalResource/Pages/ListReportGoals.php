@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\ReportGoalResource\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Filament\Admin\Resources\ReportGoalResource;
 use Filament\Resources\Pages\ListRecords;
 
@@ -12,7 +13,7 @@ class ListReportGoals extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

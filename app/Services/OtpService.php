@@ -29,9 +29,7 @@ class OtpService
 
         $account = WhatsAppAccount::where('gym_id', $tenantId)->first();
 
-        if (! $account) {
-            throw new Exception('No WhatsApp account found for this gym');
-        }
+        throw_unless($account, Exception::class, 'No WhatsApp account found for this gym');
 
         return new Client(
             $account->twilio_account_sid,
@@ -152,7 +150,7 @@ class OtpService
         // Get member's phone
         $phone = $member?->phone;
 
-        if (empty($phone)) {
+        if (blank($phone)) {
             return [
                 'success' => false,
                 'message' => 'Member does not have a registered phone number.',

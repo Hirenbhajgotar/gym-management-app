@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Events\LeadCreated;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
@@ -61,10 +62,10 @@ abstract class SocialMediaLeadProcessor
         try {
             // Validate required fields
             $validator = Validator::make($leadData, [
-                'name' => 'required|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'phone' => 'nullable|string|max:20',
-                'gym_id' => 'required|exists:gyms,id',
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:20'],
+                'gym_id' => ['required', 'exists:gyms,id'],
             ]);
 
             if ($validator->fails()) {
@@ -80,10 +81,10 @@ abstract class SocialMediaLeadProcessor
             // Check for duplicate leads (same email or phone within 30 days)
             $existingLead = Lead::where('gym_id', $leadData['gym_id'])
                 ->where(function ($query) use ($leadData) {
-                    if (! empty($leadData['email'])) {
+                    if (filled($leadData['email'])) {
                         $query->where('email', $leadData['email']);
                     }
-                    if (! empty($leadData['phone'])) {
+                    if (filled($leadData['phone'])) {
                         $query->orWhere('phone', $leadData['phone']);
                     }
                 })
@@ -127,7 +128,7 @@ abstract class SocialMediaLeadProcessor
             ]);
 
             // Trigger lead created event for notifications
-            event(new \App\Events\LeadCreated($lead));
+            event(new LeadCreated($lead));
 
             return $lead;
         } catch (\Exception $e) {
@@ -150,7 +151,7 @@ abstract class SocialMediaLeadProcessor
             'facebook' => LeadSource::FACEBOOK,
             'instagram' => LeadSource::INSTAGRAM,
             'whatsapp' => LeadSource::WHATSAPP,
-            'indiamart' => LeadSource::INDIAMART,
+            // 'indiamart' => LeadSource::INDIAMART,
             'justdial' => LeadSource::JUSTDIAL,
             default => LeadSource::SOCIAL_MEDIA,
         };
@@ -177,11 +178,11 @@ abstract class SocialMediaLeadProcessor
      */
     protected function mergeNotes(?string $existingNotes, string $newNotes): string
     {
-        if (empty($newNotes)) {
+        if (blank($newNotes)) {
             return $existingNotes ?? '';
         }
 
-        if (empty($existingNotes)) {
+        if (blank($existingNotes)) {
             return $newNotes;
         }
 

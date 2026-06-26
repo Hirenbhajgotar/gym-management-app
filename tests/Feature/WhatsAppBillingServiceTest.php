@@ -26,7 +26,7 @@ class WhatsAppBillingServiceTest extends TestCase
         parent::setUp();
 
         $this->gym = Gym::factory()->create();
-        $this->billingService = app(WhatsAppBillingService::class);
+        $this->billingService = resolve(WhatsAppBillingService::class);
     }
 
     // ========== WELCOME CREDITS ==========

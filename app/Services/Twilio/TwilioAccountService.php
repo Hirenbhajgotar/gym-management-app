@@ -225,8 +225,8 @@ class TwilioAccountService implements AccountManagementInterface
                 Cache::forget("twilio:account_status:{$gymId}");
 
                 return [
-                    'success' => empty($errors),
-                    'message' => empty($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
+                    'success' => blank($errors),
+                    'message' => blank($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
                     'cleaned' => $cleaned,
                     'errors' => $errors,
                 ];
@@ -280,9 +280,7 @@ class TwilioAccountService implements AccountManagementInterface
                                 'phone_number' => $phoneNumber->phone_number,
                             ]);
                         } catch (RestException $e) {
-                            if ($e->getStatusCode() !== 404) {
-                                throw $e;
-                            }
+                            throw_if($e->getStatusCode() !== 404, $e);
                         }
                     }
 
@@ -291,9 +289,7 @@ class TwilioAccountService implements AccountManagementInterface
                         try {
                             $subClient->incomingPhoneNumbers($incomingPhoneSid)->delete();
                         } catch (RestException $e) {
-                            if ($e->getStatusCode() !== 404) {
-                                throw $e;
-                            }
+                            throw_if($e->getStatusCode() !== 404, $e);
                         }
                     }
 
@@ -393,9 +389,7 @@ class TwilioAccountService implements AccountManagementInterface
     {
         $account = WhatsAppAccount::where('gym_id', $gymId)->first();
 
-        if (! $account) {
-            throw new \Exception('WhatsApp account not found for this gym');
-        }
+        throw_unless($account, \Exception::class, 'WhatsApp account not found for this gym');
 
         return $account;
     }

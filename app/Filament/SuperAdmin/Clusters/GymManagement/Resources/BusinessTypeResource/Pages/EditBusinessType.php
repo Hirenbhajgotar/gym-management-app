@@ -2,8 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditBusinessType extends EditRecord
@@ -13,7 +13,7 @@ class EditBusinessType extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

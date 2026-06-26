@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseChartWidget;
-use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use App\Traits\HasTenantAccess;

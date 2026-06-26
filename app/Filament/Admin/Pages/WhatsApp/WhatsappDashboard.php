@@ -2,22 +2,21 @@
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
 use App\Enums\DefaultRole;
 use App\Filament\BasePages\BasePage;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppUsageLog;
-use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
-use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class WhatsappDashboard extends BasePage implements HasActions, HasForms
 {
@@ -112,18 +111,18 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Credit Balance')
+                Section::make('Credit Balance')
                     ->schema([
-                        Forms\Components\Grid::make(3)->schema([
-                            Forms\Components\Placeholder::make('total_credits')
+                        Grid::make(3)->schema([
+                            Placeholder::make('total_credits')
                                 ->label('Total Credits')
                                 ->content(fn () => $this->creditBalance?->total_credits ?? 0),
 
-                            Forms\Components\Placeholder::make('remaining_credits')
+                            Placeholder::make('remaining_credits')
                                 ->label('Remaining')
                                 ->content(fn () => $this->creditBalance?->remaining_credits ?? 0),
 
-                            Forms\Components\Placeholder::make('usage_percentage')
+                            Placeholder::make('usage_percentage')
                                 ->label('Usage')
                                 ->content(fn () => ($this->creditBalance?->getUsagePercentage() ?? 0) . '%'),
                         ]),
@@ -137,22 +136,22 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
                         */
                     ]),
 
-                Forms\Components\Section::make('Monthly Usage')
+                Section::make('Monthly Usage')
                     ->schema([
-                        Forms\Components\Grid::make(4)->schema([
-                            Forms\Components\Placeholder::make('messages')
+                        Grid::make(4)->schema([
+                            Placeholder::make('messages')
                                 ->label('Messages Sent')
                                 ->content($this->usageStats['messages_this_month'] ?? 0),
 
-                            Forms\Components\Placeholder::make('delivered')
+                            Placeholder::make('delivered')
                                 ->label('Delivered')
                                 ->content($this->usageStats['delivered'] ?? 0),
 
-                            Forms\Components\Placeholder::make('failed')
+                            Placeholder::make('failed')
                                 ->label('Failed')
                                 ->content($this->usageStats['failed'] ?? 0),
 
-                            Forms\Components\Placeholder::make('delivery_rate')
+                            Placeholder::make('delivery_rate')
                                 ->label('Delivery Rate')
                                 ->content(($this->usageStats['delivery_rate'] ?? 0) . '%'),
                         ]),

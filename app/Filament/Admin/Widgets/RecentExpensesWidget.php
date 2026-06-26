@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action;
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Expense;
 use Filament\Facades\Filament;
-use Filament\Tables;
 use Filament\Tables\Table;
 
 /**
@@ -33,7 +35,7 @@ class RecentExpensesWidget extends BaseTableWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -44,7 +46,7 @@ class RecentExpensesWidget extends BaseTableWidget
 
     public function table(Table $table): Table
     {
-        /** @var \App\Models\Gym|null $gym */
+        /** @var Gym|null $gym */
         $gym = Filament::getTenant();
 
         return $table
@@ -55,29 +57,29 @@ class RecentExpensesWidget extends BaseTableWidget
                     ->limit(5)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('expense_date')
+                TextColumn::make('expense_date')
                     ->label('Date')
                     ->date('d M')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->limit(30),
 
-                Tables\Columns\TextColumn::make('category.name')
+                TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
                     ->color(fn ($record) => $record->category->color ?? 'gray'),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency ?? 'INR')
                     ->alignEnd(),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge(),
             ])
             ->actions([
-                Tables\Actions\Action::make('view')
+                Action::make('view')
                     ->icon('phosphor-eye')
                     ->url(fn ($record) => route('filament.admin.resources.expenses.view', [
                         'tenant' => $gym->slug,

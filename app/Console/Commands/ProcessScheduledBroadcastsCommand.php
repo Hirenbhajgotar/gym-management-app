@@ -47,11 +47,7 @@ class ProcessScheduledBroadcastsCommand extends Command
             }
 
             try {
-                SendBroadcastJob::dispatch(
-                    $broadcast->id,
-                    $broadcast->gym_id,
-                    skipCreditDeduction: true,
-                );
+                dispatch(new SendBroadcastJob($broadcast->id, $broadcast->gym_id, skipCreditDeduction: true));
 
                 $this->info("Dispatched broadcast #{$broadcast->id}: {$broadcast->title}");
 

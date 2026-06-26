@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Filament\Notifications\Notification;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
@@ -69,6 +70,6 @@ class ProcessTwilioAccountAction
         $this->page->whatsappAccount->refresh();
         $this->page->accountCreated = true;
         $this->page->selectedProvider = 'twilio';
-        \Filament\Notifications\Notification::make()->title('Twilio Account Created')->success()->send();
+        Notification::make()->title('Twilio Account Created')->success()->send();
     }
 }

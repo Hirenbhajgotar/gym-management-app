@@ -13,7 +13,7 @@ class WhatsAppAccountObserver
      */
     public function created(WhatsAppAccount $whatsAppAccount): void
     {
-        $this->clearCache($whatsAppAccount);
+        $this->clearCache();
         $this->clearFactoryCache($whatsAppAccount);
     }
 
@@ -22,7 +22,7 @@ class WhatsAppAccountObserver
      */
     public function updated(WhatsAppAccount $whatsAppAccount): void
     {
-        $this->clearCache($whatsAppAccount);
+        $this->clearCache();
         $this->clearFactoryCache($whatsAppAccount);
     }
 
@@ -31,7 +31,7 @@ class WhatsAppAccountObserver
      */
     public function deleted(WhatsAppAccount $whatsAppAccount): void
     {
-        $this->clearCache($whatsAppAccount);
+        $this->clearCache();
         $this->clearFactoryCache($whatsAppAccount);
     }
 
@@ -40,7 +40,7 @@ class WhatsAppAccountObserver
      */
     public function restored(WhatsAppAccount $whatsAppAccount): void
     {
-        $this->clearCache($whatsAppAccount);
+        $this->clearCache();
         $this->clearFactoryCache($whatsAppAccount);
     }
 
@@ -49,11 +49,11 @@ class WhatsAppAccountObserver
      */
     public function forceDeleted(WhatsAppAccount $whatsAppAccount): void
     {
-        $this->clearCache($whatsAppAccount);
+        $this->clearCache();
         $this->clearFactoryCache($whatsAppAccount);
     }
 
-    private function clearCache(WhatsAppAccount $whatsAppAccount): void
+    private function clearCache(): void
     {
         ParserHelper::clearCache([
             WhatsAppAccount::NAVIGATION_BADGE_CACHE_KEY,

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Date;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use App\Enums\Currency;
 use App\Enums\SubscriptionStatus;
 use App\Observers\SubscriptionObserver;
@@ -22,20 +25,20 @@ use Illuminate\Support\Carbon;
  * @property string $billing_cycle
  * @property numeric $price
  * @property Currency $currency
- * @property \Illuminate\Support\Carbon|null $trial_ends_at
- * @property \Illuminate\Support\Carbon|null $current_period_start
- * @property \Illuminate\Support\Carbon|null $current_period_end
- * @property \Illuminate\Support\Carbon|null $ends_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
- * @property \Illuminate\Support\Carbon|null $grace_period_ends_at
+ * @property Carbon|null $trial_ends_at
+ * @property Carbon|null $current_period_start
+ * @property Carbon|null $current_period_end
+ * @property Carbon|null $ends_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $grace_period_ends_at
  * @property array<array-key, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read mixed $days_in_grace_period
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SubscriptionFeature> $features
+ * @property-read Collection<int, SubscriptionFeature> $features
  * @property-read int|null $features_count
- * @property-read \App\Models\Plan $plan
- * @property-read \App\Models\User $user
+ * @property-read Plan $plan
+ * @property-read User $user
  *
  * @method static Builder<static>|Subscription active()
  * @method static Builder<static>|Subscription cancelled()
@@ -101,16 +104,25 @@ class Subscription extends Model
     }
 
     // Relationships
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<Plan, $this>
+     */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }
 
+    /**
+     * @return HasMany<SubscriptionFeature, $this>
+     */
     public function features(): HasMany
     {
         return $this->hasMany(SubscriptionFeature::class);
@@ -206,7 +218,7 @@ class Subscription extends Model
             return 0;
         }
 
-        return (int) Carbon::now()->diffInDays($this->trial_ends_at, false);
+        return (int) Date::now()->diffInDays($this->trial_ends_at, false);
     }
 
     public function daysUntilExpiry(): int
@@ -215,7 +227,7 @@ class Subscription extends Model
             return 0;
         }
 
-        return (int) Carbon::now()->diffInDays($this->current_period_end, false);
+        return (int) Date::now()->diffInDays($this->current_period_end, false);
     }
 
     public function getCurrentPrice(): float
@@ -272,18 +284,18 @@ class Subscription extends Model
     }
 
     // Accessor for days_in_grace_period
-    protected function daysInGracePeriod(): \Illuminate\Database\Eloquent\Casts\Attribute
+    protected function daysInGracePeriod(): Attribute
     {
-        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+        return Attribute::make(
             get: fn () => $this->isInGracePeriod()
-                ? Carbon::now()->diffInDays($this->grace_period_ends_at, false)
+                ? Date::now()->diffInDays($this->grace_period_ends_at, false)
                 : 0,
         );
     }
 
     public function setGracePeriod(int $days): void
     {
-        $this->grace_period_ends_at = Carbon::now()->addDays($days);
+        $this->grace_period_ends_at = Date::now()->addDays($days);
         $this->save();
     }
 

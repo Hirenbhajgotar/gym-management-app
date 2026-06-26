@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Twilio\Rest\Messaging\V2\ChannelsSenderModels;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
@@ -46,8 +47,8 @@ class EmbeddedSignupService
     public function isEnabled(): bool
     {
         return $this->embeddedSignupEnabled
-            && ! empty($this->metaAppId)
-            && ! empty($this->metaAppSecret);
+            && filled($this->metaAppId)
+            && filled($this->metaAppSecret);
     }
 
     /**
@@ -203,7 +204,7 @@ class EmbeddedSignupService
         foreach ($granularScopes as $scope) {
             if ($scope['scope'] === 'whatsapp_business_management' || $scope['scope'] === 'whatsapp_business_messaging') {
                 $targetIds = $scope['target_ids'] ?? [];
-                if (! empty($targetIds)) {
+                if (filled($targetIds)) {
                     $wabaId = $targetIds[0];
                 }
             }
@@ -277,7 +278,7 @@ class EmbeddedSignupService
             // Note: During embedded signup callback, phone number may be empty
             // as the user selects their phone number in step 3 of the wizard
             $senderSid = null;
-            if (! empty($phoneNumber)) {
+            if (filled($phoneNumber)) {
                 // Register WhatsApp sender via Twilio Messaging v2 Channels API
                 // // Adding asForm() because Twilio API requires application/x-www-form-urlencoded
                 // $response = Http::withBasicAuth($sid, $token)
@@ -322,7 +323,7 @@ class EmbeddedSignupService
                     $account->twilio_auth_token
                 );
 
-                $senderSid = app(TwilioAccountManager::class)->registerWhatsAppSender($subClient, $account, $phoneNumber, $wabaId);
+                $senderSid = resolve(TwilioAccountManager::class)->registerWhatsAppSender($subClient, $account, $phoneNumber, $wabaId);
             }
 
             $account->update([
@@ -372,9 +373,9 @@ class EmbeddedSignupService
                 $account->twilio_auth_token // Fixed: access the attribute correctly
             );
 
-            $request = \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
+            $request = ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
                 'sender_id' => 'whatsapp:' . $phoneNumber,
-                'configuration' => \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
+                'configuration' => ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
                     'waba_id' => $wabaId,
                 ]),
             ]);

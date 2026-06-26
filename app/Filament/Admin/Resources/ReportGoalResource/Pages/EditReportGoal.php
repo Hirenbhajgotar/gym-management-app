@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Resources\ReportGoalResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\Admin\Resources\ReportGoalResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditReportGoal extends EditRecord
@@ -13,7 +13,7 @@ class EditReportGoal extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

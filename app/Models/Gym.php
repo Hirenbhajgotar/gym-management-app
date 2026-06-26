@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\GymFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use App\Enums\DefaultRole;
 use App\Observers\GymObserver;
 use Filament\Facades\Filament;
@@ -26,55 +29,55 @@ use Illuminate\Support\Str;
  * @property string|null $logo
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \App\Models\Address|null $address
- * @property-read Collection<int, \App\Models\Attendances> $attendances
+ * @property-read Address|null $address
+ * @property-read Collection<int, Attendances> $attendances
  * @property-read int|null $attendances_count
- * @property-read Collection<int, \App\Models\BiometricDevice> $biometricDevices
+ * @property-read Collection<int, BiometricDevice> $biometricDevices
  * @property-read int|null $biometric_devices_count
- * @property-read \App\Models\BusinessDetail|null $businessDetail
- * @property-read Collection<int, \App\Models\ExpenseBudget> $expenseBudgets
+ * @property-read BusinessDetail|null $businessDetail
+ * @property-read Collection<int, ExpenseBudget> $expenseBudgets
  * @property-read int|null $expense_budgets_count
- * @property-read Collection<int, \App\Models\ExpenseCategory> $expenseCategories
+ * @property-read Collection<int, ExpenseCategory> $expenseCategories
  * @property-read int|null $expense_categories_count
- * @property-read Collection<int, \App\Models\Expense> $expenses
+ * @property-read Collection<int, Expense> $expenses
  * @property-read int|null $expenses_count
- * @property-read Collection<int, \App\Models\GymMember> $gymMembers
+ * @property-read Collection<int, GymMember> $gymMembers
  * @property-read int|null $gym_members_count
- * @property-read Collection<int, \App\Models\Lead> $leads
+ * @property-read Collection<int, Lead> $leads
  * @property-read int|null $leads_count
- * @property-read Collection<int, \App\Models\GymMember> $members
+ * @property-read Collection<int, GymMember> $members
  * @property-read int|null $members_count
- * @property-read Collection<int, \App\Models\MembershipPlan> $membershipPlans
+ * @property-read Collection<int, MembershipPlan> $membershipPlans
  * @property-read int|null $membership_plans_count
  * @property-read mixed $owner_email
- * @property-read Collection<int, \App\Models\ReportGoal> $reportGoals
+ * @property-read Collection<int, ReportGoal> $reportGoals
  * @property-read int|null $report_goals_count
- * @property-read Collection<int, \App\Models\ScheduledReport> $scheduledReports
+ * @property-read Collection<int, ScheduledReport> $scheduledReports
  * @property-read int|null $scheduled_reports_count
- * @property-read Collection<int, \App\Models\GymSetting> $settings
+ * @property-read Collection<int, GymSetting> $settings
  * @property-read int|null $settings_count
- * @property-read Collection<int, \App\Models\TenantSocialConfig> $socialConfigs
+ * @property-read Collection<int, TenantSocialConfig> $socialConfigs
  * @property-read int|null $social_configs_count
- * @property-read Collection<int, \App\Models\Trainer> $trainers
+ * @property-read Collection<int, Trainer> $trainers
  * @property-read int|null $trainers_count
- * @property-read Collection<int, \App\Models\User> $users
+ * @property-read Collection<int, User> $users
  * @property-read int|null $users_count
- * @property-read \App\Models\WhatsAppAccount|null $whatsAppAccount
- * @property-read Collection<int, \App\Models\WhatsAppTemplate> $whatsAppTemplates
+ * @property-read WhatsAppAccount|null $whatsAppAccount
+ * @property-read Collection<int, WhatsAppTemplate> $whatsAppTemplates
  * @property-read int|null $whats_app_templates_count
  *
- * @method static \Database\Factories\GymFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereLogo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereQrCodeCheckoutToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereQrCodeToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereSlug($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Gym whereUpdatedAt($value)
+ * @method static GymFactory factory($count = null, $state = [])
+ * @method static Builder<static>|Gym newModelQuery()
+ * @method static Builder<static>|Gym newQuery()
+ * @method static Builder<static>|Gym query()
+ * @method static Builder<static>|Gym whereCreatedAt($value)
+ * @method static Builder<static>|Gym whereId($value)
+ * @method static Builder<static>|Gym whereLogo($value)
+ * @method static Builder<static>|Gym whereName($value)
+ * @method static Builder<static>|Gym whereQrCodeCheckoutToken($value)
+ * @method static Builder<static>|Gym whereQrCodeToken($value)
+ * @method static Builder<static>|Gym whereSlug($value)
+ * @method static Builder<static>|Gym whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperGym
@@ -89,7 +92,9 @@ class Gym extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsToMany<User, $this, Pivot>
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'gym_user')
@@ -97,100 +102,127 @@ class Gym extends Model
             ->withTimestamps();
     }
 
+    /**
+     * @return HasMany<GymMember, $this>
+     */
     public function members(): HasMany
     {
         return $this->hasMany(GymMember::class);
     }
 
+    /**
+     * @return HasMany<Trainer, $this>
+     */
     public function trainers(): HasMany
     {
         return $this->hasMany(Trainer::class);
     }
 
+    /**
+     * @return MorphOne<Address, $this>
+     */
     public function address(): MorphOne
     {
         return $this->morphOne(Address::class, 'addressable');
     }
 
-    /** @return HasMany<GymMember, self> */
+    /** @return HasMany<GymMember, $this> */
     public function gymMembers(): HasMany
     {
         return $this->hasMany(GymMember::class);
     }
 
-    /** @return HasMany<MembershipPlan, self> */
+    /** @return HasMany<MembershipPlan, $this> */
     public function membershipPlans(): HasMany
     {
         return $this->hasMany(MembershipPlan::class);
     }
 
+    /**
+     * @return HasMany<Attendances, $this>
+     */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendances::class);
     }
 
+    /**
+     * @return HasOne<BusinessDetail, $this>
+     */
     public function businessDetail(): HasOne
     {
         return $this->hasOne(BusinessDetail::class);
     }
 
-    /** @return HasMany<TenantSocialConfig, self> */
+    /** @return HasMany<TenantSocialConfig, $this> */
     public function socialConfigs(): HasMany
     {
         return $this->hasMany(TenantSocialConfig::class);
     }
 
+    /**
+     * @return HasMany<Lead, $this>
+     */
     public function leads(): HasMany
     {
         return $this->hasMany(Lead::class);
     }
 
-    /** @return HasMany<ExpenseCategory, self> */
+    /** @return HasMany<ExpenseCategory, $this> */
     public function expenseCategories(): HasMany
     {
         return $this->hasMany(ExpenseCategory::class);
     }
 
-    /** @return HasMany<Expense, self> */
+    /** @return HasMany<Expense, $this> */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
     }
 
-    /** @return HasMany<ExpenseBudget, self> */
+    /** @return HasMany<ExpenseBudget, $this> */
     public function expenseBudgets(): HasMany
     {
         return $this->hasMany(ExpenseBudget::class);
     }
 
-    /** @return HasMany<ReportGoal, self> */
+    /** @return HasMany<ReportGoal, $this> */
     public function reportGoals(): HasMany
     {
         return $this->hasMany(ReportGoal::class);
     }
 
-    /** @return HasMany<ScheduledReport, self> */
+    /** @return HasMany<ScheduledReport, $this> */
     public function scheduledReports(): HasMany
     {
         return $this->hasMany(ScheduledReport::class);
     }
 
-    /** @return HasMany<GymSetting, self> */
+    /** @return HasMany<GymSetting, $this> */
     public function settings(): HasMany
     {
         return $this->hasMany(GymSetting::class);
     }
 
+    /**
+     * @return HasOne<WhatsAppAccount, $this>
+     */
     public function whatsAppAccount(): HasOne
     {
         return $this->hasOne(WhatsAppAccount::class);
     }
 
+    /**
+     * @return HasMany<WhatsAppTemplate, $this>
+     */
     public function whatsAppTemplates(): HasMany
     {
         return $this->hasMany(WhatsAppTemplate::class);
     }
 
+    /**
+     * @return HasMany<BiometricDevice, $this>
+     */
     public function biometricDevices(): HasMany
     {
         return $this->hasMany(BiometricDevice::class);
@@ -318,7 +350,7 @@ class Gym extends Model
      */
     public function generateCheckInQrCodeToken(): string
     {
-        if (empty($this->qr_code_token)) {
+        if (blank($this->qr_code_token)) {
             $this->qr_code_token = Str::random(32);
             $this->save();
         }
@@ -356,7 +388,7 @@ class Gym extends Model
      */
     public function generateCheckoutQrCodeToken(): string
     {
-        if (empty($this->qr_code_checkout_token)) {
+        if (blank($this->qr_code_checkout_token)) {
             $this->qr_code_checkout_token = Str::random(32);
             $this->save();
         }

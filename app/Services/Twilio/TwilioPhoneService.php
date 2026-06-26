@@ -90,7 +90,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
                 }
 
                 // Check if subaccount already has a number
-                $incomingNumber = $this->fetchOrCreateTwilioNumber($subClient, $account, $phoneNumber);
+                $incomingNumber = $this->fetchOrCreateTwilioNumber($subClient, $phoneNumber);
 
                 $this->attachNumberToMessagingService($subClient, $account, $incomingNumber->sid);
 
@@ -177,9 +177,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
 
                 $senderSid = $this->registerWhatsAppSender($subClient, $account, $phoneNumber);
 
-                if (! $senderSid) {
-                    throw new \Exception('Failed to register sender with Twilio.');
-                }
+                throw_unless($senderSid, \Exception::class, 'Failed to register sender with Twilio.');
 
                 $this->attachSenderToMessagingService($subClient, $account, $senderSid);
 
@@ -296,17 +294,13 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
             $account = $this->context->getAccountOrFail();
             $subClient = $this->context->getClientForAccount($account);
 
-            if (! $account->waba_id) {
-                throw new \Exception('WABA ID is not configured. Please complete Step 2 first.');
-            }
+            throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
 
             $phoneNumberRecord = WhatsAppPhoneNumber::where('whatsapp_account_id', $account->id)
                 ->where('phone_number_sid', $senderSid)
                 ->first();
 
-            if (! $phoneNumberRecord) {
-                throw new \Exception('Phone number record not found.');
-            }
+            throw_unless($phoneNumberRecord, \Exception::class, 'Phone number record not found.');
 
             // Re-registering triggers new OTP
             $request = ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
@@ -385,24 +379,20 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
      */
     private function validateByodPrerequisites(WhatsAppAccount $account): void
     {
-        if (! $account->waba_id) {
-            throw new \Exception('WABA ID is not configured. Please complete setup first.');
-        }
+        throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete setup first.');
 
-        if (! $account->messaging_service_sid) {
-            throw new \Exception('Messaging Service is not configured. Please complete setup first.');
-        }
+        throw_unless($account->messaging_service_sid, \Exception::class, 'Messaging Service is not configured. Please complete setup first.');
     }
 
     /**
      * Either use existing subaccount number or purchase a new one.
      */
-    private function fetchOrCreateTwilioNumber(Client $subClient, WhatsAppAccount $account, string $phoneNumber): object
+    private function fetchOrCreateTwilioNumber(Client $subClient, string $phoneNumber): object
     {
         // Check if subaccount already has a number
         $existingNumbers = $subClient->incomingPhoneNumbers->read([], 1);
 
-        if (! empty($existingNumbers)) {
+        if (filled($existingNumbers)) {
             return $existingNumbers[0];
         }
 
@@ -418,12 +408,12 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
     private function registerWhatsAppSender(Client $subClient, WhatsAppAccount $account, string $phoneNumber): ?string
     {
         try {
-            $request = \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
+            $request = ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
                 'sender_id' => 'whatsapp:' . $phoneNumber,
-                'configuration' => \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
+                'configuration' => ChannelsSenderModels::createMessagingV2ChannelsSenderConfiguration([
                     'waba_id' => $account->waba_id,
                 ]),
-                'profile' => \Twilio\Rest\Messaging\V2\ChannelsSenderModels::createMessagingV2ChannelsSenderProfile([
+                'profile' => ChannelsSenderModels::createMessagingV2ChannelsSenderProfile([
                     'name' => $account->business_name ?? $account->waba_name ?? 'Gym Business',
                 ]),
             ]);
@@ -441,31 +431,7 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
         }
     }
 
-    private function registerExistingNumber(WhatsAppAccount $account, $existing): array
-    {
-        $channelSenderSid = $this->registerWhatsAppSender(
-            $this->context->getClientForAccount($account),
-            $account,
-            $existing->phoneNumber
-        );
-
-        WhatsAppPhoneNumber::firstOrCreate(
-            ['whatsapp_account_id' => $account->id, 'phone_number' => $existing->phoneNumber],
-            [
-                'phone_number_sid' => $existing->sid,
-                'channel_sender_sid' => $channelSenderSid,
-                'country_code' => $existing->isoCountry ?? 'US',
-                'friendly_name' => $existing->friendlyName,
-                'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
-                'type' => WhatsAppPhoneNumberTypesEnum::LOCAL,
-                'purchased_at' => now(),
-            ]
-        );
-
-        return ['success' => true, 'phone_number' => $existing->phoneNumber, 'message' => 'Using existing number'];
-    }
-
-    private function attachNumberToMessagingService(Client $client, \App\Models\WhatsAppAccount $account, string $phoneSid): void
+    private function attachNumberToMessagingService(Client $client, WhatsAppAccount $account, string $phoneSid): void
     {
         if (! $account->messaging_service_sid) {
             return;
@@ -475,21 +441,17 @@ class TwilioPhoneService implements PhoneNumberManagementInterface
             $client->messaging->v1->services($account->messaging_service_sid)
                 ->phoneNumbers->create($phoneSid);
         } catch (RestException $e) {
-            if ($e->getStatusCode() !== 409) {
-                throw $e;
-            }
+            throw_if($e->getStatusCode() !== 409, $e);
         }
     }
 
-    private function attachSenderToMessagingService(Client $client, \App\Models\WhatsAppAccount $account, string $senderSid): void
+    private function attachSenderToMessagingService(Client $client, WhatsAppAccount $account, string $senderSid): void
     {
         try {
             $client->messaging->v1->services($account->messaging_service_sid)
                 ->channelSenders->create($senderSid);
         } catch (RestException $e) {
-            if ($e->getStatusCode() !== 409) {
-                throw $e;
-            }
+            throw_if($e->getStatusCode() !== 409, $e);
         }
     }
 }

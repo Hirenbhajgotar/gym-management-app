@@ -72,17 +72,13 @@ class ExportServiceProvider extends ServiceProvider
 
                     return true;
                 }
-
-                if (! $found) {
-                    Log::error('Export file validation failed: file does not exist on disk', [
-                        'export_id' => $export->id,
-                        'file_name' => $export->file_name,
-                        'file_disk' => $export->file_disk,
-                        'checked_paths' => $pathsToCheck,
-                    ]);
-
-                    return false;
-                }
+                Log::error('Export file validation failed: file does not exist on disk', [
+                    'export_id' => $export->id,
+                    'file_name' => $export->file_name,
+                    'file_disk' => $export->file_disk,
+                    'checked_paths' => $pathsToCheck,
+                ]);
+                return false;
             }
 
             // Check if the file is readable

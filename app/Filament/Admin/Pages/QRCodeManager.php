@@ -2,13 +2,17 @@
 
 namespace App\Filament\Admin\Pages;
 
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
 use App\Enums\DefaultRole;
 use App\Filament\BasePages\BasePage;
 use App\Models\Gym;
 use App\Traits\HasTenantAccess;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -49,8 +53,8 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
     public function mount(): void
     {
         $this->gym = $this->getGym();
-        $this->hasCheckInQrCode = ! empty($this->gym->qr_code_token);
-        $this->hasCheckoutQrCode = ! empty($this->gym->qr_code_checkout_token);
+        $this->hasCheckInQrCode = filled($this->gym->qr_code_token);
+        $this->hasCheckoutQrCode = filled($this->gym->qr_code_checkout_token);
     }
 
     public function generateCheckInQrCode(): void
@@ -74,14 +78,14 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
     public function form(Form $form): Form
     {
         return $form->statePath('data')->schema([
-            Forms\Components\Grid::make(2)
+            Grid::make(2)
                 ->schema([
                     // Check-in QR Code Section
-                    Forms\Components\Section::make('Check-In QR Code')
+                    Section::make('Check-In QR Code')
                         ->description('QR code for member check-in.')
                         ->schema([
                             // Show message when QR not generated
-                            Forms\Components\Placeholder::make('no_qr_message')
+                            Placeholder::make('no_qr_message')
                                 ->label('')
                                 ->hidden(fn () => $this->hasCheckInQrCode)
                                 ->content(function () {
@@ -100,8 +104,8 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                                     ');
                                 }),
                             // Generate button
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('generate')
+                            Actions::make([
+                                Action::make('generate')
                                     ->label('Generate Check-In QR Code')
                                     ->icon('heroicon-o-qr-code')
                                     ->hidden(fn () => $this->hasCheckInQrCode)
@@ -111,11 +115,11 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                             ])
                                 ->alignCenter(),
                             // QR Code display (when generated)
-                            Forms\Components\Placeholder::make('qr_display')
+                            Placeholder::make('qr_display')
                                 ->label('')
                                 ->hidden(fn () => ! $this->hasCheckInQrCode)
                                 ->content(function () {
-                                    if (! $this->hasCheckInQrCode || empty($this->gym->qr_code_token)) {
+                                    if (! $this->hasCheckInQrCode || blank($this->gym->qr_code_token)) {
                                         return new HtmlString('<p class="text-gray-500">No QR code generated yet.</p>');
                                     }
 
@@ -138,8 +142,8 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                                     ');
                                 }),
                             // Actions when QR exists
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('regenerate')
+                            Actions::make([
+                                Action::make('regenerate')
                                     ->label('Regenerate')
                                     ->color('primary')
                                     ->icon('heroicon-o-arrow-path')
@@ -161,11 +165,11 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                         ->columnSpan(1),
 
                     // Check-out QR Code Section
-                    Forms\Components\Section::make('Check-Out QR Code')
+                    Section::make('Check-Out QR Code')
                         ->description('QR code for member check-out.')
                         ->schema([
                             // Show message when QR not generated
-                            Forms\Components\Placeholder::make('no_checkout_qr_message')
+                            Placeholder::make('no_checkout_qr_message')
                                 ->label('')
                                 ->hidden(fn () => $this->hasCheckoutQrCode)
                                 ->content(function () {
@@ -184,8 +188,8 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                                     ');
                                 }),
                             // Generate button
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('generate_checkout')
+                            Actions::make([
+                                Action::make('generate_checkout')
                                     ->label('Generate Check-Out QR Code')
                                     ->icon('heroicon-o-qr-code')
                                     ->hidden(fn () => $this->hasCheckoutQrCode)
@@ -195,11 +199,11 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                             ])
                                 ->alignCenter(),
                             // QR Code display (when generated)
-                            Forms\Components\Placeholder::make('checkout_qr_display')
+                            Placeholder::make('checkout_qr_display')
                                 ->label('')
                                 ->hidden(fn () => ! $this->hasCheckoutQrCode)
                                 ->content(function () {
-                                    if (! $this->hasCheckoutQrCode || empty($this->gym->qr_code_checkout_token)) {
+                                    if (! $this->hasCheckoutQrCode || blank($this->gym->qr_code_checkout_token)) {
                                         return new HtmlString('<p class="text-gray-500">No QR code generated yet.</p>');
                                     }
 
@@ -222,8 +226,8 @@ class QRCodeManager extends BasePage implements HasActions, HasForms
                                     ');
                                 }),
                             // Actions when QR exists
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('regenerate_checkout')
+                            Actions::make([
+                                Action::make('regenerate_checkout')
                                     ->label('Regenerate')
                                     ->icon('heroicon-o-arrow-path')
                                     ->hidden(fn () => ! $this->hasCheckoutQrCode)

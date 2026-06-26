@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Filament\Admin\Resources\ExpenseCategoryResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListExpenseCategories extends ListRecords
@@ -13,7 +13,7 @@ class ListExpenseCategories extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('phosphor-plus')
                 ->label('New Category'),
         ];

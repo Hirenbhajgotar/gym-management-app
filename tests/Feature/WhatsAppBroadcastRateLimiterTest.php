@@ -46,7 +46,7 @@ class WhatsAppBroadcastRateLimiterTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->rateLimiter = app(BroadcastRateLimiter::class);
+        $this->rateLimiter = resolve(BroadcastRateLimiter::class);
     }
 
     private function createBroadcast(): WhatsAppBroadcast

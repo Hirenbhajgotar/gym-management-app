@@ -16,7 +16,7 @@ class SocialMediaCredentialVerifier
     public function verify(TenantSocialConfig $config): array
     {
         /**
-         * @var \App\Enums\SocialPlatform $platform
+         * @var SocialPlatform $platform
          */
         $platform = $config->platform;
         try {
@@ -47,9 +47,7 @@ class SocialMediaCredentialVerifier
      */
     protected function verifyFacebook(TenantSocialConfig $config): array
     {
-        if (! $config->access_token) {
-            throw new Exception('Access token is required for Facebook verification');
-        }
+        throw_unless($config->access_token, Exception::class, 'Access token is required for Facebook verification');
 
         // Verify the access token by fetching the user's pages
         $response = Http::get('https://graph.facebook.com/v18.0/me/accounts', [
@@ -87,9 +85,7 @@ class SocialMediaCredentialVerifier
      */
     protected function verifyInstagram(TenantSocialConfig $config): array
     {
-        if (! $config->access_token) {
-            throw new Exception('Access token is required for Instagram verification');
-        }
+        throw_unless($config->access_token, Exception::class, 'Access token is required for Instagram verification');
 
         // Instagram Business API - verify by fetching account info
         if ($config->page_id) {
@@ -134,9 +130,7 @@ class SocialMediaCredentialVerifier
      */
     protected function verifyWhatsApp(TenantSocialConfig $config): array
     {
-        if (! $config->access_token || ! $config->phone_number_id) {
-            throw new Exception('Access token and phone number ID are required for WhatsApp verification');
-        }
+        throw_if(! $config->access_token || ! $config->phone_number_id, Exception::class, 'Access token and phone number ID are required for WhatsApp verification');
 
         // Verify WhatsApp Business API credentials
         $response = Http::withToken($config->access_token)

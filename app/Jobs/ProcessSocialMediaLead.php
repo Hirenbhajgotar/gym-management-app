@@ -157,11 +157,11 @@ class ProcessSocialMediaLead implements ShouldQueue
     private function getProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => app(FacebookLeadProcessor::class),
-            'instagram' => app(InstagramLeadProcessor::class),
-            'whatsapp' => app(WhatsAppLeadProcessor::class),
-            'indiamart' => app(IndiaMartLeadProcessor::class),
-            'justdial' => app(JustDialLeadProcessor::class),
+            'facebook' => resolve(FacebookLeadProcessor::class),
+            'instagram' => resolve(InstagramLeadProcessor::class),
+            'whatsapp' => resolve(WhatsAppLeadProcessor::class),
+            'indiamart' => resolve(IndiaMartLeadProcessor::class),
+            'justdial' => resolve(JustDialLeadProcessor::class),
             default => null,
         };
     }
@@ -266,7 +266,7 @@ class ProcessSocialMediaLead implements ShouldQueue
     private function isValidationError(array $data): bool
     {
         // Check for obvious validation issues
-        if (empty($data['name']) && empty($data['phone']) && empty($data['email'])) {
+        if (blank($data['name']) && blank($data['phone']) && blank($data['email'])) {
             return true;
         }
 

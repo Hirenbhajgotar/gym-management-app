@@ -2,13 +2,14 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
+use Filament\Actions\CreateAction;
+use App\Models\User;
 use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Exports\GymMemberExporter;
 use App\Imports\GymMemberImport;
 use App\Models\GymMember;
-use Filament\Actions;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Resources\Pages\ListRecords;
 
@@ -35,7 +36,7 @@ class ListGymMembers extends ListRecords
                     sampleButtonLabel: 'Download Sample File'
                 ),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
@@ -48,9 +49,9 @@ class ListGymMembers extends ListRecords
         ];
     }
 
-    public function getUser(): \App\Models\User
+    public function getUser(): User
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user;

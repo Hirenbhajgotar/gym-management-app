@@ -31,9 +31,7 @@ class ExceptionStorageService
 
     public function retrieve(string $id): ?array
     {
-        $data = Session::get($id);
-
-        return $data;
+        return Session::get($id);
     }
 
     public function clearExceptionStorageData(?string $id = null): void

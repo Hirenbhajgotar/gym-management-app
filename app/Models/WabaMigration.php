@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\WabaMigrationStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,37 +20,38 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $new_waba_mode
  * @property string|null $migration_notes
  * @property array<array-key, mixed>|null $migration_data
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $failed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\WhatsAppAccount $whatsappAccount
+ * @property Carbon|null $started_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $failed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read WhatsAppAccount $whatsappAccount
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereCompletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereFailedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereMigrationData($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereMigrationNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereNewWabaId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereNewWabaMode($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereOldWabaId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereOldWabaMode($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereStartedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaMigration whereWhatsappAccountId($value)
+ * @method static Builder<static>|WabaMigration newModelQuery()
+ * @method static Builder<static>|WabaMigration newQuery()
+ * @method static Builder<static>|WabaMigration query()
+ * @method static Builder<static>|WabaMigration whereCompletedAt($value)
+ * @method static Builder<static>|WabaMigration whereCreatedAt($value)
+ * @method static Builder<static>|WabaMigration whereFailedAt($value)
+ * @method static Builder<static>|WabaMigration whereGymId($value)
+ * @method static Builder<static>|WabaMigration whereId($value)
+ * @method static Builder<static>|WabaMigration whereMigrationData($value)
+ * @method static Builder<static>|WabaMigration whereMigrationNotes($value)
+ * @method static Builder<static>|WabaMigration whereNewWabaId($value)
+ * @method static Builder<static>|WabaMigration whereNewWabaMode($value)
+ * @method static Builder<static>|WabaMigration whereOldWabaId($value)
+ * @method static Builder<static>|WabaMigration whereOldWabaMode($value)
+ * @method static Builder<static>|WabaMigration whereStartedAt($value)
+ * @method static Builder<static>|WabaMigration whereStatus($value)
+ * @method static Builder<static>|WabaMigration whereUpdatedAt($value)
+ * @method static Builder<static>|WabaMigration whereWhatsappAccountId($value)
  *
  * @mixin \Eloquent
  */
 class WabaMigration extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'gym_id',
         'whatsapp_account_id',
@@ -77,12 +81,17 @@ class WabaMigration extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return BelongsTo<WhatsAppAccount, $this>
+     */
     public function whatsappAccount(): BelongsTo
     {
         return $this->belongsTo(WhatsAppAccount::class, 'whatsapp_account_id');

@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Support\Facades\Date;
 use App\Enums\PaymentStatus;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
-use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class MemberPaymentSeeder extends Seeder
@@ -32,7 +32,7 @@ class MemberPaymentSeeder extends Seeder
             $gymId = $gyms->get($member->gym_id)->id ?? null;
 
             for ($i = 0; $i < $count; $i++) {
-                $paymentDate = Carbon::today()
+                $paymentDate = Date::today()
                     ->subDays(rand(0, 90)) // last 3 months
                     ->subHours(rand(0, 23));
 
@@ -62,7 +62,7 @@ class MemberPaymentSeeder extends Seeder
 
         // Chunk insert for speed
         collect($payments)->chunk(500)->each(
-            fn ($chunk) => MemberPayment::insert($chunk->toArray())
+            fn ($chunk) => MemberPayment::insert($chunk->all())
         );
 
         $this->command->info('✅ Seeded ' . count($payments) . ' payments for ' . $members->count() . ' members.');

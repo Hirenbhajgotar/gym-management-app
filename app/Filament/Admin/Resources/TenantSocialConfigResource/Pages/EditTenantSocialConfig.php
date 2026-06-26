@@ -2,8 +2,12 @@
 
 namespace App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 
+use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
+use App\Jobs\ProcessSocialMediaLead;
+use Filament\Notifications\Notification;
+use App\Models\TenantSocialConfig;
 use App\Filament\Admin\Resources\TenantSocialConfigResource;
-use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTenantSocialConfig extends EditRecord
@@ -13,8 +17,8 @@ class EditTenantSocialConfig extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
-            Actions\Action::make('test_webhook')
+            DeleteAction::make(),
+            Action::make('test_webhook')
                 ->label('Test Webhook')
                 ->icon('heroicon-o-bolt')
                 ->color('warning')
@@ -33,7 +37,7 @@ class EditTenantSocialConfig extends EditRecord
     {
         try {
             /**
-             * @var \App\Models\TenantSocialConfig $config
+             * @var TenantSocialConfig $config
              */
             $config = $this->getRecord();
 
@@ -48,18 +52,14 @@ class EditTenantSocialConfig extends EditRecord
             ];
 
             // Dispatch test job
-            \App\Jobs\ProcessSocialMediaLead::dispatch(
-                $testData,
-                $config->platform,
-                'test_' . uniqid()
-            );
+            dispatch(new ProcessSocialMediaLead($testData, $config->platform, 'test_' . uniqid()));
 
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Test webhook sent successfully')
                 ->success()
                 ->send();
         } catch (\Exception $e) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Test webhook failed')
                 ->body($e->getMessage())
                 ->danger()

@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use App\Events\ImportCompleted;
 use App\Models\User;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
@@ -138,7 +140,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             });
 
             // A row is considered not empty if it has at least one non-empty value.
-            return ! empty($filteredRow);
+            return filled($filteredRow);
         });
 
         // Update the total number of rows to be processed.
@@ -228,7 +230,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         if (property_exists($this, 'dateColumns')) {
             foreach ($this->dateColumns as $column) {
                 if (isset($data[$column]) && is_numeric($data[$column])) {
-                    $data[$column] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($data[$column])->format('Y-m-d');
+                    $data[$column] = Date::excelToDateTimeObject($data[$column])->format('Y-m-d');
                 }
             }
         }
@@ -405,7 +407,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         }
 
         // Dispatch the ImportCompleted event to refresh the list page.
-        event(new \App\Events\ImportCompleted($recipient->id));
+        event(new ImportCompleted($recipient->id));
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\GymMember;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BiometricConsentStoreRequest extends FormRequest
@@ -40,7 +41,7 @@ class BiometricConsentStoreRequest extends FormRequest
                 // Also validate gym matches member
                 function ($attribute, $value, $fail) {
                     $gymMemberId = $this->input('gym_member_id');
-                    $member = \App\Models\GymMember::find($gymMemberId);
+                    $member = GymMember::find($gymMemberId);
                     if ($member && (int) $member->gym_id !== (int) $value) {
                         $fail('The gym does not match the member\'s gym.');
                     }

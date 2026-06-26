@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
 use Illuminate\Support\Facades\Http;
@@ -26,7 +25,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             // Extract lead data from WhatsApp format
             $leadData = $this->extractLeadData($data);
 
-            if (empty($leadData)) {
+            if (blank($leadData)) {
                 Log::warning('No lead data extracted from WhatsApp webhook', ['data' => $data]);
 
                 return null;
@@ -76,7 +75,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             // WhatsApp uses a different verification method
             // Check for webhook verification token
             $verifyToken = config('services.whatsapp.webhook_verify_token');
-            if (empty($verifyToken)) {
+            if (blank($verifyToken)) {
                 Log::warning('WhatsApp webhook verify token not configured');
 
                 return false;
@@ -89,12 +88,12 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
 
             // For regular webhook messages, verify using signature
             $signature = $headers['x-hub-signature-256'][0] ?? '';
-            if (empty($signature)) {
+            if (blank($signature)) {
                 return false;
             }
 
             $appSecret = config('services.whatsapp.app_secret');
-            if (empty($appSecret)) {
+            if (blank($appSecret)) {
                 Log::warning('WhatsApp app secret not configured');
 
                 return false;
@@ -164,14 +163,6 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
      */
     private function extractBusinessAccountData(array $data): array
     {
-        $leadData = [
-            'name' => '',
-            'email' => '',
-            'phone' => '',
-            'notes' => '',
-            'metadata' => [],
-        ];
-
         if (! isset($data['entry']) || ! is_array($data['entry'])) {
             return [];
         }
@@ -270,7 +261,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
         }
 
         // If no name found, try to extract from greeting
-        if (empty($data['name']) && preg_match('/hello|hi|hey/i', $message)) {
+        if (blank($data['name']) && preg_match('/hello|hi|hey/i', $message)) {
             // Look for capitalized words after greeting
             if (preg_match('/(?:hello|hi|hey)[\s,]+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i', $message, $greetingMatches)) {
                 $data['name'] = trim($greetingMatches[1]);

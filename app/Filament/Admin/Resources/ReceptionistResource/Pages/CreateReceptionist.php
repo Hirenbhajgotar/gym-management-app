@@ -46,8 +46,8 @@ class CreateReceptionist extends CreateRecord
         // Activate account on creation
         $data['status'] = UserStatus::ACTIVE;
 
-        if (is_null($data['profile_photo']) || empty($data['profile_photo'])) {
-            $data['profile_photo'] = app(AvatarService::class)->generate($data['name']);
+        if (is_null($data['profile_photo']) || blank($data['profile_photo'])) {
+            $data['profile_photo'] = resolve(AvatarService::class)->generate($data['name']);
         }
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();

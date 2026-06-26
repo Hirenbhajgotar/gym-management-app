@@ -41,7 +41,7 @@ class DeleteOldLeads extends Command
             ->chunkById(500, function ($leads) use (&$totalDeleted) {
                 $leadIds = $leads->pluck('id')->toArray();
 
-                if (empty($leadIds)) {
+                if (blank($leadIds)) {
                     return;
                 }
 

@@ -22,7 +22,7 @@ class CreateBiometricDevice extends CreateRecord
         $data['gym_id'] = $data['gym_id'] ?? Filament::getTenant()->id;
 
         // Auto-generate device token if not provided (model cast will hash it)
-        if (empty($data['device_token'])) {
+        if (blank($data['device_token'])) {
             $this->generatedToken = bin2hex(random_bytes(32));
             $data['device_token'] = $this->generatedToken; // Model cast handles hashing
         }

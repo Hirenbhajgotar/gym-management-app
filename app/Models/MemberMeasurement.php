@@ -68,12 +68,15 @@ class MemberMeasurement extends Model
         });
     }
 
+    /**
+     * @return BelongsTo<GymMember, $this>
+     */
     public function gymMember(): BelongsTo
     {
         return $this->belongsTo(GymMember::class);
     }
 
-    public function status(): Attribute
+    protected function status(): Attribute
     {
         return Attribute::make(
             get: function () {

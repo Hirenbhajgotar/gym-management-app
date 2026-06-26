@@ -95,7 +95,7 @@ class MetaContext
      */
     public function hasAccessToken(): bool
     {
-        return ! empty($this->getAccessToken());
+        return filled($this->getAccessToken());
     }
 
     /**
@@ -103,7 +103,7 @@ class MetaContext
      */
     public function hasWaba(): bool
     {
-        return ! empty($this->getWabaId());
+        return filled($this->getWabaId());
     }
 
     /**
@@ -111,7 +111,7 @@ class MetaContext
      */
     public function hasPhoneNumber(): bool
     {
-        return ! empty($this->getPhoneNumberId());
+        return filled($this->getPhoneNumberId());
     }
 
     /**

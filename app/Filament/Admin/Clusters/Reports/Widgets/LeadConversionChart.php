@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use Illuminate\Support\Facades\Date;
+use App\Models\Gym;
 use App\Enums\LeadStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Lead;
@@ -30,7 +32,7 @@ class LeadConversionChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -67,7 +69,7 @@ class LeadConversionChart extends BaseChartWidget
             $conversionData = [];
 
             foreach ($allMonths as $month) {
-                $labels[] = \Carbon\Carbon::parse($month . '-01')->format('M Y');
+                $labels[] = Date::parse($month . '-01')->format('M Y');
                 $newLeadData[] = $newLeads->get($month, 0);
                 $conversionData[] = $conversions->get($month, 0);
             }

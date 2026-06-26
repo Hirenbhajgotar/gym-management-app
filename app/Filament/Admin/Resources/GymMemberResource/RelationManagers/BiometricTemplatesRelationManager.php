@@ -2,15 +2,23 @@
 
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\CreateAction;
 use App\Enums\BiometricTypeEnum;
 use App\Models\BiometricTemplate;
 use App\Traits\HasTenantAccess;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -26,23 +34,23 @@ class BiometricTemplatesRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Hidden::make('gym_id')
+                Hidden::make('gym_id')
                     ->default(fn () => $this->getGymId()),
 
-                Forms\Components\Section::make('Biometric Template')
+                Section::make('Biometric Template')
                     ->schema([
-                        Forms\Components\Select::make('biometric_type')
+                        Select::make('biometric_type')
                             ->label('Biometric Type')
                             ->options(BiometricTypeEnum::class)
                             ->required(),
 
-                        Forms\Components\Textarea::make('template_data')
+                        Textarea::make('template_data')
                             ->label('Template Data')
                             ->rows(3)
                             ->required()
                             ->helperText('Base64 encoded biometric template'),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
                     ]),
@@ -53,16 +61,16 @@ class BiometricTemplatesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('biometric_type')
+                TextColumn::make('biometric_type')
                     ->label('Type')
                     ->badge()
                     ->color('info'),
 
-                Tables\Columns\TextColumn::make('template_id')
+                TextColumn::make('template_id')
                     ->label('Template ID')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('is_active')
+                TextColumn::make('is_active')
                     ->label('Status')
                     ->badge()
                     ->colors([
@@ -71,18 +79,18 @@ class BiometricTemplatesRelationManager extends RelationManager
                     ])
                     ->formatStateUsing(fn (bool $state) => $state ? 'Active' : 'Inactive'),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Enrolled')
                     ->dateTime(),
             ])
             ->filters([
-                Tables\Filters\Filter::make('active_only')
+                Filter::make('active_only')
                     ->label('Active Only')
                     ->query(fn (Builder $query) => $query->where('is_active', true)),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                EditAction::make(),
+                DeleteAction::make()
                     ->action(function (BiometricTemplate $record) {
                         $record->update(['is_active' => false]);
                         Notification::make()
@@ -92,10 +100,10 @@ class BiometricTemplatesRelationManager extends RelationManager
                     }),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Add Biometric Template')
                     ->icon('heroicon-o-plus-circle')
-                    ->form($this->form(new Forms\Form($this))->getComponents())
+                    ->form($this->form(new Form($this))->getComponents())
                     ->action(fn (array $data) => $this->handleCreateBiometricTemplate($data)),
             ]);
     }

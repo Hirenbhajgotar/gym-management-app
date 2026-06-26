@@ -5,14 +5,20 @@ namespace App\Filament\SuperAdmin\Resources;
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\Location;
-use App\Filament\SuperAdmin\Resources\CityResource\Pages;
+use App\Filament\SuperAdmin\Resources\CityResource\Pages\ListCities;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
-use Filament\Forms;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,7 +57,7 @@ class CityResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('state_id')
+                Select::make('state_id')
                     ->relationship('state', 'name')
                     ->options(State::active()->get()->pluck('name', 'id'))
                     ->required()
@@ -64,7 +70,7 @@ class CityResource extends BaseResource
                         return $state->id;
                     })
                     ->placeholder('Select or create a state'),
-                Forms\Components\TextInput::make('name')
+                TextInput::make('name')
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true)
@@ -72,7 +78,7 @@ class CityResource extends BaseResource
                         $set('slug', Str::slug($state));
                     })
                     ->default(null),
-                Forms\Components\TextInput::make('slug')
+                TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
                     ->unique(City::class, 'slug', ignoreRecord: true)
@@ -82,7 +88,7 @@ class CityResource extends BaseResource
                         }
                     })
                     ->default(null),
-                Forms\Components\Toggle::make('status'),
+                Toggle::make('status'),
             ]);
     }
 
@@ -90,21 +96,21 @@ class CityResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('state.name')
+                TextColumn::make('state.name')
                     ->numeric()
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\ToggleColumn::make('status'),
-                Tables\Columns\TextColumn::make('created_at')
+                ToggleColumn::make('status'),
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -135,7 +141,7 @@ class CityResource extends BaseResource
                         return $query
                             ->when(
                                 $data['country_id'] ?? null,
-                                fn ($q, $countryId) => $q->whereHas('state.country', fn ($q) => $q->where('id', $countryId))
+                                fn ($q, $countryId) => $q->whereHas('state.country', fn (Builder $q) => $q->where('id', $countryId))
                             )
                             ->when(
                                 $data['state_id'] ?? null,
@@ -144,12 +150,12 @@ class CityResource extends BaseResource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -164,7 +170,7 @@ class CityResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCities::route('/'),
+            'index' => ListCities::route('/'),
             // 'create' => Pages\CreateCity::route('/create'),
             // 'edit' => Pages\EditCity::route('/{record}/edit'),
         ];

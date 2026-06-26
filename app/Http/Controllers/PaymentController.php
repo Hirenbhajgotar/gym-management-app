@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InvoiceService;
+use App\Models\Subscription;
+use App\Services\SubscriptionService;
+use App\Notifications\RenewalSuccessNotification;
+use App\Notifications\PaymentFailedNotification;
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
@@ -22,11 +27,11 @@ class PaymentController extends Controller
 
     protected RazorpayService $razorpayService;
 
-    protected \App\Services\InvoiceService $invoiceService;
+    protected InvoiceService $invoiceService;
 
     protected WhatsAppBillingService $whatsAppBillingService;
 
-    public function __construct(RazorpayService $razorpayService, \App\Services\InvoiceService $invoiceService)
+    public function __construct(RazorpayService $razorpayService, InvoiceService $invoiceService)
     {
         $this->razorpayService = $razorpayService;
         $this->invoiceService = $invoiceService;
@@ -39,8 +44,8 @@ class PaymentController extends Controller
     public function createOrder(Request $request): JsonResponse
     {
         $request->validate([
-            'package_id' => 'required|exists:whatsapp_packages,id',
-            'gym_id' => 'required|exists:gyms,id',
+            'package_id' => ['required', 'exists:whatsapp_packages,id'],
+            'gym_id' => ['required', 'exists:gyms,id'],
         ]);
 
         try {
@@ -94,10 +99,10 @@ class PaymentController extends Controller
     public function verifyPayment(Request $request): JsonResponse
     {
         $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature' => 'required|string',
-            'tenant_id' => 'required',
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
+            'tenant_id' => ['required'],
         ]);
 
         try {
@@ -247,9 +252,7 @@ class PaymentController extends Controller
 
         $tenant = Gym::where('id', $tenantId)->firstOrFail();
 
-        if (! $orderId || ! $amount || ! $key) {
-            abort(400, 'Invalid payment parameters');
-        }
+        abort_if(! $orderId || ! $amount || ! $key, 400, 'Invalid payment parameters');
 
         return view('payments.checkout', compact(
             'orderId',
@@ -293,14 +296,14 @@ class PaymentController extends Controller
             return;
         }
 
-        $subscription = \App\Models\Subscription::find($subscriptionId);
+        $subscription = Subscription::find($subscriptionId);
         if (! $subscription) {
             Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
 
             return;
         }
 
-        $subscriptionService = app(\App\Services\SubscriptionService::class);
+        $subscriptionService = resolve(SubscriptionService::class);
 
         try {
             DB::beginTransaction();
@@ -314,7 +317,7 @@ class PaymentController extends Controller
             $subscription->update(['metadata' => $metadata]);
 
             // Send success notification
-            $subscription->user->notify(new \App\Notifications\RenewalSuccessNotification($subscription));
+            $subscription->user->notify(new RenewalSuccessNotification($subscription));
 
             DB::commit();
 
@@ -325,7 +328,7 @@ class PaymentController extends Controller
             ]);
 
             // Generate invoice
-            GenerateInvoiceJob::dispatch($payment);
+            dispatch(new GenerateInvoiceJob($payment));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to process subscription payment', [
@@ -335,7 +338,7 @@ class PaymentController extends Controller
             ]);
 
             // Send failure notification
-            $subscription->user->notify(new \App\Notifications\PaymentFailedNotification($subscription));
+            $subscription->user->notify(new PaymentFailedNotification($subscription));
         }
     }
 
@@ -395,7 +398,7 @@ class PaymentController extends Controller
                     'gym_id' => $payment->gym_id,
                 ]);
 
-                GenerateInvoiceJob::dispatch($payment);
+                dispatch(new GenerateInvoiceJob($payment));
             } else {
                 Log::error('Failed to process WhatsApp package purchase', [
                     'payment_id' => $payment->id,

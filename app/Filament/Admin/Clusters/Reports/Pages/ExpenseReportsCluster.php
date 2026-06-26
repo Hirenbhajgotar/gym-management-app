@@ -2,6 +2,13 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Livewire\Attributes\Computed;
+use App\Models\Gym;
+use App\Exports\ExpenseReportExport;
+use Illuminate\Support\Facades\Date;
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
@@ -16,7 +23,6 @@ use App\Models\ExpenseCategory;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -64,7 +70,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->startOfYear()->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -77,27 +83,27 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->default(now()->startOfYear())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options(ExpenseStatus::toSelectOptions())
                             ->placeholder('All Statuses')
                             ->multiple(),
 
-                        Forms\Components\Select::make('category_id')
+                        Select::make('category_id')
                             ->label('Category')
                             ->options(
                                 ExpenseCategory::where('gym_id', $gym?->id)
@@ -107,7 +113,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
                             ->placeholder('All Categories')
                             ->multiple(),
 
-                        Forms\Components\Select::make('payment_method')
+                        Select::make('payment_method')
                             ->options(ExpensePaymentMethod::toSelectOptions())
                             ->placeholder('All Methods'),
                     ])
@@ -201,7 +207,8 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         });
     }
 
-    public function getExpensesProperty(): Collection
+    #[Computed]
+    public function expenses(): Collection
     {
         return $this->getFilteredExpensesQuery()
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
@@ -210,7 +217,8 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             ->get();
     }
 
-    public function getCategoryBreakdownProperty(): Collection
+    #[Computed]
+    public function categoryBreakdown(): Collection
     {
         $totalAmount = $this->expenses->sum('amount');
 
@@ -254,13 +262,13 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function exportToExcel()
     {
-        /** @var \App\Models\Gym $gym */
-        $gym = \App\Models\Gym::find($this->getGymId());
+        /** @var Gym $gym */
+        $gym = Gym::find($this->getGymId());
 
         $filename = 'expense-report-' . $gym->slug . '-' . now()->format('Y-m-d') . '.xlsx';
 
         return Excel::download(
-            new \App\Exports\ExpenseReportExport(
+            new ExpenseReportExport(
                 $this->expenses,
                 $this->categoryBreakdown,
                 $this->filters
@@ -342,7 +350,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             ->get()
             ->map(function ($item) {
                 return [
-                    'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                    'month' => Date::parse($item->month . '-01')->format('M Y'),
                     'total' => $item->total,
                     'count' => $item->count,
                 ];
@@ -386,7 +394,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

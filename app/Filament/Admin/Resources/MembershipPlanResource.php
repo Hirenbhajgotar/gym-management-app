@@ -2,15 +2,28 @@
 
 namespace App\Filament\Admin\Resources;
 
+use Filament\Forms\Components\Section;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Admin\Resources\MembershipPlanResource\Pages\ListMembershipPlans;
+use App\Filament\Admin\Resources\MembershipPlanResource\Pages\CreateMembershipPlan;
+use App\Filament\Admin\Resources\MembershipPlanResource\Pages\EditMembershipPlan;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use App\Models\Gym;
 use App\Enums\Currency;
 use App\Enums\DurationMonth;
-use App\Filament\Admin\Resources\MembershipPlanResource\Pages;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\MembershipPlan;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables;
 use Filament\Tables\Table;
 
 class MembershipPlanResource extends BaseResource
@@ -25,7 +38,7 @@ class MembershipPlanResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Plan Details')
+                Section::make('Plan Details')
                     ->icon('heroicon-o-ticket')
                     ->description('Create a membership plan for your gym')
                     ->schema(self::planFormSchema())
@@ -39,20 +52,20 @@ class MembershipPlanResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('price')
+                TextColumn::make('price')
                     ->money(fn ($record) => $record->currency)
                     ->sortable(),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active')
                     ->onColor('success')
                     ->offColor('danger'),
 
-                Tables\Columns\TextColumn::make('members_count')
+                TextColumn::make('members_count')
                     ->counts('members')
                     ->label('Members')
                     ->badge()
@@ -61,17 +74,17 @@ class MembershipPlanResource extends BaseResource
             ])
             ->filters([])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->successNotification(null),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('name')
@@ -88,23 +101,23 @@ class MembershipPlanResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMembershipPlans::route('/'),
-            'create' => Pages\CreateMembershipPlan::route('/create'),
-            'edit' => Pages\EditMembershipPlan::route('/{record}/edit'),
+            'index' => ListMembershipPlans::route('/'),
+            'create' => CreateMembershipPlan::route('/create'),
+            'edit' => EditMembershipPlan::route('/{record}/edit'),
         ];
     }
 
     public static function planFormSchema(): array
     {
         /**
-         * @var \App\Models\Gym $gym
+         * @var Gym $gym
          */
         $gym = Filament::getTenant();
 
         return [
-            Forms\Components\Hidden::make('gym_id')->default($gym->id),
+            Hidden::make('gym_id')->default($gym->id),
 
-            Forms\Components\TextInput::make('name')
+            TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->placeholder('e.g., Gold Membership')
@@ -113,7 +126,7 @@ class MembershipPlanResource extends BaseResource
                     'class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
                 ]),
 
-            Forms\Components\TextInput::make('price')
+            TextInput::make('price')
                 ->numeric()
                 ->required()
                 ->prefix(function ($get) {
@@ -130,7 +143,7 @@ class MembershipPlanResource extends BaseResource
                 ->extraInputAttributes([
                     'class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
                 ]),
-            Forms\Components\Select::make('currency')
+            Select::make('currency')
                 ->options(
                     collect(Currency::cases())->mapWithKeys(
                         fn (Currency $currency) => [
@@ -141,7 +154,7 @@ class MembershipPlanResource extends BaseResource
                 ->required()
                 ->reactive()
                 ->default(Currency::INR->value),
-            Forms\Components\Select::make('duration')
+            Select::make('duration')
                 ->label('Duration (Months)')
                 ->options(
                     collect(DurationMonth::cases())->mapWithKeys(
@@ -152,7 +165,7 @@ class MembershipPlanResource extends BaseResource
                 )
                 ->required()
                 ->default(DurationMonth::THREE_MONTHS->value),
-            Forms\Components\Textarea::make('description')
+            Textarea::make('description')
                 ->maxLength(65535)
                 ->placeholder(
                     'e.g., Includes unlimited classes and personal training',
@@ -163,7 +176,7 @@ class MembershipPlanResource extends BaseResource
                 ])
                 ->columnSpanFull(),
 
-            Forms\Components\Toggle::make('is_active')
+            Toggle::make('is_active')
                 ->default(true)
                 ->label('Active')
                 ->onColor('success')

@@ -6,7 +6,7 @@ use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Spatie\Permission\Models\Role>
+ * @extends Factory<\App\Models\Spatie\Permission\Models\Role>
  */
 class RoleFactory extends Factory
 {
@@ -20,7 +20,7 @@ class RoleFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->word, // e.g., 'gym_owner', 'trainer'
+            'name' => $this->faker->unique()->word(), // e.g., 'gym_owner', 'trainer'
             'gym_id' => null, // Default to null; override in tests as needed
             'guard_name' => 'web', // Required by Spatie’s Laravel Permission
         ];

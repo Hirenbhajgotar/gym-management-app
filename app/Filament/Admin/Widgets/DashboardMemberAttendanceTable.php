@@ -2,13 +2,14 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use Illuminate\Support\Facades\Date;
+use Filament\Tables\Actions\Action;
+use App\Models\Gym;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Attendances;
 use App\Models\GymMember;
-use Carbon\Carbon;
 use Filament\Facades\Filament;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -26,7 +27,7 @@ class DashboardMemberAttendanceTable extends BaseTableWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -43,10 +44,10 @@ class DashboardMemberAttendanceTable extends BaseTableWidget
     public function table(Table $table): Table
     {
         /**
-         * @var \App\Models\Gym $tenant
+         * @var Gym $tenant
          */
         $tenant = Filament::getTenant();
-        $today = Carbon::today();
+        $today = Date::today();
         $currentGymId = $tenant->id;
 
         return $table
@@ -84,7 +85,7 @@ class DashboardMemberAttendanceTable extends BaseTableWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('open')
+                Action::make('open')
                     ->url(fn (Attendances $record): string => GymMemberResource::getUrl('edit', ['record' => $record->attendanceable_id])),
             ]);
     }

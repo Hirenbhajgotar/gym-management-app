@@ -10,7 +10,7 @@ class LoginActivityStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $service = app(LoginActivityService::class);
+        $service = resolve(LoginActivityService::class);
         $stats = $service->getAggregateStats();
 
         return [

@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Log;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
@@ -103,7 +104,7 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
 
     private static function logAndFallback(?string $status): self
     {
-        \Illuminate\Support\Facades\Log::warning('Unknown Meta WABA review status encountered', [
+        Log::warning('Unknown Meta WABA review status encountered', [
             'status' => $status,
             'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
         ]);

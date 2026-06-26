@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
+use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
+use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
 use App\Models\Gym;
 use App\Models\ShareableReportLink;
 use App\Models\User;
@@ -30,7 +34,7 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'filters' => ['date_range' => 'last_30_days'],
         ]);
 
@@ -46,13 +50,13 @@ class ShareableReportLinkTest extends TestCase
         $link1 = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
         ]);
 
         $link2 = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class,
+            'report_type' => RevenueReports::class,
         ]);
 
         $this->assertNotEquals($link1->token, $link2->token);
@@ -63,7 +67,7 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'expires_at' => now()->subDay(),
         ]);
 
@@ -76,7 +80,7 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'is_active' => false,
         ]);
 
@@ -89,7 +93,7 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
         ]);
 
         $expectedUrl = route('shared-reports.show', $link->token);
@@ -101,13 +105,13 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'filters' => ['date_range' => 'last_30_days'],
         ]);
 
         $response = $this->get(route('shared-reports.show', $link->token));
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertViewIs('shared-reports.show');
         $response->assertViewHas('link', function ($viewLink) use ($link) {
             return $viewLink->id === $link->id;
@@ -118,7 +122,7 @@ class ShareableReportLinkTest extends TestCase
     {
         $response = $this->get(route('shared-reports.show', 'invalid-token'));
 
-        $response->assertStatus(404);
+        $response->assertNotFound();
     }
 
     public function test_shared_report_controller_returns_404_for_expired_link(): void
@@ -126,13 +130,13 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'expires_at' => now()->subDay(),
         ]);
 
         $response = $this->get(route('shared-reports.show', $link->token));
 
-        $response->assertStatus(404);
+        $response->assertNotFound();
     }
 
     public function test_shared_report_controller_returns_404_for_inactive_link(): void
@@ -140,13 +144,13 @@ class ShareableReportLinkTest extends TestCase
         $link = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
             'is_active' => false,
         ]);
 
         $response = $this->get(route('shared-reports.show', $link->token));
 
-        $response->assertStatus(404);
+        $response->assertNotFound();
     }
 
     public function test_shareable_report_link_scopes(): void
@@ -155,20 +159,20 @@ class ShareableReportLinkTest extends TestCase
         $activeLink1 = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class,
+            'report_type' => MemberReports::class,
         ]);
 
         $activeLink2 = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class,
+            'report_type' => RevenueReports::class,
         ]);
 
         // Create inactive link
         $inactiveLink = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class,
+            'report_type' => LeadReports::class,
             'is_active' => false,
         ]);
 
@@ -176,7 +180,7 @@ class ShareableReportLinkTest extends TestCase
         $expiredLink = ShareableReportLink::create([
             'gym_id' => $this->gym->id,
             'user_id' => $this->user->id,
-            'report_type' => \App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports::class,
+            'report_type' => AttendanceReports::class,
             'expires_at' => now()->subDay(),
         ]);
 

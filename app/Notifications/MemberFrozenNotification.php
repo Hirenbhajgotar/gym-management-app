@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use Carbon\Carbon;
 use App\Models\GymMember;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,7 +16,7 @@ class MemberFrozenNotification extends Notification
         public GymMember $member,
         public bool $isFrozen,
         public ?string $reason = null,
-        public ?\Carbon\Carbon $frozenUntil = null
+        public ?Carbon $frozenUntil = null
     ) {}
 
     public function via(object $notifiable): array

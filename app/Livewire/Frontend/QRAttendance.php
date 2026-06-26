@@ -94,9 +94,7 @@ class QRAttendance extends Component
 
         $this->gym = Gym::find($gymId);
 
-        if (! $this->gym) {
-            abort(404, 'Gym not found.');
-        }
+        abort_unless($this->gym, 404, 'Gym not found.');
 
         // Check if this is a check-out QR code
         if ($this->gym->hasValidCheckoutQrCodeToken($token)) {

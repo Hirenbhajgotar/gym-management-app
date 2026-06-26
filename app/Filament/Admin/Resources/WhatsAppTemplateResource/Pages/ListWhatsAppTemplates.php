@@ -2,10 +2,11 @@
 
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
 use App\Models\WhatsAppTemplate;
-use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
@@ -20,7 +21,7 @@ class ListWhatsAppTemplates extends ListRecords
     {
         return [
             // Import from Global Defaults
-            Actions\Action::make('importDefault')
+            Action::make('importDefault')
                 ->label('Import Default Templates')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
@@ -40,7 +41,7 @@ class ListWhatsAppTemplates extends ListRecords
                 ])
                 ->action(fn (array $data) => $this->importDefaultTemplatesAction($data)),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('New Template')
                 ->icon('heroicon-o-plus'),
         ];
@@ -61,7 +62,7 @@ class ListWhatsAppTemplates extends ListRecords
 
         $selectedNames = $data['template_names'] ?? [];
 
-        if (empty($selectedNames)) {
+        if (blank($selectedNames)) {
             Notification::make()
                 ->info()
                 ->title('No Selection')
@@ -100,7 +101,7 @@ class ListWhatsAppTemplates extends ListRecords
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ])->toArray();
+            ])->all();
 
             WhatsAppTemplate::insert($importData);
 

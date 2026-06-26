@@ -58,7 +58,7 @@ enum ExpenseStatus: string implements HasColor, HasIcon, HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 
     /**

@@ -53,7 +53,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->createPerGymRoles();
 
         // Flush cache AFTER all inserts are complete
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->info('✅ Roles and permissions seeded successfully!');
 
@@ -128,7 +128,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     ->toArray();
 
                 $missingRoles = array_diff($requiredRoles, $existingRoles);
-                if (empty($missingRoles)) {
+                if (blank($missingRoles)) {
                     continue;
                 }
 
@@ -157,7 +157,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     $defaultPermissions = $discoveredAssignments[$role->value]
                         ?? $this->rolesService->getDynamicDefaultPermissions($role->value);
 
-                    if (! empty($defaultPermissions)) {
+                    if (filled($defaultPermissions)) {
                         $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id');
                         $roleId = $createdRoles[$role->value];
 
@@ -170,7 +170,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     }
                 }
 
-                if (! empty($permissionInsertData)) {
+                if (filled($permissionInsertData)) {
                     foreach (array_chunk($permissionInsertData, 500) as $chunk) {
                         DB::table('role_has_permissions')->insertOrIgnore($chunk);
                     }
@@ -188,7 +188,7 @@ class RolesAndPermissionsSeeder extends Seeder
     private function displaySummary(): void
     {
         $totalPermissions = Permission::count();
-        $totalRoles = Role::count();
+        Role::count();
         $globalRoles = Role::whereNull('gym_id')->count();
         $gymRoles = Role::whereNotNull('gym_id')->count();
         $pivotCount = DB::table('role_has_permissions')->count();

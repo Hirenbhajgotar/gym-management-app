@@ -142,14 +142,14 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->command->newLine();
 
         $name = $this->command->ask('Enter the super-admin name');
-        if (empty($name)) {
+        if (blank($name)) {
             $this->command->fail('Name cannot be empty.');
 
             return;
         }
 
         $email = $this->command->ask('Enter the super-admin email');
-        if (empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (blank($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->command->fail('Please enter a valid email address.');
 
             return;
@@ -162,7 +162,7 @@ class UserRoleAssignmentSeeder extends Seeder
         }
 
         $password = $this->command->secret('Enter the super-admin password (minimum 8 characters)');
-        if (empty($password) || strlen($password) < 8) {
+        if (blank($password) || strlen($password) < 8) {
             $this->command->fail('Password must be at least 8 characters long.');
 
             return;
@@ -234,7 +234,7 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->command->info('📝 Creating demo users for specific gym...');
 
         $gyms = $this->getAvailableGyms();
-        if (empty($gyms)) {
+        if (blank($gyms)) {
             $this->command->error('No gyms found. Please create gyms first.');
 
             return;
@@ -255,7 +255,7 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->command->info('📝 Creating demo users for all gyms...');
 
         $gyms = $this->getAvailableGyms();
-        if (empty($gyms)) {
+        if (blank($gyms)) {
             $this->command->fail('No gyms found. Please create gyms first.');
 
             return;
@@ -384,7 +384,7 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->command->info('👥 Assigning roles to existing users...');
 
         $gyms = $this->getAvailableGyms();
-        if (empty($gyms)) {
+        if (blank($gyms)) {
             $this->command->error('No gyms found. Please create gyms first.');
 
             return;
@@ -402,7 +402,7 @@ class UserRoleAssignmentSeeder extends Seeder
             ->get();
 
         if ($usersWithoutRoles->isEmpty()) {
-            $this->command->info('ℹ️  All users already have roles assigned.');
+            $this->command->info('All users already have roles assigned.');
 
             return;
         }
@@ -486,7 +486,7 @@ class UserRoleAssignmentSeeder extends Seeder
         $this->command->info('📧 Bulk assign role to users by email list...');
 
         $gyms = $this->getAvailableGyms();
-        if (empty($gyms)) {
+        if (blank($gyms)) {
             $this->command->error('No gyms found.');
 
             return;
@@ -506,7 +506,7 @@ class UserRoleAssignmentSeeder extends Seeder
 
         while (true) {
             $email = $this->command->ask('Email (or press enter to finish)');
-            if (empty($email)) {
+            if (blank($email)) {
                 break;
             }
             if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -516,7 +516,7 @@ class UserRoleAssignmentSeeder extends Seeder
             }
         }
 
-        if (empty($emails)) {
+        if (blank($emails)) {
             $this->command->info('No emails provided.');
 
             return;

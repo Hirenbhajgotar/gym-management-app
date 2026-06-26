@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Cache\RedisStore;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -304,8 +306,8 @@ class ReportCacheService
             // Check if this is a pattern (contains wildcard) or exact key
             if (str_contains($pattern, '*')) {
                 // Pattern matching - use Redis KEYS
-                if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
-                    $redis = \Illuminate\Support\Facades\Redis::connection('cache');
+                if (Cache::getStore() instanceof RedisStore) {
+                    $redis = Redis::connection('cache');
                     $fullPrefix = $this->getCachePrefix();
 
                     // Search for keys matching the pattern
@@ -318,15 +320,13 @@ class ReportCacheService
 
                     $allKeys = array_merge($keys, $flexibleKeys);
 
-                    if (! empty($allKeys)) {
-                        foreach ($allKeys as $key) {
-                            // Remove the prefix to get the cache key
-                            $cacheKey = str_replace($redisPrefix . $fullPrefix, '', $key);
+                    foreach ($allKeys as $key) {
+                        // Remove the prefix to get the cache key
+                        $cacheKey = str_replace($redisPrefix . $fullPrefix, '', $key);
 
-                            Cache::forget($cacheKey);
+                        Cache::forget($cacheKey);
 
-                            Cache::forget('illuminate:cache:flexible:created:' . $cacheKey);
-                        }
+                        Cache::forget('illuminate:cache:flexible:created:' . $cacheKey);
                     }
                 }
             } else {

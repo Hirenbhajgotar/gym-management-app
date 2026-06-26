@@ -2,6 +2,12 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Collection;
+use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentStatus;
@@ -22,7 +28,6 @@ use App\Traits\HasReportFilters;
 use Carbon\CarbonPeriod;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -79,29 +84,29 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
 
     public function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->startOfYear())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label('Payment Status')
                             ->options(PaymentStatus::class)
                             ->placeholder('All Status'),
 
-                        Forms\Components\Select::make('membership_plan_id')
+                        Select::make('membership_plan_id')
                             ->label('Membership Plan')
                             ->options(
                                 MembershipPlan::where('gym_id', $gym?->id)
@@ -209,8 +214,8 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = $this->getReportCacheKey('pnl_data_v2', $this->filters);
 
         return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () use ($gymId) {
-            $startDate = $this->filters['start_date'] ? \Carbon\Carbon::parse($this->filters['start_date']) : now()->startOfYear();
-            $endDate = $this->filters['end_date'] ? \Carbon\Carbon::parse($this->filters['end_date']) : now();
+            $startDate = $this->filters['start_date'] ? Date::parse($this->filters['start_date']) : now()->startOfYear();
+            $endDate = $this->filters['end_date'] ? Date::parse($this->filters['end_date']) : now();
 
             // Create monthly periods between start and end date
             $period = CarbonPeriod::create($startDate, '1 month', $endDate);
@@ -292,7 +297,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
      */
     public function getRevenueBreakdown(): array
     {
-        $gymId = $this->getGymId();
+        $this->getGymId();
         $cacheKey = $this->getReportCacheKey('revenue_breakdown', $this->filters);
 
         return Cache::flexible($cacheKey, [now()->addMinutes(10), now()->addMinutes(30)], function () {
@@ -371,13 +376,13 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                 'label' => $item['label'],
                 'value' => $item['revenue'],
             ];
-        })->toArray();
+        })->all();
     }
 
     /**
      * Get Expense Breakdown for PDF.
      */
-    public function getCategoryBreakdown(): \Illuminate\Support\Collection
+    public function getCategoryBreakdown(): Collection
     {
         return collect($this->getExpenseBreakdown());
     }
@@ -391,7 +396,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
 
         // Cache forecast data
         return Cache::flexible("report_forecast_{$gymId}_revenue", [now()->addHours(1), now()->addHours(2)], function () use ($gymId) {
-            $service = app(ForecastService::class);
+            $service = resolve(ForecastService::class);
             // Get 6 months forecast for better visualization in PDF
             $chartData = $service->getChartData($gymId, 'revenue', 6);
 
@@ -402,7 +407,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                     'value' => $point['value'],
                     'type' => $point['type'], // 'actual' or 'forecast'
                 ];
-            })->toArray();
+            })->all();
         });
     }
 
@@ -414,7 +419,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                 ->icon('phosphor-download')
                 ->color('success')
                 ->action(function () {
-                    /** @var \App\Models\Gym $gym */
+                    /** @var Gym $gym */
                     $gym = Filament::getTenant();
 
                     return new RevenueReportExport($gym?->id, $this->filters);

@@ -2,16 +2,10 @@
 
 namespace Tests\Unit;
 
-use App\Enums\GenderEnum;
-use App\Enums\MaritalStatusEnum;
 use App\Imports\BaseExcelImport;
 use App\Imports\ReceptionistsImport;
-use App\Models\EmployeeDetail;
 use App\Models\Gym;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -37,7 +31,7 @@ class ReceptionistImportTest extends TestCase
 
         $this->tenant = Gym::factory()->create();
         // filament()->setTenant($this->tenant);
-        $this->import = app(ReceptionistsImport::class);
+        $this->import = resolve(ReceptionistsImport::class);
     }
 
     #[Test]

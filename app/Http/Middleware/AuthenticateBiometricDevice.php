@@ -22,7 +22,7 @@ class AuthenticateBiometricDevice
 
         $plainToken = substr($authHeader, 7);
 
-        if (empty($plainToken)) {
+        if (blank($plainToken)) {
             return response()->json([
                 'error' => 'Unauthorized',
                 'message' => 'Empty token',

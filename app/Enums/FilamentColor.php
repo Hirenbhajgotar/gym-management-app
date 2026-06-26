@@ -73,7 +73,7 @@ enum FilamentColor: string implements HasColor, HasLabel
     {
         return collect(self::cases())
             ->mapWithKeys(fn (self $color) => [$color->value => $color->getLabel()])
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -84,6 +84,6 @@ enum FilamentColor: string implements HasColor, HasLabel
     {
         return collect(self::cases())
             ->mapWithKeys(fn (self $color) => [$color->value => $color->hex()])
-            ->toArray();
+            ->all();
     }
 }

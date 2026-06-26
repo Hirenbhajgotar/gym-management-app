@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use Illuminate\Support\Facades\URL;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -33,7 +34,7 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
             ->line('Welcome to our Gym Management System. We are excited to have you on board.');
 
         if ($this->token) {
-            $resetUrl = \Illuminate\Support\Facades\URL::signedRoute('filament.admin.auth.password-reset.reset', [
+            $resetUrl = URL::signedRoute('filament.admin.auth.password-reset.reset', [
                 'token' => $this->token,
                 'email' => $this->user->email,
             ]);

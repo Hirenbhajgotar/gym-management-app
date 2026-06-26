@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
 use Illuminate\Database\Eloquent\Model;
@@ -23,36 +26,37 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $monthly_salary
  * @property array<array-key, mixed>|null $skills
  * @property string|null $notes
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User $user
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereDateOfBirth($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmergencyContactEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmergencyContactName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmergencyContactPhone($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmergencyContactRelationship($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmployeeId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereEmploymentType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereGender($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereHireDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereMaritalStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereMonthlySalary($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereSkills($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeDetail whereUserId($value)
+ * @method static Builder<static>|EmployeeDetail newModelQuery()
+ * @method static Builder<static>|EmployeeDetail newQuery()
+ * @method static Builder<static>|EmployeeDetail query()
+ * @method static Builder<static>|EmployeeDetail whereCreatedAt($value)
+ * @method static Builder<static>|EmployeeDetail whereDateOfBirth($value)
+ * @method static Builder<static>|EmployeeDetail whereEmergencyContactEmail($value)
+ * @method static Builder<static>|EmployeeDetail whereEmergencyContactName($value)
+ * @method static Builder<static>|EmployeeDetail whereEmergencyContactPhone($value)
+ * @method static Builder<static>|EmployeeDetail whereEmergencyContactRelationship($value)
+ * @method static Builder<static>|EmployeeDetail whereEmployeeId($value)
+ * @method static Builder<static>|EmployeeDetail whereEmploymentType($value)
+ * @method static Builder<static>|EmployeeDetail whereGender($value)
+ * @method static Builder<static>|EmployeeDetail whereHireDate($value)
+ * @method static Builder<static>|EmployeeDetail whereId($value)
+ * @method static Builder<static>|EmployeeDetail whereMaritalStatus($value)
+ * @method static Builder<static>|EmployeeDetail whereMonthlySalary($value)
+ * @method static Builder<static>|EmployeeDetail whereNotes($value)
+ * @method static Builder<static>|EmployeeDetail whereSkills($value)
+ * @method static Builder<static>|EmployeeDetail whereUpdatedAt($value)
+ * @method static Builder<static>|EmployeeDetail whereUserId($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperEmployeeDetail
  */
 class EmployeeDetail extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id',
         'date_of_birth',
@@ -76,6 +80,9 @@ class EmployeeDetail extends Model
         'marital_status' => MaritalStatusEnum::class,
     ];
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

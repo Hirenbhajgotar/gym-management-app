@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Database\Factories\LeadFactory;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Observers\LeadObserver;
@@ -33,19 +36,19 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property string|null $notes
  * @property int $created_by
  * @property int|null $updated_by
- * @property \Illuminate\Support\Carbon|null $last_follow_up_date
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\LeadConversion|null $conversion
- * @property-read \App\Models\User $creator
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\FollowUp> $followUps
+ * @property Carbon|null $last_follow_up_date
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read LeadConversion|null $conversion
+ * @property-read User $creator
+ * @property-read Collection<int, FollowUp> $followUps
  * @property-read int|null $follow_ups_count
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\MembershipPlan|null $membershipPlan
- * @property-read \App\Models\User|null $updatedByUser
+ * @property-read Gym $gym
+ * @property-read MembershipPlan|null $membershipPlan
+ * @property-read User|null $updatedByUser
  *
  * @method static Builder<static>|Lead converted()
- * @method static \Database\Factories\LeadFactory factory($count = null, $state = [])
+ * @method static LeadFactory factory($count = null, $state = [])
  * @method static Builder<static>|Lead lost()
  * @method static Builder<static>|Lead newModelQuery()
  * @method static Builder<static>|Lead newQuery()
@@ -119,31 +122,49 @@ class Lead extends Model implements Sortable
         ];
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function updatedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /**
+     * @return BelongsTo<MembershipPlan, $this>
+     */
     public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class, 'membership_plan_id');
     }
 
+    /**
+     * @return HasMany<FollowUp, $this>
+     */
     public function followUps(): HasMany
     {
         return $this->hasMany(FollowUp::class);
     }
 
+    /**
+     * @return HasOne<LeadConversion, $this>
+     */
     public function conversion(): HasOne
     {
         return $this->hasOne(LeadConversion::class);

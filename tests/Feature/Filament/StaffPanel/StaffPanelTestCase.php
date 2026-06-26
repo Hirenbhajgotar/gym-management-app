@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament\StaffPanel;
 
+use Spatie\Permission\Contracts\Permission;
 use App\Models\Gym;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -74,12 +75,12 @@ abstract class StaffPanelTestCase extends TestCase
         }
 
         setPermissionsTeamId($this->testGym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         Filament::setCurrentPanel(Filament::getPanel('staff'));
     }
 
-    protected function grantPermission(User $user, string $name): \Spatie\Permission\Contracts\Permission
+    protected function grantPermission(User $user, string $name): Permission
     {
         $permission = \App\Models\Permission::firstOrCreate([
             'name' => $name,
@@ -94,7 +95,7 @@ abstract class StaffPanelTestCase extends TestCase
             }
         }
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $permission;
     }
