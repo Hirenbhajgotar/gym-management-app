@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentStatus;
 use App\Exports\RevenueReportExport;
@@ -10,6 +11,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\PaymentMethodChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueByPlanChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueForecastChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\RevenueTrendChart;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Expense;
 use App\Models\GymMember;
@@ -24,10 +26,9 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class RevenueReports extends Page implements HasForms, ShareableReport
+class RevenueReports extends BasePage implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;
@@ -43,6 +44,15 @@ class RevenueReports extends Page implements HasForms, ShareableReport
     protected static ?string $cluster = Reports::class;
 
     protected static string $view = 'filament.clusters.reports.pages.revenue-reports';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     /**
      * Get Livewire listeners for real-time updates via Echo.

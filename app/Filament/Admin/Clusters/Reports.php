@@ -14,6 +14,6 @@ class Reports extends Cluster
 
     public static function getNavigationGroup(): ?string
     {
-        return null; // Top-level navigation (no group)
+        return null;
     }
 }

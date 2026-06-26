@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\BaseResources;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Attendances as ClustersAttendances;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
@@ -15,7 +18,6 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
@@ -25,11 +27,39 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-abstract class BaseAttendanceResource extends Resource
+abstract class BaseAttendanceResource extends BaseResource
 {
     protected static ?string $model = Attendances::class;
 
     protected static ?string $cluster = ClustersAttendances::class;
+
+    /**
+     * Attendance resources have custom permissions - all roles can view, managers can manage.
+     */
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'create',
+                'update',
+                'delete',
+                'restore',
+                'delete_any',
+                'restore_any',
+                'force_delete',
+                'force_delete_any',
+                'export',
+                'import',
+                'reorder',
+                'replicate',
+                'approve',
+            ],
+            DefaultRole::RECEPTIONIST->value => ['view', 'view_any', 'create', 'update', 'export'],
+            DefaultRole::TRAINER->value => ['view', 'view_any', 'create', 'update', 'export'],
+        ];
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -125,12 +155,12 @@ abstract class BaseAttendanceResource extends Resource
 
                 TextColumn::make('check_in_time')
                     ->label('Check-In Time')
-                    ->badge('info')
+                    ->badge()
                     ->dateTime(),
 
                 TextColumn::make('check_out_time')
                     ->label('Check-Out Time')
-                    ->badge('info')
+                    ->badge()
                     ->dateTime(),
 
                 TextColumn::make('status')

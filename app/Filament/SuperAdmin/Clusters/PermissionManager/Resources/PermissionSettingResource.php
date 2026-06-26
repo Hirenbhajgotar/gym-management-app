@@ -4,6 +4,7 @@ namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 use App\Jobs\ImportDefaultPermissionsJob;
@@ -12,13 +13,12 @@ use App\Models\PermissionSetting;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class PermissionSettingResource extends Resource
+class PermissionSettingResource extends BaseResource
 {
     protected static ?string $model = PermissionSetting::class;
 
@@ -27,6 +27,17 @@ class PermissionSettingResource extends Resource
     protected static ?string $cluster = PermissionManager::class;
 
     protected static ?int $navigationSort = 3;
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function form(Form $form): Form
     {
@@ -171,10 +182,5 @@ class PermissionSettingResource extends Resource
             'edit' => Pages\EditPermissionSetting::route('/{record}/edit'),
             'view' => Pages\ViewPermissionSetting::route('/{record}'),
         ];
-    }
-
-    public static function canAccess(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
     }
 }

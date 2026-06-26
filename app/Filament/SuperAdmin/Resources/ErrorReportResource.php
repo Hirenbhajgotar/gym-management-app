@@ -2,21 +2,22 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Enums\DefaultRole;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 use App\Models\ErrorReport;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class ErrorReportResource extends Resource
+class ErrorReportResource extends BaseResource
 {
     protected static ?string $model = ErrorReport::class;
 
@@ -25,6 +26,17 @@ class ErrorReportResource extends Resource
     protected static ?int $navigationSort = 2;
 
     private static ?array $badgeData = null;
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function form(Form $form): Form
     {

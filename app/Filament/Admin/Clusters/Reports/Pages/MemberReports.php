@@ -8,6 +8,7 @@ use App\Filament\Admin\Clusters\Reports\Widgets\MemberDemographicsChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberGrowthChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberPlanDistributionChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\MemberStatusChart;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
@@ -19,11 +20,10 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class MemberReports extends Page implements HasForms, ShareableReport
+class MemberReports extends BasePage implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;

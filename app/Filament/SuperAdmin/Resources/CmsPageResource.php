@@ -2,23 +2,35 @@
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages;
 use App\Models\CmsPage;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
-class CmsPageResource extends Resource
+class CmsPageResource extends BaseResource
 {
     protected static ?string $model = CmsPage::class;
 
     protected static ?string $navigationGroup = 'Content Management';
 
     protected static ?string $navigationLabel = 'CMS Pages';
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function form(Form $form): Form
     {

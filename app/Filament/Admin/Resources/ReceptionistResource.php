@@ -4,7 +4,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
-use App\Filament\Actions\Imports\ExcelImportAction;
+use App\Filament\Actions\ExportAction;
+use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Filament\Admin\Resources\ReceptionistResource\Pages;
 use App\Filament\Exports\ReceptionistExporter;
@@ -16,6 +17,11 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ReceptionistResource extends BaseEmployeeResource
 {
+    public static function getPermissionLabel(): string
+    {
+        return 'receptionist';
+    }
+
     public static function getLabel(): string
     {
         return 'Receptionist';
@@ -77,23 +83,23 @@ class ReceptionistResource extends BaseEmployeeResource
     public static function getCommonHeaderActions(): array
     {
         return [
-            // Permissions action
             Actions\Action::make('managePermissions')
                 ->label('Manage Permissions')
                 ->color('info')
                 ->icon('heroicon-o-key')
                 ->outlined()
-                ->url(fn (): string => ReceptionistPermissionsPage::getUrl()),
+                ->url(fn (): string => ReceptionistPermissionsPage::getUrl())
+                ->visible(fn (): bool => auth()->user()->hasAnyRole([DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::GYM_OWNER]))
+                ->authorize(fn (): bool => auth()->user()->hasAnyRole([DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::GYM_OWNER])),
 
-            // Export action
-            Actions\ExportAction::make()
+            ExportAction::make()
                 ->label('Export ' . static::getPluralLabel())
-                ->icon('heroicon-o-arrow-up-tray')
                 ->exporter(ReceptionistExporter::class)
-                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole())),
+                ->modifyQueryUsing(fn (Builder $query) => $query->role(static::getEmployeeRole()))
+                ->visible(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('export_' . static::getPermissionLabel())),
 
-            // Import action
-            ExcelImportAction::make()
+            ImportAction::make()
                 ->label('Import Receptionists')
                 ->importer(ReceptionistsImport::class)
                 ->use(User::class)
@@ -102,9 +108,10 @@ class ReceptionistResource extends BaseEmployeeResource
                     urlOrData: url('import/templates/xls/employee-sample.xlsx'),
                     fileName: 'receptionist-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
-                ),
+                )
+                ->visible(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel()))
+                ->authorize(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel())),
 
-            // Create action
             Actions\CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),

@@ -21,6 +21,8 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFormatting
 {
+    protected static ?string $model = GymMember::class;
+
     protected array $dateColumns = [
         'dob',
         'membership_start',

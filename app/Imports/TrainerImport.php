@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class TrainerImport extends BaseImporter implements ShouldQueue
 {
+    protected static ?string $model = Trainer::class;
+
     public function __construct(public string $tenantId)
     {
         parent::__construct();

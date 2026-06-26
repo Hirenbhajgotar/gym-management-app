@@ -4,16 +4,16 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Enums\ExpenseStatus;
+use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Expense;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 
 /**
  * Dashboard widget showing expenses pending approval for managers/owners.
  */
-class PendingExpenseApprovalsWidget extends BaseWidget
+class PendingExpenseApprovalsWidget extends BaseTableWidget
 {
     protected static ?int $sort = 6;
 
@@ -22,6 +22,15 @@ class PendingExpenseApprovalsWidget extends BaseWidget
     protected static ?string $heading = 'Pending Expense Approvals';
 
     protected static ?string $pollingInterval = null;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['widget'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public static function canView(): bool
     {
@@ -36,7 +45,9 @@ class PendingExpenseApprovalsWidget extends BaseWidget
 
     protected function getListeners(): array
     {
-        $gymId = Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId = $tenant?->id;
 
         return [
             "echo-private:reports.{$gymId},.ExpenseStatsUpdated" => '$refresh',
@@ -45,7 +56,7 @@ class PendingExpenseApprovalsWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var \App\Models\Gym|null $gym */
         $gym = Filament::getTenant();
 
         /** @var \App\Models\User $user */
@@ -76,7 +87,7 @@ class PendingExpenseApprovalsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
-                    ->color(fn ($record) => $record->category?->color ?? 'gray'),
+                    ->color(fn ($record) => $record->category->color ?? 'gray'),
 
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency ?? 'INR')

@@ -2,25 +2,37 @@
 
 namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\GymManagement;
 use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
 use App\Models\BusinessType;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
-class BusinessTypeResource extends Resource
+class BusinessTypeResource extends BaseResource
 {
     protected static ?string $model = BusinessType::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
 
     protected static ?string $cluster = GymManagement::class;
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
+    }
 
     public static function form(Form $form): Form
     {

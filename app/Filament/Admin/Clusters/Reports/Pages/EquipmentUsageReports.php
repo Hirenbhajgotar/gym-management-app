@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Traits\HasReportFilters;
@@ -11,10 +12,9 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class EquipmentUsageReports extends Page implements HasForms, ShareableReport
+class EquipmentUsageReports extends BasePage implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;

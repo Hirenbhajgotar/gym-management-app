@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\Currency;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
+use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Models\User;
 use App\Rules\ValidEmailDomain;
@@ -16,17 +17,15 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Pages\Concerns\HasWizard;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-abstract class BaseEmployeeResource extends Resource
+abstract class BaseEmployeeResource extends BaseResource
 {
     use HasWizard;
 
@@ -35,11 +34,6 @@ abstract class BaseEmployeeResource extends Resource
     protected static ?string $navigationGroup = 'Users';
 
     protected static ?string $tenantOwnershipRelationshipName = 'gyms';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::check() && Auth::user()->hasAnyRole(['gym_owner']);
-    }
 
     /**
      * @return Builder<User>
@@ -53,6 +47,94 @@ abstract class BaseEmployeeResource extends Resource
 
         return $query->role(static::getEmployeeRole())
             ->with(['employeeDetails', 'address']);
+    }
+
+    /**
+     * Determine whether the user can view any models.
+     */
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     */
+    public static function canView(mixed $record): bool
+    {
+        return auth()->user()?->can('view_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     */
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     */
+    public static function canUpdate(mixed $record): bool
+    {
+        return auth()->user()?->can('update_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public static function canDelete(mixed $record): bool
+    {
+        return auth()->user()?->can('delete_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can bulk delete.
+     */
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can permanently delete.
+     */
+    public static function canForceDelete(mixed $record): bool
+    {
+        return auth()->user()?->can('force_delete_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can permanently bulk delete.
+     */
+    public static function canForceDeleteAny(): bool
+    {
+        return auth()->user()?->can('force_delete_any_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can restore.
+     */
+    public static function canRestore(mixed $record): bool
+    {
+        return auth()->user()?->can('restore_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can bulk restore.
+     */
+    public static function canRestoreAny(): bool
+    {
+        return auth()->user()?->can('restore_any_' . static::getPermissionLabel()) ?? false;
+    }
+
+    /**
+     * Determine whether the user can replicate.
+     */
+    public static function canReplicate(mixed $record): bool
+    {
+        return auth()->user()?->can('replicate_' . static::getPermissionLabel()) ?? false;
     }
 
     public static function form(Form $form): Form
@@ -432,6 +514,8 @@ abstract class BaseEmployeeResource extends Resource
     }
 
     // Abstract methods that child classes must implement
+    abstract protected static function getPermissionLabel(): string;
+
     abstract protected static function getEmployeeRole(): string;
 
     abstract protected static function getSalaryPrefix(): string;

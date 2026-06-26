@@ -82,4 +82,13 @@ enum DefaultRole: string implements HasLabel
             self::GYM_MEMBER,
         ];
     }
+
+    public static function getAdminAndOwnerRoles(): array
+    {
+        return [
+            self::SUPER_ADMIN,
+            self::ADMIN,
+            self::GYM_OWNER,
+        ];
+    }
 }

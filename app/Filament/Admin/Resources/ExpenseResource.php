@@ -8,19 +8,19 @@ use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Enums\RecurringFrequency;
 use App\Filament\Admin\Resources\ExpenseResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
-class ExpenseResource extends Resource
+class ExpenseResource extends BaseResource
 {
     protected static ?string $model = Expense::class;
 
@@ -33,6 +33,20 @@ class ExpenseResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+                'reorder',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public static function form(Form $form): Form
     {

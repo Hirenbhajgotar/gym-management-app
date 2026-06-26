@@ -2,16 +2,17 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Resources;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
+use App\Filament\BaseResources\BaseResource;
 use App\Models\ScheduledReport;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class ScheduledReportResource extends Resource
+class ScheduledReportResource extends BaseResource
 {
     protected static ?string $model = ScheduledReport::class;
 
@@ -20,6 +21,19 @@ class ScheduledReportResource extends Resource
     protected static ?string $cluster = Reports::class;
 
     protected static ?int $navigationSort = 10;
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+            ],
+
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public static function form(Form $form): Form
     {

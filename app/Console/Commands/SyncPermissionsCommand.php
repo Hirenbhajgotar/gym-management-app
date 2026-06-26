@@ -61,24 +61,14 @@ class SyncPermissionsCommand extends Command
         // Step 4: Sync other tenant roles (manager, receptionist, trainer)
         $otherRolesStats = $this->syncOtherTenantRoles($gymId, $dryRun, $force);
 
-        // Clear permission cache for affected gyms
+        // Clear permission cache — always flush globally since permission names are unique
+        // and the cache is not team-scoped. The setPermissionsTeamId() approach was removed
+        // because it mutates global state, which is unsafe under concurrent execution
+        // (Octane, queue workers) and leaks team context across requests.
         if (! $dryRun) {
             $registrar = app(PermissionRegistrar::class);
-
-            if ($gymId) {
-                // Clear cache for specific gym only
-                if (method_exists($registrar, 'forgetCachedPermissionsForGym')) {
-                    $registrar->forgetCachedPermissionsForGym($gymId);
-                } else {
-                    setPermissionsTeamId($gymId);
-                    $registrar->forgetCachedPermissions();
-                }
-                $this->info("   🗑️ Cleared permission cache for gym #{$gymId}");
-            } else {
-                // Clear base cache (super_admin uses this)
-                $registrar->forgetCachedPermissions();
-                $this->info('   🗑️ Cleared global permission cache');
-            }
+            $registrar->forgetCachedPermissions();
+            $this->info('   🗑️ Cleared global permission cache');
         }
 
         $this->newLine();
@@ -87,55 +77,18 @@ class SyncPermissionsCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * Create any missing permissions from resource and page definitions.
-     */
     protected function createMissingPermissions(bool $dryRun): int
     {
         $this->info('📋 Checking for missing permissions...');
 
-        // Resource permissions
-        $resources = [
-            'user', 'city', 'state', 'country', 'plan', 'gym_member',
-            'gym', 'membership_plan', 'trainer', 'receptionist', 'manager',
-            'attendance', 'payment', 'permission', 'lead',
-            'expense', 'expense_category', 'expense_budget',
-        ];
+        $guardName = config('filament-permissions.guard_name', 'web');
 
-        $actions = [
-            'view_any', 'view', 'create', 'update', 'delete', 'delete_any',
-            'force_delete', 'force_delete_any', 'restore', 'replicate',
-            'reorder', 'export', 'import', 'approve',
-        ];
+        $discoveredPermissions = $this->rolesService->discoverFilamentPermissions();
 
-        $filamentPermissions = [
-            'access_admin_panel',
-            'view_dashboard', 'page_dashboard', 'page_edit_gym_profile',
-            'page_register_gym', 'page_settings', 'page_reports',
-            'page_analytics', 'page_backup', 'page_system_health',
-            'widget_gym_revenue_chart', 'widget_gym_stats_overview',
-            'widget_membership_expiry_alerts_chart', 'widget_recent_activity',
-            'widget_todays_birthdays', 'widget_trainer_performance',
-            'manage_settings', 'view_analytics', 'export_data', 'import_data',
-            'manage_backups', 'view_system_logs', 'clear_cache', 'run_commands',
-            'send_notifications', 'send_bulk_emails', 'manage_announcements',
-            'bulk_actions', 'advanced_search', 'manage_integrations', 'api_access',
-            'view_financial_reports', 'view_member_reports',
-            'view_trainer_reports', 'view_equipment_reports', 'export_reports',
-        ];
+        $this->info('   🔍 Discovered ' . count($discoveredPermissions) . ' permissions from Filament classes');
 
-        // Build complete permission list
-        $allPermissions = [];
-        foreach ($resources as $resource) {
-            foreach ($actions as $action) {
-                $allPermissions[] = "{$action}_{$resource}";
-            }
-        }
-        $allPermissions = array_merge($allPermissions, $filamentPermissions);
-
-        // Check which permissions are missing
         $existingPermissions = Permission::pluck('name')->toArray();
-        $missingPermissions = array_diff($allPermissions, $existingPermissions);
+        $missingPermissions = array_diff($discoveredPermissions, $existingPermissions);
 
         if (empty($missingPermissions)) {
             $this->info('   ✅ All permissions already exist');
@@ -156,10 +109,9 @@ class SyncPermissionsCommand extends Command
             return count($missingPermissions);
         }
 
-        // Create missing permissions
         $permissionData = array_map(fn ($name) => [
             'name' => $name,
-            'guard_name' => 'web',
+            'guard_name' => $guardName,
             'created_at' => now(),
             'updated_at' => now(),
         ], $missingPermissions);
@@ -291,6 +243,8 @@ class SyncPermissionsCommand extends Command
 
         $stats = ['synced' => 0, 'permissions_added' => 0];
 
+        $discoveredAssignments = $this->rolesService->getDiscoveredDefaultRoleAssignments();
+
         foreach ($rolesToSync as $roleName) {
             $query = Role::where('name', $roleName)->whereNotNull('gym_id');
 
@@ -298,17 +252,11 @@ class SyncPermissionsCommand extends Command
                 $query->where('gym_id', $gymId);
             }
 
-            $roles = $query->get();
+            foreach ($query->cursor() as $role) {
+                $defaultPermissions = $discoveredAssignments[$roleName]
+                    ?? $this->rolesService->getDynamicDefaultPermissions($roleName);
+                $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
 
-            if ($roles->isEmpty()) {
-                continue;
-            }
-
-            // Get default permissions for this role
-            $defaultPermissions = $this->rolesService->getDynamicDefaultPermissions($roleName);
-            $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
-
-            foreach ($roles as $role) {
                 $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
                 $missingPermissionIds = array_diff($permissionIds, $currentPermissionIds);
 
@@ -323,7 +271,6 @@ class SyncPermissionsCommand extends Command
                     continue;
                 }
 
-                // Add only missing permissions (don't remove existing ones)
                 $insertData = array_map(fn ($permissionId) => [
                     'permission_id' => $permissionId,
                     'role_id' => $role->id,

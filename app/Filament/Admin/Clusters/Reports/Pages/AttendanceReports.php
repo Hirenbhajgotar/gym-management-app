@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Clusters\Reports\Pages;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceHeatmapChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\AttendanceTrendChart;
+use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Services\ReportCacheService;
@@ -15,10 +16,9 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 
-class AttendanceReports extends Page implements HasForms, ShareableReport
+class AttendanceReports extends BasePage implements HasForms, ShareableReport
 {
     use HasReportFilters;
     use InteractsWithForms;

@@ -2,6 +2,8 @@
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
+use App\Enums\DefaultRole;
+use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 use App\Models\Permission;
@@ -10,7 +12,6 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TagsColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -18,7 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
 
-class RoleResource extends Resource
+class RoleResource extends BaseResource
 {
     protected static ?string $model = Role::class;
 
@@ -162,6 +163,12 @@ class RoleResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasRole('super_admin');
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 }

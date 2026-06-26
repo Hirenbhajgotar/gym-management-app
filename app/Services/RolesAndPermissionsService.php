@@ -8,6 +8,7 @@ use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
+use App\Traits\DerivesPermissionsSlug;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -17,6 +18,18 @@ class RolesAndPermissionsService
 {
     use DefaultPermissionResourceTrait {
         getDefaultPermissions as traitGetDefaultPermissions;
+    }
+    use DerivesPermissionsSlug;
+
+    protected ?PermissionDiscoveryService $discoveryService = null;
+
+    protected function getDiscoveryService(): PermissionDiscoveryService
+    {
+        if ($this->discoveryService === null) {
+            $this->discoveryService = app(PermissionDiscoveryService::class);
+        }
+
+        return $this->discoveryService;
     }
 
     /**
@@ -28,63 +41,56 @@ class RolesAndPermissionsService
             return;
         }
 
-        // Get all tenant-specific roles
-        $roles = DefaultRole::tenantRoles();
+        $guardName = config('filament-permissions.guard_name', 'web');
 
-        $roleData = array_map(fn ($role) => [
-            'name' => $role->value,
-            'guard_name' => 'web',
-            'gym_id' => $tenant->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ], $roles);
+        DB::transaction(function () use ($tenant, $guardName) {
+            // Get all tenant-specific roles
+            $roles = DefaultRole::tenantRoles();
 
-        // Use bulk insert to minimize DB queries
-        Role::insert($roleData);
+            // Idempotent check: If roles already exist, skip.
+            $existingCount = Role::where('gym_id', $tenant->id)
+                ->whereIn('name', array_column($roles, 'value'))
+                ->count();
 
-        // Fetch the created role IDs mapped by name
-        $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
-            ->where('gym_id', $tenant->id)
-            ->pluck('id', 'name');
-
-        $permissionInsertData = [];
-
-        // Now assign permissions to each role using PermissionSetting or Fallback
-        foreach ($roles as $role) {
-            if (! isset($createdRoles[$role->value])) {
-                continue;
+            if ($existingCount > 0) {
+                return;
             }
 
-            // Set the role context for the trait logic
-            $this->setDefaultRole($role->value);
+            $roleData = array_map(fn ($role) => [
+                'name' => $role->value,
+                'guard_name' => $guardName,
+                'gym_id' => $tenant->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], $roles);
 
-            // Get permissions (checks DB Settings -> fallback to Dynamic Service Logic)
-            $permissionsToAssign = $this->getDefaultPermissions($role->value);
+            // Use bulk insert to minimize DB queries
+            Role::insert($roleData);
 
-            if (! empty($permissionsToAssign)) {
-                // Fetch IDs for these permission names efficiently
-                $permissionIds = Permission::whereIn('name', $permissionsToAssign)->pluck('id');
-                $roleId = $createdRoles[$role->value];
+            // Fetch the created role IDs mapped by name
+            $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+                ->where('gym_id', $tenant->id)
+                ->pluck('id', 'name');
 
-                foreach ($permissionIds as $permissionId) {
-                    $permissionInsertData[] = [
-                        'permission_id' => $permissionId,
-                        'role_id' => $roleId,
-                    ];
+            // Now assign permissions to each role using PermissionSetting or Fallback
+            foreach ($roles as $role) {
+                if (! isset($createdRoles[$role->value])) {
+                    continue;
+                }
+
+                $defaultPermissions = $this->getDiscoveryService()->getDefaultPermissionsForRole($role);
+
+                $roleModel = Role::firstOrCreate(
+                    ['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]
+                );
+
+                if (! empty($defaultPermissions)) {
+                    $roleModel->syncPermissions($defaultPermissions);
                 }
             }
-        }
-
-        if (! empty($permissionInsertData)) {
-            // Bulk insert all permissions
-            // Optimize chunk size if necessary, but for valid roles this is safe enough
-            foreach (array_chunk($permissionInsertData, 1000) as $chunk) {
-                DB::table('role_has_permissions')->insert($chunk);
-            }
-
             // Forget cache only once at the end
             app(PermissionRegistrar::class)->forgetCachedPermissions();
-        }
+        });
     }
 
     /**
@@ -183,9 +189,9 @@ class RolesAndPermissionsService
     protected function getRoleAllowedResourcesList(string $role): array
     {
         return match ($role) {
-            DefaultRole::MANAGER->value => config('default-roles-and-permissions.' . DefaultRole::MANAGER->value),
-            DefaultRole::RECEPTIONIST->value => config('default-roles-and-permissions.' . DefaultRole::RECEPTIONIST->value),
-            DefaultRole::TRAINER->value => config('default-roles-and-permissions.' . DefaultRole::TRAINER->value),
+            DefaultRole::MANAGER->value => (array) config('default-roles-and-permissions.' . DefaultRole::MANAGER->value),
+            DefaultRole::RECEPTIONIST->value => (array) config('default-roles-and-permissions.' . DefaultRole::RECEPTIONIST->value),
+            DefaultRole::TRAINER->value => (array) config('default-roles-and-permissions.' . DefaultRole::TRAINER->value),
             default => [],
         };
     }
@@ -233,6 +239,10 @@ class RolesAndPermissionsService
                 'view_receptionist', 'update_receptionist', // Own profile
                 'send_notifications',
             ]),
+            // Trainers need base panel access plus their resource permissions
+            // (attendance, gym_member from config). They don't get management
+            // widgets or settings — those are manager-only.
+            DefaultRole::TRAINER->value => $common,
             default => [],
         };
     }
@@ -287,6 +297,18 @@ class RolesAndPermissionsService
     /**
      * Assigns a role to a user for a given gym.
      *
+     * When Spatie teams are enabled, assignRole() reads
+     * getPermissionsTeamId() to write the team foreign key (gym_id)
+     * into the model_has_roles pivot. The roles() relationship also
+     * filters by this value. We therefore set the team ID for the
+     * duration of the assignment and restore it afterward.
+     *
+     * This is safe under sequential execution (HTTP requests, queue
+     * workers) because PHP is single-threaded and try/finally
+     * guarantees the restore. Under Laravel Octane, each worker
+     * process has its own static copy, so there is no cross-request
+     * contamination.
+     *
      * @throws \Exception If the role does not exist for the given gym.
      */
     public function assignRoleToTenant(?Gym $tenant, User $user, DefaultRole $roleName): void
@@ -300,22 +322,19 @@ class RolesAndPermissionsService
             ->where('gym_id', $tenant->id)
             ->first();
 
-        if ($role) {
-            $permissionRegistrar = app(PermissionRegistrar::class);
-
-            $permissionRegistrar->forgetCachedPermissions();
-
-            setPermissionsTeamId($tenant->id);
-
-            // Reload user's roles to ensure role checks use the updated team context
-            $user->load('roles');
-
-            // Assign the role to the user
-            $user->assignRole($role);
-
-            // setPermissionsTeamId(Filament::getTenantId());
-        } else {
+        if (! $role) {
             throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
+        }
+
+        // Set the team ID so Spatie writes the correct gym_id to the
+        // pivot and the roles() relationship can see the role.
+        // try/finally guarantees restore even on exceptions.
+        $previousTeamId = getPermissionsTeamId();
+        try {
+            setPermissionsTeamId($tenant->id);
+            $user->assignRole($role);
+        } finally {
+            setPermissionsTeamId($previousTeamId);
         }
     }
 
@@ -331,6 +350,221 @@ class RolesAndPermissionsService
 
     public function getPermissionCategory(string $permissionName): ?string
     {
-        return PermissionCategory::tryFrom($permissionName)->value ?? null;
+        $category = PermissionCategory::tryFrom($permissionName);
+
+        return $category?->value;
+    }
+
+    public function discoverFilamentPermissions(): array
+    {
+        $permissions = [];
+        $panelIds = config('filament-permissions.panels', []);
+        $actions = config('filament-permissions.resource_actions', []);
+
+        foreach (Filament::getPanels() as $id => $panel) {
+            if (! in_array($id, $panelIds, true)) {
+                continue;
+            }
+
+            foreach ($panel->getResources() as $resourceClass) {
+                $reflection = $this->safeReflection($resourceClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                // Derive slug from the MODEL class name, not the Resource class name.
+                // This matches how BasePolicy generates permission names via $tableName.
+                // e.g. WhatsAppTransactionResource → model WhatsAppCreditTransaction → whatsapp_credit_transaction
+                $modelClass = $this->resolveResourceModel($reflection);
+                $prefix = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
+
+                $permissions = array_merge($permissions, $this->generateResourcePermissions($prefix, $actions));
+            }
+
+            foreach ($panel->getPages() as $pageClass) {
+                $reflection = $this->safeReflection($pageClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $permissions[] = $this->derivePageSlug($reflection);
+                // $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
+                // $permissions[] = $this->generatePagePermission($prefix);
+            }
+
+            foreach ($panel->getWidgets() as $widgetClass) {
+                $reflection = $this->safeReflection($widgetClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $permissions[] = $this->deriveWidgetSlug($reflection);
+                // $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
+                // $permissions[] = $this->generateWidgetPermission($prefix);
+            }
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    /**
+     * Collect default role assignments from all discovered Filament classes.
+     *
+     * Scans panels for Resources, Pages, and Widgets implementing HasFilamentPermissions,
+     * calls defaultRolePermissions() on each, and groups permissions by role.
+     *
+     * @return array<string, string[]> role name => permission names
+     */
+    public function getDiscoveredDefaultRoleAssignments(): array
+    {
+        $assignments = [];
+        $panelIds = config('filament-permissions.panels', []);
+        $actions = config('filament-permissions.resource_actions', []);
+        $discoverEnabled = config('filament-permissions.discover_default_roles', true);
+
+        if (! $discoverEnabled) {
+            return $this->getFallbackDefaultRoleAssignments();
+        }
+
+        foreach (Filament::getPanels() as $id => $panel) {
+            if (! in_array($id, $panelIds, true)) {
+                continue;
+            }
+
+            foreach ($panel->getResources() as $resourceClass) {
+                $reflection = $this->safeReflection($resourceClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $modelClass = $this->resolveResourceModel($reflection);
+                $prefix = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    foreach ($actions as $action) {
+                        $assignments[$roleName][] = "{$action}_{$prefix}";
+                    }
+                }
+            }
+
+            foreach ($panel->getPages() as $pageClass) {
+                $reflection = $this->safeReflection($pageClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    if (! empty($actions)) {
+                        $assignments[$roleName][] = "page_{$prefix}";
+                    }
+                }
+            }
+
+            foreach ($panel->getWidgets() as $widgetClass) {
+                $reflection = $this->safeReflection($widgetClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                    continue;
+                }
+
+                $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
+
+                $instance = $reflection->newInstanceWithoutConstructor();
+                $defaultRolePerms = $instance->defaultRolePermissions();
+
+                foreach ($defaultRolePerms as $role => $actions) {
+                    $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
+
+                    if (! empty($actions)) {
+                        $assignments[$roleName][] = "widget_{$prefix}";
+                    }
+                }
+            }
+        }
+
+        foreach ($assignments as $role => $perms) {
+            $assignments[$role] = array_values(array_unique($perms));
+        }
+
+        $fallback = $this->getFallbackDefaultRoleAssignments();
+
+        foreach ($fallback as $role => $resourceSlugs) {
+            if (! isset($assignments[$role])) {
+                $resourceActions = config('filament-permissions.resource_actions', []);
+                $generatedPermissions = [];
+
+                foreach ($resourceSlugs as $slug) {
+                    foreach ($resourceActions as $action) {
+                        $generatedPermissions[] = "{$action}_{$slug}";
+                    }
+                }
+
+                $assignments[$role] = $generatedPermissions;
+            }
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * Get fallback role-to-resource mappings from config.
+     *
+     * @return array<string, string[]>
+     */
+    protected function getFallbackDefaultRoleAssignments(): array
+    {
+        return (array) config('filament-permissions.fallback_default_roles', []);
+    }
+
+    public function generateResourcePermissions(string $prefix, ?array $actions = null): array
+    {
+        $actions ??= config('filament-permissions.resource_actions', []);
+        $guard = config('filament-permissions.guard_name', 'web');
+
+        return array_map(
+            fn (string $action) => "{$action}_{$prefix}",
+            $actions,
+        );
     }
 }

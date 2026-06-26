@@ -165,6 +165,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
 
     public function subscription(): ?Subscription
     {
+        /** @var \App\Models\Subscription|null */
         return $this->activeSubscription()->first();
     }
 
@@ -226,15 +227,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
 
     private function hasActiveTenant(): bool
     {
-        return $this->gyms->isNotEmpty() && $this->status === UserStatus::ACTIVE;
-    }
-
-    /**
-     * Check if user has any of the given roles and is active.
-     */
-    private function hasActiveRole(array $roles): bool
-    {
-        return $this->hasAnyRole($roles) && $this->status === UserStatus::ACTIVE;
+        return $this->gyms()->exists() && $this->status === UserStatus::ACTIVE;
     }
 
     public function getTenants(Panel $panel): array|Collection
@@ -245,7 +238,7 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
     public function canAccessTenant(Model $tenant): bool
     {
         // Check if user is associated with this gym through pivot table
-        return $this->gyms->contains($tenant);
+        return $this->gyms()->where('gym_id', $tenant->id)->exists();
     }
 
     // =========================

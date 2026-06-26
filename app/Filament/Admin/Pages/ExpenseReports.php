@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseMonthlyTrendChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpensePaymentMethodChart;
+use App\Filament\BasePages\BasePage;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use Filament\Actions\Action;
@@ -15,15 +17,12 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ExpenseReports extends Page implements HasForms
+class ExpenseReports extends BasePage implements HasForms
 {
     use InteractsWithForms;
-
-    protected static ?string $navigationIcon = 'phosphor-chart-bar';
 
     protected static ?string $navigationLabel = 'Expense Reports';
 
@@ -32,6 +31,15 @@ class ExpenseReports extends Page implements HasForms
     protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.pages.expense-reports';
+
+    public function defaultRolePermissions(): array
+    {
+        return [
+            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::RECEPTIONIST->value => [],
+            DefaultRole::TRAINER->value => [],
+        ];
+    }
 
     public ?array $filters = [];
 

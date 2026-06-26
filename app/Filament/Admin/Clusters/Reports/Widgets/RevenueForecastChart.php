@@ -2,11 +2,11 @@
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
+use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Services\ForecastService;
 use Filament\Facades\Filament;
-use Filament\Widgets\ChartWidget;
 
-class RevenueForecastChart extends ChartWidget
+class RevenueForecastChart extends BaseChartWidget
 {
     protected static ?string $heading = 'Revenue Forecast (Next 3 Months)';
 

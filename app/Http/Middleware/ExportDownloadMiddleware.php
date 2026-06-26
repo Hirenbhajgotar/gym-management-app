@@ -112,7 +112,6 @@ class ExportDownloadMiddleware
                 'file_name' => $fileName,
                 'disk' => $export->file_disk,
                 'php_user' => get_current_user(),
-                'exec_whoami' => exec('whoami'),
             ]);
 
             // Check if file exists exactly as stored
