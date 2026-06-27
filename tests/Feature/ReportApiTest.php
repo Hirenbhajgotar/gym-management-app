@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Filament\Facades\Filament;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

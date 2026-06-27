@@ -2,21 +2,21 @@
 
 namespace App\Services;
 
-use Illuminate\Database\QueryException;
-use Symfony\Component\Mailer\Exception\TransportException;
-use Illuminate\Queue\MaxAttemptsExceededException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\FilesystemException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Throwable;
 
 class ErrorReportService

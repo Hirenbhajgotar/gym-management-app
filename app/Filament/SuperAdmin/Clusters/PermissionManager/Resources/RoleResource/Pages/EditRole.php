@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 
-use Filament\Actions\ViewAction;
-use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 

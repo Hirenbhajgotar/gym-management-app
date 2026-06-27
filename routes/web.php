@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\SharedReportController;
 use App\Http\Controllers\BiometricConsentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SharedReportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WhatsApp\EmbeddedSignupController;
 use App\Livewire\Frontend\BlogDetail;

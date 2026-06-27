@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\MembershipPlanResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Admin\Resources\MembershipPlanResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditMembershipPlan extends EditRecord

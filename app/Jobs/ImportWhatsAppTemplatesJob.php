@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use Illuminate\Foundation\Queue\Queueable;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -19,6 +18,7 @@ use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -141,6 +141,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     {
         $context = new TwilioContext($this->gymId);
         $templateService = new TwilioTemplateService($context, resolve(WhatsAppTemplateService::class));
+
         return $templateService->getTemplates($this->gymId);
     }
 
@@ -152,6 +153,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         $context = new MetaContext($this->gymId);
         $api = new MetaApiClient($context);
         $templateService = new MetaTemplateService($context, $api);
+
         return $templateService->getTemplates($this->gymId);
     }
 

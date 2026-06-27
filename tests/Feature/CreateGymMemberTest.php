@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Filament\Facades\Filament;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
 use App\Models\Gym;
 use App\Models\MembershipPlan;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;

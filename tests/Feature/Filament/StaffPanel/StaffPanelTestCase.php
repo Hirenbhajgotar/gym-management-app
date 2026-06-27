@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Filament\StaffPanel;
 
-use Spatie\Permission\Contracts\Permission;
 use App\Models\Gym;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;

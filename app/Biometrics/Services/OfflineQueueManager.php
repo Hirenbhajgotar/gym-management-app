@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
-use Illuminate\Support\Facades\Date;
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

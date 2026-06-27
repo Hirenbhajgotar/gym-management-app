@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Notifications\Member;
 
 use App\Enums\NotificationType;
-use Illuminate\Support\Facades\Storage;
-use App\Services\WhatsAppVariableResolver;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Notifications\BaseTenantNotification;
+use App\Services\WhatsAppVariableResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class WelcomeNotification extends BaseTenantNotification
 {

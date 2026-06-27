@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Cache\RedisStore;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * Service to manage report and widget caching.

@@ -152,6 +152,7 @@ class ExportDownloadMiddleware
                     'checked_paths' => $pathsToCheck,
                     'disk_root' => $disk->path(''),
                 ]);
+
                 return false;
             } else {
                 Log::info('ExportDownloadMiddleware: Exact match found');

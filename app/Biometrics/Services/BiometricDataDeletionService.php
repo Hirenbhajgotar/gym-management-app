@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
-use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Models\BiometricConsent;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;

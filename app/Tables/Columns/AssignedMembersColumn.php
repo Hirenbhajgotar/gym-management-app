@@ -4,8 +4,8 @@ namespace App\Tables\Columns;
 
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Database\Eloquent\Collection;
 use Filament\Tables\Columns\Column;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * @mixin Gym

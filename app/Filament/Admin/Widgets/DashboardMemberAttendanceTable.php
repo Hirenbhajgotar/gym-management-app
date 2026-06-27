@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use Illuminate\Support\Facades\Date;
-use Filament\Tables\Actions\Action;
-use App\Models\Gym;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Attendances;
+use App\Models\Gym;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Date;
 
 // use Filament\Widgets\TableWidget as BaseWidget;
 

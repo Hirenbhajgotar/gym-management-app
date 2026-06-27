@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use Carbon\Carbon;
 use App\Models\GymMember;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;

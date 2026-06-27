@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use Illuminate\Foundation\Queue\Queueable;
 use App\Mail\BiometricConsentMail;
 use App\Models\GymMember;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 

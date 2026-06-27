@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use Illuminate\Support\Facades\Date;
-use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class AttendanceTrendChart extends BaseChartWidget
 {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
 
-use Filament\Facades\Filament;
 use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateScheduledReport extends CreateRecord

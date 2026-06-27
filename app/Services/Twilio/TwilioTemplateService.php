@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Twilio;
 
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Database\QueryException;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateMasterSyncResult;
@@ -18,6 +16,8 @@ use App\Services\Support\TemplateVariableHelper;
 use App\Services\Support\WhatsAppTemplateStatusMapper;
 use App\Services\WhatsAppTemplateService as BaseTemplateService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

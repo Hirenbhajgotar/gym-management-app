@@ -2,13 +2,13 @@
 
 namespace App\Livewire\Frontend;
 
-use Illuminate\Validation\ValidationException;
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
 use App\Rules\ValidEmailDomain;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;

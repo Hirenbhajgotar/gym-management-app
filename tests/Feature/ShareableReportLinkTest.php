@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
+use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
 use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
-use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
-use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
 use App\Models\Gym;
 use App\Models\ShareableReportLink;
 use App\Models\User;

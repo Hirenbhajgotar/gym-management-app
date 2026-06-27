@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\BaseWidgets;
 
-use Illuminate\Support\Facades\Date;
 use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Services\AttendanceService;
 use App\Traits\HasTenantAccess;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Date;
 
 abstract class BaseAttendanceStats extends BaseWidget implements HasFilamentPermissions
 {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Notifications\BirthdayNotification;
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
+use App\Notifications\BirthdayNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 

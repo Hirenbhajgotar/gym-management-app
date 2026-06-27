@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-use Illuminate\Support\Facades\Log;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Support\Facades\Log;
 
 enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon, HasLabel
 {

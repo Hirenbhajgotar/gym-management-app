@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Date;
 use App\Enums\AttendanceStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Illuminate\Support\Facades\Date;
 
 class QRAttendanceService
 {

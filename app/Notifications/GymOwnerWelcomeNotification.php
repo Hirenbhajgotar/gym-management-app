@@ -2,7 +2,6 @@
 
 namespace App\Notifications;
 
-use Illuminate\Support\Facades\URL;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -10,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
 {

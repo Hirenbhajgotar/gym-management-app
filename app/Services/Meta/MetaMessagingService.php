@@ -2,9 +2,9 @@
 
 namespace App\Services\Meta;
 
+use App\Interfaces\MessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppPhoneNumber;
-use App\Interfaces\MessagingInterface;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;

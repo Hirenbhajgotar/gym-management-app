@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Permissions;
 
-use Illuminate\Support\Collection;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 

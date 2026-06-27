@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use Filament\Tables\Actions\Action;
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Jobs\SendMembershipExpiryNotificationJob;
+use App\Models\Gym;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 

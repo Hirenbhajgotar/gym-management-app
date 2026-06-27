@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
 
-use Filament\Actions\CreateAction;
-use Illuminate\Support\Facades\Date;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 class ListGymMemberAttendances extends ListRecords
 {

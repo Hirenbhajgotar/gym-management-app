@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
 use App\Enums\PermissionCategory;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Infolists\Components\Fieldset;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;

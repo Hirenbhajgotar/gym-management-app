@@ -18,6 +18,7 @@ class SyncPermissionsCommandTest extends TestCase
         parent::setUp();
         $this->mockConsoleOutput = false;
     }
+
     use RefreshDatabase;
 
     #[Test]

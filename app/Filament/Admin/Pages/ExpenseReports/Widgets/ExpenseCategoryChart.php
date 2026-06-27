@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\ExpenseReports\Widgets;
 
-use App\Models\Gym;
 use App\Enums\ExpenseStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Expense;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Support\RawJs;
 use Livewire\Attributes\Reactive;

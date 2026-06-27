@@ -1,8 +1,8 @@
 <?php
 
+use App\Jobs\ScheduledReportJob;
 use App\Jobs\SubscriptionRenewalJob;
 use App\Models\ScheduledReport;
-use App\Jobs\ScheduledReportJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;

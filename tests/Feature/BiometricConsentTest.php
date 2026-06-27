@@ -2,10 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Http\Requests\BiometricConsentStoreRequest;
-use Illuminate\Support\Facades\Validator;
 use App\Events\BiometricConsentGiven;
 use App\Http\Controllers\BiometricConsentController;
+use App\Http\Requests\BiometricConsentStoreRequest;
 use App\Jobs\SendBiometricConsentEmail;
 use App\Models\BiometricConsent;
 use App\Models\Gym;
@@ -14,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 class BiometricConsentTest extends TestCase

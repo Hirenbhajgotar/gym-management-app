@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Traits\HasTenantAccess;
 use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
 use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
 use App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
 use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\ReportGoalResource\Pages;
 
-use App\Models\Gym;
 use App\Filament\Admin\Resources\ReportGoalResource;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 

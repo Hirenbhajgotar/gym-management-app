@@ -78,6 +78,7 @@ class ExportServiceProvider extends ServiceProvider
                     'file_disk' => $export->file_disk,
                     'checked_paths' => $pathsToCheck,
                 ]);
+
                 return false;
             }
 

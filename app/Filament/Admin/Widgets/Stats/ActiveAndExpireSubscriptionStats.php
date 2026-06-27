@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets\Stats;
 
-use Illuminate\Support\Facades\Date;
-use Illuminate\Contracts\View\View;
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\DashboardCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
 {

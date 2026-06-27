@@ -2,12 +2,12 @@
 
 namespace App\Observers;
 
-use Illuminate\Support\Facades\Log;
 use App\Models\Gym;
 use App\Services\GymSettingService;
 use App\Services\TwilioAccountManager;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class GymObserver
 {

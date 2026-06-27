@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources;
 
-use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\ListTrainerAttendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\CreateTrainerAttendance;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\EditTrainerAttendance;
+use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\ListTrainerAttendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Widgets\TrainerAttendanceStats;
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Filament\BaseResources\BaseAttendanceResource;

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
 use App\Filament\Admin\WhatsAppSetup\Steps\ProviderSelectionStep;
-use App\Filament\Admin\WhatsAppSetup\Steps\TwilioAccountStep;
-use App\Filament\Admin\WhatsAppSetup\Steps\WabaAccountStep;
-use App\Filament\Admin\WhatsAppSetup\Steps\TwilioPhoneNumberStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\TemplatesStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\TwilioAccountStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\TwilioPhoneNumberStep;
+use App\Filament\Admin\WhatsAppSetup\Steps\WabaAccountStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\WelcomeCreditsStep;
 use Filament\Forms\Components\Wizard;
 

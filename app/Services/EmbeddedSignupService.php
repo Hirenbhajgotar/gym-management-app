@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Twilio\Rest\Messaging\V2\ChannelsSenderModels;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
+use Twilio\Rest\Messaging\V2\ChannelsSenderModels;
 
 /**
  * EmbeddedSignupService - Legacy service for WhatsApp embedded signup.

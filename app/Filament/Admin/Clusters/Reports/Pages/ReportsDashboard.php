@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Collection;
 use App\Enums\LeadStatus;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Clusters\Reports;
@@ -24,7 +22,9 @@ use App\Services\InsightsService;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class ReportsDashboard extends BasePage implements ShareableReport
 {

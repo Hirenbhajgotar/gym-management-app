@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\Trainer;
-use App\Models\GymMember;
 use App\Models\Gym;
+use App\Models\GymMember;
+use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

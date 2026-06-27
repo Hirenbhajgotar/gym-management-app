@@ -2,11 +2,11 @@
 
 namespace App\Notifications;
 
-use App\Services\WhatsAppVariableResolver;
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;

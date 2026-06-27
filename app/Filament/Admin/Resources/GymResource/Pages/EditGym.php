@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Admin\Resources\GymResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditGym extends EditRecord

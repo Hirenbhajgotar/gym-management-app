@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
-use Illuminate\Http\Client\ConnectionException;
 use App\Biometrics\DTOs\DoorControlResult;
 use App\Enums\BiometricDoorControlType;
 use App\Events\DoorControllerUnreachable;
@@ -12,6 +11,7 @@ use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\DoorEvent;
 use App\Models\GymMember;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 

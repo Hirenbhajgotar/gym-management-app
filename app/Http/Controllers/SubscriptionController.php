@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -12,6 +11,7 @@ use App\Models\Subscription;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;

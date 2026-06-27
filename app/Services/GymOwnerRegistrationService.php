@@ -4,27 +4,27 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Illuminate\Auth\Events\Registered;
-use App\Enums\SubscriptionStatus;
-use Spatie\Permission\Models\Role;
-use App\Models\Permission;
-use Spatie\Permission\PermissionRegistrar;
-use App\Helpers\FeedbackHelper;
-use Illuminate\Support\Facades\Cache;
-use App\Notifications\UserActionNotification;
-use Filament\Notifications\Notification;
-use Filament\Notifications\Events\DatabaseNotificationsSent;
-use App\Notifications\GymOwnerWelcomeNotification;
 use App\Enums\DefaultRole;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
+use App\Helpers\FeedbackHelper;
 use App\Models\Gym;
 use App\Models\Payment;
+use App\Models\Permission;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Notifications\GymOwnerWelcomeNotification;
+use App\Notifications\UserActionNotification;
 use Exception;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
+use Filament\Notifications\Notification;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Service responsible for handling complete gym owner registration process

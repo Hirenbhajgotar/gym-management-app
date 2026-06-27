@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Actions\Imports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
 use App\Traits\HasTenantAccess;
 use Closure;
 use Filament\Actions\Action;
@@ -17,6 +16,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;

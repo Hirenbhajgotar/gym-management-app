@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 
-use Filament\Actions\DeleteAction;
-use Filament\Actions\Action;
-use App\Jobs\ProcessSocialMediaLead;
-use Filament\Notifications\Notification;
-use App\Models\TenantSocialConfig;
 use App\Filament\Admin\Resources\TenantSocialConfigResource;
+use App\Jobs\ProcessSocialMediaLead;
+use App\Models\TenantSocialConfig;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTenantSocialConfig extends EditRecord

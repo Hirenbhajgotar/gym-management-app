@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\WhatsAppTemplateService;
 use App\Models\WhatsAppTemplate;
+use App\Services\WhatsAppTemplateService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 

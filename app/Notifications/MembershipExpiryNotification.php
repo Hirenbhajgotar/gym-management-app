@@ -2,10 +2,10 @@
 
 namespace App\Notifications;
 
-use App\Services\WhatsAppVariableResolver;
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Services\WhatsAppVariableResolver;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;

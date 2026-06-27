@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 
+use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use Filament\Resources\Pages\EditRecord;
 
 class EditErrorReport extends EditRecord

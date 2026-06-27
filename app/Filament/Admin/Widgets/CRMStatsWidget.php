@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Enums\LeadStatus;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
+use App\Models\Gym;
 use App\Models\Lead;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Actions\Action;
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Expense;
+use App\Models\Gym;
 use Filament\Facades\Filament;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**

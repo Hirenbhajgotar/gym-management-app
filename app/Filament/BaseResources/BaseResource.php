@@ -54,6 +54,7 @@ abstract class BaseResource extends Resource implements HasFilamentPermissions
         if ($tableName !== null) {
             return $tableName;
         }
+
         // Fallback to deriving from model class name.
         return $this->convertFromClassName(class_basename($modelClass));
     }

@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Pages;
 
-use Filament\Tables\Concerns\InteractsWithTable;
-use Illuminate\Database\Eloquent\Builder;
-use App\Models\UserLoginLog;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DatePicker;
-use Illuminate\Support\Facades\Date;
 use App\Filament\BasePages\BasePage;
 use App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets\LoginActivityStatsWidget;
 use App\Models\Gym;
+use App\Models\UserLoginLog;
 use App\Services\LoginActivityService;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 class LoginActivity extends BasePage implements HasTable
 {

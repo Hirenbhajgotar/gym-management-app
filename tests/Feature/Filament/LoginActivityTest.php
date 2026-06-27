@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Services\LoginActivityService;
 use App\Filament\SuperAdmin\Pages\LoginActivity;
 use App\Models\Gym;
 use App\Models\User;
 use App\Models\UserLoginLog;
+use App\Services\LoginActivityService;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;

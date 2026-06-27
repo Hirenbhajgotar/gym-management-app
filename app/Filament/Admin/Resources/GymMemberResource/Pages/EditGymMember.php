@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use App\Filament\Admin\Resources\GymMemberResource\Widgets\MemberProgressChart;
-use App\Models\User;
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\Admin\Resources\GymMemberResource\Widgets\MemberProgressChart;
 use App\Models\GymMember;
+use App\Models\User;
 use App\Notifications\MemberActionNotification;
 use Exception;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Log;
 

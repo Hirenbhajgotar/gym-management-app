@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Models\User;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricDoorControlType;
@@ -15,6 +14,7 @@ use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\EditBiometricDevi
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\ListBiometricDevices;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\BiometricDevice;
+use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Actions\Action as ComponentsActionsAction;
 use Filament\Forms\Components\KeyValue;

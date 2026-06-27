@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Permissions;
 
-use App\Services\PermissionDiscoveryService;
-use Spatie\Permission\Models\Role;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Models\Permission;
+use App\Services\PermissionDiscoveryService;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class AutoDiscoverPermissionsTest extends PermissionsTestCase

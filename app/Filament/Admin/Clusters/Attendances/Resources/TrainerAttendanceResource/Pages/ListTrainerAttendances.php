@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
 
-use Filament\Actions\CreateAction;
-use Illuminate\Support\Facades\Date;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 class ListTrainerAttendances extends ListRecords
 {

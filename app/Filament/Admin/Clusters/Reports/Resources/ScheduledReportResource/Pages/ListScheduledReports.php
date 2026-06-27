@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
 
-use Filament\Actions\CreateAction;
 use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListScheduledReports extends ListRecords

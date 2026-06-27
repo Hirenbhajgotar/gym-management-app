@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;

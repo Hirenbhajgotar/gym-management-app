@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
 
-use Filament\Actions\CreateAction;
 use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListBusinessTypes extends ListRecords

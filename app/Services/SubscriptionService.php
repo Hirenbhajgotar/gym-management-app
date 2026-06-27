@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Date;
 use App\Enums\SubscriptionStatus;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -10,6 +9,7 @@ use App\Models\SubscriptionFeature;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService

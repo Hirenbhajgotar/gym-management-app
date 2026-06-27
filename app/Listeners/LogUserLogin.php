@@ -2,11 +2,11 @@
 
 namespace App\Listeners;
 
-use Filament\Facades\Filament;
-use App\Services\LoginActivityService;
-use Filament\Events\TenantSet;
 use App\Models\User;
 use App\Models\UserLoginLog;
+use App\Services\LoginActivityService;
+use Filament\Events\TenantSet;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;

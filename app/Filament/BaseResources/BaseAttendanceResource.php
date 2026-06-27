@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\BaseResources;
 
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\DeleteBulkAction;
-use App\Models\Gym;
 use App\Enums\AttendanceStatus;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Attendances as ClustersAttendances;
 use App\Models\Attendances;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
@@ -24,6 +21,9 @@ use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;

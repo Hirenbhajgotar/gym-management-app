@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Spatie\Permission\PermissionRegistrar;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\Permission;
@@ -12,6 +11,7 @@ use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase

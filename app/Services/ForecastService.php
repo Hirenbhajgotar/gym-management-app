@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Date;
 use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 class ForecastService
 {

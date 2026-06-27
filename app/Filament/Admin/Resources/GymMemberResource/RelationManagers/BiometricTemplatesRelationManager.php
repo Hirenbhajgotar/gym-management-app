@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
+use App\Enums\BiometricTypeEnum;
+use App\Models\BiometricTemplate;
+use App\Traits\HasTenantAccess;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\CreateAction;
-use App\Enums\BiometricTypeEnum;
-use App\Models\BiometricTemplate;
-use App\Traits\HasTenantAccess;
-use Filament\Facades\Filament;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 

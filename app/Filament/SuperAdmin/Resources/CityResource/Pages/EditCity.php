@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources\CityResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Resources\CityResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditCity extends EditRecord

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Imports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use App\Models\User;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
 use Filament\Actions\Imports\Models\FailedImportRow;
@@ -18,9 +16,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
 
 abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQueue, ToCollection, WithChunkReading, WithHeadingRow

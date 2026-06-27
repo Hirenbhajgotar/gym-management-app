@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Propaganistas\LaravelPhone\PhoneNumber;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
-use Database\Factories\RequestContactFactory;
 use App\Observers\RequestContactObserver;
+use Database\Factories\RequestContactFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 /**
  * @property int $id

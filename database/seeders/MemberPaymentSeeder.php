@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Support\Facades\Date;
 use App\Enums\PaymentStatus;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Date;
 
 class MemberPaymentSeeder extends Seeder
 {

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
-use Filament\Actions\EditAction;
+use App\Filament\Admin\Resources\ReceptionistResource;
 use Filament\Actions\DeleteAction;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Components\Split;
-use Filament\Infolists\Components\ImageEntry;
+use Filament\Actions\EditAction;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\IconEntry;
-use App\Filament\Admin\Resources\ReceptionistResource;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
 

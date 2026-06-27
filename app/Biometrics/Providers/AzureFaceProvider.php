@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Providers;
 
-use Illuminate\Http\Client\PendingRequest;
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class AzureFaceProvider implements BiometricProvider

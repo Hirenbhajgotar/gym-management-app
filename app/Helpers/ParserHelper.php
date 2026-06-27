@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-use Propaganistas\LaravelPhone\PhoneNumber;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class ParserHelper
 {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BiometricEnrollRequest;

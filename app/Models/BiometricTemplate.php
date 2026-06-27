@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use App\Enums\BiometricTypeEnum;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Database\Factories\BiometricTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id

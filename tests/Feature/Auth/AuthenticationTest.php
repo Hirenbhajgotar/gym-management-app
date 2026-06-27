@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
-use Illuminate\Auth\Events\Login;
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Volt\Volt as LivewireVolt;
 use Tests\TestCase;

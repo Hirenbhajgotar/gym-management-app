@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Jobs\SendBroadcastJob;
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppBroadcastStatusEnum;
+use App\Jobs\SendBroadcastJob;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Role;

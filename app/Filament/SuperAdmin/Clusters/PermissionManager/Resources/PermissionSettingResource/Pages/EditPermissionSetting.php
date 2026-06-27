@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPermissionSetting extends EditRecord

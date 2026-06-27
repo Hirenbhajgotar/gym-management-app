@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
-use Illuminate\Foundation\Queue\Queueable;
 use App\Models\GymMember;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
 
 class SendMembershipExpiryNotificationJob implements ShouldQueue
 {

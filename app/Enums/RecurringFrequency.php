@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-use Illuminate\Support\Facades\Date;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Support\Facades\Date;
 
 enum RecurringFrequency: string implements HasLabel
 {

@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Filament\Admin\Resources\ManagerResource\Pages\ListManagers;
-use App\Filament\Admin\Resources\ManagerResource\Pages\CreateManager;
-use App\Filament\Admin\Resources\ManagerResource\Pages\EditManager;
-use App\Filament\Admin\Resources\ManagerResource\Pages\ViewManager;
-use Filament\Tables\Actions\ViewAction;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Actions\Action;
-use Filament\Actions\CreateAction;
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
 use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
+use App\Filament\Admin\Resources\ManagerResource\Pages\CreateManager;
+use App\Filament\Admin\Resources\ManagerResource\Pages\EditManager;
+use App\Filament\Admin\Resources\ManagerResource\Pages\ListManagers;
+use App\Filament\Admin\Resources\ManagerResource\Pages\ViewManager;
 use App\Filament\Exports\ManagerExporter;
 use App\Imports\ManagersImport;
 use App\Models\User;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Illuminate\Database\Eloquent\Builder;
 
 class ManagerResource extends BaseEmployeeResource

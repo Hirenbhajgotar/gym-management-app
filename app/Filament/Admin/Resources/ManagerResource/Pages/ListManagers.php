@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
-use App\Models\User;
 use App\Filament\Admin\Resources\ManagerResource;
+use App\Models\User;
 use Filament\Resources\Pages\ListRecords;
 
 class ListManagers extends ListRecords

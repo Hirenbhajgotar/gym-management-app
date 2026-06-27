@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use Illuminate\Support\Facades\Date;
-use App\Services\SubscriptionService;
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
 use App\Notifications\PlanExpiryNotification;
 use App\Notifications\SubscriptionExpired;
 use App\Notifications\TrialEndingNotification;
+use App\Services\SubscriptionService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Date;
 
 class SendSubscriptionExpiryAlerts extends Command
 {

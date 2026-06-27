@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Illuminate\Database\QueryException;
 use App\Events\BiometricConsentGiven;
 use App\Http\Requests\BiometricConsentStoreRequest;
 use App\Models\BiometricConsent;
 use App\Models\GymMember;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 

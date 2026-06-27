@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\PermissionSetting;
 use App\Models\User;
@@ -10,6 +9,7 @@ use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class ImportDefaultPermissionsJobTest extends TestCase
 {
@@ -46,7 +46,7 @@ class ImportDefaultPermissionsJobTest extends TestCase
         // Mock auth to return a user ID
         $this->actingAs($this->createUser());
 
-        $job = new ImportDefaultPermissionsJob();
+        $job = new ImportDefaultPermissionsJob;
 
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }

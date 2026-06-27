@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
-use Illuminate\Support\Facades\Date;
-use App\Models\Attendances;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\AttendanceStatus;
+use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
+use Illuminate\Support\Facades\Date;
 
 class OfflineSyncService
 {

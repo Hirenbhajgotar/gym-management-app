@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\BiometricDevice;
 
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use App\Enums\BiometricTypeEnum;
 use App\Filament\BasePages\BasePage;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;

@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources\UserResource\Pages;
 
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Password;
-use App\Notifications\GymOwnerWelcomeNotification;
-use Spatie\Permission\Models\Role;
-use App\Models\Permission;
-use Spatie\Permission\PermissionRegistrar;
 use App\Enums\DefaultRole;
 use App\Filament\SuperAdmin\Resources\UserResource;
 use App\Helpers\FeedbackHelper;
 use App\Models\Gym;
+use App\Models\Permission;
 use App\Models\User;
+use App\Notifications\GymOwnerWelcomeNotification;
 use App\Notifications\UserActionNotification;
 use App\Services\RolesAndPermissionsService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class CreateUser extends CreateRecord
 {

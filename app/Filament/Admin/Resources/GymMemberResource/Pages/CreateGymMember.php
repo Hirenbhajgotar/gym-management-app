@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
-use Filament\Forms\Components\Select;
-use App\Models\GymMember;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
+use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;

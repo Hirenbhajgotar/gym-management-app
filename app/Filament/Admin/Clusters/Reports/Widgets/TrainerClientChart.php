@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;

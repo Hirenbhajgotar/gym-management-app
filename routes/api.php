@@ -1,8 +1,5 @@
 <?php
 
-use App\Models\Gym;
-use App\Models\Lead;
-use App\Models\TenantSocialConfig;
 use App\Http\Controllers\Api\BiometricCheckInController;
 use App\Http\Controllers\Api\BiometricDeviceController;
 use App\Http\Controllers\Api\BiometricEnrollController;
@@ -18,6 +15,9 @@ use App\Http\Controllers\Api\WhatsAppLeadController;
 use App\Http\Controllers\Api\WhatsAppTemplateWebhookController;
 use App\Http\Controllers\ReportApiController;
 use App\Http\Middleware\AuthenticateBiometricDevice;
+use App\Models\Gym;
+use App\Models\Lead;
+use App\Models\TenantSocialConfig;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;

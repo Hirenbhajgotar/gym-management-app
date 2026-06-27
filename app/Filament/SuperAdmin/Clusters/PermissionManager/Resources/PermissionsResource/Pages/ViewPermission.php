@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
 
-use Filament\Actions\EditAction;
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource;
+use Filament\Actions\EditAction;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;

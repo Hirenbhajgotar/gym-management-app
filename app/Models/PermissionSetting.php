@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
-use Database\Factories\PermissionSettingFactory;
-use Illuminate\Database\Eloquent\Builder;
 use App\Casts\DefaultResourcesCast;
 use App\Enums\DefaultRole;
+use Database\Factories\PermissionSettingFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @deprecated No longer used by the permission management UI. The UI now auto-discovers

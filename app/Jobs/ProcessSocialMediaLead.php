@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use Illuminate\Foundation\Queue\Queueable;
 use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Services\FacebookLeadProcessor;
@@ -14,6 +13,7 @@ use App\Services\JustDialLeadProcessor;
 use App\Services\SocialMediaLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 

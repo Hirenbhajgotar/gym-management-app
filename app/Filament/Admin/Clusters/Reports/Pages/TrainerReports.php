@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
-use Filament\Facades\Filament;
-use App\Models\Gym;
 use App\Enums\DefaultRole;
 use App\Exports\TrainerReportExport;
 use App\Filament\Admin\Clusters\Reports;
@@ -13,11 +11,13 @@ use App\Filament\Admin\Clusters\Reports\Widgets\TrainerClientChart;
 use App\Filament\Admin\Clusters\Reports\Widgets\TrainerUtilizationWidget;
 use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
 
 class TrainerReports extends BasePage implements ShareableReport

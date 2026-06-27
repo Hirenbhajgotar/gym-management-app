@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 
-use Filament\Actions\CreateAction;
 use App\Filament\Admin\Resources\TenantSocialConfigResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListTenantSocialConfigs extends ListRecords

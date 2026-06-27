@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Services\SubscriptionService;
-use App\Services\RazorpayService;
 use App\Jobs\SubscriptionRenewalJob;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\RazorpayService;
+use App\Services\SubscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -20,7 +20,7 @@ class SubscriptionRenewalJobTest extends TestCase
         Queue::fake();
 
         // Dispatch the job
-        dispatch(new SubscriptionRenewalJob());
+        dispatch(new SubscriptionRenewalJob);
 
         // Assert that the job was pushed to the queue
         Queue::assertPushed(SubscriptionRenewalJob::class);

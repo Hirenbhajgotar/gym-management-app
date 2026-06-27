@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\PermissionCategory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Spatie\Permission\Models\Role;
-use Illuminate\Database\Eloquent\Builder;
-use App\Enums\PermissionCategory;
 use Spatie\Permission\Models\Permission as ModelsPermission;
+use Spatie\Permission\Models\Role;
 
 /**
  * @property int $id
@@ -48,6 +48,7 @@ use Spatie\Permission\Models\Permission as ModelsPermission;
 class Permission extends ModelsPermission
 {
     use HasFactory;
+
     /**
      * Get the attributes that should be cast.
      *

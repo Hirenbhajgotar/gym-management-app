@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Attendances\Resources;
 
-use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\ListGymMemberAttendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\CreateGymMemberAttendance;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\EditGymMemberAttendance;
+use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages\ListGymMemberAttendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Widgets\MemberAttendanceStats;
 use App\Filament\BaseResources\BaseAttendanceResource;
 use App\Models\GymMember;

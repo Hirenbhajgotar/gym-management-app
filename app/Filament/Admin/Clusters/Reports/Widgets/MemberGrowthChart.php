@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
-use Illuminate\Support\Facades\Date;
-use App\Models\Gym;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class MemberGrowthChart extends BaseChartWidget
 {

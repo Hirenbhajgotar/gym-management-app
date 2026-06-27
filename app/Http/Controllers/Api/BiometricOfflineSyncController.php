@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\BiometricDevice;
 use App\Biometrics\Services\OfflineSyncService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OfflineSyncRequest;
+use App\Models\BiometricDevice;
 use Illuminate\Http\JsonResponse;
 
 class BiometricOfflineSyncController extends Controller

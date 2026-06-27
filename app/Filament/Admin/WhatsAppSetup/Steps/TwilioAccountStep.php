@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
-use Filament\Notifications\Notification;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Actions\ProcessTwilioAccountAction;
 use Filament\Forms\Components\Grid;
@@ -12,6 +11,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard\Step;
+use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 
 class TwilioAccountStep
