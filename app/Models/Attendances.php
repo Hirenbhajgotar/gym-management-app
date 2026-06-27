@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use App\Enums\AttendanceStatus;
 use App\Enums\BiometricTypeEnum;
 use App\Observers\AttendanceObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Attendances extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'attendanceable_id',
         'attendanceable_type',
@@ -117,18 +118,21 @@ class Attendances extends Model
         'door_unlocked_at',
     ];
 
-    protected $casts = [
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
-        'status' => AttendanceStatus::class,
-        'confidence_score' => 'float',
-        'liveness_score' => 'float',
-        'fusion_score' => 'float',
-        'synced_at' => 'datetime',
-        'biometric_type' => BiometricTypeEnum::class,
-        // Door control casts
-        'door_unlocked_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'check_in_time' => 'datetime',
+            'check_out_time' => 'datetime',
+            'status' => AttendanceStatus::class,
+            'confidence_score' => 'float',
+            'liveness_score' => 'float',
+            'fusion_score' => 'float',
+            'synced_at' => 'datetime',
+            'biometric_type' => BiometricTypeEnum::class,
+            // Door control casts
+            'door_unlocked_at' => 'datetime',
+        ];
+    }
 
     public function attendanceable(): MorphTo
     {

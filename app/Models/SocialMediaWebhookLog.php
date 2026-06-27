@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -69,16 +69,20 @@ class SocialMediaWebhookLog extends Model
     /**
      * The attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'payload' => 'array',
-        'response' => 'array',
-        'processed_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'response' => 'array',
+            'processed_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the social media configuration that owns this log.
+     *
      * @return BelongsTo<TenantSocialConfig, $this>
      */
     public function socialConfig(): BelongsTo

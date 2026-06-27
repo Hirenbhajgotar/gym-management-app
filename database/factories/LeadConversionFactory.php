@@ -32,8 +32,8 @@ class LeadConversionFactory extends Factory
 
                 return MembershipPlan::factory()->create(['gym_id' => $gym->id])->id;
             },
-            'conversion_date' => $this->faker->dateTimeBetween('-1 month', 'now'),
-            'notes' => $this->faker->optional()->sentence(),
+            'conversion_date' => fake()->dateTimeBetween('-1 month', 'now'),
+            'notes' => fake()->optional()->sentence(),
         ];
     }
 }

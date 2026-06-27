@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Database\Factories\TrainerFactory;
 use App\Observers\TrainerObserver;
+use Database\Factories\TrainerFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -86,11 +87,14 @@ class Trainer extends Model
         'profile_photo',
     ];
 
-    protected $casts = [
-        'is_available' => 'boolean',
-        'basic_salary' => 'decimal:2',
-        'pt_salary_per_member' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_available' => 'boolean',
+            'basic_salary' => 'decimal:2',
+            'pt_salary_per_member' => 'decimal:2',
+        ];
+    }
 
     /**
      * @return BelongsTo<Gym, $this>
@@ -113,11 +117,13 @@ class Trainer extends Model
         return $query->where('is_available', 1);
     }
 
-    protected function getTotalEarningsAttribute(): float
+    protected function totalEarnings(): Attribute
     {
-        $assignedMembersCount = $this->members()->count();
+        return Attribute::make(get: function () {
+            $assignedMembersCount = $this->members()->count();
 
-        return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
+            return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
+        });
     }
 
     /**

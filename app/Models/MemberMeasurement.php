@@ -52,12 +52,15 @@ class MemberMeasurement extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'weight' => 'decimal:2',
-        'height' => 'decimal:2',
-        'bmi' => 'decimal:2',
-        'measured_at' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'decimal:2',
+            'height' => 'decimal:2',
+            'bmi' => 'decimal:2',
+            'measured_at' => 'date',
+        ];
+    }
 
     protected static function booted()
     {

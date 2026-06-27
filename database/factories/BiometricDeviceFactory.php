@@ -23,9 +23,9 @@ class BiometricDeviceFactory extends Factory
 
         return [
             'gym_id' => Gym::factory(),
-            'device_name' => $this->faker->word() . ' Device',
+            'device_name' => fake()->word() . ' Device',
             'device_type' => BiometricTypeEnum::Face->value,
-            'provider_type' => $this->faker->randomElement(['rekognition', 'azure_face', 'bioid', 'on_premise', 'custom']),
+            'provider_type' => fake()->randomElement(['rekognition', 'azure_face', 'bioid', 'on_premise', 'custom']),
             'provider_config' => json_encode(['threshold' => 0.8]),
             'status' => BiometricDeviceStatusEnum::Active,
             'device_token' => Hash::make($plainToken),

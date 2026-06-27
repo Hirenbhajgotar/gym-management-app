@@ -15,9 +15,9 @@ class CountryFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->country(),
-            'code' => $this->faker->unique()->countryCode(),
-            'status' => $this->faker->boolean(90), // 90% chance of being active (1)
+            'name' => fake()->country(),
+            'code' => fake()->unique()->countryCode(),
+            'status' => fake()->boolean(90), // 90% chance of being active (1)
             'created_at' => now(),
             'updated_at' => now(),
         ];

@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Spatie\Activitylog\Models\Activity;
-use Illuminate\Database\Eloquent\Builder;
-use Database\Factories\ExpenseCategoryFactory;
 use App\Enums\FilamentColor;
 use App\Observers\ExpenseCategoryObserver;
+use Database\Factories\ExpenseCategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
@@ -235,14 +235,10 @@ class ExpenseCategory extends Model implements Sortable
         );
     }
 
-    // ========================================
-    // Accessors & Helpers
-    // ========================================
-
     /**
      * Get the full hierarchical path of the category
      */
-    protected function getFullPathAttribute(): Attribute
+    protected function fullPath(): Attribute
     {
         return Attribute::make(
             get: fn () => $this->parent ? $this->parent->full_path . ' > ' . $this->name : $this->name,

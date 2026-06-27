@@ -4,7 +4,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Date;
 use App\Enums\AttendanceStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Attendances;
@@ -13,6 +12,7 @@ use App\Models\Trainer;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 class AttendanceService
 {

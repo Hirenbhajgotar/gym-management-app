@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -64,12 +64,15 @@ class ScheduledReport extends Model
         'is_active',
     ];
 
-    protected $casts = [
-        'recipients' => 'array',
-        'filters' => 'array',
-        'last_run_at' => 'datetime',
-        'is_active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'recipients' => 'array',
+            'filters' => 'array',
+            'last_run_at' => 'datetime',
+            'is_active' => 'boolean',
+        ];
+    }
 
     /**
      * @return BelongsTo<Gym, $this>

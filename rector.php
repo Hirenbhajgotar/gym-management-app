@@ -6,6 +6,7 @@ use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
 use RectorLaravel\Rector\Empty_\EmptyToBlankAndFilledFuncRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
+use RectorLaravel\Set\LaravelLevelSetList;
 use RectorLaravel\Set\LaravelSetList;
 use RectorLaravel\Set\LaravelSetProvider;
 
@@ -33,8 +34,9 @@ return RectorConfig::configure()
         // LaravelSetList::LARAVEL_CONTAINER_STRING_TO_FULLY_QUALIFIED_NAME,
         LaravelSetList::LARAVEL_ELOQUENT_MAGIC_METHOD_TO_QUERY_BUILDER,
         // LaravelSetList::LARAVEL_FACADE_ALIASES_TO_FULL_NAMES,
-        // LaravelSetList::LARAVEL_LEGACY_FACTORIES_TO_CLASSES,
+        LaravelSetList::LARAVEL_LEGACY_FACTORIES_TO_CLASSES,
         // LaravelSetList::LARAVEL_STATIC_TO_INJECTION,
+        LaravelLevelSetList::UP_TO_LARAVEL_120,
     ])
     ->withConfiguredRule(RemoveDumpDataDeadCodeRector::class, [
         'dd',

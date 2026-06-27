@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use Illuminate\Foundation\Queue\Queueable;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -16,12 +17,8 @@ use App\Services\Support\TemplateVariableHelper;
 use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsAppTemplateService;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -36,10 +33,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The number of times the job may be attempted.

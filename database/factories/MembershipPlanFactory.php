@@ -16,11 +16,11 @@ class MembershipPlanFactory extends Factory
     {
         return [
             'gym_id' => null, // Will be set in the seeder
-            'name' => $this->faker->word() . ' Plan',
-            'description' => $this->faker->sentence(),
-            'price' => $this->faker->randomFloat(4, 3000, 10000),
-            'duration' => $this->faker->randomElement([3, 6, 12, 15]), // Duration in months
-            'currency' => $this->faker->randomElement(['INR', 'USD']),
+            'name' => fake()->word() . ' Plan',
+            'description' => fake()->sentence(),
+            'price' => fake()->randomFloat(4, 3000, 10000),
+            'duration' => fake()->randomElement([3, 6, 12, 15]), // Duration in months
+            'currency' => fake()->randomElement(['INR', 'USD']),
             'is_active' => true,
         ];
     }

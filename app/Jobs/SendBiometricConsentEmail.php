@@ -2,22 +2,16 @@
 
 namespace App\Jobs;
 
+use Illuminate\Foundation\Queue\Queueable;
 use App\Mail\BiometricConsentMail;
 use App\Models\GymMember;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
 class SendBiometricConsentEmail implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     public int $tries = 3;
 

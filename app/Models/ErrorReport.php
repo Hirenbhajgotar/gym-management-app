@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Observers\ErrorReportObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -95,14 +95,17 @@ class ErrorReport extends Model
         'last_occurrence',
     ];
 
-    protected $casts = [
-        'context' => 'array',
-        'occurred_at' => 'datetime',
-        'last_occurrence' => 'datetime',
-        'status' => ErrorStatus::class,
-        'priority' => ErrorPriority::class,
-        'category' => ErrorCategory::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'context' => 'array',
+            'occurred_at' => 'datetime',
+            'last_occurrence' => 'datetime',
+            'status' => ErrorStatus::class,
+            'priority' => ErrorPriority::class,
+            'category' => ErrorCategory::class,
+        ];
+    }
 
     /**
      * @return BelongsTo<User, $this>

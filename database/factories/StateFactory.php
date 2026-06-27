@@ -54,8 +54,8 @@ class StateFactory extends Factory
     {
         return [
             'country_id' => Country::factory(),
-            'name' => $this->faker->state(),
-            'status' => $this->faker->boolean(90), // 90% chance of being active (1)
+            'name' => fake()->state(),
+            'status' => fake()->boolean(90), // 90% chance of being active (1)
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -69,7 +69,7 @@ class StateFactory extends Factory
         return $this->state(function () use ($countryId, $states) {
             return [
                 'country_id' => $countryId,
-                'name' => $this->faker->randomElement($states) ?? $this->faker->state(),
+                'name' => fake()->randomElement($states) ?? fake()->state(),
                 'status' => 1,
             ];
         });

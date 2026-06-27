@@ -16,9 +16,9 @@ class PermissionSettingFactory extends Factory
     public function definition(): array
     {
         return [
-            'role' => $this->faker->word(),
-            'default_resources' => $this->faker->word(),
-            'default_permissions' => $this->faker->words(),
+            'role' => fake()->word(),
+            'default_resources' => fake()->word(),
+            'default_permissions' => fake()->words(),
             'created_at' => Date::now(),
             'updated_at' => Date::now(),
         ];

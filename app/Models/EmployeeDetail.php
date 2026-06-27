@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use App\Enums\GenderEnum;
 use App\Enums\MaritalStatusEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -57,6 +57,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EmployeeDetail extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'date_of_birth',
@@ -74,11 +75,14 @@ class EmployeeDetail extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'skills' => 'array',
-        'gender' => GenderEnum::class,
-        'marital_status' => MaritalStatusEnum::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'skills' => 'array',
+            'gender' => GenderEnum::class,
+            'marital_status' => MaritalStatusEnum::class,
+        ];
+    }
 
     /**
      * @return BelongsTo<User, $this>

@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Builder;
 use App\Enums\SocialPlatform;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -111,12 +111,15 @@ class TenantSocialConfig extends Model
         'rate_limit',
     ];
 
-    protected $casts = [
-        'additional_config' => 'array',
-        'is_active' => 'boolean',
-        'token_expires_at' => 'datetime',
-        'platform' => SocialPlatform::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'additional_config' => 'array',
+            'is_active' => 'boolean',
+            'token_expires_at' => 'datetime',
+            'platform' => SocialPlatform::class,
+        ];
+    }
 
     // Encrypt sensitive data
     protected function accessToken(): Attribute
@@ -150,6 +153,7 @@ class TenantSocialConfig extends Model
 
     /**
      * Get the webhook logs for this social media configuration.
+     *
      * @return HasMany<SocialMediaWebhookLog, $this>
      */
     public function webhookLogs(): HasMany
@@ -172,17 +176,18 @@ class TenantSocialConfig extends Model
         return $this->token_expires_at && $this->token_expires_at->isPast();
     }
 
-    protected function getMaskedTokenAttribute()
+    protected function maskedToken(): Attribute
     {
-        if (! $this->access_token) {
-            return null;
-        }
+        return Attribute::make(get: function () {
+            if (! $this->access_token) {
+                return null;
+            }
+            $token = $this->access_token;
+            if (strlen($token) > 10) {
+                return substr($token, 0, 6) . '...' . substr($token, -4);
+            }
 
-        $token = $this->access_token;
-        if (strlen($token) > 10) {
-            return substr($token, 0, 6) . '...' . substr($token, -4);
-        }
-
-        return '***';
+            return '***';
+        });
     }
 }

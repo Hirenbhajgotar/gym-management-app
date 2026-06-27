@@ -28,10 +28,10 @@ class FollowUpFactory extends Factory
             'lead_id' => Lead::factory(),
             'gym_id' => Gym::factory(),
             'user_id' => User::factory(),
-            'type' => $this->faker->randomElement(InteractionType::cases()),
-            'scheduled_date' => $this->faker->dateTimeBetween('-1 month', 'now'),
-            'status' => $this->faker->randomElement(FollowUpStatus::cases()),
-            'notes' => $this->faker->optional()->sentence(),
+            'type' => fake()->randomElement(InteractionType::cases()),
+            'scheduled_date' => fake()->dateTimeBetween('-1 month', 'now'),
+            'status' => fake()->randomElement(FollowUpStatus::cases()),
+            'notes' => fake()->optional()->sentence(),
         ];
     }
 }

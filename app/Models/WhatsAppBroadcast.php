@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
@@ -201,19 +202,19 @@ class WhatsAppBroadcast extends Model
     /**
      * @return array{total: int, pending: int, failed: int, progress: int}|null
      */
-    protected function getProgressAttribute(): ?array
+    protected function progress(): Attribute
     {
-        $batch = $this->batch();
-
-        if (! $batch) {
-            return null;
-        }
-
-        return [
-            'total' => $batch->totalJobs,
-            'pending' => $batch->pendingJobs,
-            'failed' => $batch->failedJobs,
-            'progress' => $batch->progress(),
-        ];
+        return Attribute::make(get: function () {
+            $batch = $this->batch();
+            if (! $batch) {
+                return null;
+            }
+            return [
+                'total' => $batch->totalJobs,
+                'pending' => $batch->pendingJobs,
+                'failed' => $batch->failedJobs,
+                'progress' => $batch->progress(),
+            ];
+        });
     }
 }

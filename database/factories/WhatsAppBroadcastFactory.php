@@ -22,8 +22,8 @@ class WhatsAppBroadcastFactory extends Factory
         return [
             'gym_id' => Gym::factory(),
             'whatsapp_template_id' => WhatsAppTemplate::factory(),
-            'title' => $this->faker->sentence(4),
-            'description' => $this->faker->paragraph(),
+            'title' => fake()->sentence(4),
+            'description' => fake()->paragraph(),
             'target_filters' => null,
             'target_count' => 0,
             'status' => WhatsAppBroadcastStatusEnum::DRAFT,

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use Illuminate\Foundation\Queue\Queueable;
 use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Services\FacebookLeadProcessor;
@@ -10,17 +11,13 @@ use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\SocialMediaLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ProcessSocialMediaLead implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     /**
      * The number of times the job may be attempted.

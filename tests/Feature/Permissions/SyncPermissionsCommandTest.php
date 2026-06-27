@@ -13,6 +13,11 @@ use Tests\TestCase;
 
 class SyncPermissionsCommandTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mockConsoleOutput = false;
+    }
     use RefreshDatabase;
 
     #[Test]

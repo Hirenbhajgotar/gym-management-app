@@ -15,16 +15,16 @@ class GymMemberFactory extends Factory
 
     public function definition(): array
     {
-        $membershipStart = $this->faker->dateTimeBetween('-1 year', 'now');
+        $membershipStart = fake()->dateTimeBetween('-1 year', 'now');
 
         return [
             'gym_id' => Gym::factory(),
-            'name' => $this->faker->name(),
-            'profile_photo' => $this->faker->imageUrl(200, 200, 'people'),
-            'email' => $this->faker->unique()->safeEmail(),
-            'phone' => $this->faker->phoneNumber(),
+            'name' => fake()->name(),
+            'profile_photo' => fake()->imageUrl(200, 200, 'people'),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->phoneNumber(),
             'age' => rand(18, 60),
-            'dob' => $this->faker->dateTimeBetween('-60 years', '-18 years'),
+            'dob' => fake()->dateTimeBetween('-60 years', '-18 years'),
             'membership_start' => $membershipStart,
             'membership_end' => null, // Will be calculated by the model
             'gym_membership_plan_id' => null, // Will be set in the seeder

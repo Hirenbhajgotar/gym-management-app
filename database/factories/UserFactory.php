@@ -17,8 +17,8 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(),
-            'email' => $this->faker->unique()->safeEmail(),
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
             'password' => Hash::make('password'),
             'status' => UserStatus::ACTIVE,
             'is_active' => true, // Explicitly keeping it true as well, though observer would sync it.

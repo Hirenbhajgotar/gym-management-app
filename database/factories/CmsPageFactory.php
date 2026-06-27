@@ -18,15 +18,15 @@ class CmsPageFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->sentence();
+        $title = fake()->sentence();
 
         return [
             'title' => $title,
             'slug' => Str::slug($title),
-            'content' => $this->faker->paragraphs(3, true),
-            'is_published' => $this->faker->boolean(),
-            'meta_title' => $this->faker->sentence(),
-            'meta_description' => $this->faker->text(160),
+            'content' => fake()->paragraphs(3, true),
+            'is_published' => fake()->boolean(),
+            'meta_title' => fake()->sentence(),
+            'meta_description' => fake()->text(160),
         ];
     }
 }
