@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\TenantSocialConfigResource\RelationManagers;
 
 use Filament\Forms\Components\Section;

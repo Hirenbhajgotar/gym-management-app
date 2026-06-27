@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
+use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 use RectorLaravel\Rector\Empty_\EmptyToBlankAndFilledFuncRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use RectorLaravel\Set\LaravelLevelSetList;
@@ -45,5 +46,6 @@ return RectorConfig::configure()
     ])
     ->withRules([
         EmptyToBlankAndFilledFuncRector::class,
+        DeclareStrictTypesRector::class,
     ])
     ->withImportNames(importDocBlockNames: true, importShortClasses: false, removeUnusedImports: true);

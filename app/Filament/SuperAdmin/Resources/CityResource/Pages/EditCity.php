@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\CityResource\Pages;
 
 use Filament\Actions\DeleteAction;

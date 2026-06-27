@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\GymResource\Pages;
 
 use Filament\Actions\CreateAction;

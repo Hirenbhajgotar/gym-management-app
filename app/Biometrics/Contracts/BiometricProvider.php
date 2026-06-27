@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Contracts;
 
 use App\Biometrics\DTOs\BiometricSample;

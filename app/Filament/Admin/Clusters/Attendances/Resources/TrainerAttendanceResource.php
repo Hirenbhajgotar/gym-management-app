@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Attendances\Resources;
 
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\ListTrainerAttendances;

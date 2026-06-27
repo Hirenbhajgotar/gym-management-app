@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
 use App\Filament\Admin\WhatsAppSetup\Steps\ProviderSelectionStep;

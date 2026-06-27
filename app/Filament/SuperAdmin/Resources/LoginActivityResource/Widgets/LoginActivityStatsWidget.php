@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets;
 
 use App\Services\LoginActivityService;
