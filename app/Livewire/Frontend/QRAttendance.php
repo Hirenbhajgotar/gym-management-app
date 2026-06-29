@@ -11,6 +11,7 @@ use App\Models\GymMember;
 use App\Services\ErrorReportService;
 use App\Services\OtpService;
 use App\Services\QRAttendanceService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
@@ -235,7 +236,7 @@ class QRAttendance extends Component
                     $this->checkInWithoutOtp();
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance (sendOtp) exception', [
                 'gym_id' => $this->gym->id,
                 'member_id' => $this->member->id,
@@ -336,7 +337,7 @@ class QRAttendance extends Component
                 'gym_id' => $this->gym->id,
                 'member_id' => $this->member->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance (verifyOtp) exception', [
                 'gym_id' => $this->gym->id,
                 'member_id' => $this->member->id,
@@ -384,7 +385,7 @@ class QRAttendance extends Component
 
             $this->result = $result;
             $this->showResult = true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance Check-in (without OTP) exception', [
                 'gym_id' => $this->gym?->id,
                 'member_id' => $this->member?->id,
@@ -431,7 +432,7 @@ class QRAttendance extends Component
 
             $this->result = $result;
             $this->showResult = true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance Check-out (without OTP) exception', [
                 'gym_id' => $this->gym?->id,
                 'member_id' => $this->member?->id,

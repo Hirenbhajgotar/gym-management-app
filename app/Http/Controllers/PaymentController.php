@@ -17,6 +17,7 @@ use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
 use App\Services\WhatsAppBillingService;
 use App\Traits\HasTenantAccess;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +82,7 @@ class PaymentController extends Controller
                 'success' => true,
                 'data' => $orderData,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create payment order', [
                 'error' => $e->getMessage(),
                 'package_id' => $request->package_id,
@@ -141,7 +142,7 @@ class PaymentController extends Controller
                 'payment_id' => $verifiedPayment->razorpay_payment_id,
                 // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Payment verification failed', [
@@ -212,7 +213,7 @@ class PaymentController extends Controller
             }
 
             return response()->json(['status' => 'ok']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook processing failed', [
                 'error' => $e->getMessage(),
                 'payload' => $request->all(),
@@ -331,7 +332,7 @@ class PaymentController extends Controller
 
             // Generate invoice
             dispatch(new GenerateInvoiceJob($payment));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::error('Failed to process subscription payment', [
                 'payment_id' => $payment->id,
@@ -409,7 +410,7 @@ class PaymentController extends Controller
                     'error' => $result['error'] ?? 'Unknown error',
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Exception processing WhatsApp package purchase', [
                 'payment_id' => $payment->id,
                 'package_id' => $packageId,

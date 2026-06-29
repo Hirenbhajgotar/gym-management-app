@@ -15,8 +15,10 @@ use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
 use App\Filament\Admin\Clusters\Reports\Pages\TrainerReports;
 use App\Models\ScheduledReport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ReportPdfGenerator
 {
@@ -34,8 +36,8 @@ class ReportPdfGenerator
         // Instantiate page class to reuse logic
         try {
             $page = resolve($reportClass);
-        } catch (\Throwable $e) {
-            throw new \Exception("Could not instantiate report class: {$reportClass}");
+        } catch (Throwable $e) {
+            throw new Exception("Could not instantiate report class: {$reportClass}");
         }
 
         // Set context manually
@@ -362,7 +364,7 @@ class ReportPdfGenerator
                     800, // width
                     400  // height
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error but continue processing other charts
                 Log::warning("Failed to generate chart image for {$chartType}: " . $e->getMessage());
                 $chartImages[$chartType] = null;
@@ -456,7 +458,7 @@ class ReportPdfGenerator
             $imageData = file_get_contents($logoPath);
 
             return 'data:image/' . pathinfo($gym->logo, PATHINFO_EXTENSION) . ';base64,' . base64_encode($imageData);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to load gym logo: ' . $e->getMessage());
 
             return null;

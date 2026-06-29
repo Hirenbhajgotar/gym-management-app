@@ -144,7 +144,7 @@ class SubscriptionService
      */
     public function activateSubscription(Subscription $subscription): bool
     {
-        throw_if($subscription->status !== SubscriptionStatus::PENDING, \Exception::class, 'Only pending subscriptions can be activated');
+        throw_if($subscription->status !== SubscriptionStatus::PENDING, Exception::class, 'Only pending subscriptions can be activated');
 
         return $subscription->update([
             'status' => SubscriptionStatus::ACTIVE,
@@ -163,7 +163,7 @@ class SubscriptionService
         Subscription $subscription,
         bool $immediately = false,
     ): bool {
-        throw_unless($subscription->isActive(), \Exception::class, 'Subscription is not active');
+        throw_unless($subscription->isActive(), Exception::class, 'Subscription is not active');
 
         $trialEnd = $subscription->trial_ends_at?->isFuture()
             ? now()
@@ -222,7 +222,7 @@ class SubscriptionService
         Plan $newPlan,
         array $options = [],
     ): Subscription {
-        throw_unless($subscription->isActive(), \Exception::class, 'Subscription is not active');
+        throw_unless($subscription->isActive(), Exception::class, 'Subscription is not active');
 
         $billingCycle =
             $options['billing_cycle'] ?? $subscription->billing_cycle;
@@ -427,14 +427,14 @@ class SubscriptionService
             // Lock user first to prevent race conditions and consistent locking order (User -> Plan)
             $lockedUser = User::query()->where('id', $user->id)->lockForUpdate()->first();
 
-            throw_unless($lockedUser, \Exception::class, 'User not found');
+            throw_unless($lockedUser, Exception::class, 'User not found');
 
             $lockedPlan = Plan::with('features')
                 ->where('id', $plan->id)
                 ->sharedLock()
                 ->first();
 
-            throw_unless($lockedPlan, \Exception::class, 'Plan not found');
+            throw_unless($lockedPlan, Exception::class, 'Plan not found');
 
             $activeSubscriptions = Subscription::query()->where('user_id', $lockedUser->id)
                 ->active()

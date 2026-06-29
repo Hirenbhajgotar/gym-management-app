@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
@@ -75,7 +76,7 @@ class ParserHelper
             $phone = new PhoneNumber($formattedNumber);
 
             return $phone->getCountry();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }

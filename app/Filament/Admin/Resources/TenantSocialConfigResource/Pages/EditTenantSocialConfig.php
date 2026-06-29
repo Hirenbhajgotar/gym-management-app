@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources\TenantSocialConfigResource\Pages;
 use App\Filament\Admin\Resources\TenantSocialConfigResource;
 use App\Jobs\ProcessSocialMediaLead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -60,7 +61,7 @@ class EditTenantSocialConfig extends EditRecord
                 ->title('Test webhook sent successfully')
                 ->success()
                 ->send();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Test webhook failed')
                 ->body($e->getMessage())

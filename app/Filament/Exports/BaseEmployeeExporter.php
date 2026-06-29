@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Exports;
 
 use App\Models\User;
+use Exception;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -70,7 +71,7 @@ abstract class BaseEmployeeExporter extends Exporter
             mkdir($path, 0775, true);
         }
 
-        throw_unless(is_writable($path), \Exception::class, "Export directory not writable: {$path}");
+        throw_unless(is_writable($path), Exception::class, "Export directory not writable: {$path}");
     }
 
     /**
@@ -126,7 +127,7 @@ abstract class BaseEmployeeExporter extends Exporter
             }
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),

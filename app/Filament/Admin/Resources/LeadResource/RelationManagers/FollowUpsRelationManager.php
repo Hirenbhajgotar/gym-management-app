@@ -11,6 +11,7 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
 use App\Traits\HasTenantAccess;
+use Exception;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
@@ -352,7 +353,7 @@ class FollowUpsRelationManager extends RelationManager
     {
         try {
             $followUp->user->notify(new LeadFollowUpNotification($followUp));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send follow-up notification', [
                 'follow_up_id' => $followUp->id,
                 'error' => $e->getMessage(),

@@ -12,6 +12,7 @@ use App\Notifications\RenewalErrorNotification;
 use App\Notifications\TrialEndingNotification;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Date;
@@ -160,7 +161,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             $this->processPayment($subscription);
 
             Log::info("Created renewal order for subscription {$subscription->id}, user notified to complete payment");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Error creating renewal order for subscription {$subscription->id}: {$e->getMessage()}");
             $this->notifyRenewalError($subscription, $e);
         }
@@ -215,7 +216,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             // The subscription will be suspended, and user can complete payment manually
             // return false;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::error("Failed to create renewal order for subscription {$subscription->id}: {$e->getMessage()}");
             throw $e;
@@ -243,7 +244,7 @@ class SubscriptionRenewalJob implements ShouldQueue
     /**
      * Send notification for renewal error
      */
-    private function notifyRenewalError(Subscription $subscription, \Exception $e): void
+    private function notifyRenewalError(Subscription $subscription, Exception $e): void
     {
         $subscription->user->notify(new RenewalErrorNotification($subscription, $e));
         Log::error("Renewal error notification sent to user {$subscription->user_id}: {$e->getMessage()}");

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\WhatsAppTemplates;
 
+use InvalidArgumentException;
+
 readonly class CreateTemplateData
 {
     public function __construct(
@@ -30,9 +32,9 @@ readonly class CreateTemplateData
     public static function fromArray(array $data): self
     {
         return new self(
-            name: $data['name'] ?? throw new \InvalidArgumentException('Missing required field: name'),
-            display_name: $data['display_name'] ?? throw new \InvalidArgumentException('Missing required field: display_name'),
-            body: $data['body'] ?? throw new \InvalidArgumentException('Missing required field: body'),
+            name: $data['name'] ?? throw new InvalidArgumentException('Missing required field: name'),
+            display_name: $data['display_name'] ?? throw new InvalidArgumentException('Missing required field: display_name'),
+            body: $data['body'] ?? throw new InvalidArgumentException('Missing required field: body'),
             category: $data['category'] ?? 'utility',
             variable_placeholder: $data['variable_placeholder'] ?? null,
             is_default: $data['is_default'] ?? null,

@@ -15,6 +15,7 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\BroadcastOrchestrator;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -217,7 +218,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'filters' => [],
         ];
 
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Insufficient credits');
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);

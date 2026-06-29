@@ -6,6 +6,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Actions\ProcessTwilioAccountAction;
+use Exception;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
@@ -56,7 +57,7 @@ class TwilioAccountStep
 
                 try {
                     (new ProcessTwilioAccountAction($page))();
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Notification::make()->title('Setup Failed')->body($e->getMessage())->danger()->send();
                     throw new Halt();
                 }

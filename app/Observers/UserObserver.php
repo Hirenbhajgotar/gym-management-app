@@ -11,6 +11,7 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\AccountActivatedNotification;
 use App\Notifications\AccountDeactivatedNotification;
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -214,7 +215,7 @@ class UserObserver
             Log::info('Successfully completed cascade deletion for gym_owner', [
                 'user_id' => $user->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Failed to cascade delete gym_owner data', [
@@ -258,7 +259,7 @@ class UserObserver
                     ->title('Account Activated')
                     ->body('User has been notified.')
                     ->send();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
                 Notification::make()
                     ->danger()
@@ -279,7 +280,7 @@ class UserObserver
                     ->title('Account Deactivated')
                     ->body('User has been notified.')
                     ->send();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
                 Notification::make()
                     ->danger()

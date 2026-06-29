@@ -15,6 +15,7 @@ use App\Models\WhatsAppTemplate;
 use App\Providers\WhatsAppProviderFactory;
 use App\Services\Support\TemplateVariableHelper;
 use App\Services\WhatsAppVariableResolver;
+use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
@@ -46,6 +47,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
+use InvalidArgumentException;
+use RuntimeException;
 
 class WhatsAppTemplateResource extends BaseResource
 {
@@ -290,7 +293,7 @@ class WhatsAppTemplateResource extends BaseResource
                             ->maxLength(1024)
                             ->live(debounce: 500)
                             ->rules([
-                                fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                fn (): Closure => function (string $attribute, $value, Closure $fail) {
                                     $trimmed = trim((string) $value);
                                     if (preg_match('/^\{\{\d+\}\}/', $trimmed)) {
                                         $fail('The template body cannot start with a variable.');
@@ -683,7 +686,7 @@ class WhatsAppTemplateResource extends BaseResource
                                         ->body('Your template has not been submitted for approval.')
                                         ->send();
                                 }
-                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                            } catch (InvalidArgumentException|RuntimeException $e) {
                                 Log::error('Template submission failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
@@ -727,7 +730,7 @@ class WhatsAppTemplateResource extends BaseResource
                                         ->body('Your updated template has not been submitted for approval.')
                                         ->send();
                                 }
-                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                            } catch (InvalidArgumentException|RuntimeException $e) {
                                 Log::error('Template resubmission failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
@@ -757,7 +760,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     ->title('Status Synced')
                                     ->body('Template status: ' . ($record->status?->getLabel() ?? 'Unknown'))
                                     ->send();
-                            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                            } catch (InvalidArgumentException|RuntimeException $e) {
                                 Log::error('Template status sync failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
                                 Notification::make()
                                     ->danger()
@@ -819,7 +822,7 @@ class WhatsAppTemplateResource extends BaseResource
     {
         $gymId ??= Filament::getTenant()?->id;
 
-        throw_unless($gymId, \RuntimeException::class, 'No tenant context available for provider resolution');
+        throw_unless($gymId, RuntimeException::class, 'No tenant context available for provider resolution');
 
         return WhatsAppProviderFactory::create($gymId);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,7 +41,7 @@ class PurchaseNumberAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many purchase attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many purchase attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -64,9 +65,9 @@ class PurchaseNumberAction
                     ->success()
                     ->send();
             } else {
-                throw new \Exception($result['error'] ?? 'Failed to purchase number');
+                throw new Exception($result['error'] ?? 'Failed to purchase number');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to purchase number', ['error' => $e->getMessage()]);
 
             Notification::make()

@@ -7,7 +7,7 @@ namespace App\Filament\Admin\Clusters\Reports\Widgets;
 use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\Attendances;
 use Filament\Facades\Filament;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 
 class RealtimeAttendanceWidget extends BaseWidget
 {

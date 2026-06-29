@@ -11,6 +11,7 @@ use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
@@ -144,7 +145,7 @@ class TwilioAccountManager
             }
 
             return $this->createSharedWaba($account, $gymId, $subClient, $businessProfile);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create WABA', [
                 'gym_id' => $gymId,
                 'error' => $e->getMessage(),
@@ -217,13 +218,13 @@ class TwilioAccountManager
     public function connectIndividualWaba(int $gymId, string $wabaId, string $phoneNumber, ?string $metaAccessToken = null): array
     {
         try {
-            throw_unless($wabaId, \Exception::class, 'WABA ID is required');
+            throw_unless($wabaId, Exception::class, 'WABA ID is required');
 
-            throw_unless($phoneNumber, \Exception::class, 'Phone Number is required');
+            throw_unless($phoneNumber, Exception::class, 'Phone Number is required');
 
             $account = $this->getAccountOrFail($gymId);
 
-            throw_unless($account, \Exception::class, 'Account not found');
+            throw_unless($account, Exception::class, 'Account not found');
 
             $subClient = $this->makeSubaccountClient($account);
 
@@ -245,7 +246,7 @@ class TwilioAccountManager
                 'sender_sid' => $senderSid,
                 'message' => 'Individual WABA connected successfully',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect individual WABA', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
@@ -267,9 +268,9 @@ class TwilioAccountManager
 
             $subClient = $this->makeSubaccountClient($account);
 
-            throw_unless($wabaId, \Exception::class, 'WABA ID is required');
+            throw_unless($wabaId, Exception::class, 'WABA ID is required');
 
-            throw_unless($phoneNumber, \Exception::class, 'Phone Number is required');
+            throw_unless($phoneNumber, Exception::class, 'Phone Number is required');
 
             // 1. Ensure Messaging Service exists
             if (! $account->messaging_service_sid) {
@@ -318,7 +319,7 @@ class TwilioAccountManager
                 'sender_sid' => $senderSid,
                 'message' => 'Manual WABA connected successfully',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect manual WABA', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
@@ -373,7 +374,7 @@ class TwilioAccountManager
     public function purchaseNumber(int $gymId, string $phoneNumber): array
     {
         try {
-            throw_unless($phoneNumber, \Exception::class, 'Phone Number is required');
+            throw_unless($phoneNumber, Exception::class, 'Phone Number is required');
 
             $account = $this->getAccountOrFail($gymId);
 
@@ -463,7 +464,7 @@ class TwilioAccountManager
                 'phone_number' => $incomingNumber->phoneNumber,
                 'message' => 'Number purchased successfully',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to purchase number', [
                 'gym_id' => $gymId,
                 'phone_number' => $phoneNumber,
@@ -493,9 +494,9 @@ class TwilioAccountManager
             $account = $this->getAccountOrFail($gymId);
             $subClient = $this->makeSubaccountClient($account);
 
-            throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
+            throw_unless($account->waba_id, Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
 
-            throw_unless($account->messaging_service_sid, \Exception::class, 'Messaging Service is not configured. Please complete Step 2 first.');
+            throw_unless($account->messaging_service_sid, Exception::class, 'Messaging Service is not configured. Please complete Step 2 first.');
 
             $request = ChannelsSenderModels::createMessagingV2ChannelsSenderRequestsCreate([
                 'sender_id' => 'whatsapp:' . $phoneNumber,
@@ -554,7 +555,7 @@ class TwilioAccountManager
                 'status' => 'purchased',
                 'message' => 'Number registered. Please enter the OTP sent to your phone.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('BYOD registration failed', [
                 'gym_id' => $gymId,
                 'phone_number' => $phoneNumber,
@@ -580,9 +581,9 @@ class TwilioAccountManager
             $account = $this->getAccountOrFail($gymId);
             $subClient = $this->makeSubaccountClient($account);
 
-            throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
+            throw_unless($account->waba_id, Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
 
-            throw_unless($account->messaging_service_sid, \Exception::class, 'Messaging Service is not configured. Please complete Step 2 first.');
+            throw_unless($account->messaging_service_sid, Exception::class, 'Messaging Service is not configured. Please complete Step 2 first.');
 
             $subClient->messaging->v2->channelsSenders($senderSid)
                 ->update([
@@ -627,7 +628,7 @@ class TwilioAccountManager
                 'error' => $e->getMessage(),
                 'message' => $message,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('BYOD verification error', [
                 'gym_id' => $gymId,
                 'sender_sid' => $senderSid,
@@ -653,13 +654,13 @@ class TwilioAccountManager
             $account = $this->getAccountOrFail($gymId);
             $subClient = $this->makeSubaccountClient($account);
 
-            throw_unless($account->waba_id, \Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
+            throw_unless($account->waba_id, Exception::class, 'WABA ID is not configured. Please complete Step 2 first.');
 
             $phoneNumberRecord = WhatsAppPhoneNumber::query()->where('whatsapp_account_id', $account->id)
                 ->where('phone_number_sid', $senderSid)
                 ->first();
 
-            throw_unless($phoneNumberRecord, \Exception::class, 'Phone number record not found.');
+            throw_unless($phoneNumberRecord, Exception::class, 'Phone number record not found.');
 
             $phoneNumber = $phoneNumberRecord->phone_number;
 
@@ -683,7 +684,7 @@ class TwilioAccountManager
                 'success' => true,
                 'message' => 'Verification code has been resent.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to resend BYOD OTP', [
                 'gym_id' => $gymId,
                 'sender_sid' => $senderSid,
@@ -876,7 +877,7 @@ class TwilioAccountManager
                     // Update local record
                     $phoneNumber->update(['status' => 'released']);
                     $released++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $failed++;
                     $lastError = $e->getMessage();
 
@@ -886,7 +887,7 @@ class TwilioAccountManager
                     ]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -1094,7 +1095,7 @@ class TwilioAccountManager
                 'error' => $result['error'] ?? null,
                 'requires_template' => $result['requires_template'] ?? false,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send test WhatsApp message', [
                 'gym_id' => $account->gym_id ?? null,
                 'error' => $e->getMessage(),
@@ -1124,7 +1125,7 @@ class TwilioAccountManager
     {
         $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
-        throw_unless($account, \Exception::class, 'WhatsApp account not found for this gym');
+        throw_unless($account, Exception::class, 'WhatsApp account not found for this gym');
 
         return $account;
     }
@@ -1289,7 +1290,7 @@ class TwilioAccountManager
             ]);
 
             return filled($messages) ? $messages[0]->body : null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch incoming messages', ['error' => $e->getMessage()]);
 
             return null;
@@ -1384,7 +1385,7 @@ class TwilioAccountManager
             }
 
             return $sender->sid;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to register WhatsApp sender', [
                 'phone_number' => $phoneNumber,
                 'waba_id' => $whatsAppBusinessId,

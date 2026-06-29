@@ -9,6 +9,7 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Http;
 
 class LocalModelProvider implements BiometricProvider
@@ -100,7 +101,7 @@ class LocalModelProvider implements BiometricProvider
                 ->delete("{$this->baseUrl}/api/template/{$ref->externalId}");
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -116,7 +117,7 @@ class LocalModelProvider implements BiometricProvider
             $response = Http::timeout(3)->get("{$this->baseUrl}/api/health");
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

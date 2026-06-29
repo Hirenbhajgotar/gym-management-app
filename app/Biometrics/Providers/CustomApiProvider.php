@@ -9,7 +9,9 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 class CustomApiProvider implements BiometricProvider
 {
@@ -46,7 +48,7 @@ class CustomApiProvider implements BiometricProvider
     {
         $endpoint = $this->endpointMap['enroll'] ?? null;
 
-        throw_unless($endpoint, \Exception::class, 'Enroll endpoint not configured');
+        throw_unless($endpoint, Exception::class, 'Enroll endpoint not configured');
 
         $response = Http::timeout($this->timeout)
             ->withHeaders($this->getHeaders())
@@ -59,7 +61,7 @@ class CustomApiProvider implements BiometricProvider
             ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Custom API enroll failed [{$response->status()}]: " . $response->body()
             );
         }
@@ -77,7 +79,7 @@ class CustomApiProvider implements BiometricProvider
     {
         $endpoint = $this->endpointMap['verify'] ?? null;
 
-        throw_unless($endpoint, \Exception::class, 'Verify endpoint not configured');
+        throw_unless($endpoint, Exception::class, 'Verify endpoint not configured');
 
         $response = Http::timeout($this->timeout)
             ->withHeaders($this->getHeaders())
@@ -121,7 +123,7 @@ class CustomApiProvider implements BiometricProvider
             if ($this->config['skip_liveness'] ?? false) {
                 return 1.0; // intentional bypass — config mein set hai
             }
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Liveness endpoint not configured for custom provider. ' .
                 'Set skip_liveness=true in config to bypass liveness check.'
             );
@@ -137,11 +139,11 @@ class CustomApiProvider implements BiometricProvider
         $result = $response->json();
 
         if (! $response->successful()) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Custom API liveness check failed [{$response->status()}]: " . $response->body()
             );
         }
-        throw_unless(is_array($result), \RuntimeException::class, 'Custom API liveness check returned invalid JSON response');
+        throw_unless(is_array($result), RuntimeException::class, 'Custom API liveness check returned invalid JSON response');
 
         return (float) ($result['liveness'] ?? $result['liveness_score'] ?? $result['score'] ?? 0.0);
     }
@@ -170,7 +172,7 @@ class CustomApiProvider implements BiometricProvider
                 ->delete($deleteEndpoint);
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -194,7 +196,7 @@ class CustomApiProvider implements BiometricProvider
                 ->get($endpoint);
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\AttendanceStatus;
 use App\Enums\BiometricTypeEnum;
 use App\Observers\AttendanceObserver;
+use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,7 +45,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $check_in_ip
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|\Eloquent $attendanceable
+ * @property-read Model|Eloquent $attendanceable
  * @property-read BiometricDevice|null $device
  * @property-read DoorEvent|null $doorEvent
  * @property-read mixed $duration

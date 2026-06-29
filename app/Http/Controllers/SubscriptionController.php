@@ -11,6 +11,7 @@ use App\Models\Subscription;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -191,7 +192,7 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature,
             );
 
-            throw_unless($verifiedPayment->isCompleted(), \Exception::class, 'Payment verification failed');
+            throw_unless($verifiedPayment->isCompleted(), Exception::class, 'Payment verification failed');
 
             $checkoutType = $this->determineCheckoutType();
 
@@ -220,7 +221,7 @@ class SubscriptionController extends Controller
 
             return to_route('profile')
                 ->with('success', $successMessage);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Subscription payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
@@ -363,7 +364,7 @@ class SubscriptionController extends Controller
             // Get registration data from session
             $registrationData = session('gym_owner_registration');
 
-            throw_unless($registrationData, \Exception::class, 'Registration data not found');
+            throw_unless($registrationData, Exception::class, 'Registration data not found');
 
             // Get payment record
             $payment = Payment::query()->where('razorpay_order_id', $request->razorpay_order_id)->first();
@@ -387,7 +388,7 @@ class SubscriptionController extends Controller
             return to_route('thank-you')
                 ->with('success', $successMessage)
                 ->with('email', $result['user']->email);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Gym owner payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id ?? null,

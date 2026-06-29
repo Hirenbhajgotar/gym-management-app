@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
@@ -56,7 +57,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('IndiaMart lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -94,7 +95,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             $expectedApiKey = $config->api_key ?? config('services.indiamart.api_key');
 
             return $apiKey === $expectedApiKey;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('IndiaMart webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -133,7 +134,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown IndiaMart webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from IndiaMart', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -350,7 +351,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             if ($config->email_acknowledgment_enabled && $lead->email) {
                 $this->sendEmailAcknowledgment($lead);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send IndiaMart acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,

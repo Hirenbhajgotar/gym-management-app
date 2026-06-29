@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use ReflectionClass;
+
 trait DerivesPermissionsSlug
 {
     use ConvertsToSnakeCase;
@@ -28,7 +30,7 @@ trait DerivesPermissionsSlug
      * Uses reflection because direct static property access via string variable
      * returns null in PHP.
      */
-    public function resolveResourceModel(\ReflectionClass $resourceReflection): ?string
+    public function resolveResourceModel(ReflectionClass $resourceReflection): ?string
     {
         if (! $resourceReflection->hasProperty('model')) {
             return null;
@@ -47,7 +49,7 @@ trait DerivesPermissionsSlug
      * This ensures generated permissions match BasePolicy's $tableName convention
      * (e.g. WhatsAppCreditTransaction → whatsapp_credit_transaction, not whatsapp_transaction).
      */
-    public function deriveSlugFromModelOrResource(?string $modelClass, \ReflectionClass $resourceReflection): string
+    public function deriveSlugFromModelOrResource(?string $modelClass, ReflectionClass $resourceReflection): string
     {
         if ($modelClass !== null) {
             // Prefer the policy's $tableName — it's the source of truth for permission naming.
@@ -68,14 +70,14 @@ trait DerivesPermissionsSlug
         return $this->convertFromClassName($resourceReflection->getShortName(), 'Resource');
     }
 
-    public function derivePageSlug(\ReflectionClass $reflection): string
+    public function derivePageSlug(ReflectionClass $reflection): string
     {
         $prefix = $this->convertFromClassName($reflection->getShortName(), 'Page');
 
         return $this->generatePagePermission($prefix);
     }
 
-    public function deriveWidgetSlug(\ReflectionClass $reflection): string
+    public function deriveWidgetSlug(ReflectionClass $reflection): string
     {
         $prefix = $this->convertFromClassName($reflection->getShortName(), 'Widget');
 

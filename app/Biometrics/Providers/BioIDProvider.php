@@ -9,7 +9,9 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 class BioIDProvider implements BiometricProvider
 {
@@ -61,7 +63,7 @@ class BioIDProvider implements BiometricProvider
             ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'BioID enrollment failed: ' . $response->body()
             );
         }
@@ -150,7 +152,7 @@ class BioIDProvider implements BiometricProvider
                 ]);
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -169,7 +171,7 @@ class BioIDProvider implements BiometricProvider
                 ->get($this->getBaseUrl() . '/status');
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

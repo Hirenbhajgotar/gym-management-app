@@ -7,6 +7,7 @@ namespace App\Observers;
 use App\Models\Gym;
 use App\Services\GymSettingService;
 use App\Services\TwilioAccountManager;
+use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -83,7 +84,7 @@ class GymObserver
             if ($gym->whatsAppAccount) {
                 try {
                     resolve(TwilioAccountManager::class)->cleanupTenantResources($gym->id);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::warning('Twilio cleanup failed during gym deletion, continuing with local cleanup', [
                         'gym_id' => $gym->id,
                         'error' => $e->getMessage(),
@@ -114,7 +115,7 @@ class GymObserver
             Log::info('Successfully completed cascade deletion for gym', [
                 'gym_id' => $gym->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to cascade delete gym data', [
                 'gym_id' => $gym->id,
                 'error' => $e->getMessage(),

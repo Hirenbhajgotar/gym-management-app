@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -57,7 +58,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WhatsApp lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -115,7 +116,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
 
             // Compare signatures
             return hash_equals($expectedSignature, $calculatedSignature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WhatsApp webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -150,7 +151,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown WhatsApp webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from WhatsApp', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -355,7 +356,7 @@ class WhatsAppLeadProcessor extends SocialMediaLeadProcessor
                 'lead_id' => $lead->id,
                 'phone' => $lead->phone,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send WhatsApp acknowledgment message', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,

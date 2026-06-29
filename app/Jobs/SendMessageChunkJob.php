@@ -15,6 +15,7 @@ use Illuminate\Queue\Middleware\RateLimitedWithRedis;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SendMessageChunkJob implements ShouldQueue
 {
@@ -234,7 +235,7 @@ class SendMessageChunkJob implements ShouldQueue
                     'message_id' => $result['message_id'] ?? null,
                     'error' => $result['success'] ? null : ($result['error'] ?? 'Unknown error'),
                 ];
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $results[$i] = [
                     'success' => false,
                     'error' => $e->getMessage(),

@@ -6,6 +6,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
 use App\Models\WhatsAppMessageCredit;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -27,7 +28,7 @@ class ClaimWelcomeCreditsAction
         $gymId = $this->page->getGymId();
         $rateLimiterKey = $this->rateLimiterKey($gymId);
 
-        throw_if(RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS), \Exception::class, 'Welcome credits have already been claimed for this gym.');
+        throw_if(RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS), Exception::class, 'Welcome credits have already been claimed for this gym.');
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
 

@@ -6,6 +6,7 @@ namespace App\Listeners;
 
 use App\Biometrics\Services\BiometricDataDeletionService;
 use App\Events\BiometricConsentRevoked;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
@@ -33,7 +34,7 @@ class HandleConsentRevoked implements ShouldQueue
      * Calculate the time at which the job should expire.
      * Enforces a 1-hour retry window from the first attempt.
      */
-    public function retryUntil(): \DateTimeInterface
+    public function retryUntil(): DateTimeInterface
     {
         return now()->addHour();
     }

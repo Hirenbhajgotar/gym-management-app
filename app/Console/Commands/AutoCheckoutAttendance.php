@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Services\AttendanceService;
+use Exception;
 use Illuminate\Console\Command;
 
 class AutoCheckoutAttendance extends Command
@@ -63,7 +64,7 @@ class AutoCheckoutAttendance extends Command
             }
 
             $this->info('Auto check-out process completed successfully!');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Error during auto check-out: ' . $e->getMessage());
 
             return 1;

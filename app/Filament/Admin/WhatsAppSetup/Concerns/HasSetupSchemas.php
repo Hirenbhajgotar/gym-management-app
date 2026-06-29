@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 
 use App\Enums\WhatsAppProviderTypeEnum;
+use Exception;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
@@ -259,7 +260,7 @@ trait HasSetupSchemas
             ->afterValidation(function () {
                 try {
                     $this->processTwilioAccountSetup();
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->handleSetupError($e, 'Failed to process Twilio account setup');
                     throw new Halt();
                 }
@@ -472,7 +473,7 @@ trait HasSetupSchemas
             ->afterValidation(function () {
                 try {
                     $this->processWabaSetup();
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->handleSetupError($e, 'Failed to process WABA setup');
                     throw new Halt();
                 }

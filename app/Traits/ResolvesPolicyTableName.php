@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use Illuminate\Support\Facades\Gate;
+use ReflectionClass;
+use ReflectionException;
 
 trait ResolvesPolicyTableName
 {
@@ -19,11 +21,11 @@ trait ResolvesPolicyTableName
         return $policy::getTableName();
     }
 
-    protected function safeReflection(string $className): ?\ReflectionClass
+    protected function safeReflection(string $className): ?ReflectionClass
     {
         try {
-            return new \ReflectionClass($className);
-        } catch (\ReflectionException) {
+            return new ReflectionClass($className);
+        } catch (ReflectionException) {
             return null;
         }
     }

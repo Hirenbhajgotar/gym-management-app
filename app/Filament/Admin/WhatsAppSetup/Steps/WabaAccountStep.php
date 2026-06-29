@@ -7,6 +7,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Steps;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
+use Exception;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
@@ -121,7 +122,7 @@ class WabaAccountStep
                     } elseif ($page->data['waba_connection_method'] === 'manual_connect') {
                         (new ConnectExistingWabaAction($page))();
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Notification::make()->title('Setup Failed')->body($e->getMessage())->danger()->send();
                     throw new Halt();
                 }

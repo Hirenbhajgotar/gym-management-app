@@ -8,6 +8,7 @@ use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -151,7 +152,7 @@ class RegisterGym extends RegisterTenant
     {
         // Final check before creating the gym
         if ($this->hasReachedGymLimit()) {
-            throw new \Exception(
+            throw new Exception(
                 "Gym limit exceeded. Cannot register more than {$this->totalGyms} gyms.",
             );
         }

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -61,7 +62,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Facebook lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -104,7 +105,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
 
             // Compare signatures
             return hash_equals($expectedSignature, $calculatedSignature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Facebook webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -245,7 +246,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             ];
 
             return $leadData;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from Facebook', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -287,7 +288,7 @@ class FacebookLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $response->json();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch lead details from Facebook', [
                 'error' => $e->getMessage(),
                 'lead_id' => $leadId,

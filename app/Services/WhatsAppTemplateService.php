@@ -10,6 +10,7 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use App\Services\Support\TemplateVariableHelper;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -255,7 +256,7 @@ class WhatsAppTemplateService
                 'template_id' => $template->id,
                 'new_status' => $newStatus,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync template status', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
@@ -298,7 +299,7 @@ class WhatsAppTemplateService
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to delete Twilio WhatsApp template', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
@@ -428,7 +429,7 @@ class WhatsAppTemplateService
                     try {
                         $approvalFetch = $masterClient->content->v1->contents($record->sid)->approvalFetch()->fetch();
                         $whatsapp = $approvalFetch->whatsapp ?? [];
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::warning("Could not fetch approval status for {$record->sid}: " . $e->getMessage());
                     }
 
@@ -482,7 +483,7 @@ class WhatsAppTemplateService
                     }
 
                     $successCount++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $errorCount++;
                     $errors[] = "Error syncing template {$record->sid}: " . $e->getMessage();
                     Log::error("Error syncing Twilio template {$record->sid}", ['error' => $e->getMessage()]);
@@ -495,7 +496,7 @@ class WhatsAppTemplateService
                 'error_count' => $errorCount,
                 'errors' => $errors,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
 
             return [

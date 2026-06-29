@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PushWhatsAppTemplateToGymJob implements ShouldQueue
 {
@@ -106,7 +107,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
         ]);
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('PushWhatsAppTemplateToGymJob permanently failed', [
             'template_id' => $this->templateId,

@@ -6,6 +6,8 @@ namespace App\Traits;
 
 use App\Enums\DefaultRole;
 use Illuminate\Support\Facades\Gate;
+use ReflectionClass;
+use Throwable;
 
 trait ResolvesExportImportPermission
 {
@@ -116,7 +118,7 @@ trait ResolvesExportImportPermission
 
         // Fallback: read protected property via reflection
         try {
-            $ref = new \ReflectionClass($this);
+            $ref = new ReflectionClass($this);
             $current = $ref;
             $property = null;
 
@@ -136,7 +138,7 @@ trait ResolvesExportImportPermission
             $value = $property->getValue($this);
 
             return is_string($value) ? $value : null;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

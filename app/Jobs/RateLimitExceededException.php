@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use Exception;
+use Throwable;
 
 class RateLimitExceededException extends Exception
 {
@@ -12,7 +13,7 @@ class RateLimitExceededException extends Exception
         string $message = 'Rate limit exceeded',
         protected int $retryAfter = 5,
         int $code = 429,
-        ?\Throwable $previous = null,
+        ?Throwable $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
     }

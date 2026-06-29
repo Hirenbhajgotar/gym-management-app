@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use DateTimeInterface;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -86,7 +87,7 @@ class DashboardCacheService
     /**
      * Get the cache TTL array for Cache::flexible().
      *
-     * @return array{0: \DateTimeInterface, 1: \DateTimeInterface}
+     * @return array{0: DateTimeInterface, 1: DateTimeInterface}
      */
     public static function getCacheTtl(): array
     {

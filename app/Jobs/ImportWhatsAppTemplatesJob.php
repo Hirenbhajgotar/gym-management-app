@@ -20,6 +20,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Imports WhatsApp templates from Meta/Twilio for a specific gym.
@@ -357,7 +358,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ImportWhatsAppTemplatesJob: job failed', [
             'gym_id' => $this->gymId,

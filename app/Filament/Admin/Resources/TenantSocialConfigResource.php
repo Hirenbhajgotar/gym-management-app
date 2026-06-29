@@ -14,6 +14,7 @@ use App\Jobs\ProcessSocialMediaLead;
 use App\Models\Gym;
 use App\Models\TenantSocialConfig;
 use App\Services\SocialMediaCredentialVerifier;
+use Exception;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
@@ -471,7 +472,7 @@ class TenantSocialConfigResource extends BaseResource
                     ->danger()
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Credential verification failed')
                 ->body($e->getMessage())
@@ -497,7 +498,7 @@ class TenantSocialConfigResource extends BaseResource
                 ->body("A test lead for {$config->platform->getLabel()} has been queued for processing. Check the Leads page and Webhook Logs tab.")
                 ->success()
                 ->send();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Test webhook failed')
                 ->body($e->getMessage())

@@ -12,6 +12,7 @@ use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ListWhatsApp
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ViewWhatsAppAccount;
 use App\Models\WhatsAppAccount;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -141,7 +142,7 @@ class WhatsAppAccountResource extends BaseResource
                                 ->title('Credits Adjusted')
                                 ->body("Adjusted {$data['amount']} credits for {$record->gym->name}.")
                                 ->send();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Notification::make()
                                 ->danger()
                                 ->title('Adjustment Failed')

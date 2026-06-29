@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class MemberActionNotification extends Notification implements ShouldQueue
 {
@@ -28,14 +30,14 @@ class MemberActionNotification extends Notification implements ShouldQueue
 
         try {
             // Validate member data
-            throw_if($member && ! is_object($member), \InvalidArgumentException::class, 'Member must be a valid model instance');
+            throw_if($member && ! is_object($member), InvalidArgumentException::class, 'Member must be a valid model instance');
             // Log notification creation
             Log::info('Creating member notification', [
                 'action' => $action,
                 'member_id' => $member?->id ?? 'null',
                 'has_details' => ! is_null($details),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error creating member notification: ' . $e->getMessage(), [
                 'action' => $action,
                 'error' => $e->getMessage(),

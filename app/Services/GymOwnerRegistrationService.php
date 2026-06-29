@@ -373,7 +373,7 @@ class GymOwnerRegistrationService
                         ->send();
 
                     event(new DatabaseNotificationsSent($superAdmin));
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Failed to notify super admin', [
                         'admin_id' => $superAdmin->id,
                         'error' => $e->getMessage(),
@@ -384,13 +384,13 @@ class GymOwnerRegistrationService
             // Send welcome notification to the new gym owner
             try {
                 $user->notify(new GymOwnerWelcomeNotification($user, null, $payment));
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Failed to send welcome notification', [
                     'user_id' => $user->id,
                     'error' => $e->getMessage(),
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error in sendNotifications wrapper', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),

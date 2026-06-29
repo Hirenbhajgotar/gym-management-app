@@ -10,6 +10,7 @@ use App\Models\WhatsAppCreditTransaction;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -82,7 +83,7 @@ class WhatsAppBillingService
             });
         } catch (LockTimeoutException $e) {
             return ['success' => false, 'error' => 'Payment is being processed. Please wait.'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Package purchase failed', ['gym_id' => $gymId, 'error' => $e->getMessage()]);
 
             return ['success' => false, 'error' => 'Failed to process package purchase.'];
@@ -161,7 +162,7 @@ class WhatsAppBillingService
         } catch (LockTimeoutException $e) {
             // Silent fail, user will just see 0 credits and can retry
             Log::warning('Welcome credits lock timeout', ['gym_id' => $gymId]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Welcome credits usage failed', ['gym_id' => $gymId, 'error' => $e->getMessage()]);
         }
     }
@@ -205,7 +206,7 @@ class WhatsAppBillingService
             Log::warning('Credit usage lock timeout', ['gym_id' => $gymId]);
 
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Credit usage failed', ['gym_id' => $gymId, 'error' => $e->getMessage()]);
 
             return false;
@@ -255,7 +256,7 @@ class WhatsAppBillingService
                 });
             });
         } catch (LockTimeoutException $e) {
-            throw new \Exception('System is busy processing another credit adjustment. Please try again.');
+            throw new Exception('System is busy processing another credit adjustment. Please try again.');
         }
     }
 

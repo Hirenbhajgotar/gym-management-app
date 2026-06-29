@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * @property int $id
@@ -84,7 +85,7 @@ class ShareableReportLink extends Model
         $count = 0;
 
         do {
-            throw_if($count >= $maxRetries, \RuntimeException::class, 'Failed to generate a unique token after ' . $maxRetries . ' attempts.');
+            throw_if($count >= $maxRetries, RuntimeException::class, 'Failed to generate a unique token after ' . $maxRetries . ' attempts.');
 
             $token = Str::random(64);
             $count++;

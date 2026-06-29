@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessMetaTemplateWebhook;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -152,7 +153,7 @@ class WhatsAppTemplateWebhookController extends Controller
             }
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WhatsApp template webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

@@ -127,7 +127,7 @@ class WhatsAppChannel
             try {
                 $tenant = $this->getGym();
                 $gymId = $tenant?->id;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // No tenant set, check if user has exactly one gym
                 if ($notifiable->gyms()->count() === 1) {
                     /** @var Gym $gym */

@@ -15,12 +15,15 @@ use App\Models\WhatsAppTemplate;
 use App\Services\Support\TemplateVariableHelper;
 use App\Services\Support\WhatsAppTemplateStatusMapper;
 use App\Services\WhatsAppTemplateService as BaseTemplateService;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Throwable;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
@@ -98,7 +101,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             ]);
 
             return new TemplateSubmissionResult(success: false, error: $e->getMessage());
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Twilio template submit exception', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
@@ -172,7 +175,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             $template->save();
         } catch (LockTimeoutException $e) {
             // Skip
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Failed to sync template status', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
@@ -201,12 +204,12 @@ class TwilioTemplateService implements TemplateManagementInterface
                     ->get("{$this->context->getApiBaseUrlv1()}/Contents");
 
                 if ($response->failed()) {
-                    throw new \RuntimeException($response->json('message') ?? 'Failed to fetch');
+                    throw new RuntimeException($response->json('message') ?? 'Failed to fetch');
                 }
 
                 return $response->json('contents', []);
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Failed to fetch fresh Twilio templates, falling back to cache.', ['error' => $e->getMessage()]);
             $templates = Cache::get($this->templatesCacheKey($gymId));
             if ($templates === null) {
@@ -244,7 +247,7 @@ class TwilioTemplateService implements TemplateManagementInterface
 
             return true;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to delete Twilio WhatsApp template', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
@@ -270,7 +273,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             return $this->processMasterSync();
         } catch (LockTimeoutException $e) {
             return new TemplateMasterSyncResult(success: false, error: 'Master template sync is already in progress.');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
 
             return new TemplateMasterSyncResult(success: false, error: $e->getMessage());
@@ -385,7 +388,7 @@ class TwilioTemplateService implements TemplateManagementInterface
                     );
 
                     $successCount++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $errorCount++;
                     $errors[] = "Error syncing {$record->sid}: {$e->getMessage()}";
                     Log::error("Error syncing Twilio template {$record->sid}", ['error' => $e->getMessage()]);
@@ -397,7 +400,7 @@ class TwilioTemplateService implements TemplateManagementInterface
                 errorCount: $errorCount,
                 errors: $errors,
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync WhatsApp templates from Twilio', ['error' => $e->getMessage()]);
 
             return TemplateMasterSyncResult::fromError($e->getMessage());
@@ -410,7 +413,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             $approval = $masterClient->content->v1->contents($sid)->approvalFetch()->fetch();
 
             return $approval->whatsapp ?? [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning("Could not fetch approval status for {$sid}: {$e->getMessage()}");
 
             return [];

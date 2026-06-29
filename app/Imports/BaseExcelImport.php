@@ -6,6 +6,7 @@ namespace App\Imports;
 
 use App\Models\User;
 use EightyNine\ExcelImport\EnhancedDefaultImport;
+use Exception;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
@@ -22,6 +23,7 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
+use Throwable;
 
 abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQueue, ToCollection, WithChunkReading, WithHeadingRow
 {
@@ -41,18 +43,18 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     public $importModel;
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function __construct()
     {
         // Ensure the importModel property is defined in the child class
         if (! isset($this->importModel)) {
-            throw new \Exception("The $this->importModel property must be defined in the child import class: " . static::class);
+            throw new Exception("The $this->importModel property must be defined in the child import class: " . static::class);
         }
 
         // Verify the model class exists
         if (! class_exists($this->importModel)) {
-            throw new \Exception("Model class {$this->importModel} does not exist in " . static::class);
+            throw new Exception("Model class {$this->importModel} does not exist in " . static::class);
         }
 
         parent::__construct($this->importModel); // Pass model and attributes to parent
@@ -104,7 +106,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
                 try {
                     $this->processRow($data);
                     $this->successfulRows++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->failedRows++;
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
@@ -262,7 +264,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         event(new DatabaseNotificationsSent($recipient));
     }
 
-    public function failed(\Throwable $exception)
+    public function failed(Throwable $exception)
     {
         if ($this->importRecord) {
             $this->importRecord->update([

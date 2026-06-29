@@ -7,6 +7,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Actions;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -34,7 +35,7 @@ class ProcessTwilioAccountAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many setup attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many setup attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -66,7 +67,7 @@ class ProcessTwilioAccountAction
         $result = $this->page->getProvider()->createSubAccount($gymId, $this->page->whatsappAccount->business_name, $this->page->whatsappAccount->business_email);
 
         if (! $result['success']) {
-            throw new \Exception($result['error'] ?? 'Failed to create subaccount');
+            throw new Exception($result['error'] ?? 'Failed to create subaccount');
         }
 
         $this->page->whatsappAccount->refresh();

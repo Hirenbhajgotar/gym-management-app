@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Models\MemberPayment;
 use App\Models\Payment;
 use App\Services\InvoiceService;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -35,7 +36,7 @@ class GenerateInvoiceJob implements ShouldQueue
                 $payment = $this->payment;
                 $invoiceService->generateInvoice($payment);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to generate invoice', [
                 'error' => $e->getMessage(),
                 'payment_id' => $this->payment->id,

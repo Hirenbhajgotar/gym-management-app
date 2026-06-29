@@ -11,6 +11,7 @@ use App\Models\PermissionSetting;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\PermissionRegistrar;
@@ -282,7 +283,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $service = new RolesAndPermissionsService();
 
         // Act & Assert: Expect exception when role is missing
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Role ' . DefaultRole::GYM_OWNER->value . ' does not exist for this tenant.');
 
         $service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);

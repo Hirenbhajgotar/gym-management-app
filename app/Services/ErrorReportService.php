@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
+use Error;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\FilesystemException;
+use PDOException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Throwable;
@@ -170,7 +172,7 @@ class ErrorReportService
     {
         try {
             // Critical errors
-            if ($exception instanceof \Error) {
+            if ($exception instanceof Error) {
                 return ErrorPriority::CRITICAL->value;
             }
 
@@ -276,14 +278,14 @@ class ErrorReportService
     public function shouldAutoReport(Throwable $exception): bool
     {
         // Always report critical errors
-        if ($exception instanceof \Error) {
+        if ($exception instanceof Error) {
             return true;
         }
 
         // Report database errors
         if (
             $exception instanceof QueryException ||
-            $exception instanceof \PDOException
+            $exception instanceof PDOException
         ) {
             return true;
         }

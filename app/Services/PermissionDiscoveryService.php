@@ -12,6 +12,9 @@ use App\Traits\DerivesPermissionsSlug;
 use App\Traits\ResolvesPolicyTableName;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
+use ReflectionClass;
+use ReflectionException;
+use ValueError;
 
 class PermissionDiscoveryService
 {
@@ -206,7 +209,7 @@ class PermissionDiscoveryService
                 $catEnum = PermissionCategory::from($category);
                 $label = $catEnum->getLabel();
                 $icon = $catEnum->getIcon();
-            } catch (\ValueError) {
+            } catch (ValueError) {
                 $label = ucfirst(str_replace('_', ' ', $category));
                 $icon = 'heroicon-o-folder';
             }
@@ -501,14 +504,14 @@ class PermissionDiscoveryService
     protected function safeInstance(string $class): ?object
     {
         try {
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
 
             if ($reflection->isAbstract()) {
                 return null;
             }
 
             return $reflection->newInstanceWithoutConstructor();
-        } catch (\ReflectionException) {
+        } catch (ReflectionException) {
             return null;
         }
     }
@@ -516,7 +519,7 @@ class PermissionDiscoveryService
     /**
      * Derive resource slug from the model's policy $tableName or class name.
      */
-    protected function deriveResourceSlug(\ReflectionClass $reflection): string
+    protected function deriveResourceSlug(ReflectionClass $reflection): string
     {
         $modelClass = $this->resolveResourceModel($reflection);
 
@@ -537,7 +540,7 @@ class PermissionDiscoveryService
     /**
      * Derive icon from resource's getNavigationIcon() method.
      */
-    protected function deriveResourceIcon(\ReflectionClass $reflection): ?string
+    protected function deriveResourceIcon(ReflectionClass $reflection): ?string
     {
         try {
             if ($reflection->hasMethod('getNavigationIcon')) {
@@ -546,7 +549,7 @@ class PermissionDiscoveryService
 
                 return $method->invoke($instance);
             }
-        } catch (\ReflectionException) {
+        } catch (ReflectionException) {
         }
 
         return null;

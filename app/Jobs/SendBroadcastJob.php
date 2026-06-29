@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 {
@@ -238,7 +239,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         ]);
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('SendBroadcastJob permanently failed', [
             'broadcast_id' => $this->broadcastId,

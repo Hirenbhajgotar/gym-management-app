@@ -11,6 +11,7 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
 use App\Traits\DerivesPermissionsSlug;
+use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -307,11 +308,11 @@ class RolesAndPermissionsService
      * process has its own static copy, so there is no cross-request
      * contamination.
      *
-     * @throws \Exception If the role does not exist for the given gym.
+     * @throws Exception If the role does not exist for the given gym.
      */
     public function assignRoleToTenant(?Gym $tenant, User $user, DefaultRole $roleName): void
     {
-        throw_unless($tenant, \Exception::class, 'Gym not found.');
+        throw_unless($tenant, Exception::class, 'Gym not found.');
 
         // Ensure the role exists for the tenant
         $role = Role::query()->where('name', $roleName->value)
@@ -319,7 +320,7 @@ class RolesAndPermissionsService
             ->first();
 
         if (! $role) {
-            throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
+            throw new Exception("Role {$roleName->value} does not exist for this tenant.");
         }
 
         // Set the team ID so Spatie writes the correct gym_id to the

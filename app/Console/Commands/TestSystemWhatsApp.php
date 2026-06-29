@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Services\TwilioWhatsAppService;
+use Exception;
 use Illuminate\Console\Command;
 
 class TestSystemWhatsApp extends Command
@@ -84,7 +85,7 @@ class TestSystemWhatsApp extends Command
 
                 return Command::FAILURE;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('❌ Exception occurred!');
             $this->error($e->getMessage());
             $this->newLine();

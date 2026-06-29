@@ -9,6 +9,7 @@ use App\DTOs\WhatsAppTemplates\TemplateFetchResult;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
@@ -110,7 +111,7 @@ class WhatsAppTemplateManager
                 templates: $templates,
                 count: count($templates),
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch WhatsApp templates', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,
@@ -186,7 +187,7 @@ class WhatsAppTemplateManager
                 synced: $synced,
                 message: "Successfully synced {$synced} templates",
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync templates to database', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,

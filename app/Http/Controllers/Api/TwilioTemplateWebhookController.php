@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessTwilioTemplateWebhook;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +67,7 @@ class TwilioTemplateWebhookController extends Controller
             dispatch(new ProcessTwilioTemplateWebhook($contentSid, $status, $errorCode, $errorMessage));
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Twilio template webhook processing failed', [
                 'error' => $e->getMessage(),
             ]);

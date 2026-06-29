@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -50,7 +51,7 @@ class VerifyOwnNumberAction
             } else {
                 throw ValidationException::withMessages(['otp_code' => $result['message'] ?? 'Verification failed.']);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
         }
     }

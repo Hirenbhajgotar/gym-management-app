@@ -8,6 +8,7 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Rules\ValidPhone;
+use Exception;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
@@ -114,7 +115,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                         if (! File::exists($importsDir)) {
                             File::makeDirectory($importsDir, 0755, true);
                         } elseif (! is_writable($importsDir)) {
-                            throw new \Exception('Imports directory is not writable: ' . $importsDir);
+                            throw new Exception('Imports directory is not writable: ' . $importsDir);
                         }
 
                         // Generate failed rows CSV
@@ -123,7 +124,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                         $fileName = "failed_rows_{$timestamp}.csv";
                         $path = storage_path($filePath . $fileName);
                         $file = fopen($path, 'w');
-                        throw_if($file === false, \Exception::class, 'Failed to open file for writing: ' . $path);
+                        throw_if($file === false, Exception::class, 'Failed to open file for writing: ' . $path);
                         $headers = array_merge(array_keys($this->failedRows[0]), ['error']);
                         fputcsv($file, $headers);
                         foreach ($this->failedRows as $row) {
@@ -151,7 +152,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                             ->send();
 
                         event(new DatabaseNotificationsSent($recipient));
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $recipient = auth()->user();
                         Notification::make()
                             ->title('Import partially failed')

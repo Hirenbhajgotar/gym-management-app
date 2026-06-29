@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\ScheduledReport;
 use App\Services\ReportPdfGenerator;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -51,7 +52,7 @@ class ScheduledReportJob implements ShouldQueue
             // Update last run
             $this->scheduledReport->update(['last_run_at' => now()]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log failure
             Log::error('Scheduled report failed: ' . $e->getMessage());
             // Optionally notify admin or user

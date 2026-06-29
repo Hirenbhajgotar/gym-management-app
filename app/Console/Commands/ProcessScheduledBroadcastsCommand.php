@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\WhatsAppBroadcast;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -61,7 +62,7 @@ class ProcessScheduledBroadcastsCommand extends Command
                 ]);
 
                 $processed++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $broadcast->update(['status' => WhatsAppBroadcastStatusEnum::FAILED->value]);
 
                 Log::error('Failed to dispatch scheduled broadcast', [

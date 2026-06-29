@@ -10,6 +10,7 @@ use App\Events\LeadCreated;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -134,7 +135,7 @@ abstract class SocialMediaLeadProcessor
             event(new LeadCreated($lead));
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create lead from social media', [
                 'platform' => $this->platform,
                 'error' => $e->getMessage(),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Services\TwilioWhatsAppService;
+use Exception;
 use Illuminate\Console\Command;
 
 class TwilioWhatsAppTest extends Command
@@ -34,7 +35,7 @@ class TwilioWhatsAppTest extends Command
                 $this->error('❌ Failed to send message');
                 $this->error("Error: {$result['error']}");
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('❌ Exception: ' . $e->getMessage());
         }
     }

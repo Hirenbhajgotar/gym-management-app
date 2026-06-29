@@ -10,6 +10,7 @@ use App\Jobs\MigrateTenantToIndividualWaba;
 use App\Models\WabaMigration;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -135,7 +136,7 @@ class WabaMigrationService
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $migration->markAsFailed($e->getMessage());
 
             Log::error('Migration failed', [
@@ -177,7 +178,7 @@ class WabaMigrationService
             $migration->markAsCompleted($newWabaId, 'individual');
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $migration->markAsFailed($e->getMessage());
 
             Log::error('Migration completion failed', [

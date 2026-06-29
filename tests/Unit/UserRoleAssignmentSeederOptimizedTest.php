@@ -8,12 +8,14 @@ use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Tests\TestCase;
 
 class UserRoleAssignmentSeederOptimizedTest extends TestCase
@@ -32,7 +34,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $commandProperty = $reflection->getProperty('command');
         $commandProperty->setAccessible(true);
         $commandProperty->setValue($this->seeder, $this->mockCommand);
@@ -304,7 +306,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureGlobalRolesExist');
         $method->setAccessible(true);
 
@@ -338,7 +340,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureTenantRolesExist');
         $method->setAccessible(true);
 
@@ -363,7 +365,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureTenantRolesExist');
         $method->setAccessible(true);
 
@@ -389,7 +391,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureTenantRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -415,7 +417,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureTenantRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -507,7 +509,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockFinalSummary();
 
         // Force an exception by making the database unavailable
-        DB::shouldReceive('beginTransaction')->andThrow(new \Exception('Database connection failed'));
+        DB::shouldReceive('beginTransaction')->andThrow(new Exception('Database connection failed'));
 
         $this->seeder->run();
     }
@@ -520,7 +522,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create demo users
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('getDemoUsersData');
         $method->setAccessible(true);
         $demoUsers = $method->invoke($this->seeder, $gym->id);

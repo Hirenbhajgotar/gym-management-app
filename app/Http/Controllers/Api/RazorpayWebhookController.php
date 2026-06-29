@@ -10,6 +10,7 @@ use App\Models\WhatsAppCreditTransaction;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -67,7 +68,7 @@ class RazorpayWebhookController
             }
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -196,7 +197,7 @@ class RazorpayWebhookController
                 'email' => $email,
                 'payment_id' => $payment->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process gym owner registration via webhook', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
@@ -267,7 +268,7 @@ class RazorpayWebhookController
                     'error' => $result['error'] ?? 'Unknown error',
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process WhatsApp package payment via webhook', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),

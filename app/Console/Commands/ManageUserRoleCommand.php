@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -361,7 +362,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Assigned roles to {$successCount} users. Failed: {$failCount}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->error('Failed: ' . $e->getMessage());
 
@@ -439,7 +440,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Assigned role '{$roleName}' to {$user->name}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to assign role: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -481,7 +482,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Changed role from '{$oldRoles}' to '{$newRoleName}' for {$user->name}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to change role: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -505,7 +506,7 @@ class ManageUserRoleCommand extends Command
             }
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to remove roles: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -589,7 +590,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Super-admin user '{$name}' created successfully!");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->error('Failed to create super-admin: ' . $e->getMessage());
 

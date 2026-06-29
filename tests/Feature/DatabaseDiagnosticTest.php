@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * Diagnostic test to verify database setup for the test suite.
@@ -130,7 +131,7 @@ class DatabaseDiagnosticTest extends TestCase
                 $actualDb->db,
                 "Connected to wrong database: {$actualDb->db} (expected gym_app_test)"
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fail("MySQL connection failed: {$e->getMessage()}. Host: {$host}, Database: {$database}");
         }
     }

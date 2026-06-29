@@ -12,6 +12,7 @@ use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -53,7 +54,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -61,7 +62,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callDisplayFinalSummary(): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('displayFinalSummary');
                 $method->setAccessible(true);
                 $method->invoke($this);
@@ -109,7 +110,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -153,7 +154,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -200,7 +201,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -209,7 +210,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -217,7 +218,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -287,7 +288,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -296,7 +297,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -304,7 +305,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -363,7 +364,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -412,7 +413,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -421,7 +422,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -429,7 +430,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -475,7 +476,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);

@@ -98,7 +98,7 @@ class RazorpayService
                 'key' => config('services.razorpay.key_id'),
                 'payment_id' => $payment->id,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create Razorpay order', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -237,7 +237,7 @@ class RazorpayService
                 'order_id' => $razorpayPayment->order_id,
                 'captured' => $razorpayPayment->captured,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch payment details', [
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
@@ -266,7 +266,7 @@ class RazorpayService
                 'amount' => $refund->amount / 100,
                 'status' => $refund->status,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process refund', [
                 'payment_id' => $paymentId,
                 'amount' => $amount,
@@ -293,7 +293,7 @@ class RazorpayService
             $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
             return hash_equals($expectedSignature, $signature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook signature verification failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -352,7 +352,7 @@ class RazorpayService
             }
 
             return ['verified' => false, 'reason' => 'local_record_not_found'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('API-based payment verification failed', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),

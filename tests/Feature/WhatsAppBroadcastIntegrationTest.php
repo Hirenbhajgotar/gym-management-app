@@ -15,6 +15,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use RuntimeException;
 use Tests\TestCase;
 
 class WhatsAppBroadcastIntegrationTest extends TestCase
@@ -176,7 +177,7 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
 
     public function test_failed_method_sets_broadcast_status_to_failed(): void
     {
-        $exception = new \RuntimeException('Test failure');
+        $exception = new RuntimeException('Test failure');
         $job = new SendBroadcastJob($this->broadcast->id, $this->broadcast->gym_id);
         $job->failed($exception);
 

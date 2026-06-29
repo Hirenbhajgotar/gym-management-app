@@ -11,6 +11,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\SubscriptionService;
+use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
@@ -96,7 +97,7 @@ class ProfileController extends Component
                 );
 
                 return to_route('profile');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 session()->flash(
                     'error',
                     'Failed to start trial. Please try again.',

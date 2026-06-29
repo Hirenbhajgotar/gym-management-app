@@ -12,6 +12,7 @@ use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\SocialMediaLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -68,7 +69,7 @@ class ProcessSocialMediaLead implements ShouldQueue
 
             if (! $processor) {
                 Log::error('No processor available for platform', ['platform' => $this->platform]);
-                $this->fail(new \Exception("No processor available for platform: {$this->platform}"));
+                $this->fail(new Exception("No processor available for platform: {$this->platform}"));
 
                 return;
             }
@@ -107,7 +108,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 }
 
                 // Retry for other failures
-                $this->fail(new \Exception("Lead creation failed for platform: {$this->platform}"));
+                $this->fail(new Exception("Lead creation failed for platform: {$this->platform}"));
             }
         } catch (Throwable $e) {
             Log::error('Social media lead processing job failed', [
@@ -192,7 +193,7 @@ class ProcessSocialMediaLead implements ShouldQueue
 
             // Update lead source tracking
             $this->updateLeadSourceTracking($lead, $platform);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Post-processing failed for social media lead', [
                 'lead_id' => $lead->id,
                 'platform' => $platform,
@@ -250,7 +251,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 $stats[$platform] = ($stats[$platform] ?? 0) + 1;
                 $gym->update(['lead_source_stats' => $stats]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to update lead source tracking', [
                 'lead_id' => $lead->id,
                 'platform' => $platform,
@@ -319,7 +320,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 'attempts' => $this->attempts(),
                 'data' => $this->leadData,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Ignore logging errors to prevent infinite loops
         }
     }

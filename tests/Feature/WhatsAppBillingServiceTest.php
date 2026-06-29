@@ -9,6 +9,7 @@ use App\Models\WhatsAppCreditTransaction;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -49,7 +50,7 @@ class WhatsAppBillingServiceTest extends TestCase
     {
         $this->billingService->addWelcomeCredits($this->gym->id);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->billingService->addWelcomeCredits($this->gym->id);
     }
 
@@ -117,7 +118,7 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 2,
         ]);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->billingService->useCredits($this->gym->id, 5, 'Trying to send 5 messages');
     }
 

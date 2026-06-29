@@ -13,6 +13,7 @@ use App\Models\WhatsAppPackage;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
@@ -132,7 +133,7 @@ class PurchaseCredits extends BasePage implements HasActions
         try {
             $package = WhatsAppPackage::query()->find($this->selectedPackageId);
 
-            throw_unless($package, \Exception::class, 'Package not found');
+            throw_unless($package, Exception::class, 'Package not found');
 
             $gym = $this->getGym();
             $user = Auth::user();
@@ -181,7 +182,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 'package_name' => $package->name,
                 'message_count' => $package->message_count,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::info('Payment Init Failed: ' . $e->getMessage());
             Notification::make()
                 ->title('Payment Init Failed')
@@ -201,7 +202,7 @@ class PurchaseCredits extends BasePage implements HasActions
             if (blank($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
                 $paymentRecord = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
 
-                throw_unless($paymentRecord, \Exception::class, 'Payment session expired. Please try again.');
+                throw_unless($paymentRecord, Exception::class, 'Payment session expired. Please try again.');
 
                 $this->razorpayOrder = [
                     'order_id' => $paymentRecord->razorpay_order_id,
@@ -211,7 +212,7 @@ class PurchaseCredits extends BasePage implements HasActions
             }
 
             // Guard: verify we have the required state before proceeding
-            throw_if(blank($this->razorpayOrder['order_id']) || ! $this->selectedPackageId, \Exception::class, 'Payment session data is missing. Please try again.');
+            throw_if(blank($this->razorpayOrder['order_id']) || ! $this->selectedPackageId, Exception::class, 'Payment session data is missing. Please try again.');
 
             $razorpayService = new RazorpayService();
 
@@ -261,7 +262,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 $this->selectedPackageId = null;
                 $this->razorpayOrder = [];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
                 'razorpay_order_id' => $this->razorpayOrder['order_id'] ?? 'N/A',
@@ -304,7 +305,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 navigate: true
             );
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Failed to Claim Credits')
                 ->body($e->getMessage())
@@ -343,7 +344,7 @@ class PurchaseCredits extends BasePage implements HasActions
     {
         $tenant = Filament::getTenant();
 
-        throw_unless($tenant instanceof Gym, \Exception::class, 'No gym tenant context available.');
+        throw_unless($tenant instanceof Gym, Exception::class, 'No gym tenant context available.');
 
         return $tenant;
     }

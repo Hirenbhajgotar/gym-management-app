@@ -11,11 +11,13 @@ use App\Notifications\WhatsAppTemplateApprovedNotification;
 use App\Notifications\WhatsAppTemplateRejectedNotification;
 use App\Notifications\WhatsAppTemplateStatusChangedNotification;
 use App\Services\Support\WhatsAppTemplateStatusMapper;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Processes Meta template status webhook events asynchronously.
@@ -175,7 +177,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
                 'new_status' => $newStatus->value,
                 'notified_user_id' => $owner->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log but don't fail the job - notification failure shouldn't block status updates
             Log::error('ProcessMetaTemplateWebhook: notification failed', [
                 'template_id' => $template->id,
@@ -187,7 +189,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ProcessMetaTemplateWebhook: job failed', [
             'meta_template_id' => $this->metaTemplateId,

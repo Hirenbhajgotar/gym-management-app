@@ -15,6 +15,7 @@ use App\Providers\WhatsAppProviderFactory;
 use App\Services\WhatsApp\BroadcastOrchestrator;
 use App\Services\WhatsApp\BroadcastRateLimiter;
 use App\Services\WhatsAppVariableResolver;
+use Exception;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
@@ -583,7 +584,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
             $this->initializeForm();
             $this->loadTemplates();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Broadcast Failed')
                 ->body($e->getMessage())
@@ -595,11 +596,11 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
     private function sendTestMessage(): void
     {
         try {
-            throw_unless(config('services.twilio.use_sandbox', false), \Exception::class, 'Sandbox mode is not enabled. Please enable it in services.php configuration.');
+            throw_unless(config('services.twilio.use_sandbox', false), Exception::class, 'Sandbox mode is not enabled. Please enable it in services.php configuration.');
 
             $testPhoneNumber = config('services.twilio.sandbox_recipient_number');
 
-            throw_unless($testPhoneNumber, \Exception::class, 'No test phone number configured for this gym');
+            throw_unless($testPhoneNumber, Exception::class, 'No test phone number configured for this gym');
 
             $provider = WhatsAppProviderFactory::create($this->getGymId());
 
@@ -615,9 +616,9 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                     ->success()
                     ->send();
             } else {
-                throw new \Exception($result['error'] ?? 'Failed to send test message');
+                throw new Exception($result['error'] ?? 'Failed to send test message');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Test Message Failed')
                 ->body($e->getMessage())

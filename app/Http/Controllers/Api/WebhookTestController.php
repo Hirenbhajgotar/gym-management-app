@@ -12,6 +12,7 @@ use App\Services\IndiaMartLeadProcessor;
 use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -91,7 +92,7 @@ class WebhookTestController extends Controller
                 'platform' => $platform,
                 'test_data' => $testData,
             ], 422);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Test {$platform} webhook processing failed", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -142,7 +143,7 @@ class WebhookTestController extends Controller
             ];
 
             return response()->json($status);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Failed to get verification status for {$platform}", [
                 'error' => $e->getMessage(),
                 'platform' => $platform,

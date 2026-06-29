@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Models\WabaSetupSession;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
@@ -340,7 +341,7 @@ class EmbeddedSignupService
                 'sender_sid' => $senderSid,
                 'waba_id' => $wabaId,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect WABA to subaccount', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
@@ -401,7 +402,7 @@ class EmbeddedSignupService
                 'sender_sid' => $sender->sid,
                 'waba_id' => $wabaId,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect manual WABA', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,

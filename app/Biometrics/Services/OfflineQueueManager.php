@@ -6,6 +6,7 @@ namespace App\Biometrics\Services;
 
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -150,7 +151,7 @@ class OfflineQueueManager
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to queue offline check-in', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -316,7 +317,7 @@ class OfflineQueueManager
             Log::info('Biometric offline queue cleared (all files)');
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to clear offline queue', ['error' => $e->getMessage()]);
 
             return false;
@@ -395,7 +396,7 @@ class OfflineQueueManager
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to remove events from queue', ['error' => $e->getMessage()]);
 
             return false;
@@ -544,7 +545,7 @@ class OfflineQueueManager
             $handle = null;
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to rewrite queue file', ['error' => $e->getMessage()]);
 
             return false;
@@ -578,7 +579,7 @@ class OfflineQueueManager
                 'success' => $response->getStatusCode() === 200,
                 'body' => $body,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync offline batch', [
                 'error' => $e->getMessage(),
                 'batch_size' => count($batch),

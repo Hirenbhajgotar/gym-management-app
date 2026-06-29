@@ -9,6 +9,7 @@ use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Notifications\BaseTenantNotification;
 use App\Services\WhatsAppVariableResolver;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
@@ -82,7 +83,7 @@ class WelcomeNotification extends BaseTenantNotification
                 'template_sid' => $template->twilio_template_sid,
                 'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
                 'error' => $e->getMessage(),
                 'member_id' => $this->member->id,

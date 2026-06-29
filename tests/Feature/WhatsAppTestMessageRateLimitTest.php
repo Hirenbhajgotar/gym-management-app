@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioWhatsAppService;
+use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -162,7 +163,7 @@ class WhatsAppTestMessageRateLimitTest extends TestCase
         $mock = Mockery::mock(TwilioWhatsAppService::class);
         $mock->shouldReceive('sendTemplateMessage')
             ->once()
-            ->andThrow(new \Exception('Connection timeout'));
+            ->andThrow(new Exception('Connection timeout'));
 
         $this->app->singleton(TwilioWhatsAppService::class, fn () => $mock);
 

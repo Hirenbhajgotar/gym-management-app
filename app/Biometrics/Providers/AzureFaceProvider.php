@@ -9,8 +9,10 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 class AzureFaceProvider implements BiometricProvider
 {
@@ -72,7 +74,7 @@ class AzureFaceProvider implements BiometricProvider
         $faceData = $response->json();
 
         if (blank($faceData['persistedFaceId'])) {
-            throw new \RuntimeException('Azure Face enrollment failed: ' . json_encode($faceData));
+            throw new RuntimeException('Azure Face enrollment failed: ' . json_encode($faceData));
         }
 
         $this->trainPersonGroup($personGroupId);
@@ -207,7 +209,7 @@ class AzureFaceProvider implements BiometricProvider
             )->throw();
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -221,7 +223,7 @@ class AzureFaceProvider implements BiometricProvider
     {
         try {
             return $this->http()->timeout(5)->get($this->getBaseUrl() . '/face/v1.0/persongroups?top=1')->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

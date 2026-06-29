@@ -10,6 +10,7 @@ use App\Models\WhatsAppAccount;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Throwable;
 
 /**
  * Import WhatsApp templates from Meta/Twilio for tenant gyms.
@@ -190,7 +191,7 @@ class ImportTenantWhatsAppTemplates extends Command
             $this->info('Import completed successfully.');
 
             return self::SUCCESS;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error('Import failed: ' . $e->getMessage());
 
             return self::FAILURE;

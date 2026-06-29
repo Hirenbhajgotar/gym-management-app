@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Models\PermissionSetting;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,6 +16,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ImportDefaultPermissionsJob implements ShouldQueue
 {
@@ -58,7 +60,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
             Log::info('Default permissions import completed successfully', [
                 'target_role' => $this->targetRole,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error($e);
 
             throw $e;
@@ -127,7 +129,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ImportDefaultPermissionsJob failed', [
             'target_role' => $this->targetRole,

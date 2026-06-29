@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -31,7 +32,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $commandProperty = $reflection->getProperty('command');
         $commandProperty->setAccessible(true);
         $commandProperty->setValue($this->seeder, $this->mockCommand);
@@ -70,7 +71,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn(false);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -104,7 +105,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('trainer');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -139,7 +140,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with('ℹ️  No users found without the selected type of role assignment.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -180,7 +181,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn(false);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -219,7 +220,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with("✅ Removed global roles from {$user->name}");
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -263,7 +264,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('manager');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -313,7 +314,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('Remove all roles in context');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -336,7 +337,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('ℹ️  No users with roles found.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -357,7 +358,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createDemoUsersForAllGyms');
         $method->setAccessible(true);
 
@@ -379,7 +380,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('No gyms found. Please create gyms first.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createDemoUsersForAllGyms');
         $method->setAccessible(true);
 
@@ -401,7 +402,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -438,7 +439,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         ]);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createProfileForUser');
         $method->setAccessible(true);
 
@@ -462,7 +463,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('error')->with('No roles available for selection in the chosen context.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -487,7 +488,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('displayFinalSummary');
         $method->setAccessible(true);
 
@@ -515,7 +516,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('warn')->with("⚠️  1 users don't have any Spatie roles assigned!");
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('displayFinalSummary');
         $method->setAccessible(true);
 

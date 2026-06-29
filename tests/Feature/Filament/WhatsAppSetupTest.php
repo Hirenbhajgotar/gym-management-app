@@ -18,12 +18,14 @@ use App\Services\TwilioAccountManager;
 use App\Services\TwilioWhatsAppService;
 use App\Services\WhatsAppBillingService;
 use App\Services\WhatsAppTemplateService;
+use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Throwable;
 
 class WhatsAppSetupTest extends TestCase
 {
@@ -58,7 +60,7 @@ class WhatsAppSetupTest extends TestCase
     {
         try {
             Filament::setTenant(null);
-        } catch (\Throwable $_) {
+        } catch (Throwable $_) {
         }
 
         Mockery::close();
@@ -240,7 +242,7 @@ class WhatsAppSetupTest extends TestCase
         $mock = Mockery::mock(TwilioAccountManager::class);
         $mock->shouldReceive('createSubaccount')
             ->once()
-            ->andThrow(new \Exception('Connection timeout'));
+            ->andThrow(new Exception('Connection timeout'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
 
@@ -493,7 +495,7 @@ class WhatsAppSetupTest extends TestCase
         $mock = Mockery::mock(WhatsAppTemplateService::class);
         $mock->shouldReceive('createDefaultTemplates')
             ->once()
-            ->andThrow(new \Exception('Template API error'));
+            ->andThrow(new Exception('Template API error'));
 
         $this->app->singleton(WhatsAppTemplateService::class, fn () => $mock);
 
@@ -559,7 +561,7 @@ class WhatsAppSetupTest extends TestCase
         $billingMock = Mockery::mock(WhatsAppBillingService::class);
         $billingMock->shouldReceive('addWelcomeCredits')
             ->once()
-            ->andThrow(new \Exception('Credits already claimed'));
+            ->andThrow(new Exception('Credits already claimed'));
 
         $this->app->singleton(WhatsAppBillingService::class, fn () => $billingMock);
 
@@ -901,7 +903,7 @@ class WhatsAppSetupTest extends TestCase
         $mock = Mockery::mock(TwilioAccountManager::class);
         $mock->shouldReceive('connectManualWaba')
             ->once()
-            ->andThrow(new \Exception('Network timeout'));
+            ->andThrow(new Exception('Network timeout'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
 
@@ -1053,7 +1055,7 @@ class WhatsAppSetupTest extends TestCase
         $mock = Mockery::mock(TwilioAccountManager::class);
         $mock->shouldReceive('registerOwnNumber')
             ->once()
-            ->andThrow(new \Exception('Twilio API timeout'));
+            ->andThrow(new Exception('Twilio API timeout'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
 
@@ -1244,7 +1246,7 @@ class WhatsAppSetupTest extends TestCase
         $mock = Mockery::mock(TwilioAccountManager::class);
         $mock->shouldReceive('resendOwnNumberOtp')
             ->once()
-            ->andThrow(new \Exception('Rate limit exceeded'));
+            ->andThrow(new Exception('Rate limit exceeded'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $mock);
 

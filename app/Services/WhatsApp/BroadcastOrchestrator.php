@@ -11,6 +11,7 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +27,7 @@ class BroadcastOrchestrator
      * @param  array<string, mixed>  $data  Template, variables, recipient/schedule config
      * @param  int[]  $selectedMemberIds  Pre-filtered member IDs (for 'filtered' recipient type)
      *
-     * @throws \Exception On any validation failure
+     * @throws Exception On any validation failure
      */
     public function createAndDispatch(
         array $data,
@@ -35,7 +36,7 @@ class BroadcastOrchestrator
     ): WhatsAppBroadcast {
         $lock = Cache::lock("broadcast-rate-{$gymId}", 10);
 
-        throw_unless($lock->get(), \Exception::class, 'Unable to send broadcast at this time. Please try again.');
+        throw_unless($lock->get(), Exception::class, 'Unable to send broadcast at this time. Please try again.');
 
         try {
             $templateId = $data['template_id'] ?? null;
@@ -49,27 +50,27 @@ class BroadcastOrchestrator
             /** @var WhatsAppTemplate|null $template */
             $template = WhatsAppTemplate::query()->find($templateId);
 
-            throw_unless($template, \Exception::class, 'Please select a template');
+            throw_unless($template, Exception::class, 'Please select a template');
 
             $targetCount = $recipientType === 'all'
                 ? GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
                 : count($selectedMemberIds);
 
-            throw_if($targetCount === 0, \Exception::class, 'No recipients found. Please select members or change recipient type.');
+            throw_if($targetCount === 0, Exception::class, 'No recipients found. Please select members or change recipient type.');
 
-            throw_if($recipientType !== 'all' && blank($selectedMemberIds), \Exception::class, 'Please select at least one member from the filtered results.');
+            throw_if($recipientType !== 'all' && blank($selectedMemberIds), Exception::class, 'Please select at least one member from the filtered results.');
 
             if (! $this->rateLimiter->canSend($gymId)) {
                 $quota = $this->rateLimiter->getQuota($gymId);
                 $cooldown = $this->rateLimiter->getCooldown($gymId);
 
                 if ($quota['remaining'] <= 0) {
-                    throw new \Exception('Daily broadcast limit reached. You can send a maximum of ' . $quota['limit'] . ' broadcasts per day. Try again tomorrow.');
+                    throw new Exception('Daily broadcast limit reached. You can send a maximum of ' . $quota['limit'] . ' broadcasts per day. Try again tomorrow.');
                 }
 
-                throw_if($cooldown !== null, \Exception::class, "Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
+                throw_if($cooldown !== null, Exception::class, "Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
 
-                throw new \Exception('Unable to send broadcast at this time. Please try again.');
+                throw new Exception('Unable to send broadcast at this time. Please try again.');
             }
 
             // === Upfront credit deduction ===
@@ -84,7 +85,7 @@ class BroadcastOrchestrator
                     ->first();
 
                 if (! $creditRecord || ! $creditRecord->canSendMessage($targetCount)) {
-                    throw new \Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+                    throw new Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
                 }
 
                 // Handle welcome credits first, then bulk deduction
@@ -109,7 +110,7 @@ class BroadcastOrchestrator
 
                 $creditsDeducted = true;
                 DB::commit();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 throw $e;
@@ -165,7 +166,7 @@ class BroadcastOrchestrator
                 });
 
                 DB::commit();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 throw $e;

@@ -7,6 +7,7 @@ namespace App\Services\Twilio;
 use App\Interfaces\TestMessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -102,7 +103,7 @@ class TwilioTestMessageService implements TestMessagingInterface
                 'error' => $result['error'] ?? null,
                 'requires_template' => $result['requires_template'] ?? false,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send test WhatsApp message', [
                 'gym_id' => $gymId ?? null,
                 'error' => $e->getMessage(),

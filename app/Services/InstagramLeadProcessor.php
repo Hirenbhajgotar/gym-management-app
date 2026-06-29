@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -61,7 +62,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Instagram lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -104,7 +105,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
 
             // Compare signatures
             return hash_equals($expectedSignature, $calculatedSignature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Instagram webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -143,7 +144,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown Instagram webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from Instagram', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -350,7 +351,7 @@ class InstagramLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $response->json();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch lead details from Instagram', [
                 'error' => $e->getMessage(),
                 'lead_id' => $leadId,

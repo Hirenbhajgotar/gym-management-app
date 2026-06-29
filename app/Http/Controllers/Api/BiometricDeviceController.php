@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -79,7 +80,7 @@ class BiometricDeviceController extends Controller
                     ? 'Connection successful'
                     : 'Provider not available',
             ], $isAvailable ? 200 : 503);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Connection failed: ' . $e->getMessage(),

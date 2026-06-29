@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TenantSocialConfig;
 use App\Services\InstagramLeadProcessor;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -73,7 +74,7 @@ class InstagramLeadController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to process lead'], 422);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Instagram webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -123,7 +124,7 @@ class InstagramLeadController extends Controller
             ]);
 
             return response()->json(['error' => 'Verification failed'], 403);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Instagram webhook verification error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

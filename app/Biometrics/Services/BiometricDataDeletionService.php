@@ -9,7 +9,9 @@ use App\Biometrics\DTOs\TemplateRef;
 use App\Models\BiometricConsent;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Spatie\Activitylog\Facades\Activity;
 
 class BiometricDataDeletionService
@@ -26,7 +28,7 @@ class BiometricDataDeletionService
      * - Catches exceptions per template and continues processing
      * - Throws aggregated exception after loop if any failures occurred
      *
-     * @throws \Exception when provider deletion fails - allows listener retry
+     * @throws Exception when provider deletion fails - allows listener retry
      */
     public function deleteForGymMember(GymMember $gymMember): void
     {
@@ -66,7 +68,7 @@ class BiometricDataDeletionService
                         'provider' => $template->provider_type,
                     ]);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Catch exception per template and accumulate error
                 // This allows processing to continue for remaining templates
                 $errors[] = [
@@ -107,7 +109,7 @@ class BiometricDataDeletionService
         // Step 6: Throw aggregated exception if any errors occurred
         // This triggers the listener retry mechanism
         if (filled($errors)) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Biometric data deletion failed for ' . count($errors) . ' template(s). See logs for details.',
                 0
             );

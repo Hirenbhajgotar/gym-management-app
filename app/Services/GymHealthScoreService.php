@@ -9,7 +9,7 @@ use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Lead;
 use App\Models\MemberPayment;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class GymHealthScoreService

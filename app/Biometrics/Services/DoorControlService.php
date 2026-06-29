@@ -11,6 +11,7 @@ use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\DoorEvent;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -91,7 +92,7 @@ class DoorControlService
             event(new DoorControllerUnreachable($device, $e->getMessage()));
 
             return DoorControlResult::failed('Door controller unreachable');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             event(new DoorControllerUnreachable($device, $e->getMessage()));
 
             return DoorControlResult::failed('Door controller error: ' . $e->getMessage());

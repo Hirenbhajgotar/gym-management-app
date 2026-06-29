@@ -8,6 +8,7 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\Services\CheckInService;
 use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -77,7 +78,7 @@ class BiometricWebhookController extends Controller
             $result = $this->checkInService->processCheckIn($sample, $device);
 
             return $this->formatResponse($result, $device);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Biometric webhook error', [
                 'device_id' => $device->id,
                 'error' => $e->getMessage(),

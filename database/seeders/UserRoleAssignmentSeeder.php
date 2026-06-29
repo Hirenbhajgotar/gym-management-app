@@ -9,6 +9,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
+use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +63,7 @@ class UserRoleAssignmentSeeder extends Seeder
                 'Bulk assign role to users by email list' => $this->bulkAssignRolesByEmail(),
                 default => $this->command->error('Invalid choice selected.'),
             };
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->command->error('Error: ' . $e->getMessage());
             $this->command->error('Please check your database connection and try again.');
         } finally {
@@ -101,7 +102,7 @@ class UserRoleAssignmentSeeder extends Seeder
                         $this->command->info("Created global role '{$roleName}'");
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->command->error("Failed to create role {$roleName}: " . $e->getMessage());
             }
         }
@@ -223,7 +224,7 @@ class UserRoleAssignmentSeeder extends Seeder
                     ['Created At', $superAdmin->created_at->format('Y-m-d H:i:s')],
                 ],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->command->error('Failed to create super-admin user: ' . $e->getMessage());
         }
@@ -298,7 +299,7 @@ class UserRoleAssignmentSeeder extends Seeder
                 $this->createProfileForUser($user, $userData['role'], $userData['profile_data'] ?? null, $gymId);
             }
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->command->error('Failed to create demo users: ' . $e->getMessage());
         }
@@ -540,7 +541,7 @@ class UserRoleAssignmentSeeder extends Seeder
                 $this->assignRoleToUser($user, $selectedRole, $gymId);
             }
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->command->error('Failed to assign roles: ' . $e->getMessage());
         }

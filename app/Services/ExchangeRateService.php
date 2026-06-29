@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use BadMethodCallException;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -181,7 +183,7 @@ class ExchangeRateService
             return $this->convert((float) $amount, $currency);
         }
 
-        throw new \BadMethodCallException("Method {$method} does not exist on " . static::class);
+        throw new BadMethodCallException("Method {$method} does not exist on " . static::class);
     }
 
     /**
@@ -278,7 +280,7 @@ class ExchangeRateService
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to fetch exchange rate', [
                 'error' => $e->getMessage(),
             ]);

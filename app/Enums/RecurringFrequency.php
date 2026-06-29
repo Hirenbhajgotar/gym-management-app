@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use DateTimeInterface;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Support\Facades\Date;
 
@@ -59,7 +60,7 @@ enum RecurringFrequency: string implements HasLabel
     /**
      * Calculate next due date from a given date
      */
-    public function getNextDueDate(\DateTimeInterface $fromDate): \DateTimeInterface
+    public function getNextDueDate(DateTimeInterface $fromDate): DateTimeInterface
     {
         $date = Date::parse($fromDate);
 

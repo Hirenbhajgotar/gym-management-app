@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Exception;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -100,7 +101,7 @@ class ExportServiceProvider extends ServiceProvider
             fclose($stream);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),

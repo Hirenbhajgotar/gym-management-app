@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\Subscription;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -16,7 +17,7 @@ class RenewalErrorNotification extends Notification implements ShouldQueue
 
     public function __construct(
         public Subscription $subscription,
-        public \Exception $exception
+        public Exception $exception
     ) {}
 
     /**

@@ -9,6 +9,7 @@ use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -355,7 +356,7 @@ class TwilioAccountCleanupTest extends TestCase
         $managerMock->shouldReceive('cleanupTenantResources')
             ->with($this->gym->id)
             ->once()
-            ->andThrow(new \Exception('Twilio API unavailable'));
+            ->andThrow(new Exception('Twilio API unavailable'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
 

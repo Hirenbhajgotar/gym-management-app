@@ -13,6 +13,7 @@ use App\Interfaces\WabaSetupInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Providers\WhatsAppProviderFactory;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -134,7 +135,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => false,
                 'error' => 'WABA connection is currently in progress. Please wait a moment.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect manual WABA', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
@@ -191,7 +192,7 @@ class MetaWabaService implements WabaSetupInterface
                 'timezone' => $wabaData['timezone'] ?? null,
                 'error' => null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to verify WABA connection', [
                 'waba_id' => $wabaId,
                 'phone_number_id' => $phoneNumberId,
@@ -341,7 +342,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => false,
                 'error' => 'Processing embedded signup. Please wait.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to complete embedded signup: ' . $e->getMessage(),
@@ -374,7 +375,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => true,
                 'display_phone_number' => $response['data']['display_phone_number'] ?? null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to fetch phone details from Meta', [
                 'phone_number_id' => $phoneNumberId,
                 'error' => $e->getMessage(),
@@ -433,7 +434,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => true,
                 'data' => $response['data'],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $exceptionMessage = $e->getMessage();
 
             Log::error('Exception while getting WABA details', [

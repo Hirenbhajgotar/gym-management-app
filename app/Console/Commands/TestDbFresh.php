@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 use function Laravel\Prompts\confirm;
 
@@ -84,7 +85,7 @@ final class TestDbFresh extends Command
 
         try {
             DB::connection()->getPdo();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error('  ABORTED: Cannot connect to the test database.');
             $this->error('  ' . $e->getMessage());
             $this->newLine();

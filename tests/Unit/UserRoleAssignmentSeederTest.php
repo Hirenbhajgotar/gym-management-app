@@ -7,12 +7,14 @@ namespace Tests\Unit;
 use App\Models\Gym;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -32,7 +34,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $commandProperty = $reflection->getProperty('command');
         $commandProperty->setAccessible(true);
         $commandProperty->setValue($this->seeder, $this->mockCommand);
@@ -174,7 +176,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureRolesExist');
         $method->setAccessible(true);
 
@@ -201,7 +203,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureRolesExist');
         $method->setAccessible(true);
 
@@ -226,7 +228,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureRolesExist');
         $method->setAccessible(true);
 
@@ -255,7 +257,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('Name cannot be empty.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -274,7 +276,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('Please enter a valid email address.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -297,7 +299,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with("User with email 'existing@example.com' already exists.");
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -315,7 +317,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('Password must be at least 8 characters long. Exiting...');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -334,7 +336,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('Passwords do not match. Exiting...');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -349,7 +351,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -394,7 +396,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -420,7 +422,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -445,7 +447,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('error')->with('No gyms found. Please create gyms first.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createDemoUsersForGym');
         $method->setAccessible(true);
 
@@ -459,7 +461,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('getAvailableGyms');
         $method->setAccessible(true);
 
@@ -510,7 +512,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 1');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('displayFinalSummary');
         $method->setAccessible(true);
 
@@ -534,10 +536,10 @@ class UserRoleAssignmentSeederTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('Please check your database connection and try again.');
 
         // Force an exception by making the database unavailable
-        DB::shouldReceive('beginTransaction')->andThrow(new \Exception('Database connection failed'));
+        DB::shouldReceive('beginTransaction')->andThrow(new Exception('Database connection failed'));
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createSuperAdminUser');
         $method->setAccessible(true);
 
@@ -562,7 +564,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         Role::create(['name' => 'gym_owner', 'guard_name' => 'web']);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createOrUpdateUser');
         $method->setAccessible(true);
 
@@ -594,7 +596,7 @@ class UserRoleAssignmentSeederTest extends TestCase
         Role::create(['name' => 'trainer', 'guard_name' => 'web', 'gym_id' => $gym->id]);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createOrUpdateUser');
         $method->setAccessible(true);
 

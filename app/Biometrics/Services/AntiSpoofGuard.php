@@ -6,6 +6,7 @@ namespace App\Biometrics\Services;
 
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class AntiSpoofGuard
@@ -14,7 +15,7 @@ class AntiSpoofGuard
     {
         try {
             $livenessScore = $provider->getLivenessScore($sample);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log the error but deny access as a safety measure when liveness check fails
             Log::warning('Biometric liveness check failed, denying access', [
                 'error' => $e->getMessage(),
@@ -33,7 +34,7 @@ class AntiSpoofGuard
     {
         try {
             return $provider->getLivenessScore($sample);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log the error and return 0.0 as a safe fallback
             Log::warning('Biometric liveness score retrieval failed', [
                 'error' => $e->getMessage(),

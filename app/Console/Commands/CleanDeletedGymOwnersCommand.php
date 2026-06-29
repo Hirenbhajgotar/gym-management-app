@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\DefaultRole;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -81,7 +82,7 @@ class CleanDeletedGymOwnersCommand extends Command
                     'user_email' => $owner->email,
                 ]);
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 $errorMessage = "Failed to delete gym owner {$owner->email}: {$e->getMessage()}";

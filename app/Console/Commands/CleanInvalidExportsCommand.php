@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use Exception;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,7 +54,7 @@ class CleanInvalidExportsCommand extends Command
                     $export->delete();
                     $deletedCount++;
                     $this->line("Deleted export ID: {$export->id}");
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->error("Failed to delete export ID {$export->id}: {$e->getMessage()}");
                 }
             }
@@ -87,7 +88,7 @@ class CleanInvalidExportsCommand extends Command
                     $disk = Storage::disk($export->file_disk);
 
                     return ! $disk->exists($export->file_name);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Error checking export file existence', [
                         'export_id' => $export->id,
                         'exception' => $e->getMessage(),

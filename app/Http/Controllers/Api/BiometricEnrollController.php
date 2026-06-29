@@ -13,6 +13,7 @@ use App\Http\Requests\BiometricEnrollRequest;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -72,7 +73,7 @@ class BiometricEnrollController extends Controller
                 'quality_score' => $template->quality_score,
                 'enrolled_at' => $template->enrolled_at->toISOString(),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'Enrollment failed',
@@ -159,7 +160,7 @@ class BiometricEnrollController extends Controller
                 'success' => true,
                 'message' => 'Template deleted successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'Deletion failed',

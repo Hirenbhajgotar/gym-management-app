@@ -6,6 +6,7 @@ namespace App\Imports;
 
 use App\Events\ImportCompleted;
 use App\Models\User;
+use Exception;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
@@ -22,6 +23,7 @@ use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Throwable;
 
 /**
  * Class BaseImporter
@@ -181,7 +183,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     Log::info('Processing row: ');
                     $this->processRow($data);
                     $this->successfulRows++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // If an exception occurs during processing, record the failed row and error message.
                     Log::error('Error processing row: ', [
                         'exception' => $e,
@@ -324,7 +326,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 'import_id' => $this->importRecord->id,
                 'file_path' => $this->failedFilePath,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to generate failed rows CSV', [
                 'import_id' => $this->importRecord->id,
                 'error' => $e->getMessage(),
@@ -419,9 +421,9 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      * It updates the import record, sends a failure notification to the user,
      * and logs the exception.
      *
-     * @param  \Throwable  $exception  The exception that caused the job to fail.
+     * @param  Throwable  $exception  The exception that caused the job to fail.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         // If there is an import record, mark it as completed with an error status.
         if ($this->importRecord) {

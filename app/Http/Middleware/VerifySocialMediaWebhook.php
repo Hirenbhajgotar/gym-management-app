@@ -11,6 +11,7 @@ use App\Services\JustDialLeadProcessor;
 use App\Services\SocialMediaLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -63,7 +64,7 @@ class VerifySocialMediaWebhook
             $request->attributes->set('social_media_platform', $platform);
 
             return $next($request);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook verification middleware error', [
                 'error' => $e->getMessage(),
                 'path' => $request->path(),

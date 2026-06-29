@@ -13,6 +13,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * Listener to log user login activity.
@@ -58,7 +59,7 @@ class LogUserLogin
             if (class_exists(Filament::class) && Filament::isServing()) {
                 $gym = Filament::getTenant();
             }
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             // Ignore if tenant is not set yet
         }
 

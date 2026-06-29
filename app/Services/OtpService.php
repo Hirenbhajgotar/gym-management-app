@@ -104,7 +104,7 @@ class OtpService
             ]);
 
             return $newService->sid;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to get or create Verify service', [
                 'gym_id' => $gym->id,
                 'error' => $e->getMessage(),
@@ -179,7 +179,7 @@ class OtpService
                 'success' => false,
                 'message' => 'Failed to send verification code. Please try again.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance OTP exception', [
                 'gym_id' => $gym->id,
                 'member_id' => $member->id,
@@ -245,7 +245,7 @@ class OtpService
                 'valid' => false,
                 'message' => 'Invalid verification code. Please try again.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance OTP verification exception', [
                 'gym_id' => $gym->id,
                 'phone' => $formattedPhone,

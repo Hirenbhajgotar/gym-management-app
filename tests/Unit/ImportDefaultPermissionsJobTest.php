@@ -8,6 +8,7 @@ use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\PermissionSetting;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -146,13 +147,13 @@ class ImportDefaultPermissionsJobTest extends TestCase
             ->shouldReceive('getDefaultPermissions')
             ->with($roleName)
             ->once()
-            ->andThrow(new \Exception($exceptionMessage));
+            ->andThrow(new Exception($exceptionMessage));
 
         //        Log::shouldReceive('info')->times(1);
         //        Log::shouldReceive('error')->times(1);
 
         // Act & Assert
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
         $job = new ImportDefaultPermissionsJob($roleName, $userId);
@@ -170,10 +171,10 @@ class ImportDefaultPermissionsJobTest extends TestCase
             ->shouldReceive('getDefaultPermissions')
             ->withNoArgs()
             ->once()
-            ->andThrow(new \Exception($exceptionMessage));
+            ->andThrow(new Exception($exceptionMessage));
 
         // Act & Assert
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
         $job = new ImportDefaultPermissionsJob(null, $userId);
@@ -220,7 +221,7 @@ class ImportDefaultPermissionsJobTest extends TestCase
         // Arrange
         $roleName = 'admin';
         $userId = 1;
-        $exception = new \Exception('Test exception');
+        $exception = new Exception('Test exception');
 
         //        Log::shouldReceive('error')->times(1);
 

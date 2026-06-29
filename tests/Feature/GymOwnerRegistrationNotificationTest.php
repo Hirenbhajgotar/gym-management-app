@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -48,7 +49,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
         $mockSuperAdmin->shouldReceive('getAttribute')->with('name')->andReturn('Super Admin');
         $mockSuperAdmin->shouldReceive('getAttribute')->with('email')->andReturn('admin@example.com');
         $mockSuperAdmin->shouldReceive('notify')
-            ->andThrow(new \Exception('Simulated notification failure'));
+            ->andThrow(new Exception('Simulated notification failure'));
 
         // Mock Cache to return our problematic super admin
         Cache::shouldReceive('flexible')

@@ -9,6 +9,7 @@ use App\Enums\DefaultRole;
 use App\Traits\ConvertsToSnakeCase;
 use App\Traits\ResolvesPolicyTableName;
 use Filament\Resources\Resource;
+use ReflectionClass;
 
 abstract class BaseResource extends Resource implements HasFilamentPermissions
 {
@@ -67,7 +68,7 @@ abstract class BaseResource extends Resource implements HasFilamentPermissions
             return false;
         }
 
-        $reflection = new \ReflectionClass(static::class);
+        $reflection = new ReflectionClass(static::class);
         if ($reflection->isAbstract()) {
             return false;
         }

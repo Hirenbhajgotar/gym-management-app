@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class JustDialLeadProcessor extends SocialMediaLeadProcessor
@@ -56,7 +57,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('JustDial lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -94,7 +95,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             $expectedApiKey = $config->api_key ?? config('services.justdial.api_key');
 
             return $apiKey === $expectedApiKey;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('JustDial webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -133,7 +134,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown JustDial webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from JustDial', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -343,7 +344,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             if ($config->email_acknowledgment_enabled && $lead->email) {
                 $this->sendEmailAcknowledgment($lead);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send JustDial acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,
@@ -370,7 +371,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             // Here you would integrate with your SMS provider
             // Example: SMS::send($lead->phone, $message);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send SMS acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,
@@ -398,7 +399,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             // Here you would integrate with your email service
             // Example: Mail::to($lead->email)->send(new LeadAcknowledgmentEmail($lead, $subject, $body));
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send email acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,

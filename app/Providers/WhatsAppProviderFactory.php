@@ -8,6 +8,7 @@ use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 /**
  * WhatsApp Provider Factory.
@@ -49,7 +50,7 @@ class WhatsAppProviderFactory
      * @param  int  $gymId  The gym ID
      * @param  bool  $isSystemMessage  If true, uses Twilio for system messages (super-admin)
      *
-     * @throws \InvalidArgumentException If provider is not supported
+     * @throws InvalidArgumentException If provider is not supported
      */
     public static function create(int $gymId, bool $isSystemMessage = false, ?string $providerType = null): MetaWhatsAppProvider|TwilioWhatsAppProvider
     {
@@ -74,7 +75,7 @@ class WhatsAppProviderFactory
         return match ($provider) {
             self::PROVIDER_TWILIO => new TwilioWhatsAppProvider($gymId),
             self::PROVIDER_META => new MetaWhatsAppProvider($gymId),
-            default => throw new \InvalidArgumentException(
+            default => throw new InvalidArgumentException(
                 "Unsupported WhatsApp provider: {$provider}. " .
                 'Supported providers: ' . implode(', ', [self::PROVIDER_TWILIO, self::PROVIDER_META])
             ),

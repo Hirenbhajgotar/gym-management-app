@@ -11,6 +11,8 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Traits\HasTenantAccess;
+use Closure;
+use Exception;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
@@ -232,7 +234,7 @@ class PaymentsRelationManager extends RelationManager
             ])
             ->rules([
                 'required',
-                fn () => function (string $attribute, mixed $value, \Closure $fail): void {
+                fn () => function (string $attribute, mixed $value, Closure $fail): void {
                     if (! Hash::check($value, auth()->user()->password)) {
                         $fail('The password is incorrect.');
                     }
@@ -397,7 +399,7 @@ class PaymentsRelationManager extends RelationManager
             ->persistent()
             ->send();
 
-        throw new \Exception('Cannot edit an expired payment.');
+        throw new Exception('Cannot edit an expired payment.');
     }
 
     /**

@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
+use Closure;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
@@ -82,7 +83,7 @@ class EditGymProfile extends EditTenantProfile
                                             // ->dehydrated(false)
                                             ->requiredWith('new_password')
                                             ->rule(function () {
-                                                return function (string $attribute, $value, \Closure $fail) {
+                                                return function (string $attribute, $value, Closure $fail) {
                                                     if (! Hash::check($value, auth()->user()->password)) {
                                                         $fail('The provided password does not match your current password.');
                                                     }

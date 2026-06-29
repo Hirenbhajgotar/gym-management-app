@@ -266,7 +266,7 @@ class TwilioMessagingService implements MessagingInterface
         return ['success' => false, 'error' => $e->getMessage(), 'message_id' => null, 'data' => null];
     }
 
-    private function handleError(string $context, \Exception $e): array
+    private function handleError(string $context, Exception $e): array
     {
         Log::error("WhatsApp {$context} error", [
             'gym_id' => $this->context->gymId,

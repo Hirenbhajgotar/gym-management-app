@@ -8,6 +8,7 @@ use App\Interfaces\ShareableReport;
 use App\Models\ShareableReportLink;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class SharedReportController extends Controller
 {
@@ -25,7 +26,7 @@ class SharedReportController extends Controller
 
         try {
             $page = resolve($reportClass);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             abort(404, 'Report type not found');
         }
 

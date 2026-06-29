@@ -11,6 +11,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+use RuntimeException;
 
 class EditWhatsAppTemplate extends EditRecord
 {
@@ -56,7 +58,7 @@ class EditWhatsAppTemplate extends EditRecord
                                 ->body('Your updated template has not been submitted for Meta approval.')
                                 ->send();
                         }
-                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                    } catch (InvalidArgumentException|RuntimeException $e) {
                         Log::error('Template resubmission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()
@@ -97,7 +99,7 @@ class EditWhatsAppTemplate extends EditRecord
                                 ->body('Your template has not been submitted for Meta approval.')
                                 ->send();
                         }
-                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                    } catch (InvalidArgumentException|RuntimeException $e) {
                         Log::error('Template submission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()

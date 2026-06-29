@@ -8,6 +8,7 @@ use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Interfaces\AccountManagementInterface;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -238,7 +239,7 @@ class TwilioAccountService implements AccountManagementInterface
                 'success' => false,
                 'message' => 'Account cleanup is currently in progress. Please wait.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during Twilio cleanup', [
                 'gym_id' => $gymId,
                 'error' => $e->getMessage(),
@@ -297,7 +298,7 @@ class TwilioAccountService implements AccountManagementInterface
 
                     $phoneNumber->update(['status' => 'released']);
                     $released++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $failed++;
                     $lastError = $e->getMessage();
 
@@ -307,7 +308,7 @@ class TwilioAccountService implements AccountManagementInterface
                     ]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -385,13 +386,13 @@ class TwilioAccountService implements AccountManagementInterface
     /**
      * Get account or fail.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function getAccountOrFail(int $gymId): WhatsAppAccount
     {
         $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
-        throw_unless($account, \Exception::class, 'WhatsApp account not found for this gym');
+        throw_unless($account, Exception::class, 'WhatsApp account not found for this gym');
 
         return $account;
     }

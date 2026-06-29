@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\GymOwnerWelcomeNotification;
 use App\Notifications\UserActionNotification;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Events\Registered;
@@ -90,7 +91,7 @@ class CreateUser extends CreateRecord
             // Store feedback cache
             FeedbackHelper::storeFeedbackCache($user?->id, 15);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Notifications failing shouldn't rollback the user creation,
             // but we'll log it and notify admin in UI
             Notification::make()

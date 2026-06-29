@@ -11,6 +11,7 @@ use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
 use Aws\Exception\AwsException;
 use Aws\Rekognition\RekognitionClient;
+use Exception;
 
 class RekognitionProvider implements BiometricProvider
 {
@@ -48,7 +49,7 @@ class RekognitionProvider implements BiometricProvider
 
         $faceRecords = $result->get('FaceRecords');
 
-        throw_if(blank($faceRecords), \Exception::class, 'No face detected in the image');
+        throw_if(blank($faceRecords), Exception::class, 'No face detected in the image');
 
         $faceId = $faceRecords[0]['Face']['FaceId'];
         $quality = $faceRecords[0]['Face']['Quality'] ?? null;
@@ -165,7 +166,7 @@ class RekognitionProvider implements BiometricProvider
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -185,7 +186,7 @@ class RekognitionProvider implements BiometricProvider
             return true;
         } catch (AwsException $e) {
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -201,7 +202,7 @@ class RekognitionProvider implements BiometricProvider
             $this->client->describeCollection([
                 'CollectionId' => $collectionId,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Collection doesn't exist, create it
             $this->client->createCollection([
                 'CollectionId' => $collectionId,

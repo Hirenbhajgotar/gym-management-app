@@ -22,6 +22,7 @@ use App\Services\Twilio\TwilioPhoneService;
 use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use App\Services\WhatsAppTemplateService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -233,7 +234,7 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
                 : $this->sendProductionTestMessage($recipientNumber, $gymName);
 
             return array_merge($result, ['to' => $recipientNumber, 'mode' => $this->context->useSandbox ? 'sandbox' : 'production']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send test WhatsApp message', ['gym_id' => $gymId, 'error' => $e->getMessage()]);
 
             return ['success' => false, 'error' => $e->getMessage()];

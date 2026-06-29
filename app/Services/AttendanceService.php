@@ -13,6 +13,7 @@ use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -35,7 +36,7 @@ class AttendanceService
     public static function checkIn(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -55,7 +56,7 @@ class AttendanceService
                 } elseif ($member->payment_status !== PaymentStatus::COMPLETED) {
                     $reason = 'Your payment is not completed.';
                 }
-                throw new \Exception('Cannot check in: ' . $reason);
+                throw new Exception('Cannot check in: ' . $reason);
             }
         }
 
@@ -67,7 +68,7 @@ class AttendanceService
             ->whereNull('check_out_time')
             ->first();
 
-        throw_if($existingAttendance, \Exception::class, 'User is already checked in today.');
+        throw_if($existingAttendance, Exception::class, 'User is already checked in today.');
 
         // Create new attendance record
         return Attendances::query()->create([
@@ -86,7 +87,7 @@ class AttendanceService
     public static function checkOut(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
 
         $attendance = Attendances::query()->where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
@@ -94,7 +95,7 @@ class AttendanceService
             ->active()
             ->first();
 
-        throw_unless($attendance, \Exception::class, 'No active check-in found for this user.');
+        throw_unless($attendance, Exception::class, 'No active check-in found for this user.');
 
         // Calculate duration
         $duration = $attendance->check_in_time->diffInMinutes(now());
@@ -115,7 +116,7 @@ class AttendanceService
     public static function markAbsent(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, [GymMember::class, Trainer::class]), \Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, [GymMember::class, Trainer::class]), Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -292,7 +293,7 @@ class AttendanceService
     public static function generateUserReport(int $userId, string $userType, int $gymId, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), \Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
 
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
@@ -386,7 +387,7 @@ class AttendanceService
             $user = User::query()->find($userId);
         }
 
-        throw_unless($user, \Exception::class, 'User not found or does not belong to this gym.');
+        throw_unless($user, Exception::class, 'User not found or does not belong to this gym.');
     }
 
     /**
