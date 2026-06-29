@@ -143,7 +143,7 @@ class ExpenseCategory extends Model implements Sortable
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(ExpenseCategory::class, 'parent_id');
+        return $this->belongsTo(self::class, 'parent_id');
     }
 
     /**
@@ -151,7 +151,7 @@ class ExpenseCategory extends Model implements Sortable
      */
     public function children(): HasMany
     {
-        return $this->hasMany(ExpenseCategory::class, 'parent_id')->orderBy('order');
+        return $this->hasMany(self::class, 'parent_id')->orderBy('order');
     }
 
     /**

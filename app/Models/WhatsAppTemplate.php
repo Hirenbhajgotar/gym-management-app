@@ -78,9 +78,9 @@ class WhatsAppTemplate extends Model
     use HasFactory;
     use SoftDeletes;
 
-    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
+    public const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
 
-    const SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY = 'super_admin_whatsapp_template_navigation_badge';
+    public const SUPER_ADMIN_NAVIGATION_BADGE_CACHE_KEY = 'super_admin_whatsapp_template_navigation_badge';
 
     protected $table = 'whatsapp_templates';
 

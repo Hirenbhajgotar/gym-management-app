@@ -62,7 +62,7 @@ class WhatsAppPackage extends Model
 {
     use HasFactory;
 
-    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_package_navigation_badge';
+    public const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_package_navigation_badge';
 
     protected $table = 'whatsapp_packages';
 

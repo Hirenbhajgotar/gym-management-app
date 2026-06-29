@@ -86,7 +86,7 @@ class WhatsAppAccount extends Model
 {
     use HasFactory;
 
-    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_account_navigation_badge';
+    public const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_account_navigation_badge';
 
     protected $table = 'whatsapp_accounts';
 

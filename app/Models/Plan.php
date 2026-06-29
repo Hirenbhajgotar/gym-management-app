@@ -135,7 +135,7 @@ class Plan extends Model
      */
     public function isFree(): bool
     {
-        return $this->price_monthly == 0;
+        return (float) $this->price_monthly === 0.0;
     }
 
     /**

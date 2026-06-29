@@ -104,7 +104,7 @@ class GymHealthScoreService
             ->whereMonth('payment_date', now()->subMonth()->month)
             ->sum('amount');
 
-        if ($lastMonth == 0) {
+        if ($lastMonth <= 0) {
             return $thisMonth > 0 ? 100 : 0;
         }
 
@@ -187,7 +187,7 @@ class GymHealthScoreService
             ->where('status', PaymentStatus::COMPLETED)
             ->sum('amount');
 
-        if ($totalDue == 0) {
+        if ($totalDue <= 0) {
             return 0; // No dues = perfect score
         }
 

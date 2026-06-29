@@ -43,11 +43,11 @@ class WhatsAppPackageResource extends BaseResource
 
     protected static ?string $navigationLabel = 'Message Packages';
 
-    const MARGIN_PERCENTAGE = 0.010;
+    public const MARGIN_PERCENTAGE = 0.010;
 
-    const TWILIO_COST_PER_MESSAGE = 1.53;
+    public const TWILIO_COST_PER_MESSAGE = 1.53;
 
-    const TWILIO_NUMBER_COST = 136.41;
+    public const TWILIO_NUMBER_COST = 136.41;
 
     public static function canAccess(): bool
     {

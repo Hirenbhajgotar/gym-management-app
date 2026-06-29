@@ -9,6 +9,11 @@
         "modernize_types_casting": true,
         "new_with_parentheses": true,
         "no_useless_else": true,
+        "no_multiple_statements_per_line": true,
+        "self_accessor": true,
+        "self_static_accessor": true,
+        "strict_comparison": true,
+        "modifier_keywords": true,
         "concat_space": {
             "spacing": "one"
         },

@@ -100,7 +100,7 @@ class MembershipPlan extends Model
      */
     public function membershipPlans(): HasMany
     {
-        return $this->hasMany(MembershipPlan::class, 'gym_id');
+        return $this->hasMany(self::class, 'gym_id');
     }
 
     // ========================

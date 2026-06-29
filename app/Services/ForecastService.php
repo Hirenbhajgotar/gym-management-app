@@ -87,7 +87,7 @@ class ForecastService
 
         $divisor = ($n * $sumXX) - ($sumX * $sumX);
 
-        if ($divisor == 0) {
+        if ($divisor === 0) {
             $slope = 0;
         } else {
             $slope = (($n * $sumXY) - ($sumX * $sumY)) / $divisor;

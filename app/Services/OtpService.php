@@ -278,7 +278,7 @@ class OtpService
         }
 
         // Has exactly 10 digits - add India country code
-        if (strlen($cleaned) == 10) {
+        if (strlen($cleaned) === 10) {
             return '+91' . $cleaned;
         }
 
