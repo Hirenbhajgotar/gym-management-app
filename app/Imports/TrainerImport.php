@@ -36,11 +36,11 @@ class TrainerImport extends BaseImporter implements ShouldQueue
             'email' => $formattedRow['email'] ?? null,
             'phone' => $formattedRow['phone'] ?? null,
             'specialization' => $formattedRow['specialization'] ?? null,
-            'experience_years' => filled($formattedRow['experience_years']) ? (int) $formattedRow['experience_years'] : 0,
+            'experience_years' => isset($formattedRow['experience_years']) ? (int) $formattedRow['experience_years'] : 0,
             'is_available' => $isAvailable,
             'available_hours' => $formattedRow['available_hours'] ?? null,
-            'basic_salary' => filled($formattedRow['basic_salary']) ? (float) $formattedRow['basic_salary'] : 0,
-            'pt_salary_per_member' => filled($formattedRow['pt_salary_per_member']) ? (float) $formattedRow['pt_salary_per_member'] : 0,
+            'basic_salary' => isset($formattedRow['basic_salary']) ? (float) $formattedRow['basic_salary'] : 0,
+            'pt_salary_per_member' => isset($formattedRow['pt_salary_per_member']) ? (float) $formattedRow['pt_salary_per_member'] : 0,
             'currency' => $formattedRow['currency'] ?? Currency::INR->value,
         ];
 
