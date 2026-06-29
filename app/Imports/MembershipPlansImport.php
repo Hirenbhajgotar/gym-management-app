@@ -11,7 +11,7 @@ class MembershipPlansImport extends BaseImporter implements ShouldQueue
 {
     protected static ?string $model = MembershipPlan::class;
 
-    public function __construct(public string $tenantId)
+    public function __construct(public int $tenantId)
     {
         parent::__construct();
     }
