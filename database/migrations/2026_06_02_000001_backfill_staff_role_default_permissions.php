@@ -24,7 +24,7 @@ use Spatie\Permission\Models\Role;
  * Honors `permission_settings` overrides: if a row exists for the role,
  * its `default_permissions` JSON is used instead of the hardcoded list.
  */
-return new class extends Migration
+return new class() extends Migration
 {
     /**
      * Default permission set for both `manager` and `receptionist`.

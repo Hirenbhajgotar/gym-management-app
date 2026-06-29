@@ -91,7 +91,7 @@ class PurchaseCredits extends BasePage implements HasActions
 
     private function loadSurchargeData(): void
     {
-        $billingService = new WhatsAppBillingService(new RazorpayService);
+        $billingService = new WhatsAppBillingService(new RazorpayService());
         $surcharge = $billingService->getTwilioNumberSurcharge($this->getGymId());
 
         $this->showSurcharge = (bool) $surcharge['eligible'];
@@ -137,7 +137,7 @@ class PurchaseCredits extends BasePage implements HasActions
             $gym = $this->getGym();
             $user = Auth::user();
 
-            $razorpayService = new RazorpayService;
+            $razorpayService = new RazorpayService();
 
             $totalAmount = $package->selling_price;
 
@@ -213,7 +213,7 @@ class PurchaseCredits extends BasePage implements HasActions
             // Guard: verify we have the required state before proceeding
             throw_if(blank($this->razorpayOrder['order_id']) || ! $this->selectedPackageId, \Exception::class, 'Payment session data is missing. Please try again.');
 
-            $razorpayService = new RazorpayService;
+            $razorpayService = new RazorpayService();
 
             $payment = $razorpayService->verifyPayment(
                 $this->razorpayOrder['order_id'],
@@ -287,7 +287,7 @@ class PurchaseCredits extends BasePage implements HasActions
     public function claimWelcomeCredits(): void
     {
         try {
-            $whatsAppBillingService = new WhatsAppBillingService(new RazorpayService);
+            $whatsAppBillingService = new WhatsAppBillingService(new RazorpayService());
 
             $whatsAppBillingService->addWelcomeCredits($this->getGymId());
 

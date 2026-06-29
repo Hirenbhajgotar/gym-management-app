@@ -28,7 +28,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder;
+        $this->seeder = new UserRoleAssignmentSeeder();
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property

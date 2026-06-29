@@ -14,7 +14,7 @@ class ChartToImageService
 
     public function __construct()
     {
-        $this->manager = new ImageManager(new Driver);
+        $this->manager = new ImageManager(new Driver());
     }
 
     /**

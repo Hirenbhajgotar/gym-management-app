@@ -29,7 +29,7 @@ class ExpenseStatusChangedNotification extends Notification implements ShouldQue
         $gym = $this->expense->gym;
         $actionBy = $this->expense->approvedBy;
 
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->greeting("Hello {$notifiable->name}!");
 
         return match ($this->action) {

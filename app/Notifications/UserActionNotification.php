@@ -41,7 +41,7 @@ class UserActionNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject("New Gym Owner {$this->action} Notification")
             ->greeting('Hello!')
             ->line("A new gym owner has been {$this->action}:")

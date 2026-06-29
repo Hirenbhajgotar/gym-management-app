@@ -30,7 +30,7 @@ class WhatsAppTemplateRejectedNotification extends Notification implements Shoul
         $gymSlug = $this->template->gym?->slug ?? 'admin';
         $reason = $this->template->rejection_reason ?? 'No specific reason provided.';
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('❌ WhatsApp Template Rejected — ' . $this->template->display_name)
             ->greeting("Hello {$notifiable->name},")
             ->line("Unfortunately, your WhatsApp template **\"{$this->template->display_name}\"** was rejected by Meta.")

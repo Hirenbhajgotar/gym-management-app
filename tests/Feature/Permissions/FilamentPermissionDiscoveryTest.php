@@ -18,7 +18,7 @@ class FilamentPermissionDiscoveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService;
+        $this->service = new RolesAndPermissionsService();
     }
 
     #[Test]

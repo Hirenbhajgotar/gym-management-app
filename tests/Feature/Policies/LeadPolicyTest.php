@@ -19,7 +19,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         $this->assertFalse($this->managerUser->fresh()->can('view_any_lead'));
 
         $this->assertFalse(
-            (new LeadPolicy)->viewAny($this->managerUser),
+            (new LeadPolicy())->viewAny($this->managerUser),
             'viewAny should return false when view_any_lead permission is missing',
         );
     }
@@ -34,7 +34,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         );
 
         $this->assertTrue(
-            (new LeadPolicy)->viewAny($this->managerUser->fresh()),
+            (new LeadPolicy())->viewAny($this->managerUser->fresh()),
             'viewAny should return true when view_any_lead permission is granted',
         );
     }
@@ -54,7 +54,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         );
 
         $this->assertFalse(
-            (new LeadPolicy)->viewAny($bareUser),
+            (new LeadPolicy())->viewAny($bareUser),
             'viewAny must be permission-based, not role-based',
         );
     }

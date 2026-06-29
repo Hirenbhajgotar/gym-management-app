@@ -30,7 +30,7 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Welcome to Gym Management System')
             ->greeting("Hello {$this->user->name}!")
             ->line('Welcome to our Gym Management System. We are excited to have you on board.');

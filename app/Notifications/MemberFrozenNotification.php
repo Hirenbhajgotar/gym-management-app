@@ -37,7 +37,7 @@ class MemberFrozenNotification extends Notification
 
     protected function freezeMail(): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Your Gym Membership Has Been Frozen')
             ->greeting('Hello ' . $this->member->name . '!');
 
@@ -61,7 +61,7 @@ class MemberFrozenNotification extends Notification
 
     protected function unfreezeMail(): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Gym Membership Has Been Unfrozen')
             ->greeting('Hello ' . $this->member->name . '!')
             ->line('Great news! Your gym membership has been unfrozen.')

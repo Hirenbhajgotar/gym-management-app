@@ -455,7 +455,7 @@ class TenantSocialConfigResource extends BaseResource
     private static function verifyCredentials(TenantSocialConfig $config): void
     {
         try {
-            $verifier = new SocialMediaCredentialVerifier;
+            $verifier = new SocialMediaCredentialVerifier();
             $result = $verifier->verify($config);
 
             if ($result['success']) {

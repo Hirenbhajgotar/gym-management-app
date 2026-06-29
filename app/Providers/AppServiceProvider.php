@@ -104,11 +104,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Notification::extend('whatsapp', function ($app) {
-            return new WhatsAppChannel;
+            return new WhatsAppChannel();
         });
 
         Notification::extend('filament', function ($app) {
-            return new FilamentChannel;
+            return new FilamentChannel();
         });
     }
 }

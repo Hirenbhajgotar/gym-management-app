@@ -116,7 +116,7 @@ class UserResource extends BaseResource
                                 ->maxLength(255),
                             TextInput::make('email')
                                 ->email()
-                                ->rule(new ValidEmailDomain)
+                                ->rule(new ValidEmailDomain())
                                 ->required()
                                 ->unique(ignoreRecord: true)
                                 ->maxLength(255),

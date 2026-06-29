@@ -51,7 +51,7 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
         );
 
         $this->assertFalse(
-            (new $policyClass)->viewAny($this->managerUser),
+            (new $policyClass())->viewAny($this->managerUser),
             "{$policyClass}::viewAny should return false without '{$permissionSlug}'",
         );
     }
@@ -66,7 +66,7 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
         );
 
         $this->assertTrue(
-            (new $policyClass)->viewAny($this->managerUser->fresh()),
+            (new $policyClass())->viewAny($this->managerUser->fresh()),
             "{$policyClass}::viewAny should return true with '{$permissionSlug}'",
         );
     }

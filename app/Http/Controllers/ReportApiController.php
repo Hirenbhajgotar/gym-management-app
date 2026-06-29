@@ -72,7 +72,7 @@ class ReportApiController extends Controller
     {
         $gymId = $this->getGymId();
 
-        $report = new $reportClass;
+        $report = new $reportClass();
         $report->manualGymId = $gymId;
         $report->filters = $request->only(['date_range', 'start_date', 'end_date']);
         $report->mount();

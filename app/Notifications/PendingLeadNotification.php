@@ -36,7 +36,7 @@ class PendingLeadNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject("Pending Lead Reminder: {$this->lead->name}")
             ->greeting("Hello {$notifiable->name},")
             ->line(

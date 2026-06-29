@@ -145,7 +145,7 @@ class RegisterGymTest extends TestCase
 
         // Act: Instantiate RegisterGym and set authenticated user
         $this->actingAs($this->gymOwner);
-        $registerGym = new RegisterGym;
+        $registerGym = new RegisterGym();
 
         // Assert: hasReachedGymLimit returns true
         $result = $this->invokeProtectedMethod($registerGym, 'hasReachedGymLimit');

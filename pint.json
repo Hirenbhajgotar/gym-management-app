@@ -4,6 +4,10 @@
         "array_push": true,
         "backtick_to_shell_exec": true,
         "declare_strict_types": true,
+        "lowercase_keywords": true,
+        "lowercase_static_reference": true,
+        "modernize_types_casting": true,
+        "new_with_parentheses": true,
         "concat_space": {
             "spacing": "one"
         }

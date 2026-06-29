@@ -60,7 +60,7 @@ class ManagerCreate extends Notification implements ShouldQueue
         $userName = $this->sanitizeUserName();
         $userEmail = $this->user->email ?? 'Not provided';
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject($this->getEmailSubject())
             ->greeting($this->getPersonalizedGreeting($userName))
             ->line($this->getWelcomeMessage())

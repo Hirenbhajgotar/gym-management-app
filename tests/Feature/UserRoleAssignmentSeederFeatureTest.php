@@ -26,7 +26,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Mock the interactive inputs by creating a custom seeder that doesn't require interaction
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -100,7 +100,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_creates_all_required_global_roles()
     {
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -144,7 +144,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
         $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -186,7 +186,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -273,7 +273,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
         $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -354,7 +354,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -398,7 +398,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -466,7 +466,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         // Don't create any gyms
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {

@@ -41,7 +41,7 @@ class InvoiceGenerationTest extends TestCase
             'payment_date' => now(),
         ]);
 
-        $service = new InvoiceService;
+        $service = new InvoiceService();
         $service->generateMemberInvoice($payment);
 
         $payment->refresh();

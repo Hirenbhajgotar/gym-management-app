@@ -87,7 +87,7 @@ class ResourceAccessTest extends StaffPanelTestCase
         $tableName = (new ReflectionClass($policyClass))->getStaticPropertyValue('tableName');
         $expectedPermission = 'view_any_' . $tableName;
 
-        $policy = new $policyClass;
+        $policy = new $policyClass();
         $user = $this->managerUser;
 
         $this->assertInstanceOf(BasePolicy::class, $policy);

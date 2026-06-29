@@ -289,7 +289,7 @@ abstract class BaseEmployeeResource extends BaseResource
                             TextInput::make('email')
                                 ->label('Email Address')
                                 ->email()
-                                ->rule(new ValidEmailDomain)
+                                ->rule(new ValidEmailDomain())
                                 ->required()
                                 ->unique(User::class, 'email', ignoreRecord: true)
                                 ->maxLength(100)

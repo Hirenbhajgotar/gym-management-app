@@ -22,7 +22,7 @@ class SubscriptionRenewalJobTest extends TestCase
         Queue::fake();
 
         // Dispatch the job
-        dispatch(new SubscriptionRenewalJob);
+        dispatch(new SubscriptionRenewalJob());
 
         // Assert that the job was pushed to the queue
         Queue::assertPushed(SubscriptionRenewalJob::class);
@@ -41,7 +41,7 @@ class SubscriptionRenewalJobTest extends TestCase
         ]);
 
         // Dispatch and run the job synchronously
-        $job = new SubscriptionRenewalJob;
+        $job = new SubscriptionRenewalJob();
         $job->handle(resolve(SubscriptionService::class), resolve(RazorpayService::class));
 
         // The job should have processed the expiring subscription

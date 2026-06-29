@@ -34,7 +34,7 @@ class WelcomeNotification extends BaseTenantNotification
     {
         $memberName = $this->member->name ?? 'Member';
 
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->from($this->gym->owner_email, $this->gym->name)
             ->subject("Welcome to {$this->gym->name}")
             ->greeting("Hello {$memberName},")

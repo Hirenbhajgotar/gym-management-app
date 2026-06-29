@@ -32,7 +32,7 @@ class PaymentReminderNotification extends BaseTenantNotification
     {
         $amount = $this->member->latestPayment ? $this->member->latestPayment->formatted_amount : 'your dues';
 
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Payment Reminder - ' . $this->gym->name)
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('This is a gentle reminder regarding your upcoming or pending payment of ' . $amount . '.')

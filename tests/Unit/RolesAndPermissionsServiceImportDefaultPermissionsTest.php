@@ -21,7 +21,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService;
+        $this->service = new RolesAndPermissionsService();
     }
 
     #[Test]

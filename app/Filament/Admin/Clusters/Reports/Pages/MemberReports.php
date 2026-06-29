@@ -284,7 +284,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::CHURN_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = new ChurnRiskService;
+            $service = new ChurnRiskService();
             $stats = $service->getChurnStats($gymId);
             $atRiskMembers = $service->getAtRiskMembers($gymId, 65, 5);
 

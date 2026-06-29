@@ -27,7 +27,7 @@ class RolesAndPermissionsServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService;
+        $this->service = new RolesAndPermissionsService();
 
         $this->app->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -279,7 +279,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gym = Gym::factory()->create();
         $user = User::factory()->create();
 
-        $service = new RolesAndPermissionsService;
+        $service = new RolesAndPermissionsService();
 
         // Act & Assert: Expect exception when role is missing
         $this->expectException(\Exception::class);

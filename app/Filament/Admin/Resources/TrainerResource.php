@@ -104,7 +104,7 @@ class TrainerResource extends BaseResource
 
                     TextInput::make('email')
                         ->email()
-                        ->rule(new ValidEmailDomain)
+                        ->rule(new ValidEmailDomain())
                         ->required()
                         ->unique(Trainer::class, 'email', ignoreRecord: true)
                         ->placeholder('trainer@example.com')

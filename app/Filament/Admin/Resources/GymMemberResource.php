@@ -743,7 +743,7 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->maxLength(255)
                 ->unique(GymMember::class, 'email', ignoreRecord: true)
-                ->rules(['email:rfc', new ValidEmailDomain])
+                ->rules(['email:rfc', new ValidEmailDomain()])
                 ->validationMessages([
                     'email' => 'Please enter a valid email address.',
                     'email.rfc' => 'The email format is invalid.',

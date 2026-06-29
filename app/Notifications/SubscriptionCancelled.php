@@ -37,7 +37,7 @@ class SubscriptionCancelled extends Notification implements ShouldQueue
             ? 'Your Subscription Has Been Cancelled'
             : 'Your Subscription Has Been Cancelled and Will End Immediately';
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject($subject)
             ->greeting("Hi {$notifiable->name},")
             ->line('We\'re sorry to see you go. Your subscription has been cancelled.')

@@ -123,7 +123,7 @@ class WabaAccountStep
                     }
                 } catch (\Exception $e) {
                     Notification::make()->title('Setup Failed')->body($e->getMessage())->danger()->send();
-                    throw new Halt;
+                    throw new Halt();
                 }
             });
     }

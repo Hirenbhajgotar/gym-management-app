@@ -31,7 +31,7 @@ class PlanExpiryNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject(
                 'Your Subscription is Ending Soon - ' . config('app.name'),
             )

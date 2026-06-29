@@ -48,7 +48,7 @@ class ImportDefaultPermissionsJobTest extends TestCase
         // Mock auth to return a user ID
         $this->actingAs($this->createUser());
 
-        $job = new ImportDefaultPermissionsJob;
+        $job = new ImportDefaultPermissionsJob();
 
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }

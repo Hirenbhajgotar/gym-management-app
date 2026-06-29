@@ -33,7 +33,7 @@ class ReceptionistsImportTest extends TestCase
     public function it_can_import_receptionists()
     {
         // Given
-        $importer = new ReceptionistsImport;
+        $importer = new ReceptionistsImport();
 
         $mockData = new Collection([
             [
@@ -83,7 +83,7 @@ class ReceptionistsImportTest extends TestCase
     public function it_fails_to_import_when_required_data_is_missing()
     {
         // Given
-        $importer = new ReceptionistsImport;
+        $importer = new ReceptionistsImport();
 
         $mockData = new Collection([
             [

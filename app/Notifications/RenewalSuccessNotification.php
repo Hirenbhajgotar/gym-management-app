@@ -33,7 +33,7 @@ class RenewalSuccessNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Subscription Renewed Successfully - ' . config('app.name'))
             ->greeting("Great news {$notifiable->name}!")
             ->line('Your gym subscription has been renewed successfully.')

@@ -105,7 +105,7 @@ class BiometricDeviceResource extends BaseResource
             return true;
         }
 
-        $slug = (new static)->getPermissionSlug();
+        $slug = (new static())->getPermissionSlug();
 
         return $user->can("view_any_{$slug}");
     }

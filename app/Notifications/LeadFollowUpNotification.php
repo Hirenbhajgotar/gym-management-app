@@ -37,7 +37,7 @@ class LeadFollowUpNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('New Follow-up Assigned: ' . $this->followUp->lead->name)
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('A new follow-up has been assigned to you.')

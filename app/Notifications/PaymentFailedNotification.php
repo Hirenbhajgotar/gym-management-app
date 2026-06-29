@@ -33,7 +33,7 @@ class PaymentFailedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Payment Failed - Subscription Suspended - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
             ->line('We were unable to process the payment for your gym subscription renewal.')

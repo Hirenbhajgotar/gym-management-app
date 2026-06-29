@@ -86,7 +86,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:gym_members,email',
-            'phone' => ['nullable', 'max:255', new ValidPhone],
+            'phone' => ['nullable', 'max:255', new ValidPhone()],
             'address' => 'nullable|string|max:65535',
             'weight' => 'nullable|numeric|min:0|max:500',
             'height' => 'nullable|numeric|min:0|max:300',

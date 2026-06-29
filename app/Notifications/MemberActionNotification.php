@@ -70,7 +70,7 @@ class MemberActionNotification extends Notification implements ShouldQueue
             default => "Gym Member {$this->action} Notification"
         };
 
-        $message = (new MailMessage)
+        $message = (new MailMessage())
             ->subject($subject)
             ->greeting("Hello {$notifiable->name}!")
             ->line($subject);

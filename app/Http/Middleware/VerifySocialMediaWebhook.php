@@ -144,11 +144,11 @@ class VerifySocialMediaWebhook
     private function getProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => new FacebookLeadProcessor,
-            'instagram' => new InstagramLeadProcessor,
-            'whatsapp' => new WhatsAppLeadProcessor,
-            'indiamart' => new IndiaMartLeadProcessor,
-            'justdial' => new JustDialLeadProcessor,
+            'facebook' => new FacebookLeadProcessor(),
+            'instagram' => new InstagramLeadProcessor(),
+            'whatsapp' => new WhatsAppLeadProcessor(),
+            'indiamart' => new IndiaMartLeadProcessor(),
+            'justdial' => new JustDialLeadProcessor(),
             default => null,
         };
     }

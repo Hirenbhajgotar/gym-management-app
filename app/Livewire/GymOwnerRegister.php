@@ -176,7 +176,7 @@ class GymOwnerRegister extends Component
                 $this->validate(
                     [
                         'name' => 'required|string|max:50',
-                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain],
+                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain()],
                         'phone' => 'required|phone:IN',
                         'password' => [
                             'required',

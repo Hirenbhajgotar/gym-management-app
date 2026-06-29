@@ -32,7 +32,7 @@ class AttendanceReminderNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('We Miss You at ' . $this->gym->name . '!')
             ->greeting('Hello ' . $this->member->name . ',')
             ->line("We noticed you haven't visited the gym recently.")

@@ -30,7 +30,7 @@ class BirthdayNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Happy Birthday, ' . $this->member->name . '!')
             ->greeting('Hello ' . $this->member->name . ',')
             ->line(

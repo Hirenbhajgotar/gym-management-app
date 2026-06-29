@@ -178,7 +178,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::LEAD_SCORING_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = new LeadScoringService;
+            $service = new LeadScoringService();
             $stats = $service->getLeadStats($gymId);
             $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);
 

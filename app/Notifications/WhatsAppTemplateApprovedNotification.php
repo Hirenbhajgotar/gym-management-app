@@ -29,7 +29,7 @@ class WhatsAppTemplateApprovedNotification extends Notification implements Shoul
     {
         $gymSlug = $this->template->gym?->slug ?? 'admin';
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('✅ WhatsApp Template Approved — ' . $this->template->display_name)
             ->greeting("Hello {$notifiable->name},")
             ->line("Great news! Your WhatsApp template **\"{$this->template->display_name}\"** has been approved by Meta.")

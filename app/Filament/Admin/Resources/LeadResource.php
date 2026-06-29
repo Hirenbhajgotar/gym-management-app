@@ -91,7 +91,7 @@ class LeadResource extends BaseResource
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
                     TextInput::make('email')->email()
-                        ->rule(new ValidEmailDomain)
+                        ->rule(new ValidEmailDomain())
                         ->required(),
                     PhoneInput::make('phone')
                         ->required()

@@ -98,7 +98,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance and validate
-        $formRequest = new BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest();
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -138,7 +138,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance
-        $formRequest = new BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest();
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -162,7 +162,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Test form request validation directly
-        $formRequest = new BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest();
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,
@@ -223,7 +223,7 @@ class BiometricConsentTest extends TestCase
         ]);
 
         // Create form request instance
-        $formRequest = new BiometricConsentStoreRequest;
+        $formRequest = new BiometricConsentStoreRequest();
         $formRequest->merge([
             'gym_member_id' => $member->id,
             'gym_id' => $gym->id,

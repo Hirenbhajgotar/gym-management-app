@@ -32,7 +32,7 @@ class PromotionalNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Special Offer from ' . $this->gym->name . '!')
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('We have a special offer just for you:')

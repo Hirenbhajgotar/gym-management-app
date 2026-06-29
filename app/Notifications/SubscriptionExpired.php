@@ -33,7 +33,7 @@ class SubscriptionExpired extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Subscription Has Expired')
             ->greeting("Hi {$notifiable->name},")
             ->line('Your subscription has expired and your access has been limited.')

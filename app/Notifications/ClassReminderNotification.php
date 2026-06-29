@@ -32,7 +32,7 @@ class ClassReminderNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Class Reminder: ' . $this->className)
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('Just a quick reminder about your upcoming class: ' . $this->className)

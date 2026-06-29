@@ -419,7 +419,7 @@ trait HasReportFilters
                 ->icon('phosphor-file-pdf')
                 ->color('danger')
                 ->action(function () {
-                    $report = new ScheduledReport;
+                    $report = new ScheduledReport();
                     $report->report_type = static::class;
                     $report->gym_id = $this->getGymId();
                     $report->name = static::$title ?? static::$navigationLabel ?? 'Report';

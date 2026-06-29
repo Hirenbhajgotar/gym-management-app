@@ -39,7 +39,7 @@ class MembershipExpiryNotification extends BaseTenantNotification
             ? "Your Gym membership expires soon - let's keep the momentum!"
             : "Your Gym membership has expired - but the grind doesn't have to stop";
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->from($this->member->gym->owner_email, $this->member->gym->name)
             ->subject($subject)
             ->greeting("Hey {$this->member->name},")

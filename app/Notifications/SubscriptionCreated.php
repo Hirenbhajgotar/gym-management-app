@@ -33,7 +33,7 @@ class SubscriptionCreated extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('New Subscription Created - Welcome to ' . config('app.name'))
             ->greeting("Congratulations {$notifiable->name}!")
             ->line('A new subscription has been created for your gym.')

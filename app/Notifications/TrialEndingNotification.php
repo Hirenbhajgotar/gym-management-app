@@ -33,7 +33,7 @@ class TrialEndingNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Trial is Ending Soon - ' . config('app.name'))
             ->greeting("Hi {$notifiable->name}!")
             ->line('Your trial period for your gym subscription is ending soon.')

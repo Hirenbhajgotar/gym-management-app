@@ -261,7 +261,7 @@ trait HasSetupSchemas
                     $this->processTwilioAccountSetup();
                 } catch (\Exception $e) {
                     $this->handleSetupError($e, 'Failed to process Twilio account setup');
-                    throw new Halt;
+                    throw new Halt();
                 }
             });
     }
@@ -474,7 +474,7 @@ trait HasSetupSchemas
                     $this->processWabaSetup();
                 } catch (\Exception $e) {
                     $this->handleSetupError($e, 'Failed to process WABA setup');
-                    throw new Halt;
+                    throw new Halt();
                 }
             });
     }

@@ -36,7 +36,7 @@ class ReceptionistCreate extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Welcome to Team!')
             ->greeting('Hello ' . $this->user->name . '!')
             ->line('You have been added as a staff member. Please use the following credentials to log in:')

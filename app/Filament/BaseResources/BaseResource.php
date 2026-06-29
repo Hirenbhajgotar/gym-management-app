@@ -72,7 +72,7 @@ abstract class BaseResource extends Resource implements HasFilamentPermissions
             return false;
         }
 
-        $slug = (new static)->getPermissionSlug();
+        $slug = (new static())->getPermissionSlug();
 
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value) || $user->can("view_any_{$slug}");
     }
