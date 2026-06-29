@@ -1,7 +1,8 @@
 <?php
 
-// app/Services/AvatarService.php
+declare(strict_types=1);
 
+// app/Services/AvatarService.php
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;

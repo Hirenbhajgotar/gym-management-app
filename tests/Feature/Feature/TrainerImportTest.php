@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Feature;
 
 use App\Filament\Admin\Resources\TrainerResource\Pages\ManageTrainers;
