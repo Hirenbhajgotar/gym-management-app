@@ -12,7 +12,7 @@ class TrainerImport extends BaseImporter implements ShouldQueue
 {
     protected static ?string $model = Trainer::class;
 
-    public function __construct(public string $tenantId)
+    public function __construct(public int $tenantId)
     {
         parent::__construct();
     }
