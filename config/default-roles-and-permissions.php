@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // NOTE: This file is no longer the source of truth. Role-permission mappings come from
 // HasFilamentPermissions::defaultRolePermissions() on each Filament class. Keep for reference only.
 

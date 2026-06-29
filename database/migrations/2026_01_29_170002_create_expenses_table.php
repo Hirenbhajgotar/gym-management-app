@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use Illuminate\Database\Migrations\Migration;

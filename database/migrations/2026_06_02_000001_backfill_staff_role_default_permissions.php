@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Gym;
 use App\Models\PermissionSetting;
 use App\Models\User;

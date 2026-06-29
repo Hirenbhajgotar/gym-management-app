@@ -1,6 +1,9 @@
 {
     "preset": "laravel",
     "rules": {
+        "array_push": true,
+        "backtick_to_shell_exec": true,
+        "declare_strict_types": true,
         "concat_space": {
             "spacing": "one"
         }

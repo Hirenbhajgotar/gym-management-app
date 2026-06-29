@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Jobs\ScheduledReportJob;
 use App\Jobs\SubscriptionRenewalJob;
 use App\Models\ScheduledReport;

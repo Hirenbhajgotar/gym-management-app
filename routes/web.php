@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\BiometricConsentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;

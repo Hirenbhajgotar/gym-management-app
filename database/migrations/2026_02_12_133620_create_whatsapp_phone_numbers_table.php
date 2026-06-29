@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
 use App\Enums\WhatsAppPhoneNumberTypesEnum;
 use Illuminate\Database\Migrations\Migration;

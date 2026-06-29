@@ -22,6 +22,9 @@ return RectorConfig::configure()
         __DIR__ . '/routes',
         __DIR__ . '/tests',
     ])
+    ->withSkip([
+        __DIR__ . '/app/Permissions/TeamPermissionRegistrar.php',
+    ])
     ->withSets([
         SetList::DEAD_CODE,
         LaravelSetList::LARAVEL_CODE_QUALITY,

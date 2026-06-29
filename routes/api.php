@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\BiometricCheckInController;
 use App\Http\Controllers\Api\BiometricDeviceController;
 use App\Http\Controllers\Api\BiometricEnrollController;

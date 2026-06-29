@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'show_application_tab' => true,
     'show_logo_and_favicon' => true,
