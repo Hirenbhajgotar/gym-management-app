@@ -155,9 +155,8 @@ class ExportDownloadMiddleware
                 ]);
 
                 return false;
-            } else {
-                Log::info('ExportDownloadMiddleware: Exact match found');
             }
+            Log::info('ExportDownloadMiddleware: Exact match found');
 
             return true;
         } catch (Exception $e) {

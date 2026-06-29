@@ -74,17 +74,17 @@ class TestSystemWhatsApp extends Command
                 }
 
                 return Command::SUCCESS;
-            } else {
-                $this->error('❌ Message sending failed!');
-                $this->newLine();
-                $this->error('Error: ' . ($result['error'] ?? 'Unknown error'));
-
-                if (isset($result['code'])) {
-                    $this->error('Error Code: ' . $result['code']);
-                }
-
-                return Command::FAILURE;
             }
+            $this->error('❌ Message sending failed!');
+            $this->newLine();
+            $this->error('Error: ' . ($result['error'] ?? 'Unknown error'));
+
+            if (isset($result['code'])) {
+                $this->error('Error Code: ' . $result['code']);
+            }
+
+            return Command::FAILURE;
+
         } catch (Exception $e) {
             $this->error('❌ Exception occurred!');
             $this->error($e->getMessage());

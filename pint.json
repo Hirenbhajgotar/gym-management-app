@@ -8,6 +8,7 @@
         "lowercase_static_reference": true,
         "modernize_types_casting": true,
         "new_with_parentheses": true,
+        "no_useless_else": true,
         "concat_space": {
             "spacing": "one"
         },

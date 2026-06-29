@@ -115,9 +115,10 @@ class GymHealthScoreService
             return 100;
         } elseif ($growthRate >= 0) {
             return 50 + ($growthRate / 10) * 50;
-        } else {
-            return max(0, 50 + ($growthRate / 10) * 50);
         }
+
+        return max(0, 50 + ($growthRate / 10) * 50);
+
     }
 
     /**

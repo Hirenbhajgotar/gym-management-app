@@ -174,9 +174,9 @@ class FeedbackResource extends BaseResource
                                         // Check if it's an image
                                         if (in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
                                             return "<img src='" . asset('storage/' . $file) . "' alt='{$fileName}' style='max-width: 100px; max-height: 100px; margin: 5px;' />";
-                                        } else {
-                                            return "<a href='" . asset('storage/' . $file) . "' target='_blank' download='{$fileName}'>{$fileName}</a>";
                                         }
+
+                                        return "<a href='" . asset('storage/' . $file) . "' target='_blank' download='{$fileName}'>{$fileName}</a>";
 
                                         // if (in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
                                         //     return "
