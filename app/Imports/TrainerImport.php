@@ -36,7 +36,7 @@ class TrainerImport extends BaseImporter implements ShouldQueue
             'email' => $formattedRow['email'] ?? null,
             'phone' => $formattedRow['phone'] ?? null,
             'specialization' => $formattedRow['specialization'] ?? null,
-            'experience_years' => isset($formattedRow['experience_years']) ? (int) $formattedRow['experience_years'] : 0,
+            'experience_years' => isset($formattedRow['experience_years']) ? (int) $formattedRow['experience_years'] : null,
             'is_available' => $isAvailable,
             'available_hours' => $formattedRow['available_hours'] ?? null,
             'basic_salary' => isset($formattedRow['basic_salary']) ? (float) $formattedRow['basic_salary'] : 0,
