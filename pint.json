@@ -14,6 +14,7 @@
         "self_static_accessor": true,
         "strict_comparison": true,
         "modifier_keywords": true,
+        "phpdoc_types_no_duplicates": true,
         "concat_space": {
             "spacing": "one"
         },
