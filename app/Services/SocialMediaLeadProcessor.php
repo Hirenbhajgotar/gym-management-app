@@ -11,7 +11,7 @@ use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
 use Exception;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 

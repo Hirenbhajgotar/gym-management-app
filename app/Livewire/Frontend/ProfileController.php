@@ -13,7 +13,7 @@ use App\Services\InvoiceService;
 use App\Services\SubscriptionService;
 use Exception;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
@@ -165,9 +165,9 @@ class ProfileController extends Component
         // Get active subscription or expired trial subscription that can be renewed
         $subscription = $user
             ->subscriptions()
-            ->where(function (QueryBuilder $query) {
+            ->where(function (Builder $query) {
                 $query->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE])
-                    ->orWhere(function (QueryBuilder $q) {
+                    ->orWhere(function (Builder $q) {
                         $q->where('status', 'expired')->whereNotNull(
                             'trial_ends_at',
                         ); // Expired trials can be renewed

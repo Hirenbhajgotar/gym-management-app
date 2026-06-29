@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Models\Gym;
 use App\Models\PermissionSetting;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 

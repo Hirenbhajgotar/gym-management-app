@@ -14,7 +14,7 @@ use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
 use Exception;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Sleep;
 use Twilio\Exceptions\RestException;

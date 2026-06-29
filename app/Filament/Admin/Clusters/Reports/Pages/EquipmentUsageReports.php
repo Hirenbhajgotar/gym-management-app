@@ -105,7 +105,7 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
         $days = Date::parse($this->filters['start_date'])
             ->diffInDays(Date::parse($this->filters['end_date'])) + 1;
 
-        return $days > 0 ? round($total / $days) : 0;
+        return $days > 0 ? (int) round($total / $days) : 0;
     }
 
     /**

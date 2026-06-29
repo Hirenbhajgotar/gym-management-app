@@ -13,7 +13,7 @@ use App\Notifications\AccountActivatedNotification;
 use App\Notifications\AccountDeactivatedNotification;
 use Exception;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

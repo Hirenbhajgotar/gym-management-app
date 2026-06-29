@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Carbon\Carbon;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 

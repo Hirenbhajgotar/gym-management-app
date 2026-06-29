@@ -10,7 +10,7 @@ use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Exception;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
