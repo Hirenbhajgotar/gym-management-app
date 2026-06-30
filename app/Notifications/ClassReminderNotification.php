@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +32,7 @@ class ClassReminderNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Class Reminder: ' . $this->className)
             ->greeting('Hello ' . $this->member->name . ',')
             ->line('Just a quick reminder about your upcoming class: ' . $this->className)
@@ -73,7 +76,7 @@ class ClassReminderNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, [
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, [
                     'member' => $this->member,
                     'custom' => [
                         '2' => $this->className,

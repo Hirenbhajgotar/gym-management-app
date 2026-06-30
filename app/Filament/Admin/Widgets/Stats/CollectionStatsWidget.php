@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets\Stats;
 
 use App\Enums\DefaultRole;
 use App\Enums\PaymentStatus;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
 use App\Helpers\Number as HelpersNumber;
+use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -32,7 +36,7 @@ class CollectionStatsWidget extends BaseStatsOverviewWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -43,7 +47,7 @@ class CollectionStatsWidget extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -103,9 +107,9 @@ class CollectionStatsWidget extends BaseStatsOverviewWidget
     /**
      * Ensure we always return at least a root tag to prevent Livewire errors.
      */
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         if ($tenant?->id === null) {
             return view()->make('filament-widgets::blank');

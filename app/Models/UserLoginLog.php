@@ -1,52 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $user_id
  * @property int $gym_id
- * @property \Illuminate\Support\Carbon $login_at
- * @property \Illuminate\Support\Carbon|null $logged_out_at
+ * @property Carbon $login_at
+ * @property Carbon|null $logged_out_at
  * @property bool $is_current_session
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property string|null $device_type
  * @property string $login_method
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read mixed $duration_minutes
- * @property-read \App\Models\Gym $gym
+ * @property-read Gym $gym
  * @property-read mixed $session_duration
- * @property-read \App\Models\User $user
+ * @property-read User $user
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog forUser(int $userId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereDeviceType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereIpAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereIsCurrentSession($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoggedOutAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoginAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereLoginMethod($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserAgent($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLoginLog whereUserId($value)
+ * @method static Builder<static>|UserLoginLog active()
+ * @method static Builder<static>|UserLoginLog forUser(int $userId)
+ * @method static Builder<static>|UserLoginLog newModelQuery()
+ * @method static Builder<static>|UserLoginLog newQuery()
+ * @method static Builder<static>|UserLoginLog query()
+ * @method static Builder<static>|UserLoginLog whereCreatedAt($value)
+ * @method static Builder<static>|UserLoginLog whereDeviceType($value)
+ * @method static Builder<static>|UserLoginLog whereGymId($value)
+ * @method static Builder<static>|UserLoginLog whereId($value)
+ * @method static Builder<static>|UserLoginLog whereIpAddress($value)
+ * @method static Builder<static>|UserLoginLog whereIsCurrentSession($value)
+ * @method static Builder<static>|UserLoginLog whereLoggedOutAt($value)
+ * @method static Builder<static>|UserLoginLog whereLoginAt($value)
+ * @method static Builder<static>|UserLoginLog whereLoginMethod($value)
+ * @method static Builder<static>|UserLoginLog whereUpdatedAt($value)
+ * @method static Builder<static>|UserLoginLog whereUserAgent($value)
+ * @method static Builder<static>|UserLoginLog whereUserId($value)
  *
  * @mixin \Eloquent
  */
 class UserLoginLog extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'gym_id',
@@ -68,11 +75,17 @@ class UserLoginLog extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');

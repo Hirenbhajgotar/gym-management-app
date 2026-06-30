@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Filament\StaffPanel;
 
-use App\Policies\BaseEmployeePolicy;
 use App\Policies\BasePolicy;
 use App\Policies\BiometricDevicePolicy;
 use App\Policies\GymMemberAttendancePolicy;
@@ -86,7 +87,7 @@ class ResourceAccessTest extends StaffPanelTestCase
         $tableName = (new ReflectionClass($policyClass))->getStaticPropertyValue('tableName');
         $expectedPermission = 'view_any_' . $tableName;
 
-        $policy = new $policyClass;
+        $policy = new $policyClass();
         $user = $this->managerUser;
 
         $this->assertInstanceOf(BasePolicy::class, $policy);
@@ -99,7 +100,7 @@ class ResourceAccessTest extends StaffPanelTestCase
 
         $freshUser = $user->fresh();
         setPermissionsTeamId($this->testGym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         $freshUser->forgetCachedPermissions();
         $freshUser->unsetRelation('permissions');
         $freshUser->unsetRelation('roles');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
@@ -9,9 +11,10 @@ use App\Models\PermissionSetting;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase
@@ -25,9 +28,9 @@ class RolesAndPermissionsServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService;
+        $this->service = new RolesAndPermissionsService();
 
-        $this->app->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->app->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Mock the User
         // $this->userMock = Mockery::mock(User::class);
@@ -64,7 +67,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Create a permission setting for gym_owner role
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'gym_owner',
             'default_permissions' => $permissions,
         ]);
@@ -83,7 +86,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Assert that permissions were assigned to the gym_owner role
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(count($permissions), $gymOwnerRole->permissions);
     }
@@ -108,7 +111,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $user = User::factory()->create();
 
         // Call the service method with null gym
-        $this->service->createDefaultTenantRolesAndAssignPermissions($user, null);
+        $this->service->createDefaultTenantRolesAndAssignPermissions($user);
 
         // Assert that no roles were created
         $this->assertDatabaseCount('roles', 0);
@@ -118,7 +121,7 @@ class RolesAndPermissionsServiceTest extends TestCase
     public function it_does_not_create_roles_when_both_user_and_gym_are_null()
     {
         // Call the service method with null user and gym
-        $this->service->createDefaultTenantRolesAndAssignPermissions(null, null);
+        $this->service->createDefaultTenantRolesAndAssignPermissions();
 
         // Assert that no roles were created
         $this->assertDatabaseCount('roles', 0);
@@ -148,7 +151,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         // Create permission settings for all tenant roles
         $tenantRoles = DefaultRole::tenantRoles();
         foreach ($tenantRoles as $role) {
-            PermissionSetting::create([
+            PermissionSetting::query()->create([
                 'role' => $role->value,
                 'default_permissions' => $permissions,
             ]);
@@ -159,7 +162,7 @@ class RolesAndPermissionsServiceTest extends TestCase
 
         // Assert that each role has the correct permissions
         foreach ($tenantRoles as $role) {
-            $roleModel = Role::where('name', $role->value)->where('gym_id', $gym->id)->first();
+            $roleModel = Role::query()->where('name', $role->value)->where('gym_id', $gym->id)->first();
             $this->assertNotNull($roleModel);
             $this->assertCount(count($permissions), $roleModel->permissions);
         }
@@ -179,7 +182,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
 
         // Create a permission setting for only one role
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'manager',
             'default_permissions' => ['view_any_user'],
         ]);
@@ -198,12 +201,12 @@ class RolesAndPermissionsServiceTest extends TestCase
         }
 
         // Assert that only the manager role has permissions
-        $managerRole = Role::where('name', 'manager')->where('gym_id', $gym->id)->first();
+        $managerRole = Role::query()->where('name', 'manager')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($managerRole);
         $this->assertCount(1, $managerRole->permissions);
 
         // Assert that other roles have no permissions
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(0, $gymOwnerRole->permissions);
     }
@@ -216,7 +219,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gym = Gym::factory()->create();
 
         // Create a permission setting with empty permissions
-        PermissionSetting::create([
+        PermissionSetting::query()->create([
             'role' => 'gym_owner',
             'default_permissions' => [],
         ]);
@@ -232,7 +235,7 @@ class RolesAndPermissionsServiceTest extends TestCase
         ]);
 
         // Assert that the role has no permissions
-        $gymOwnerRole = Role::where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
+        $gymOwnerRole = Role::query()->where('name', 'gym_owner')->where('gym_id', $gym->id)->first();
         $this->assertNotNull($gymOwnerRole);
         $this->assertCount(0, $gymOwnerRole->permissions);
     }
@@ -277,10 +280,10 @@ class RolesAndPermissionsServiceTest extends TestCase
         $gym = Gym::factory()->create();
         $user = User::factory()->create();
 
-        $service = new RolesAndPermissionsService;
+        $service = new RolesAndPermissionsService();
 
         // Act & Assert: Expect exception when role is missing
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Role ' . DefaultRole::GYM_OWNER->value . ' does not exist for this tenant.');
 
         $service->assignRoleToTenant($gym, $user, DefaultRole::GYM_OWNER);

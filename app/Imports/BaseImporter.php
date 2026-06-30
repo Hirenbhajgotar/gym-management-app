@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
+use App\Events\ImportCompleted;
 use App\Models\User;
+use Exception;
 use Filament\Actions\Imports\Models\FailedImportRow;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
@@ -18,6 +22,8 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Throwable;
 
 /**
  * Class BaseImporter
@@ -69,7 +75,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             ->body('Your import is being processed in the background. You will be notified once it is complete.')
             ->send();
 
-        $this->importRecord = Import::create([
+        $this->importRecord = Import::query()->create([
             'completed_at' => null,
             'file_name' => 'import_' . now()->timestamp . '.xlsx',
             'file_path' => 'temp',
@@ -138,7 +144,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             });
 
             // A row is considered not empty if it has at least one non-empty value.
-            return ! empty($filteredRow);
+            return filled($filteredRow);
         });
 
         // Update the total number of rows to be processed.
@@ -166,7 +172,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 $failedRow = $rowData;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
 
-                FailedImportRow::create([
+                FailedImportRow::query()->create([
                     'import_id' => $this->importRecord->id,
                     'data' => json_encode($failedRow),
                     'validation_error' => $failedRow['error'],
@@ -177,7 +183,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     Log::info('Processing row: ');
                     $this->processRow($data);
                     $this->successfulRows++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // If an exception occurs during processing, record the failed row and error message.
                     Log::error('Error processing row: ', [
                         'exception' => $e,
@@ -185,7 +191,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     $this->failedRows++;
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
-                    FailedImportRow::create([
+                    FailedImportRow::query()->create([
                         'import_id' => $this->importRecord->id,
                         'data' => json_encode($failedRow),
                         'validation_error' => $e->getMessage(),
@@ -228,7 +234,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         if (property_exists($this, 'dateColumns')) {
             foreach ($this->dateColumns as $column) {
                 if (isset($data[$column]) && is_numeric($data[$column])) {
-                    $data[$column] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($data[$column])->format('Y-m-d');
+                    $data[$column] = Date::excelToDateTimeObject($data[$column])->format('Y-m-d');
                 }
             }
         }
@@ -279,7 +285,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             ]);
 
             // Generate CSV content manually to avoid memory issues
-            $failedRows = FailedImportRow::where('import_id', $this->importRecord->id)->get();
+            $failedRows = FailedImportRow::query()->where('import_id', $this->importRecord->id)->get();
 
             if ($failedRows->isEmpty()) {
                 Log::info('No failed rows to export');
@@ -320,7 +326,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 'import_id' => $this->importRecord->id,
                 'file_path' => $this->failedFilePath,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to generate failed rows CSV', [
                 'import_id' => $this->importRecord->id,
                 'error' => $e->getMessage(),
@@ -342,7 +348,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Find the user who initiated the import.
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         // If the user is not found, log a warning and exit.
         if (! $recipient) {
@@ -405,7 +411,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         }
 
         // Dispatch the ImportCompleted event to refresh the list page.
-        event(new \App\Events\ImportCompleted($recipient->id));
+        event(new ImportCompleted($recipient->id));
     }
 
     /**
@@ -415,9 +421,9 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      * It updates the import record, sends a failure notification to the user,
      * and logs the exception.
      *
-     * @param  \Throwable  $exception  The exception that caused the job to fail.
+     * @param  Throwable  $exception  The exception that caused the job to fail.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         // If there is an import record, mark it as completed with an error status.
         if ($this->importRecord) {
@@ -428,7 +434,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         }
 
         // Find the user who initiated the import.
-        $recipient = User::find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord->user_id);
 
         // If the user is found, send a failure notification.
         if ($recipient) {

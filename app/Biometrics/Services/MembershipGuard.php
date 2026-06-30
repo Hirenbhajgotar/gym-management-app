@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Biometrics\DTOs\GuardResult;
+use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 
 class MembershipGuard
@@ -30,7 +33,7 @@ class MembershipGuard
             return 'membership_expired';
         }
 
-        if ($gymMember->payment_status !== \App\Enums\PaymentStatus::COMPLETED) {
+        if ($gymMember->payment_status !== PaymentStatus::COMPLETED) {
             return 'payment_pending';
         }
 

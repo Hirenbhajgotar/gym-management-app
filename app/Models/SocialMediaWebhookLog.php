@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,25 +19,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed>|null $response
  * @property string $status
  * @property string|null $error_message
- * @property \Illuminate\Support\Carbon|null $processed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\TenantSocialConfig $socialConfig
+ * @property Carbon|null $processed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read TenantSocialConfig $socialConfig
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereErrorMessage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog wherePayload($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog wherePlatform($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereProcessedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereResponse($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereTenantSocialConfigId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SocialMediaWebhookLog whereWebhookId($value)
+ * @method static Builder<static>|SocialMediaWebhookLog newModelQuery()
+ * @method static Builder<static>|SocialMediaWebhookLog newQuery()
+ * @method static Builder<static>|SocialMediaWebhookLog query()
+ * @method static Builder<static>|SocialMediaWebhookLog whereCreatedAt($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereErrorMessage($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereId($value)
+ * @method static Builder<static>|SocialMediaWebhookLog wherePayload($value)
+ * @method static Builder<static>|SocialMediaWebhookLog wherePlatform($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereProcessedAt($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereResponse($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereStatus($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereTenantSocialConfigId($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereUpdatedAt($value)
+ * @method static Builder<static>|SocialMediaWebhookLog whereWebhookId($value)
  *
  * @mixin \Eloquent
  */
@@ -67,16 +71,21 @@ class SocialMediaWebhookLog extends Model
     /**
      * The attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'payload' => 'array',
-        'response' => 'array',
-        'processed_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'response' => 'array',
+            'processed_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the social media configuration that owns this log.
+     *
+     * @return BelongsTo<TenantSocialConfig, $this>
      */
     public function socialConfig(): BelongsTo
     {

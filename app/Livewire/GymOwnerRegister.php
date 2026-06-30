@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire;
 
 use App\Models\BusinessType;
@@ -77,7 +79,7 @@ class GymOwnerRegister extends Component
         $plan = Plan::active()->find($planId) ?? Plan::active()->trial()->orderByDesc('trial_days')->orderBy('id')->first();
 
         if (! $plan) {
-            return redirect()->route('home')->with('error', 'Plan not selected');
+            return to_route('home')->with('error', 'Plan not selected');
         }
 
         $this->selectedPlan = $plan;
@@ -85,14 +87,14 @@ class GymOwnerRegister extends Component
 
     public function getBusinessTypes(): Collection
     {
-        return BusinessType::active()->orderBy('name')->get();
+        return BusinessType::query()->active()->orderBy('name')->get();
     }
 
     #[Computed]
     public function countries()
     {
         return Cache::flexible(Country::COUNTRIES_LIST_CACHE_KEY, [now()->addDays(7), now()->addDays(14)], function () {
-            return Country::active()->orderBy('name')->pluck('name', 'id');
+            return Country::query()->active()->orderBy('name')->pluck('name', 'id');
         });
     }
 
@@ -104,7 +106,7 @@ class GymOwnerRegister extends Component
         }
 
         return Cache::flexible(State::STATES_OF_COUNTRY_CACHE_KEY . $this->address['country_id'], [now()->addDays(7), now()->addDays(14)], function () {
-            return State::where('country_id', $this->address['country_id'])
+            return State::query()->where('country_id', $this->address['country_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');
@@ -119,7 +121,7 @@ class GymOwnerRegister extends Component
         }
 
         return Cache::flexible(City::CITIES_OF_STATE_CACHE_KEY . $this->address['state_id'], [now()->addDays(7), now()->addDays(14)], function () {
-            return City::where('state_id', $this->address['state_id'])
+            return City::query()->where('state_id', $this->address['state_id'])
                 ->active()
                 ->orderBy('name')
                 ->pluck('name', 'id');
@@ -174,7 +176,7 @@ class GymOwnerRegister extends Component
                 $this->validate(
                     [
                         'name' => 'required|string|max:50',
-                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain],
+                        'email' => ['required', 'email', 'max:255', 'unique:users,email', new ValidEmailDomain()],
                         'phone' => 'required|phone:IN',
                         'password' => [
                             'required',
@@ -235,7 +237,7 @@ class GymOwnerRegister extends Component
         if (! $plan) {
             session()->flash('error', 'Selected plan is no longer available. Please select a new plan.');
 
-            return redirect()->route('home');
+            return to_route('home');
         }
 
         // Update the confirmed active plan
@@ -272,7 +274,7 @@ class GymOwnerRegister extends Component
             );
 
             // Redirect to Razorpay checkout
-            return redirect()->route('gym-owner.checkout');
+            return to_route('gym-owner.checkout');
         } catch (Exception $e) {
             Log::error($e);
             session()->flash(

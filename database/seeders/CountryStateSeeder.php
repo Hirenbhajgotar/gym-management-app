@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\City;
@@ -28,7 +30,7 @@ class CountryStateSeeder extends Seeder
             ['name' => 'Germany', 'code' => 'DE', 'factory' => 'germany'],
         ];
 
-        foreach ($countries as $index => $countryData) {
+        foreach ($countries as $countryData) {
             // Create the country
             $country = Country::factory()->{$countryData['factory']}()->create([
                 // 'id' => $index + 1,
@@ -38,7 +40,7 @@ class CountryStateSeeder extends Seeder
             ]);
 
             // Get the predefined states for this country from the StateFactory
-            $stateFactory = new StateFactory;
+            $stateFactory = new StateFactory();
             $states = $stateFactory->statesByCountry[$countryData['name']] ?? [];
 
             // For India and USA, create all states; for others, create 5
@@ -65,7 +67,7 @@ class CountryStateSeeder extends Seeder
             // Create 5 cities for each state
             foreach ($stateIds as $stateData) {
                 // Get the predefined cities for this state from the CityFactory
-                $cityFactory = new CityFactory;
+                $cityFactory = new CityFactory();
                 $cities = $cityFactory->citiesByState[$stateData['name']] ?? [];
                 $cityCount = count($cities);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages\BiometricDevice;
 
 use App\Enums\BiometricTypeEnum;
@@ -8,7 +10,11 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,7 +59,7 @@ class EnrollMember extends BasePage
             return [];
         }
 
-        $device = BiometricDevice::find($this->selectedDeviceId);
+        $device = BiometricDevice::query()->find($this->selectedDeviceId);
         if (! $device) {
             return [];
         }
@@ -73,9 +79,9 @@ class EnrollMember extends BasePage
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Device & Member Selection')
+                Section::make('Device & Member Selection')
                     ->schema([
-                        Forms\Components\Select::make('selectedDeviceId')
+                        Select::make('selectedDeviceId')
                             ->label('Biometric Device')
                             ->options(fn () => $this->getDevices())
                             ->required()
@@ -85,7 +91,7 @@ class EnrollMember extends BasePage
                                 $this->enrolledTemplates = [];
                             }),
 
-                        Forms\Components\Select::make('selectedMemberId')
+                        Select::make('selectedMemberId')
                             ->label('Member to Enroll')
                             ->options(fn () => $this->getMembers())
                             ->required()
@@ -94,29 +100,29 @@ class EnrollMember extends BasePage
                                 $this->loadEnrolledTemplates();
                             }),
 
-                        Forms\Components\Select::make('biometricType')
+                        Select::make('biometricType')
                             ->label('Biometric Type')
                             ->options(BiometricTypeEnum::class)
                             ->default(fn () => $this->getDefaultBiometricType())
                             ->required(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Already Enrolled')
+                Section::make('Already Enrolled')
                     ->schema([
-                        Forms\Components\Placeholder::make('enrolled_info')
+                        Placeholder::make('enrolled_info')
                             ->content(fn () => $this->getEnrolledInfoContent()),
                     ])
                     ->visible(fn () => count($this->enrolledTemplates) > 0),
 
-                Forms\Components\Section::make('Biometric Enrollment')
+                Section::make('Biometric Enrollment')
                     ->schema([
-                        Forms\Components\Textarea::make('rawBiometricData')
+                        Textarea::make('rawBiometricData')
                             ->label('Biometric Data (Base64)')
                             ->rows(5)
                             ->required()
                             ->helperText('Paste the Base64 encoded biometric template data from the device'),
 
-                        Forms\Components\Toggle::make('sendToDevice')
+                        Toggle::make('sendToDevice')
                             ->label('Send to Device for Verification')
                             ->default(true)
                             ->helperText('Automatically send enrolled template to device for verification'),
@@ -130,7 +136,7 @@ class EnrollMember extends BasePage
             return null;
         }
 
-        $device = BiometricDevice::find($this->selectedDeviceId);
+        $device = BiometricDevice::query()->find($this->selectedDeviceId);
 
         return $device?->device_type?->value;
     }
@@ -155,12 +161,12 @@ class EnrollMember extends BasePage
                     'device' => $template->enrolledByDevice?->device_name ?? 'Admin',
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     protected function getEnrolledInfoContent(): string
     {
-        if (empty($this->enrolledTemplates)) {
+        if (blank($this->enrolledTemplates)) {
             return 'No biometric templates enrolled yet.';
         }
 
@@ -168,9 +174,8 @@ class EnrollMember extends BasePage
         foreach ($this->enrolledTemplates as $template) {
             $html .= "<li><strong>{$template['type']}</strong> - Enrolled {$template['enrolled_at']} via {$template['device']}</li>";
         }
-        $html .= '</ul>';
 
-        return $html;
+        return $html . '</ul>';
     }
 
     public function enroll(): void
@@ -182,8 +187,8 @@ class EnrollMember extends BasePage
             'rawBiometricData' => 'required',
         ]);
 
-        $device = BiometricDevice::findOrFail($this->selectedDeviceId);
-        $member = GymMember::findOrFail($this->selectedMemberId);
+        $device = BiometricDevice::query()->findOrFail($this->selectedDeviceId);
+        $member = GymMember::query()->findOrFail($this->selectedMemberId);
 
         // Validate biometric data is valid base64
         if (! base64_decode($this->rawBiometricData, true)) {
@@ -205,7 +210,7 @@ class EnrollMember extends BasePage
         ]);
 
         // Create biometric template
-        $template = BiometricTemplate::create([
+        BiometricTemplate::query()->create([
             'gym_member_id' => $member->id,
             'gym_id' => $device->gym_id,
             'enrolled_by_device_id' => $device->id,

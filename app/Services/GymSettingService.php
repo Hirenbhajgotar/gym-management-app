@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Gym;
@@ -20,10 +22,7 @@ class GymSettingService
         ];
 
         foreach ($settings as $key => $value) {
-            GymSetting::updateOrCreate(
-                ['gym_id' => $gym->id, 'key' => $key],
-                ['value' => $value, 'type' => gettype($value)]
-            );
+            GymSetting::query()->updateOrCreate(['gym_id' => $gym->id, 'key' => $key], ['value' => $value, 'type' => gettype($value)]);
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\Country;
@@ -7,7 +9,7 @@ use App\Models\State;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\State>
+ * @extends Factory<State>
  */
 class StateFactory extends Factory
 {
@@ -54,8 +56,8 @@ class StateFactory extends Factory
     {
         return [
             'country_id' => Country::factory(),
-            'name' => $this->faker->state(),
-            'status' => $this->faker->boolean(90), // 90% chance of being active (1)
+            'name' => fake()->state(),
+            'status' => fake()->boolean(90), // 90% chance of being active (1)
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -69,7 +71,7 @@ class StateFactory extends Factory
         return $this->state(function () use ($countryId, $states) {
             return [
                 'country_id' => $countryId,
-                'name' => $this->faker->randomElement($states) ?? $this->faker->state(),
+                'name' => fake()->randomElement($states) ?? fake()->state(),
                 'status' => 1,
             ];
         });

@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class AttendanceTrendChart extends BaseChartWidget
 {
@@ -17,7 +21,7 @@ class AttendanceTrendChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -27,14 +31,14 @@ class AttendanceTrendChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->subMonth()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $data = Attendances::where('gym_id', $gymId)
+            $data = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->selectRaw('DATE(check_in_time) as date, COUNT(*) as count')
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get();
 
-            $labels = $data->map(fn ($item) => \Carbon\Carbon::parse($item->date)->format('M d'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->date)->format('M d'))->all();
             $counts = $data->pluck('count')->toArray();
 
             // Calculate moving average (7-day)

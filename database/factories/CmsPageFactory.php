@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\CmsPage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\CmsPage>
+ * @extends Factory<CmsPage>
  */
 class CmsPageFactory extends Factory
 {
@@ -17,15 +20,15 @@ class CmsPageFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->sentence;
+        $title = fake()->sentence();
 
         return [
             'title' => $title,
             'slug' => Str::slug($title),
-            'content' => $this->faker->paragraphs(3, true),
-            'is_published' => $this->faker->boolean,
-            'meta_title' => $this->faker->sentence,
-            'meta_description' => $this->faker->text(160),
+            'content' => fake()->paragraphs(3, true),
+            'is_published' => fake()->boolean(),
+            'meta_title' => fake()->sentence(),
+            'meta_description' => fake()->text(160),
         ];
     }
 }

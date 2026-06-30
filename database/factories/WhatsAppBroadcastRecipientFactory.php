@@ -11,7 +11,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WhatsAppBroadcastRecipient>
+ * @extends Factory<WhatsAppBroadcastRecipient>
  */
 class WhatsAppBroadcastRecipientFactory extends Factory
 {
@@ -22,8 +22,8 @@ class WhatsAppBroadcastRecipientFactory extends Factory
         return [
             'whatsapp_broadcast_id' => WhatsAppBroadcast::factory(),
             'member_id' => GymMember::factory(),
-            'phone_number' => $this->faker->phoneNumber(),
-            'member_name' => $this->faker->name(),
+            'phone_number' => fake()->phoneNumber(),
+            'member_name' => fake()->name(),
             'status' => WhatsAppBroadcastRecipientStatusEnum::PENDING,
             'twilio_message_sid' => null,
             'failure_reason' => null,

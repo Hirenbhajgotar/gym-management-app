@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Twilio;
 
 use App\Interfaces\MessagingInterface;
@@ -8,6 +10,7 @@ use App\Models\WhatsAppUsageLog;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 
@@ -222,7 +225,7 @@ class TwilioMessagingService implements MessagingInterface
 
     private function logUsage(string $recipient, WhatsAppTemplate $template, string $messageSid): void
     {
-        WhatsAppUsageLog::create([
+        WhatsAppUsageLog::query()->create([
             'gym_id' => $this->context->gymId,
             'whatsapp_template_id' => $template->id,
             'twilio_message_sid' => $messageSid,
@@ -243,7 +246,7 @@ class TwilioMessagingService implements MessagingInterface
         return WhatsAppTemplate::query()
             ->where('name', $templateName)
             ->where('status', 'approved')
-            ->where(function ($q) {
+            ->where(function (Builder $q) {
                 $q->where('gym_id', $this->context->gymId);
                 if ($this->context->useSandbox) {
                     $q->orWhereNull('gym_id');
@@ -263,7 +266,7 @@ class TwilioMessagingService implements MessagingInterface
         return ['success' => false, 'error' => $e->getMessage(), 'message_id' => null, 'data' => null];
     }
 
-    private function handleError(string $context, \Exception $e): array
+    private function handleError(string $context, Exception $e): array
     {
         Log::error("WhatsApp {$context} error", [
             'gym_id' => $this->context->gymId,

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -27,16 +30,16 @@ class MemberStatusChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
         $cacheKey = ReportCacheService::WIDGET_MEMBER_STATUS . $gymId . ':' . md5(json_encode($this->filters));
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $active = GymMember::where('gym_id', $gymId)->membershipActive()->count();
-            $expired = GymMember::where('gym_id', $gymId)->membershipExpired()->count();
-            $expiringSoon = GymMember::where('gym_id', $gymId)
+            $active = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
+            $expired = GymMember::query()->where('gym_id', $gymId)->membershipExpired()->count();
+            $expiringSoon = GymMember::query()->where('gym_id', $gymId)
                 ->where('membership_end', '>=', now())
                 ->where('membership_end', '<=', now()->addDays(7))
                 ->count();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\TrainerResource\Pages;
 
 use App\Filament\Actions\ExportAction;
@@ -8,7 +10,8 @@ use App\Filament\Admin\Resources\TrainerResource;
 use App\Filament\Exports\TrainerExporter;
 use App\Imports\TrainerImport;
 use App\Models\Trainer;
-use Filament\Actions;
+use App\Models\User;
+use Filament\Actions\CreateAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -36,7 +39,7 @@ class ManageTrainers extends ManageRecords
                     sampleButtonLabel: 'Download Sample File'
                 ),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
@@ -54,9 +57,9 @@ class ManageTrainers extends ManageRecords
         ];
     }
 
-    public function getUser(): \App\Models\User
+    public function getUser(): User
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user;

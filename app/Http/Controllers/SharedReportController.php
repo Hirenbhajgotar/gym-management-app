@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Interfaces\ShareableReport;
 use App\Models\ShareableReportLink;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class SharedReportController extends Controller
 {
@@ -15,16 +19,14 @@ class SharedReportController extends Controller
             ->valid()
             ->first();
 
-        if (! $link) {
-            abort(404, 'Shared report not found or has expired');
-        }
+        abort_unless($link, 404, 'Shared report not found or has expired');
 
         // Get the report class
         $reportClass = $link->report_type;
 
         try {
-            $page = app($reportClass);
-        } catch (\Throwable $e) {
+            $page = resolve($reportClass);
+        } catch (Throwable $e) {
             abort(404, 'Report type not found');
         }
 
@@ -46,7 +48,7 @@ class SharedReportController extends Controller
 
         // Prepare data for the view
         $data = $this->getReportData($page);
-        $title = $page instanceof \App\Interfaces\ShareableReport ? $page->getSharedReportTitle() : 'Report';
+        $title = $page instanceof ShareableReport ? $page->getSharedReportTitle() : 'Report';
 
         return view('shared-reports.show', [
             'link' => $link,
@@ -59,7 +61,7 @@ class SharedReportController extends Controller
 
     private function getReportData($page): array
     {
-        if ($page instanceof \App\Interfaces\ShareableReport) {
+        if ($page instanceof ShareableReport) {
             return $page->getSharedReportData();
         }
 

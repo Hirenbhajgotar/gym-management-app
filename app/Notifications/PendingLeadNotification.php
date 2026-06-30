@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +36,7 @@ class PendingLeadNotification extends BaseTenantNotification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject("Pending Lead Reminder: {$this->lead->name}")
             ->greeting("Hello {$notifiable->name},")
             ->line(
@@ -82,7 +85,7 @@ class PendingLeadNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, [
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, [
                     'custom' => [
                         '1' => $notifiable->name ?? 'Staff',
                         '2' => $this->lead->name ?? '',

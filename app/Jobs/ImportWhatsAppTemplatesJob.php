@@ -16,13 +16,11 @@ use App\Services\Support\TemplateVariableHelper;
 use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsAppTemplateService;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Imports WhatsApp templates from Meta/Twilio for a specific gym.
@@ -36,10 +34,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The number of times the job may be attempted.
@@ -91,7 +86,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     {
         Log::info('ImportWhatsAppTemplatesJob: starting', ['gym_id' => $this->gymId]);
 
-        $account = WhatsAppAccount::where('gym_id', $this->gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $this->gymId)->first();
 
         if (! $account) {
             Log::warning('ImportWhatsAppTemplatesJob: no WhatsApp account found', [
@@ -114,8 +109,8 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         $providerType = $this->providerType ?? $account->provider_type;
 
         $templateResult = match ($providerType) {
-            WhatsAppProviderTypeEnum::TWILIO => $this->importFromTwilio($account),
-            WhatsAppProviderTypeEnum::WABA => $this->importFromMeta($account),
+            WhatsAppProviderTypeEnum::TWILIO => $this->importFromTwilio(),
+            WhatsAppProviderTypeEnum::WABA => $this->importFromMeta(),
             default => $this->importFromProviderFallback($account),
         };
 
@@ -131,7 +126,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $syncedCount = $this->syncTemplatesToDatabase($account, $templateResult->templates, $providerType);
+        $syncedCount = $this->syncTemplatesToDatabase($templateResult->templates, $providerType);
 
         Log::info('ImportWhatsAppTemplatesJob: completed', [
             'gym_id' => $this->gymId,
@@ -143,10 +138,10 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Import templates from Twilio.
      */
-    private function importFromTwilio(WhatsAppAccount $account): TemplateCollectionResult
+    private function importFromTwilio(): TemplateCollectionResult
     {
         $context = new TwilioContext($this->gymId);
-        $templateService = new TwilioTemplateService($context, app(WhatsAppTemplateService::class));
+        $templateService = new TwilioTemplateService($context, resolve(WhatsAppTemplateService::class));
 
         return $templateService->getTemplates($this->gymId);
     }
@@ -154,7 +149,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Import templates from Meta.
      */
-    private function importFromMeta(WhatsAppAccount $account): TemplateCollectionResult
+    private function importFromMeta(): TemplateCollectionResult
     {
         $context = new MetaContext($this->gymId);
         $api = new MetaApiClient($context);
@@ -171,12 +166,12 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     {
         // Try Twilio first if twilio credentials exist
         if (filled($account->twilio_account_sid) && filled($account->twilio_auth_token)) {
-            return $this->importFromTwilio($account);
+            return $this->importFromTwilio();
         }
 
         // Try Meta if waba_id exists
         if (filled($account->waba_id) && filled($account->meta_access_token)) {
-            return $this->importFromMeta($account);
+            return $this->importFromMeta();
         }
 
         Log::warning('ImportWhatsAppTemplatesJob: no provider credentials found', [
@@ -196,7 +191,6 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
      * @param  array<string, mixed>  $templates  Array of template data from API
      */
     private function syncTemplatesToDatabase(
-        WhatsAppAccount $account,
         array $templates,
         ?WhatsAppProviderTypeEnum $providerType,
     ): int {
@@ -217,19 +211,16 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
             $providerSid = $this->extractProviderSid($templateData, $providerType);
             $body = $this->extractBody($templateData, $providerType);
 
-            $record = WhatsAppTemplate::updateOrCreate(
-                [
-                    'gym_id' => $this->gymId,
-                    'name' => $templateName,
-                ],
-                [
-                    'display_name' => $templateName,
-                    'body' => $body,
-                    'category' => $this->extractCategory($templateData, $providerType),
-                    'status' => WhatsAppTemplateStatusEnum::DRAFT,
-                    'is_active' => true,
-                ],
-            );
+            $record = WhatsAppTemplate::query()->updateOrCreate([
+                'gym_id' => $this->gymId,
+                'name' => $templateName,
+            ], [
+                'display_name' => $templateName,
+                'body' => $body,
+                'category' => $this->extractCategory($templateData, $providerType),
+                'status' => WhatsAppTemplateStatusEnum::DRAFT,
+                'is_active' => true,
+            ]);
 
             // Set provider-specific ID via direct property assignment
             if ($providerType === WhatsAppProviderTypeEnum::TWILIO) {
@@ -240,7 +231,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
 
             // Extract and set variables if available
             $variables = $this->extractVariables($templateData, $body, $providerType);
-            if (! empty($variables)) {
+            if (filled($variables)) {
                 $record->variables = $variables;
                 $record->variable_count = count($variables);
                 $record->variable_placeholder = TemplateVariableHelper::generateDefaultPlaceholders($variables);
@@ -331,7 +322,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         // Try to extract from Twilio variables field
         if ($providerType === WhatsAppProviderTypeEnum::TWILIO) {
             $twilioVars = $templateData['variables'] ?? [];
-            if (is_array($twilioVars) && ! empty($twilioVars)) {
+            if (is_array($twilioVars) && filled($twilioVars)) {
                 return $this->convertTwilioVariables($twilioVars);
             }
         }
@@ -367,7 +358,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ImportWhatsAppTemplatesJob: job failed', [
             'gym_id' => $this->gymId,

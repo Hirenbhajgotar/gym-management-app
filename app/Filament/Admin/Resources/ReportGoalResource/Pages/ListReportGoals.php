@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ReportGoalResource\Pages;
 
 use App\Filament\Admin\Resources\ReportGoalResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListReportGoals extends ListRecords
@@ -12,7 +15,7 @@ class ListReportGoals extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

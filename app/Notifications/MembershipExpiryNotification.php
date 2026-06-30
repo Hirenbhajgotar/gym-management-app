@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Services\WhatsAppVariableResolver;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -36,7 +39,7 @@ class MembershipExpiryNotification extends BaseTenantNotification
             ? "Your Gym membership expires soon - let's keep the momentum!"
             : "Your Gym membership has expired - but the grind doesn't have to stop";
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->from($this->member->gym->owner_email, $this->member->gym->name)
             ->subject($subject)
             ->greeting("Hey {$this->member->name},")
@@ -86,7 +89,7 @@ class MembershipExpiryNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [

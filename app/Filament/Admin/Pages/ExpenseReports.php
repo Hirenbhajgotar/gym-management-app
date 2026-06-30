@@ -1,23 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages;
 
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
+use App\Exports\ExpenseReportExport;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseMonthlyTrendChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpensePaymentMethodChart;
 use App\Filament\BasePages\BasePage;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Gym;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
+use Livewire\Attributes\Computed;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ExpenseReports extends BasePage implements HasForms
@@ -76,37 +84,37 @@ class ExpenseReports extends BasePage implements HasForms
 
     public function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->default(now()->startOfYear())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options(ExpenseStatus::toSelectOptions())
                             ->placeholder('All Statuses')
                             ->multiple(),
 
-                        Forms\Components\Select::make('category_id')
+                        Select::make('category_id')
                             ->label('Category')
                             ->options(
-                                ExpenseCategory::where('gym_id', $gym?->id)
+                                ExpenseCategory::query()->where('gym_id', $gym?->id)
                                     ->active()
                                     ->pluck('name', 'id')
                             )
                             ->placeholder('All Categories')
                             ->multiple(),
 
-                        Forms\Components\Select::make('payment_method')
+                        Select::make('payment_method')
                             ->options(ExpensePaymentMethod::toSelectOptions())
                             ->placeholder('All Methods'),
                     ])
@@ -115,9 +123,10 @@ class ExpenseReports extends BasePage implements HasForms
             ->statePath('filters');
     }
 
-    public function getExpensesProperty(): Collection
+    #[Computed]
+    public function expenses(): Collection
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return Expense::query()
@@ -133,12 +142,14 @@ class ExpenseReports extends BasePage implements HasForms
             ->get();
     }
 
-    public function getTotalAmountProperty(): float
+    #[Computed]
+    public function totalAmount(): float
     {
         return $this->expenses->sum('amount');
     }
 
-    public function getCategoryBreakdownProperty(): Collection
+    #[Computed]
+    public function categoryBreakdown(): Collection
     {
         return $this->expenses
             ->groupBy('expense_category_id')
@@ -159,13 +170,14 @@ class ExpenseReports extends BasePage implements HasForms
             ->values();
     }
 
-    public function getMonthlyTrendProperty(): Collection
+    #[Computed]
+    public function monthlyTrend(): Collection
     {
         return $this->expenses
             ->groupBy(fn ($e) => $e->expense_date->format('Y-m'))
             ->map(function ($expenses, $month) {
                 return [
-                    'month' => \Carbon\Carbon::parse($month . '-01')->format('M Y'),
+                    'month' => Date::parse($month . '-01')->format('M Y'),
                     'total' => $expenses->sum('amount'),
                     'count' => $expenses->count(),
                 ];
@@ -174,7 +186,8 @@ class ExpenseReports extends BasePage implements HasForms
             ->values();
     }
 
-    public function getPaymentMethodBreakdownProperty(): Collection
+    #[Computed]
+    public function paymentMethodBreakdown(): Collection
     {
         return $this->expenses
             ->groupBy('payment_method')
@@ -212,13 +225,13 @@ class ExpenseReports extends BasePage implements HasForms
 
     public function exportToExcel()
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         $filename = 'expense-report-' . $gym->slug . '-' . now()->format('Y-m-d') . '.xlsx';
 
         return Excel::download(
-            new \App\Exports\ExpenseReportExport(
+            new ExpenseReportExport(
                 $this->expenses,
                 $this->categoryBreakdown,
                 $this->filters

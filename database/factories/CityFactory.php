@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\City;
@@ -8,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\City>
+ * @extends Factory<City>
  */
 class CityFactory extends Factory
 {
@@ -277,8 +279,8 @@ class CityFactory extends Factory
     {
         return [
             'state_id' => State::factory(),
-            'name' => $this->faker->city(),
-            'status' => $this->faker->boolean(90), // 90% chance of being active (1)
+            'name' => fake()->city(),
+            'status' => fake()->boolean(90), // 90% chance of being active (1)
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -290,7 +292,7 @@ class CityFactory extends Factory
         $cities = $this->citiesByState[$stateName] ?? [];
 
         return $this->state(function () use ($stateId, $cities) {
-            $cityName = $this->faker->randomElement($cities) ?? $this->faker->city();
+            $cityName = fake()->randomElement($cities) ?? fake()->city();
 
             return [
                 'state_id' => $stateId,

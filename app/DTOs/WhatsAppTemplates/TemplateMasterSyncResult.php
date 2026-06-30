@@ -6,6 +6,9 @@ namespace App\DTOs\WhatsAppTemplates;
 
 readonly class TemplateMasterSyncResult
 {
+    /**
+     * @param  array<int, string>  $errors
+     */
     public function __construct(
         public bool $success,
         public ?int $syncedCount = null,
@@ -14,6 +17,9 @@ readonly class TemplateMasterSyncResult
         public ?string $error = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         $result = [
@@ -36,6 +42,9 @@ readonly class TemplateMasterSyncResult
         return $result;
     }
 
+    /**
+     * @param  array<int, string>  $errors
+     */
     public static function fromTwilioResponse(int $syncedCount, int $errorCount, array $errors): self
     {
         return new self(

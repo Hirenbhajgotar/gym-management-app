@@ -1,14 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tables\Columns;
 
+use App\Models\Gym;
+use App\Models\GymMember;
 use Filament\Tables\Columns\Column;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
- * @mixin \App\Models\Gym
- * @mixin \App\Models\GymMember
+ * @mixin Gym
+ * @mixin GymMember
  *
- * @property-read \Illuminate\Database\Eloquent\Collection $members
+ * @property-read Collection $members
  * @property-read int $members_count
  */
 class AssignedMembersColumn extends Column
@@ -19,7 +24,7 @@ class AssignedMembersColumn extends Column
     {
 
         /**
-         * @var \App\Models\Gym $record
+         * @var Gym $record
          */
         $record = $this->getRecord();
 

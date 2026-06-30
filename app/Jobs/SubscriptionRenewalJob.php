@@ -1,20 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Enums\SubscriptionStatus;
-use App\Models\Payment;
 use App\Models\Subscription;
 use App\Notifications\PaymentFailedNotification;
 use App\Notifications\PendingRenewalNotification;
 use App\Notifications\RenewalErrorNotification;
-use App\Notifications\RenewalSuccessNotification;
 use App\Notifications\TrialEndingNotification;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
-use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -33,7 +34,7 @@ class SubscriptionRenewalJob implements ShouldQueue
      */
     public function __construct()
     {
-        $this->razorpayService = app(RazorpayService::class);
+        $this->razorpayService = resolve(RazorpayService::class);
     }
 
     /**
@@ -43,8 +44,8 @@ class SubscriptionRenewalJob implements ShouldQueue
     {
         Log::info('Starting subscription renewal job');
 
-        $this->processExpiringTrials($subscriptionService);
-        $this->processExpiringSubscriptions($subscriptionService);
+        $this->processExpiringTrials();
+        $this->processExpiringSubscriptions();
         $this->processExpiredSubscriptions($subscriptionService);
         $this->processExpiredTrials($subscriptionService);
 
@@ -54,46 +55,42 @@ class SubscriptionRenewalJob implements ShouldQueue
     /**
      * Process subscriptions with trials ending soon (notify users)
      */
-    private function processExpiringTrials(SubscriptionService $subscriptionService): void
+    private function processExpiringTrials(): void
     {
         Subscription::with(['user', 'plan'])
             ->where('status', SubscriptionStatus::TRIAL)
-            ->where('trial_ends_at', '<=', Carbon::now()->addDays(3))
-            ->where('trial_ends_at', '>', Carbon::now())
+            ->where('trial_ends_at', '<=', Date::now()->addDays(3))
+            ->where('trial_ends_at', '>', Date::now())
             ->chunk(100, function ($expiringTrials) {
                 foreach ($expiringTrials as $subscription) {
                     $this->notifyTrialEnding($subscription);
                 }
             });
-
-        $count = Subscription::where('status', SubscriptionStatus::TRIAL)
-            ->where('trial_ends_at', '<=', Carbon::now()->addDays(3))
-            ->where('trial_ends_at', '>', Carbon::now())
+        $count = Subscription::query()->where('status', SubscriptionStatus::TRIAL)
+            ->where('trial_ends_at', '<=', Date::now()->addDays(3))
+            ->where('trial_ends_at', '>', Date::now())
             ->count();
-
         Log::info("Processed {$count} expiring trials");
     }
 
     /**
      * Process subscriptions expiring soon (attempt renewal)
      */
-    private function processExpiringSubscriptions(SubscriptionService $subscriptionService): void
+    private function processExpiringSubscriptions(): void
     {
         Subscription::with(['user', 'plan'])
             ->active()
-            ->where('current_period_end', '<=', Carbon::now()->addDays(3))
-            ->where('current_period_end', '>', Carbon::now())
-            ->chunk(100, function ($expiringSubscriptions) use ($subscriptionService) {
+            ->where('current_period_end', '<=', Date::now()->addDays(3))
+            ->where('current_period_end', '>', Date::now())
+            ->chunk(100, function ($expiringSubscriptions) {
                 foreach ($expiringSubscriptions as $subscription) {
-                    $this->attemptRenewal($subscription, $subscriptionService);
+                    $this->attemptRenewal($subscription);
                 }
             });
-
         $count = Subscription::active()
-            ->where('current_period_end', '<=', Carbon::now()->addDays(3))
-            ->where('current_period_end', '>', Carbon::now())
+            ->where('current_period_end', '<=', Date::now()->addDays(3))
+            ->where('current_period_end', '>', Date::now())
             ->count();
-
         Log::info("Processed {$count} expiring subscriptions");
     }
 
@@ -118,12 +115,12 @@ class SubscriptionRenewalJob implements ShouldQueue
 
         Subscription::with(['user', 'plan'])
             ->where('status', SubscriptionStatus::ACTIVE)
-            ->where('current_period_end', '<', Carbon::now())
-            ->where('metadata->pending_renewal_order_id', '!=', null)
+            ->where('current_period_end', '<', Date::now())
+            ->where('metadata->pending_renewal_order_id', '!=')
             ->chunk(100, function ($pendingRenewals) use ($subscriptionService, &$processedCount) {
                 foreach ($pendingRenewals as $subscription) {
                     // Check if the pending renewal order is older than 7 days
-                    $orderCreatedAt = Carbon::parse($subscription->metadata['pending_renewal_created_at'] ?? null);
+                    $orderCreatedAt = Date::parse($subscription->metadata['pending_renewal_created_at'] ?? null);
 
                     if ($orderCreatedAt && $orderCreatedAt->addDays(7)->isPast()) {
                         // Suspend subscription after grace period
@@ -155,7 +152,7 @@ class SubscriptionRenewalJob implements ShouldQueue
     /**
      * Attempt to renew a subscription
      */
-    private function attemptRenewal(Subscription $subscription, SubscriptionService $subscriptionService): void
+    private function attemptRenewal(Subscription $subscription): void
     {
         try {
             // For automatic renewals without saved payment methods,
@@ -164,7 +161,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             $this->processPayment($subscription);
 
             Log::info("Created renewal order for subscription {$subscription->id}, user notified to complete payment");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Error creating renewal order for subscription {$subscription->id}: {$e->getMessage()}");
             $this->notifyRenewalError($subscription, $e);
         }
@@ -205,7 +202,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             $metadata = $subscription->metadata ?? [];
             $metadata['pending_renewal_order_id'] = $orderData['order_id'];
             $metadata['pending_renewal_payment_id'] = $orderData['payment_id'];
-            $metadata['pending_renewal_created_at'] = Carbon::now()->toDateTimeString();
+            $metadata['pending_renewal_created_at'] = Date::now()->toDateTimeString();
             $subscription->update(['metadata' => $metadata]);
 
             DB::commit();
@@ -219,7 +216,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             // The subscription will be suspended, and user can complete payment manually
             // return false;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::error("Failed to create renewal order for subscription {$subscription->id}: {$e->getMessage()}");
             throw $e;
@@ -236,15 +233,6 @@ class SubscriptionRenewalJob implements ShouldQueue
     }
 
     /**
-     * Send notification for successful renewal
-     */
-    private function notifyRenewalSuccess(Subscription $subscription): void
-    {
-        $subscription->user->notify(new RenewalSuccessNotification($subscription));
-        Log::info("Renewal success notification sent to user {$subscription->user_id}");
-    }
-
-    /**
      * Send notification for payment failure
      */
     private function notifyPaymentFailed(Subscription $subscription): void
@@ -256,7 +244,7 @@ class SubscriptionRenewalJob implements ShouldQueue
     /**
      * Send notification for renewal error
      */
-    private function notifyRenewalError(Subscription $subscription, \Exception $e): void
+    private function notifyRenewalError(Subscription $subscription, Exception $e): void
     {
         $subscription->user->notify(new RenewalErrorNotification($subscription, $e));
         Log::error("Renewal error notification sent to user {$subscription->user_id}: {$e->getMessage()}");

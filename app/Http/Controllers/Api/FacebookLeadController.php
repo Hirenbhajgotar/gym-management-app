@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\FacebookLeadProcessor;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -64,7 +67,7 @@ class FacebookLeadController extends Controller
             Log::info('Facebook webhook processed successfully');
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Facebook webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

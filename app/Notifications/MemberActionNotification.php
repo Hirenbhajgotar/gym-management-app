@@ -1,11 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class MemberActionNotification extends Notification implements ShouldQueue
 {
@@ -25,17 +30,15 @@ class MemberActionNotification extends Notification implements ShouldQueue
 
         try {
             // Validate member data
-            if ($member && ! is_object($member)) {
-                throw new \InvalidArgumentException('Member must be a valid model instance');
-            }
+            throw_if($member && ! is_object($member), InvalidArgumentException::class, 'Member must be a valid model instance');
             // Log notification creation
-            \Illuminate\Support\Facades\Log::info('Creating member notification', [
+            Log::info('Creating member notification', [
                 'action' => $action,
                 'member_id' => $member?->id ?? 'null',
                 'has_details' => ! is_null($details),
             ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error creating member notification: ' . $e->getMessage(), [
+        } catch (Exception $e) {
+            Log::error('Error creating member notification: ' . $e->getMessage(), [
                 'action' => $action,
                 'error' => $e->getMessage(),
             ]);
@@ -69,7 +72,7 @@ class MemberActionNotification extends Notification implements ShouldQueue
             default => "Gym Member {$this->action} Notification"
         };
 
-        $message = (new MailMessage)
+        $message = (new MailMessage())
             ->subject($subject)
             ->greeting("Hello {$notifiable->name}!")
             ->line($subject);

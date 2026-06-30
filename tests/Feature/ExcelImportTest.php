@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\TrainerResource\Pages\ManageTrainers;
@@ -53,7 +55,7 @@ class ExcelImportTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('trainers', [
-            'user_id' => User::where('email', 'trainer@example.com')->first()->id,
+            'user_id' => User::query()->where('email', 'trainer@example.com')->first()->id,
         ]);
     }
 

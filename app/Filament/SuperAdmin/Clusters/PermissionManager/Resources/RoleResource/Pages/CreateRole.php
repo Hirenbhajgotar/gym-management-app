@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;

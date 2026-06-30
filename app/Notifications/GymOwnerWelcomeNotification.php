@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\Payment;
@@ -9,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
 {
@@ -27,13 +30,13 @@ class GymOwnerWelcomeNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->subject('Welcome to Gym Management System')
             ->greeting("Hello {$this->user->name}!")
             ->line('Welcome to our Gym Management System. We are excited to have you on board.');
 
         if ($this->token) {
-            $resetUrl = \Illuminate\Support\Facades\URL::signedRoute('filament.admin.auth.password-reset.reset', [
+            $resetUrl = URL::signedRoute('filament.admin.auth.password-reset.reset', [
                 'token' => $this->token,
                 'email' => $this->user->email,
             ]);

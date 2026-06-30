@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ExpenseCategoryResource\Pages;
 
 use App\Filament\Admin\Resources\ExpenseCategoryResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditExpenseCategory extends EditRecord
@@ -13,7 +15,7 @@ class EditExpenseCategory extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->icon('phosphor-trash')
                 ->before(function () {
                     if ($this->record->expenses()->exists()) {

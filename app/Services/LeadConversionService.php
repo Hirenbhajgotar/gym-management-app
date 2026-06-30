@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\LeadStatus;
@@ -20,13 +22,9 @@ class LeadConversionService
         return DB::transaction(function () use ($lead, $extraData) {
             $lockedLead = $lead->lockForUpdate()->find($lead->id);
 
-            if (! $lockedLead) {
-                throw new Exception('Lead not found.');
-            }
+            throw_unless($lockedLead, Exception::class, 'Lead not found.');
 
-            if ($lockedLead->status === LeadStatus::CONVERTED) {
-                throw new Exception('Lead has already been converted.');
-            }
+            throw_if($lockedLead->status === LeadStatus::CONVERTED, Exception::class, 'Lead has already been converted.');
 
             $gymId = $this->getGymId();
             $now = now();
@@ -45,10 +43,10 @@ class LeadConversionService
             ];
 
             // 1. Create a GymMember from the Lead
-            $gymMember = GymMember::create($memberData);
+            $gymMember = GymMember::query()->create($memberData);
 
             // 2. Create the LeadConversion record
-            LeadConversion::create([
+            LeadConversion::query()->create([
                 'lead_id' => $lockedLead->id,
                 'gym_member_id' => $gymMember->id,
                 'membership_plan_id' => $extraData['membership_plan_id'] ?? null,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\GymMember;
@@ -13,7 +15,7 @@ class UpdateMemberProfile extends Seeder
      */
     public function run(): void
     {
-        $GymMember = GymMember::whereNull('profile_photo')->get();
+        $GymMember = GymMember::query()->whereNull('profile_photo')->get();
 
         foreach ($GymMember as $member) {
             $member->profile_photo = AvatarService::generate($member->name);

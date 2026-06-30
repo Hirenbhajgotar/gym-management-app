@@ -12,6 +12,9 @@ use App\Traits\DerivesPermissionsSlug;
 use App\Traits\ResolvesPolicyTableName;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
+use ReflectionClass;
+use ReflectionException;
+use ValueError;
 
 class PermissionDiscoveryService
 {
@@ -21,14 +24,14 @@ class PermissionDiscoveryService
     /**
      * Cache for discovered classes across panels.
      *
-     * @var array{resources: array, pages: array, widgets: array}
+     * @var array{resources: array<string, array{class: class-string, slug: string, label: string, icon: ?string}>, pages: array<string, array{class: class-string, slug: string, label: string}>, widgets: array<string, array{class: class-string, slug: string, label: string}>}
      */
     protected array $discoveredCache = [];
 
     /**
      * Get all discovered resources for a specific role (admin+staff panels, deduplicated).
      *
-     * @return array<string, array{label: string, icon: ?string, permissions: string[]}>
+     * @return array<string, array{label: string, icon: ?string, permissions: string[], default_permissions?: string[]}>
      */
     public function getDiscoveredResourcesForRole(DefaultRole $role): array
     {
@@ -51,11 +54,12 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
             $defaultActions = $defaultPerms[$roleValue];
+            /** @var array<int, string> $allActions */
             $allActions = config('filament-permissions.resource_actions', []);
 
             $allPermissionNames = array_map(
@@ -105,15 +109,13 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
-            $permissionName = "{$slug}";
-
             $pages[$slug] = [
                 'label' => $page['label'],
-                'permissions' => [$permissionName],
+                'permissions' => [$slug],
             ];
         }
 
@@ -146,15 +148,13 @@ class PermissionDiscoveryService
             $defaultPerms = $instance->defaultRolePermissions();
             $roleValue = $role->value;
 
-            if (! isset($defaultPerms[$roleValue]) || empty($defaultPerms[$roleValue])) {
+            if (! isset($defaultPerms[$roleValue]) || blank($defaultPerms[$roleValue])) {
                 continue;
             }
 
-            $permissionName = "{$slug}";
-
             $widgets[$slug] = [
                 'label' => $widget['label'],
-                'permissions' => [$permissionName],
+                'permissions' => [$slug],
             ];
         }
 
@@ -165,13 +165,15 @@ class PermissionDiscoveryService
      * Get "other" permissions not matching any discovered class.
      *
      * @param  Collection<int, Permission>  $allRolePermissions
-     * @return array<string, array{label: string, icon: ?string, permissions: string[]}>
+     * @return array<string, array{label: string, icon: string, permissions: string[]}>
      */
     public function getOtherPermissions(DefaultRole $role, Collection $allRolePermissions): array
     {
         $discovered = $this->getDiscoveredClasses();
+        /** @var array<int, string> $resourceActions */
         $resourceActions = config('filament-permissions.resource_actions', []);
 
+        /** @var array<string, true> $discoveredPermNames */
         $discoveredPermNames = [];
 
         foreach ($discovered['resources'] as $resource) {
@@ -191,6 +193,7 @@ class PermissionDiscoveryService
             $discoveredPermNames[$widget['slug']] = true;
         }
 
+        /** @var array<int, Permission> $otherPerms */
         $otherPerms = [];
         foreach ($allRolePermissions as $permission) {
             if (! isset($discoveredPermNames[$permission->name])) {
@@ -198,6 +201,7 @@ class PermissionDiscoveryService
             }
         }
 
+        /** @var array<string, array{label: string, icon: string, permissions: string[]}> $grouped */
         $grouped = [];
         foreach ($otherPerms as $permission) {
             $category = $permission->category instanceof PermissionCategory ? $permission->category->value : 'general';
@@ -206,7 +210,7 @@ class PermissionDiscoveryService
                 $catEnum = PermissionCategory::from($category);
                 $label = $catEnum->getLabel();
                 $icon = $catEnum->getIcon();
-            } catch (\ValueError) {
+            } catch (ValueError) {
                 $label = ucfirst(str_replace('_', ' ', $category));
                 $icon = 'heroicon-o-folder';
             }
@@ -229,7 +233,7 @@ class PermissionDiscoveryService
      * Main entry point: returns all grouped permissions for the UI.
      *
      * @param  Collection<int, Permission>  $allRolePermissions
-     * @return array{resources: array, pages: array, widgets: array, other: array}
+     * @return array{resources: array<string, array{label: string, icon: ?string, permissions: string[], default_permissions?: string[]}>, pages: array<string, array{label: string, permissions: string[]}>, widgets: array<string, array{label: string, permissions: string[]}>, other: array<string, array{label: string, icon: string, permissions: string[]}>}
      */
     public function getGroupedPermissions(DefaultRole $role, Collection $allRolePermissions): array
     {
@@ -243,11 +247,13 @@ class PermissionDiscoveryService
 
     /**
      * Get ALL default permission names for a role (from all discovered classes' defaultRolePermissions()).
+     *
+     * @return Collection<int, Permission>
      */
     public function getDefaultPermissionsForRole(DefaultRole $role): Collection
     {
         $discovered = $this->getDiscoveredClasses();
-        $resourceActions = config('filament-permissions.resource_actions', []);
+        /** @var list<string> $permissionNames */
         $permissionNames = [];
         $roleValue = $role->value;
 
@@ -265,7 +271,7 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 foreach ($defaultPerms[$roleValue] as $action) {
                     $permissionNames[] = "{$action}_{$slug}";
                 }
@@ -286,7 +292,7 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 // Slug already includes page_ prefix from derivePageSlug()
                 $permissionNames[] = $slug;
             }
@@ -306,13 +312,13 @@ class PermissionDiscoveryService
             }
 
             $defaultPerms = $instance->defaultRolePermissions();
-            if (isset($defaultPerms[$roleValue]) && ! empty($defaultPerms[$roleValue])) {
+            if (isset($defaultPerms[$roleValue]) && filled($defaultPerms[$roleValue])) {
                 // Slug already includes widget_ prefix from deriveWidgetSlug()
                 $permissionNames[] = $slug;
             }
         }
 
-        return Permission::whereIn('name', array_unique($permissionNames))->get();
+        return Permission::query()->whereIn('name', array_unique($permissionNames))->get();
     }
 
     /**
@@ -326,19 +332,24 @@ class PermissionDiscoveryService
     /**
      * Get all discovered classes from admin + staff panels (deduplicated).
      *
-     * @return array{resources: array, pages: array, widgets: array}
+     * @return array{resources: array<string, array{class: class-string, slug: string, label: string, icon: ?string}>, pages: array<string, array{class: class-string, slug: string, label: string}>, widgets: array<string, array{class: class-string, slug: string, label: string}>}
      */
     protected function getDiscoveredClasses(): array
     {
-        if (! empty($this->discoveredCache)) {
+        if (filled($this->discoveredCache)) {
             return $this->discoveredCache;
         }
 
+        /** @var array<int, string> $panelIds */
         $panelIds = config('filament-permissions.permissions_panels', []);
+        /** @var array{resources: list<string>, pages: list<string>, widgets: list<string>} $seen */
         $seen = ['resources' => [], 'pages' => [], 'widgets' => []];
 
+        /** @var array<string, array{class: class-string, slug: string, label: string, icon: ?string}> $resources */
         $resources = [];
+        /** @var array<string, array{class: class-string, slug: string, label: string}> $pages */
         $pages = [];
+        /** @var array<string, array{class: class-string, slug: string, label: string}> $widgets */
         $widgets = [];
 
         foreach (Filament::getPanels() as $id => $panel) {
@@ -346,7 +357,9 @@ class PermissionDiscoveryService
                 continue;
             }
 
-            foreach ($panel->getResources() as $resourceClass) {
+            /** @var array<int, class-string> $panelResources */
+            $panelResources = $panel->getResources();
+            foreach ($panelResources as $resourceClass) {
                 $reflection = $this->safeReflection($resourceClass);
                 if ($reflection === null || $reflection->isAbstract()) {
                     continue;
@@ -374,7 +387,9 @@ class PermissionDiscoveryService
                 ];
             }
 
-            foreach ($panel->getPages() as $pageClass) {
+            /** @var array<int, class-string> $panelPages */
+            $panelPages = $panel->getPages();
+            foreach ($panelPages as $pageClass) {
                 $reflection = $this->safeReflection($pageClass);
                 if ($reflection === null || $reflection->isAbstract()) {
                     continue;
@@ -391,8 +406,9 @@ class PermissionDiscoveryService
                 $seen['pages'][] = $className;
 
                 $slug = $this->derivePageSlug($reflection);
+                $pagePrefix = config('filament-permissions.page_prefix', 'page_');
                 $label = $this->deriveLabel(
-                    substr($slug, strlen(config('filament-permissions.page_prefix', 'page_'))),
+                    substr($slug, strlen($pagePrefix)),
                     'Page',
                 );
 
@@ -403,7 +419,9 @@ class PermissionDiscoveryService
                 ];
             }
 
-            foreach ($panel->getWidgets() as $widgetClass) {
+            /** @var array<int, class-string> $panelWidgets */
+            $panelWidgets = $panel->getWidgets();
+            foreach ($panelWidgets as $widgetClass) {
                 $reflection = $this->safeReflection($widgetClass);
                 if ($reflection === null || $reflection->isAbstract()) {
                     continue;
@@ -420,8 +438,9 @@ class PermissionDiscoveryService
                 $seen['widgets'][] = $className;
 
                 $slug = $this->deriveWidgetSlug($reflection);
+                $widgetPrefix = config('filament-permissions.widget_prefix', 'widget_');
                 $label = $this->deriveLabel(
-                    substr($slug, strlen(config('filament-permissions.widget_prefix', 'widget_'))),
+                    substr($slug, strlen($widgetPrefix)),
                     'Widget',
                 );
 
@@ -438,6 +457,7 @@ class PermissionDiscoveryService
             $clusterPath = app_path("Filament/{$panelName}/Clusters");
 
             if (is_dir($clusterPath)) {
+                /** @var array<int, string> $clusterDirs */
                 $clusterDirs = glob($clusterPath . '/*', GLOB_ONLYDIR) ?: [];
 
                 foreach ($clusterDirs as $clusterDir) {
@@ -450,6 +470,7 @@ class PermissionDiscoveryService
                     $clusterName = basename($clusterDir);
                     $namespace = "App\\Filament\\{$panelName}\\Clusters\\{$clusterName}\\Widgets";
 
+                    /** @var array<int, string> $widgetFiles */
                     $widgetFiles = glob($widgetDir . '/*.php') ?: [];
 
                     foreach ($widgetFiles as $file) {
@@ -471,8 +492,9 @@ class PermissionDiscoveryService
                         $seen['widgets'][] = $shortName;
 
                         $slug = $this->deriveWidgetSlug($reflection);
+                        $widgetPrefix = config('filament-permissions.widget_prefix', 'widget_');
                         $label = $this->deriveLabel(
-                            substr($slug, strlen(config('filament-permissions.widget_prefix', 'widget_'))),
+                            substr($slug, strlen($widgetPrefix)),
                             'Widget',
                         );
 
@@ -497,26 +519,34 @@ class PermissionDiscoveryService
 
     /**
      * Safely instantiate a class without calling constructor.
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>  $class
+     * @return T|null
      */
     protected function safeInstance(string $class): ?object
     {
         try {
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
 
             if ($reflection->isAbstract()) {
                 return null;
             }
 
+            /** @var T */
             return $reflection->newInstanceWithoutConstructor();
-        } catch (\ReflectionException) {
+        } catch (ReflectionException) {
             return null;
         }
     }
 
     /**
      * Derive resource slug from the model's policy $tableName or class name.
+     *
+     * @param  ReflectionClass<object>  $reflection
      */
-    protected function deriveResourceSlug(\ReflectionClass $reflection): string
+    protected function deriveResourceSlug(ReflectionClass $reflection): string
     {
         $modelClass = $this->resolveResourceModel($reflection);
 
@@ -530,23 +560,25 @@ class PermissionDiscoveryService
     {
         $humanized = ucwords(str_replace('_', ' ', $slug));
 
-        // return "{$humanized} {$suffix}";
         return "{$humanized}";
     }
 
     /**
      * Derive icon from resource's getNavigationIcon() method.
+     *
+     * @param  ReflectionClass<object>  $reflection
      */
-    protected function deriveResourceIcon(\ReflectionClass $reflection): ?string
+    protected function deriveResourceIcon(ReflectionClass $reflection): ?string
     {
         try {
             if ($reflection->hasMethod('getNavigationIcon')) {
                 $method = $reflection->getMethod('getNavigationIcon');
                 $instance = $reflection->newInstanceWithoutConstructor();
 
+                /** @var string|null */
                 return $method->invoke($instance);
             }
-        } catch (\ReflectionException) {
+        } catch (ReflectionException) {
         }
 
         return null;
@@ -558,9 +590,9 @@ class PermissionDiscoveryService
     protected function convertToSnakeCase(string $value): string
     {
         $value = str_replace('-', '_', $value);
-        $value = preg_replace('/([A-Z])/', '_$1', $value);
+        $value = preg_replace('/([A-Z])/', '_$1', $value) ?? $value;
         $value = strtolower(trim($value, '_'));
 
-        return preg_replace('/_+/', '_', $value);
+        return preg_replace('/_+/', '_', $value) ?? $value;
     }
 }

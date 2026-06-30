@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Filament\StaffPanel;
 
 use App\Models\Gym;
@@ -109,7 +111,7 @@ class CrossTenantTest extends StaffPanelTestCase
     protected function switchToGym(Gym $gym): self
     {
         setPermissionsTeamId($gym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->managerUser->forgetCachedPermissions();
         $this->managerUser->load('roles');
 

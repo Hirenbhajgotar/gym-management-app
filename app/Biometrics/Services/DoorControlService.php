@@ -11,6 +11,8 @@ use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\DoorEvent;
 use App\Models\GymMember;
+use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -86,11 +88,11 @@ class DoorControlService
                 $response->json() ?? []
             );
 
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             event(new DoorControllerUnreachable($device, $e->getMessage()));
 
             return DoorControlResult::failed('Door controller unreachable');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             event(new DoorControllerUnreachable($device, $e->getMessage()));
 
             return DoorControlResult::failed('Door controller error: ' . $e->getMessage());
@@ -123,7 +125,7 @@ class DoorControlService
         $trustedSubnets = array_filter(config('biometrics.trusted_subnets', []));
 
         // If no restrictions configured, deny by default for security
-        if (empty($trustedDomains) && empty($trustedSubnets)) {
+        if (blank($trustedDomains) && blank($trustedSubnets)) {
             return 'No trusted domains or subnets configured';
         }
 
@@ -174,13 +176,13 @@ class DoorControlService
 
         $records = @dns_get_record($host, DNS_A);
 
-        if ($records !== false && ! empty($records)) {
+        if ($records !== false && filled($records)) {
             return $records[0]['ip'] ?? null;
         }
 
         // Try AAAA record for IPv6
         $records = @dns_get_record($host, DNS_AAAA);
-        if ($records !== false && ! empty($records)) {
+        if ($records !== false && filled($records)) {
             return $records[0]['ipv6'] ?? null;
         }
 
@@ -231,7 +233,7 @@ class DoorControlService
         string $eventType,
         DoorControlResult $result
     ): DoorEvent {
-        return DoorEvent::create([
+        return DoorEvent::query()->create([
             'gym_id' => $device->gym_id,
             'device_id' => $device->id,
             'gym_member_id' => $gymMember?->id,

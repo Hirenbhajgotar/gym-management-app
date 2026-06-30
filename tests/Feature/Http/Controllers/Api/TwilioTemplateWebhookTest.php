@@ -27,7 +27,7 @@ class TwilioTemplateWebhookTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_twilio_sid',
             'twilio_auth_token' => 'test_twilio_auth_token',
@@ -48,7 +48,7 @@ class TwilioTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/twilio/templates-status?hub_mode=subscribe&hub_verify_token=test_twilio_verify_token&hub_challenge=challenge_12345');
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertContent('challenge_12345');
         $response->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
     }
@@ -58,7 +58,7 @@ class TwilioTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/twilio/templates-status?hub_mode=subscribe&hub_verify_token=wrong_token&hub_challenge=challenge_12345');
 
-        $response->assertStatus(403);
+        $response->assertForbidden();
         $response->assertJson(['error' => 'Verification failed']);
     }
 
@@ -67,7 +67,7 @@ class TwilioTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/twilio/templates-status');
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertJson(['status' => 'ok']);
     }
 
@@ -79,7 +79,7 @@ class TwilioTemplateWebhookTest extends TestCase
             // Missing Status
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
         $response->assertJson(['error' => 'Missing required fields']);
     }
 
@@ -91,7 +91,7 @@ class TwilioTemplateWebhookTest extends TestCase
             // Missing ContentSid
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
         $response->assertJson(['error' => 'Missing required fields']);
     }
 
@@ -105,7 +105,7 @@ class TwilioTemplateWebhookTest extends TestCase
             'Status' => 'approved',
         ]);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertJson(['status' => 'success']);
 
         Queue::assertPushed(ProcessTwilioTemplateWebhook::class, function ($job) {
@@ -126,7 +126,7 @@ class TwilioTemplateWebhookTest extends TestCase
             'ErrorMessage' => 'Template contains prohibited content',
         ]);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertJson(['status' => 'success']);
 
         Queue::assertPushed(ProcessTwilioTemplateWebhook::class, function ($job) {
@@ -150,7 +150,7 @@ class TwilioTemplateWebhookTest extends TestCase
                 'Status' => $status,
             ]);
 
-            $response->assertStatus(200);
+            $response->assertOk();
             $response->assertJson(['status' => 'success']);
         }
 
@@ -167,7 +167,7 @@ class TwilioTemplateWebhookTest extends TestCase
             'Status' => 'APPROVED',
         ]);
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         Queue::assertPushed(ProcessTwilioTemplateWebhook::class, function ($job) {
             return $job->status === 'APPROVED';

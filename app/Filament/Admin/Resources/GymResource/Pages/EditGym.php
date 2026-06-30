@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\GymResource\Pages;
 
 use App\Filament\Admin\Resources\GymResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditGym extends EditRecord
@@ -13,7 +15,7 @@ class EditGym extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->successNotification(null), // Disable default success notification,
         ];
     }

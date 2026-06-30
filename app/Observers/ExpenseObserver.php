@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
 use App\Enums\ExpenseStatus;
@@ -23,7 +25,7 @@ class ExpenseObserver
     public function creating(Expense $expense): void
     {
         // Set default currency if not provided
-        if (empty($expense->currency)) {
+        if (blank($expense->currency)) {
             $expense->currency = 'INR';
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\MembershipPlanResource\Pages;
 
 use App\Filament\Actions\ExportAction;
@@ -8,7 +10,9 @@ use App\Filament\Admin\Resources\MembershipPlanResource;
 use App\Filament\Admin\Resources\MembershipPlanResource\Exports\MembershipPlanExporter;
 use App\Imports\MembershipPlansImport;
 use App\Models\MembershipPlan;
-use Filament\Actions;
+use App\Models\User;
+use Filament\Actions\CreateAction;
+use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Resources\Pages\ListRecords;
 
 class ListMembershipPlans extends ListRecords
@@ -21,7 +25,7 @@ class ListMembershipPlans extends ListRecords
             ExportAction::make()
                 ->label('Export Plans')
                 ->exporter(MembershipPlanExporter::class)
-                ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                ->formats([ExportFormat::Xlsx]),
 
             ImportAction::make()
                 ->label('Import Plans')
@@ -47,7 +51,7 @@ class ListMembershipPlans extends ListRecords
                     sampleButtonLabel: 'Download Sample File',
                 ),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
@@ -60,9 +64,9 @@ class ListMembershipPlans extends ListRecords
         ];
     }
 
-    public function getUser(): \App\Models\User
+    public function getUser(): User
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user;

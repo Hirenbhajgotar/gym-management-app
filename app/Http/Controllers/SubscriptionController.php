@@ -8,10 +8,11 @@ use App\Jobs\GenerateInvoiceJob;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
-use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -62,7 +63,7 @@ class SubscriptionController extends Controller
         $planId = session('renew_plan_id');
 
         $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
 
         // Create Razorpay order for renewal
         $orderData = $this->razorpayService->createOrder([
@@ -98,7 +99,7 @@ class SubscriptionController extends Controller
         $subscriptionId = session('current_subscription_id');
 
         $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $newPlan = Plan::findOrFail($planId);
+        $newPlan = Plan::query()->findOrFail($planId);
 
         // For upgrades, charge the full amount of the new plan
         $upgradeAmount = $newPlan->price_yearly;
@@ -134,7 +135,7 @@ class SubscriptionController extends Controller
     private function handleNewSubscriptionCheckout(): View
     {
         $planId = session('selected_plan_id');
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
         $user = auth()->user();
 
         // Check if user has already used a trial
@@ -178,9 +179,9 @@ class SubscriptionController extends Controller
     public function verifyPayment(Request $request)
     {
         $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature' => 'required|string',
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
         ]);
 
         try {
@@ -191,9 +192,7 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature,
             );
 
-            if (! $verifiedPayment->isCompleted()) {
-                throw new \Exception('Payment verification failed');
-            }
+            throw_unless($verifiedPayment->isCompleted(), Exception::class, 'Payment verification failed');
 
             $checkoutType = $this->determineCheckoutType();
 
@@ -217,21 +216,19 @@ class SubscriptionController extends Controller
 
             // Generate invoice
             if ($verifiedPayment->isCompleted()) {
-                GenerateInvoiceJob::dispatch($verifiedPayment);
+                dispatch(new GenerateInvoiceJob($verifiedPayment));
             }
 
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('success', $successMessage);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Subscription payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
                 'checkout_type' => $this->determineCheckoutType(),
             ]);
 
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('error', 'Payment failed. Please try again.');
         }
     }
@@ -239,7 +236,7 @@ class SubscriptionController extends Controller
     private function processRenewal(): void
     {
         $subscriptionId = session('renew_subscription_id');
-        $subscription = Subscription::findOrFail($subscriptionId);
+        $subscription = Subscription::query()->findOrFail($subscriptionId);
 
         $this->subscriptionService->renewSubscription($subscription);
     }
@@ -249,8 +246,8 @@ class SubscriptionController extends Controller
         $planId = session('upgrade_plan_id');
         $subscriptionId = session('current_subscription_id');
 
-        $subscription = Subscription::findOrFail($subscriptionId);
-        $newPlan = Plan::findOrFail($planId);
+        $subscription = Subscription::query()->findOrFail($subscriptionId);
+        $newPlan = Plan::query()->findOrFail($planId);
         $user = $subscription?->user;
 
         // Cancel the current subscription immediately
@@ -266,7 +263,7 @@ class SubscriptionController extends Controller
     private function processNewSubscription(): void
     {
         $planId = session('selected_plan_id');
-        $plan = Plan::findOrFail($planId);
+        $plan = Plan::query()->findOrFail($planId);
         $user = auth()->user();
 
         $this->subscriptionService->createSubscription($user, $plan, [
@@ -279,27 +276,20 @@ class SubscriptionController extends Controller
      */
     public function completePendingPayment(
         string $orderId,
-    ): View|\Illuminate\Http\RedirectResponse {
+    ): View|RedirectResponse {
         // Find the payment record
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
-        if (! $payment || $payment->user_id !== auth()->id()) {
-            abort(404, 'Payment not found');
-        }
+        abort_if(! $payment || $payment->user_id !== auth()->id(), 404, 'Payment not found');
 
         // Find the subscription
-        $subscription = Subscription::find(
-            $payment->metadata['subscription_id'] ?? null,
-        );
+        $subscription = Subscription::query()->find($payment->metadata['subscription_id'] ?? null);
 
-        if (! $subscription || $subscription->user_id !== auth()->id()) {
-            abort(404, 'Subscription not found');
-        }
+        abort_if(! $subscription || $subscription->user_id !== auth()->id(), 404, 'Subscription not found');
 
         // Check if payment is still pending
         if ($payment->status !== 'pending') {
-            return redirect()
-                ->route('profile')
+            return to_route('profile')
                 ->with('info', 'This payment has already been processed.');
         }
 
@@ -318,17 +308,16 @@ class SubscriptionController extends Controller
     /**
      * Handle gym owner registration checkout
      */
-    public function handleGymOwnerCheckout(): View|\Illuminate\Http\RedirectResponse
+    public function handleGymOwnerCheckout(): View|RedirectResponse
     {
         $registrationData = session('gym_owner_registration');
 
         if (! $registrationData || ! isset($registrationData['selected_plan_id'])) {
-            return redirect()
-                ->route('gym.register')
+            return to_route('gym.register')
                 ->with('error', 'Registration data not found. Please start again.');
         }
 
-        $plan = Plan::findOrFail($registrationData['selected_plan_id']);
+        $plan = Plan::query()->findOrFail($registrationData['selected_plan_id']);
 
         // Create Razorpay order with complete registration data in metadata
         $orderData = $this->razorpayService->createOrder([
@@ -366,21 +355,19 @@ class SubscriptionController extends Controller
     public function verifyGymOwnerPayment(Request $request)
     {
         $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature' => 'required|string',
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
         ]);
 
         try {
             // Get registration data from session
             $registrationData = session('gym_owner_registration');
 
-            if (! $registrationData) {
-                throw new \Exception('Registration data not found');
-            }
+            throw_unless($registrationData, Exception::class, 'Registration data not found');
 
             // Get payment record
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $request->razorpay_order_id)->first();
 
             // Use the reusable method to create gym owner
             $result = $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);
@@ -398,18 +385,16 @@ class SubscriptionController extends Controller
                     : 'Registration completed! Please complete the payment to activate your subscription.';
             }
 
-            return redirect()
-                ->route('thank-you')
+            return to_route('thank-you')
                 ->with('success', $successMessage)
                 ->with('email', $result['user']->email);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Gym owner payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id ?? null,
             ]);
 
-            return redirect()
-                ->route('gym.register')
+            return to_route('gym.register')
                 ->with('error', 'Payment verification failed. Please try again or contact support.');
         }
     }

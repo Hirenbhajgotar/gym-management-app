@@ -1,11 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
 use App\Enums\WhatsAppPhoneNumberTypesEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -22,36 +27,38 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $number_cost
  * @property WhatsAppPhoneNumberStatusEnum $status
  * @property WhatsAppPhoneNumberTypesEnum $type
- * @property \Illuminate\Support\Carbon|null $purchased_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\WhatsAppAccount|null $account
- * @property-read \Illuminate\Support\Carbon|null $last_number_cost_charged_at
+ * @property Carbon|null $purchased_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read WhatsAppAccount|null $account
+ * @property-read Carbon|null $last_number_cost_charged_at
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereChannelSenderSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereCountryCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereFriendlyName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereLocality($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereMonthlyCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereNumberCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePhoneNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePhoneNumberSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber wherePurchasedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereRegion($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppPhoneNumber whereWhatsappAccountId($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber newModelQuery()
+ * @method static Builder<static>|WhatsAppPhoneNumber newQuery()
+ * @method static Builder<static>|WhatsAppPhoneNumber query()
+ * @method static Builder<static>|WhatsAppPhoneNumber whereChannelSenderSid($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereCountryCode($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereFriendlyName($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereId($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereLocality($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereMonthlyCost($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereNumberCost($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber wherePhoneNumber($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber wherePhoneNumberSid($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber wherePurchasedAt($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereRegion($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereStatus($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereType($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereUpdatedAt($value)
+ * @method static Builder<static>|WhatsAppPhoneNumber whereWhatsappAccountId($value)
  *
  * @mixin \Eloquent
  */
 class WhatsAppPhoneNumber extends Model
 {
+    use HasFactory;
+
     protected $table = 'whatsapp_phone_numbers';
 
     protected $fillable = [
@@ -86,7 +93,9 @@ class WhatsAppPhoneNumber extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<WhatsAppAccount, $this>
+     */
     public function account(): BelongsTo
     {
         return $this->belongsTo(WhatsAppAccount::class, 'whatsapp_account_id');
@@ -130,7 +139,7 @@ class WhatsAppPhoneNumber extends Model
      */
     public function isValidIncomingPhoneNumberSid(): bool
     {
-        if (empty($this->phone_number_sid)) {
+        if (blank($this->phone_number_sid)) {
             return false;
         }
 
@@ -143,7 +152,7 @@ class WhatsAppPhoneNumber extends Model
      */
     public function isValidChannelSenderSid(): bool
     {
-        if (empty($this->channel_sender_sid)) {
+        if (blank($this->channel_sender_sid)) {
             return false;
         }
 
@@ -156,7 +165,7 @@ class WhatsAppPhoneNumber extends Model
      */
     public function hasLegacyChannelSenderSidInPhoneNumberField(): bool
     {
-        if (empty($this->phone_number_sid)) {
+        if (blank($this->phone_number_sid)) {
             return false;
         }
 
@@ -180,8 +189,8 @@ class WhatsAppPhoneNumber extends Model
         // return ! $hasLegacyIssue && ($phoneNumberSidValid || empty($this->phone_number_sid));
 
         return ! $hasLegacyIssue
-           && ($phoneNumberSidValid || empty($this->phone_number_sid))
-           && ($channelSenderSidValid || empty($this->channel_sender_sid));
+           && ($phoneNumberSidValid || blank($this->phone_number_sid))
+           && ($channelSenderSidValid || blank($this->channel_sender_sid));
     }
 
     public function isSurchargeDue(): bool

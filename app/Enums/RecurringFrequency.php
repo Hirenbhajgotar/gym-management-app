@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
+use DateTimeInterface;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Support\Facades\Date;
 
 enum RecurringFrequency: string implements HasLabel
 {
@@ -34,7 +38,7 @@ enum RecurringFrequency: string implements HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 
     /**
@@ -56,9 +60,9 @@ enum RecurringFrequency: string implements HasLabel
     /**
      * Calculate next due date from a given date
      */
-    public function getNextDueDate(\DateTimeInterface $fromDate): \DateTimeInterface
+    public function getNextDueDate(DateTimeInterface $fromDate): DateTimeInterface
     {
-        $date = \Carbon\Carbon::parse($fromDate);
+        $date = Date::parse($fromDate);
 
         return match ($this) {
             self::DAILY => $date->addDay(),

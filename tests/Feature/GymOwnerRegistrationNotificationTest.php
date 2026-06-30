@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\GymOwnerRegistrationService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Mockery;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class GymOwnerRegistrationNotificationTest extends TestCase
@@ -20,7 +24,7 @@ class GymOwnerRegistrationNotificationTest extends TestCase
     {
         parent::setUp();
         // Manually create necessary roles/permissions to avoid heavy seeder
-        $role = \Spatie\Permission\Models\Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
     }
 
     public function test_registration_completes_even_if_notification_throws_exception()
@@ -45,14 +49,14 @@ class GymOwnerRegistrationNotificationTest extends TestCase
         $mockSuperAdmin->shouldReceive('getAttribute')->with('name')->andReturn('Super Admin');
         $mockSuperAdmin->shouldReceive('getAttribute')->with('email')->andReturn('admin@example.com');
         $mockSuperAdmin->shouldReceive('notify')
-            ->andThrow(new \Exception('Simulated notification failure'));
+            ->andThrow(new Exception('Simulated notification failure'));
 
         // Mock Cache to return our problematic super admin
         Cache::shouldReceive('flexible')
             ->with(User::ALL_SUPER_ADMINS_CACHE_KEY, Mockery::any(), Mockery::any())
             ->andReturn(collect([$mockSuperAdmin]));
 
-        $service = app(GymOwnerRegistrationService::class);
+        $service = resolve(GymOwnerRegistrationService::class);
 
         $registrationData = [
             'name' => 'John Doe',

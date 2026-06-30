@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
 use App\Enums\DefaultRole;
@@ -41,7 +43,7 @@ class ReceptionistsImport extends BaseImporter implements ShouldQueue, WithColum
         $receptionistRole = DefaultRole::RECEPTIONIST;
 
         // Create a new user with basic information from the imported row.
-        $user = User::create([
+        $user = User::query()->create([
             'name' => $row['name'],
             'email' => $row['email'],
             'password' => $row['password'], // Hash the password for security.
@@ -54,10 +56,10 @@ class ReceptionistsImport extends BaseImporter implements ShouldQueue, WithColum
         $user->gyms()->attach($this->tenantId, ['role' => $receptionistRole->value]);
 
         // Use the RolesAndPermissionsService to formally assign the role to the user within the tenant.
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::find($this->tenantId), $user, $receptionistRole);
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(Gym::query()->find($this->tenantId), $user, $receptionistRole);
 
         // Create the employee's detailed profile.
-        EmployeeDetail::create([
+        EmployeeDetail::query()->create([
             'user_id' => $user->id, // Link to the created user.
             'date_of_birth' => $row['date_of_birth'] ?? null,
             'gender' => $row['gender'] ?? null,

@@ -33,7 +33,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_unit_sid',
             'twilio_auth_token' => 'test_unit_auth_token',
@@ -155,7 +155,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         $this->assertCount(2, $templates);
 
@@ -200,7 +200,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::WABA);
         $job->handle();
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         $this->assertCount(1, $templates);
 
@@ -249,7 +249,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job->handle();
 
         // Should still be 1 template (updated)
-        $this->assertCount(1, WhatsAppTemplate::where('gym_id', $this->gym->id)->get());
+        $this->assertCount(1, WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get());
 
         // Template should be updated to DRAFT
         $existingTemplate->refresh();
@@ -286,7 +286,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
-        $template = WhatsAppTemplate::where('gym_id', $this->gym->id)->first();
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->first();
 
         $this->assertEquals('HXtemplate_sid_123', $template->twilio_template_sid);
         $this->assertNull($template->meta_template_id);
@@ -347,7 +347,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
-        $template = WhatsAppTemplate::where('gym_id', $this->gym->id)->first();
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->first();
 
         $this->assertNotNull($template->variables);
         $this->assertIsArray($template->variables);
@@ -391,7 +391,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
-        $templates = WhatsAppTemplate::where('gym_id', $this->gym->id)->get();
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         // Only the template with a name should be imported
         $this->assertCount(1, $templates);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
@@ -19,7 +21,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RolesAndPermissionsService;
+        $this->service = new RolesAndPermissionsService();
     }
 
     #[Test]
@@ -43,7 +45,7 @@ class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCa
         $this->assertArrayHasKey(DefaultRole::RECEPTIONIST->value, $result);
 
         // Assert that each role has an array of permission names
-        foreach ($result as $role => $permissions) {
+        foreach ($result as $permissions) {
             $this->assertIsArray($permissions);
             $this->assertNotEmpty($permissions);
 

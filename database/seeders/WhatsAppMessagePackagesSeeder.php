@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\WhatsAppPackage;
@@ -127,10 +129,7 @@ class WhatsAppMessagePackagesSeeder extends Seeder
         ];
 
         foreach ($packages as $package) {
-            WhatsAppPackage::updateOrCreate(
-                ['name' => $package['name']],
-                $package
-            );
+            WhatsAppPackage::query()->updateOrCreate(['name' => $package['name']], $package);
         }
     }
 }

@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Notifications\PendingLeadNotification;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 class PendingLeadNotificationCommand extends Command
 {
@@ -26,7 +29,7 @@ class PendingLeadNotificationCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         // Get leads that are pending for 2+ days with no recent follow-ups
         $pendingLeads = Lead::with(['gym.users'])->whereIn('status', [
@@ -34,7 +37,7 @@ class PendingLeadNotificationCommand extends Command
             LeadStatus::CONTACTED,
         ])
             ->where('created_at', '<', now()->subDays(2))
-            ->where(function ($query) {
+            ->where(function (Builder $query) {
                 $query
                     ->whereDoesntHave('followUps')
                     ->orWhere('last_follow_up_date', '<', now()->subDays(2))
@@ -61,5 +64,7 @@ class PendingLeadNotificationCommand extends Command
         }
 
         $this->info('Pending lead reminders sent successfully.');
+
+        return self::SUCCESS;
     }
 }

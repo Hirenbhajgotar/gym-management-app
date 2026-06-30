@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\User;
@@ -58,7 +60,7 @@ class ManagerCreate extends Notification implements ShouldQueue
         $userName = $this->sanitizeUserName();
         $userEmail = $this->user->email ?? 'Not provided';
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject($this->getEmailSubject())
             ->greeting($this->getPersonalizedGreeting($userName))
             ->line($this->getWelcomeMessage())
@@ -128,19 +130,6 @@ class ManagerCreate extends Notification implements ShouldQueue
     private function formatCredentialLine(string $label, string $value): string
     {
         return "• **{$label}:** {$value}";
-    }
-
-    /**
-     * Mask password for security (show partial).
-     */
-    private function maskPassword(): string
-    {
-        $length = strlen($this->password);
-        if ($length <= 4) {
-            return str_repeat('*', $length);
-        }
-
-        return substr($this->password, 0, 2) . str_repeat('*', $length - 4) . substr($this->password, -2);
     }
 
     /**

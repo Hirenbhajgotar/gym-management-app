@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Meta;
 
 use App\Interfaces\EmbeddedSignupInterface;
@@ -43,7 +45,7 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
 
     public function handleEmbeddedSignupCallback(string $code, string $state): array
     {
-        $session = WabaSetupSession::where('session_id', $state)->first();
+        $session = WabaSetupSession::query()->where('session_id', $state)->first();
 
         if (! $session) {
             return [
@@ -188,7 +190,7 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
         foreach ($granularScopes as $scope) {
             if ($scope['scope'] === 'whatsapp_business_management' || $scope['scope'] === 'whatsapp_business_messaging') {
                 $targetIds = $scope['target_ids'] ?? [];
-                if (! empty($targetIds)) {
+                if (filled($targetIds)) {
                     $wabaId = $targetIds[0];
                 }
             }
@@ -211,8 +213,8 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
         $metaAppSecret = config('services.meta.app_secret', '');
         $configId = config('services.meta.config_id', '');
 
-        return ! empty($metaAppId)
-            && ! empty($metaAppSecret)
-            && ! empty($configId);
+        return filled($metaAppId)
+            && filled($metaAppSecret)
+            && filled($configId);
     }
 }

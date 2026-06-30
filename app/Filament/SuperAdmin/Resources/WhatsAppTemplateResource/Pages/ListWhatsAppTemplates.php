@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListWhatsAppTemplates extends ListRecords
@@ -15,7 +15,7 @@ class ListWhatsAppTemplates extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('New Template')
                 ->icon('heroicon-o-plus'),
         ];

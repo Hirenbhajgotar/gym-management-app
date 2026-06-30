@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
 use App\Models\Gym;
 use App\Services\GymSettingService;
 use App\Services\TwilioAccountManager;
+use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class GymObserver
 {
@@ -15,7 +19,7 @@ class GymObserver
      */
     public function created(Gym $gym): void
     {
-        app(GymSettingService::class)->createDefaultSettings($gym);
+        resolve(GymSettingService::class)->createDefaultSettings($gym);
 
         $recipient = $gym->owner() ?? auth()->user();
 
@@ -47,7 +51,7 @@ class GymObserver
     public function deleting(Gym $gym): void
     {
         try {
-            \Illuminate\Support\Facades\Log::info('Starting cascade deletion for gym', [
+            Log::info('Starting cascade deletion for gym', [
                 'gym_id' => $gym->id,
                 'gym_name' => $gym->name,
             ]);
@@ -79,9 +83,9 @@ class GymObserver
             // and delete WhatsApp Account
             if ($gym->whatsAppAccount) {
                 try {
-                    app(TwilioAccountManager::class)->cleanupTenantResources($gym->id);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::warning('Twilio cleanup failed during gym deletion, continuing with local cleanup', [
+                    resolve(TwilioAccountManager::class)->cleanupTenantResources($gym->id);
+                } catch (Exception $e) {
+                    Log::warning('Twilio cleanup failed during gym deletion, continuing with local cleanup', [
                         'gym_id' => $gym->id,
                         'error' => $e->getMessage(),
                     ]);
@@ -108,11 +112,11 @@ class GymObserver
             // 11. Detach all users from this gym (gym_user pivot table)
             $gym->users()->detach();
 
-            \Illuminate\Support\Facades\Log::info('Successfully completed cascade deletion for gym', [
+            Log::info('Successfully completed cascade deletion for gym', [
                 'gym_id' => $gym->id,
             ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to cascade delete gym data', [
+        } catch (Exception $e) {
+            Log::error('Failed to cascade delete gym data', [
                 'gym_id' => $gym->id,
                 'error' => $e->getMessage(),
             ]);

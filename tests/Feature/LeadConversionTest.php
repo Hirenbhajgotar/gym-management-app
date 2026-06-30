@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Enums\PaymentStatus;
@@ -8,6 +10,7 @@ use App\Models\Lead;
 use App\Models\MembershipPlan;
 use App\Models\User;
 use App\Services\LeadConversionService;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +25,7 @@ class LeadConversionTest extends TestCase
         $user = User::factory()->create();
         $user->gyms()->attach($gym);
         $this->actingAs($user);
-        \Filament\Facades\Filament::setTenant($gym);
+        Filament::setTenant($gym);
 
         $lead = Lead::factory()->create(['gym_id' => $gym->id]);
         $plan = MembershipPlan::factory()->create(['gym_id' => $gym->id]);
@@ -43,7 +46,7 @@ class LeadConversionTest extends TestCase
         ];
 
         // 2. Act
-        $service = app(LeadConversionService::class);
+        $service = resolve(LeadConversionService::class);
         $member = $service->convert($lead, $extraData);
 
         // 3. Assert

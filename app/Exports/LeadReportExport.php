@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exports;
 
 use App\Models\Lead;
@@ -49,8 +51,7 @@ class LeadReportExport implements FromQuery, Responsable, ShouldAutoSize, WithHe
                 isset($this->filters['status']) && $this->filters['status'],
                 fn ($q) => $q->where('status', $this->filters['status'])
             )
-            ->with(['membershipPlan', 'creator'])
-            ->orderByDesc('created_at');
+            ->with(['membershipPlan', 'creator'])->latest();
     }
 
     public function headings(): array

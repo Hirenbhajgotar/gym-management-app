@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\RequestContactResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\RequestContactResource;

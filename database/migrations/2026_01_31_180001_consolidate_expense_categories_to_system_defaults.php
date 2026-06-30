@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Expense;
 use App\Models\ExpenseBudget;
 use App\Models\ExpenseCategory;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
+return new class() extends Migration
 {
     /**
      * Run the migrations.
@@ -29,19 +31,16 @@ return new class extends Migration
                 unset($categoryData['children']);
 
                 // Check if system category already exists
-                $systemCategory = ExpenseCategory::firstOrCreate(
-                    [
-                        'gym_id' => null,
-                        'name' => $categoryData['name'],
-                        'parent_id' => null,
-                    ],
-                    [
-                        ...$categoryData,
-                        'order' => $order++,
-                        'is_active' => true,
-                        'is_system' => true,
-                    ]
-                );
+                $systemCategory = ExpenseCategory::query()->firstOrCreate([
+                    'gym_id' => null,
+                    'name' => $categoryData['name'],
+                    'parent_id' => null,
+                ], [
+                    ...$categoryData,
+                    'order' => $order++,
+                    'is_active' => true,
+                    'is_system' => true,
+                ]);
 
                 // Update is_system flag if it already existed
                 $systemCategory->update(['is_system' => true]);
@@ -54,20 +53,17 @@ return new class extends Migration
                 // Create child categories
                 $childOrder = 0;
                 foreach ($children as $childData) {
-                    $childCategory = ExpenseCategory::firstOrCreate(
-                        [
-                            'gym_id' => null,
-                            'name' => $childData['name'],
-                            'parent_id' => $systemCategory->id,
-                        ],
-                        [
-                            ...$childData,
-                            'description' => null,
-                            'order' => $childOrder++,
-                            'is_active' => true,
-                            'is_system' => true,
-                        ]
-                    );
+                    $childCategory = ExpenseCategory::query()->firstOrCreate([
+                        'gym_id' => null,
+                        'name' => $childData['name'],
+                        'parent_id' => $systemCategory->id,
+                    ], [
+                        ...$childData,
+                        'description' => null,
+                        'order' => $childOrder++,
+                        'is_active' => true,
+                        'is_system' => true,
+                    ]);
 
                     $childCategory->update(['is_system' => true]);
                     $categoryMapping[$categoryData['name']]['children'][$childData['name']] = $childCategory->id;
@@ -92,25 +88,25 @@ return new class extends Migration
     {
         foreach ($categoryMapping as $parentName => $parentData) {
             // Update expenses pointing to gym-specific parent categories
-            $gymCategoryIds = ExpenseCategory::whereNotNull('gym_id')
+            $gymCategoryIds = ExpenseCategory::query()->whereNotNull('gym_id')
                 ->where('name', $parentName)
                 ->whereNull('parent_id')
                 ->pluck('id');
 
             if ($gymCategoryIds->isNotEmpty()) {
-                Expense::whereIn('expense_category_id', $gymCategoryIds)
+                Expense::query()->whereIn('expense_category_id', $gymCategoryIds)
                     ->update(['expense_category_id' => $parentData['id']]);
             }
 
             // Update expenses pointing to gym-specific child categories
             foreach ($parentData['children'] as $childName => $childId) {
-                $gymChildIds = ExpenseCategory::whereNotNull('gym_id')
+                $gymChildIds = ExpenseCategory::query()->whereNotNull('gym_id')
                     ->where('name', $childName)
                     ->whereNotNull('parent_id')
                     ->pluck('id');
 
                 if ($gymChildIds->isNotEmpty()) {
-                    Expense::whereIn('expense_category_id', $gymChildIds)
+                    Expense::query()->whereIn('expense_category_id', $gymChildIds)
                         ->update(['expense_category_id' => $childId]);
                 }
             }
@@ -123,24 +119,24 @@ return new class extends Migration
     private function migrateBudgetsToSystemCategories(array $categoryMapping): void
     {
         foreach ($categoryMapping as $parentName => $parentData) {
-            $gymCategoryIds = ExpenseCategory::whereNotNull('gym_id')
+            $gymCategoryIds = ExpenseCategory::query()->whereNotNull('gym_id')
                 ->where('name', $parentName)
                 ->whereNull('parent_id')
                 ->pluck('id');
 
             if ($gymCategoryIds->isNotEmpty()) {
-                ExpenseBudget::whereIn('expense_category_id', $gymCategoryIds)
+                ExpenseBudget::query()->whereIn('expense_category_id', $gymCategoryIds)
                     ->update(['expense_category_id' => $parentData['id']]);
             }
 
             foreach ($parentData['children'] as $childName => $childId) {
-                $gymChildIds = ExpenseCategory::whereNotNull('gym_id')
+                $gymChildIds = ExpenseCategory::query()->whereNotNull('gym_id')
                     ->where('name', $childName)
                     ->whereNotNull('parent_id')
                     ->pluck('id');
 
                 if ($gymChildIds->isNotEmpty()) {
-                    ExpenseBudget::whereIn('expense_category_id', $gymChildIds)
+                    ExpenseBudget::query()->whereIn('expense_category_id', $gymChildIds)
                         ->update(['expense_category_id' => $childId]);
                 }
             }
@@ -160,13 +156,13 @@ return new class extends Migration
         }
 
         // Delete children first (due to foreign key)
-        ExpenseCategory::whereNotNull('gym_id')
+        ExpenseCategory::query()->whereNotNull('gym_id')
             ->whereIn('name', $childNames)
             ->whereNotNull('parent_id')
             ->delete();
 
         // Delete parent categories
-        ExpenseCategory::whereNotNull('gym_id')
+        ExpenseCategory::query()->whereNotNull('gym_id')
             ->whereIn('name', $defaultNames)
             ->whereNull('parent_id')
             ->delete();

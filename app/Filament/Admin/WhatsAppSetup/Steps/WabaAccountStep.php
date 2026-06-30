@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
+use Exception;
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
@@ -43,7 +47,7 @@ class WabaAccountStep
                     Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.waba-success-message')->render()))
                         ->visible(fn () => session()->has('success')),
 
-                    \Filament\Forms\Components\Actions::make([
+                    Actions::make([
                         Action::make('connectViaFacebook')->label('Connect via Facebook')->color('success')->icon('heroicon-o-arrow-right')
                             ->action('startEmbeddedSignupAction')
                             ->extraAttributes([
@@ -84,7 +88,7 @@ class WabaAccountStep
                             ->required()
                             ->password(),
 
-                        \Filament\Forms\Components\Actions::make([
+                        Actions::make([
                             Action::make('connectExistingWaba')->label('Connect WABA')->color('primary')->icon('heroicon-o-link')
                                 ->action('connectExistingWabaAction')
                                 ->visible(fn (Get $get) => $get('waba_connection_method') === 'manual_connect' && ! $page->isWabaConnected()),
@@ -118,9 +122,9 @@ class WabaAccountStep
                     } elseif ($page->data['waba_connection_method'] === 'manual_connect') {
                         (new ConnectExistingWabaAction($page))();
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Notification::make()->title('Setup Failed')->body($e->getMessage())->danger()->send();
-                    throw new Halt;
+                    throw new Halt();
                 }
             });
     }

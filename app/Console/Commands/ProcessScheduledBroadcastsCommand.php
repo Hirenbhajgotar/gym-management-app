@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\WhatsAppBroadcast;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -25,7 +28,7 @@ class ProcessScheduledBroadcastsCommand extends Command
      */
     public function handle(): int
     {
-        $broadcasts = WhatsAppBroadcast::where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
+        $broadcasts = WhatsAppBroadcast::query()->where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
             ->where('scheduled_at', '<=', now())
             ->limit(self::MAX_BROADCASTS_PER_RUN)
             ->lazy();
@@ -33,7 +36,7 @@ class ProcessScheduledBroadcastsCommand extends Command
         $processed = 0;
 
         foreach ($broadcasts as $broadcast) {
-            $claimed = WhatsAppBroadcast::where('id', $broadcast->id)
+            $claimed = WhatsAppBroadcast::query()->where('id', $broadcast->id)
                 ->where('status', WhatsAppBroadcastStatusEnum::SCHEDULED->value)
                 ->update([
                     'status' => WhatsAppBroadcastStatusEnum::SENDING->value,
@@ -47,11 +50,7 @@ class ProcessScheduledBroadcastsCommand extends Command
             }
 
             try {
-                SendBroadcastJob::dispatch(
-                    $broadcast->id,
-                    $broadcast->gym_id,
-                    skipCreditDeduction: true,
-                );
+                dispatch(new SendBroadcastJob($broadcast->id, $broadcast->gym_id, skipCreditDeduction: true));
 
                 $this->info("Dispatched broadcast #{$broadcast->id}: {$broadcast->title}");
 
@@ -63,7 +62,7 @@ class ProcessScheduledBroadcastsCommand extends Command
                 ]);
 
                 $processed++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $broadcast->update(['status' => WhatsAppBroadcastStatusEnum::FAILED->value]);
 
                 Log::error('Failed to dispatch scheduled broadcast', [

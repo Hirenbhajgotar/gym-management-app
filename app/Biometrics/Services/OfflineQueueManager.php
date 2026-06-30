@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Exception;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -147,7 +151,7 @@ class OfflineQueueManager
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to queue offline check-in', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -244,7 +248,7 @@ class OfflineQueueManager
 
         while (($line = fgets($handle)) !== false) {
             $line = trim($line);
-            if (empty($line)) {
+            if (blank($line)) {
                 continue;
             }
 
@@ -313,7 +317,7 @@ class OfflineQueueManager
             Log::info('Biometric offline queue cleared (all files)');
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to clear offline queue', ['error' => $e->getMessage()]);
 
             return false;
@@ -343,7 +347,7 @@ class OfflineQueueManager
 
             while (($line = fgets($handle)) !== false) {
                 $line = trim($line);
-                if (empty($line)) {
+                if (blank($line)) {
                     continue;
                 }
 
@@ -392,7 +396,7 @@ class OfflineQueueManager
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to remove events from queue', ['error' => $e->getMessage()]);
 
             return false;
@@ -408,7 +412,7 @@ class OfflineQueueManager
     {
         $allFiles = $this->getAllQueueFilePaths();
 
-        if (empty($allFiles)) {
+        if (blank($allFiles)) {
             return [
                 'success' => true,
                 'synced' => 0,
@@ -426,7 +430,7 @@ class OfflineQueueManager
         foreach ($allFiles as $file => $date) {
             $events = $this->getEventsFromFile($file);
 
-            if (empty($events)) {
+            if (blank($events)) {
                 // Empty file - can be safely deleted
                 File::delete($file);
                 $filesDeleted++;
@@ -471,7 +475,7 @@ class OfflineQueueManager
                 // Some failed - remove only successful events, keep failed
                 $remainingEvents = array_values(array_diff_key($events, array_flip($successfulIndices)));
 
-                if (empty($remainingEvents)) {
+                if (blank($remainingEvents)) {
                     // All events synced - delete the file
                     File::delete($file);
                     $filesDeleted++;
@@ -541,7 +545,7 @@ class OfflineQueueManager
             $handle = null;
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to rewrite queue file', ['error' => $e->getMessage()]);
 
             return false;
@@ -575,7 +579,7 @@ class OfflineQueueManager
                 'success' => $response->getStatusCode() === 200,
                 'body' => $body,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync offline batch', [
                 'error' => $e->getMessage(),
                 'batch_size' => count($batch),
@@ -602,7 +606,7 @@ class OfflineQueueManager
             $memberId = $event['data']['gym_member_id'] ?? null;
 
             if ($capturedAt && $memberId) {
-                Attendances::where('attendanceable_id', $memberId)
+                Attendances::query()->where('attendanceable_id', $memberId)
                     ->where('attendanceable_type', GymMember::class)
                     ->where('check_in_time', $capturedAt)
                     ->whereNull('synced_at')
@@ -624,7 +628,7 @@ class OfflineQueueManager
         $allFiles = $this->getAllQueueFilePaths();
 
         foreach ($allFiles as $file => $date) {
-            $fileDate = \Carbon\Carbon::parse($date);
+            $fileDate = Date::parse($date);
 
             // Only delete files older than retention policy
             if ($fileDate->lt($cutoffDate)) {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Enums\WhatsAppAccountStatusEnum;
@@ -7,10 +9,12 @@ use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
 use App\Providers\WhatsAppProviderFactory;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
 {
@@ -26,7 +30,7 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        $account = WhatsAppAccount::find($this->whatsAppAccountId);
+        $account = WhatsAppAccount::query()->find($this->whatsAppAccountId);
 
         if (! $account || ! $account->waba_id || ! $account->meta_access_token) {
             Log::warning('SyncWabaStatus skipped: Invalid account data', [
@@ -60,7 +64,7 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
             ]);
 
             // Throwing exception here triggers the $tries and $backoff retry mechanism
-            throw new \Exception($wabaDetails['error'] ?? 'Meta API fetch failed');
+            throw new Exception($wabaDetails['error'] ?? 'Meta API fetch failed');
         }
 
         $data = $wabaDetails['data'];
@@ -94,7 +98,7 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
         ]);
     }
 
-    public function failed(?\Throwable $exception): void
+    public function failed(?Throwable $exception): void
     {
         Log::error('SyncWabaStatus job failed', [
             'whatsapp_account_id' => $this->whatsAppAccountId,

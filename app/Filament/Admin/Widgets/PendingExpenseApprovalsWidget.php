@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Enums\ExpenseStatus;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Expense;
+use App\Models\Gym;
+use App\Models\User;
 use Filament\Facades\Filament;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
@@ -34,7 +39,7 @@ class PendingExpenseApprovalsWidget extends BaseTableWidget
 
     public static function canView(): bool
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user->hasAnyRole([
@@ -45,7 +50,7 @@ class PendingExpenseApprovalsWidget extends BaseTableWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -56,10 +61,10 @@ class PendingExpenseApprovalsWidget extends BaseTableWidget
 
     public function table(Table $table): Table
     {
-        /** @var \App\Models\Gym|null $gym */
+        /** @var Gym|null $gym */
         $gym = Filament::getTenant();
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $table
@@ -71,38 +76,38 @@ class PendingExpenseApprovalsWidget extends BaseTableWidget
                     ->limit(10)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('submitted_at')
+                TextColumn::make('submitted_at')
                     ->label('Submitted')
                     ->since()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->limit(30),
 
-                Tables\Columns\TextColumn::make('user.name')
+                TextColumn::make('user.name')
                     ->label('By')
                     ->limit(15),
 
-                Tables\Columns\TextColumn::make('category.name')
+                TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
                     ->color(fn ($record) => $record->category->color ?? 'gray'),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency ?? 'INR')
                     ->alignEnd()
                     ->weight('bold'),
             ])
             ->actions([
-                Tables\Actions\Action::make('approve')
+                Action::make('approve')
                     ->icon('phosphor-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn ($record) => $user->can('approve', $record))
                     ->action(fn ($record) => $record->approve($user)),
 
-                Tables\Actions\Action::make('view')
+                Action::make('view')
                     ->icon('phosphor-eye')
                     ->url(fn ($record) => route('filament.admin.resources.expenses.view', [
                         'tenant' => $gym->slug,

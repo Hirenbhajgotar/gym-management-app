@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use DateTimeInterface;
+use Illuminate\Cache\RedisStore;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * Service to manage report and widget caching.
@@ -304,8 +309,8 @@ class ReportCacheService
             // Check if this is a pattern (contains wildcard) or exact key
             if (str_contains($pattern, '*')) {
                 // Pattern matching - use Redis KEYS
-                if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
-                    $redis = \Illuminate\Support\Facades\Redis::connection('cache');
+                if (Cache::getStore() instanceof RedisStore) {
+                    $redis = Redis::connection('cache');
                     $fullPrefix = $this->getCachePrefix();
 
                     // Search for keys matching the pattern
@@ -318,15 +323,13 @@ class ReportCacheService
 
                     $allKeys = array_merge($keys, $flexibleKeys);
 
-                    if (! empty($allKeys)) {
-                        foreach ($allKeys as $key) {
-                            // Remove the prefix to get the cache key
-                            $cacheKey = str_replace($redisPrefix . $fullPrefix, '', $key);
+                    foreach ($allKeys as $key) {
+                        // Remove the prefix to get the cache key
+                        $cacheKey = str_replace($redisPrefix . $fullPrefix, '', $key);
 
-                            Cache::forget($cacheKey);
+                        Cache::forget($cacheKey);
 
-                            Cache::forget('illuminate:cache:flexible:created:' . $cacheKey);
-                        }
+                        Cache::forget('illuminate:cache:flexible:created:' . $cacheKey);
                     }
                 }
             } else {
@@ -363,7 +366,7 @@ class ReportCacheService
     /**
      * Get the cache TTL array for Cache::flexible().
      *
-     * @return array{0: \DateTimeInterface, 1: \DateTimeInterface}
+     * @return array{0: DateTimeInterface, 1: DateTimeInterface}
      */
     public static function getCacheTtl(): array
     {

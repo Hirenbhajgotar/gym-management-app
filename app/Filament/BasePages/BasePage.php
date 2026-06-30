@@ -40,7 +40,7 @@ abstract class BasePage extends Page implements HasFilamentPermissions
             return false;
         }
 
-        $slug = (new static)->getPagePermissionSlug();
+        $slug = (new static())->getPagePermissionSlug();
 
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value) || $user->can("page_{$slug}");
     }

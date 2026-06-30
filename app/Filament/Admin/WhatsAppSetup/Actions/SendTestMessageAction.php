@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -28,7 +31,7 @@ class SendTestMessageAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many test message attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many test message attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -41,9 +44,9 @@ class SendTestMessageAction
             if ($result['success']) {
                 Notification::make()->title('Test Message Sent!')->success()->send();
             } else {
-                throw new \Exception($result['error'] ?? 'Failed');
+                throw new Exception($result['error'] ?? 'Failed');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()->title('Failed')->body($e->getMessage())->danger()->send();
         }
     }

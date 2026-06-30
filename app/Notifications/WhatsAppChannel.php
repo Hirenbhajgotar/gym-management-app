@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
+use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\Contracts\HasGymContext;
 use App\Providers\WhatsAppProviderFactory;
@@ -35,7 +38,7 @@ class WhatsAppChannel
         // Get the WhatsApp message from the notification
         $message = $notification->toWhatsApp($notifiable);
 
-        if (empty($message) || ! isset($message['to']) || (! isset($message['body']) && ! isset($message['template_sid']))) {
+        if (blank($message) || ! isset($message['to']) || (! isset($message['body']) && ! isset($message['template_sid']))) {
             Log::warning('Invalid WhatsApp message format', ['message' => $message]);
 
             return null;
@@ -124,10 +127,10 @@ class WhatsAppChannel
             try {
                 $tenant = $this->getGym();
                 $gymId = $tenant?->id;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // No tenant set, check if user has exactly one gym
                 if ($notifiable->gyms()->count() === 1) {
-                    /** @var \App\Models\Gym $gym */
+                    /** @var Gym $gym */
                     $gym = $notifiable->gyms()->first();
                     $gymId = $gym->id;
                 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Subscription;
@@ -20,8 +22,8 @@ class SubscriptionRenewalTest extends TestCase
     public function test_subscription_renewal_flow_with_existing_data()
     {
         // Use existing user and subscription from the database
-        $user = User::find(1978); // From our earlier check
-        $subscription = Subscription::find(1); // From our earlier check
+        $user = User::query()->find(1978); // From our earlier check
+        $subscription = Subscription::query()->find(1); // From our earlier check
 
         $this->assertNotNull($user, 'User should exist');
         $this->assertNotNull($subscription, 'Subscription should exist');
@@ -39,7 +41,7 @@ class SubscriptionRenewalTest extends TestCase
         $response = $this->get(route('subscriptions.checkout'));
 
         // Assert that the checkout page loads successfully
-        $response->assertStatus(200);
+        $response->assertOk();
 
         // Assert that the view has the correct data
         $response->assertViewHas('subscription');

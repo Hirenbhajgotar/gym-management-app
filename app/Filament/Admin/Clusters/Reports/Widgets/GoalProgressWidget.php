@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseWidget;
+use App\Models\Gym;
 use App\Models\ReportGoal;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
@@ -39,7 +42,7 @@ class GoalProgressWidget extends BaseWidget
 
     public function getActiveGoals(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         if (! $gym) {
@@ -49,7 +52,7 @@ class GoalProgressWidget extends BaseWidget
         $cacheKey = ReportGoal::CACHE_KEY_PREFIX . $gym->id;
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(15)], function () use ($gym) {
-            $goals = ReportGoal::where('gym_id', $gym->id)
+            $goals = ReportGoal::query()->where('gym_id', $gym->id)
                 ->active()
                 ->current()
                 ->get();

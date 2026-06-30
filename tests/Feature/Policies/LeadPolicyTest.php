@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Policies;
 
 use App\Models\User;
@@ -17,7 +19,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         $this->assertFalse($this->managerUser->fresh()->can('view_any_lead'));
 
         $this->assertFalse(
-            (new LeadPolicy)->viewAny($this->managerUser),
+            (new LeadPolicy())->viewAny($this->managerUser),
             'viewAny should return false when view_any_lead permission is missing',
         );
     }
@@ -28,11 +30,11 @@ class LeadPolicyTest extends StaffPanelTestCase
         setPermissionsTeamId($this->testGym->id);
 
         $this->managerUser->givePermissionTo(
-            Permission::firstOrCreate(['name' => 'view_any_lead', 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => 'view_any_lead', 'guard_name' => 'web']),
         );
 
         $this->assertTrue(
-            (new LeadPolicy)->viewAny($this->managerUser->fresh()),
+            (new LeadPolicy())->viewAny($this->managerUser->fresh()),
             'viewAny should return true when view_any_lead permission is granted',
         );
     }
@@ -44,7 +46,7 @@ class LeadPolicyTest extends StaffPanelTestCase
 
         setPermissionsTeamId($this->testGym->id);
         $bareUser->assignRole(
-            Role::firstOrCreate([
+            Role::query()->firstOrCreate([
                 'name' => 'manager',
                 'guard_name' => 'web',
                 'gym_id' => $this->testGym->id,
@@ -52,7 +54,7 @@ class LeadPolicyTest extends StaffPanelTestCase
         );
 
         $this->assertFalse(
-            (new LeadPolicy)->viewAny($bareUser),
+            (new LeadPolicy())->viewAny($bareUser),
             'viewAny must be permission-based, not role-based',
         );
     }

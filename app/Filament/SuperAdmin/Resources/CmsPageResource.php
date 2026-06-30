@@ -1,14 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages;
+use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages\CreateCmsPage;
+use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages\EditCmsPage;
+use App\Filament\SuperAdmin\Resources\CmsPageResource\Pages\ListCmsPages;
 use App\Models\CmsPage;
-use Filament\Forms;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Forms\Set;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -36,24 +50,24 @@ class CmsPageResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Page Details')
+                Section::make('Page Details')
                     ->schema([
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                            ->afterStateUpdated(fn (string $operation, $state, Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
 
-                        Forms\Components\TextInput::make('slug')
+                        TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(CmsPage::class, 'slug', ignoreRecord: true),
 
-                        Forms\Components\Toggle::make('is_published')
+                        Toggle::make('is_published')
                             ->label('Published')
                             ->default(false),
 
-                        Forms\Components\RichEditor::make('content')
+                        RichEditor::make('content')
                             ->toolbarButtons([
                                 'attachFiles',
                                 'blockquote',
@@ -74,13 +88,13 @@ class CmsPageResource extends BaseResource
                             ->columnSpanFull(),
                     ]),
 
-                Forms\Components\Section::make('SEO')
+                Section::make('SEO')
                     ->schema([
-                        Forms\Components\TextInput::make('meta_title')
+                        TextInput::make('meta_title')
                             ->maxLength(255),
-                        Forms\Components\Textarea::make('meta_description')
+                        Textarea::make('meta_description')
                             ->maxLength(255),
-                        Forms\Components\Textarea::make('meta_keywords')
+                        Textarea::make('meta_keywords')
                             ->helperText('Separate keywords with commas'),
                     ])
                     ->collapsible(),
@@ -91,17 +105,17 @@ class CmsPageResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\ToggleColumn::make('is_published')
+                ToggleColumn::make('is_published')
                     ->label('Published'),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -110,12 +124,12 @@ class CmsPageResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -130,9 +144,9 @@ class CmsPageResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCmsPages::route('/'),
-            'create' => Pages\CreateCmsPage::route('/create'),
-            'edit' => Pages\EditCmsPage::route('/{record}/edit'),
+            'index' => ListCmsPages::route('/'),
+            'create' => CreateCmsPage::route('/create'),
+            'edit' => EditCmsPage::route('/{record}/edit'),
         ];
     }
 

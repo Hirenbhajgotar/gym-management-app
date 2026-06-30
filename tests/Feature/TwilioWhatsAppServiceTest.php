@@ -36,7 +36,7 @@ class TwilioWhatsAppServiceTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_sid',
             'twilio_auth_token' => 'test_auth_token',
@@ -44,7 +44,7 @@ class TwilioWhatsAppServiceTest extends TestCase
             'verification_status' => 'verified',
         ]);
 
-        $this->phoneNumber = WhatsAppPhoneNumber::create([
+        $this->phoneNumber = WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $this->whatsappAccount->id,
             'phone_number' => '+14155551234',
             'formatted_number' => '(415) 555-1234',
@@ -52,7 +52,7 @@ class TwilioWhatsAppServiceTest extends TestCase
             'verification_status' => 'verified',
         ]);
 
-        $this->template = WhatsAppTemplate::create([
+        $this->template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'welcome_message',
             'display_name' => 'Welcome Message',
@@ -66,7 +66,7 @@ class TwilioWhatsAppServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->credits = WhatsAppMessageCredit::create([
+        $this->credits = WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 100,
             'used_credits' => 0,

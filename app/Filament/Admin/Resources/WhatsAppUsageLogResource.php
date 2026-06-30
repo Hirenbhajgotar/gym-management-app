@@ -1,15 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppUsageLogStatusEnum;
+use App\Filament\Admin\Resources\WhatsAppUsageLogResource\Pages\ListWhatsAppUsageLogs;
 use App\Filament\BaseResources\BaseResource;
+use App\Models\Gym;
 use App\Models\WhatsAppUsageLog;
 use Filament\Facades\Filament;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class WhatsAppUsageLogResource extends BaseResource
@@ -54,50 +61,50 @@ class WhatsAppUsageLogResource extends BaseResource
     {
         return $table
             ->modifyQueryUsing(function ($query) {
-                /** @var \App\Models\Gym|null $tenant */
+                /** @var Gym|null $tenant */
                 $tenant = Filament::getTenant();
 
                 return $query->where('gym_id', $tenant?->id);
             })
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('sent_at')
+                TextColumn::make('sent_at')
                     ->label('Sent')
                     ->dateTime('M d, Y g:i A')
                     ->sortable()
                     ->placeholder('Not sent'),
 
-                Tables\Columns\TextColumn::make('recipient')
+                TextColumn::make('recipient')
                     ->searchable()
                     ->label('Recipient'),
 
-                Tables\Columns\TextColumn::make('template.display_name')
+                TextColumn::make('template.display_name')
                     ->label('Template')
                     ->placeholder('—')
                     ->limit(30),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('credits_used')
+                TextColumn::make('credits_used')
                     ->label('Credits')
                     ->numeric()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('twilio_cost')
+                TextColumn::make('twilio_cost')
                     ->label('Cost')
                     ->money('USD')
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('delivered_at')
+                TextColumn::make('delivered_at')
                     ->label('Delivered')
                     ->dateTime('g:i A')
                     ->placeholder('—')
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('error_message')
+                TextColumn::make('error_message')
                     ->label('Error')
                     ->limit(40)
                     ->tooltip(fn ($record) => $record->error_message)
@@ -105,21 +112,21 @@ class WhatsAppUsageLogResource extends BaseResource
                     ->color('danger')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('twilio_message_sid')
+                TextColumn::make('twilio_message_sid')
                     ->label('Message SID')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options(WhatsAppUsageLogStatusEnum::class)
                     ->label('Status'),
 
-                Tables\Filters\Filter::make('sent_at')
+                Filter::make('sent_at')
                     ->form([
-                        Forms\Components\DatePicker::make('from')->label('From'),
-                        Forms\Components\DatePicker::make('until')->label('Until'),
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -127,7 +134,7 @@ class WhatsAppUsageLogResource extends BaseResource
                             ->when($data['until'], fn ($q) => $q->whereDate('sent_at', '<=', $data['until']));
                     }),
 
-                Tables\Filters\TernaryFilter::make('has_error')
+                TernaryFilter::make('has_error')
                     ->label('Has Error')
                     ->queries(
                         true: fn ($query) => $query->whereNotNull('error_message'),
@@ -135,14 +142,14 @@ class WhatsAppUsageLogResource extends BaseResource
                     ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\Admin\Resources\WhatsAppUsageLogResource\Pages\ListWhatsAppUsageLogs::route('/'),
+            'index' => ListWhatsAppUsageLogs::route('/'),
         ];
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
 
 use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListScheduledReports extends ListRecords
@@ -13,7 +15,7 @@ class ListScheduledReports extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

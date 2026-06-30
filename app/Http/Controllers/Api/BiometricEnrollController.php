@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BiometricEnrollRequest;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -26,7 +30,7 @@ class BiometricEnrollController extends Controller
         $device = $request->attributes->get('device');
 
         // Scope member lookup to device's gym (prevents cross-gym enrollment)
-        $gymMember = GymMember::where('gym_id', $device->gym_id)
+        $gymMember = GymMember::query()->where('gym_id', $device->gym_id)
             ->findOrFail($request->validated('gym_member_id'));
 
         // Enforce that active consent exists - do not auto-create
@@ -51,7 +55,7 @@ class BiometricEnrollController extends Controller
             $templateRef = $provider->enroll($gymMember, $sample);
 
             // Create BiometricTemplate record
-            $template = BiometricTemplate::create([
+            $template = BiometricTemplate::query()->create([
                 'gym_member_id' => $gymMember->id,
                 'gym_id' => $device->gym_id,
                 'enrolled_by_device_id' => $device->id,
@@ -69,7 +73,7 @@ class BiometricEnrollController extends Controller
                 'quality_score' => $template->quality_score,
                 'enrolled_at' => $template->enrolled_at->toISOString(),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'Enrollment failed',
@@ -92,11 +96,11 @@ class BiometricEnrollController extends Controller
                     ->where('gym_id', $device->gym_id),
             ],
             'biometric_type' => ['required', Rule::enum(BiometricTypeEnum::class)],
-            'template_ref' => 'required|string|max:255', // device ka internal ID
-            'quality_score' => 'nullable|numeric|between:0,1',
+            'template_ref' => ['required', 'string', 'max:255'], // device ka internal ID
+            'quality_score' => ['nullable', 'numeric', 'between:0,1'],
         ]);
 
-        $gymMember = GymMember::find($validated['gym_member_id']);
+        $gymMember = GymMember::query()->find($validated['gym_member_id']);
 
         // Consent check — agar nahi hai toh deny karo
         if (! $gymMember->hasActiveBiometricConsent()) {
@@ -107,21 +111,18 @@ class BiometricEnrollController extends Controller
         }
 
         // Sirf record banao — koi provider call nahi
-        BiometricTemplate::updateOrCreate(
-            [
-                'gym_member_id' => $validated['gym_member_id'],
-                'gym_id' => $device->gym_id,
-                'biometric_type' => $validated['biometric_type'],
-            ],
-            [
-                'provider_type' => $device->provider_type,
-                'template_ref' => $validated['template_ref'],
-                'enrolled_by_device_id' => $device->id,
-                'quality_score' => $validated['quality_score'] ?? null,
-                'is_active' => true,
-                'enrolled_at' => now(),
-            ]
-        );
+        BiometricTemplate::query()->updateOrCreate([
+            'gym_member_id' => $validated['gym_member_id'],
+            'gym_id' => $device->gym_id,
+            'biometric_type' => $validated['biometric_type'],
+        ], [
+            'provider_type' => $device->provider_type,
+            'template_ref' => $validated['template_ref'],
+            'enrolled_by_device_id' => $device->id,
+            'quality_score' => $validated['quality_score'] ?? null,
+            'is_active' => true,
+            'enrolled_at' => now(),
+        ]);
 
         return response()->json(['success' => true]);
     }
@@ -142,7 +143,7 @@ class BiometricEnrollController extends Controller
         try {
             $provider = $this->registry->resolve($template->provider_type);
 
-            $templateRef = \App\Biometrics\DTOs\TemplateRef::fromJson($template->template_ref);
+            $templateRef = TemplateRef::fromJson($template->template_ref);
 
             if (! $provider->deleteTemplate($templateRef)) {
                 return response()->json([
@@ -159,7 +160,7 @@ class BiometricEnrollController extends Controller
                 'success' => true,
                 'message' => 'Template deleted successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'Deletion failed',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
@@ -29,7 +31,7 @@ class ReportPdfChartDataTest extends TestCase
 
     public function test_lead_reports_has_chart_data_methods(): void
     {
-        $page = new LeadReports;
+        $page = new LeadReports();
         $page->manualGymId = $this->gym->id;
         $page->filters = [
             'start_date' => now()->subMonths(6)->format('Y-m-d'),
@@ -49,7 +51,7 @@ class ReportPdfChartDataTest extends TestCase
 
     public function test_attendance_reports_has_chart_data_methods(): void
     {
-        $page = new AttendanceReports;
+        $page = new AttendanceReports();
         $page->manualGymId = $this->gym->id;
         $page->filters = [
             'start_date' => now()->subMonth()->format('Y-m-d'),
@@ -67,7 +69,7 @@ class ReportPdfChartDataTest extends TestCase
 
     public function test_trainer_reports_has_chart_data_methods(): void
     {
-        $page = new TrainerReports;
+        $page = new TrainerReports();
         $page->manualGymId = $this->gym->id;
 
         $this->assertTrue(method_exists($page, 'getClientDistributionData'));
@@ -81,7 +83,7 @@ class ReportPdfChartDataTest extends TestCase
 
     public function test_expense_reports_has_chart_data_methods(): void
     {
-        $page = new ExpenseReportsCluster;
+        $page = new ExpenseReportsCluster();
         $page->manualGymId = $this->gym->id;
         $page->filters = [
             'start_date' => now()->startOfYear()->format('Y-m-d'),

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
 use App\Helpers\ParserHelper;
@@ -12,7 +14,7 @@ class CountryObserver
      */
     public function created(Country $country): void
     {
-        $this->clearCache($country);
+        $this->clearCache();
     }
 
     /**
@@ -20,7 +22,7 @@ class CountryObserver
      */
     public function updated(Country $country): void
     {
-        $this->clearCache($country);
+        $this->clearCache();
     }
 
     /**
@@ -28,7 +30,7 @@ class CountryObserver
      */
     public function deleted(Country $country): void
     {
-        $this->clearCache($country);
+        $this->clearCache();
     }
 
     /**
@@ -36,7 +38,7 @@ class CountryObserver
      */
     public function restored(Country $country): void
     {
-        $this->clearCache($country);
+        $this->clearCache();
     }
 
     /**
@@ -44,10 +46,10 @@ class CountryObserver
      */
     public function forceDeleted(Country $country): void
     {
-        $this->clearCache($country);
+        $this->clearCache();
     }
 
-    private function clearCache(Country $country): void
+    private function clearCache(): void
     {
         ParserHelper::clearCache(Country::COUNTRIES_LIST_CACHE_KEY);
     }

@@ -1,11 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
+use App\Filament\Admin\Clusters\Reports\Pages\EquipmentUsageReports;
+use App\Filament\Admin\Clusters\Reports\Pages\ExpenseReportsCluster;
+use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
+use App\Filament\Admin\Clusters\Reports\Pages\MemberLifetimeValueReports;
+use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
+use App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
+use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Filament\Admin\Clusters\Reports\Pages\TrainerReports;
+use App\Models\Gym;
 use App\Models\ScheduledReport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ReportPdfGenerator
 {
@@ -22,9 +37,10 @@ class ReportPdfGenerator
 
         // Instantiate page class to reuse logic
         try {
-            $page = app($reportClass);
-        } catch (\Throwable $e) {
-            throw new \Exception("Could not instantiate report class: {$reportClass}");
+            $page = resolve($reportClass);
+
+        } catch (Throwable $e) {
+            throw new Exception("Could not instantiate report class: {$reportClass}");
         }
 
         // Set context manually
@@ -47,7 +63,8 @@ class ReportPdfGenerator
         $viewName = 'pdf.reports.generic';
         $title = $report->name ?? 'Gym Report';
 
-        if ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class) {
+        if ($reportClass === ReportsDashboard::class) {
+            /** @var ReportsDashboard $page */
             $data = [
                 'memberStats' => $page->getMemberStats(),
                 'revenueStats' => $page->getRevenueStats(),
@@ -57,7 +74,8 @@ class ReportPdfGenerator
                 'chart_data' => $this->getChartData($page, ['membership_trends', 'revenue_trends', 'lead_funnel', 'attendance_patterns']),
             ];
             $viewName = 'pdf.reports.dashboard';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class) {
+        } elseif ($reportClass === RevenueReports::class) {
+            /** @var RevenueReports $page */
             $data = [
                 'stats' => [
                     'total_revenue' => $page->getSummaryStats()['total_revenue'] ?? 0,
@@ -75,58 +93,65 @@ class ReportPdfGenerator
                 'chart_data' => $this->getChartData($page, ['revenue_trends', 'revenue_breakdown', 'expense_categories', 'revenue_forecast']),
             ];
             $viewName = 'pdf.reports.financial';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class) {
+        } elseif ($reportClass === MemberReports::class) {
+            /** @var MemberReports $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
                 'growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
                 'planDistribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
                 'churnStats' => method_exists($page, 'getChurnStats') ? $page->getChurnStats() : [],
                 'chart_data' => $this->getChartData($page, ['member_growth', 'plan_distribution', 'churn_analysis']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'members'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
 
             $viewName = 'pdf.reports.member';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\LeadReports::class) {
+        } elseif ($reportClass === LeadReports::class) {
+            /** @var LeadReports $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
                 'chart_data' => $this->getChartData($page, ['lead_funnel', 'conversion_rates', 'lead_sources']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'leads'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
 
             $viewName = 'pdf.reports.generic';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports::class) {
+        } elseif ($reportClass === AttendanceReports::class) {
+            /** @var AttendanceReports $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
                 'chart_data' => $this->getChartData($page, ['hourly_distribution', 'daily_patterns', 'weekly_trends']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'attendance'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
             $viewName = 'pdf.reports.generic';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\TrainerReports::class) {
+        } elseif ($reportClass === TrainerReports::class) {
+            /** @var TrainerReports $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
                 'chart_data' => $this->getChartData($page, ['trainer_utilization', 'client_distribution', 'performance_metrics']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'trainers'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
             $viewName = 'pdf.reports.generic';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\EquipmentUsageReports::class) {
+        } elseif ($reportClass === EquipmentUsageReports::class) {
+            /** @var EquipmentUsageReports $page */
             $data = [
                 'stats' => $page->getUsageStats(),
                 'chart_data' => $this->getChartData($page, ['equipment_usage', 'peak_hours', 'utilization_rates']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'equipment'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
             $viewName = 'pdf.reports.generic';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\MemberLifetimeValueReports::class) {
+        } elseif ($reportClass === MemberLifetimeValueReports::class) {
+            /** @var MemberLifetimeValueReports $page */
             $data = [
                 'stats' => $page->getLtvStats(),
                 'chart_data' => $this->getChartData($page, ['ltv_trends', 'revenue_streams', 'retention_impact']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'ltv'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
             $viewName = 'pdf.reports.generic';
-        } elseif ($reportClass === \App\Filament\Admin\Clusters\Reports\Pages\ExpenseReportsCluster::class) {
+        } elseif ($reportClass === ExpenseReportsCluster::class) {
+            /** @var ExpenseReportsCluster $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
                 'chart_data' => $this->getChartData($page, ['expense_categories', 'budget_variance', 'cost_trends']),
-                'monthly_trends' => $this->getMonthlyTrends($page, 'expenses'),
+                'monthly_trends' => $this->getMonthlyTrends($page),
             ];
             $viewName = 'pdf.reports.generic';
         }
@@ -151,8 +176,11 @@ class ReportPdfGenerator
 
     /**
      * Get chart data for PDF reports
+     *
+     * @param  array<int, string>  $chartTypes
+     * @return array<string, mixed>
      */
-    private function getChartData($page, array $chartTypes): array
+    private function getChartData(object $page, array $chartTypes): array
     {
         $chartData = [];
 
@@ -160,17 +188,22 @@ class ReportPdfGenerator
             switch ($chartType) {
                 case 'member_growth':
                     if (method_exists($page, 'getGrowthData')) {
-                        $chartData['member_growth'] = $page->getGrowthData()->toArray();
+                        $growthData = $page->getGrowthData();
+                        /** @var Collection $growthData */
+                        $chartData['member_growth'] = $growthData->toArray();
                     }
                     break;
                 case 'plan_distribution':
                     if (method_exists($page, 'getPlanDistribution')) {
-                        $chartData['plan_distribution'] = $page->getPlanDistribution()->toArray();
+                        $planDist = $page->getPlanDistribution();
+                        /** @var Collection $planDist */
+                        $chartData['plan_distribution'] = $planDist->toArray();
                     }
                     break;
                 case 'churn_analysis':
                     if (method_exists($page, 'getChurnStats')) {
                         $churnStats = $page->getChurnStats();
+                        /** @var array{high_risk?: int, medium_risk?: int, low_risk?: int} $churnStats */
                         $chartData['churn_analysis'] = [
                             ['risk_level' => 'High', 'count' => $churnStats['high_risk'] ?? 0],
                             ['risk_level' => 'Medium', 'count' => $churnStats['medium_risk'] ?? 0],
@@ -181,6 +214,7 @@ class ReportPdfGenerator
                 case 'hourly_distribution':
                     if (method_exists($page, 'getHourlyDistribution')) {
                         $hourly = $page->getHourlyDistribution();
+                        /** @var array{hours: array<int, string>, counts: array<int, int>} $hourly */
                         $chartData['hourly_distribution'] = [];
                         foreach ($hourly['hours'] as $index => $hour) {
                             $chartData['hourly_distribution'][] = [
@@ -228,7 +262,12 @@ class ReportPdfGenerator
                 case 'trainer_utilization':
                     if (method_exists($page, 'getTrainerDistribution')) {
                         $distribution = $page->getTrainerDistribution();
-                        $chartData['trainer_utilization'] = is_array($distribution) ? $distribution : $distribution->toArray();
+                        if (is_array($distribution)) {
+                            $chartData['trainer_utilization'] = $distribution;
+                        } else {
+                            /** @var Collection $distribution */
+                            $chartData['trainer_utilization'] = $distribution->toArray();
+                        }
                     } else {
                         $chartData['trainer_utilization'] = [];
                     }
@@ -278,9 +317,16 @@ class ReportPdfGenerator
                 case 'expense_categories':
                     if (method_exists($page, 'getCategoryBreakdown')) {
                         $data = $page->getCategoryBreakdown();
-                        $chartData['expense_categories'] = is_array($data) ? $data : $data->toArray();
+                        if (is_array($data)) {
+                            $chartData['expense_categories'] = $data;
+                        } else {
+                            /** @var Collection $data */
+                            $chartData['expense_categories'] = $data->toArray();
+                        }
                     } elseif (property_exists($page, 'categoryBreakdown')) {
-                        $chartData['expense_categories'] = $page->categoryBreakdown->toArray();
+                        /** @var Collection $categoryBreakdown */
+                        $categoryBreakdown = $page->categoryBreakdown;
+                        $chartData['expense_categories'] = $categoryBreakdown->toArray();
                     } else {
                         $chartData['expense_categories'] = [];
                     }
@@ -312,12 +358,17 @@ class ReportPdfGenerator
 
     /**
      * Get monthly trends data from the actual page data
+     *
+     * @return array<string, mixed>
      */
-    private function getMonthlyTrends($page, string $reportType): array
+    private function getMonthlyTrends(object $page): array
     {
         // Check if page has a method to provide monthly trends
         if (method_exists($page, 'getMonthlyTrendsData')) {
-            return $page->getMonthlyTrendsData();
+            /** @var array<string, mixed> */
+            $trends = $page->getMonthlyTrendsData();
+
+            return $trends;
         }
 
         // Return empty array if no data available
@@ -326,6 +377,9 @@ class ReportPdfGenerator
 
     /**
      * Process chart data to base64 images for PDF inclusion.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, string|null>
      */
     protected function processChartsToImages(array $data, string $reportClass): array
     {
@@ -335,14 +389,17 @@ class ReportPdfGenerator
             return $chartImages;
         }
 
-        foreach ($data['chart_data'] as $chartType => $chartData) {
-            if (empty($chartData)) {
+        /** @var array<string, array<int, array<string, mixed>>> $chartDataItems */
+        $chartDataItems = $data['chart_data'];
+
+        foreach ($chartDataItems as $chartType => $chartData) {
+            if (blank($chartData)) {
                 continue;
             }
 
             try {
                 // Determine chart type based on data structure
-                $renderType = $this->determineChartRenderType($chartType, $chartData);
+                $renderType = $this->determineChartRenderType((string) $chartType, $chartData);
 
                 // Generate chart image
                 $chartImages[$chartType] = $this->chartToImageService->convertChartToBase64(
@@ -351,9 +408,10 @@ class ReportPdfGenerator
                     800, // width
                     400  // height
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error but continue processing other charts
-                Log::warning("Failed to generate chart image for {$chartType}: " . $e->getMessage());
+                $chartTypeStr = (string) $chartType;
+                Log::warning("Failed to generate chart image for {$chartTypeStr}: " . $e->getMessage());
                 $chartImages[$chartType] = null;
             }
         }
@@ -363,6 +421,8 @@ class ReportPdfGenerator
 
     /**
      * Determine the best chart render type based on data structure.
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     protected function determineChartRenderType(string $chartType, array $chartData): string
     {
@@ -377,7 +437,6 @@ class ReportPdfGenerator
             'lead_funnel' => 'bar',
             'conversion_rates' => 'bar',
             'lead_sources' => 'doughnut',
-            'equipment_usage' => 'bar',
             'equipment_usage' => 'bar',
             'trainer_utilization' => 'bar',
             'revenue_breakdown' => 'doughnut',
@@ -402,13 +461,16 @@ class ReportPdfGenerator
 
     /**
      * Check if data is categorical (good for pie/doughnut charts).
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     protected function isCategoricalData(array $chartData): bool
     {
-        if (empty($chartData)) {
+        if (blank($chartData)) {
             return false;
         }
 
+        /** @var array<string, mixed> $firstItem */
         $firstItem = $chartData[0];
 
         return isset($firstItem['label']) || isset($firstItem['name']) || isset($firstItem['risk_level']);
@@ -416,13 +478,16 @@ class ReportPdfGenerator
 
     /**
      * Check if data is time series (good for line charts).
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     protected function isTimeSeriesData(array $chartData): bool
     {
-        if (empty($chartData)) {
+        if (blank($chartData)) {
             return false;
         }
 
+        /** @var array<string, mixed> $firstItem */
         $firstItem = $chartData[0];
 
         return isset($firstItem['month']) || isset($firstItem['date']) || isset($firstItem['period']);
@@ -431,7 +496,7 @@ class ReportPdfGenerator
     /**
      * Get gym logo as base64 encoded string for PDF.
      */
-    protected function getGymLogoBase64($gym): ?string
+    protected function getGymLogoBase64(?Gym $gym): ?string
     {
         if (! $gym || ! $gym->logo) {
             return null;
@@ -444,9 +509,12 @@ class ReportPdfGenerator
             }
 
             $imageData = file_get_contents($logoPath);
+            if ($imageData === false) {
+                return null;
+            }
 
             return 'data:image/' . pathinfo($gym->logo, PATHINFO_EXTENSION) . ';base64,' . base64_encode($imageData);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to load gym logo: ' . $e->getMessage());
 
             return null;
@@ -455,8 +523,10 @@ class ReportPdfGenerator
 
     /**
      * Get gym brand colors for PDF theming.
+     *
+     * @return array{primary: string, secondary: string, accent: string, danger: string, success: string, warning: string, info: string}
      */
-    protected function getGymBrandColors($gym): array
+    protected function getGymBrandColors(?Gym $gym): array
     {
         // Default brand colors
         $defaultColors = [

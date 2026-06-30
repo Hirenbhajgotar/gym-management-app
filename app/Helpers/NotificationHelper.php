@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 use App\Services\ExceptionStorageService;
@@ -14,7 +16,7 @@ class NotificationHelper
         $exceptionId = null;
 
         if ($exception) {
-            $exceptionStorage = app(ExceptionStorageService::class);
+            $exceptionStorage = resolve(ExceptionStorageService::class);
             $exceptionId = $exceptionStorage->store($exception);
         }
 

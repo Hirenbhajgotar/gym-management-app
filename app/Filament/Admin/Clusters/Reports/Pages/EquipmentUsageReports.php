@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
@@ -8,11 +10,13 @@ use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class EquipmentUsageReports extends BasePage implements HasForms, ShareableReport
 {
@@ -43,14 +47,14 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->startOfMonth())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
@@ -73,13 +77,13 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
             // For now, we will simulate this based on check-in patterns or assume future schema updates
             // Just placeholder logic for now using existing 'Attendances' model
 
-            $totalCheckIns = Attendances::where('gym_id', $gymId)
+            $totalCheckIns = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', '>=', $this->filters['start_date'])
                 ->whereDate('check_in_time', '<=', $this->filters['end_date'])
                 ->count();
 
             // Peak Hours Analysis
-            $peakHours = Attendances::where('gym_id', $gymId)
+            $peakHours = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', '>=', $this->filters['start_date'])
                 ->whereDate('check_in_time', '<=', $this->filters['end_date'])
                 ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
@@ -98,10 +102,10 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
 
     protected function calculateAvgDailyTraffic(int $total): int
     {
-        $days = \Carbon\Carbon::parse($this->filters['start_date'])
-            ->diffInDays(\Carbon\Carbon::parse($this->filters['end_date'])) + 1;
+        $days = Date::parse($this->filters['start_date'])
+            ->diffInDays(Date::parse($this->filters['end_date'])) + 1;
 
-        return $days > 0 ? round($total / $days) : 0;
+        return $days > 0 ? (int) round($total / $days) : 0;
     }
 
     /**
@@ -113,7 +117,7 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyData = Attendances::where('gym_id', $gymId)
+        $monthlyData = Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
             ->selectRaw("DATE_FORMAT(check_in_time, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')
@@ -139,7 +143,7 @@ class EquipmentUsageReports extends BasePage implements HasForms, ShareableRepor
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

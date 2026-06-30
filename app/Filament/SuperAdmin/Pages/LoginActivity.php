@@ -1,21 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Pages;
 
 use App\Filament\BasePages\BasePage;
 use App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets\LoginActivityStatsWidget;
 use App\Models\Gym;
+use App\Models\UserLoginLog;
 use App\Services\LoginActivityService;
-use Filament\Tables;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 class LoginActivity extends BasePage implements HasTable
 {
-    use Tables\Concerns\InteractsWithTable;
+    use InteractsWithTable;
 
     protected static ?string $navigationLabel = 'Login Activity';
 
@@ -41,9 +48,9 @@ class LoginActivity extends BasePage implements HasTable
         return 4;
     }
 
-    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+    protected function getTableQuery(): Builder
     {
-        return \App\Models\UserLoginLog::query()
+        return UserLoginLog::query()
             ->with(['user', 'gym'])
             ->orderByDesc('login_at');
     }
@@ -51,40 +58,40 @@ class LoginActivity extends BasePage implements HasTable
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('user.name')
+            TextColumn::make('user.name')
                 ->label('User')
                 ->searchable()
                 ->sortable(),
-            Tables\Columns\TextColumn::make('user.email')
+            TextColumn::make('user.email')
                 ->label('Email')
                 ->searchable()
                 ->toggleable(),
-            Tables\Columns\TextColumn::make('gym.name')
+            TextColumn::make('gym.name')
                 ->label('Gym')
                 ->searchable()
                 ->sortable(),
-            Tables\Columns\TextColumn::make('status')
+            TextColumn::make('status')
                 ->label('Status')
                 ->getStateUsing(fn ($record) => $record?->isCurrentlyLoggedIn() ? 'Logged In' : 'Logged Out')
                 ->badge()
                 ->color(fn (string $state): string => $state === 'Logged In' ? 'success' : 'gray'),
-            Tables\Columns\TextColumn::make('session_duration')
+            TextColumn::make('session_duration')
                 ->label('Duration')
                 ->getStateUsing(fn ($record) => $record?->session_duration)
                 ->visible(fn ($record) => ! $record?->isCurrentlyLoggedIn()),
-            Tables\Columns\TextColumn::make('login_at')
+            TextColumn::make('login_at')
                 ->label('Login Time')
                 ->dateTime('M j, Y g:i A')
                 ->sortable(),
-            Tables\Columns\TextColumn::make('logged_out_at')
+            TextColumn::make('logged_out_at')
                 ->label('Logout Time')
                 ->dateTime('M j, Y g:i A')
                 ->visible(fn ($record) => $record?->logged_out_at !== null)
                 ->toggleable(),
-            Tables\Columns\TextColumn::make('ip_address')
+            TextColumn::make('ip_address')
                 ->label('IP Address')
                 ->toggleable(),
-            Tables\Columns\TextColumn::make('device_type')
+            TextColumn::make('device_type')
                 ->label('Device')
                 ->badge()
                 ->color(fn (string $state): string => match ($state) {
@@ -94,7 +101,7 @@ class LoginActivity extends BasePage implements HasTable
                     'bot' => 'danger',
                     default => 'gray',
                 }),
-            Tables\Columns\TextColumn::make('login_method')
+            TextColumn::make('login_method')
                 ->label('Method')
                 ->toggleable(),
         ];
@@ -106,7 +113,7 @@ class LoginActivity extends BasePage implements HasTable
             Filter::make('role')
                 ->label('Role')
                 ->form([
-                    \Filament\Forms\Components\Select::make('role')
+                    Select::make('role')
                         ->options([
                             'gym_owner' => 'Gym Owner',
                             'manager' => 'Manager',
@@ -114,11 +121,11 @@ class LoginActivity extends BasePage implements HasTable
                             'trainer' => 'Trainer',
                         ]),
                 ])
-                ->query(function ($query, array $data): \Illuminate\Database\Eloquent\Builder {
+                ->query(function ($query, array $data): Builder {
                     return $query->when(
                         $data['role'] ?? null,
                         function ($query, $role) {
-                            $userIds = app(LoginActivityService::class)->getUserIdsByRoles([$role]);
+                            $userIds = resolve(LoginActivityService::class)->getUserIdsByRoles([$role]);
 
                             return $query->whereIn('user_id', $userIds);
                         }
@@ -127,31 +134,31 @@ class LoginActivity extends BasePage implements HasTable
 
             SelectFilter::make('gym_id')
                 ->label('Gym')
-                ->options(fn () => Gym::pluck('name', 'id')),
+                ->options(fn () => Gym::query()->pluck('name', 'id')),
 
             Filter::make('date_from')
                 ->label('From Date')
                 ->form([
-                    \Filament\Forms\Components\DatePicker::make('date_from')
+                    DatePicker::make('date_from')
                         ->label('From Date'),
                 ])
-                ->query(function ($query, array $data): \Illuminate\Database\Eloquent\Builder {
+                ->query(function ($query, array $data): Builder {
                     return $query->when(
                         $data['date_from'] ?? null,
-                        fn ($query, $date) => $query->where('login_at', '>=', Carbon::parse($date)->startOfDay())
+                        fn ($query, $date) => $query->where('login_at', '>=', Date::parse($date)->startOfDay())
                     );
                 }),
 
             Filter::make('date_to')
                 ->label('To Date')
                 ->form([
-                    \Filament\Forms\Components\DatePicker::make('date_to')
+                    DatePicker::make('date_to')
                         ->label('To Date'),
                 ])
-                ->query(function ($query, array $data): \Illuminate\Database\Eloquent\Builder {
+                ->query(function ($query, array $data): Builder {
                     return $query->when(
                         $data['date_to'] ?? null,
-                        fn ($query, $date) => $query->where('login_at', '<=', Carbon::parse($date)->endOfDay())
+                        fn ($query, $date) => $query->where('login_at', '<=', Date::parse($date)->endOfDay())
                     );
                 }),
         ];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\WhatsApp;
 
 use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
@@ -9,6 +11,7 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +27,7 @@ class BroadcastOrchestrator
      * @param  array<string, mixed>  $data  Template, variables, recipient/schedule config
      * @param  int[]  $selectedMemberIds  Pre-filtered member IDs (for 'filtered' recipient type)
      *
-     * @throws \Exception On any validation failure
+     * @throws Exception On any validation failure
      */
     public function createAndDispatch(
         array $data,
@@ -33,9 +36,7 @@ class BroadcastOrchestrator
     ): WhatsAppBroadcast {
         $lock = Cache::lock("broadcast-rate-{$gymId}", 10);
 
-        if (! $lock->get()) {
-            throw new \Exception('Unable to send broadcast at this time. Please try again.');
-        }
+        throw_unless($lock->get(), Exception::class, 'Unable to send broadcast at this time. Please try again.');
 
         try {
             $templateId = $data['template_id'] ?? null;
@@ -47,37 +48,29 @@ class BroadcastOrchestrator
             $creditsDeducted = false;
 
             /** @var WhatsAppTemplate|null $template */
-            $template = WhatsAppTemplate::find($templateId);
+            $template = WhatsAppTemplate::query()->find($templateId);
 
-            if (! $template) {
-                throw new \Exception('Please select a template');
-            }
+            throw_unless($template, Exception::class, 'Please select a template');
 
             $targetCount = $recipientType === 'all'
-                ? GymMember::where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
+                ? GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
                 : count($selectedMemberIds);
 
-            if ($targetCount === 0) {
-                throw new \Exception('No recipients found. Please select members or change recipient type.');
-            }
+            throw_if($targetCount === 0, Exception::class, 'No recipients found. Please select members or change recipient type.');
 
-            if ($recipientType !== 'all' && empty($selectedMemberIds)) {
-                throw new \Exception('Please select at least one member from the filtered results.');
-            }
+            throw_if($recipientType !== 'all' && blank($selectedMemberIds), Exception::class, 'Please select at least one member from the filtered results.');
 
             if (! $this->rateLimiter->canSend($gymId)) {
                 $quota = $this->rateLimiter->getQuota($gymId);
                 $cooldown = $this->rateLimiter->getCooldown($gymId);
 
                 if ($quota['remaining'] <= 0) {
-                    throw new \Exception('Daily broadcast limit reached. You can send a maximum of ' . $quota['limit'] . ' broadcasts per day. Try again tomorrow.');
+                    throw new Exception('Daily broadcast limit reached. You can send a maximum of ' . $quota['limit'] . ' broadcasts per day. Try again tomorrow.');
                 }
 
-                if ($cooldown !== null) {
-                    throw new \Exception("Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
-                }
+                throw_if($cooldown !== null, Exception::class, "Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
 
-                throw new \Exception('Unable to send broadcast at this time. Please try again.');
+                throw new Exception('Unable to send broadcast at this time. Please try again.');
             }
 
             // === Upfront credit deduction ===
@@ -87,12 +80,12 @@ class BroadcastOrchestrator
 
             try {
                 /** @var WhatsAppMessageCredit|null $creditRecord */
-                $creditRecord = WhatsAppMessageCredit::where('gym_id', $gymId)
+                $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $gymId)
                     ->lockForUpdate()
                     ->first();
 
                 if (! $creditRecord || ! $creditRecord->canSendMessage($targetCount)) {
-                    throw new \Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+                    throw new Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
                 }
 
                 // Handle welcome credits first, then bulk deduction
@@ -117,7 +110,7 @@ class BroadcastOrchestrator
 
                 $creditsDeducted = true;
                 DB::commit();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 throw $e;
@@ -126,7 +119,7 @@ class BroadcastOrchestrator
             DB::beginTransaction();
 
             try {
-                $broadcast = WhatsAppBroadcast::create([
+                $broadcast = WhatsAppBroadcast::query()->create([
                     'gym_id' => $gymId,
                     'whatsapp_template_id' => $templateId,
                     'title' => 'Broadcast: ' . $template->display_name,
@@ -140,7 +133,7 @@ class BroadcastOrchestrator
                     'message_variables' => $variables,
                 ]);
 
-                $memberQuery = GymMember::where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
+                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
 
                 if ($recipientType !== 'all') {
                     $memberQuery->whereIn('id', $selectedMemberIds);
@@ -152,7 +145,7 @@ class BroadcastOrchestrator
                     $recipients = [];
 
                     foreach ($members as $member) {
-                        if (empty($member->phone)) {
+                        if (blank($member->phone)) {
                             continue;
                         }
 
@@ -167,13 +160,13 @@ class BroadcastOrchestrator
                         ];
                     }
 
-                    if (! empty($recipients)) {
-                        WhatsAppBroadcastRecipient::insert($recipients);
+                    if (filled($recipients)) {
+                        WhatsAppBroadcastRecipient::query()->insert($recipients);
                     }
                 });
 
                 DB::commit();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 throw $e;
@@ -181,11 +174,7 @@ class BroadcastOrchestrator
 
             // Dispatch job for immediate broadcasts
             if ($scheduleType === 'now') {
-                SendBroadcastJob::dispatch(
-                    $broadcast->id,
-                    $gymId,
-                    skipCreditDeduction: $creditsDeducted,
-                );
+                dispatch(new SendBroadcastJob($broadcast->id, $gymId, skipCreditDeduction: $creditsDeducted));
             }
 
             return $broadcast;

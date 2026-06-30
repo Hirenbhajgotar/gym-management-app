@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
 
 use App\Filament\Admin\Resources\ExpenseBudgetResource;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListExpenseBudgets extends ListRecords
@@ -13,7 +15,7 @@ class ListExpenseBudgets extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('phosphor-plus')
                 ->label('New Budget'),
         ];

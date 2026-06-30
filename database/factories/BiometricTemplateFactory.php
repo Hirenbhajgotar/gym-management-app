@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\BiometricTypeEnum;
@@ -8,6 +10,9 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends Factory<BiometricTemplate>
+ */
 class BiometricTemplateFactory extends Factory
 {
     protected $model = BiometricTemplate::class;
@@ -19,9 +24,9 @@ class BiometricTemplateFactory extends Factory
             'gym_id' => Gym::factory(),
             'enrolled_by_device_id' => null,
             'biometric_type' => BiometricTypeEnum::Face,
-            'provider_type' => $this->faker->randomElement(['rekognition', 'azure', 'bioid', 'local', 'custom']),
-            'template_ref' => ['provider_id' => $this->faker->uuid()],
-            'quality_score' => $this->faker->randomFloat(2, 0.7, 1.0),
+            'provider_type' => fake()->randomElement(['rekognition', 'azure', 'bioid', 'local', 'custom']),
+            'template_ref' => ['provider_id' => fake()->uuid()],
+            'quality_score' => fake()->randomFloat(2, 0.7, 1.0),
             'is_active' => true,
             'enrolled_at' => now(),
         ];

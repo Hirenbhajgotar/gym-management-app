@@ -9,6 +9,7 @@ use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -32,7 +33,7 @@ class TwilioAccountCleanupTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest_cleanup_sid',
             'twilio_auth_token' => 'test_auth_token',
@@ -44,7 +45,7 @@ class TwilioAccountCleanupTest extends TestCase
             'business_email' => 'test@gym.com',
         ]);
 
-        $this->phoneNumber = WhatsAppPhoneNumber::create([
+        $this->phoneNumber = WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $this->whatsappAccount->id,
             'phone_number' => '+14155551234',
             'phone_number_sid' => 'PNtest_cleanup_123',
@@ -82,7 +83,7 @@ class TwilioAccountCleanupTest extends TestCase
     public function it_returns_success_when_account_has_no_twilio_sid(): void
     {
         $gym = Gym::factory()->create();
-        WhatsAppAccount::create([
+        WhatsAppAccount::query()->create([
             'gym_id' => $gym->id,
             'twilio_account_sid' => '',
             'twilio_auth_token' => '',
@@ -355,7 +356,7 @@ class TwilioAccountCleanupTest extends TestCase
         $managerMock->shouldReceive('cleanupTenantResources')
             ->with($this->gym->id)
             ->once()
-            ->andThrow(new \Exception('Twilio API unavailable'));
+            ->andThrow(new Exception('Twilio API unavailable'));
 
         $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
 
@@ -385,7 +386,7 @@ class TwilioAccountCleanupTest extends TestCase
     public function it_cleans_up_multiple_phone_numbers(): void
     {
         // Add a second phone number
-        WhatsAppPhoneNumber::create([
+        WhatsAppPhoneNumber::query()->create([
             'whatsapp_account_id' => $this->whatsappAccount->id,
             'phone_number' => '+14155559999',
             'phone_number_sid' => 'PNtest_cleanup_456',

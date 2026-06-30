@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\WhatsApp;
 
 use App\Jobs\SendBroadcastJob;
@@ -13,7 +15,7 @@ class WhatsAppBroadcastService
 
     public function dispatchBroadcast(int $broadcastId): void
     {
-        SendBroadcastJob::dispatch($broadcastId, $this->gymId);
+        dispatch(new SendBroadcastJob($broadcastId, $this->gymId));
 
         Log::info('Broadcast dispatched for async processing', [
             'broadcast_id' => $broadcastId,

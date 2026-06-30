@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Gym;
+use App\Models\GymMember;
+use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -19,10 +24,10 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     public function it_can_be_called_via_artisan_command()
     {
         // Create a gym first
-        Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Mock the interactive inputs by creating a custom seeder that doesn't require interaction
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -37,7 +42,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
                 $this->callEnsureRolesExist();
 
                 // Create super admin user
-                $superAdmin = User::create([
+                $superAdmin = User::query()->create([
                     'name' => 'Test Super Admin',
                     'email' => 'admin@test.com',
                     'password' => bcrypt('password123'),
@@ -49,7 +54,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -57,7 +62,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callDisplayFinalSummary(): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('displayFinalSummary');
                 $method->setAccessible(true);
                 $method->invoke($this);
@@ -65,7 +70,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         };
 
         // Register the custom seeder
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -89,14 +94,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify user has the role
-        $user = User::where('email', 'admin@test.com')->first();
+        $user = User::query()->where('email', 'admin@test.com')->first();
         $this->assertTrue($user->hasRole('super_admin'));
     }
 
     #[Test]
     public function it_creates_all_required_global_roles()
     {
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -105,14 +110,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -137,10 +142,10 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_creates_tenant_roles_for_existing_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -149,14 +154,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -180,14 +185,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_creates_demo_users_programmatically()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (! empty($gyms)) {
+                if (filled($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -196,7 +201,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -205,7 +210,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -213,14 +218,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -266,10 +271,10 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_handles_multiple_gyms_correctly()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -283,7 +288,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -292,7 +297,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -300,14 +305,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -348,9 +353,9 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     #[Test]
     public function it_does_not_duplicate_roles_when_run_multiple_times()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -359,14 +364,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -380,26 +385,26 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify only one instance of each role exists
-        $this->assertEquals(1, Role::where('name', 'super_admin')->whereNull('gym_id')->count());
-        $this->assertEquals(1, Role::where('name', 'gym_owner')->whereNull('gym_id')->count());
+        $this->assertEquals(1, Role::query()->where('name', 'super_admin')->whereNull('gym_id')->count());
+        $this->assertEquals(1, Role::query()->where('name', 'gym_owner')->whereNull('gym_id')->count());
 
         $tenantRoles = ['manager', 'receptionist', 'trainer', 'member'];
         foreach ($tenantRoles as $role) {
-            $this->assertEquals(1, Role::where('name', $role)->where('gym_id', $gym->id)->count());
+            $this->assertEquals(1, Role::query()->where('name', $role)->where('gym_id', $gym->id)->count());
         }
     }
 
     #[Test]
     public function it_does_not_duplicate_users_when_run_multiple_times()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
                 $gyms = $this->callGetAvailableGyms();
-                if (! empty($gyms)) {
+                if (filled($gyms)) {
                     $gym = $gyms[0];
                     $this->callEnsureRolesExist($gym['id']);
                     $this->callCreateDemoUsers($gym['id']);
@@ -408,7 +413,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callGetAvailableGyms(): array
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('getAvailableGyms');
                 $method->setAccessible(true);
 
@@ -417,7 +422,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
@@ -425,14 +430,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callCreateDemoUsers($gymId): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('createDemoUsers');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -446,15 +451,15 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         ]);
 
         // Verify only one instance of each user exists
-        $this->assertEquals(1, User::where('email', "owner.gym{$gym->id}@gym.com")->count());
-        $this->assertEquals(1, User::where('email', "john.trainer.gym{$gym->id}@gym.com")->count());
-        $this->assertEquals(1, User::where('email', "emma.member.gym{$gym->id}@gmail.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "owner.gym{$gym->id}@gym.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "john.trainer.gym{$gym->id}@gym.com")->count());
+        $this->assertEquals(1, User::query()->where('email', "emma.member.gym{$gym->id}@gmail.com")->count());
 
         // Verify only one trainer profile exists
-        $this->assertEquals(1, \App\Models\Trainer::where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
+        $this->assertEquals(1, Trainer::query()->where('gym_id', $gym->id)->where('name', 'John Trainer')->count());
 
         // Verify only one member profile exists
-        $this->assertEquals(1, \App\Models\GymMember::where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
+        $this->assertEquals(1, GymMember::query()->where('gym_id', $gym->id)->where('name', 'Emma Member')->count());
     }
 
     #[Test]
@@ -462,7 +467,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
     {
         // Don't create any gyms
 
-        $seeder = new class extends UserRoleAssignmentSeeder
+        $seeder = new class() extends UserRoleAssignmentSeeder
         {
             public function run(): void
             {
@@ -471,14 +476,14 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
 
             private function callEnsureRolesExist($gymId = null): void
             {
-                $reflection = new \ReflectionClass(parent::class);
+                $reflection = new ReflectionClass(parent::class);
                 $method = $reflection->getMethod('ensureRolesExist');
                 $method->setAccessible(true);
                 $method->invoke($this, $gymId);
             }
         };
 
-        $this->app->bind(UserRoleAssignmentSeeder::class, function () use ($seeder) {
+        $this->app->bind(function () use ($seeder): UserRoleAssignmentSeeder {
             return $seeder;
         });
 
@@ -502,7 +507,7 @@ class UserRoleAssignmentSeederFeatureTest extends TestCase
         // Verify no tenant roles were created
         $tenantRoles = ['manager', 'receptionist', 'trainer', 'member'];
         foreach ($tenantRoles as $role) {
-            $this->assertEquals(0, Role::where('name', $role)->count());
+            $this->assertEquals(0, Role::query()->where('name', $role)->count());
         }
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\BiometricDeviceResource\Pages;
 
 use App\Filament\Admin\Resources\BiometricDeviceResource;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListBiometricDevices extends ListRecords
@@ -14,7 +16,7 @@ class ListBiometricDevices extends ListRecords
     {
         return [
             // Create action
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->label('Add Device')
                 ->color('primary'),

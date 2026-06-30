@@ -1,13 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\WhatsAppLeadProcessor;
 
-class WhatsAppLeadController extends Controller
-{
-    public function __construct(
-        private WhatsAppLeadProcessor $processor
-    ) {}
-}
+class WhatsAppLeadController extends Controller {}

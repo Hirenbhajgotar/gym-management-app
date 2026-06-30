@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets\Stats;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\DashboardCacheService;
-use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
 {
@@ -19,7 +23,7 @@ class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -30,7 +34,7 @@ class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -39,7 +43,7 @@ class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
         }
 
         return Cache::flexible(DashboardCacheService::SUBSCRIPTION_STATS . $gymId, DashboardCacheService::getCacheTtl(), function () {
-            $today = Carbon::today();
+            $today = Date::today();
 
             // Gym Memberships
             $gymActiveCount = GymMember::query()->membershipActive()->count('id');
@@ -100,7 +104,7 @@ class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
     /**
      * Ensure we always return at least a root tag to prevent Livewire errors.
      */
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         if (! static::canView()) {
             return view()->make('filament-widgets::blank');

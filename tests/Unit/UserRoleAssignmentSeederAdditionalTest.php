@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Models\Gym;
-use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Illuminate\Console\Command;
@@ -11,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -26,11 +28,11 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder;
+        $this->seeder = new UserRoleAssignmentSeeder();
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $commandProperty = $reflection->getProperty('command');
         $commandProperty->setAccessible(true);
         $commandProperty->setValue($this->seeder, $this->mockCommand);
@@ -46,7 +48,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_assign_roles_to_existing_users_with_global_context()
     {
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -69,7 +71,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn(false);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -81,10 +83,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_assign_roles_to_existing_users_with_gym_context()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -103,7 +105,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('trainer');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -122,7 +124,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_handles_no_users_without_roles_scenario()
     {
         // Create a user with a role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -138,7 +140,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with('ℹ️  No users found without the selected type of role assignment.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -150,14 +152,14 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_update_existing_user_roles_global_context()
     {
         // Create a user with a global role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
         ]);
 
         $oldRole = Role::create(['name' => 'gym_owner', 'guard_name' => 'web']);
-        $newRole = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
         $user->assignRole($oldRole);
 
         $this->mockCommand->shouldReceive('info')->with('🔄 Updating existing user roles...');
@@ -179,7 +181,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn(false);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -193,7 +195,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_can_remove_all_global_roles()
     {
         // Create a user with a global role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -218,7 +220,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with("✅ Removed global roles from {$user->name}");
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -230,17 +232,17 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_update_tenant_roles_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user with a tenant role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
         ]);
 
         $oldRole = Role::create(['name' => 'trainer', 'guard_name' => 'web', 'gym_id' => $gym->id]);
-        $newRole = Role::create(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
+        Role::create(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $gym->id]);
         $user->assignRole($oldRole);
 
         // Add to gym_user pivot
@@ -262,7 +264,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('manager');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -281,10 +283,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_can_remove_tenant_roles_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user with a tenant role
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -312,7 +314,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
             ->andReturn('Remove all roles in context');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -335,7 +337,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('ℹ️  No users with roles found.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('updateExistingUserRoles');
         $method->setAccessible(true);
 
@@ -346,8 +348,8 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_creates_demo_users_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('info')->with('📝 Creating demo users for all gyms...');
         $this->mockCommand->shouldReceive('info')->with('Creating demo users for gym: Gym 1');
@@ -356,7 +358,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createDemoUsersForAllGyms');
         $method->setAccessible(true);
 
@@ -378,7 +380,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('fail')->with('No gyms found. Please create gyms first.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createDemoUsersForAllGyms');
         $method->setAccessible(true);
 
@@ -388,10 +390,10 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_updates_existing_user_instead_of_creating_new_one()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create existing user
-        $existingUser = User::create([
+        $existingUser = User::query()->create([
             'name' => 'Old Name',
             'email' => 'john.trainer.gym1@gym.com',
             'password' => Hash::make('oldpassword'),
@@ -400,7 +402,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -429,15 +431,15 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_skips_profile_creation_when_no_profile_data()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
-        $user = User::create([
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
         ]);
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('createProfileForUser');
         $method->setAccessible(true);
 
@@ -461,7 +463,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('error')->with('No roles available for selection in the chosen context.');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('assignRolesToExistingUsers');
         $method->setAccessible(true);
 
@@ -471,7 +473,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     #[Test]
     public function it_displays_summary_with_no_global_users()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->with(str_repeat('=', 80));
         $this->mockCommand->shouldReceive('info')->with('📊 FINAL USER ROLE SUMMARY');
@@ -486,7 +488,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('info')->with('🏢 Total active gym assignments (pivot entries): 0');
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('displayFinalSummary');
         $method->setAccessible(true);
 
@@ -497,7 +499,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
     public function it_displays_warning_for_users_without_roles()
     {
         // Create a user without any roles
-        User::create([
+        User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -514,7 +516,7 @@ class UserRoleAssignmentSeederAdditionalTest extends TestCase
         $this->mockCommand->shouldReceive('warn')->with("⚠️  1 users don't have any Spatie roles assigned!");
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('displayFinalSummary');
         $method->setAccessible(true);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exports;
 
 use App\Enums\PaymentStatus;
@@ -51,7 +53,7 @@ class RevenueReportExport implements FromQuery, Responsable, ShouldAutoSize, Wit
                 fn ($q) => $q->where('membership_plan_id', $this->filters['membership_plan_id'])
             )
             ->with(['member', 'membershipPlan'])
-            ->orderByDesc('payment_date');
+            ->latest('payment_date');
     }
 
     public function headings(): array

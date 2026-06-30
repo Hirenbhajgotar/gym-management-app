@@ -13,6 +13,9 @@ readonly class TemplateDbSyncResult
         public ?string $error = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         $result = ['success' => $this->success];

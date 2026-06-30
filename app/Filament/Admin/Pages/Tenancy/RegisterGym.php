@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Enums\DefaultRole;
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -149,25 +152,25 @@ class RegisterGym extends RegisterTenant
     {
         // Final check before creating the gym
         if ($this->hasReachedGymLimit()) {
-            throw new \Exception(
+            throw new Exception(
                 "Gym limit exceeded. Cannot register more than {$this->totalGyms} gyms.",
             );
         }
 
         $user = auth()->user();
 
-        $gym = Gym::create($data);
+        $gym = Gym::query()->create($data);
 
         // Associate the user with the new gym and assign the 'gym_owner' role.
         $gym->users()->attach($user, ['role' => DefaultRole::GYM_OWNER->value]);
 
         // Create default roles and permissions for the gym
-        app(
+        resolve(
             RolesAndPermissionsService::class,
         )->createDefaultTenantRolesAndAssignPermissions($user, $gym);
 
         // Assign the gym to the user
-        app(RolesAndPermissionsService::class)->assignRoleToTenant(
+        resolve(RolesAndPermissionsService::class)->assignRoleToTenant(
             $gym,
             $user,
             DefaultRole::GYM_OWNER,

@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages;
 
-use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
@@ -18,6 +19,13 @@ use App\Traits\HasTenantAccess;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -78,23 +86,23 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make()
+            CreateAction::make()
                 ->model(Lead::class)
                 ->visible(fn () => auth()->user()?->can('create_lead'))
                 ->authorize(fn () => auth()->user()?->can('create_lead'))
                 ->form([
-                    \Filament\Forms\Components\Section::make()
+                    Section::make()
                         ->schema([
-                            \Filament\Forms\Components\Hidden::make('gym_id')
+                            Hidden::make('gym_id')
                                 ->default($this->getGymId()),
 
-                            \Filament\Forms\Components\Hidden::make('created_by')
+                            Hidden::make('created_by')
                                 ->default(auth()->user()->id),
 
-                            \Filament\Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->required(),
 
-                            \Filament\Forms\Components\TextInput::make('email')
+                            TextInput::make('email')
                                 ->required()
                                 ->email(),
 
@@ -105,10 +113,10 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                                     type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
                                 ),
 
-                            \Filament\Forms\Components\Select::make('source')
+                            Select::make('source')
                                 ->options(LeadSource::class),
 
-                            \Filament\Forms\Components\TagsInput::make('interest')
+                            TagsInput::make('interest')
                                 ->splitKeys(['Tab', ','])
                                 ->placeholder(
                                     'Add tags (e.g., High Priority, Referral)',
@@ -116,11 +124,11 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                                 ->suggestions(
                                     collect(LeadTag::cases())
                                         ->map(fn (LeadTag $tag) => $tag->getLabel())
-                                        ->toArray(),
+                                        ->all(),
                                 )
                                 ->columnSpanFull(),
 
-                            \Filament\Forms\Components\Textarea::make('notes')
+                            Textarea::make('notes')
                                 ->columnSpanFull(),
                         ])
                         ->columns(2),
@@ -138,7 +146,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 FollowUpsRelationManager::getFollowUpFormSchema(),
             )
             ->action(function (array $data, array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -150,7 +158,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                FollowUp::create([
+                FollowUp::query()->create([
                     'gym_id' => $this->getGym()->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
@@ -189,7 +197,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             )
             ->modalSubmitActionLabel('Convert to Member')
             ->action(function (array $data, array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -201,7 +209,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                     return;
                 }
 
-                $member = app(LeadConversionService::class)->convert($record, $data);
+                $member = resolve(LeadConversionService::class)->convert($record, $data);
 
                 // Send welcome notification and generate invoice if payment exists
                 if ($member->latestPayment) {
@@ -210,7 +218,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                         new SendNotificationJob($member, new WelcomeNotification($member)),
                     ])->dispatch();
                 } else {
-                    SendNotificationJob::dispatch($member, new WelcomeNotification($member));
+                    dispatch(new SendNotificationJob($member, new WelcomeNotification($member)));
                 }
 
                 Notification::make()
@@ -233,13 +241,13 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Lost Lead')
             ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 return $record ? "Are you sure you want to mark '{$record->name}' as lost? The lead will be moved to lost status." : 'Lead not found';
             })
             ->modalSubmitActionLabel('Lost Lead')
             ->action(function (array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -276,13 +284,13 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             ->requiresConfirmation()
             ->modalHeading('Delete Lead')
             ->modalDescription(function (array $arguments) {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 return $record ? "Are you sure you want to delete '{$record->name}'? This action cannot be undone." : 'Lead not found';
             })
             ->modalSubmitActionLabel('Delete Lead')
             ->action(function (array $arguments): void {
-                $record = Lead::find($arguments['id']);
+                $record = Lead::query()->find($arguments['id']);
 
                 if (! $record) {
                     Notification::make()
@@ -309,7 +317,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
 
     public function onStatusChanged(int|string $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
     {
-        $currentLead = Lead::find($recordId);
+        $currentLead = Lead::query()->find($recordId);
 
         if (! $currentLead) {
             Notification::make()

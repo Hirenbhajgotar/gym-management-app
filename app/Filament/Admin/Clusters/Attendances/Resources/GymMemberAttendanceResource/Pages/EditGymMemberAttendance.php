@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource\Pages;
 
 use App\Filament\Admin\Clusters\Attendances\Resources\GymMemberAttendanceResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditGymMemberAttendance extends EditRecord
@@ -13,7 +15,7 @@ class EditGymMemberAttendance extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Meta;
 
 use App\Enums\WhatsAppAccountStatusEnum;
@@ -11,6 +13,7 @@ use App\Interfaces\WabaSetupInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Providers\WhatsAppProviderFactory;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +89,7 @@ class MetaWabaService implements WabaSetupInterface
                 $normalizedPhoneNumber = $this->normalizePhoneNumber($displayPhoneNumber);
 
                 return DB::transaction(function () use ($gymId, $businessData, $wabaId, $phoneNumberId, $metaAccessToken, $verificationResult, $businessName, $normalizedPhoneNumber) {
-                    $account = WhatsAppAccount::updateOrCreate([
+                    $account = WhatsAppAccount::query()->updateOrCreate([
                         'gym_id' => $gymId,
                     ], [
                         'business_name' => htmlspecialchars(strip_tags($businessName)),
@@ -102,7 +105,7 @@ class MetaWabaService implements WabaSetupInterface
                         'verified_at' => now(),
                     ]);
 
-                    WhatsAppPhoneNumber::updateOrCreate([
+                    WhatsAppPhoneNumber::query()->updateOrCreate([
                         'whatsapp_account_id' => $account->id,
                     ], [
                         'waba_phone_number_id' => $verificationResult['phone_number_id'] ?? $phoneNumberId,
@@ -132,7 +135,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => false,
                 'error' => 'WABA connection is currently in progress. Please wait a moment.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to connect manual WABA', [
                 'gym_id' => $gymId,
                 'waba_id' => $wabaId,
@@ -189,7 +192,7 @@ class MetaWabaService implements WabaSetupInterface
                 'timezone' => $wabaData['timezone'] ?? null,
                 'error' => null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to verify WABA connection', [
                 'waba_id' => $wabaId,
                 'phone_number_id' => $phoneNumberId,
@@ -247,12 +250,6 @@ class MetaWabaService implements WabaSetupInterface
 
     protected function determinePhoneType(?array $verificationResult): WhatsAppPhoneNumberTypesEnum
     {
-        $codeStatus = $verificationResult['code_verification_status'] ?? null;
-
-        if ($codeStatus === 'VERIFIED') {
-            return WhatsAppPhoneNumberTypesEnum::BUSINESS;
-        }
-
         return WhatsAppPhoneNumberTypesEnum::BUSINESS;
     }
 
@@ -283,7 +280,7 @@ class MetaWabaService implements WabaSetupInterface
         try {
             return Cache::lock("meta:embedded-signup:{$gymId}", 60)->block(15, function () use ($gymId, $wabaId, $accessToken, $phoneNumberId) {
                 // Double-check if already processed (Meta callback deduplication)
-                $existingAccount = WhatsAppAccount::where('gym_id', $gymId)
+                $existingAccount = WhatsAppAccount::query()->where('gym_id', $gymId)
                     ->where('waba_id', $wabaId)
                     ->where('embedded_signup_completed', true)
                     ->first();
@@ -297,10 +294,7 @@ class MetaWabaService implements WabaSetupInterface
                 }
 
                 // Get or create WhatsAppAccount for the gym
-                $account = WhatsAppAccount::firstOrCreate(
-                    ['gym_id' => $gymId],
-                    ['provider_type' => WhatsAppProviderTypeEnum::WABA]
-                );
+                $account = WhatsAppAccount::query()->firstOrCreate(['gym_id' => $gymId], ['provider_type' => WhatsAppProviderTypeEnum::WABA]);
 
                 // Update with WABA details from embedded signup
                 // provider_type = WABA because user created it via embedded signup (owns it)
@@ -322,17 +316,14 @@ class MetaWabaService implements WabaSetupInterface
                     if ($phoneDetails['success'] && $phoneDetails['display_phone_number']) {
                         $normalizedPhoneNumber = $this->normalizePhoneNumber($phoneDetails['display_phone_number']);
 
-                        WhatsAppPhoneNumber::updateOrCreate(
-                            ['whatsapp_account_id' => $account->id],
-                            [
-                                'waba_phone_number_id' => $phoneNumberId,
-                                'phone_number' => $normalizedPhoneNumber,
-                                'country_code' => $this->extractCountryCode($normalizedPhoneNumber),
-                                'friendly_name' => $normalizedPhoneNumber,
-                                'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
-                                'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
-                            ]
-                        );
+                        WhatsAppPhoneNumber::query()->updateOrCreate(['whatsapp_account_id' => $account->id], [
+                            'waba_phone_number_id' => $phoneNumberId,
+                            'phone_number' => $normalizedPhoneNumber,
+                            'country_code' => $this->extractCountryCode($normalizedPhoneNumber),
+                            'friendly_name' => $normalizedPhoneNumber,
+                            'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+                            'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
+                        ]);
                     }
                 }
 
@@ -351,7 +342,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => false,
                 'error' => 'Processing embedded signup. Please wait.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to complete embedded signup: ' . $e->getMessage(),
@@ -384,7 +375,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => true,
                 'display_phone_number' => $response['data']['display_phone_number'] ?? null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to fetch phone details from Meta', [
                 'phone_number_id' => $phoneNumberId,
                 'error' => $e->getMessage(),
@@ -443,7 +434,7 @@ class MetaWabaService implements WabaSetupInterface
                 'success' => true,
                 'data' => $response['data'],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $exceptionMessage = $e->getMessage();
 
             Log::error('Exception while getting WABA details', [

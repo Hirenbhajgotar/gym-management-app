@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Models\WhatsAppUsageLog;
@@ -43,7 +45,7 @@ class TwilioWebhookController
         ]);
 
         // Update the usage log with the delivery status
-        $usageLog = WhatsAppUsageLog::where('twilio_message_sid', $messageSid)->first();
+        $usageLog = WhatsAppUsageLog::query()->where('twilio_message_sid', $messageSid)->first();
 
         if ($usageLog) {
             $updateData = [

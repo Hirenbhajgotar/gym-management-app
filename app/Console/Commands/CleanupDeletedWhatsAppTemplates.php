@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Models\WhatsAppTemplate;
+use App\Services\WhatsAppTemplateService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -25,7 +28,7 @@ class CleanupDeletedWhatsAppTemplates extends Command
     /**
      * Execute the console command.
      */
-    public function handle(\App\Services\WhatsAppTemplateService $service)
+    public function handle(WhatsAppTemplateService $service)
     {
         // 15 days threshold
         $threshold = now()->subDays(15);

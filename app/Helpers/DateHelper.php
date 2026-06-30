@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class DateHelper
 {
@@ -11,6 +13,6 @@ class DateHelper
      */
     public static function calculateAge(string $dob): int
     {
-        return Carbon::parse($dob)->age;
+        return Date::parse($dob)->age;
     }
 }

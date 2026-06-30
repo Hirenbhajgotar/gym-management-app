@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Gym;
@@ -29,7 +31,7 @@ class InvoiceGenerationTest extends TestCase
             'gym_membership_plan_id' => $plan->id,
         ]);
 
-        $payment = MemberPayment::create([
+        $payment = MemberPayment::query()->create([
             'gym_id' => $gym->id,
             'member_id' => $member->id,
             'membership_plan_id' => $plan->id,
@@ -39,7 +41,7 @@ class InvoiceGenerationTest extends TestCase
             'payment_date' => now(),
         ]);
 
-        $service = new InvoiceService;
+        $service = new InvoiceService();
         $service->generateMemberInvoice($payment);
 
         $payment->refresh();
@@ -53,7 +55,7 @@ class InvoiceGenerationTest extends TestCase
     {
         Bus::fake();
 
-        $gym = Gym::factory()->create();
+        Gym::factory()->create();
         $user = User::factory()->create();
         $this->actingAs($user); // Assuming HasTenantAccess uses Auth
 

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
+use App\Livewire\Frontend\HomeController;
 use App\Livewire\Frontend\RequestDemo;
 use App\Models\RequestContact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +30,7 @@ class RequestDemoTest extends TestCase
     {
         $response = $this->get(route('request-demo'));
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSeeLivewire(RequestDemo::class);
     }
 
@@ -184,7 +187,7 @@ class RequestDemoTest extends TestCase
             ->set('phone', '+1234567890')
             ->call('submitRequest');
 
-        $requestContact = RequestContact::first();
+        $requestContact = RequestContact::query()->first();
 
         $this->assertNotNull($requestContact->ip_address);
         $this->assertNotNull($requestContact->user_agent);
@@ -302,9 +305,9 @@ class RequestDemoTest extends TestCase
     {
         $response = $this->get(route('home'));
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSeeLivewire(
-            \App\Livewire\Frontend\HomeController::class,
+            HomeController::class,
         );
     }
 }

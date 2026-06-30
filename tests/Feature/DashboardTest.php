@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\User;
@@ -22,6 +24,6 @@ class DashboardTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get('/dashboard');
-        $response->assertStatus(200);
+        $response->assertOk();
     }
 }

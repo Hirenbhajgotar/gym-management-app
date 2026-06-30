@@ -1,11 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Models\Payment;
+use App\Models\User;
+use App\Models\WhatsAppCreditTransaction;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +68,7 @@ class RazorpayWebhookController
             }
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -89,7 +94,7 @@ class RazorpayWebhookController
             return;
         }
 
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         if (! $payment) {
             Log::warning('Payment not found for webhook', [
@@ -132,7 +137,7 @@ class RazorpayWebhookController
             return;
         }
 
-        $payment = Payment::where('razorpay_order_id', $orderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         if ($payment && $payment->status !== 'failed') {
             $payment->update([
@@ -174,7 +179,7 @@ class RazorpayWebhookController
             }
 
             // Check if user already exists (idempotency)
-            $existingUser = \App\Models\User::where('email', $email)->first();
+            $existingUser = User::query()->where('email', $email)->first();
 
             if ($existingUser) {
                 Log::info('User already exists, skipping registration', [
@@ -192,7 +197,7 @@ class RazorpayWebhookController
                 'email' => $email,
                 'payment_id' => $payment->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process gym owner registration via webhook', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
@@ -224,7 +229,7 @@ class RazorpayWebhookController
             }
 
             // Check if already processed (idempotency)
-            $existingTransaction = \App\Models\WhatsAppCreditTransaction::where('payment_reference', $payment->razorpay_payment_id)
+            $existingTransaction = WhatsAppCreditTransaction::query()->where('payment_reference', $payment->razorpay_payment_id)
                 ->where('type', 'purchase')
                 ->first();
 
@@ -263,7 +268,7 @@ class RazorpayWebhookController
                     'error' => $result['error'] ?? 'Unknown error',
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process WhatsApp package payment via webhook', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),

@@ -47,7 +47,7 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         Bus::fake();
 
         /** @var WhatsAppBroadcast $broadcast */
-        $broadcast = WhatsAppBroadcast::where('gym_id', $this->gym->id)->first();
+        $broadcast = WhatsAppBroadcast::query()->where('gym_id', $this->gym->id)->first();
 
         $start = microtime(true);
 
@@ -102,7 +102,7 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         Bus::fake();
 
         /** @var WhatsAppBroadcast $broadcast */
-        $broadcast = WhatsAppBroadcast::where('gym_id', $this->gym->id)->first();
+        $broadcast = WhatsAppBroadcast::query()->where('gym_id', $this->gym->id)->first();
         $broadcast->update(['status' => WhatsAppBroadcastStatusEnum::COMPLETED]);
 
         $start = microtime(true);

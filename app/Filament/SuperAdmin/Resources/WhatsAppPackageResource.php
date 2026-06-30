@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
@@ -8,11 +10,23 @@ use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\CreateWhatsA
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\EditWhatsAppPackage;
 use App\Filament\SuperAdmin\Resources\WhatsAppPackageResource\Pages\ListWhatsAppPackages;
 use App\Models\WhatsAppPackage;
-use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
@@ -29,11 +43,11 @@ class WhatsAppPackageResource extends BaseResource
 
     protected static ?string $navigationLabel = 'Message Packages';
 
-    const MARGIN_PERCENTAGE = 0.010;
+    public const MARGIN_PERCENTAGE = 0.010;
 
-    const TWILIO_COST_PER_MESSAGE = 1.53;
+    public const TWILIO_COST_PER_MESSAGE = 1.53;
 
-    const TWILIO_NUMBER_COST = 136.41;
+    public const TWILIO_NUMBER_COST = 136.41;
 
     public static function canAccess(): bool
     {
@@ -94,15 +108,15 @@ class WhatsAppPackageResource extends BaseResource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Package Details')
+            Section::make('Package Details')
                 ->schema([
-                    Forms\Components\TextInput::make('name')
+                    TextInput::make('name')
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true)
                         ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('message_count')
+                    TextInput::make('message_count')
                         ->required()
                         ->numeric()
                         ->minValue(1)
@@ -111,14 +125,14 @@ class WhatsAppPackageResource extends BaseResource
                         ->label('Number of Messages')
                         ->columnSpan(1),
 
-                    Forms\Components\Textarea::make('description')
+                    Textarea::make('description')
                         ->maxLength(500)
                         ->columnSpanFull(),
                 ])->columns(2),
 
-            Forms\Components\Section::make('Pricing')
+            Section::make('Pricing')
                 ->schema([
-                    Forms\Components\TextInput::make('selling_price')
+                    TextInput::make('selling_price')
                         ->required()
                         ->numeric()
                         ->prefix('₹')
@@ -129,7 +143,7 @@ class WhatsAppPackageResource extends BaseResource
                         ->hintColor(fn (Get $get) => static::calculateProfit($get) > 0 ? 'success' : 'danger')
                         ->label('Selling Price'),
 
-                    Forms\Components\TextInput::make('twilio_number_cost')
+                    TextInput::make('twilio_number_cost')
                         ->numeric()
                         ->prefix('₹')
                         ->default(0)
@@ -139,7 +153,7 @@ class WhatsAppPackageResource extends BaseResource
                         ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Twilio Number Cost'),
 
-                    Forms\Components\TextInput::make('twilio_msg_cost_per_unit')
+                    TextInput::make('twilio_msg_cost_per_unit')
                         ->numeric()
                         ->prefix('₹')
                         ->default(0.15)
@@ -148,7 +162,7 @@ class WhatsAppPackageResource extends BaseResource
                         ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Twilio Cost Per Message')
                         ->suffixAction(
-                            Forms\Components\Actions\Action::make('fetch_pricing')
+                            Action::make('fetch_pricing')
                                 ->icon('phosphor-currency-inr')
                                 ->tooltip('Fetching live pricing requires Twilio Pricing API. Assuming default rate.')
                                 ->action(function (Set $set) {
@@ -159,38 +173,38 @@ class WhatsAppPackageResource extends BaseResource
                                 })
                         ),
 
-                    Forms\Components\TextInput::make('validity_days')
+                    TextInput::make('validity_days')
                         ->numeric()
                         ->default(365)
                         ->minValue(1)
                         ->label('Validity (Days)'),
                 ])->columns(2),
 
-            Forms\Components\Section::make('Display Settings')
+            Section::make('Display Settings')
                 ->schema([
-                    Forms\Components\TextInput::make('sort_order')
+                    TextInput::make('sort_order')
                         ->numeric()
                         ->default(0)
                         ->label('Sort Order'),
 
-                    Forms\Components\Toggle::make('is_active')
+                    Toggle::make('is_active')
                         ->default(true)
                         ->label('Active'),
 
-                    Forms\Components\Toggle::make('is_popular')
+                    Toggle::make('is_popular')
                         ->default(false)
                         ->label('Mark as Popular'),
 
-                    Forms\Components\Toggle::make('includes_number')
+                    Toggle::make('includes_number')
                         ->default(false)
                         ->live()
                         ->afterStateUpdated(fn (Get $get, Set $set) => static::updateSellingPrice($get, $set))
                         ->label('Includes Dedicated Number'),
                 ])->columns(2),
 
-            Forms\Components\Section::make('Features List')
+            Section::make('Features List')
                 ->schema([
-                    Forms\Components\TagsInput::make('features')
+                    TagsInput::make('features')
                         ->placeholder('Add a feature')
                         ->helperText('Press Enter after each feature')
                         ->columnSpanFull(),
@@ -202,61 +216,61 @@ class WhatsAppPackageResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('message_count')
+                TextColumn::make('message_count')
                     ->numeric()
                     ->sortable()
                     ->label('Messages'),
 
-                Tables\Columns\TextColumn::make('selling_price')
+                TextColumn::make('selling_price')
                     ->money('INR')
                     ->sortable()
                     ->label('Price'),
 
-                Tables\Columns\TextColumn::make('your_profit')
+                TextColumn::make('your_profit')
                     ->money('INR')
                     ->label('Profit'),
 
-                Tables\Columns\TextColumn::make('margin_percentage')
+                TextColumn::make('margin_percentage')
                     ->numeric(2)
                     ->suffix('%')
                     ->label('Margin'),
 
-                Tables\Columns\IconColumn::make('is_popular')
+                IconColumn::make('is_popular')
                     ->boolean()
                     ->label('Popular'),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active'),
 
-                Tables\Columns\TextColumn::make('sort_order')
+                TextColumn::make('sort_order')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('sort_order')
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
+                TernaryFilter::make('is_active')
                     ->label('Active Status'),
-                Tables\Filters\TernaryFilter::make('is_popular')
+                TernaryFilter::make('is_popular')
                     ->label('Popular'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

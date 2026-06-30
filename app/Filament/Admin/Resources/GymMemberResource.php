@@ -1,29 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Enums\DefaultRole;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Exports\MembersExport;
-use App\Filament\Admin\Resources\GymMemberResource\Pages;
+use App\Events\BiometricConsentRevoked;
+use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
+use App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember;
+use App\Filament\Admin\Resources\GymMemberResource\Pages\ListGymMembers;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\BiometricTemplatesRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\MeasurementsRelationManager;
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
-use App\Imports\GymMembersImport;
+use App\Jobs\SendBiometricConsentEmail;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
-use App\Models\User;
 use App\Rules\ValidEmailDomain;
-use Carbon\Carbon;
 use Closure;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -31,11 +35,20 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
@@ -93,13 +106,13 @@ class GymMemberResource extends BaseResource
     public static function getFormSchema(): array
     {
         return [
-            Forms\Components\Group::make()
+            Group::make()
                 ->schema([
-                    Forms\Components\Section::make()
+                    Section::make()
                         ->schema(static::getDetailsFormSchema())
                         ->columns(2),
 
-                    Forms\Components\Section::make()
+                    Section::make()
                         ->schema(static::getMembershipFormSchema())
                         ->columns(2),
                 ]),
@@ -117,48 +130,48 @@ class GymMemberResource extends BaseResource
                 }]);
             })
             ->columns([
-                Tables\Columns\ImageColumn::make('profile_photo')
+                ImageColumn::make('profile_photo')
                     ->circular()
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
 
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Email copied!')
                     ->icon('heroicon-o-envelope')
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('phone')
+                TextColumn::make('phone')
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Phone copied!')
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('membershipPlan.name')
+                TextColumn::make('membershipPlan.name')
                     ->label('Plan')
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('membership_start')
+                TextColumn::make('membership_start')
                     ->date()
                     ->badge()
                     ->icon('heroicon-o-calendar')
                     ->color('info'),
 
-                Tables\Columns\TextColumn::make('membership_end')
+                TextColumn::make('membership_end')
                     ->formatStateUsing(function ($state) {
                         if (! $state) {
                             return 'Not Set';
                         }
 
-                        $now = now(); // June 1, 2025
-                        $membershipEnd = Carbon::parse(date('Y-m-d', strtotime($state)));
+                        $now = now();
+                        $membershipEnd = $state;
 
                         // Check if membership has already expired
                         if ($now->greaterThan($membershipEnd)) {
@@ -183,7 +196,7 @@ class GymMemberResource extends BaseResource
                         }
 
                         $now = now(); // June 1, 2025, 12:43 AM IST
-                        $membershipEnd = Carbon::parse($state);
+                        $membershipEnd = Date::parse($state);
 
                         // Check if membership has already expired
                         if ($now->greaterThan($membershipEnd)) {
@@ -205,7 +218,7 @@ class GymMemberResource extends BaseResource
                         }
 
                         $now = now(); // June 1, 2025
-                        $membershipEnd = Carbon::parse($state);
+                        $membershipEnd = Date::parse($state);
 
                         $diffInDays = $now->diffInDays($membershipEnd, false);
                         if ($diffInDays <= 60 && $diffInDays >= 14) {
@@ -227,11 +240,11 @@ class GymMemberResource extends BaseResource
                         return 'info';
                     }),
 
-                Tables\Columns\TextColumn::make('payment_status')
+                TextColumn::make('payment_status')
                     ->label('Payment Status')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('biometric_consent_status')
+                TextColumn::make('biometric_consent_status')
                     ->label('Biometric Consent')
                     ->getStateUsing(fn (GymMember $record) => $record->biometric_consents_exists ? 'Consented' : 'Pending')
                     ->badge()
@@ -241,7 +254,7 @@ class GymMemberResource extends BaseResource
                         default => 'gray',
                     }),
 
-                Tables\Columns\IconColumn::make('is_frozen')
+                IconColumn::make('is_frozen')
                     ->label('Frozen')
                     ->boolean()
                     ->trueIcon('phosphor-prohibit')
@@ -250,7 +263,7 @@ class GymMemberResource extends BaseResource
                     ->falseColor('gray')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('frozen_until')
+                TextColumn::make('frozen_until')
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
@@ -263,7 +276,7 @@ class GymMemberResource extends BaseResource
                 //     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('gym_membership_plan_id')
+                SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name', function ($query) {
                         if (filament()->getId() === 'admin') {
                             if (auth()->user()->hasRole('gym_owner')) {
@@ -292,20 +305,20 @@ class GymMemberResource extends BaseResource
 
                         $query->where(function ($query) use ($value) {
                             if ($value === 'paid') {
-                                $query->where('payment_status', \App\Enums\PaymentStatus::COMPLETED);
+                                $query->where('payment_status', PaymentStatus::COMPLETED);
                             } elseif ($value === 'unpaid') {
                                 $query->whereIn('payment_status', [
-                                    \App\Enums\PaymentStatus::PENDING,
-                                    \App\Enums\PaymentStatus::FAILED,
+                                    PaymentStatus::PENDING,
+                                    PaymentStatus::FAILED,
                                 ]);
                             } elseif ($value === 'expire') {
-                                $query->where('payment_status', \App\Enums\PaymentStatus::EXPIRED);
+                                $query->where('payment_status', PaymentStatus::EXPIRED);
                             }
                         });
                     })
                     ->label('Payment Status'),
 
-                Tables\Filters\SelectFilter::make('is_frozen')
+                SelectFilter::make('is_frozen')
                     ->label('Freeze Status')
                     ->options([
                         'frozen' => 'Frozen',
@@ -337,11 +350,11 @@ class GymMemberResource extends BaseResource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -349,7 +362,7 @@ class GymMemberResource extends BaseResource
                     ->modalDescription('Are you sure you want to delete this member? This action requires password confirmation.')
                     ->modalSubmitActionLabel('Confirm Delete')
                     ->form([
-                        Forms\Components\TextInput::make('password')
+                        TextInput::make('password')
                             ->label('Your Password')
                             ->revealable()
                             ->password()
@@ -364,8 +377,8 @@ class GymMemberResource extends BaseResource
                             ]),
                     ]),
 
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('quick_measure')
+                ActionGroup::make([
+                    Action::make('quick_measure')
                         ->label('Measure')
                         ->icon('heroicon-o-scale')
                         ->tooltip('Add new measurement')
@@ -382,23 +395,23 @@ class GymMemberResource extends BaseResource
                                 'notes' => $data['notes'],
                             ]);
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Measurement Added')
                                 ->success()
                                 ->send();
                         }),
 
-                    Tables\Actions\Action::make('toggle_freeze')
+                    Action::make('toggle_freeze')
                         ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
                         ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
                         ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
                         ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
                         ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
                         ->form([
-                            Forms\Components\Textarea::make('reason')
+                            Textarea::make('reason')
                                 ->label('Reason for freezing (optional)')
                                 ->placeholder('Enter reason for freezing membership'),
-                            Forms\Components\TextInput::make('days')
+                            TextInput::make('days')
                                 ->label('Freeze for days (optional)')
                                 ->placeholder('Leave empty for manual unfreeze')
                                 ->numeric()
@@ -408,7 +421,7 @@ class GymMemberResource extends BaseResource
                         ->action(function (GymMember $record, array $data) {
                             if ($record->is_frozen) {
                                 $record->unfreeze();
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->title('Member Unfrozen')
                                     ->success()
                                     ->send();
@@ -418,7 +431,7 @@ class GymMemberResource extends BaseResource
                                     reason: $data['reason'] ?? null,
                                     days: $days
                                 );
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->title('Member Frozen')
                                     ->success()
                                     ->send();
@@ -427,30 +440,30 @@ class GymMemberResource extends BaseResource
                         ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
                         ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
 
-                    Tables\Actions\Action::make('resend_consent_email')
+                    Action::make('resend_consent_email')
                         ->label('Resend Consent Email')
                         ->icon('heroicon-o-envelope')
                         ->color('info')
                         ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists
-                            && ! empty($record->email)
+                            && filled($record->email)
                         )
                         ->action(function (GymMember $record) {
                             // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
-                            \App\Jobs\SendBiometricConsentEmail::dispatch($record->load('gym'));
+                            dispatch(new SendBiometricConsentEmail($record->load('gym')));
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Consent email sent to ' . $record->email)
                                 ->success()
                                 ->send();
                         }),
 
-                    Tables\Actions\Action::make('copy_consent_link')
+                    Action::make('copy_consent_link')
                         ->label('Copy Consent Link')
                         ->icon('heroicon-o-link')
                         ->color('gray')
                         ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
                         ->action(function (GymMember $record, $livewire) {
-                            $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                            $url = URL::temporarySignedRoute(
                                 'biometric.consent.show',
                                 now()->addDays(7),
                                 [
@@ -464,19 +477,19 @@ class GymMemberResource extends BaseResource
                                 navigator.clipboard.writeText({$escapedUrl});
                             ");
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Link copied')
                                 ->body('Share this link via WhatsApp, SMS, or any channel.')
                                 ->success()
                                 ->send();
                         }),
 
-                    Tables\Actions\Action::make('open_consent_page')
+                    Action::make('open_consent_page')
                         ->label('Open on Tablet (Walk-in)')
                         ->icon('heroicon-o-device-tablet')
                         ->color('gray')
                         ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
-                        ->url(fn (GymMember $record) => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                        ->url(fn (GymMember $record) => URL::temporarySignedRoute(
                             'biometric.consent.show',
                             now()->addHours(1),
                             [
@@ -486,7 +499,7 @@ class GymMemberResource extends BaseResource
                         ))
                         ->openUrlInNewTab(),
 
-                    Tables\Actions\Action::make('revoke_consent')
+                    Action::make('revoke_consent')
                         ->label('Revoke Biometric Consent')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
@@ -502,9 +515,9 @@ class GymMemberResource extends BaseResource
                                 'revoked_at' => now(),
                             ]);
 
-                            \App\Events\BiometricConsentRevoked::dispatch($record);
+                            event(new BiometricConsentRevoked($record));
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Consent revoked')
                                 ->body('All biometric data for ' . $record->name . ' has been deleted.')
                                 ->warning()
@@ -700,16 +713,16 @@ class GymMemberResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGymMembers::route('/'),
-            'create' => Pages\CreateGymMember::route('/create'),
-            'edit' => Pages\EditGymMember::route('/{record}/edit'),
+            'index' => ListGymMembers::route('/'),
+            'create' => CreateGymMember::route('/create'),
+            'edit' => EditGymMember::route('/{record}/edit'),
         ];
     }
 
     public static function getDetailsFormSchema(): array
     {
         return [
-            Forms\Components\FileUpload::make('profile_photo')
+            FileUpload::make('profile_photo')
                 ->image()
                 ->avatar()
                 ->imageEditor()
@@ -718,19 +731,19 @@ class GymMemberResource extends BaseResource
                 ->maxSize(2048)
                 ->columnSpanFull(),
 
-            Forms\Components\TextInput::make('name')
+            TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->placeholder('e.g., John Doe')
                 ->autofocus()
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
-            Forms\Components\TextInput::make('email')
+            TextInput::make('email')
                 ->email()
                 ->required()
                 ->maxLength(255)
                 ->unique(GymMember::class, 'email', ignoreRecord: true)
-                ->rules(['email:rfc', new ValidEmailDomain])
+                ->rules(['email:rfc', new ValidEmailDomain()])
                 ->validationMessages([
                     'email' => 'Please enter a valid email address.',
                     'email.rfc' => 'The email format is invalid.',
@@ -752,25 +765,25 @@ class GymMemberResource extends BaseResource
             AddressForm::make('address')
                 ->columnSpan('full'),
 
-            Forms\Components\TextInput::make('weight')
+            TextInput::make('weight')
                 ->numeric()
                 ->suffix('kg')
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(500)
                 ->placeholder('e.g., 75.5')
-                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
+                ->visible(fn ($livewire) => $livewire instanceof CreateGymMember),
 
-            Forms\Components\TextInput::make('height')
+            TextInput::make('height')
                 ->numeric()
                 ->suffix('cm')
                 ->step(0.01)
                 ->minValue(0)
                 ->maxValue(300)
                 ->placeholder('e.g., 175')
-                ->visible(fn ($livewire) => $livewire instanceof Pages\CreateGymMember),
+                ->visible(fn ($livewire) => $livewire instanceof CreateGymMember),
 
-            Forms\Components\DatePicker::make('dob')
+            DatePicker::make('dob')
                 ->label('Date of Birth')
                 ->placeholder('Select date of birth')
                 ->native(false)
@@ -778,7 +791,7 @@ class GymMemberResource extends BaseResource
                 ->reactive()
                 ->afterStateUpdated(function ($state, callable $set) {
                     if ($state) {
-                        $dob = Carbon::parse($state);
+                        $dob = Date::parse($state);
                         $age = floor($dob->diffInYears(now())); // Calculate age based on current date
                         $set('age', $age);
                     } else {
@@ -786,7 +799,7 @@ class GymMemberResource extends BaseResource
                     }
                 }),
 
-            Forms\Components\TextInput::make('age')
+            TextInput::make('age')
                 ->numeric()
                 ->minValue(0)
                 ->maxValue(150)
@@ -800,30 +813,30 @@ class GymMemberResource extends BaseResource
             Hidden::make('user_id')
                 ->default(fn () => auth()->id()),
 
-            Forms\Components\Section::make('Membership Details')
+            Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
                 ->description('Configure membership settings')
                 ->schema([
-                    Forms\Components\Hidden::make('gym_id')
+                    Hidden::make('gym_id')
                         ->default(function () {
-                            /** @var \App\Models\Gym|null $tenant */
+                            /** @var Gym|null $tenant */
                             $tenant = Filament::getTenant();
 
                             return $tenant?->id;
                         }),
 
-                    Forms\Components\Select::make('trainer_id')
+                    Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
                             // $gymId = $get('gym_id');
                             // if (!$gymId) {
                             //     return [];
                             // }
-                            /** @var \App\Models\Gym|null $tenant */
+                            /** @var Gym|null $tenant */
                             $tenant = Filament::getTenant();
                             $gymId = $tenant?->id;
 
-                            return Trainer::where('gym_id', $gymId)
+                            return Trainer::query()->where('gym_id', $gymId)
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option
@@ -851,10 +864,10 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->afterStateUpdated(function ($state, callable $set, $get) {
                     if ($state) {
-                        $plan = MembershipPlan::find($state);
+                        $plan = MembershipPlan::query()->find($state);
                         if ($plan && $plan->duration) {
                             $start = $get('membership_start') ?? now();
-                            $set('membership_end', Carbon::parse($start)->addMonths($plan->duration)->toDateString());
+                            $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
                             $set('amount', $plan->price);
                         }
                     }
@@ -862,7 +875,7 @@ class GymMemberResource extends BaseResource
                 ->options(function () use ($gymId) {
                     $gymId = $gymId instanceof Closure ? $gymId() : $gymId;
                     if (! $gymId) {
-                        /** @var \App\Models\Gym|null $tenant */
+                        /** @var Gym|null $tenant */
                         $tenant = Filament::getTenant();
                         $gymId = $tenant?->id;
                     }
@@ -883,7 +896,7 @@ class GymMemberResource extends BaseResource
                 ])
                 ->createOptionUsing(function (array $data) {
                     // Create the new state and return its ID
-                    $state = MembershipPlan::create($data);
+                    $state = MembershipPlan::query()->create($data);
 
                     return $state->id;
                 }),
@@ -899,9 +912,9 @@ class GymMemberResource extends BaseResource
                 ->afterStateUpdated(function ($state, callable $set, $get) {
                     $planId = $get('membership_plan_id');
                     if ($planId && $state) {
-                        $plan = MembershipPlan::find($planId);
+                        $plan = MembershipPlan::query()->find($planId);
                         if ($plan && $plan->duration) {
-                            $set('membership_end', Carbon::parse($state)->addMonths($plan->duration)->toDateString());
+                            $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
                         }
                     }
                 }),
@@ -917,7 +930,7 @@ class GymMemberResource extends BaseResource
     public static function getPaymentFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Payment Details')
+            Section::make('Payment Details')
                 ->icon('heroicon-o-credit-card')
                 ->description('Record the member\'s payment')
                 ->schema([
@@ -953,7 +966,7 @@ class GymMemberResource extends BaseResource
                         ->options(collect(PaymentStatus::cases())
                             ->filter(fn ($status) => $status !== PaymentStatus::EXPIRED)
                             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                            ->toArray()
+                            ->all()
                         )
                         ->required(),
 

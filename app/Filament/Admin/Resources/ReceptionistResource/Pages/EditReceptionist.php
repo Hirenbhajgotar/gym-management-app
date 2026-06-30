@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Filament\Admin\Resources\ReceptionistResource;
 use App\Models\EmployeeDetail;
-use Filament\Actions;
+use App\Models\User;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -21,9 +25,9 @@ class EditReceptionist extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make()
+            ViewAction::make()
                 ->icon('heroicon-o-eye'),
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->icon('heroicon-o-trash'),
         ];
     }
@@ -47,7 +51,7 @@ class EditReceptionist extends EditRecord
         /**
          * Load the employee details and address data
          *
-         * @var \App\Models\User $user
+         * @var User $user
          */
         $user = $this->record;
 
@@ -81,7 +85,7 @@ class EditReceptionist extends EditRecord
                 $record->employeeDetails->update($data['employeeDetails']);
             } else {
                 $data['employeeDetails']['user_id'] = $record->id;
-                EmployeeDetail::create($data['employeeDetails']);
+                EmployeeDetail::query()->create($data['employeeDetails']);
             }
         }
 

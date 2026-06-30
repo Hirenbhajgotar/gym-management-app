@@ -1,12 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
 use App\Helpers\BmiHelper;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class MeasurementsRelationManager extends RelationManager
@@ -26,7 +35,7 @@ class MeasurementsRelationManager extends RelationManager
     public static function getMeasurementsFormSchema(): array
     {
         return [
-            Forms\Components\DatePicker::make('measured_at')
+            DatePicker::make('measured_at')
                 ->label('Measured Date')
                 ->native(false)
                 ->closeOnDateSelection(true)
@@ -35,7 +44,7 @@ class MeasurementsRelationManager extends RelationManager
                 ->maxDate(now())
                 ->columnSpanFull(),
 
-            Forms\Components\TextInput::make('weight')
+            TextInput::make('weight')
                 ->label('Weight (kg)')
                 ->suffix('kg')
                 ->numeric()
@@ -46,7 +55,7 @@ class MeasurementsRelationManager extends RelationManager
                     self::updateBmi($get, $set);
                 }),
 
-            Forms\Components\TextInput::make('height')
+            TextInput::make('height')
                 ->label('Height (cm)')
                 ->suffix('cm')
                 ->numeric()
@@ -57,13 +66,13 @@ class MeasurementsRelationManager extends RelationManager
                     self::updateBmi($get, $set);
                 }),
 
-            Forms\Components\TextInput::make('bmi')
+            TextInput::make('bmi')
                 ->label('BMI')
                 ->disabled()
                 ->dehydrated(false) // We calculate this in the model
                 ->suffix(fn ($state) => self::getBmiStatus($state)),
 
-            Forms\Components\Textarea::make('notes')
+            Textarea::make('notes')
                 ->columnSpanFull(),
         ];
     }
@@ -93,50 +102,50 @@ class MeasurementsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('measured_at')
             ->columns([
-                Tables\Columns\TextColumn::make('measured_at')
+                TextColumn::make('measured_at')
                     ->date()
                     ->sortable()
                     ->label('Date'),
 
-                Tables\Columns\TextColumn::make('weight')
+                TextColumn::make('weight')
                     ->label('Weight')
                     ->suffix(' kg')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('height')
+                TextColumn::make('height')
                     ->label('Height')
                     ->suffix(' cm')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('bmi')
+                TextColumn::make('bmi')
                     ->label('BMI')
                     ->badge()
                     ->color(fn ($state) => BmiHelper::getColor($state))
                     ->description(fn ($record) => $record->status ?? ''),
 
-                Tables\Columns\TextColumn::make('notes')
+                TextColumn::make('notes')
                     ->limit(30),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Record Measurement')
                     ->successNotificationTitle('Measurement Added')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->successNotificationTitle('Measurement Updated')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->successNotificationTitle('Measurement Deleted')
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
                 ]),
             ])

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Interfaces\WhatsAppServiceInterface;
@@ -12,7 +14,9 @@ use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
@@ -119,21 +123,15 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             // Use sandbox sender when in sandbox mode
             $phoneNumber = config('services.twilio.sandbox_number', '+15557626186');
 
-            if (! $phoneNumber) {
-                throw new Exception('No phone number configured for this gym');
-            }
+            throw_unless($phoneNumber, Exception::class, 'No phone number configured for this gym');
 
             $contentSid = config('services.twilio.whatsapp_integration_active_v5_template_sid');
 
-            if (! $contentSid) {
-                throw new Exception('No template SID configured for this gym');
-            }
+            throw_unless($contentSid, Exception::class, 'No template SID configured for this gym');
 
-            $gym = Gym::where('id', $this->tenantId)->first();
+            $gym = Gym::query()->where('id', $this->tenantId)->first();
 
-            if (! $gym) {
-                throw new Exception('No gym found for this tenant ID');
-            }
+            throw_unless($gym, Exception::class, 'No gym found for this tenant ID');
 
             $twilioMessage = $client->messages->create("whatsapp:$to", [
                 'from' => "whatsapp:$phoneNumber",
@@ -194,7 +192,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             $client = $this->getClient();
 
-            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
             $phoneNumber = $account?->phoneNumber?->phone_number;
 
             if (! $phoneNumber) {
@@ -295,11 +293,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             );
         }
 
-        $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
 
-        if (! $account) {
-            throw new Exception('No WhatsApp account found for this gym');
-        }
+        throw_unless($account, Exception::class, 'No WhatsApp account found for this gym');
 
         return new Client(
             $account->twilio_account_sid,
@@ -316,7 +312,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
             $query = WhatsAppTemplate::query()
                 ->where('name', $templateName)
                 ->where('status', 'approved')
-                ->where(function ($q) {
+                ->where(function (Builder $q) {
                     $q->where('gym_id', $this->tenantId);
 
                     if ($this->useSandbox) {
@@ -344,7 +340,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
             $client = $this->getClient();
 
-            $account = WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
             $phoneNumber = $account?->phoneNumber?->phone_number;
 
             if (! $phoneNumber) {
@@ -439,7 +435,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
                     }
 
                     // Add a small delay to avoid hitting Twilio rate limits (approx. 20 messages per second)
-                    usleep(50000);
+                    Sleep::usleep(50000);
                 }
             });
 
@@ -470,7 +466,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         $member = GymMember::with(['gym', 'membershipPlan', 'trainer', 'latestPayment'])
             ->find($recipient->member_id);
 
-        $resolver = app(WhatsAppVariableResolver::class);
+        $resolver = resolve(WhatsAppVariableResolver::class);
 
         return $resolver->resolve($template, [
             'member' => $member,
@@ -480,11 +476,9 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     protected function checkAndDeductCredits(int $count = 1): void
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->tenantId)->first();
 
-        if (! $credit || ! $credit->canSendMessage($count)) {
-            throw new Exception('Insufficient message credits. Please purchase more credits.');
-        }
+        throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 
         if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
             $credit->useWelcomeCredit();
@@ -498,7 +492,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         WhatsAppTemplate $template,
         $twilioMessage
     ): void {
-        WhatsAppUsageLog::create([
+        WhatsAppUsageLog::query()->create([
             'gym_id' => $this->tenantId,
             'whatsapp_template_id' => $template->id,
             'twilio_message_sid' => $twilioMessage->sid,
@@ -512,7 +506,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     public function getCreditBalance(): array
     {
-        $credit = WhatsAppMessageCredit::where('gym_id', $this->tenantId)->first();
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->tenantId)->first();
 
         if (! $credit) {
             return [
@@ -536,7 +530,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
 
     public function getMonthlyUsage(int $year, int $month): array
     {
-        $logs = WhatsAppUsageLog::where('gym_id', $this->tenantId)
+        $logs = WhatsAppUsageLog::query()->where('gym_id', $this->tenantId)
             ->whereYear('sent_at', $year)
             ->whereMonth('sent_at', $month)
             ->get();

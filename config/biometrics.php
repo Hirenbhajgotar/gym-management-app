@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'liveness_threshold' => env('BIOMETRIC_LIVENESS_THRESHOLD', 0.75),
     'confidence_threshold' => env('BIOMETRIC_CONFIDENCE_THRESHOLD', 0.80),

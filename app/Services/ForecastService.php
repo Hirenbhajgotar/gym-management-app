@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
@@ -8,6 +10,7 @@ use App\Models\MemberPayment;
 use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 class ForecastService
 {
@@ -19,7 +22,7 @@ class ForecastService
     {
         // Get last 6 months of actual data
         $historicalData = Trend::query(
-            MemberPayment::where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
+            MemberPayment::query()->where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
         )
             ->between(
                 start: now()->subMonths(6),
@@ -39,7 +42,7 @@ class ForecastService
         // Get last 6 months of active member counts
         // Note: This is an approximation using created_at count for growth trend
         $historicalData = Trend::query(
-            GymMember::where('gym_id', $gymId)
+            GymMember::query()->where('gym_id', $gymId)
         )
             ->between(
                 start: now()->subMonths(6),
@@ -84,7 +87,7 @@ class ForecastService
 
         $divisor = ($n * $sumXX) - ($sumX * $sumX);
 
-        if ($divisor == 0) {
+        if ($divisor === 0) {
             $slope = 0;
         } else {
             $slope = (($n * $sumXY) - ($sumX * $sumY)) / $divisor;
@@ -94,7 +97,7 @@ class ForecastService
 
         // Generate forecast
         $forecast = [];
-        $lastDate = \Carbon\Carbon::parse($historicalData->last()->date);
+        $lastDate = Date::parse($historicalData->last()->date);
 
         for ($i = 1; $i <= $monthsToForecast; $i++) {
             $nextIndex = $n - 1 + $i; // Continue 'x' sequence
@@ -120,7 +123,7 @@ class ForecastService
     {
         if ($metric === 'revenue') {
             $historical = Trend::query(
-                MemberPayment::where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
+                MemberPayment::query()->where('gym_id', $gymId)->where('status', PaymentStatus::COMPLETED)
             )
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()
@@ -130,7 +133,7 @@ class ForecastService
 
         } else {
             $historical = Trend::query(
-                GymMember::where('gym_id', $gymId)
+                GymMember::query()->where('gym_id', $gymId)
             )
                 ->between(start: now()->subMonths(6), end: now())
                 ->perMonth()
@@ -140,10 +143,10 @@ class ForecastService
         }
 
         $formattedHistory = $historical->map(fn (TrendValue $val) => [
-            'date' => \Carbon\Carbon::parse($val->date)->format('M Y'),
+            'date' => Date::parse($val->date)->format('M Y'),
             'value' => $val->aggregate,
             'type' => 'actual',
-        ])->values()->toArray();
+        ])->values()->all();
 
         return array_merge($formattedHistory, $forecast);
     }

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ReportGoalResource\Pages;
 
 use App\Filament\Admin\Resources\ReportGoalResource;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -12,7 +15,7 @@ class CreateReportGoal extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         $data['gym_id'] = $gym?->id;

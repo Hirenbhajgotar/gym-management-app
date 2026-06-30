@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,25 +19,25 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $gym_size
  * @property string|null $business_description
  * @property string|null $special_requirements
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\BusinessType|null $businessType
- * @property-read \App\Models\Gym|null $gym
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read BusinessType|null $businessType
+ * @property-read Gym|null $gym
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereBusinessDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereBusinessTypeId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereGymSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereNumberOfLocations($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereSpecialRequirements($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereWebsite($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BusinessDetail whereYearsInBusiness($value)
+ * @method static Builder<static>|BusinessDetail newModelQuery()
+ * @method static Builder<static>|BusinessDetail newQuery()
+ * @method static Builder<static>|BusinessDetail query()
+ * @method static Builder<static>|BusinessDetail whereBusinessDescription($value)
+ * @method static Builder<static>|BusinessDetail whereBusinessTypeId($value)
+ * @method static Builder<static>|BusinessDetail whereCreatedAt($value)
+ * @method static Builder<static>|BusinessDetail whereGymId($value)
+ * @method static Builder<static>|BusinessDetail whereGymSize($value)
+ * @method static Builder<static>|BusinessDetail whereId($value)
+ * @method static Builder<static>|BusinessDetail whereNumberOfLocations($value)
+ * @method static Builder<static>|BusinessDetail whereSpecialRequirements($value)
+ * @method static Builder<static>|BusinessDetail whereUpdatedAt($value)
+ * @method static Builder<static>|BusinessDetail whereWebsite($value)
+ * @method static Builder<static>|BusinessDetail whereYearsInBusiness($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperBusinessDetail

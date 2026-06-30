@@ -49,7 +49,7 @@ class WhatsAppTemplateStatusChangedNotification extends Notification implements 
             default => "Your WhatsApp template **\"{$this->template->display_name}\"** status has changed from **{$this->oldStatus}** to **{$statusLabel}**.",
         };
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject($subject)
             ->greeting("Hello {$notifiable->name},")
             ->line($body)

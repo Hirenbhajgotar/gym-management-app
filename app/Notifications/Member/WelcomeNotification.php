@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Notifications\Member;
 
+use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
 use App\Notifications\BaseTenantNotification;
+use App\Services\WhatsAppVariableResolver;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class WelcomeNotification extends BaseTenantNotification
 {
@@ -24,14 +28,14 @@ class WelcomeNotification extends BaseTenantNotification
 
     protected function getNotificationType(): string
     {
-        return \App\Enums\NotificationType::WELCOME->value;
+        return NotificationType::WELCOME->value;
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $memberName = $this->member->name ?? 'Member';
 
-        $mail = (new MailMessage)
+        $mail = (new MailMessage())
             ->from($this->gym->owner_email, $this->gym->name)
             ->subject("Welcome to {$this->gym->name}")
             ->greeting("Hello {$memberName},")
@@ -41,8 +45,8 @@ class WelcomeNotification extends BaseTenantNotification
 
         // Attach invoice if exists on the latest payment
         $latestPayment = $this->member->latestPayment;
-        if ($latestPayment && $latestPayment->invoice_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($latestPayment->invoice_path)) {
-            $mail->attach(\Illuminate\Support\Facades\Storage::disk('local')->path($latestPayment->invoice_path), [
+        if ($latestPayment && $latestPayment->invoice_path && Storage::disk('local')->exists($latestPayment->invoice_path)) {
+            $mail->attach(Storage::disk('local')->path($latestPayment->invoice_path), [
                 'as' => $latestPayment->invoice_number . '.pdf',
                 'mime' => 'application/pdf',
             ]);
@@ -77,9 +81,9 @@ class WelcomeNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
-                'template_variables' => app(\App\Services\WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
+                'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
                 'error' => $e->getMessage(),
                 'member_id' => $this->member->id,

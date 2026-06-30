@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
+use Exception;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -30,7 +34,7 @@ class ProcessWabaSetupAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many setup attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many setup attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -50,10 +54,10 @@ class ProcessWabaSetupAction
             $existing->update($accountData);
             $this->page->whatsappAccount = $existing->fresh();
         } else {
-            $whatsappAccount = WhatsAppAccount::create($accountData);
+            $whatsappAccount = WhatsAppAccount::query()->create($accountData);
             $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber']);
         }
         $this->page->accountCreated = true;
-        \Filament\Notifications\Notification::make()->title('WABA Configured')->success()->send();
+        Notification::make()->title('WABA Configured')->success()->send();
     }
 }

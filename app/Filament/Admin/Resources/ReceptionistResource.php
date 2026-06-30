@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
@@ -7,12 +9,18 @@ use App\Enums\DefaultRole;
 use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
-use App\Filament\Admin\Resources\ReceptionistResource\Pages;
+use App\Filament\Admin\Resources\ReceptionistResource\Pages\CreateReceptionist;
+use App\Filament\Admin\Resources\ReceptionistResource\Pages\EditReceptionist;
+use App\Filament\Admin\Resources\ReceptionistResource\Pages\ListReceptionists;
+use App\Filament\Admin\Resources\ReceptionistResource\Pages\ViewReceptionist;
 use App\Filament\Exports\ReceptionistExporter;
 use App\Imports\ReceptionistsImport;
 use App\Models\User;
-use Filament\Actions;
-use Filament\Tables;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Illuminate\Database\Eloquent\Builder;
 
 class ReceptionistResource extends BaseEmployeeResource
@@ -35,10 +43,10 @@ class ReceptionistResource extends BaseEmployeeResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListReceptionists::route('/'),
-            'create' => Pages\CreateReceptionist::route('/create'),
-            'edit' => Pages\EditReceptionist::route('/{record}/edit'),
-            'view' => Pages\ViewReceptionist::route('/{record}'),
+            'index' => ListReceptionists::route('/'),
+            'create' => CreateReceptionist::route('/create'),
+            'edit' => EditReceptionist::route('/{record}/edit'),
+            'view' => ViewReceptionist::route('/{record}'),
         ];
     }
 
@@ -71,9 +79,9 @@ class ReceptionistResource extends BaseEmployeeResource
     protected static function getTableActions(): array
     {
         return [
-            Tables\Actions\ViewAction::make(),
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
+            ViewAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 
@@ -83,7 +91,7 @@ class ReceptionistResource extends BaseEmployeeResource
     public static function getCommonHeaderActions(): array
     {
         return [
-            Actions\Action::make('managePermissions')
+            Action::make('managePermissions')
                 ->label('Manage Permissions')
                 ->color('info')
                 ->icon('heroicon-o-key')
@@ -112,7 +120,7 @@ class ReceptionistResource extends BaseEmployeeResource
                 ->visible(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel()))
                 ->authorize(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel())),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];

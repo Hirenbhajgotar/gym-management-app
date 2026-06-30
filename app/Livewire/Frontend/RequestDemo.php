@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Frontend;
 
 use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
-use App\Providers\WhatsAppProviderFactory;
 use App\Rules\ValidEmailDomain;
-use App\Services\TwilioWhatsAppService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -36,7 +38,7 @@ class RequestDemo extends Component
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'email', 'max:255', new ValidEmailDomain],
+            'email' => ['required', 'email', 'max:255', new ValidEmailDomain()],
             'phone' => ['required', 'phone:US,IN,PK'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'gym_size' => ['nullable', 'integer', 'min:1', 'max:100000'],
@@ -80,7 +82,7 @@ class RequestDemo extends Component
 
         try {
             // Create the request contact record
-            $requestContact = RequestContact::create([
+            $requestContact = RequestContact::query()->create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
@@ -115,13 +117,13 @@ class RequestDemo extends Component
 
             // Optional: Redirect to thank you page or home
             // return redirect()->route('home');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Validation errors are automatically displayed
             $this->dispatch(
                 'show-error',
                 message: 'Validation error. Please check the form and correct the errors.',
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Request Demo Submission Error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -153,7 +155,7 @@ class RequestDemo extends Component
                         'request_id' => $requestContact->id,
                         'admin_email' => $adminEmail,
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Failed to send demo request email', [
                         'error' => $e->getMessage(),
                         'request_id' => $requestContact->id,
@@ -168,14 +170,14 @@ class RequestDemo extends Component
                         $requestContact,
                         $adminPhone,
                     );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Failed to send demo request WhatsApp', [
                         'error' => $e->getMessage(),
                         'request_id' => $requestContact->id,
                     ]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send admin notifications', [
                 'error' => $e->getMessage(),
                 'request_id' => $requestContact->id,
@@ -245,7 +247,7 @@ class RequestDemo extends Component
             //         'error' => $result['error'] ?? 'Unknown error',
             //     ]);
             // }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WhatsApp notification error', [
                 'error' => $e->getMessage(),
                 'request_id' => $requestContact->id,

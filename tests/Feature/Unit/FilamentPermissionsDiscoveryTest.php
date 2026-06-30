@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Unit;
 
 use Tests\TestCase;
@@ -13,6 +15,6 @@ class FilamentPermissionsDiscoveryTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertOk();
     }
 }

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications\Channels;
 
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 
 class FilamentChannel
@@ -35,7 +38,7 @@ class FilamentChannel
         if (isset($filamentData['actions']) && is_array($filamentData['actions'])) {
             $actions = [];
             foreach ($filamentData['actions'] as $actionData) {
-                $action = \Filament\Notifications\Actions\Action::make($actionData['name'] ?? 'action')
+                $action = Action::make($actionData['name'] ?? 'action')
                     ->label($actionData['label'] ?? 'Action');
 
                 if (isset($actionData['url'])) {

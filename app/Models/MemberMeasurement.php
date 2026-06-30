@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Helpers\BmiHelper;
@@ -52,12 +54,15 @@ class MemberMeasurement extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'weight' => 'decimal:2',
-        'height' => 'decimal:2',
-        'bmi' => 'decimal:2',
-        'measured_at' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'decimal:2',
+            'height' => 'decimal:2',
+            'bmi' => 'decimal:2',
+            'measured_at' => 'date',
+        ];
+    }
 
     protected static function booted()
     {
@@ -68,12 +73,15 @@ class MemberMeasurement extends Model
         });
     }
 
+    /**
+     * @return BelongsTo<GymMember, $this>
+     */
     public function gymMember(): BelongsTo
     {
         return $this->belongsTo(GymMember::class);
     }
 
-    public function status(): Attribute
+    protected function status(): Attribute
     {
         return Attribute::make(
             get: function () {

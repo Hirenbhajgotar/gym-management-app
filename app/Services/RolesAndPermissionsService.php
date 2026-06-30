@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Models\Gym;
-use App\Models\Permission;
 use App\Models\User;
 use App\Traits\DefaultPermissionResourceTrait;
 use App\Traits\DerivesPermissionsSlug;
+use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -26,7 +29,7 @@ class RolesAndPermissionsService
     protected function getDiscoveryService(): PermissionDiscoveryService
     {
         if ($this->discoveryService === null) {
-            $this->discoveryService = app(PermissionDiscoveryService::class);
+            $this->discoveryService = resolve(PermissionDiscoveryService::class);
         }
 
         return $this->discoveryService;
@@ -48,7 +51,7 @@ class RolesAndPermissionsService
             $roles = DefaultRole::tenantRoles();
 
             // Idempotent check: If roles already exist, skip.
-            $existingCount = Role::where('gym_id', $tenant->id)
+            $existingCount = Role::query()->where('gym_id', $tenant->id)
                 ->whereIn('name', array_column($roles, 'value'))
                 ->count();
 
@@ -65,10 +68,10 @@ class RolesAndPermissionsService
             ], $roles);
 
             // Use bulk insert to minimize DB queries
-            Role::insert($roleData);
+            Role::query()->insert($roleData);
 
             // Fetch the created role IDs mapped by name
-            $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+            $createdRoles = Role::query()->whereIn('name', array_column($roleData, 'name'))
                 ->where('gym_id', $tenant->id)
                 ->pluck('id', 'name');
 
@@ -80,16 +83,12 @@ class RolesAndPermissionsService
 
                 $defaultPermissions = $this->getDiscoveryService()->getDefaultPermissionsForRole($role);
 
-                $roleModel = Role::firstOrCreate(
-                    ['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]
-                );
+                $roleModel = Role::query()->firstOrCreate(['name' => $role->value, 'guard_name' => $guardName, 'gym_id' => $tenant->id]);
 
-                if (! empty($defaultPermissions)) {
-                    $roleModel->syncPermissions($defaultPermissions);
-                }
+                $roleModel->syncPermissions($defaultPermissions);
             }
             // Forget cache only once at the end
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            resolve(PermissionRegistrar::class)->forgetCachedPermissions();
         });
     }
 
@@ -309,21 +308,19 @@ class RolesAndPermissionsService
      * process has its own static copy, so there is no cross-request
      * contamination.
      *
-     * @throws \Exception If the role does not exist for the given gym.
+     * @throws Exception If the role does not exist for the given gym.
      */
     public function assignRoleToTenant(?Gym $tenant, User $user, DefaultRole $roleName): void
     {
-        if (! $tenant) {
-            throw new \Exception('Gym not found.');
-        }
+        throw_unless($tenant, Exception::class, 'Gym not found.');
 
         // Ensure the role exists for the tenant
-        $role = Role::where('name', $roleName->value)
+        $role = Role::query()->where('name', $roleName->value)
             ->where('gym_id', $tenant->id)
             ->first();
 
         if (! $role) {
-            throw new \Exception("Role {$roleName->value} does not exist for this tenant.");
+            throw new Exception("Role {$roleName->value} does not exist for this tenant.");
         }
 
         // Set the team ID so Spatie writes the correct gym_id to the
@@ -373,7 +370,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -393,7 +390,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -409,7 +406,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -453,7 +450,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -479,7 +476,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -491,7 +488,7 @@ class RolesAndPermissionsService
                 foreach ($defaultRolePerms as $role => $actions) {
                     $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
 
-                    if (! empty($actions)) {
+                    if (filled($actions)) {
                         $assignments[$roleName][] = "page_{$prefix}";
                     }
                 }
@@ -504,7 +501,7 @@ class RolesAndPermissionsService
                     continue;
                 }
 
-                if (! $reflection->implementsInterface(\App\Contracts\HasFilamentPermissions::class)) {
+                if (! $reflection->implementsInterface(HasFilamentPermissions::class)) {
                     continue;
                 }
 
@@ -516,7 +513,7 @@ class RolesAndPermissionsService
                 foreach ($defaultRolePerms as $role => $actions) {
                     $roleName = $role instanceof DefaultRole ? $role->value : (string) $role;
 
-                    if (! empty($actions)) {
+                    if (filled($actions)) {
                         $assignments[$roleName][] = "widget_{$prefix}";
                     }
                 }
@@ -560,7 +557,7 @@ class RolesAndPermissionsService
     public function generateResourcePermissions(string $prefix, ?array $actions = null): array
     {
         $actions ??= config('filament-permissions.resource_actions', []);
-        $guard = config('filament-permissions.guard_name', 'web');
+        config('filament-permissions.guard_name', 'web');
 
         return array_map(
             fn (string $action) => "{$action}_{$prefix}",

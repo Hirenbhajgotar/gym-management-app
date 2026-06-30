@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseWidget;
 use App\Models\ExpenseBudget;
+use App\Models\Gym;
 use Filament\Facades\Filament;
-use Filament\Widgets\Widget;
 
 /**
  * Dashboard widget showing budget usage overview with progress bars.
@@ -24,7 +26,7 @@ class BudgetOverviewWidget extends BaseWidget
     public function defaultRolePermissions(): array
     {
         return [
-            DefaultRole::MANAGER->value => ['page'],
+            DefaultRole::MANAGER->value => ['widget'],
             DefaultRole::RECEPTIONIST->value => [],
             DefaultRole::TRAINER->value => [],
         ];
@@ -41,7 +43,7 @@ class BudgetOverviewWidget extends BaseWidget
 
     public function getBudgets()
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         if (! $gym) {

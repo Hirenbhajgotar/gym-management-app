@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
 use App\Enums\Currency;
@@ -8,11 +10,13 @@ use App\Enums\PaymentStatus;
 use App\Helpers\DateHelper;
 use App\Helpers\Number;
 use App\Models\City;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
+use App\Models\Trainer;
 use App\Services\AvatarService;
-use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -45,7 +49,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     {
         $membershipPlan = null;
         if (isset($row['membership_plan'])) {
-            $membershipPlan = MembershipPlan::where('name', $row['membership_plan'])->first();
+            $membershipPlan = MembershipPlan::query()->where('name', $row['membership_plan'])->first();
 
             if (! $membershipPlan) {
                 throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
@@ -54,7 +58,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
         $trainer = null;
         if (isset($row['trainer_email'])) {
-            $trainer = \App\Models\Trainer::where('email', $row['trainer_email'])->first();
+            $trainer = Trainer::query()->where('email', $row['trainer_email'])->first();
         }
 
         if (isset($row['dob'])) {
@@ -67,10 +71,10 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
         $profileImagePath = null;
         if (isset($row['name'])) {
-            $profileImagePath = app(AvatarService::class)->generate($row['name']);
+            $profileImagePath = resolve(AvatarService::class)->generate($row['name']);
         }
 
-        $gymMember = GymMember::create([
+        $gymMember = GymMember::query()->create([
             'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'profile_photo' => $profileImagePath,
@@ -84,11 +88,11 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'payment_status' => $row['payment_status'] ?? PaymentStatus::PENDING,
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
-            'user_id' => \App\Models\Gym::find($this->tenantId)?->owner()->id ?? null,
+            'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
         ]);
 
         if ($membershipPlan) {
-            $membershipStart = $row['membership_start'] ? Carbon::parse($row['membership_start']) : now();
+            $membershipStart = $row['membership_start'] ? Date::parse($row['membership_start']) : now();
             $membershipEnd = $membershipStart->copy()->addMonths($membershipPlan->duration);
 
             $gymMember->payments()->create([

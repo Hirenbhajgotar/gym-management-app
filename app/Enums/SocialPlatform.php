@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasColor;
@@ -12,7 +14,7 @@ enum SocialPlatform: string implements HasColor, HasLabel
     case WhatsApp = 'whatsapp';
     case YouTube = 'youtube';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::Facebook => 'Facebook',
@@ -22,7 +24,7 @@ enum SocialPlatform: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::Facebook => 'blue',

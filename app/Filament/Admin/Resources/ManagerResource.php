@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
@@ -7,12 +9,18 @@ use App\Enums\DefaultRole;
 use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
-use App\Filament\Admin\Resources\ManagerResource\Pages;
+use App\Filament\Admin\Resources\ManagerResource\Pages\CreateManager;
+use App\Filament\Admin\Resources\ManagerResource\Pages\EditManager;
+use App\Filament\Admin\Resources\ManagerResource\Pages\ListManagers;
+use App\Filament\Admin\Resources\ManagerResource\Pages\ViewManager;
 use App\Filament\Exports\ManagerExporter;
 use App\Imports\ManagersImport;
 use App\Models\User;
-use Filament\Actions;
-use Filament\Tables;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Illuminate\Database\Eloquent\Builder;
 
 class ManagerResource extends BaseEmployeeResource
@@ -47,10 +55,10 @@ class ManagerResource extends BaseEmployeeResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListManagers::route('/'),
-            'create' => Pages\CreateManager::route('/create'),
-            'edit' => Pages\EditManager::route('/{record}/edit'),
-            'view' => Pages\ViewManager::route('/{record}'),
+            'index' => ListManagers::route('/'),
+            'create' => CreateManager::route('/create'),
+            'edit' => EditManager::route('/{record}/edit'),
+            'view' => ViewManager::route('/{record}'),
         ];
     }
 
@@ -83,9 +91,9 @@ class ManagerResource extends BaseEmployeeResource
     protected static function getTableActions(): array
     {
         return [
-            Tables\Actions\ViewAction::make(),
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
+            ViewAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 
@@ -95,7 +103,7 @@ class ManagerResource extends BaseEmployeeResource
     public static function getCommonHeaderActions(): array
     {
         return [
-            Actions\Action::make('managePermissions')
+            Action::make('managePermissions')
                 ->label('Manage Permissions')
                 ->color('info')
                 ->icon('heroicon-o-key')
@@ -124,7 +132,7 @@ class ManagerResource extends BaseEmployeeResource
                 ->visible(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel()))
                 ->authorize(fn (): bool => auth()->user()->can('import_' . static::getPermissionLabel())),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];

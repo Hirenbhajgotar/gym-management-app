@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Http\Controllers\Controller;
+use App\Models\BiometricDevice;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +19,7 @@ class BiometricDeviceController extends Controller
 
     public function heartbeat(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         $device->last_heartbeat_at = now();
@@ -29,7 +33,7 @@ class BiometricDeviceController extends Controller
 
     public function config(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         $provider = $this->registry->resolve($device->provider_type, is_array($device->provider_config) ? $device->provider_config : []);
@@ -63,7 +67,7 @@ class BiometricDeviceController extends Controller
 
     public function testConnection(Request $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         try {
@@ -76,7 +80,7 @@ class BiometricDeviceController extends Controller
                     ? 'Connection successful'
                     : 'Provider not available',
             ], $isAvailable ? 200 : 503);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Connection failed: ' . $e->getMessage(),

@@ -8,6 +8,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Attendances as ClustersAttendances;
 use App\Models\Attendances;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
@@ -18,9 +19,11 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
-use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -66,6 +69,9 @@ abstract class BaseAttendanceResource extends BaseResource
         return auth()->check();
     }
 
+    /**
+     * @return Builder<\App\Models\Attendances>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -77,7 +83,7 @@ abstract class BaseAttendanceResource extends BaseResource
     public static function form(Form $form): Form
     {
         /**
-         * @var \App\Models\Gym $currentGym
+         * @var Gym $currentGym
          */
         $currentGym = Filament::getTenant();
         $attendanceableModel = static::getAttendanceableType();
@@ -187,7 +193,7 @@ abstract class BaseAttendanceResource extends BaseResource
                     ->label('Device')
                     ->badge()
                     ->color('warning')
-                    ->hidden(fn (): bool => ! in_array('device_id', (new Attendances)->getFillable())),
+                    ->hidden(fn (): bool => ! in_array('device_id', (new Attendances())->getFillable())),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -196,7 +202,7 @@ abstract class BaseAttendanceResource extends BaseResource
                 SelectFilter::make('attendanceable_id')
                     ->label('Member')
                     ->options(function () {
-                        /** @var \App\Models\Gym $currentGym */
+                        /** @var Gym $currentGym */
                         $currentGym = Filament::getTenant();
                         $modelClass = static::getAttendanceableType();
 
@@ -255,11 +261,11 @@ abstract class BaseAttendanceResource extends BaseResource
                     ->modalDescription('Are you sure you want to mark this ' . static::getEntityType() . ' as absent?')
                     ->modalSubmitActionLabel('Yes, Mark Absent')
                     ->visible(fn (Attendances $record) => ! $record->check_in_time && ! $record->check_out_time),
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
 
                     BulkAction::make('markAbsent')
                         ->label('Mark as Absent')

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Services;
 
 use App\Models\Gym;
@@ -24,7 +26,7 @@ class TwilioAccountManagerTest extends TestCase
     {
         parent::setUp();
         $this->gym = Gym::factory()->create();
-        $this->account = WhatsAppAccount::create([
+        $this->account = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'twilio_account_sid' => 'ACtest123',
             'twilio_auth_token' => 'test_token',
@@ -37,7 +39,7 @@ class TwilioAccountManagerTest extends TestCase
     public function it_registers_whatsapp_sender_when_purchasing_number(): void
     {
         // Mock Twilio Client and its nested resources
-        $mockClient = Mockery::mock(Client::class);
+        Mockery::mock(Client::class);
         $mockSubClient = Mockery::mock(Client::class);
 
         // Mock IncomingPhoneNumbers
@@ -92,7 +94,7 @@ class TwilioAccountManagerTest extends TestCase
         // Assertions
         $this->assertTrue($result['success']);
 
-        $phoneNumberRecord = WhatsAppPhoneNumber::where('phone_number', '+14155551234')->first();
+        $phoneNumberRecord = WhatsAppPhoneNumber::query()->where('phone_number', '+14155551234')->first();
         $this->assertNotNull($phoneNumberRecord);
         $this->assertEquals('PN123', $phoneNumberRecord->phone_number_sid);
         $this->assertEquals('XE123', $phoneNumberRecord->channel_sender_sid); // Should store Sender SID

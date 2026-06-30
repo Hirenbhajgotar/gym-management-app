@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasColor;
@@ -14,7 +16,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
     case CANCELLED = 'cancelled';
     case FAILED = 'failed';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::DRAFT => 'Draft',

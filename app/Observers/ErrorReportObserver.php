@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
 use App\Helpers\ParserHelper;
@@ -12,7 +14,7 @@ class ErrorReportObserver
      */
     public function created(ErrorReport $errorReport): void
     {
-        $this->clearCache($errorReport);
+        $this->clearCache();
     }
 
     /**
@@ -20,7 +22,7 @@ class ErrorReportObserver
      */
     public function updated(ErrorReport $errorReport): void
     {
-        $this->clearCache($errorReport);
+        $this->clearCache();
     }
 
     /**
@@ -28,7 +30,7 @@ class ErrorReportObserver
      */
     public function deleted(ErrorReport $errorReport): void
     {
-        $this->clearCache($errorReport);
+        $this->clearCache();
     }
 
     /**
@@ -36,7 +38,7 @@ class ErrorReportObserver
      */
     public function restored(ErrorReport $errorReport): void
     {
-        $this->clearCache($errorReport);
+        $this->clearCache();
     }
 
     /**
@@ -44,10 +46,10 @@ class ErrorReportObserver
      */
     public function forceDeleted(ErrorReport $errorReport): void
     {
-        $this->clearCache($errorReport);
+        $this->clearCache();
     }
 
-    private function clearCache(ErrorReport $errorReport): void
+    private function clearCache(): void
     {
         $keys = [
             ErrorReport::NAVIGATION_BADGE_CACHE_KEY,

@@ -1,20 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages\CreatePermissionSetting;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages\EditPermissionSetting;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages\ListPermissionSettings;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages\ViewPermissionSetting;
 use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\Permission;
 use App\Models\PermissionSetting;
-use Filament\Forms;
+use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -43,15 +54,15 @@ class PermissionSettingResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('role')
+                Select::make('role')
                     ->options(DefaultRole::class)
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->helperText('Enter a unique role name (e.g., manager, trainer).'),
 
-                Forms\Components\Select::make('default_permissions')
+                Select::make('default_permissions')
                     ->multiple()
-                    ->options(fn () => Permission::whereNotNull('category')
+                    ->options(fn () => Permission::query()->whereNotNull('category')
                         ->where('category', '!=', '')
                         ->orderBy('category')
                         ->orderBy('name')
@@ -59,34 +70,34 @@ class PermissionSettingResource extends BaseResource
                         ->groupBy('category')
                         ->mapWithKeys(function ($permissions, $category) {
                             return [$category => $permissions->pluck('name', 'name')->toArray()];
-                        })->toArray())
+                        })->all())
                     ->searchable()
                     ->optionsLimit(300)
                     ->searchingMessage('Searching permissions...')
                     ->noSearchResultsMessage('No permissions found.')
                     ->helperText('Select default permissions to assign to this role, grouped by category.'),
 
-                Forms\Components\Fieldset::make('Default Resources')
+                Fieldset::make('Default Resources')
                     ->schema([
-                        Forms\Components\Select::make('default_resources.resources')
+                        Select::make('default_resources.resources')
                             ->label('Resources')
                             ->multiple()
                             ->options(PermissionCategory::class)
                             ->default([])
                             ->helperText('Select resource categories for this role.'),
-                        Forms\Components\Select::make('default_resources.widgets')
+                        Select::make('default_resources.widgets')
                             ->label('Widgets')
                             ->multiple()
                             ->options(PermissionCategory::class)
                             ->default([])
                             ->helperText('Select widget categories for this role.'),
-                        Forms\Components\Select::make('default_resources.reports')
+                        Select::make('default_resources.reports')
                             ->label('Reports')
                             ->multiple()
                             ->options(PermissionCategory::class)
                             ->default([])
                             ->helperText('Select report categories for this role.'),
-                        Forms\Components\Select::make('default_resources.other')
+                        Select::make('default_resources.other')
                             ->label('Other')
                             ->multiple()
                             ->options(PermissionCategory::class)
@@ -138,11 +149,11 @@ class PermissionSettingResource extends BaseResource
             ])
             ->actions([
                 ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
 
-                    Tables\Actions\Action::make('importPermissions')
+                    Action::make('importPermissions')
                         ->label('Import Permissions')
                         ->icon('heroicon-o-cloud-arrow-down')
                         ->color('info')
@@ -150,7 +161,7 @@ class PermissionSettingResource extends BaseResource
                         ->modalHeading(fn ($record) => "Import Permissions for {$record->role->value}")
                         ->modalDescription('This will import default permissions for this specific role.')
                         ->action(function ($record) {
-                            ImportDefaultPermissionsJob::dispatch($record->role->value, auth()->id());
+                            dispatch(new ImportDefaultPermissionsJob($record->role->value, auth()->id()));
 
                             Notification::make()
                                 ->title('Permissions Import Queued')
@@ -161,8 +172,8 @@ class PermissionSettingResource extends BaseResource
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -177,10 +188,10 @@ class PermissionSettingResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPermissionSettings::route('/'),
-            'create' => Pages\CreatePermissionSetting::route('/create'),
-            'edit' => Pages\EditPermissionSetting::route('/{record}/edit'),
-            'view' => Pages\ViewPermissionSetting::route('/{record}'),
+            'index' => ListPermissionSettings::route('/'),
+            'create' => CreatePermissionSetting::route('/create'),
+            'edit' => EditPermissionSetting::route('/{record}/edit'),
+            'view' => ViewPermissionSetting::route('/{record}'),
         ];
     }
 }

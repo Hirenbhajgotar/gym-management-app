@@ -8,7 +8,6 @@ use App\Enums\DefaultRole;
 use App\Enums\UserStatus;
 use App\Filament\Admin\Resources\ManagerResource;
 use App\Models\EmployeeDetail;
-use App\Models\Gym;
 use App\Models\User;
 use App\Notifications\ManagerCreate;
 use App\Services\AvatarService;
@@ -84,7 +83,7 @@ class CreateManager extends CreateRecord
         $userData = $this->prepareUserData($data);
 
         // Create the manager user
-        $manager = User::create($userData);
+        $manager = User::query()->create($userData);
 
         // Create associated employee details if provided
         $this->createEmployeeDetails($manager, $data);
@@ -116,7 +115,7 @@ class CreateManager extends CreateRecord
         $data['status'] = UserStatus::ACTIVE;
 
         // Generate avatar if not provided
-        if (empty($data['profile_photo'])) {
+        if (blank($data['profile_photo'])) {
             $data['profile_photo'] = $this->generateAvatar($data['name']);
         }
 
@@ -131,7 +130,7 @@ class CreateManager extends CreateRecord
      */
     private function generateAvatar(string $name): string
     {
-        return app(AvatarService::class)->generate($name);
+        return resolve(AvatarService::class)->generate($name);
     }
 
     /**
@@ -143,11 +142,11 @@ class CreateManager extends CreateRecord
     {
         $employeeData = $data['employeeDetails'] ?? null;
 
-        if (! is_array($employeeData) || empty($employeeData)) {
+        if (! is_array($employeeData) || blank($employeeData)) {
             return;
         }
 
-        EmployeeDetail::create([
+        EmployeeDetail::query()->create([
             ...$employeeData,
             'user_id' => $manager->id,
         ]);
@@ -167,10 +166,6 @@ class CreateManager extends CreateRecord
     private function attachToGym(User $manager): void
     {
         $gym = $this->getGym();
-
-        if (! $gym instanceof Gym) {
-            return;
-        }
 
         $manager->gyms()->attach($gym->id, [
             'role' => DefaultRole::MANAGER->value,

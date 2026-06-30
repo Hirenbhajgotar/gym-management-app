@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Exception;
 use Illuminate\Support\Facades\RateLimiter;
 
 class SearchNumbersAction
@@ -26,7 +29,7 @@ class SearchNumbersAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many search attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many search attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -34,7 +37,7 @@ class SearchNumbersAction
         $this->page->isSearching = true;
         $result = $this->page->getProvider()->getAvailableNumbers($this->page->data['search_country'] ?? 'US', 'local', 5);
         $this->page->isSearching = false;
-        if ($result['success'] && ! empty($result['numbers'])) {
+        if ($result['success'] && filled($result['numbers'])) {
             $this->page->availableNumbers = $result['numbers'];
             $this->page->availableNumbersLoaded = true;
         } else {

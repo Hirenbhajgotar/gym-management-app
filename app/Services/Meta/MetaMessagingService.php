@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Meta;
 
 use App\Interfaces\MessagingInterface;
+use App\Models\Gym;
+use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
@@ -120,7 +124,7 @@ class MetaMessagingService implements MessagingInterface
         }
 
         // Find the template
-        $template = WhatsAppTemplate::where('gym_id', $this->context->gymId)
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
             ->where('name', $templateName)
             ->where('status', 'approved')
             ->first();
@@ -148,7 +152,7 @@ class MetaMessagingService implements MessagingInterface
             'name' => $templateName,
         ];
 
-        if (! empty($variables)) {
+        if (filled($variables)) {
             $templatePayload['components'] = [
                 [
                     'type' => 'body',
@@ -204,8 +208,7 @@ class MetaMessagingService implements MessagingInterface
     public function sendTestWhatsAppMessage(int $gymId, ?string $to = null): array
     {
         /**
-         * @var \App\Models\WhatsAppAccount|null $account
-         * @var \App\Models\WhatsAppPhoneNumber|null $phoneNumber
+         * @var WhatsAppPhoneNumber|null $phoneNumber
          */
         $account = $this->context->getAccount();
         $phoneNumber = $account?->phoneNumber?->phone_number;
@@ -218,7 +221,7 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
-        $gym = \App\Models\Gym::find($gymId);
+        $gym = Gym::query()->find($gymId);
         $gymName = $gym?->name ?? 'Your Gym';
 
         $message = "WhatsApp Integration Active!\n\nHello from {$gymName}!";

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -21,7 +23,7 @@ class CreateWhatsAppTemplate extends CreateRecord
         $data['whatsapp_account_id'] = $tenant?->whatsappAccount?->id;
 
         // Handle default template selection — merge variable_placeholder from default
-        if (! empty($data['_default_template'])) {
+        if (filled($data['_default_template'])) {
             $templates = WhatsAppTemplateResource::getDefaultTemplatesForForm();
             if (isset($templates[$data['_default_template']])) {
                 $template = $templates[$data['_default_template']];
@@ -32,13 +34,13 @@ class CreateWhatsAppTemplate extends CreateRecord
 
                 // Merge default template's variable_placeholder as a base,
                 // then let the form's values override where present
-                if (! empty($template['variable_placeholder'])) {
+                if (filled($template['variable_placeholder'])) {
                     $formPlaceholders = $data['variable_placeholder'] ?? [];
                     $merged = $template['variable_placeholder'];
 
                     foreach ($formPlaceholders as $num => $formValues) {
                         foreach ($formValues as $key => $value) {
-                            if (! empty($value)) {
+                            if (filled($value)) {
                                 $merged[$num][$key] = $value;
                             }
                         }

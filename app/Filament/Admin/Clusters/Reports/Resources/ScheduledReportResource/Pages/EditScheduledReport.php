@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
 
 use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditScheduledReport extends EditRecord
@@ -12,7 +15,7 @@ class EditScheduledReport extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

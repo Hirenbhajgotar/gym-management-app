@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use Exception;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -47,11 +51,11 @@ class RegisterOwnNumberAction
             if ($result['success']) {
                 $this->page->senderSid = $result['sender_sid'];
                 $this->page->ownNumberRegistered = true;
-                \Filament\Notifications\Notification::make()->title('Verification Code Sent')->success()->send();
+                Notification::make()->title('Verification Code Sent')->success()->send();
             } else {
-                throw new \Exception($result['error'] ?? 'Failed to register phone number');
+                throw new Exception($result['error'] ?? 'Failed to register phone number');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Reg Num Error', ['e' => $e]);
             throw ValidationException::withMessages(['own_phone_number' => $e->getMessage()]);
         }

@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ExpenseResource\Pages;
 
 use App\Filament\Admin\Resources\ExpenseResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditExpense extends EditRecord
@@ -13,8 +16,8 @@ class EditExpense extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make()
+            ViewAction::make(),
+            DeleteAction::make()
                 ->visible(fn () => $this->record->isDraft()),
         ];
     }

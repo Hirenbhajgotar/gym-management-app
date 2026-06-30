@@ -9,6 +9,7 @@ use App\Jobs\ProcessTwilioTemplateWebhook;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Sleep;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -180,7 +181,7 @@ class ProcessTwilioTemplateWebhookTest extends TestCase
 
         $updatedAtBefore = $template->updated_at;
 
-        usleep(1000);
+        Sleep::usleep(1000);
 
         $job = new ProcessTwilioTemplateWebhook('HXtest_same_status', 'approved');
         $job->handle();

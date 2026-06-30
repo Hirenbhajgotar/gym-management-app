@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Filament;
 
 use App\Enums\ErrorCategory;
@@ -162,7 +164,7 @@ class ErrorReportModal extends Component implements HasForms
     {
         $this->validate();
 
-        $errorReportService = app(ErrorReportService::class);
+        $errorReportService = resolve(ErrorReportService::class);
 
         $errorReportService->manuallyReportException(
             userDescription: $this->description,

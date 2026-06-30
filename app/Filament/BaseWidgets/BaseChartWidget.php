@@ -37,7 +37,7 @@ abstract class BaseChartWidget extends ChartWidget implements HasFilamentPermiss
             return false;
         }
 
-        $slug = (new static)->getWidgetPermissionSlug();
+        $slug = (new static())->getWidgetPermissionSlug();
 
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value) || $user->can("widget_{$slug}");
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\Expense;
@@ -26,7 +28,7 @@ class ExpensePendingApprovalNotification extends Notification implements ShouldQ
         $gym = $this->expense->gym;
         $submitter = $this->expense->user;
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject("Expense Pending Approval: {$this->expense->title}")
             ->greeting("Hello {$notifiable->name}!")
             ->line('A new expense has been submitted and requires your approval.')

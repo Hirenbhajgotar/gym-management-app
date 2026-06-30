@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Filament\Admin\Resources\ReceptionistResource;
+use App\Models\User;
 use Filament\Resources\Pages\ListRecords;
 
 class ListReceptionists extends ListRecords
@@ -21,9 +24,9 @@ class ListReceptionists extends ListRecords
         ];
     }
 
-    public function getUser(): \App\Models\User
+    public function getUser(): User
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user;

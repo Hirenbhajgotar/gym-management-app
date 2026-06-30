@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\User;
@@ -7,6 +9,7 @@ use App\Traits\HasTenantAccess;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Spatie\Permission\Models\Role;
@@ -127,15 +130,13 @@ class RolePermissionsStatsWidget extends BaseWidget
     {
         $currentTenant = $this->getGym();
 
-        $roleQuery = Role::where('name', $this->role);
+        $roleQuery = Role::query()->where('name', $this->role);
 
         if ($currentTenant) {
             $roleQuery->where('gym_id', $currentTenant->id);
         }
 
-        $role = $roleQuery;
-
-        return $role;
+        return $roleQuery;
     }
 
     /**
@@ -175,7 +176,7 @@ class RolePermissionsStatsWidget extends BaseWidget
      */
     protected function getActiveUsersCount($currentTenant): int
     {
-        return User::whereHas('roles', function ($query) use ($currentTenant) {
+        return User::query()->whereHas('roles', function (Builder $query) use ($currentTenant) {
             $query->where('name', $this->role);
 
             if ($currentTenant) {
@@ -253,7 +254,7 @@ class RolePermissionsStatsWidget extends BaseWidget
 
         $permissions = $role->permissions->pluck('name');
 
-        $breakdown = [
+        return [
             'resource_permissions' => $permissions->filter(
                 fn ($p) => str_contains($p, 'view_') || str_contains($p, 'create_') ||
                     str_contains($p, 'edit_') || str_contains($p, 'delete_')
@@ -271,8 +272,6 @@ class RolePermissionsStatsWidget extends BaseWidget
                 fn ($p) => str_contains($p, 'send_') || str_contains($p, 'notification')
             )->count(),
         ];
-
-        return $breakdown;
     }
 
     /**

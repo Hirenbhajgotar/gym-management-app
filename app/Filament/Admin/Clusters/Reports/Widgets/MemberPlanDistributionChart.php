@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -27,14 +30,14 @@ class MemberPlanDistributionChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
         $cacheKey = ReportCacheService::WIDGET_MEMBER_PLAN_DIST . $gymId . ':' . md5(json_encode($this->filters));
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $distribution = GymMember::where('gym_id', $gymId)
+            $distribution = GymMember::query()->where('gym_id', $gymId)
                 ->with('membershipPlan')
                 ->get()
                 ->groupBy('gym_membership_plan_id')

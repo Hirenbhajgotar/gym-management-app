@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Enums\NotificationType;
@@ -191,13 +193,10 @@ class WhatsAppDefaultTemplatesSeeder extends Seeder
         ];
 
         foreach ($defaultTemplates as $template) {
-            WhatsAppTemplate::updateOrCreate(
-                [
-                    'name' => $template['name'],
-                    'gym_id' => null, // Global defaults
-                ],
-                $template
-            );
+            WhatsAppTemplate::query()->updateOrCreate([
+                'name' => $template['name'],
+                'gym_id' => null, // Global defaults
+            ], $template);
         }
     }
 }

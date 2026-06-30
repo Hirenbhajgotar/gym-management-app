@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ExpenseBudgetResource\Pages;
 
 use App\Filament\Admin\Resources\ExpenseBudgetResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditExpenseBudget extends EditRecord
@@ -13,7 +15,7 @@ class EditExpenseBudget extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->icon('phosphor-trash'),
         ];
     }

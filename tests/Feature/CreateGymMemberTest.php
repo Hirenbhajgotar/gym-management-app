@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
 use App\Models\Gym;
 use App\Models\MembershipPlan;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -20,7 +23,7 @@ class CreateGymMemberTest extends TestCase
         $user = User::factory()->create();
         $user->gyms()->attach($gym);
         $this->actingAs($user);
-        \Filament\Facades\Filament::setTenant($gym);
+        Filament::setTenant($gym);
 
         // This should fail if the form schema is invalid (e.g. TypeError)
         Livewire::test(CreateGymMember::class)
@@ -32,7 +35,7 @@ class CreateGymMemberTest extends TestCase
         $gym = Gym::factory()->create();
         $user = User::factory()->create();
         $user->gyms()->attach($gym);
-        \Filament\Facades\Filament::setTenant($gym);
+        Filament::setTenant($gym);
         $plan = MembershipPlan::factory()->create(['gym_id' => $gym->id, 'price' => 100]);
 
         $this->actingAs($user);

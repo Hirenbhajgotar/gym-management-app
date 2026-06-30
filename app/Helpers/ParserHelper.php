@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class ParserHelper
 {
@@ -69,10 +73,10 @@ class ParserHelper
     {
         try {
             $formattedNumber = self::formatPhoneNumberWithCountryCode($phoneNumber, $defaultCountryCode);
-            $phone = new \Propaganistas\LaravelPhone\PhoneNumber($formattedNumber);
+            $phone = new PhoneNumber($formattedNumber);
 
             return $phone->getCountry();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }

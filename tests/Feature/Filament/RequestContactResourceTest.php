@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Filament;
 
 use App\Enums\DefaultRole;
@@ -27,7 +29,7 @@ class RequestContactResourceTest extends TestCase
         parent::setUp();
 
         // Create roles
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
 
         // Create super admin user
         $this->superAdmin = User::factory()->create([

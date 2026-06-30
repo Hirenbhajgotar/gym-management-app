@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasLabel;
@@ -11,7 +13,7 @@ enum MaritalStatusEnum: string implements HasLabel
     case DIVORCED = 'divorced';
     case WIDOWED = 'widowed';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::SINGLE => 'Single',

@@ -1,14 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Pages\Tenancy\EditGymProfile;
 use App\Filament\Admin\Pages\Tenancy\RegisterGym;
-use App\Filament\Components\FeedbackPopup;
-use App\Filament\Components\FeedbackTrigger;
 use App\Http\Middleware\ApplyTenantScopes;
 use App\Http\Middleware\TeamsPermission;
-use App\Livewire\Filament\ErrorReportModal;
 use App\Models\Gym;
 use Filafly\FilamentPhosphorIcons\PhosphorIcons;
 use Filament\Http\Middleware\Authenticate;
@@ -25,7 +25,6 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -111,7 +110,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Tenant/Pages'), for: 'App\\Filament\\Tenant\\Pages')
             ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
             ->pages([
-                \App\Filament\Admin\Pages\Dashboard::class,
+                Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\BaseWidgets;
 
 use App\Contracts\HasFilamentPermissions;
@@ -36,7 +38,7 @@ abstract class BaseTableWidget extends TableWidget implements HasFilamentPermiss
         }
 
         /** @phpstan-ignore new.static (safe because this is always called on concrete subclasses) */
-        $slug = (new static)->getWidgetPermissionSlug();
+        $slug = (new static())->getWidgetPermissionSlug();
 
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value) || $user->can("widget_{$slug}");
     }

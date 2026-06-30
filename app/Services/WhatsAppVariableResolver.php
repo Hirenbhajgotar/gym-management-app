@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\GymMember;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class WhatsAppVariableResolver
 {
@@ -155,7 +158,7 @@ class WhatsAppVariableResolver
         }
 
         if (is_string($date)) {
-            return Carbon::parse($date)->format('M j, Y');
+            return Date::parse($date)->format('M j, Y');
         }
 
         return null;

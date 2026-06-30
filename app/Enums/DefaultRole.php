@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasLabel;
@@ -72,6 +74,8 @@ enum DefaultRole: string implements HasLabel
 
     /**
      * Get Owner Roles
+     *
+     * @return array<int, self>
      */
     public static function getOwnersRoles(): array
     {
@@ -83,6 +87,9 @@ enum DefaultRole: string implements HasLabel
         ];
     }
 
+    /**
+     * @return array<int, self>
+     */
     public static function getAdminAndOwnerRoles(): array
     {
         return [

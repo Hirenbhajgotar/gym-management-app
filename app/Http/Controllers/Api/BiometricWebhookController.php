@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\Services\CheckInService;
 use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +23,7 @@ class BiometricWebhookController extends Controller
     public function handle(Request $request, string $token): JsonResponse
     {
         // Verify webhook token
-        $device = BiometricDevice::whereNotNull('device_token')
+        $device = BiometricDevice::query()->whereNotNull('device_token')
             ->get()
             ->first(function ($d) use ($token) {
                 return Hash::check($token, $d->device_token);
@@ -36,7 +39,7 @@ class BiometricWebhookController extends Controller
         $signature = $request->header($signatureHeader) ?? $request->header('X-Hub-Signature-256');
 
         // If device has webhook_secret configured, signature is required
-        $hasWebhookSecret = ! empty($device->provider_config['webhook_secret'] ?? '');
+        $hasWebhookSecret = filled($device->provider_config['webhook_secret'] ?? '');
 
         // If signature is required but not provided, reject
         if ($hasWebhookSecret && ! $signature) {
@@ -75,7 +78,7 @@ class BiometricWebhookController extends Controller
             $result = $this->checkInService->processCheckIn($sample, $device);
 
             return $this->formatResponse($result, $device);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Biometric webhook error', [
                 'device_id' => $device->id,
                 'error' => $e->getMessage(),
@@ -124,7 +127,7 @@ class BiometricWebhookController extends Controller
 
         // If no secret is configured, reject the request for security
         // This prevents processing unverified webhooks
-        if (empty($secret)) {
+        if (blank($secret)) {
             Log::warning('BiometricWebhook: Webhook secret not configured for device', [
                 'device_id' => $device->id,
                 'device_name' => $device->device_name,

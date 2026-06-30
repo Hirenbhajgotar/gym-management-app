@@ -13,6 +13,12 @@ use Tests\TestCase;
 
 class SyncPermissionsCommandTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mockConsoleOutput = false;
+    }
+
     use RefreshDatabase;
 
     #[Test]
@@ -30,26 +36,26 @@ class SyncPermissionsCommandTest extends TestCase
     #[Test]
     public function it_does_not_create_permissions_in_dry_run(): void
     {
-        $countBefore = Permission::count();
+        $countBefore = Permission::query()->count();
 
         Artisan::call('permissions:sync', ['--dry-run' => true]);
 
-        $this->assertSame($countBefore, Permission::count());
+        $this->assertSame($countBefore, Permission::query()->count());
     }
 
     #[Test]
     public function it_creates_missing_permissions(): void
     {
-        $service = app(RolesAndPermissionsService::class);
+        $service = resolve(RolesAndPermissionsService::class);
         $discovered = $service->discoverFilamentPermissions();
 
-        $before = Permission::pluck('name')->toArray();
+        $before = Permission::query()->pluck('name')->toArray();
         $missingBefore = array_diff($discovered, $before);
         $this->assertNotEmpty($missingBefore, 'Should have missing permissions before sync');
 
         Artisan::call('permissions:sync');
 
-        $after = Permission::pluck('name')->toArray();
+        $after = Permission::query()->pluck('name')->toArray();
         $stillMissing = array_diff($discovered, $after);
         $this->assertEmpty($stillMissing, 'All discovered permissions should exist after sync');
     }
@@ -58,10 +64,10 @@ class SyncPermissionsCommandTest extends TestCase
     public function it_is_idempotent(): void
     {
         Artisan::call('permissions:sync');
-        $countAfterFirst = Permission::count();
+        $countAfterFirst = Permission::query()->count();
 
         Artisan::call('permissions:sync');
-        $countAfterSecond = Permission::count();
+        $countAfterSecond = Permission::query()->count();
 
         $this->assertSame($countAfterFirst, $countAfterSecond);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\LoginActivityResource\Widgets;
 
 use App\Services\LoginActivityService;
@@ -10,7 +12,7 @@ class LoginActivityStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $service = app(LoginActivityService::class);
+        $service = resolve(LoginActivityService::class);
         $stats = $service->getAggregateStats();
 
         return [

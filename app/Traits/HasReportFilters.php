@@ -1,15 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
+use App\Models\Gym;
+use App\Models\SavedReportFilter;
+use App\Models\ScheduledReport;
 use App\Models\ShareableReportLink;
 use App\Services\ReportCacheService;
-use Carbon\Carbon;
+use App\Services\ReportPdfGenerator;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
+use Illuminate\Support\Str;
 
 /**
  * Trait for report pages with common caching and filtering functionality.
@@ -77,7 +92,7 @@ trait HasReportFilters
      */
     protected function formatCurrency(float|int $amount, string $currency = 'INR'): string
     {
-        return \Illuminate\Support\Number::currency($amount, in: $currency);
+        return Number::currency($amount, in: $currency);
     }
 
     /**
@@ -91,9 +106,9 @@ trait HasReportFilters
     /**
      * Calculate percentage change between two values.
      */
-    protected function calculatePercentageChange(float|int $current, float|int $previous): float
+    protected function calculatePercentageChange(float|int|string $current, float|int|string $previous): float
     {
-        if ($previous == 0) {
+        if ($previous <= 0) {
             return $current > 0 ? 100 : 0;
         }
 
@@ -141,8 +156,8 @@ trait HasReportFilters
      */
     protected function getComparisonPeriod(string $startDate, string $endDate): array
     {
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
+        $start = Date::parse($startDate);
+        $end = Date::parse($endDate);
         $daysInPeriod = $start->diffInDays($end) + 1;
 
         // Calculate equivalent previous period
@@ -162,8 +177,8 @@ trait HasReportFilters
     protected function getYoYPeriod(string $startDate, string $endDate): array
     {
         return [
-            'previous_start' => Carbon::parse($startDate)->subYear()->format('Y-m-d'),
-            'previous_end' => Carbon::parse($endDate)->subYear()->format('Y-m-d'),
+            'previous_start' => Date::parse($startDate)->subYear()->format('Y-m-d'),
+            'previous_end' => Date::parse($endDate)->subYear()->format('Y-m-d'),
         ];
     }
 
@@ -173,8 +188,8 @@ trait HasReportFilters
     protected function getMoMPeriod(string $startDate, string $endDate): array
     {
         return [
-            'previous_start' => Carbon::parse($startDate)->subMonth()->format('Y-m-d'),
-            'previous_end' => Carbon::parse($endDate)->subMonth()->format('Y-m-d'),
+            'previous_start' => Date::parse($startDate)->subMonth()->format('Y-m-d'),
+            'previous_end' => Date::parse($endDate)->subMonth()->format('Y-m-d'),
         ];
     }
 
@@ -250,7 +265,7 @@ trait HasReportFilters
                         // Count how many from this cohort were still active
                         $retainedCount = DB::table('gym_members')
                             ->whereIn('id', $cohortMembers)
-                            ->where(function ($query) use ($checkMonth) {
+                            ->where(function (QueryBuilder $query) use ($checkMonth) {
                                 $query->where('membership_end', '>=', $checkMonth->endOfMonth())
                                     ->orWhereNull('membership_end');
                             })
@@ -334,53 +349,53 @@ trait HasReportFilters
     public function getFilterActions(): array
     {
         return [
-            \Filament\Actions\ActionGroup::make([
-                \Filament\Actions\Action::make('save_filter')
+            ActionGroup::make([
+                Action::make('save_filter')
                     ->label('Save Current View')
                     ->icon('phosphor-floppy-disk')
                     ->form([
-                        \Filament\Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->label('Filter Name'),
-                        \Filament\Forms\Components\Checkbox::make('is_default')
+                        Checkbox::make('is_default')
                             ->label('Set as Default'),
                     ])
                     ->action(function (array $data) {
-                        \App\Models\SavedReportFilter::create([
+                        SavedReportFilter::query()->create([
                             'gym_id' => $this->getGymId(),
-                            'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                            'user_id' => Auth::id(),
                             'report_type' => static::class,
                             'name' => $data['name'],
                             'filters' => $this->filters,
                             'is_default' => $data['is_default'],
                         ]);
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('Filter Saved')
                             ->success()
                             ->send();
                     }),
 
-                \Filament\Actions\Action::make('load_filter')
+                Action::make('load_filter')
                     ->label('Load Saved View')
                     ->icon('phosphor-folder-open')
                     ->form([
-                        \Filament\Forms\Components\Select::make('filter_id')
+                        Select::make('filter_id')
                             ->label('Select Saved View')
                             ->options(function () {
-                                return \App\Models\SavedReportFilter::where('gym_id', $this->getGymId())
+                                return SavedReportFilter::query()->where('gym_id', $this->getGymId())
                                     ->where('report_type', static::class)
                                     ->pluck('name', 'id');
                             })
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        $savedFilter = \App\Models\SavedReportFilter::find($data['filter_id']);
+                        $savedFilter = SavedReportFilter::query()->find($data['filter_id']);
                         if ($savedFilter) {
                             $this->filters = $savedFilter->filters;
                             $this->dispatch('$refresh');
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Filter Loaded')
                                 ->success()
                                 ->send();
@@ -399,35 +414,35 @@ trait HasReportFilters
     public function getExportActions(): array
     {
         return [
-            \Filament\Actions\Action::make('export_pdf')
+            Action::make('export_pdf')
                 ->label('Export PDF')
                 ->icon('phosphor-file-pdf')
                 ->color('danger')
                 ->action(function () {
-                    $report = new \App\Models\ScheduledReport;
+                    $report = new ScheduledReport();
                     $report->report_type = static::class;
                     $report->gym_id = $this->getGymId();
                     $report->name = static::$title ?? static::$navigationLabel ?? 'Report';
                     $report->filters = $this->filters ?? [];
-                    $report->setRelation('gym', \App\Models\Gym::find($this->getGymId()));
+                    $report->setRelation('gym', Gym::query()->find($this->getGymId()));
 
-                    $pdfContent = app(\App\Services\ReportPdfGenerator::class)->generate($report);
+                    $pdfContent = resolve(ReportPdfGenerator::class)->generate($report);
 
                     return response()->streamDownload(
                         fn () => print ($pdfContent),
-                        \Illuminate\Support\Str::slug(static::$title ?? static::$navigationLabel ?? 'Report') . '-' . now()->format('Y-m-d') . '.pdf'
+                        Str::slug(static::$title ?? static::$navigationLabel ?? 'Report') . '-' . now()->format('Y-m-d') . '.pdf'
                     );
                 }),
 
-            \Filament\Actions\Action::make('share_report')
+            Action::make('share_report')
                 ->label('Share Report')
                 ->icon('phosphor-share-network')
                 ->color('primary')
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('name')
+                    TextInput::make('name')
                         ->label('Share Name (Optional)')
                         ->placeholder('e.g., Monthly Report for Investors'),
-                    \Filament\Forms\Components\Select::make('expires_in')
+                    Select::make('expires_in')
                         ->label('Link Expires In')
                         ->options([
                             '7' => '7 Days',
@@ -440,7 +455,7 @@ trait HasReportFilters
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $shareableLink = ShareableReportLink::create([
+                    $shareableLink = ShareableReportLink::query()->create([
                         'gym_id' => $this->getGymId(),
                         'user_id' => Auth::id(),
                         'report_type' => static::class,
@@ -453,7 +468,7 @@ trait HasReportFilters
                     $shareUrl = $shareableLink->getShareableUrl();
 
                     // Copy to clipboard notification
-                    \Filament\Notifications\Notification::make()
+                    Notification::make()
                         ->title('Report Shared Successfully')
                         ->body('Shareable link created and copied to clipboard!')
                         ->success()

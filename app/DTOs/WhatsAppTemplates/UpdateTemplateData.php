@@ -6,6 +6,10 @@ namespace App\DTOs\WhatsAppTemplates;
 
 readonly class UpdateTemplateData
 {
+    /**
+     * @param  array<string, mixed>|null  $variable_placeholder
+     * @param  array<int, array<string, mixed>>|null  $variables
+     */
     public function __construct(
         public ?string $name = null,
         public ?string $display_name = null,
@@ -17,6 +21,9 @@ readonly class UpdateTemplateData
         public ?bool $is_default = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return array_filter([
@@ -31,6 +38,9 @@ readonly class UpdateTemplateData
         ], fn ($value) => $value !== null);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(

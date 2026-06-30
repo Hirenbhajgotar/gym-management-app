@@ -14,6 +14,8 @@ use App\Services\WhatsAppTemplateService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Throwable;
 
 /**
  * Meta Template Service.
@@ -35,7 +37,7 @@ class MetaTemplateService implements TemplateManagementInterface
         protected MetaApiClient $api,
         protected ?WhatsAppTemplateService $templateService = null,
     ) {
-        $this->templateService ??= app(WhatsAppTemplateService::class);
+        $this->templateService ??= resolve(WhatsAppTemplateService::class);
     }
 
     /**
@@ -46,9 +48,7 @@ class MetaTemplateService implements TemplateManagementInterface
      */
     public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
     {
-        if (! $this->templateService) {
-            throw new \RuntimeException('Template service not available');
-        }
+        throw_unless($this->templateService, RuntimeException::class, 'Template service not available');
 
         return $this->templateService->createTemplate($gymId, $data);
     }
@@ -122,7 +122,7 @@ class MetaTemplateService implements TemplateManagementInterface
         } catch (LockTimeoutException $e) {
             return new TemplateSubmissionResult(success: false, error: 'Template submission is already in progress. Please wait.');
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 
@@ -164,10 +164,10 @@ class MetaTemplateService implements TemplateManagementInterface
             $template->save();
         } catch (LockTimeoutException $e) {
             // Skip this run, another process is syncing
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning("Failed to sync Meta template status for {$template->id}", ['error' => $e->getMessage()]);
         } finally {
-            optional($lock)->release();
+            $lock?->release();
         }
     }
 
@@ -187,12 +187,12 @@ class MetaTemplateService implements TemplateManagementInterface
                 $response = $this->api->get("/{$wabaId}/message_templates");
 
                 if (! $response['success']) {
-                    throw new \RuntimeException($response['error'] ?? 'API Error');
+                    throw new RuntimeException($response['error'] ?? 'API Error');
                 }
 
                 return $response['data']['data'] ?? [];
             });
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             Log::warning('Failed to fetch fresh Meta templates, falling back to cache.', ['error' => $th->getMessage()]);
             $templates = Cache::get($this->templatesCacheKey());
             if ($templates === null) {

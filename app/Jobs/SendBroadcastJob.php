@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 {
@@ -54,7 +57,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         /** @var WhatsAppBroadcast|null $broadcast */
-        $broadcast = WhatsAppBroadcast::find($this->broadcastId);
+        $broadcast = WhatsAppBroadcast::query()->find($this->broadcastId);
 
         if (! $broadcast) {
             Log::warning('Broadcast not found for batch orchestration', [
@@ -75,7 +78,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 
         $broadcast->markAsSending();
 
-        $resolver = app(WhatsAppVariableResolver::class);
+        $resolver = resolve(WhatsAppVariableResolver::class);
         $customVariables = $broadcast->message_variables ?? [];
         $template = $broadcast->template;
         $templateData = [
@@ -88,7 +91,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         $allJobs = [];
         $totalProcessed = 0;
 
-        WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcastId)
+        WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcastId)
             ->where('status', WhatsAppBroadcastRecipientStatusEnum::PENDING->value)
             ->with([
                 'member:id,gym_id,trainer_id,gym_membership_plan_id,name,phone,email,dob,membership_start,membership_end',
@@ -201,7 +204,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                         $refundCount = (int) $broadcastRecord->failed_count;
 
                         // Atomically refund credits: increment remaining, decrement used
-                        WhatsAppMessageCredit::where('gym_id', $gymId)
+                        WhatsAppMessageCredit::query()->where('gym_id', $gymId)
                             ->update([
                                 'remaining_credits' => DB::raw('remaining_credits + ' . $refundCount),
                                 'used_credits' => DB::raw('GREATEST(used_credits - ' . $refundCount . ', 0)'),
@@ -236,7 +239,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         ]);
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('SendBroadcastJob permanently failed', [
             'broadcast_id' => $this->broadcastId,
@@ -244,7 +247,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        WhatsAppBroadcast::where('id', $this->broadcastId)
+        WhatsAppBroadcast::query()->where('id', $this->broadcastId)
             ->update(['status' => WhatsAppBroadcastStatusEnum::FAILED]);
     }
 }
