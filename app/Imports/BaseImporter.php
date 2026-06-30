@@ -302,9 +302,13 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             // Add data rows
             foreach ($failedRows as $failedRow) {
                 $data = json_decode($failedRow->data, true);
-                $csvContent .= implode(',', array_map(function ($value) {
+                $csvContent .= implode(',', array_map(function (mixed $value): string {
+                    // Cast to string to handle non-string types (int, float, etc.)
+                    // that may come from json_decode when importing numeric data.
+                    $value = (string) $value;
+
                     // Escape commas and quotes in CSV
-                    if (strpos($value, ',') !== false || strpos($value, '"') !== false) {
+                    if (str_contains($value, ',') || str_contains($value, '"')) {
                         return '"' . str_replace('"', '""', $value) . '"';
                     }
 
