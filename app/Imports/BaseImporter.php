@@ -308,7 +308,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     $value = (string) $value;
 
                     // Escape commas and quotes in CSV
-                    if (str_contains($value, ',') || str_contains($value, '"')) {
+                    if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, "\n") || str_contains($value, "\r")) {
                         return '"' . str_replace('"', '""', $value) . '"';
                     }
 
