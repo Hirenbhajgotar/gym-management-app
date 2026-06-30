@@ -65,7 +65,7 @@ class TrainerImport extends BaseImporter implements ShouldQueue
             'is_available' => 'nullable|in:Yes,No,0,1',
             'available_hours' => 'nullable|string|max:255',
             'basic_salary' => 'nullable|numeric|min:0',
-            'pt_salary_per_member' => 'nullable|numeric|min:0',
+            'pt_salary_per_member' => 'nullable|numeric|min:0|max:100',
         ];
     }
 }

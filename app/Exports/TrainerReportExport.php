@@ -32,6 +32,7 @@ class TrainerReportExport implements FromQuery, Responsable, ShouldAutoSize, Wit
     {
         return Trainer::query()
             ->where('gym_id', $this->gymId)
+            ->with(['members.payments'])
             ->withCount(['members' => fn ($q) => $q->membershipActive()])
             ->orderBy('name');
     }
@@ -48,7 +49,7 @@ class TrainerReportExport implements FromQuery, Responsable, ShouldAutoSize, Wit
             'Status',
             'Active Clients',
             'Basic Salary',
-            'PT Salary/Member',
+            'PT Commission Rate (%)',
             'Total Earnings (Est)',
             'Joined Date',
         ];

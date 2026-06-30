@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Observers\TrainerObserver;
 use Database\Factories\TrainerFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -122,9 +123,29 @@ class Trainer extends Model
     protected function totalEarnings(): Attribute
     {
         return Attribute::make(get: function () {
-            $assignedMembersCount = $this->members()->count();
+            $basicSalary = (float) ($this->basic_salary ?? 0);
+            $rate = (float) ($this->pt_salary_per_member ?? 0);
 
-            return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
+            if ($rate <= 0) {
+                return $basicSalary;
+            }
+
+            $ptEarnings = $this->members->reduce(function (float $carry, $member) use ($rate) {
+                // Only consider completed payments within the member's current membership period
+                $paymentsInPeriod = $member->payments->filter(function ($payment) use ($member) {
+                    return $payment->payment_date
+                        && $member->membership_start
+                        && $member->membership_end
+                        && $payment->payment_date->between($member->membership_start, $member->membership_end)
+                        && $payment->status === PaymentStatus::COMPLETED;
+                });
+
+                $totalPaid = (float) $paymentsInPeriod->sum('amount');
+
+                return $carry + ($totalPaid * $rate / 100);
+            }, 0.0);
+
+            return $basicSalary + $ptEarnings;
         });
     }
 

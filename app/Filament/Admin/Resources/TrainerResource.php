@@ -51,7 +51,7 @@ class TrainerResource extends BaseResource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with('members')
+            ->with(['members.payments'])
             ->withCount('members');
     }
 
@@ -201,13 +201,14 @@ class TrainerResource extends BaseResource
                         ->columnSpan(1),
 
                     TextInput::make('pt_salary_per_member')
-                        ->label('Personal Training Rate (Per Member)')
+                        ->label('PT Commission Rate (%)')
                         ->numeric()
                         ->minValue(0)
+                        ->maxValue(100)
                         ->required()
                         ->step(0.01)
-                        ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
-                        ->placeholder('0.00')
+                        ->suffix('%')
+                        ->placeholder('10.00')
                         ->columnSpan(1),
                 ])
                 ->columns(2)
@@ -237,8 +238,8 @@ class TrainerResource extends BaseResource
                 TextColumn::make('basic_salary')
                     ->money(fn ($record) => $record->currency),
                 TextColumn::make('pt_salary_per_member')
-                    ->label('PT Salary/Member')
-                    ->money(fn ($record) => $record->currency),
+                    ->label('PT Commission Rate (%)')
+                    ->formatStateUsing(fn ($state) => number_format((float) $state, 2) . '%'),
                 TextColumn::make('total_earnings')
                     ->label('Total Earnings')
                     ->money(fn ($record) => $record->currency)

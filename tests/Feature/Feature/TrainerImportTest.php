@@ -29,8 +29,8 @@ class TrainerImportTest extends TestCase
 
         $fileContent = <<<'CSV'
 name,email,phone,specialization,experience_years,certifications,is_available,available_hours,basic_salary,pt_salary_per_member,currency
-John Doe,john.doe@example.com,1234567890,Yoga,5,Certified Yoga Trainer,1,"Mon-Fri 9am-5pm",50000,100,USD
-Jane Smith,jane.smith@example.com,0987654321,CrossFit,3,CrossFit Level 1,0,"Sat-Sun 10am-4pm",45000,120,USD
+John Doe,john.doe@example.com,1234567890,Yoga,5,Certified Yoga Trainer,1,"Mon-Fri 9am-5pm",50000,10,USD
+Jane Smith,jane.smith@example.com,0987654321,CrossFit,3,CrossFit Level 1,0,"Sat-Sun 10am-4pm",45000,15,USD
 CSV;
 
         $file = UploadedFile::fake()->createWithContent('trainers.csv', $fileContent);

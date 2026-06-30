@@ -37,8 +37,9 @@ class TrainerImporter extends Importer
                 ->numeric()
                 ->rules(['integer']),
             ImportColumn::make('pt_salary_per_member')
+                ->label('PT Commission Rate (%)')
                 ->numeric()
-                ->rules(['integer']),
+                ->rules(['numeric', 'min:0', 'max:100']),
             ImportColumn::make('currency')
                 ->rules(['max:255']),
         ];

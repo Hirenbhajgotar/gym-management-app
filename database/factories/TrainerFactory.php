@@ -30,9 +30,8 @@ class TrainerFactory extends Factory
             'available_hours' => fake()->randomElement(['Mon-Fri: 6 AM - 12 PM, 4 PM - 8 PM', 'Mon-Sat: 8 AM - 2 PM', 'Tue-Sun: 2 PM - 8 PM']),
             // 'status' => $this->faker->boolean(90),
             'basic_salary' => fake()->randomFloat(4, 10000, 40000),
-            'pt_salary_per_member' => fake()->randomFloat(4, 2000, 10000),
-            // 'currency' => $this->faker->randomElement(['USD', 'INR', 'EUR']),
-            fake()->randomElement(array_column(Currency::cases(), 'value')),
+            'pt_salary_per_member' => fake()->randomFloat(2, 5, 50),
+            'currency' => fake()->randomElement(array_column(Currency::cases(), 'value')),
         ];
     }
 }
