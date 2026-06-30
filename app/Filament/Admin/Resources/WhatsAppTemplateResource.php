@@ -116,7 +116,7 @@ class WhatsAppTemplateResource extends BaseResource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->where(function (\Illuminate\Contracts\Database\Query\Builder $query) use ($tenant) {
+            ->where(function (Builder $query) use ($tenant) {
                 $query->where('gym_id', $tenant?->id);
 
                 if (config('services.twilio.use_sandbox')) {
