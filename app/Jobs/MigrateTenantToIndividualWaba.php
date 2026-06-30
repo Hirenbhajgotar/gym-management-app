@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\WabaMigration;
@@ -7,6 +9,7 @@ use App\Services\WabaMigrationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class MigrateTenantToIndividualWaba implements ShouldQueue
 {
@@ -22,7 +25,7 @@ class MigrateTenantToIndividualWaba implements ShouldQueue
 
     public function handle(WabaMigrationService $migrationService): void
     {
-        $migration = WabaMigration::find($this->migrationId);
+        $migration = WabaMigration::query()->find($this->migrationId);
 
         if (! $migration) {
             Log::error("Migration not found: {$this->migrationId}");
@@ -41,14 +44,14 @@ class MigrateTenantToIndividualWaba implements ShouldQueue
         $migrationService->processMigration($migration);
     }
 
-    public function failed(?\Throwable $exception): void
+    public function failed(?Throwable $exception): void
     {
         Log::error('MigrateTenantToIndividualWaba job failed', [
             'migration_id' => $this->migrationId,
             'error' => $exception?->getMessage(),
         ]);
 
-        $migration = WabaMigration::find($this->migrationId);
+        $migration = WabaMigration::query()->find($this->migrationId);
 
         if ($migration) {
             $migration->markAsFailed($exception?->getMessage() ?? 'Job failed');

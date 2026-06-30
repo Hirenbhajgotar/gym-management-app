@@ -6,6 +6,9 @@ namespace App\DTOs\WhatsAppTemplates;
 
 readonly class TemplateFetchResult
 {
+    /**
+     * @param  array<int, array<string, mixed>>|null  $templates
+     */
     public function __construct(
         public bool $success,
         public ?array $templates = null,
@@ -13,6 +16,9 @@ readonly class TemplateFetchResult
         public ?string $error = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         $result = ['success' => $this->success];

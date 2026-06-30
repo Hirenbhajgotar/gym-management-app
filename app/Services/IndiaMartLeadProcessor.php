@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
@@ -25,7 +27,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             // Extract lead data from IndiaMart format
             $leadData = $this->extractLeadData($data);
 
-            if (empty($leadData)) {
+            if (blank($leadData)) {
                 Log::warning('No lead data extracted from IndiaMart webhook', ['data' => $data]);
 
                 return null;
@@ -55,7 +57,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('IndiaMart lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -74,13 +76,13 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
         try {
             // IndiaMart uses API key verification
             $apiKey = $headers['x-api-key'][0] ?? '';
-            if (empty($apiKey)) {
+            if (blank($apiKey)) {
                 return false;
             }
 
             // Get tenant configuration and verify API key
             $userId = $data['glusr_crm_key'] ?? $data['user_id'] ?? '';
-            if (empty($userId)) {
+            if (blank($userId)) {
                 return false;
             }
 
@@ -93,7 +95,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             $expectedApiKey = $config->api_key ?? config('services.indiamart.api_key');
 
             return $apiKey === $expectedApiKey;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('IndiaMart webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -132,7 +134,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown IndiaMart webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from IndiaMart', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -164,58 +166,58 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
         $notes = [];
 
         // Product information
-        if (! empty($data['PRODUCT_NAME'])) {
+        if (filled($data['PRODUCT_NAME'])) {
             $notes[] = 'Product: ' . $this->cleanString($data['PRODUCT_NAME']);
         }
 
-        if (! empty($data['PRODUCT_URL'])) {
+        if (filled($data['PRODUCT_URL'])) {
             $notes[] = 'Product URL: ' . $this->cleanString($data['PRODUCT_URL']);
         }
 
-        if (! empty($data['PRODUCT_IMAGE'])) {
+        if (filled($data['PRODUCT_IMAGE'])) {
             $notes[] = 'Product Image: ' . $this->cleanString($data['PRODUCT_IMAGE']);
         }
 
         // Inquiry details
-        if (! empty($data['QUERY_MESSAGE'])) {
+        if (filled($data['QUERY_MESSAGE'])) {
             $notes[] = 'Inquiry: ' . $this->cleanString($data['QUERY_MESSAGE']);
         }
 
-        if (! empty($data['QUERY_TYPE'])) {
+        if (filled($data['QUERY_TYPE'])) {
             $notes[] = 'Query Type: ' . $this->cleanString($data['QUERY_TYPE']);
         }
 
-        if (! empty($data['QUERY_MCAT_NAME'])) {
+        if (filled($data['QUERY_MCAT_NAME'])) {
             $notes[] = 'Category: ' . $this->cleanString($data['QUERY_MCAT_NAME']);
         }
 
         // Location information
-        if (! empty($data['SENDER_COMPANY'])) {
+        if (filled($data['SENDER_COMPANY'])) {
             $notes[] = 'Company: ' . $this->cleanString($data['SENDER_COMPANY']);
         }
 
-        if (! empty($data['SENDER_ADDRESS'])) {
+        if (filled($data['SENDER_ADDRESS'])) {
             $notes[] = 'Address: ' . $this->cleanString($data['SENDER_ADDRESS']);
         }
 
-        if (! empty($data['SENDER_CITY'])) {
+        if (filled($data['SENDER_CITY'])) {
             $notes[] = 'City: ' . $this->cleanString($data['SENDER_CITY']);
         }
 
-        if (! empty($data['SENDER_STATE'])) {
+        if (filled($data['SENDER_STATE'])) {
             $notes[] = 'State: ' . $this->cleanString($data['SENDER_STATE']);
         }
 
-        if (! empty($data['SENDER_COUNTRY_ISO'])) {
+        if (filled($data['SENDER_COUNTRY_ISO'])) {
             $notes[] = 'Country: ' . $this->cleanString($data['SENDER_COUNTRY_ISO']);
         }
 
         // Quantity and requirements
-        if (! empty($data['QUERY_QUANTITY'])) {
+        if (filled($data['QUERY_QUANTITY'])) {
             $notes[] = 'Quantity: ' . $this->cleanString($data['QUERY_QUANTITY']);
         }
 
-        if (! empty($data['QUERY_UNIT'])) {
+        if (filled($data['QUERY_UNIT'])) {
             $notes[] = 'Unit: ' . $this->cleanString($data['QUERY_UNIT']);
         }
 
@@ -261,13 +263,13 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
             $leadData['email'] = $this->cleanString($inquiry['email'] ?? '');
 
             $notes = [];
-            if (! empty($inquiry['message'])) {
+            if (filled($inquiry['message'])) {
                 $notes[] = 'Message: ' . $this->cleanString($inquiry['message']);
             }
-            if (! empty($inquiry['product_name'])) {
+            if (filled($inquiry['product_name'])) {
                 $notes[] = 'Product: ' . $this->cleanString($inquiry['product_name']);
             }
-            if (! empty($inquiry['quantity'])) {
+            if (filled($inquiry['quantity'])) {
                 $notes[] = 'Quantity: ' . $this->cleanString($inquiry['quantity']);
             }
 
@@ -342,14 +344,14 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
 
             // Send SMS acknowledgment (if configured)
             if ($config->sms_acknowledgment_enabled && $lead->phone) {
-                $this->sendSMSAcknowledgment($lead, $config);
+                $this->sendSMSAcknowledgment($lead);
             }
 
             // Send email acknowledgment (if configured)
             if ($config->email_acknowledgment_enabled && $lead->email) {
-                $this->sendEmailAcknowledgment($lead, $config);
+                $this->sendEmailAcknowledgment($lead);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send IndiaMart acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,
@@ -360,7 +362,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
     /**
      * Send SMS acknowledgment
      */
-    private function sendSMSAcknowledgment(Lead $lead, TenantSocialConfig $config): void
+    private function sendSMSAcknowledgment(Lead $lead): void
     {
         // This would integrate with your SMS service
         // For now, just log the intent
@@ -374,7 +376,7 @@ class IndiaMartLeadProcessor extends SocialMediaLeadProcessor
     /**
      * Send email acknowledgment
      */
-    private function sendEmailAcknowledgment(Lead $lead, TenantSocialConfig $config): void
+    private function sendEmailAcknowledgment(Lead $lead): void
     {
         // This would integrate with your email service
         // For now, just log the intent

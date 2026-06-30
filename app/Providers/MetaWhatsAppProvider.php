@@ -78,7 +78,7 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         return $this->templates ??= new MetaTemplateService(
             $this->context,
             $this->api,
-            app(WhatsAppTemplateService::class)
+            resolve(WhatsAppTemplateService::class)
         );
     }
 

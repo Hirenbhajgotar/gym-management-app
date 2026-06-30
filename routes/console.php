@@ -1,5 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Jobs\ScheduledReportJob;
+use App\Jobs\SubscriptionRenewalJob;
+use App\Models\ScheduledReport;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -19,7 +24,7 @@ Schedule::command('errors:clean-resolved')->dailyAt('01:00');
 Schedule::command('notification:send-subscription-expiry-alerts')->dailyAt('09:00');
 
 // Run subscription renewal job daily at 2 AM
-Schedule::job(new \App\Jobs\SubscriptionRenewalJob)->dailyAt('02:00');
+Schedule::job(new SubscriptionRenewalJob())->dailyAt('02:00');
 
 // Clean invalid exports weekly
 Schedule::command('exports:clean-invalid')->weekly();
@@ -61,7 +66,7 @@ Schedule::call(function () {
     $currentHeight = now()->format('H:i:00');
 
     // Find active reports scheduled for now
-    $reports = \App\Models\ScheduledReport::where('is_active', true)
+    $reports = ScheduledReport::query()->where('is_active', true)
         ->where('scheduled_time', $currentHeight)
         ->get();
 
@@ -74,7 +79,7 @@ Schedule::call(function () {
         };
 
         if ($shouldRun) {
-            \App\Jobs\ScheduledReportJob::dispatch($report);
+            dispatch(new ScheduledReportJob($report));
         }
     }
 })->everyTenMinutes();

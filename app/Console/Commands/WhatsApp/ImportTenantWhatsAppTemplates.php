@@ -8,6 +8,9 @@ use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Throwable;
 
 /**
  * Import WhatsApp templates from Meta/Twilio for tenant gyms.
@@ -64,7 +67,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function importForSingleGym(int $gymId, bool $sync): int
     {
-        $gym = Gym::find($gymId);
+        $gym = Gym::query()->find($gymId);
 
         if (! $gym) {
             $this->error("Gym with ID {$gymId} not found.");
@@ -188,7 +191,7 @@ class ImportTenantWhatsAppTemplates extends Command
             $this->info('Import completed successfully.');
 
             return self::SUCCESS;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error('Import failed: ' . $e->getMessage());
 
             return self::FAILURE;
@@ -198,11 +201,11 @@ class ImportTenantWhatsAppTemplates extends Command
     /**
      * Get all gyms with active WhatsApp accounts.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Gym>
+     * @return Collection<int, Gym>
      */
-    private function getGymsWithWhatsAppAccounts(): \Illuminate\Database\Eloquent\Collection
+    private function getGymsWithWhatsAppAccounts(): Collection
     {
-        return Gym::whereHas('whatsAppAccount', function ($query) {
+        return Gym::query()->whereHas('whatsAppAccount', function (Builder $query) {
             $query->where('is_active', true)
                 ->where('is_verified', true);
         })->with('whatsAppAccount')->orderBy('id')->get();
@@ -213,7 +216,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function getWhatsAppAccount(int $gymId): ?WhatsAppAccount
     {
-        return WhatsAppAccount::where('gym_id', $gymId)
+        return WhatsAppAccount::query()->where('gym_id', $gymId)
             ->where('is_active', true)
             ->where('is_verified', true)
             ->first();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\CmsPage;
@@ -13,7 +15,7 @@ class CmsPageTest extends TestCase
     public function test_cms_page_can_be_viewed()
     {
         // Create a published CMS page
-        $page = CmsPage::factory()->create([
+        CmsPage::factory()->create([
             'slug' => 'terms-of-service',
             'title' => 'Terms of Service',
             'content' => 'This is the content of the terms of service.',
@@ -24,7 +26,7 @@ class CmsPageTest extends TestCase
         $response = $this->get('/page/terms-of-service');
 
         // Assert the page loads successfully
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertSee('Terms of Service');
         $response->assertSee('This is the content of the terms of service.');
     }
@@ -32,7 +34,7 @@ class CmsPageTest extends TestCase
     public function test_unpublished_cms_page_cannot_be_viewed()
     {
         // Create an unpublished CMS page
-        $page = CmsPage::factory()->create([
+        CmsPage::factory()->create([
             'slug' => 'private-page',
             'title' => 'Private Page',
             'content' => 'This is private.',
@@ -43,6 +45,6 @@ class CmsPageTest extends TestCase
         $response = $this->get('/page/private-page');
 
         // Assert 404
-        $response->assertStatus(404);
+        $response->assertNotFound();
     }
 }

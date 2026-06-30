@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Models\Attendances;
 use App\Models\GymMember;
+use Illuminate\Database\Eloquent\Builder;
 
 class FraudDetector
 {
@@ -22,11 +25,7 @@ class FraudDetector
             return false;
         }
 
-        $count = Attendances::whereHasMorph(
-            'attendanceable',
-            [GymMember::class],
-            fn ($q) => $q->where('email', $gymMember->email)
-        )
+        $count = Attendances::query()->whereHasMorph('attendanceable', [GymMember::class], fn (Builder $q) => $q->where('email', $gymMember->email))
             ->where('check_in_result', 'granted')
             ->where('check_in_time', '>=', now()->subMinutes(10))
             ->distinct('gym_id')

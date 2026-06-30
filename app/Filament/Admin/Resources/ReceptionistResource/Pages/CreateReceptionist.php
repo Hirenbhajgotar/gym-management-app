@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ReceptionistResource\Pages;
 
 use App\Enums\DefaultRole;
@@ -46,21 +48,21 @@ class CreateReceptionist extends CreateRecord
         // Activate account on creation
         $data['status'] = UserStatus::ACTIVE;
 
-        if (is_null($data['profile_photo']) || empty($data['profile_photo'])) {
-            $data['profile_photo'] = app(AvatarService::class)->generate($data['name']);
+        if (is_null($data['profile_photo']) || blank($data['profile_photo'])) {
+            $data['profile_photo'] = resolve(AvatarService::class)->generate($data['name']);
         }
 
         $userData = collect($data)->except(['passwordConfirmation', 'employeeDetails', 'address'])->toArray();
 
         // Create the user first
-        $receptionist = User::create($userData);
+        $receptionist = User::query()->create($userData);
 
         // Create employee details if provided
         if (isset($data['employeeDetails']) && is_array($data['employeeDetails'])) {
             $employeeDetailsData = $data['employeeDetails'];
             $employeeDetailsData['user_id'] = $receptionist->id;
 
-            EmployeeDetail::create($employeeDetailsData);
+            EmployeeDetail::query()->create($employeeDetailsData);
         }
 
         $receptionistRole = DefaultRole::RECEPTIONIST->value;

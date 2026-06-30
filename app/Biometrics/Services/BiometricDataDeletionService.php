@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Biometrics\BiometricProviderRegistry;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Models\BiometricConsent;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use Exception;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Spatie\Activitylog\Facades\Activity;
 
 class BiometricDataDeletionService
@@ -23,12 +28,12 @@ class BiometricDataDeletionService
      * - Catches exceptions per template and continues processing
      * - Throws aggregated exception after loop if any failures occurred
      *
-     * @throws \Exception when provider deletion fails - allows listener retry
+     * @throws Exception when provider deletion fails - allows listener retry
      */
     public function deleteForGymMember(GymMember $gymMember): void
     {
         // Step 1: Load all BiometricTemplate for this member
-        $templates = BiometricTemplate::where('gym_member_id', $gymMember->id)->get();
+        $templates = BiometricTemplate::query()->where('gym_member_id', $gymMember->id)->get();
 
         // Accumulate errors for throwing after loop
         $errors = [];
@@ -43,7 +48,7 @@ class BiometricDataDeletionService
             try {
                 $provider = $this->registry->resolve($template->provider_type);
 
-                $templateRef = new \App\Biometrics\DTOs\TemplateRef(
+                $templateRef = new TemplateRef(
                     provider: $template->provider_type,
                     externalId: $template->template_ref,
                     meta: []
@@ -63,7 +68,7 @@ class BiometricDataDeletionService
                         'provider' => $template->provider_type,
                     ]);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Catch exception per template and accumulate error
                 // This allows processing to continue for remaining templates
                 $errors[] = [
@@ -96,18 +101,17 @@ class BiometricDataDeletionService
             ]);
 
         // Step 4: Delete BiometricConsent records
-        BiometricConsent::where('gym_member_id', $gymMember->id)->delete();
+        BiometricConsent::query()->where('gym_member_id', $gymMember->id)->delete();
 
         // Step 5: Log via Spatie activity log
         Activity::on($gymMember)->log('Biometric data deleted per GDPR request');
 
         // Step 6: Throw aggregated exception if any errors occurred
         // This triggers the listener retry mechanism
-        if (! empty($errors)) {
-            throw new \RuntimeException(
+        if (filled($errors)) {
+            throw new RuntimeException(
                 'Biometric data deletion failed for ' . count($errors) . ' template(s). See logs for details.',
-                0,
-                null
+                0
             );
         }
     }
@@ -118,7 +122,7 @@ class BiometricDataDeletionService
     public function revokeConsent(GymMember $gymMember, bool $deleteData = false): void
     {
         // Revoke all consents
-        BiometricConsent::where('gym_member_id', $gymMember->id)
+        BiometricConsent::query()->where('gym_member_id', $gymMember->id)
             ->whereNull('revoked_at')
             ->update(['revoked_at' => now()]);
 

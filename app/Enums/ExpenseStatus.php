@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasColor;
@@ -27,7 +29,7 @@ enum ExpenseStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::DRAFT => 'gray',
@@ -39,7 +41,7 @@ enum ExpenseStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::DRAFT => 'phosphor-note-pencil',
@@ -58,7 +60,7 @@ enum ExpenseStatus: string implements HasColor, HasIcon, HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 
     /**

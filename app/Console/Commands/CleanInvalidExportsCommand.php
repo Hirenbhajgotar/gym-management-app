@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
+use Exception;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -50,7 +54,7 @@ class CleanInvalidExportsCommand extends Command
                     $export->delete();
                     $deletedCount++;
                     $this->line("Deleted export ID: {$export->id}");
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->error("Failed to delete export ID {$export->id}: {$e->getMessage()}");
                 }
             }
@@ -65,13 +69,13 @@ class CleanInvalidExportsCommand extends Command
 
     protected function findInvalidExports()
     {
-        return Export::where(function ($query) {
+        return Export::query()->where(function (Builder $query) {
             // Find exports with missing file information
             $query->whereNull('file_name')
                 ->orWhereNull('file_disk')
                 ->orWhere('file_name', '')
                 ->orWhere('file_disk', '');
-        })->orWhere(function ($query) {
+        })->orWhere(function (Builder $query) {
             // Find exports where the file doesn't exist on disk
             $query->whereNotNull('file_name')
                 ->whereNotNull('file_disk')
@@ -84,7 +88,7 @@ class CleanInvalidExportsCommand extends Command
                     $disk = Storage::disk($export->file_disk);
 
                     return ! $disk->exists($export->file_name);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Error checking export file existence', [
                         'export_id' => $export->id,
                         'exception' => $e->getMessage(),

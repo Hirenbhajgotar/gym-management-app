@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -36,9 +38,7 @@ class GenerateFavicons extends Command
             $this->info("Source dimensions: {$imageInfo['width']}x{$imageInfo['height']}");
 
             $fileContent = file_get_contents($sourcePath);
-            if ($fileContent === false) {
-                throw new RuntimeException("Failed to read source file: {$sourcePath}");
-            }
+            throw_if($fileContent === false, RuntimeException::class, "Failed to read source file: {$sourcePath}");
 
             $this->generateSvg($fileContent, $imageInfo['width'], $imageInfo['height'], $imageInfo['mime']);
             $this->generateIco($sourcePath, $fileContent, $imageInfo['width'], $imageInfo['height']);
@@ -74,17 +74,13 @@ class GenerateFavicons extends Command
     {
         $info = getimagesize($path);
 
-        if (! $info) {
-            throw new RuntimeException('Could not get image info.');
-        }
+        throw_unless($info, RuntimeException::class, 'Could not get image info.');
 
         $width = $info[0];
         $height = $info[1];
         $mime = $info['mime'];
 
-        if ($mime !== 'image/png') {
-            throw new RuntimeException("Source file must be a PNG image. Found: {$mime}");
-        }
+        throw_if($mime !== 'image/png', RuntimeException::class, "Source file must be a PNG image. Found: {$mime}");
 
         return ['width' => $width, 'height' => $height, 'mime' => $mime];
     }
@@ -100,9 +96,7 @@ class GenerateFavicons extends Command
 </svg>
 SVG;
 
-        if (file_put_contents($dest, $svg) === false) {
-            throw new RuntimeException("Failed to write SVG to {$dest}");
-        }
+        throw_if(file_put_contents($dest, $svg) === false, RuntimeException::class, "Failed to write SVG to {$dest}");
 
         $this->info("Generated {$dest}");
     }
@@ -146,9 +140,7 @@ SVG;
             22 // Offset (6 header + 16 entry)
         );
 
-        if (file_put_contents($dest, $icoHeader . $entry . $pngContent) === false) {
-            throw new RuntimeException("Failed to write ICO to {$dest}");
-        }
+        throw_if(file_put_contents($dest, $icoHeader . $entry . $pngContent) === false, RuntimeException::class, "Failed to write ICO to {$dest}");
 
         $this->info("Generated {$dest}");
     }

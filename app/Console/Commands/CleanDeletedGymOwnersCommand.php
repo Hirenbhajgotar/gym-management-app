@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\DefaultRole;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -79,7 +82,7 @@ class CleanDeletedGymOwnersCommand extends Command
                     'user_email' => $owner->email,
                 ]);
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 $errorMessage = "Failed to delete gym owner {$owner->email}: {$e->getMessage()}";
@@ -97,7 +100,7 @@ class CleanDeletedGymOwnersCommand extends Command
 
         $this->info("Successfully deleted {$deletedCount} gym owner(s).");
 
-        if (! empty($errors)) {
+        if (filled($errors)) {
             $this->error('Some deletions failed:');
             foreach ($errors as $error) {
                 $this->error("  - {$error}");

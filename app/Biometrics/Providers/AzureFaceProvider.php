@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Providers;
 
 use App\Biometrics\Contracts\BiometricProvider;
@@ -7,7 +9,10 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\DTOs\VerificationResult;
 use App\Models\GymMember;
+use Exception;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 class AzureFaceProvider implements BiometricProvider
 {
@@ -37,7 +42,7 @@ class AzureFaceProvider implements BiometricProvider
         return $this->endpoint;
     }
 
-    protected function http(): \Illuminate\Http\Client\PendingRequest
+    protected function http(): PendingRequest
     {
         return Http::withHeaders([
             'Ocp-Apim-Subscription-Key' => $this->subscriptionKey,
@@ -68,8 +73,8 @@ class AzureFaceProvider implements BiometricProvider
 
         $faceData = $response->json();
 
-        if (empty($faceData['persistedFaceId'])) {
-            throw new \RuntimeException('Azure Face enrollment failed: ' . json_encode($faceData));
+        if (blank($faceData['persistedFaceId'])) {
+            throw new RuntimeException('Azure Face enrollment failed: ' . json_encode($faceData));
         }
 
         $this->trainPersonGroup($personGroupId);
@@ -96,7 +101,7 @@ class AzureFaceProvider implements BiometricProvider
 
         $faces = $detectResponse->json();
 
-        if (empty($faces)) {
+        if (blank($faces)) {
             return new VerificationResult(
                 matched: false,
                 confidence: 0.0,
@@ -145,7 +150,7 @@ class AzureFaceProvider implements BiometricProvider
 
         $faces = $response->json();
 
-        if (empty($faces)) {
+        if (blank($faces)) {
             return 0.0;
         }
 
@@ -204,7 +209,7 @@ class AzureFaceProvider implements BiometricProvider
             )->throw();
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -218,7 +223,7 @@ class AzureFaceProvider implements BiometricProvider
     {
         try {
             return $this->http()->timeout(5)->get($this->getBaseUrl() . '/face/v1.0/persongroups?top=1')->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

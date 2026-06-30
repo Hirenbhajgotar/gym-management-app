@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use App\Models\ErrorReport;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +19,7 @@ class ListErrorReports extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 
@@ -25,7 +27,7 @@ class ListErrorReports extends ListRecords
     {
         $tabs = [
             'all' => Tab::make('All')
-                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::count())),
+                ->badge(Cache::flexible(ErrorReport::ERROR_REPORT_ALL_COUNT_CACHE_KEY, [now()->addHours(6), now()->addHours(24)], fn () => ErrorReport::query()->count())),
         ];
 
         $statusTabs = [

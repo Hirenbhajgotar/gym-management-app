@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Gym;
@@ -27,11 +29,9 @@ class OtpService
             );
         }
 
-        $account = WhatsAppAccount::where('gym_id', $tenantId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $tenantId)->first();
 
-        if (! $account) {
-            throw new Exception('No WhatsApp account found for this gym');
-        }
+        throw_unless($account, Exception::class, 'No WhatsApp account found for this gym');
 
         return new Client(
             $account->twilio_account_sid,
@@ -104,7 +104,7 @@ class OtpService
             ]);
 
             return $newService->sid;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to get or create Verify service', [
                 'gym_id' => $gym->id,
                 'error' => $e->getMessage(),
@@ -152,7 +152,7 @@ class OtpService
         // Get member's phone
         $phone = $member?->phone;
 
-        if (empty($phone)) {
+        if (blank($phone)) {
             return [
                 'success' => false,
                 'message' => 'Member does not have a registered phone number.',
@@ -179,7 +179,7 @@ class OtpService
                 'success' => false,
                 'message' => 'Failed to send verification code. Please try again.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance OTP exception', [
                 'gym_id' => $gym->id,
                 'member_id' => $member->id,
@@ -245,7 +245,7 @@ class OtpService
                 'valid' => false,
                 'message' => 'Invalid verification code. Please try again.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('QR Attendance OTP verification exception', [
                 'gym_id' => $gym->id,
                 'phone' => $formattedPhone,
@@ -278,7 +278,7 @@ class OtpService
         }
 
         // Has exactly 10 digits - add India country code
-        if (strlen($cleaned) == 10) {
+        if (strlen($cleaned) === 10) {
             return '+91' . $cleaned;
         }
 

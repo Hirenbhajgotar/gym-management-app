@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -29,7 +32,7 @@ class MemberDemographicsChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -46,7 +49,7 @@ class MemberDemographicsChart extends BaseChartWidget
                 'Unknown' => 0,
             ];
 
-            $members = GymMember::where('gym_id', $gymId)
+            $members = GymMember::query()->where('gym_id', $gymId)
                 ->select('dob', 'age')
                 ->get();
 

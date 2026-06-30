@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\WhatsAppAccountStatusEnum;
@@ -7,11 +9,15 @@ use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Observers\WhatsAppAccountObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -33,38 +39,38 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $business_email
  * @property string|null $business_description
  * @property WhatsAppProviderTypeEnum|null $provider_type
- * @property \Illuminate\Support\Carbon|null $verified_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \App\Models\WhatsAppPhoneNumber|null $phoneNumber
+ * @property Carbon|null $verified_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read WhatsAppPhoneNumber|null $phoneNumber
  * @property-read int|null $phone_number_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppTemplate> $templates
+ * @property-read Collection<int, WhatsAppTemplate> $templates
  * @property-read int|null $templates_count
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereBusinessName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereEmbeddedSignupCompleted($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereEmbeddedSignupSessionId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMessagingServiceSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMetaAccessToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereMetaBusinessPortfolioId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereTwilioAccountSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereTwilioAuthToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerificationStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifiedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereVerifyServiceSid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppAccount whereWabaName($value)
+ * @method static Builder<static>|WhatsAppAccount newModelQuery()
+ * @method static Builder<static>|WhatsAppAccount newQuery()
+ * @method static Builder<static>|WhatsAppAccount query()
+ * @method static Builder<static>|WhatsAppAccount whereBusinessDescription($value)
+ * @method static Builder<static>|WhatsAppAccount whereBusinessEmail($value)
+ * @method static Builder<static>|WhatsAppAccount whereBusinessName($value)
+ * @method static Builder<static>|WhatsAppAccount whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppAccount whereEmbeddedSignupCompleted($value)
+ * @method static Builder<static>|WhatsAppAccount whereEmbeddedSignupSessionId($value)
+ * @method static Builder<static>|WhatsAppAccount whereGymId($value)
+ * @method static Builder<static>|WhatsAppAccount whereId($value)
+ * @method static Builder<static>|WhatsAppAccount whereMessagingServiceSid($value)
+ * @method static Builder<static>|WhatsAppAccount whereMetaAccessToken($value)
+ * @method static Builder<static>|WhatsAppAccount whereMetaBusinessPortfolioId($value)
+ * @method static Builder<static>|WhatsAppAccount whereStatus($value)
+ * @method static Builder<static>|WhatsAppAccount whereTwilioAccountSid($value)
+ * @method static Builder<static>|WhatsAppAccount whereTwilioAuthToken($value)
+ * @method static Builder<static>|WhatsAppAccount whereUpdatedAt($value)
+ * @method static Builder<static>|WhatsAppAccount whereVerificationStatus($value)
+ * @method static Builder<static>|WhatsAppAccount whereVerifiedAt($value)
+ * @method static Builder<static>|WhatsAppAccount whereVerifyServiceSid($value)
+ * @method static Builder<static>|WhatsAppAccount whereWabaId($value)
+ * @method static Builder<static>|WhatsAppAccount whereWabaName($value)
  * @method bool isActive()
  * @method bool isVerified()
  * @method bool hasPhoneNumber()
@@ -78,7 +84,9 @@ use Illuminate\Support\Facades\Crypt;
 #[ObservedBy([WhatsAppAccountObserver::class])]
 class WhatsAppAccount extends Model
 {
-    const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_account_navigation_badge';
+    use HasFactory;
+
+    public const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_account_navigation_badge';
 
     protected $table = 'whatsapp_accounts';
 
@@ -123,17 +131,25 @@ class WhatsAppAccount extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return HasOne<WhatsAppPhoneNumber, $this>
+     */
     public function phoneNumber(): HasOne
     {
         return $this->hasOne(WhatsAppPhoneNumber::class, 'whatsapp_account_id');
     }
 
+    /**
+     * @return HasMany<WhatsAppTemplate, $this>
+     */
     public function templates(): HasMany
     {
         return $this->hasMany(WhatsAppTemplate::class, 'gym_id');
@@ -143,7 +159,7 @@ class WhatsAppAccount extends Model
     // Accessors
     // =========================
 
-    public function twilioAuthToken(): Attribute
+    protected function twilioAuthToken(): Attribute
     {
         return Attribute::make(
             get: fn (mixed $value, array $attributes) => (isset($attributes['twilio_auth_token']) && $attributes['twilio_auth_token'])
@@ -153,7 +169,7 @@ class WhatsAppAccount extends Model
         );
     }
 
-    public function metaAccessToken(): Attribute
+    protected function metaAccessToken(): Attribute
     {
         return Attribute::make(
             get: fn (mixed $value, array $attributes) => (isset($attributes['meta_access_token']) && $attributes['meta_access_token'])
@@ -300,7 +316,7 @@ class WhatsAppAccount extends Model
      */
     public function requiresWabaSetup(): bool
     {
-        return $this->isWabaProvider() && empty($this->waba_id);
+        return $this->isWabaProvider() && blank($this->waba_id);
     }
 
     /**
@@ -310,7 +326,7 @@ class WhatsAppAccount extends Model
     public function requiresTwilioSetup(): bool
     {
         return $this->isTwilioProvider()
-            && (empty($this->twilio_account_sid) || ! $this->hasPhoneNumber());
+            && (blank($this->twilio_account_sid) || ! $this->hasPhoneNumber());
     }
 
     /**

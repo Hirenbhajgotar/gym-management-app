@@ -1,23 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages\CreatePermissions;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages\EditPermissions;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages\ListPermissions;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionsResource\Pages\ViewPermission;
 use App\Models\Permission as ModelsPermission;
-use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Forms\Set;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 
 class PermissionsResource extends BaseResource
@@ -46,7 +58,7 @@ class PermissionsResource extends BaseResource
                                     ->placeholder('e.g., create_user, edit_post')
                                     ->helperText('Use snake_case format (e.g., create_user, view_reports)')
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    ->afterStateUpdated(function ($state, Set $set) {
                                         $set('display_name', ucwords(str_replace(['_', '-'], ' ', $state)));
                                     }),
 
@@ -75,7 +87,7 @@ class PermissionsResource extends BaseResource
                                     ->helperText('Categorize this permission for better organization'),
                             ]),
 
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->label('Description')
                             ->maxLength(500)
                             ->placeholder('Describe what this permission allows users to do')
@@ -132,27 +144,31 @@ class PermissionsResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
+                SelectFilter::make('category')
                     ->label('Category')
                     ->options(PermissionCategory::class),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make()
                     ->before(function (Permission $record) {
                         // Detach all roles and users before deletion
-                        $record->roles()->detach();
-                        $record->users()->detach();
+                        DB::transaction(function () use ($record) {
+                            $record->roles()->detach();
+                            $record->users()->detach();
+                        });
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->before(function ($records) {
                             foreach ($records as $record) {
-                                $record->roles()->detach();
-                                $record->users()->detach();
+                                DB::transaction(function () use ($record) {
+                                    $record->roles()->detach();
+                                    $record->users()->detach();
+                                });
                             }
                         }),
                 ]),
@@ -169,13 +185,16 @@ class PermissionsResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPermissions::route('/'),
-            'create' => Pages\CreatePermissions::route('/create'),
-            'view' => Pages\ViewPermission::route('/{record}'),
-            'edit' => Pages\EditPermissions::route('/{record}/edit'),
+            'index' => ListPermissions::route('/'),
+            'create' => CreatePermissions::route('/create'),
+            'view' => ViewPermission::route('/{record}'),
+            'edit' => EditPermissions::route('/{record}/edit'),
         ];
     }
 
+    /**
+     * @return Builder<\App\Models\Permission>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

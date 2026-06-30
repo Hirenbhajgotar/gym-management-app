@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
+use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
-use Filament\Forms;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
@@ -18,7 +21,6 @@ use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 class CreateGymMember extends CreateRecord
 {
@@ -86,11 +88,11 @@ class CreateGymMember extends CreateRecord
 
     protected function afterCreate(): void
     {
-        /** @var \App\Models\GymMember $member */
+        /** @var GymMember $member */
         $member = $this->record;
 
         // Create measurement if provided
-        if (! empty($this->measurementData['weight']) && ! empty($this->measurementData['height'])) {
+        if (filled($this->measurementData['weight']) && filled($this->measurementData['height'])) {
             $member->measurements()->create([
                 'weight' => $this->measurementData['weight'],
                 'height' => $this->measurementData['height'],
@@ -99,7 +101,7 @@ class CreateGymMember extends CreateRecord
         }
 
         // Create the payment if payment data is provided
-        if (! empty($this->paymentData['membership_plan_id'])) {
+        if (filled($this->paymentData['membership_plan_id'])) {
             $payment = $member->payments()->create([
                 'member_id' => $member->id,
                 'gym_id' => $member->gym_id,
@@ -132,14 +134,14 @@ class CreateGymMember extends CreateRecord
         } else {
             // If no payment, just send the notification immediately
             // Ensure required member data is available before sending
-            if (empty($member->email)) {
+            if (blank($member->email)) {
                 Log::warning('No email provided for gym member', [
                     'member_id' => $member->id,
                 ]);
 
                 return;
             }
-            SendNotificationJob::dispatch($member, new WelcomeNotification($member));
+            dispatch(new SendNotificationJob($member, new WelcomeNotification($member)));
         }
     }
 
@@ -175,17 +177,17 @@ class CreateGymMember extends CreateRecord
             Hidden::make('user_id')
                 ->default(fn () => auth()->id()),
 
-            Forms\Components\Section::make('Membership Details')
+            Section::make('Membership Details')
                 ->icon('heroicon-o-ticket')
                 ->description('Configure membership settings')
                 ->schema([
-                    Forms\Components\Hidden::make('gym_id')
+                    Hidden::make('gym_id')
                         ->default(fn () => $this->getGymId()),
 
-                    Forms\Components\Select::make('trainer_id')
+                    Select::make('trainer_id')
                         ->label('Assign Trainer')
                         ->options(function (callable $get) {
-                            return Trainer::where('gym_id', $this->getGymId())
+                            return Trainer::query()->where('gym_id', $this->getGymId())
                                 ->available()
                                 ->pluck('name', 'id')
                                 ->prepend('None', null); // Allow "No Trainer" option

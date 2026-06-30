@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -30,9 +31,7 @@ abstract class PermissionsTestCase extends TestCase
         $this->gym = Gym::factory()->create();
         $this->gymId = $this->gym->id;
 
-        Role::firstOrCreate(
-            ['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $this->gymId]
-        );
+        Role::query()->firstOrCreate(['name' => 'gym_owner', 'guard_name' => 'web', 'gym_id' => $this->gymId]);
 
         $this->gymOwner = User::factory()->create();
 
@@ -45,28 +44,25 @@ abstract class PermissionsTestCase extends TestCase
 
     protected function seedPermissions(): void
     {
-        $service = app(RolesAndPermissionsService::class);
+        $service = resolve(RolesAndPermissionsService::class);
         $service->discoverFilamentPermissions();
     }
 
     protected function createRoleWithPermissions(DefaultRole $role, array $permissionNames = []): Role
     {
-        $roleModel = Role::firstOrCreate(
-            ['name' => $role->value, 'gym_id' => $this->gymId],
-            ['guard_name' => 'web']
-        );
+        $roleModel = Role::query()->firstOrCreate(['name' => $role->value, 'gym_id' => $this->gymId], ['guard_name' => 'web']);
 
-        if (! empty($permissionNames)) {
-            $permissions = Permission::whereIn('name', $permissionNames)->get();
+        if (filled($permissionNames)) {
+            $permissions = Permission::query()->whereIn('name', $permissionNames)->get();
             $roleModel->syncPermissions($permissions);
         }
 
         return $roleModel;
     }
 
-    protected function getPermissionsForRole(DefaultRole $role): \Illuminate\Support\Collection
+    protected function getPermissionsForRole(DefaultRole $role): Collection
     {
-        $roleModel = Role::where('name', $role->value)
+        $roleModel = Role::query()->where('name', $role->value)
             ->where('gym_id', $this->gymId)
             ->first();
 

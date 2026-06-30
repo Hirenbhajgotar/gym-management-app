@@ -1,13 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use Illuminate\Bus\Batch;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 
 /**
@@ -19,40 +25,40 @@ use Illuminate\Support\Facades\Bus;
  * @property array<array-key, mixed>|null $target_filters
  * @property int $target_count
  * @property WhatsAppBroadcastStatusEnum|null $status
- * @property \Illuminate\Support\Carbon|null $scheduled_at
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property Carbon|null $scheduled_at
+ * @property Carbon|null $started_at
+ * @property Carbon|null $completed_at
  * @property int $sent_count
  * @property int $failed_count
  * @property int $credits_used
  * @property array<array-key, mixed>|null $message_variables
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WhatsAppBroadcastRecipient> $recipients
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
+ * @property-read Collection<int, WhatsAppBroadcastRecipient> $recipients
  * @property-read int|null $recipients_count
- * @property-read \App\Models\WhatsAppTemplate $template
+ * @property-read WhatsAppTemplate $template
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCompletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereCreditsUsed($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereFailedCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereMessageVariables($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereScheduledAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereSentCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereStartedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTargetCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTargetFilters($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereTitle($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsAppBroadcast whereWhatsappTemplateId($value)
+ * @method static Builder<static>|WhatsAppBroadcast newModelQuery()
+ * @method static Builder<static>|WhatsAppBroadcast newQuery()
+ * @method static Builder<static>|WhatsAppBroadcast query()
+ * @method static Builder<static>|WhatsAppBroadcast whereCompletedAt($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereCreatedAt($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereCreditsUsed($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereDescription($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereFailedCount($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereGymId($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereId($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereMessageVariables($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereScheduledAt($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereSentCount($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereStartedAt($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereStatus($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereTargetCount($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereTargetFilters($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereTitle($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereUpdatedAt($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereWhatsappTemplateId($value)
  *
  * @mixin \Eloquent
  */
@@ -99,17 +105,25 @@ class WhatsAppBroadcast extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return BelongsTo<WhatsAppTemplate, $this>
+     */
     public function template(): BelongsTo
     {
         return $this->belongsTo(WhatsAppTemplate::class, 'whatsapp_template_id');
     }
 
+    /**
+     * @return HasMany<WhatsAppBroadcastRecipient, $this>
+     */
     public function recipients(): HasMany
     {
         return $this->hasMany(WhatsAppBroadcastRecipient::class, 'whatsapp_broadcast_id');
@@ -190,19 +204,20 @@ class WhatsAppBroadcast extends Model
     /**
      * @return array{total: int, pending: int, failed: int, progress: int}|null
      */
-    public function getProgressAttribute(): ?array
+    protected function progress(): Attribute
     {
-        $batch = $this->batch();
+        return Attribute::make(get: function () {
+            $batch = $this->batch();
+            if (! $batch) {
+                return null;
+            }
 
-        if (! $batch) {
-            return null;
-        }
-
-        return [
-            'total' => $batch->totalJobs,
-            'pending' => $batch->pendingJobs,
-            'failed' => $batch->failedJobs,
-            'progress' => $batch->progress(),
-        ];
+            return [
+                'total' => $batch->totalJobs,
+                'pending' => $batch->pendingJobs,
+                'failed' => $batch->failedJobs,
+                'progress' => $batch->progress(),
+            ];
+        });
     }
 }

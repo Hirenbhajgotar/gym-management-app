@@ -1,21 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages;
+use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages\CreateFeedback;
+use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages\EditFeedback;
+use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages\ListFeedback;
+use App\Filament\SuperAdmin\Resources\FeedbackResource\Pages\ViewFeedback;
 use App\Models\Feedback;
-use Filament\Forms;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
-use Filament\Infolists\Components;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Mokhosh\FilamentRating\Columns\RatingColumn;
 use Mokhosh\FilamentRating\Components\Rating;
 use Mokhosh\FilamentRating\Entries\RatingEntry;
@@ -41,15 +56,15 @@ class FeedbackResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
+                Select::make('user_id')
                     ->relationship('user', 'name')
                     ->required(),
                 Rating::make('rating')
                     ->required(),
-                Forms\Components\Textarea::make('feedback')
+                Textarea::make('feedback')
                     ->required()
                     ->columnSpanFull(),
-                Forms\Components\DateTimePicker::make('submitted_at')
+                DateTimePicker::make('submitted_at')
                     ->native(false)
                     ->closeOnDateSelection(true)
                     ->required(),
@@ -57,7 +72,9 @@ class FeedbackResource extends BaseResource
             ]);
     }
 
-    // Or in your resource/controller
+    /**
+     * @return Builder<Feedback>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['user.roles']);
@@ -67,15 +84,15 @@ class FeedbackResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
+                TextColumn::make('user.name')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('feedback')
+                TextColumn::make('feedback')
                     ->label('Feedback')
                     ->limit(50),
                 RatingColumn::make('rating')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('submitted_at')
+                TextColumn::make('submitted_at')
                     ->dateTime()
                     ->sortable(),
 
@@ -84,13 +101,13 @@ class FeedbackResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -99,12 +116,12 @@ class FeedbackResource extends BaseResource
     {
         return $infolist
             ->schema([
-                Components\Section::make()
+                Section::make()
                     ->schema([
-                        Components\Split::make([
-                            Components\Grid::make(2)
+                        Split::make([
+                            Grid::make(2)
                                 ->schema([
-                                    Components\Group::make([
+                                    Group::make([
                                         TextEntry::make('user.name')
                                             ->label('User Name'),
                                         // TextEntry::make('user.roles.first.name')
@@ -120,7 +137,7 @@ class FeedbackResource extends BaseResource
                                         //     ->badge()
                                         //     ->separator(','),
                                     ]),
-                                    Components\Group::make([
+                                    Group::make([
                                         RatingEntry::make('rating')
                                             ->label('Rating'),
 
@@ -133,21 +150,21 @@ class FeedbackResource extends BaseResource
                                 ]),
                         ])->from('lg'),
                     ]),
-                Components\Section::make('Feedback')
+                Section::make('Feedback')
                     ->schema([
-                        Components\TextEntry::make('feedback')
+                        TextEntry::make('feedback')
                             ->prose()
                             ->markdown()
                             ->hiddenLabel(),
                     ])
                     ->collapsible(),
-                Components\Section::make('Attachments')
+                Section::make('Attachments')
                     ->schema([
-                        Components\Group::make([
+                        Group::make([
                             TextEntry::make('files')
                                 ->label('Attached Files')
                                 ->formatStateUsing(function ($state, $record) {
-                                    if (empty($state)) {
+                                    if (blank($state)) {
                                         return 'No files attached';
                                     }
 
@@ -159,9 +176,9 @@ class FeedbackResource extends BaseResource
                                         // Check if it's an image
                                         if (in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
                                             return "<img src='" . asset('storage/' . $file) . "' alt='{$fileName}' style='max-width: 100px; max-height: 100px; margin: 5px;' />";
-                                        } else {
-                                            return "<a href='" . asset('storage/' . $file) . "' target='_blank' download='{$fileName}'>{$fileName}</a>";
                                         }
+
+                                        return "<a href='" . asset('storage/' . $file) . "' target='_blank' download='{$fileName}'>{$fileName}</a>";
 
                                         // if (in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
                                         //     return "
@@ -263,7 +280,7 @@ class FeedbackResource extends BaseResource
                                         </script>
                                         ";
 
-                                    return new \Illuminate\Support\HtmlString($filesList);
+                                    return new HtmlString($filesList);
                                 })
                                 ->html(),
                         ]),
@@ -282,10 +299,10 @@ class FeedbackResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListFeedback::route('/'),
-            'create' => Pages\CreateFeedback::route('/create'),
-            'edit' => Pages\EditFeedback::route('/{record}/edit'),
-            'view' => Pages\ViewFeedback::route('/{record}'),
+            'index' => ListFeedback::route('/'),
+            'create' => CreateFeedback::route('/create'),
+            'edit' => EditFeedback::route('/{record}/edit'),
+            'view' => ViewFeedback::route('/{record}'),
         ];
     }
 }

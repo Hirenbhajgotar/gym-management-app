@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\LeadSource;
@@ -11,7 +13,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Lead>
+ * @extends Factory<Lead>
  */
 class LeadFactory extends Factory
 {
@@ -27,26 +29,26 @@ class LeadFactory extends Factory
         return [
             'gym_id' => function () {
                 // Use an existing gym, or create one if none exist
-                $gym = Gym::inRandomOrder()->first();
+                $gym = Gym::query()->inRandomOrder()->first();
                 if (! $gym) {
                     $gym = Gym::factory()->create();
                 }
 
                 return $gym->id;
             },
-            'name' => $this->faker->name(),
-            'email' => $this->faker->unique()->safeEmail(),
-            'phone' => $this->faker->phoneNumber(),
-            'source' => $this->faker->randomElement(LeadSource::cases()),
-            'status' => $this->faker->randomElement(LeadStatus::cases()),
-            'interest' => $this->faker->optional()->randomElements(['weight_loss', 'muscle_gain', 'general_fitness', 'cardio', 'strength_training', 'yoga', 'group_classes'], rand(1, 3)),
-            'tags' => $this->faker->optional()->randomElements(['hot', 'warm', 'cold', 'vip', 'student', 'corporate', 'senior', 'new'], rand(1, 3)),
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->phoneNumber(),
+            'source' => fake()->randomElement(LeadSource::cases()),
+            'status' => fake()->randomElement(LeadStatus::cases()),
+            'interest' => fake()->optional()->randomElements(['weight_loss', 'muscle_gain', 'general_fitness', 'cardio', 'strength_training', 'yoga', 'group_classes'], rand(1, 3)),
+            'tags' => fake()->optional()->randomElements(['hot', 'warm', 'cold', 'vip', 'student', 'corporate', 'senior', 'new'], rand(1, 3)),
             'membership_plan_id' => function (array $attributes) {
                 // Use the gym_id from the attributes to create membership plan
                 return MembershipPlan::factory()->create(['gym_id' => $attributes['gym_id']])->id;
             },
-            'last_follow_up_date' => $this->faker->optional()->dateTimeBetween('-1 month', 'now'),
-            'notes' => $this->faker->optional()->sentence(),
+            'last_follow_up_date' => fake()->optional()->dateTimeBetween('-1 month', 'now'),
+            'notes' => fake()->optional()->sentence(),
             'created_by' => User::factory(),
         ];
     }

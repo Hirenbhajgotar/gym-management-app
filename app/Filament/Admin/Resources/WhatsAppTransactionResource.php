@@ -1,17 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppCreditTransactionEnum;
+use App\Filament\Admin\Resources\WhatsAppTransactionResource\Pages\ListWhatsAppTransactions;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\WhatsAppCreditTransaction;
 use Filament\Facades\Filament;
-use Filament\Forms;
-use Filament\Infolists;
+use Filament\Forms\Components\DatePicker;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Tables;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class WhatsAppTransactionResource extends BaseResource
 {
@@ -30,7 +38,7 @@ class WhatsAppTransactionResource extends BaseResource
         return false;
     }
 
-    public static function canUpdate(): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
     }
@@ -54,62 +62,62 @@ class WhatsAppTransactionResource extends BaseResource
             ->modifyQueryUsing(fn ($query) => $query->where('gym_id', Filament::getTenant()?->id))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Date')
                     ->dateTime('M d, Y g:i A')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('type')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('credits')
+                TextColumn::make('credits')
                     ->numeric()
                     ->prefix(fn ($record) => $record->isPurchase() || $record->isRefund() || $record->isBonus() || $record->isAdjustment() ? '+' : '-')
                     ->color(fn ($record) => $record->isPurchase() || $record->isRefund() || $record->isBonus() ? 'success' : 'danger')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('balance_before')
+                TextColumn::make('balance_before')
                     ->numeric()
                     ->label('Before')
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('balance_after')
+                TextColumn::make('balance_after')
                     ->numeric()
                     ->label('After')
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money('INR')
                     ->label('Amount')
                     ->placeholder('—')
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('description')
+                TextColumn::make('description')
                     ->limit(50)
                     ->tooltip(fn ($record) => $record->description)
                     ->placeholder('—')
                     ->wrap(),
 
-                Tables\Columns\TextColumn::make('payment_reference')
+                TextColumn::make('payment_reference')
                     ->label('Reference')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('package.name')
+                TextColumn::make('package.name')
                     ->label('Package')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
+                SelectFilter::make('type')
                     ->options(WhatsAppCreditTransactionEnum::class)
                     ->label('Transaction Type'),
 
-                Tables\Filters\Filter::make('created_at')
+                Filter::make('created_at')
                     ->form([
-                        Forms\Components\DatePicker::make('from')->label('From'),
-                        Forms\Components\DatePicker::make('until')->label('Until'),
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -118,7 +126,7 @@ class WhatsAppTransactionResource extends BaseResource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ]);
     }
 
@@ -126,49 +134,49 @@ class WhatsAppTransactionResource extends BaseResource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Transaction Details')
+                Section::make('Transaction Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('Date & Time')
                             ->dateTime('M d, Y g:i A'),
-                        Infolists\Components\TextEntry::make('type')
+                        TextEntry::make('type')
                             ->badge(),
                     ])->columns(2),
 
-                Infolists\Components\Section::make('Credit Information')
+                Section::make('Credit Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('credits')
+                        TextEntry::make('credits')
                             ->label('Credits')
                             ->formatStateUsing(fn ($record) => ($record->isPurchase() || $record->isRefund() || $record->isBonus() || $record->isAdjustment() ? '+' : '-') . $record->credits)
                             ->color(fn ($record) => $record->isPurchase() || $record->isRefund() || $record->isBonus() ? 'success' : 'danger')
                             ->weight('bold'),
-                        Infolists\Components\TextEntry::make('balance_before')
+                        TextEntry::make('balance_before')
                             ->label('Balance Before')
                             ->numeric(),
-                        Infolists\Components\TextEntry::make('balance_after')
+                        TextEntry::make('balance_after')
                             ->label('Balance After')
                             ->numeric()
                             ->weight('bold'),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Payment Details')
+                Section::make('Payment Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('amount')
+                        TextEntry::make('amount')
                             ->label('Amount')
                             ->money('INR')
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('payment_reference')
+                        TextEntry::make('payment_reference')
                             ->label('Payment Reference')
                             ->copyable()
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('package.name')
+                        TextEntry::make('package.name')
                             ->label('Package')
                             ->default('—'),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Description')
+                Section::make('Description')
                     ->schema([
-                        Infolists\Components\TextEntry::make('description')
+                        TextEntry::make('description')
                             ->default('—')
                             ->limit(400),
                     ]),
@@ -178,7 +186,7 @@ class WhatsAppTransactionResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\Admin\Resources\WhatsAppTransactionResource\Pages\ListWhatsAppTransactions::route('/'),
+            'index' => ListWhatsAppTransactions::route('/'),
         ];
     }
 }

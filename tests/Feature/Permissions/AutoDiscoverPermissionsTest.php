@@ -8,10 +8,11 @@ use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Permissions\Pages\ManagerPermissionsPage;
 use App\Filament\Admin\Clusters\Permissions\Pages\ReceptionistPermissionsPage;
 use App\Models\Permission;
+use App\Services\PermissionDiscoveryService;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class AutoDiscoverPermissionsTest extends PermissionsTestCase
@@ -50,7 +51,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $resources = $service->getDiscoveredResourcesForRole(DefaultRole::MANAGER);
 
         $component = Livewire::test(ManagerPermissionsPage::class);
@@ -66,7 +67,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $managerService = app(\App\Services\PermissionDiscoveryService::class);
+        $managerService = resolve(PermissionDiscoveryService::class);
         $managerResources = $managerService->getDiscoveredResourcesForRole(DefaultRole::MANAGER);
         $receptionistResources = $managerService->getDiscoveredResourcesForRole(DefaultRole::RECEPTIONIST);
 
@@ -92,10 +93,10 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $resources = $service->getDiscoveredResourcesForRole(DefaultRole::MANAGER);
 
-        if (empty($resources)) {
+        if (blank($resources)) {
             $this->markTestSkipped('No discovered resources for manager role');
         }
 
@@ -107,9 +108,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
             $this->markTestSkipped('No permissions found for manager resources');
         }
 
-        $permission = Permission::firstOrCreate(
-            ['name' => $permToCheck, 'guard_name' => 'web']
-        );
+        Permission::query()->firstOrCreate(['name' => $permToCheck, 'guard_name' => 'web']);
 
         Livewire::test(ManagerPermissionsPage::class)
             ->set('data', array_merge(
@@ -122,7 +121,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
         // Verify the permission-to-role assignment via raw DB to avoid Spatie cache issues.
         setPermissionsTeamId($this->gymId);
 
-        $role = \Spatie\Permission\Models\Role::where('name', 'manager')
+        $role = Role::query()->where('name', 'manager')
             ->where('gym_id', $this->gymId)
             ->first();
 
@@ -141,10 +140,10 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $resources = $service->getDiscoveredResourcesForRole(DefaultRole::MANAGER);
 
-        if (empty($resources)) {
+        if (blank($resources)) {
             $this->markTestSkipped('No discovered resources for manager role');
         }
 
@@ -155,9 +154,7 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
             $this->markTestSkipped('No permissions found for manager resources');
         }
 
-        Permission::firstOrCreate(
-            ['name' => $permToCheck, 'guard_name' => 'web']
-        );
+        Permission::query()->firstOrCreate(['name' => $permToCheck, 'guard_name' => 'web']);
 
         Livewire::test(ManagerPermissionsPage::class)
             ->set('data', array_merge(
@@ -170,10 +167,10 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
             ->callAction('reset_permissions');
 
         // Clear Spatie permission cache so relationship reflects the fresh DB state
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $defaultPerms = $service->getDefaultPermissionsForRole(DefaultRole::MANAGER);
-        $role = \Spatie\Permission\Models\Role::where('name', 'manager')
+        $role = Role::query()->where('name', 'manager')
             ->where('gym_id', $this->gymId)
             ->first();
 
@@ -195,17 +192,13 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $customPermName = 'custom_unmatched_permission_' . fake()->unique()->numerify;
-        $permission = Permission::firstOrCreate(
-            ['name' => $customPermName, 'guard_name' => 'web']
-        );
+        $customPermName = 'custom_unmatched_permission_' . fake()->unique()->numerify();
+        $permission = Permission::query()->firstOrCreate(['name' => $customPermName, 'guard_name' => 'web']);
 
-        $role = \Spatie\Permission\Models\Role::firstOrCreate(
-            ['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $this->gymId]
-        );
+        $role = Role::query()->firstOrCreate(['name' => 'manager', 'guard_name' => 'web', 'gym_id' => $this->gymId]);
         $role->givePermissionTo($permission);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $otherPerms = $service->getOtherPermissions(
             DefaultRole::MANAGER,
             $role->permissions
@@ -230,14 +223,14 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $widgets = $service->getDiscoveredWidgetsForRole(DefaultRole::MANAGER);
 
         $component = Livewire::test(ManagerPermissionsPage::class);
 
         // Widgets are now rendered in a single combined section with a
         // CheckboxList. Verify the permission names appear as option labels.
-        if (! empty($widgets)) {
+        if (filled($widgets)) {
             $firstWidget = reset($widgets);
             foreach ($firstWidget['permissions'] as $permName) {
                 $component->assertSee(substr(ucfirst(str_replace('_', ' ', $permName)), strlen('widget_')));
@@ -252,14 +245,14 @@ class AutoDiscoverPermissionsTest extends PermissionsTestCase
     {
         $this->actingAs($this->gymOwner);
 
-        $service = app(\App\Services\PermissionDiscoveryService::class);
+        $service = resolve(PermissionDiscoveryService::class);
         $pages = $service->getDiscoveredPagesForRole(DefaultRole::MANAGER);
 
         $component = Livewire::test(ManagerPermissionsPage::class);
 
         // Pages are now rendered in a single combined section with a
         // CheckboxList. Verify the permission names appear as option labels.
-        if (! empty($pages)) {
+        if (filled($pages)) {
             $firstPage = reset($pages);
             foreach ($firstPage['permissions'] as $permName) {
                 $component->assertSee(substr(ucfirst(str_replace('_', ' ', $permName)), strlen('page_')));

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class QRAttendanceService
 {
@@ -42,10 +44,10 @@ class QRAttendanceService
         }
 
         // Check for existing attendance today (duplicate prevention)
-        $existingAttendance = Attendances::where('attendanceable_id', $member->id)
+        $existingAttendance = Attendances::query()->where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->lockForUpdate()
             ->first();
 
@@ -74,7 +76,7 @@ class QRAttendanceService
      */
     public function findMember(int $gymId, string $searchValue, string $identifier): ?GymMember
     {
-        $query = GymMember::where('gym_id', $gymId);
+        $query = GymMember::query()->where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
             return $query->where('phone', $searchValue)->first();
@@ -89,10 +91,10 @@ class QRAttendanceService
      */
     public function getTodayAttendance(GymMember $member): ?Attendances
     {
-        return Attendances::where('attendanceable_id', $member->id)
+        return Attendances::query()->where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->first();
     }
 
@@ -101,11 +103,11 @@ class QRAttendanceService
      */
     protected function createAttendance(GymMember $member, int $gymId): Attendances
     {
-        return Attendances::create([
+        return Attendances::query()->create([
             'attendanceable_id' => $member->id,
             'attendanceable_type' => GymMember::class,
             'gym_id' => $gymId,
-            'check_in_time' => Carbon::now(),
+            'check_in_time' => Date::now(),
             'status' => AttendanceStatus::Present,
             'check_in_method' => 'qr_code',
         ]);
@@ -151,10 +153,10 @@ class QRAttendanceService
         }
 
         // Get today's attendance
-        $attendance = Attendances::where('attendanceable_id', $member->id)
+        $attendance = Attendances::query()->where('attendanceable_id', $member->id)
             ->where('attendanceable_type', GymMember::class)
             ->where('gym_id', $member->gym_id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->whereDate('check_in_time', Date::today())
             ->lockForUpdate()
             ->first();
 
@@ -176,7 +178,7 @@ class QRAttendanceService
         }
 
         // Update attendance with check-out time
-        $attendance->check_out_time = Carbon::now();
+        $attendance->check_out_time = Date::now();
         $attendance->status = AttendanceStatus::Completed;
         $attendance->save();
 

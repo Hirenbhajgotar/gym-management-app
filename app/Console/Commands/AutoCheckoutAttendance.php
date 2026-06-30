@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Services\AttendanceService;
+use Exception;
 use Illuminate\Console\Command;
 
 class AutoCheckoutAttendance extends Command
@@ -26,7 +29,7 @@ class AutoCheckoutAttendance extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $gymId = $this->option('gym-id');
         $hoursThreshold = (int) $this->option('hours');
@@ -61,7 +64,7 @@ class AutoCheckoutAttendance extends Command
             }
 
             $this->info('Auto check-out process completed successfully!');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Error during auto check-out: ' . $e->getMessage());
 
             return 1;

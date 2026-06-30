@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Enums\LeadSource;
@@ -12,14 +14,19 @@ use App\Filament\Admin\Clusters\Reports\Widgets\LeadSourceChart;
 use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Lead;
+use App\Services\LeadScoringService;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 
 class LeadReports extends BasePage implements HasForms, ShareableReport
 {
@@ -52,7 +59,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->subMonths(6)->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -66,24 +73,24 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->subMonths(6))
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('source')
+                        Select::make('source')
                             ->label('Lead Source')
                             ->options(LeadSource::class)
                             ->placeholder('All Sources'),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label('Lead Status')
                             ->options(LeadStatus::class)
                             ->placeholder('All Status'),
@@ -135,12 +142,12 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
             $activePipeline = $totalLeads - $convertedLeads - $lostLeads;
 
             // This month stats
-            $thisMonthLeads = Lead::where('gym_id', $gymId)
+            $thisMonthLeads = Lead::query()->where('gym_id', $gymId)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count();
 
-            $thisMonthConverted = Lead::where('gym_id', $gymId)
+            $thisMonthConverted = Lead::query()->where('gym_id', $gymId)
                 ->where('status', LeadStatus::CONVERTED)
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)
@@ -171,7 +178,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::LEAD_SCORING_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $service = new \App\Services\LeadScoringService;
+            $service = new LeadScoringService();
             $stats = $service->getLeadStats($gymId);
             $hotLeads = $service->getScoredLeads($gymId, 5)->where('score', '>=', 60);
 
@@ -226,9 +233,9 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $statusCounts = Lead::where('gym_id', $gymId)
+        $statusCounts = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
 
@@ -256,14 +263,14 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $newLeads = Lead::where('gym_id', $gymId)
+        $newLeads = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('count', 'month');
 
-        $conversions = Lead::where('gym_id', $gymId)
+        $conversions = Lead::query()->where('gym_id', $gymId)
             ->where('status', LeadStatus::CONVERTED)
             ->whereBetween('updated_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(updated_at, '%Y-%m') as month, COUNT(*) as count")
@@ -276,7 +283,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $data = [];
         foreach ($allMonths as $month) {
             $data[] = [
-                'month' => \Carbon\Carbon::parse($month . '-01')->format('M Y'),
+                'month' => Date::parse($month . '-01')->format('M Y'),
                 'new_leads' => $newLeads->get($month, 0),
                 'converted' => $conversions->get($month, 0),
             ];
@@ -294,7 +301,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        return Lead::where('gym_id', $gymId)
+        return Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw('source, COUNT(*) as count')
             ->groupBy('source')
@@ -308,7 +315,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
                     'count' => $item->count,
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -320,7 +327,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyLeads = Lead::where('gym_id', $gymId)
+        $monthlyLeads = Lead::query()->where('gym_id', $gymId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')
@@ -346,7 +353,7 @@ class LeadReports extends BasePage implements HasForms, ShareableReport
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

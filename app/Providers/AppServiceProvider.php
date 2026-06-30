@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Events\BiometricConsentGiven;
@@ -8,7 +10,6 @@ use App\Listeners\HandleConsentRevoked;
 use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
-use App\Models\Gym;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
 use App\Permissions\TeamPermissionRegistrar;
@@ -61,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
         // Replace Spatie's registrar with per-gym scoped version
         // This loads only current gym's permissions (~500) instead of all (35k+)
-        $this->app->singleton(PermissionRegistrar::class, function ($app) {
+        $this->app->singleton(function ($app): PermissionRegistrar {
             return new TeamPermissionRegistrar($app['cache']);
         });
 
@@ -103,11 +104,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Notification::extend('whatsapp', function ($app) {
-            return new WhatsAppChannel;
+            return new WhatsAppChannel();
         });
 
         Notification::extend('filament', function ($app) {
-            return new FilamentChannel;
+            return new FilamentChannel();
         });
     }
 }

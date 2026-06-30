@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Meta;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -54,7 +57,7 @@ class MetaApiClient
                 'success' => true,
                 'data' => $response->json(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Meta API request failed', [
                 'gym_id' => $this->context->gymId,
                 'endpoint' => $endpoint,
@@ -104,7 +107,7 @@ class MetaApiClient
                 'success' => true,
                 'data' => $response->json(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),

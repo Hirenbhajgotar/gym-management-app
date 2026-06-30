@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\DefaultRole;
 use App\Models\Gym;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -44,7 +47,7 @@ class ManageUserRoleCommand extends Command
     public function handle(): int
     {
         // Reset permission cache
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Handle flags first
         if ($this->option('create-super-admin')) {
@@ -109,7 +112,7 @@ class ManageUserRoleCommand extends Command
                     return [];
                 }
 
-                return User::where('name', 'like', "%{$value}%")
+                return User::query()->where('name', 'like', "%{$value}%")
                     ->orWhere('email', 'like', "%{$value}%")
                     ->limit(10)
                     ->get()
@@ -120,7 +123,7 @@ class ManageUserRoleCommand extends Command
             },
         );
 
-        return User::find($userIdentifier);
+        return User::query()->find($userIdentifier);
     }
 
     /**
@@ -142,13 +145,13 @@ class ManageUserRoleCommand extends Command
             ])->all(),
         );
 
-        return Gym::find($gymId);
+        return Gym::query()->find($gymId);
     }
 
     /**
      * Select a role with gym context.
      */
-    private function selectRole(?int $gymId = null): ?string
+    private function selectRole(?int $gymId = null): string
     {
         $roles = [];
 
@@ -280,7 +283,7 @@ class ManageUserRoleCommand extends Command
             ])->all(),
         );
 
-        if (empty($rolesToRemove)) {
+        if (blank($rolesToRemove)) {
             $this->info('No roles selected for removal.');
 
             return Command::SUCCESS;
@@ -319,7 +322,7 @@ class ManageUserRoleCommand extends Command
 
         while (true) {
             $email = text(label: 'Email (or press enter to finish):', default: '');
-            if (empty($email)) {
+            if (blank($email)) {
                 break;
             }
             if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -329,7 +332,7 @@ class ManageUserRoleCommand extends Command
             }
         }
 
-        if (empty($emails)) {
+        if (blank($emails)) {
             $this->info('No emails provided.');
 
             return Command::SUCCESS;
@@ -343,7 +346,7 @@ class ManageUserRoleCommand extends Command
         DB::beginTransaction();
         try {
             foreach ($emails as $email) {
-                $user = User::where('email', $email)->first();
+                $user = User::query()->where('email', $email)->first();
                 if (! $user) {
                     $this->warn("User not found: {$email}");
                     $failCount++;
@@ -359,7 +362,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Assigned roles to {$successCount} users. Failed: {$failCount}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->error('Failed: ' . $e->getMessage());
 
@@ -379,8 +382,8 @@ class ManageUserRoleCommand extends Command
 
         // Find user
         $user = is_numeric($userOption)
-            ? User::find($userOption)
-            : User::where('email', $userOption)->first();
+            ? User::query()->find($userOption)
+            : User::query()->where('email', $userOption)->first();
 
         if (! $user) {
             $this->error("User not found: {$userOption}");
@@ -437,7 +440,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Assigned role '{$roleName}' to {$user->name}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to assign role: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -479,7 +482,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Changed role from '{$oldRoles}' to '{$newRoleName}' for {$user->name}");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to change role: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -503,7 +506,7 @@ class ManageUserRoleCommand extends Command
             }
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Failed to remove roles: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -524,7 +527,7 @@ class ManageUserRoleCommand extends Command
             validate: fn (string $value) => filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Invalid email format'
         );
 
-        if (User::where('email', $email)->exists()) {
+        if (User::query()->where('email', $email)->exists()) {
             $this->error("User with email '{$email}' already exists.");
 
             return Command::FAILURE;
@@ -546,7 +549,7 @@ class ManageUserRoleCommand extends Command
         try {
             DB::beginTransaction();
 
-            $user = User::create([
+            $user = User::query()->create([
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($pwd),
@@ -587,7 +590,7 @@ class ManageUserRoleCommand extends Command
             $this->info("✅ Super-admin user '{$name}' created successfully!");
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->error('Failed to create super-admin: ' . $e->getMessage());
 
@@ -699,7 +702,7 @@ class ManageUserRoleCommand extends Command
     {
         $roleEnum = DefaultRole::tryFrom($roleName);
 
-        $query = Role::where('name', $roleName)->where('guard_name', 'web');
+        $query = Role::query()->where('name', $roleName)->where('guard_name', 'web');
 
         if ($roleEnum?->isTenantRole() && $gymId) {
             $query->where('gym_id', $gymId);
@@ -724,7 +727,7 @@ class ManageUserRoleCommand extends Command
     {
         $roleEnum = DefaultRole::tryFrom($roleName);
 
-        $query = Role::where('name', $roleName)->where('guard_name', 'web');
+        $query = Role::query()->where('name', $roleName)->where('guard_name', 'web');
 
         if ($roleEnum?->isTenantRole() && $gymId) {
             $query->where('gym_id', $gymId);

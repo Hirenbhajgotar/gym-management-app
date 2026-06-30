@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppBroadcastStatusEnum;
+use App\Jobs\SendBroadcastJob;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Role;
@@ -14,6 +15,7 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\BroadcastOrchestrator;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -34,7 +36,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -54,14 +56,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'phone' => '+1234567890',
         ]);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 100,
             'used_credits' => 0,
             'remaining_credits' => 100,
         ]);
 
-        $this->orchestrator = app(BroadcastOrchestrator::class);
+        $this->orchestrator = resolve(BroadcastOrchestrator::class);
     }
 
     public function test_creates_broadcast_record(): void
@@ -104,7 +106,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
 
-        Queue::assertPushed(\App\Jobs\SendBroadcastJob::class);
+        Queue::assertPushed(SendBroadcastJob::class);
     }
 
     public function test_schedules_broadcast_for_later(): void
@@ -131,14 +133,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(WhatsAppBroadcastStatusEnum::SCHEDULED, $broadcast->status);
         $this->assertNotNull($broadcast->scheduled_at);
 
-        Queue::assertNotPushed(\App\Jobs\SendBroadcastJob::class);
+        Queue::assertNotPushed(SendBroadcastJob::class);
     }
 
     public function test_creates_broadcast_with_selected_members(): void
     {
         Queue::fake();
 
-        $members = GymMember::where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
+        $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $data = [
             'template_id' => $this->template->id,
@@ -196,7 +198,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(5, $broadcast->credits_used);
 
         // Read credit record
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
 
         $this->assertSame(95, $creditRecord->remaining_credits);
         $this->assertSame(5, $creditRecord->used_credits);
@@ -204,7 +206,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
     public function test_insufficient_credits_throws_exception(): void
     {
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         $creditRecord->update(['remaining_credits' => 2, 'used_credits' => 98]);
 
         $data = [
@@ -216,7 +218,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'filters' => [],
         ];
 
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Insufficient credits');
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
@@ -237,7 +239,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
 
-        Queue::assertPushed(function (\App\Jobs\SendBroadcastJob $job): bool {
+        Queue::assertPushed(function (SendBroadcastJob $job): bool {
             return $job->skipCreditDeduction === true;
         });
     }
@@ -257,12 +259,12 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'filters' => [],
         ];
 
-        $members = GymMember::where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
+        $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, $members);
 
         // Verify credits are deducted exactly for the target count
-        $creditRecord = WhatsAppMessageCredit::where('gym_id', $this->gym->id)->first();
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         $this->assertSame(3, $broadcast->target_count);
         $this->assertSame(97, $creditRecord->remaining_credits);
         $this->assertSame(3, $creditRecord->used_credits);

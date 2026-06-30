@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class JustDialLeadProcessor extends SocialMediaLeadProcessor
@@ -25,7 +27,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             // Extract lead data from JustDial format
             $leadData = $this->extractLeadData($data);
 
-            if (empty($leadData)) {
+            if (blank($leadData)) {
                 Log::warning('No lead data extracted from JustDial webhook', ['data' => $data]);
 
                 return null;
@@ -55,7 +57,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             }
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('JustDial lead processing failed', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -74,13 +76,13 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
         try {
             // JustDial uses API key verification
             $apiKey = $headers['x-api-key'][0] ?? '';
-            if (empty($apiKey)) {
+            if (blank($apiKey)) {
                 return false;
             }
 
             // Get tenant configuration and verify API key
             $vendorId = $data['vendor_id'] ?? $data['company_id'] ?? '';
-            if (empty($vendorId)) {
+            if (blank($vendorId)) {
                 return false;
             }
 
@@ -93,7 +95,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             $expectedApiKey = $config->api_key ?? config('services.justdial.api_key');
 
             return $apiKey === $expectedApiKey;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('JustDial webhook verification failed', [
                 'error' => $e->getMessage(),
                 'headers' => $headers,
@@ -132,7 +134,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             Log::warning('Unknown JustDial webhook format', ['data' => $data]);
 
             return [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to extract lead data from JustDial', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -164,55 +166,55 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
         $notes = [];
 
         // Service/Category information
-        if (! empty($data['category'])) {
+        if (filled($data['category'])) {
             $notes[] = 'Category: ' . $this->cleanString($data['category']);
         }
 
-        if (! empty($data['subcategory'])) {
+        if (filled($data['subcategory'])) {
             $notes[] = 'Subcategory: ' . $this->cleanString($data['subcategory']);
         }
 
-        if (! empty($data['service_name'])) {
+        if (filled($data['service_name'])) {
             $notes[] = 'Service: ' . $this->cleanString($data['service_name']);
         }
 
         // Inquiry details
-        if (! empty($data['requirement'])) {
+        if (filled($data['requirement'])) {
             $notes[] = 'Requirement: ' . $this->cleanString($data['requirement']);
         }
 
-        if (! empty($data['description'])) {
+        if (filled($data['description'])) {
             $notes[] = 'Description: ' . $this->cleanString($data['description']);
         }
 
-        if (! empty($data['message'])) {
+        if (filled($data['message'])) {
             $notes[] = 'Message: ' . $this->cleanString($data['message']);
         }
 
         // Location information
-        if (! empty($data['city'])) {
+        if (filled($data['city'])) {
             $notes[] = 'City: ' . $this->cleanString($data['city']);
         }
 
-        if (! empty($data['area'])) {
+        if (filled($data['area'])) {
             $notes[] = 'Area: ' . $this->cleanString($data['area']);
         }
 
-        if (! empty($data['address'])) {
+        if (filled($data['address'])) {
             $notes[] = 'Address: ' . $this->cleanString($data['address']);
         }
 
         // Company information
-        if (! empty($data['company_name'])) {
+        if (filled($data['company_name'])) {
             $notes[] = 'Company: ' . $this->cleanString($data['company_name']);
         }
 
         // Budget and timeline
-        if (! empty($data['budget'])) {
+        if (filled($data['budget'])) {
             $notes[] = 'Budget: ' . $this->cleanString($data['budget']);
         }
 
-        if (! empty($data['timeline'])) {
+        if (filled($data['timeline'])) {
             $notes[] = 'Timeline: ' . $this->cleanString($data['timeline']);
         }
 
@@ -262,13 +264,13 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             $leadData['email'] = $this->cleanString($inquiry['email'] ?? '');
 
             $notes = [];
-            if (! empty($inquiry['message'])) {
+            if (filled($inquiry['message'])) {
                 $notes[] = 'Message: ' . $this->cleanString($inquiry['message']);
             }
-            if (! empty($inquiry['service'])) {
+            if (filled($inquiry['service'])) {
                 $notes[] = 'Service: ' . $this->cleanString($inquiry['service']);
             }
-            if (! empty($inquiry['location'])) {
+            if (filled($inquiry['location'])) {
                 $notes[] = 'Location: ' . $this->cleanString($inquiry['location']);
             }
 
@@ -335,14 +337,14 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
 
             // Send SMS acknowledgment (if configured)
             if ($config->sms_acknowledgment_enabled && $lead->phone) {
-                $this->sendSMSAcknowledgment($lead, $config);
+                $this->sendSMSAcknowledgment($lead);
             }
 
             // Send email acknowledgment (if configured)
             if ($config->email_acknowledgment_enabled && $lead->email) {
-                $this->sendEmailAcknowledgment($lead, $config);
+                $this->sendEmailAcknowledgment($lead);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send JustDial acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,
@@ -353,7 +355,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
     /**
      * Send SMS acknowledgment
      */
-    private function sendSMSAcknowledgment(Lead $lead, TenantSocialConfig $config): void
+    private function sendSMSAcknowledgment(Lead $lead): void
     {
         try {
             // This would integrate with your SMS service
@@ -369,7 +371,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             // Here you would integrate with your SMS provider
             // Example: SMS::send($lead->phone, $message);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send SMS acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,
@@ -380,7 +382,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
     /**
      * Send email acknowledgment
      */
-    private function sendEmailAcknowledgment(Lead $lead, TenantSocialConfig $config): void
+    private function sendEmailAcknowledgment(Lead $lead): void
     {
         try {
             // This would integrate with your email service
@@ -397,7 +399,7 @@ class JustDialLeadProcessor extends SocialMediaLeadProcessor
             // Here you would integrate with your email service
             // Example: Mail::to($lead->email)->send(new LeadAcknowledgmentEmail($lead, $subject, $body));
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send email acknowledgment', [
                 'error' => $e->getMessage(),
                 'lead_id' => $lead->id,

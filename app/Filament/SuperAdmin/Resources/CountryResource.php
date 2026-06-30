@@ -1,15 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\Location;
-use App\Filament\SuperAdmin\Resources\CountryResource\Pages;
+use App\Filament\SuperAdmin\Resources\CountryResource\Pages\ListCountries;
 use App\Models\Country;
-use Filament\Forms;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class CountryResource extends BaseResource
@@ -36,16 +44,16 @@ class CountryResource extends BaseResource
     public static function getFormSchema()
     {
         return [
-            Forms\Components\TextInput::make('name')
+            TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->default(null),
-            Forms\Components\TextInput::make('code')
+            TextInput::make('code')
                 ->label('Country Code')
                 ->maxLength(255)
                 ->default(null)
                 ->unique(Country::class, 'code', ignoreRecord: true),
-            Forms\Components\Toggle::make('status')
+            Toggle::make('status')
                 ->default(true),
         ];
     }
@@ -60,16 +68,16 @@ class CountryResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('code')
+                TextColumn::make('code')
                     ->searchable(),
-                Tables\Columns\ToggleColumn::make('status'),
-                Tables\Columns\TextColumn::make('created_at')
+                ToggleColumn::make('status'),
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -78,12 +86,12 @@ class CountryResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -98,7 +106,7 @@ class CountryResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCountries::route('/'),
+            'index' => ListCountries::route('/'),
             // 'create' => Pages\CreateCountry::route('/create'),
             // 'edit' => Pages\EditCountry::route('/{record}/edit'),
         ];

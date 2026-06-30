@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListRoles extends ListRecords
@@ -13,7 +15,7 @@ class ListRoles extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

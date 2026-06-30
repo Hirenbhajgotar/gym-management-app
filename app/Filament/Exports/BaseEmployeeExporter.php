@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Exports;
 
 use App\Models\User;
-use Carbon\Carbon;
+use Exception;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -24,12 +27,12 @@ abstract class BaseEmployeeExporter extends Exporter
             ExportColumn::make('phone'),
             ExportColumn::make('employeeDetails.hire_date')
                 ->label('Hire Date')
-                ->getStateUsing(fn ($record) => Carbon::parse($record->employeeDetails?->hire_date)->format('Y-m-d')),
+                ->getStateUsing(fn ($record) => Date::parse($record->employeeDetails?->hire_date)->format('Y-m-d')),
             ExportColumn::make('employeeDetails.monthly_salary')
                 ->label('Monthly Salary'),
             ExportColumn::make('employeeDetails.date_of_birth')
                 ->label('Date of Birth')
-                ->getStateUsing(fn ($record) => Carbon::parse($record->employeeDetails?->date_of_birth)->format('Y-m-d')),
+                ->getStateUsing(fn ($record) => Date::parse($record->employeeDetails?->date_of_birth)->format('Y-m-d')),
             ExportColumn::make('employeeDetails.gender')
                 ->label('Gender')
                 ->formatStateUsing(fn ($state) => $state?->value ?? 'N/A'),
@@ -68,9 +71,7 @@ abstract class BaseEmployeeExporter extends Exporter
             mkdir($path, 0775, true);
         }
 
-        if (! is_writable($path)) {
-            throw new \Exception("Export directory not writable: {$path}");
-        }
+        throw_unless(is_writable($path), Exception::class, "Export directory not writable: {$path}");
     }
 
     /**
@@ -126,7 +127,7 @@ abstract class BaseEmployeeExporter extends Exporter
             }
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),

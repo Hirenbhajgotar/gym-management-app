@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Session;
@@ -31,9 +33,7 @@ class ExceptionStorageService
 
     public function retrieve(string $id): ?array
     {
-        $data = Session::get($id);
-
-        return $data;
+        return Session::get($id);
     }
 
     public function clearExceptionStorageData(?string $id = null): void

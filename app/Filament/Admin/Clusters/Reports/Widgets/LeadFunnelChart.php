@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\LeadStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -28,7 +31,7 @@ class LeadFunnelChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -50,7 +53,7 @@ class LeadFunnelChart extends BaseChartWidget
             $colors = [];
 
             foreach ($statuses as $statusValue => $config) {
-                $count = Lead::where('gym_id', $gymId)
+                $count = Lead::query()->where('gym_id', $gymId)
                     ->where('status', $statusValue)
                     ->whereBetween('created_at', [$startDate, $endDate])
                     ->count();

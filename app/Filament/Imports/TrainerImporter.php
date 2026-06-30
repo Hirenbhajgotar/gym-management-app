@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Imports;
 
 use App\Models\Trainer;
@@ -35,8 +37,9 @@ class TrainerImporter extends Importer
                 ->numeric()
                 ->rules(['integer']),
             ImportColumn::make('pt_salary_per_member')
+                ->label('PT Commission Rate (%)')
                 ->numeric()
-                ->rules(['integer']),
+                ->rules(['numeric', 'min:0', 'max:100']),
             ImportColumn::make('currency')
                 ->rules(['max:255']),
         ];
@@ -44,7 +47,7 @@ class TrainerImporter extends Importer
 
     public function resolveRecord(): ?Trainer
     {
-        $trainer = Trainer::firstOrNew(['email' => $this->data['email']]);
+        $trainer = Trainer::query()->firstOrNew(['email' => $this->data['email']]);
 
         $trainer->fill([
             'name' => $this->data['name'],

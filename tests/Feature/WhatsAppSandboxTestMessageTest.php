@@ -30,7 +30,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate([
+        Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
@@ -48,7 +48,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Filament::setTenant($this->gym);
 
-        WhatsAppMessageCredit::create([
+        WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'balance' => 100,
             'total_purchased' => 100,
@@ -60,7 +60,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
     {
         config(['services.twilio.use_sandbox' => false]);
 
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',
@@ -98,7 +98,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
     {
         config(['services.twilio.use_sandbox' => true]);
 
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',
@@ -122,7 +122,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
         config(['services.twilio.use_sandbox' => true]);
         config(['services.twilio.sandbox_number' => '+15557626186']);
 
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',
@@ -154,7 +154,7 @@ class WhatsAppSandboxTestMessageTest extends TestCase
         config(['services.twilio.use_sandbox' => true]);
         config(['services.twilio.sandbox_number' => '+15557626186']);
 
-        $template = WhatsAppTemplate::create([
+        $template = WhatsAppTemplate::query()->create([
             'gym_id' => $this->gym->id,
             'name' => 'test_template',
             'display_name' => 'Test Template',

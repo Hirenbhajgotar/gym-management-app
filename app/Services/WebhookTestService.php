@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +61,7 @@ class WebhookTestService
                 'success' => false,
                 'message' => 'Failed to create lead from test data',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Test webhook processing failed', [
                 'platform' => $platform,
                 'config_id' => $config->id,
@@ -97,7 +100,7 @@ class WebhookTestService
             }
 
             // Add gym_id to sample data
-            $gym = Gym::where('tenant_id', $config->tenant_id)->first();
+            $gym = Gym::query()->where('tenant_id', $config->tenant_id)->first();
             if (! $gym) {
                 return [
                     'success' => false,
@@ -133,7 +136,7 @@ class WebhookTestService
                 'success' => false,
                 'message' => 'Failed to create lead from simulated data',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Simulated lead processing failed', [
                 'platform' => $platform,
                 'config_id' => $config->id,
@@ -154,11 +157,11 @@ class WebhookTestService
     private function getPlatformProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => new FacebookLeadProcessor,
-            'instagram' => new InstagramLeadProcessor,
-            'whatsapp' => new WhatsAppLeadProcessor,
-            'indiamart' => new IndiaMartLeadProcessor,
-            'justdial' => new JustDialLeadProcessor,
+            'facebook' => new FacebookLeadProcessor(),
+            'instagram' => new InstagramLeadProcessor(),
+            'whatsapp' => new WhatsAppLeadProcessor(),
+            'indiamart' => new IndiaMartLeadProcessor(),
+            'justdial' => new JustDialLeadProcessor(),
             default => null,
         };
     }
@@ -168,11 +171,9 @@ class WebhookTestService
      */
     private function generateTestData(string $platform, TenantSocialConfig $config): array
     {
-        $gym = Gym::where('tenant_id', $config->tenant_id)->first();
+        $gym = Gym::query()->where('tenant_id', $config->tenant_id)->first();
 
-        if (! $gym) {
-            throw new \Exception('No gym found for tenant');
-        }
+        throw_unless($gym, Exception::class, 'No gym found for tenant');
 
         $baseData = [
             'gym_id' => $gym->id,
@@ -256,7 +257,7 @@ class WebhookTestService
             $existingLogs = array_slice($existingLogs, -100); // Keep last 100
 
             Storage::disk('local')->put($logFile, json_encode($existingLogs, JSON_PRETTY_PRINT));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to store simulation result', [
                 'platform' => $platform,
                 'config_id' => $config->id,
@@ -274,7 +275,7 @@ class WebhookTestService
             $simulations = Cache::get("webhook_simulations_{$configId}", []);
 
             // Get from file storage as well
-            $config = TenantSocialConfig::find($configId);
+            $config = TenantSocialConfig::query()->find($configId);
             if ($config) {
                 $logFile = "webhooks/tenant_{$config->tenant_id}/simulations.log";
                 if (Storage::disk('local')->exists($logFile)) {
@@ -289,7 +290,7 @@ class WebhookTestService
             });
 
             return array_slice($simulations, 0, $limit);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to get recent activity', [
                 'config_id' => $configId,
                 'error' => $e->getMessage(),

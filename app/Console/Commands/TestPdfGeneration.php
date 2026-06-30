@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 
 class TestPdfGeneration extends Command
@@ -23,7 +26,7 @@ class TestPdfGeneration extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $type = $this->argument('type');
 
@@ -33,7 +36,7 @@ class TestPdfGeneration extends Command
             // Test basic template rendering without complex dependencies
             $this->testTemplateRendering();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('❌ Test failed: ' . $e->getMessage());
 
             return Command::FAILURE;
@@ -80,7 +83,7 @@ class TestPdfGeneration extends Command
 
                 $this->info("✅ Template {$template} compiled successfully");
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error("❌ Template {$template} failed: " . $e->getMessage());
                 throw $e;
             }

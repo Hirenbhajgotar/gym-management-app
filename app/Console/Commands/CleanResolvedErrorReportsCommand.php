@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Jobs\CleanResolvedErrorReportsJob;
@@ -26,13 +28,13 @@ class CleanResolvedErrorReportsCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Starting cleanup of resolved error reports...');
 
         try {
             // Dispatch the job
-            CleanResolvedErrorReportsJob::dispatch();
+            dispatch(new CleanResolvedErrorReportsJob());
 
             $this->info('The job will process resolved error reports older than 15 days.');
 

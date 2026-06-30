@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Filament\Admin\Clusters\Reports;
@@ -10,13 +12,14 @@ use App\Interfaces\ShareableReport;
 use App\Models\Attendances;
 use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
-use Carbon\Carbon;
 use Filament\Actions\Action;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class AttendanceReports extends BasePage implements HasForms, ShareableReport
 {
@@ -49,7 +52,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->subMonth()->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -61,14 +64,14 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->label('From Date')
                             ->default(now()->subMonth())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->label('To Date')
                             ->default(now())
                             ->native(false),
@@ -91,34 +94,34 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             $endDate = $this->filters['end_date'];
 
             // Total check-ins in period
-            $totalCheckIns = Attendances::where('gym_id', $gymId)
+            $totalCheckIns = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->count();
 
             // Unique members who checked in
-            $uniqueMembers = Attendances::where('gym_id', $gymId)
+            $uniqueMembers = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->distinct('attendanceable_id')
                 ->count('attendanceable_id');
 
             // Calculate days in range
-            $daysInRange = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+            $daysInRange = Date::parse($startDate)->diffInDays(Date::parse($endDate)) + 1;
 
             // Average daily check-ins
             $avgDaily = $daysInRange > 0 ? round($totalCheckIns / $daysInRange, 1) : 0;
 
             // Today's stats
-            $todayCheckIns = Attendances::where('gym_id', $gymId)
+            $todayCheckIns = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->count();
 
-            $currentlyIn = Attendances::where('gym_id', $gymId)
+            $currentlyIn = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->where('status', 'checked_in')
                 ->count();
 
             // Peak hour (most common check-in hour)
-            $peakHour = Attendances::where('gym_id', $gymId)
+            $peakHour = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
                 ->groupBy('hour')
@@ -126,7 +129,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 ->first();
 
             // Peak day of week
-            $peakDay = Attendances::where('gym_id', $gymId)
+            $peakDay = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->selectRaw('DAYOFWEEK(check_in_time) as day, COUNT(*) as count')
                 ->groupBy('day')
@@ -134,7 +137,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 ->first();
 
             // Average session duration (check-in to check-out)
-            $avgDuration = Attendances::where('gym_id', $gymId)
+            $avgDuration = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->whereNotNull('check_out_time')
                 ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, check_in_time, check_out_time)) as avg_minutes')
@@ -146,8 +149,8 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 'avg_daily' => $avgDaily,
                 'today_check_ins' => $todayCheckIns,
                 'currently_in' => $currentlyIn,
-                'peak_hour' => $peakHour?->hour !== null ? Carbon::createFromTime($peakHour->hour)->format('g A') : 'N/A',
-                'peak_day' => $peakDay?->day ? Carbon::now()->dayOfWeek($peakDay->day - 1)->format('l') : 'N/A',
+                'peak_hour' => $peakHour?->hour !== null ? Date::createFromTime($peakHour->hour)->format('g A') : 'N/A',
+                'peak_day' => $peakDay?->day ? Date::now()->dayOfWeek($peakDay->day - 1)->format('l') : 'N/A',
                 'avg_duration_minutes' => round($avgDuration ?? 0),
             ];
         });
@@ -162,7 +165,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
         $cacheKey = ReportCacheService::HOURLY_DISTRIBUTION . $gymId . ':' . today()->format('Y-m-d');
 
         return Cache::flexible($cacheKey, [now()->addMinutes(5), now()->addMinutes(15)], function () use ($gymId) {
-            $distribution = Attendances::where('gym_id', $gymId)
+            $distribution = Attendances::query()->where('gym_id', $gymId)
                 ->whereDate('check_in_time', today())
                 ->selectRaw('HOUR(check_in_time) as hour, COUNT(*) as count')
                 ->groupBy('hour')
@@ -182,7 +185,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             $counts = [];
 
             for ($h = $startHour; $h <= $endHour; $h++) {
-                $hours[] = Carbon::createFromTime($h)->format('g A');
+                $hours[] = Date::createFromTime($h)->format('g A');
                 $counts[] = $distribution[$h] ?? 0;
             }
 
@@ -244,7 +247,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        return Attendances::where('gym_id', $gymId)
+        return Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
             ->selectRaw('DATE(check_in_time) as date, COUNT(*) as count')
             ->groupBy('date')
@@ -252,11 +255,11 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             ->get()
             ->map(function ($item) {
                 return [
-                    'date' => Carbon::parse($item->date)->format('M d'),
+                    'date' => Date::parse($item->date)->format('M d'),
                     'count' => $item->count,
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -268,7 +271,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $weeklyData = Attendances::where('gym_id', $gymId)
+        $weeklyData = Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
             ->selectRaw('DAYOFWEEK(check_in_time) as day, COUNT(*) as count')
             ->groupBy('day')
@@ -282,7 +285,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
                 'day' => $dayNames[$item->day - 1] ?? 'Unknown',
                 'count' => $item->count,
             ];
-        })->toArray();
+        })->all();
     }
 
     /**
@@ -294,7 +297,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyData = Attendances::where('gym_id', $gymId)
+        $monthlyData = Attendances::query()->where('gym_id', $gymId)
             ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
             ->selectRaw("DATE_FORMAT(check_in_time, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')
@@ -320,7 +323,7 @@ class AttendanceReports extends BasePage implements HasForms, ShareableReport
             }
 
             $trends[] = [
-                'month' => Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

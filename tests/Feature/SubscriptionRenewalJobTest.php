@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Jobs\SubscriptionRenewalJob;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\RazorpayService;
+use App\Services\SubscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -18,7 +22,7 @@ class SubscriptionRenewalJobTest extends TestCase
         Queue::fake();
 
         // Dispatch the job
-        SubscriptionRenewalJob::dispatch();
+        dispatch(new SubscriptionRenewalJob());
 
         // Assert that the job was pushed to the queue
         Queue::assertPushed(SubscriptionRenewalJob::class);
@@ -37,8 +41,8 @@ class SubscriptionRenewalJobTest extends TestCase
         ]);
 
         // Dispatch and run the job synchronously
-        $job = new SubscriptionRenewalJob;
-        $job->handle(app(\App\Services\SubscriptionService::class), app(\App\Services\RazorpayService::class));
+        $job = new SubscriptionRenewalJob();
+        $job->handle(resolve(SubscriptionService::class), resolve(RazorpayService::class));
 
         // The job should have processed the expiring subscription
         // Since we don't have saved payment methods, it should suspend the subscription

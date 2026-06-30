@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
 
 class ChartToImageService
@@ -12,15 +15,18 @@ class ChartToImageService
 
     public function __construct()
     {
-        $this->manager = new ImageManager(new Driver);
+        $this->manager = new ImageManager(new Driver());
     }
 
     /**
      * Convert chart data to base64 encoded image for PDF inclusion.
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     public function convertChartToBase64(array $chartData, string $chartType = 'bar', int $width = 800, int $height = 400): string
     {
         // Create a canvas for the chart
+        /** @var Image $image */
         $image = $this->manager->create($width, $height);
         $image->fill('#ffffff');
 
@@ -28,14 +34,17 @@ class ChartToImageService
         $this->drawChart($image, $chartData, $chartType, $width, $height);
 
         // Convert to base64
-        return (string) $image->toPng()->toDataUri();
+        return $image->toPng()->toDataUri();
     }
 
     /**
      * Save chart as image file and return path.
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     public function saveChartAsImage(array $chartData, string $filename, string $chartType = 'bar', int $width = 800, int $height = 400): string
     {
+        /** @var Image $image */
         $image = $this->manager->create($width, $height);
         $image->fill('#ffffff');
 
@@ -49,10 +58,13 @@ class ChartToImageService
 
     /**
      * Draw chart on image canvas.
+     *
+     * @param  Image  $image
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     private function drawChart($image, array $chartData, string $chartType, int $width, int $height): void
     {
-        if (empty($chartData)) {
+        if (blank($chartData)) {
             // Draw "No Data Available" background
             $image->drawRectangle(0, 0, function ($rectangle) use ($width, $height) {
                 $rectangle->size($width, $height);
@@ -99,55 +111,66 @@ class ChartToImageService
 
     /**
      * Draw bar chart with labels.
+     *
+     * @param  Image  $image
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     private function drawBarChart($image, array $chartData, int $margin, int $chartWidth, int $chartHeight): void
     {
+        /** @var array<int, float|int> $values */
         $values = $this->extractValues($chartData);
+        /** @var array<int, string> $labels */
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values)) {
+        if (blank($values)) {
             return;
         }
 
         $maxValue = max($values);
         $barCount = count($values);
-        $barWidth = $chartWidth / $barCount * 0.7;
-        $barSpacing = $chartWidth / $barCount * 0.3;
+        $barWidth = ($chartWidth / $barCount) * 0.7;
+        $barSpacing = ($chartWidth / $barCount) * 0.3;
 
+        /** @var array<int, string> $colors */
         $colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
         foreach ($values as $index => $value) {
             $barHeight = $maxValue > 0 ? ($value / $maxValue) * $chartHeight : 0;
             $x = $margin + ($index * ($barWidth + $barSpacing)) + $barSpacing / 2;
-            $y = $margin + $chartHeight - $barHeight;
+            $y = $margin + $chartHeight - (int) $barHeight;
 
             // Draw bar
-            $image->drawRectangle($x, $y, function ($rectangle) use ($barWidth, $barHeight, $colors, $index) {
-                $rectangle->size($barWidth, $barHeight);
+            $image->drawRectangle((int) $x, $y, function ($rectangle) use ($barWidth, $barHeight, $colors, $index) {
+                $rectangle->size((int) $barWidth, (int) $barHeight);
                 $rectangle->background($colors[$index % count($colors)]);
             });
 
             // Draw value label on top of bar
             if ($barHeight > 20) {
-                $valueLabel = is_numeric($value) ? number_format($value) : (string) $value;
-                $this->drawText($image, $valueLabel, $x + $barWidth / 2, $y - 8, 12, '#333333', 'center');
+                $valueLabel = is_numeric($value) ? number_format((float) $value) : (string) $value;
+                $this->drawText($image, $valueLabel, (int) ($x + $barWidth / 2), $y - 8, 12, '#333333', 'center');
             }
 
             // Draw x-axis label
             $label = $labels[$index] ?? 'Item ' . ($index + 1);
-            $this->drawText($image, $label, $x + $barWidth / 2, $margin + $chartHeight + 15, 11, '#666666', 'center');
+            $this->drawText($image, $label, (int) ($x + $barWidth / 2), $margin + $chartHeight + 15, 11, '#666666', 'center');
         }
     }
 
     /**
      * Draw line chart with labels.
+     *
+     * @param  Image  $image
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     private function drawLineChart($image, array $chartData, int $margin, int $chartWidth, int $chartHeight): void
     {
+        /** @var array<int, float|int> $values */
         $values = $this->extractValues($chartData);
+        /** @var array<int, string> $labels */
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values) || count($values) < 2) {
+        if (blank($values) || count($values) < 2) {
             return;
         }
 
@@ -161,6 +184,7 @@ class ChartToImageService
         }
         $pointSpacing = $chartWidth / (count($values) - 1);
 
+        /** @var array<int, array{x: float, y: float}> $points */
         $points = [];
         foreach ($values as $index => $value) {
             $x = $margin + ($index * $pointSpacing);
@@ -168,25 +192,25 @@ class ChartToImageService
             $points[] = ['x' => $x, 'y' => $y];
 
             // Draw point as small circle
-            $image->drawCircle($x, $y, function ($circle) {
+            $image->drawCircle((int) $x, (int) $y, function ($circle) {
                 $circle->radius(4);
                 $circle->background('#2563eb');
             });
 
             // Draw value label above point
-            $valueLabel = is_numeric($value) ? number_format($value) : (string) $value;
-            $this->drawText($image, $valueLabel, $x, $y - 15, 10, '#2563eb', 'center');
+            $valueLabel = is_numeric($value) ? number_format((float) $value) : (string) $value;
+            $this->drawText($image, $valueLabel, (int) $x, (int) $y - 15, 10, '#2563eb', 'center');
 
             // Draw x-axis label
             $label = $labels[$index] ?? 'P' . ($index + 1);
-            $this->drawText($image, $label, $x, $margin + $chartHeight + 15, 10, '#666666', 'center');
+            $this->drawText($image, $label, (int) $x, $margin + $chartHeight + 15, 10, '#666666', 'center');
         }
 
         // Draw lines between points using width() instead of thickness()
         for ($i = 0; $i < count($points) - 1; $i++) {
             $image->drawLine(function ($line) use ($points, $i) {
-                $line->from($points[$i]['x'], $points[$i]['y']);
-                $line->to($points[$i + 1]['x'], $points[$i + 1]['y']);
+                $line->from((int) $points[$i]['x'], (int) $points[$i]['y']);
+                $line->to((int) $points[$i + 1]['x'], (int) $points[$i + 1]['y']);
                 $line->color('#2563eb');
                 $line->width(2);
             });
@@ -195,13 +219,18 @@ class ChartToImageService
 
     /**
      * Draw doughnut chart with labels and percentages.
+     *
+     * @param  Image  $image
+     * @param  array<int, array<string, mixed>>  $chartData
      */
     private function drawDoughnutChart($image, array $chartData, int $width, int $height): void
     {
+        /** @var array<int, float|int> $values */
         $values = $this->extractValues($chartData);
+        /** @var array<int, string> $labels */
         $labels = $this->extractLabels($chartData);
 
-        if (empty($values)) {
+        if (blank($values)) {
             return;
         }
 
@@ -219,10 +248,10 @@ class ChartToImageService
         $outerRadius = min($width, $height) / 3;
         $innerRadius = $outerRadius * 0.6;
 
+        /** @var array<int, string> $colors */
         $colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-        $startAngle = 0;
-        $segmentHeight = ($outerRadius - $innerRadius);
+        $startAngle = 0.0;
 
         foreach ($values as $index => $value) {
             $percentage = $total > 0 ? ($value / $total) * 100 : 0;
@@ -242,8 +271,8 @@ class ChartToImageService
         }
 
         // Draw inner white circle for doughnut effect
-        $image->drawCircle($centerX, $centerY, function ($circle) use ($innerRadius) {
-            $circle->radius($innerRadius);
+        $image->drawCircle((int) $centerX, (int) $centerY, function ($circle) use ($innerRadius) {
+            $circle->radius((int) $innerRadius);
             $circle->background('#ffffff');
         });
 
@@ -273,16 +302,20 @@ class ChartToImageService
         }
 
         // Draw total in center
-        $totalLabel = is_numeric($total) ? number_format($total) : (string) $total;
-        $this->drawText($image, $totalLabel, $centerX, $centerY - 8, 16, '#333333', 'center');
-        $this->drawText($image, 'Total', $centerX, $centerY + 12, 12, '#666666', 'center');
+        $totalLabel = is_numeric($total) ? number_format((float) $total) : (string) $total;
+        $this->drawText($image, $totalLabel, (int) $centerX, (int) $centerY - 8, 16, '#333333', 'center');
+        $this->drawText($image, 'Total', (int) $centerX, (int) $centerY + 12, 12, '#666666', 'center');
     }
 
     /**
      * Draw arc segment for doughnut chart.
+     *
+     * @param  Image  $image
+     * @param  array<int, array{x: float, y: float}>  $points
      */
     private function drawArcSegment($image, float $centerX, float $centerY, float $innerRadius, float $outerRadius, float $startAngle, float $endAngle, string $color): void
     {
+        /** @var array<int, array{x: float, y: float}> $points */
         $points = [];
         $steps = 20;
 
@@ -314,16 +347,19 @@ class ChartToImageService
 
     /**
      * Draw text on image with a font.
+     *
+     * @param  Image  $image
      */
     private function drawText($image, string $text, float $x, float $y, int $size, string $color, string $align): void
     {
         $text = trim(substr($text, 0, 20));
 
-        if (empty($text)) {
+        if (blank($text)) {
             return;
         }
 
         // Try to use a font file if available, otherwise use default
+        /** @var list<string> $fontPaths */
         $fontPaths = [
             storage_path('fonts/arial.ttf'),
             base_path('resources/fonts/arial.ttf'),
@@ -338,7 +374,7 @@ class ChartToImageService
             }
         }
 
-        $textBox = $image->text($text, $x, $y, function ($font) use ($size, $color, $align, $fontFile) {
+        $image->text($text, (int) $x, (int) $y, function ($font) use ($size, $color, $align, $fontFile) {
             if ($fontFile) {
                 $font->filename($fontFile);
             }
@@ -350,35 +386,39 @@ class ChartToImageService
 
     /**
      * Extract numeric values from chart data.
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
+     * @return array<int, float|int>
      */
     private function extractValues(array $chartData): array
     {
+        /** @var array<int, float|int> $values */
         $values = [];
 
         foreach ($chartData as $item) {
             if (is_array($item)) {
                 if (isset($item['value'])) {
-                    $values[] = is_numeric($item['value']) ? $item['value'] : 0;
+                    $values[] = is_numeric($item['value']) ? (float) $item['value'] : 0;
                 } elseif (isset($item['count'])) {
-                    $values[] = is_numeric($item['count']) ? $item['count'] : 0;
+                    $values[] = is_numeric($item['count']) ? (float) $item['count'] : 0;
                 } elseif (isset($item['amount'])) {
-                    $values[] = is_numeric($item['amount']) ? $item['amount'] : 0;
+                    $values[] = is_numeric($item['amount']) ? (float) $item['amount'] : 0;
                 } elseif (isset($item['revenue'])) {
-                    $values[] = is_numeric($item['revenue']) ? $item['revenue'] : 0;
+                    $values[] = is_numeric($item['revenue']) ? (float) $item['revenue'] : 0;
                 } elseif (isset($item['percentage'])) {
-                    $values[] = is_numeric($item['percentage']) ? $item['percentage'] : 0;
+                    $values[] = is_numeric($item['percentage']) ? (float) $item['percentage'] : 0;
                 } elseif (isset($item['conversion_rate'])) {
-                    $values[] = is_numeric($item['conversion_rate']) ? $item['conversion_rate'] : 0;
+                    $values[] = is_numeric($item['conversion_rate']) ? (float) $item['conversion_rate'] : 0;
                 } elseif (isset($item['new_leads']) && isset($item['converted'])) {
-                    $total = $item['new_leads'] + $item['converted'];
-                    $values[] = $total > 0 ? round(($item['converted'] / $total) * 100, 2) : 0;
+                    $total = (float) $item['new_leads'] + (float) $item['converted'];
+                    $values[] = $total > 0 ? round(((float) $item['converted'] / $total) * 100, 2) : 0;
                 } elseif (isset($item['new_leads'])) {
-                    $values[] = is_numeric($item['new_leads']) ? $item['new_leads'] : 0;
+                    $values[] = is_numeric($item['new_leads']) ? (float) $item['new_leads'] : 0;
                 } elseif (isset($item['converted'])) {
-                    $values[] = is_numeric($item['converted']) ? $item['converted'] : 0;
+                    $values[] = is_numeric($item['converted']) ? (float) $item['converted'] : 0;
                 } else {
                     foreach ($item as $key => $val) {
-                        if (is_numeric($val) && ! in_array($key, ['month', 'label', 'name', 'risk_level', 'hour', 'date', 'period'])) {
+                        if (is_numeric($val) && ! in_array($key, ['month', 'label', 'name', 'risk_level', 'hour', 'date', 'period'], true)) {
                             $values[] = (float) $val;
                             break;
                         }
@@ -392,23 +432,27 @@ class ChartToImageService
 
     /**
      * Extract labels from chart data.
+     *
+     * @param  array<int, array<string, mixed>>  $chartData
+     * @return array<int, string>
      */
     private function extractLabels(array $chartData): array
     {
+        /** @var array<int, string> $labels */
         $labels = [];
 
         foreach ($chartData as $item) {
             if (is_array($item)) {
                 if (isset($item['label'])) {
-                    $labels[] = $item['label'];
+                    $labels[] = (string) $item['label'];
                 } elseif (isset($item['name'])) {
-                    $labels[] = $item['name'];
+                    $labels[] = (string) $item['name'];
                 } elseif (isset($item['month'])) {
-                    $labels[] = $item['month'];
+                    $labels[] = (string) $item['month'];
                 } elseif (isset($item['risk_level'])) {
-                    $labels[] = $item['risk_level'];
+                    $labels[] = (string) $item['risk_level'];
                 } elseif (isset($item['status'])) {
-                    $labels[] = $item['status'];
+                    $labels[] = (string) $item['status'];
                 } else {
                     $labels[] = 'Item ' . (count($labels) + 1);
                 }
@@ -420,6 +464,8 @@ class ChartToImageService
 
     /**
      * Draw "No Data" message on the image when chart has no data to display.
+     *
+     * @param  Image  $image
      */
     private function drawNoDataMessage($image, int $width, int $height, string $message = 'No data available'): void
     {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Enums\LeadStatus;
@@ -21,7 +23,7 @@ class LeadSeeder extends Seeder
             ]);
         });
 
-        $leadsToConvert = Lead::inRandomOrder()->limit(rand(10, 20))->get();
+        $leadsToConvert = Lead::query()->inRandomOrder()->limit(rand(10, 20))->get();
         foreach ($leadsToConvert as $lead) {
             LeadConversion::factory()->create([
                 'lead_id' => $lead->id,

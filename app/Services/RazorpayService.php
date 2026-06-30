@@ -1,24 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Payment;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Razorpay\Api\Api;
+use Razorpay\Api\Order;
+use Razorpay\Api\Utility;
 
 class RazorpayService
 {
     /**
-     * @var Api&object{order: \Razorpay\Api\Order, payment: \Razorpay\Api\Payment, utility: \Razorpay\Api\Utility}
+     * @var Api&object{order: Order, payment: \Razorpay\Api\Payment, utility: Utility}
      */
     protected Api $api;
 
     public function __construct()
     {
-        /**
-         * @var Api $api
-         */
         $this->api = new Api(
             config('services.razorpay.key_id'),
             config('services.razorpay.key_secret')
@@ -45,9 +46,6 @@ class RazorpayService
                 $orderData['notes'] = $data['notes'];
             }
 
-            /**
-             * @var \Razorpay\Api\Order&object{id: string, amount: int, currency: string} $razorpayOrder
-             */
             $razorpayOrder = $this->api->order->create($orderData);
 
             // Create payment record
@@ -85,7 +83,7 @@ class RazorpayService
                 ]);
             }
 
-            $payment = Payment::create($paymentData);
+            $payment = Payment::query()->create($paymentData);
 
             Log::info('Razorpay order created', [
                 'order_id' => $razorpayOrder->id,
@@ -100,7 +98,7 @@ class RazorpayService
                 'key' => config('services.razorpay.key_id'),
                 'payment_id' => $payment->id,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create Razorpay order', [
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -125,7 +123,7 @@ class RazorpayService
             $this->api->utility->verifyPaymentSignature($attributes);
 
             // Update payment record
-            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
             if ($payment) {
                 $payment->update([
                     'razorpay_payment_id' => $razorpayPaymentId,
@@ -149,7 +147,7 @@ class RazorpayService
             ]);
 
             // Update payment status to failed
-            $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
             if ($payment) {
                 $payment->update([
                     'status' => 'failed',
@@ -189,7 +187,7 @@ class RazorpayService
             'status' => $status,
         ]);
 
-        $payment = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+        $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
 
         if (! $payment) {
             Log::warning('Payment not found for webhook', [
@@ -228,7 +226,6 @@ class RazorpayService
     public function getPayment(string $paymentId): ?array
     {
         try {
-            /** @var \Razorpay\Api\Payment&object{id: string, amount: int, currency: string, status: string, method: string, order_id: string, captured: bool} $razorpayPayment */
             $razorpayPayment = $this->api->payment->fetch($paymentId);
 
             return [
@@ -240,7 +237,7 @@ class RazorpayService
                 'order_id' => $razorpayPayment->order_id,
                 'captured' => $razorpayPayment->captured,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch payment details', [
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
@@ -261,7 +258,6 @@ class RazorpayService
                 $refundData['amount'] = (int) ($amount * 100);
             }
 
-            /** @var \Razorpay\Api\Refund&object{id: string, payment_id: string, amount: int, status: string} $refund */
             $refund = $this->api->payment->fetch($paymentId)->refund($refundData);
 
             return [
@@ -270,7 +266,7 @@ class RazorpayService
                 'amount' => $refund->amount / 100,
                 'status' => $refund->status,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to process refund', [
                 'payment_id' => $paymentId,
                 'amount' => $amount,
@@ -288,7 +284,7 @@ class RazorpayService
     {
         try {
             $secret = config('services.razorpay.webhook_secret');
-            if (empty($secret)) {
+            if (blank($secret)) {
                 Log::error('Razorpay webhook secret not configured');
 
                 return false;
@@ -297,7 +293,7 @@ class RazorpayService
             $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
             return hash_equals($expectedSignature, $signature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Webhook signature verification failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -314,7 +310,6 @@ class RazorpayService
     {
         try {
             // Fetch order and its payments
-            /** @var \Razorpay\Api\Order&object{payments: \Razorpay\Api\Collection} $order */
             $order = $this->api->order->fetch($orderId);
             $payments = $order->payments(); // Helper method on the resource
 
@@ -336,7 +331,7 @@ class RazorpayService
             }
 
             // Update local payment record if verified
-            $localPayment = Payment::where('razorpay_order_id', $orderId)->first();
+            $localPayment = Payment::query()->where('razorpay_order_id', $orderId)->first();
             if ($localPayment) {
                 // Only update if not already completed to avoid overwriting newer data
                 if (! $localPayment->isCompleted()) {
@@ -357,7 +352,7 @@ class RazorpayService
             }
 
             return ['verified' => false, 'reason' => 'local_record_not_found'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('API-based payment verification failed', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),

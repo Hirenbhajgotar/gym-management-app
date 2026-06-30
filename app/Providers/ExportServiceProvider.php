@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use Exception;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -72,17 +75,14 @@ class ExportServiceProvider extends ServiceProvider
 
                     return true;
                 }
+                Log::error('Export file validation failed: file does not exist on disk', [
+                    'export_id' => $export->id,
+                    'file_name' => $export->file_name,
+                    'file_disk' => $export->file_disk,
+                    'checked_paths' => $pathsToCheck,
+                ]);
 
-                if (! $found) {
-                    Log::error('Export file validation failed: file does not exist on disk', [
-                        'export_id' => $export->id,
-                        'file_name' => $export->file_name,
-                        'file_disk' => $export->file_disk,
-                        'checked_paths' => $pathsToCheck,
-                    ]);
-
-                    return false;
-                }
+                return false;
             }
 
             // Check if the file is readable
@@ -101,7 +101,7 @@ class ExportServiceProvider extends ServiceProvider
             fclose($stream);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),

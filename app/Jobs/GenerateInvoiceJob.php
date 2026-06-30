@@ -1,20 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\MemberPayment;
 use App\Models\Payment;
 use App\Services\InvoiceService;
-use Illuminate\Bus\Queueable;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 class GenerateInvoiceJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     /**
      * Create a new job instance.
@@ -36,7 +36,7 @@ class GenerateInvoiceJob implements ShouldQueue
                 $payment = $this->payment;
                 $invoiceService->generateInvoice($payment);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to generate invoice', [
                 'error' => $e->getMessage(),
                 'payment_id' => $this->payment->id,

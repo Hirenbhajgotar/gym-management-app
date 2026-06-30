@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Observers\CityObserver;
+use Database\Factories\CityFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,12 +19,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $name
  * @property string|null $slug
  * @property int|null $status 1=Active, 0=Inactive
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\State|null $state
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read State|null $state
  *
  * @method static Builder<static>|City active()
- * @method static \Database\Factories\CityFactory factory($count = null, $state = [])
+ * @method static CityFactory factory($count = null, $state = [])
  * @method static Builder<static>|City inactive()
  * @method static Builder<static>|City newModelQuery()
  * @method static Builder<static>|City newQuery()
@@ -50,6 +54,9 @@ class City extends Model
         'status',
     ];
 
+    /**
+     * @return BelongsTo<State, $this>
+     */
     public function state(): BelongsTo
     {
         return $this->belongsTo(State::class);
@@ -58,7 +65,7 @@ class City extends Model
     /**
      * Scope a query to only include active countries.
      */
-    public function scopeActive(Builder $query): Builder
+    protected function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 1);
     }
@@ -66,7 +73,7 @@ class City extends Model
     /**
      * Scope a query to only include inactive countries.
      */
-    public function scopeInactive(Builder $query): Builder
+    protected function scopeInactive(Builder $query): Builder
     {
         return $query->where('status', 0);
     }

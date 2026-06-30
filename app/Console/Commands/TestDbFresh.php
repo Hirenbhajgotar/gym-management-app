@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 use function Laravel\Prompts\confirm;
 
@@ -29,7 +30,7 @@ final class TestDbFresh extends Command
         $_ENV['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
         $_SERVER['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
 
-        $this->laravel['config']->set('database.connections.mysql.database', self::EXPECTED_TEST_DATABASE_NAME);
+        $this->laravel->make('config')->set('database.connections.mysql.database', self::EXPECTED_TEST_DATABASE_NAME);
 
         $database = (string) config('database.connections.mysql.database');
         $environment = (string) $this->laravel->environment();
@@ -40,7 +41,7 @@ final class TestDbFresh extends Command
 
         $this->line("  Environment : <info>{$environment}</info>");
         $this->line("  Database    : <info>{$database}</info>");
-        $this->line('  Host        : <info>' . (string) config('database.connections.mysql.host') . '</info>');
+        $this->line('  Host        : <info>' . config('database.connections.mysql.host') . '</info>');
         $this->newLine();
 
         if ($database === self::PRODUCTION_DATABASE_NAME) {
@@ -84,7 +85,7 @@ final class TestDbFresh extends Command
 
         try {
             DB::connection()->getPdo();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error('  ABORTED: Cannot connect to the test database.');
             $this->error('  ' . $e->getMessage());
             $this->newLine();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasLabel;
@@ -17,7 +19,7 @@ enum ErrorCategory: string implements HasLabel
     case NOTIFICATION = 'notification';
     case OTHER = 'other';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::FORM_SUBMISSION => 'Form Submission Errors',

@@ -1,15 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\Admin\Clusters\Reports;
-use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages;
+use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
+use App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
+use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages\CreateScheduledReport;
+use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages\EditScheduledReport;
+use App\Filament\Admin\Clusters\Reports\Resources\ScheduledReportResource\Pages\ListScheduledReports;
 use App\Filament\BaseResources\BaseResource;
+use App\Jobs\ScheduledReportJob;
 use App\Models\ScheduledReport;
-use Filament\Forms;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class ScheduledReportResource extends BaseResource
@@ -39,22 +59,22 @@ class ScheduledReportResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Details')
+                Section::make('Report Details')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\Select::make('report_type')
+                        Select::make('report_type')
                             ->options([
-                                \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class => 'Reports Dashboard',
-                                \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class => 'Revenue Reports',
-                                \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class => 'Member Reports',
+                                ReportsDashboard::class => 'Reports Dashboard',
+                                RevenueReports::class => 'Revenue Reports',
+                                MemberReports::class => 'Member Reports',
                                 // Add other report classes here
                             ])
                             ->required(),
 
-                        Forms\Components\Select::make('frequency')
+                        Select::make('frequency')
                             ->options([
                                 'daily' => 'Daily',
                                 'weekly' => 'Weekly',
@@ -62,16 +82,16 @@ class ScheduledReportResource extends BaseResource
                             ])
                             ->required(),
 
-                        Forms\Components\TimePicker::make('scheduled_time')
+                        TimePicker::make('scheduled_time')
                             ->required()
                             ->default('09:00:00'),
 
-                        Forms\Components\TagsInput::make('recipients')
+                        TagsInput::make('recipients')
                             ->placeholder('Enter email addresses')
                             ->helperText('Press Enter after each email')
                             ->required(),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->default(true)
                             ->label('Active'),
                     ])->columns(2),
@@ -82,17 +102,17 @@ class ScheduledReportResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('report_type')
+                TextColumn::make('report_type')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        \App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard::class => 'Reports Dashboard',
-                        \App\Filament\Admin\Clusters\Reports\Pages\RevenueReports::class => 'Revenue Reports',
-                        \App\Filament\Admin\Clusters\Reports\Pages\MemberReports::class => 'Member Reports',
+                        ReportsDashboard::class => 'Reports Dashboard',
+                        RevenueReports::class => 'Revenue Reports',
+                        MemberReports::class => 'Member Reports',
                         default => class_basename($state),
                     })
                     ->badge(),
-                Tables\Columns\TextColumn::make('frequency')
+                TextColumn::make('frequency')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'daily' => 'info',
@@ -100,10 +120,10 @@ class ScheduledReportResource extends BaseResource
                         'monthly' => 'success',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('scheduled_time')
+                TextColumn::make('scheduled_time')
                     ->time(),
-                Tables\Columns\ToggleColumn::make('is_active'),
-                Tables\Columns\TextColumn::make('last_run_at')
+                ToggleColumn::make('is_active'),
+                TextColumn::make('last_run_at')
                     ->dateTime()
                     ->placeholder('Never'),
             ])
@@ -111,22 +131,22 @@ class ScheduledReportResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('send_now')
+                EditAction::make(),
+                DeleteAction::make(),
+                Action::make('send_now')
                     ->icon('phosphor-paper-plane-right')
                     ->color('success')
                     ->action(function (ScheduledReport $record) {
-                        \App\Jobs\ScheduledReportJob::dispatch($record);
-                        \Filament\Notifications\Notification::make()
+                        dispatch(new ScheduledReportJob($record));
+                        Notification::make()
                             ->title('Report Queued')
                             ->success()
                             ->send();
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -134,9 +154,9 @@ class ScheduledReportResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListScheduledReports::route('/'),
-            'create' => Pages\CreateScheduledReport::route('/create'),
-            'edit' => Pages\EditScheduledReport::route('/{record}/edit'),
+            'index' => ListScheduledReports::route('/'),
+            'create' => CreateScheduledReport::route('/create'),
+            'edit' => EditScheduledReport::route('/{record}/edit'),
         ];
     }
 }

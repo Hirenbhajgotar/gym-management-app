@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Support\Facades\Log;
 
 enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon, HasLabel
 {
@@ -63,7 +66,7 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
 
     private static function logAndFallback(?string $status): self
     {
-        \Illuminate\Support\Facades\Log::warning('Unknown Meta WABA verification status encountered', [
+        Log::warning('Unknown Meta WABA verification status encountered', [
             'status' => $status,
             'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
         ]);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 use Illuminate\Support\Number as SupportNumber;
@@ -16,6 +18,8 @@ class Number
      */
     public static function abbreviateCurrency($value, $maxValue = 50000, $in = 'INR')
     {
+        $value = (float) $value;
+
         if (! $value) {
             // If the value is 0, return the formatted currency.
             return SupportNumber::currency($value, in: $in);

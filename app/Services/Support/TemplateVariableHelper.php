@@ -52,7 +52,7 @@ class TemplateVariableHelper
 
         foreach ($variables as $variable) {
             if (preg_match('/variable_(\d+)/', $variable->name, $matches)) {
-                $num = (string) $matches[1];
+                $num = $matches[1];
                 $default = self::DEFAULT_PLACEHOLDERS[$num] ?? [
                     'placeholder' => 'Variable ' . $num,
                     'name' => 'variable_' . $num,

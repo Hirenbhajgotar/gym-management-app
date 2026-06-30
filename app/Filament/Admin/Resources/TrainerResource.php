@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
 use App\Filament\Actions\ExportBulkAction;
-use App\Filament\Admin\Resources\TrainerResource\Pages;
+use App\Filament\Admin\Resources\TrainerResource\Pages\CreateTrainer;
+use App\Filament\Admin\Resources\TrainerResource\Pages\EditTrainer;
+use App\Filament\Admin\Resources\TrainerResource\Pages\ManageTrainers;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\Exports\TrainerExporter;
 use App\Models\Trainer;
@@ -12,14 +16,27 @@ use App\Rules\ValidEmailDomain;
 use App\Tables\Columns\AssignedMembersColumn;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use libphonenumber\PhoneNumberType;
 use Illuminate\Support\Facades\Cache;
+use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
 class TrainerResource extends BaseResource
@@ -28,10 +45,13 @@ class TrainerResource extends BaseResource
 
     protected static ?string $navigationGroup = 'Users';
 
+    /**
+     * @return Builder<Trainer>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with('members')
+            ->with(['members.payments'])
             ->withCount('members');
     }
 
@@ -52,10 +72,10 @@ class TrainerResource extends BaseResource
     {
         return [
             // Basic Information Section
-            Forms\Components\Section::make('Basic Information')
+            Section::make('Basic Information')
                 ->description('Enter trainer\'s personal details')
                 ->schema([
-                    Forms\Components\FileUpload::make('profile_photo')
+                    FileUpload::make('profile_photo')
                         ->image()
                         ->avatar()
                         ->imageEditor()
@@ -66,7 +86,7 @@ class TrainerResource extends BaseResource
 
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->label('Full Name')
                                 ->required()
                                 ->maxLength(255)
@@ -75,9 +95,9 @@ class TrainerResource extends BaseResource
                                 ->autocomplete('given-name'),
                         ]),
 
-                    Forms\Components\TextInput::make('email')
+                    TextInput::make('email')
                         ->email()
-                        ->rule(new ValidEmailDomain)
+                        ->rule(new ValidEmailDomain())
                         ->required()
                         ->unique(Trainer::class, 'email', ignoreRecord: true)
                         ->placeholder('trainer@example.com')
@@ -97,10 +117,10 @@ class TrainerResource extends BaseResource
                 ->collapsible(),
 
             // Professional Information Section
-            Forms\Components\Section::make('Professional Information')
+            Section::make('Professional Information')
                 ->description('Training specialization and experience details')
                 ->schema([
-                    Forms\Components\Select::make('specialization')
+                    Select::make('specialization')
                         ->label('Primary Specialization')
                         ->options([
                             'Strength Training' => 'Strength Training',
@@ -118,7 +138,7 @@ class TrainerResource extends BaseResource
                         ->placeholder('Select specialization')
                         ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('experience_years')
+                    TextInput::make('experience_years')
                         ->label('Years of Experience')
                         ->numeric()
                         ->minValue(0)
@@ -128,7 +148,7 @@ class TrainerResource extends BaseResource
                         ->placeholder('0')
                         ->columnSpan(1),
 
-                    Forms\Components\Textarea::make('certifications')
+                    Textarea::make('certifications')
                         ->label('Certifications')
                         ->placeholder('List all relevant certifications (e.g., NASM-CPT, ACE, ACSM)')
                         ->maxLength(500)
@@ -139,16 +159,16 @@ class TrainerResource extends BaseResource
                 ->collapsible(),
 
             // Availability Section
-            Forms\Components\Section::make('Availability')
+            Section::make('Availability')
                 ->description('Set trainer availability and working hours')
                 ->schema([
-                    Forms\Components\Toggle::make('is_available')
+                    Toggle::make('is_available')
                         ->label('Currently Available')
                         ->default(true)
                         ->inline(false)
                         ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('available_hours')
+                    TextInput::make('available_hours')
                         ->label('Available Hours')
                         ->placeholder('e.g., 9:00 AM - 5:00 PM, Monday-Friday')
                         ->maxLength(255)
@@ -158,10 +178,10 @@ class TrainerResource extends BaseResource
                 ->collapsible(),
 
             // Compensation Section
-            Forms\Components\Section::make('Compensation')
+            Section::make('Compensation')
                 ->description('Salary and payment information')
                 ->schema([
-                    Forms\Components\Select::make('currency')
+                    Select::make('currency')
                         ->options(collect(Currency::cases())->mapWithKeys(
                             fn (Currency $currency) => [$currency->value => $currency->getLabel()]
                         ))
@@ -170,7 +190,7 @@ class TrainerResource extends BaseResource
                         ->reactive()
                         ->columnSpan(2),
 
-                    Forms\Components\TextInput::make('basic_salary')
+                    TextInput::make('basic_salary')
                         ->label('Basic Salary')
                         ->numeric()
                         ->minValue(0)
@@ -180,14 +200,15 @@ class TrainerResource extends BaseResource
                         ->placeholder('0.00')
                         ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('pt_salary_per_member')
-                        ->label('Personal Training Rate (Per Member)')
+                    TextInput::make('pt_salary_per_member')
+                        ->label('PT Commission Rate (%)')
                         ->numeric()
                         ->minValue(0)
+                        ->maxValue(100)
                         ->required()
                         ->step(0.01)
-                        ->prefix(fn ($get) => Currency::from($get('currency') ?? Currency::INR->value)->getSymbol())
-                        ->placeholder('0.00')
+                        ->suffix('%')
+                        ->placeholder('10.00')
                         ->columnSpan(1),
                 ])
                 ->columns(2)
@@ -199,42 +220,42 @@ class TrainerResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('profile_photo')
+                ImageColumn::make('profile_photo')
                     ->circular()
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
 
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('specialization'),
-                Tables\Columns\TextColumn::make('experience_years')
+                TextColumn::make('specialization'),
+                TextColumn::make('experience_years')
                     ->label('Experience (Years)'),
 
                 AssignedMembersColumn::make('assigned_members')
                     ->label('Assigned Members'),
-                Tables\Columns\TextColumn::make('basic_salary')
+                TextColumn::make('basic_salary')
                     ->money(fn ($record) => $record->currency),
-                Tables\Columns\TextColumn::make('pt_salary_per_member')
-                    ->label('PT Salary/Member')
-                    ->money(fn ($record) => $record->currency),
-                Tables\Columns\TextColumn::make('total_earnings')
+                TextColumn::make('pt_salary_per_member')
+                    ->label('PT Commission Rate (%)')
+                    ->formatStateUsing(fn ($state) => number_format((float) $state, 2) . '%'),
+                TextColumn::make('total_earnings')
                     ->label('Total Earnings')
                     ->money(fn ($record) => $record->currency)
                     ->getStateUsing(fn ($record) => $record->total_earnings),
-                Tables\Columns\IconColumn::make('is_available')
+                IconColumn::make('is_available')
                     ->boolean(),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_available'),
+                TernaryFilter::make('is_available'),
 
-                Tables\Filters\Filter::make('basic_salary')
+                Filter::make('basic_salary')
                     ->form([
-                        Forms\Components\TextInput::make('basic_salary_min')
+                        TextInput::make('basic_salary_min')
                             ->numeric()
                             ->label('Min Salary'),
-                        Forms\Components\TextInput::make('basic_salary_max')
+                        TextInput::make('basic_salary_max')
                             ->numeric()
                             ->label('Max Salary'),
                     ])
@@ -245,17 +266,17 @@ class TrainerResource extends BaseResource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                BulkActionGroup::make([
                     ExportBulkAction::make()
                         ->label('Export Trainers')
                         ->exporter(TrainerExporter::class)
                         ->formats([ExportFormat::Xlsx]),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -263,9 +284,9 @@ class TrainerResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageTrainers::route('/'),
-            'create' => Pages\CreateTrainer::route('/create'),
-            'edit' => Pages\EditTrainer::route('/{record}/edit'),
+            'index' => ManageTrainers::route('/'),
+            'create' => CreateTrainer::route('/create'),
+            'edit' => EditTrainer::route('/{record}/edit'),
         ];
     }
 }

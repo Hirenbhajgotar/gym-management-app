@@ -27,7 +27,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
 
         $this->gym = Gym::factory()->create();
 
-        $this->whatsappAccount = WhatsAppAccount::create([
+        $this->whatsappAccount = WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'waba_id' => 'test_waba_123',
             'status' => 'active',
@@ -43,7 +43,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/whatsapp/templates?hub_mode=subscribe&hub_verify_token=test_verify_token&hub_challenge=12345');
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertContent('12345');
         $response->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
     }
@@ -53,7 +53,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/whatsapp/templates?hub_mode=subscribe&hub_verify_token=wrong_token&hub_challenge=12345');
 
-        $response->assertStatus(403);
+        $response->assertForbidden();
         $response->assertJson(['error' => 'Verification failed']);
     }
 
@@ -62,7 +62,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
     {
         $response = $this->get('/api/webhooks/whatsapp/templates');
 
-        $response->assertStatus(403);
+        $response->assertForbidden();
     }
 
     #[Test]
@@ -84,7 +84,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
             ],
         ], ['X-Hub-Signature-256' => 'sha256=invalid']);
 
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
         $response->assertJson(['error' => 'Invalid signature']);
     }
 
@@ -107,7 +107,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
         $response->assertJson(['error' => 'Missing signature']);
     }
 
@@ -150,7 +150,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
             $payload
         );
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertJson(['status' => 'success']);
 
         Queue::assertPushed(ProcessMetaTemplateWebhook::class, function ($job) {
@@ -210,7 +210,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
             $payload
         );
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         Queue::assertPushed(ProcessMetaTemplateWebhook::class, 2);
     }
@@ -251,7 +251,7 @@ class WhatsAppTemplateWebhookTest extends TestCase
             $payload
         );
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         Queue::assertNotPushed(ProcessMetaTemplateWebhook::class);
     }

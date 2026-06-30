@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\GymMember;
@@ -15,7 +17,7 @@ class ChurnRiskService
     public function getAtRiskMembers(int $gymId, int $thresholdScore = 65, int $limit = 50): Collection
     {
         // Get active members
-        $members = GymMember::where('gym_id', $gymId)
+        $members = GymMember::query()->where('gym_id', $gymId)
             ->with(['latestPayment', 'lastAttendance'])
             ->membershipActive()
             ->get();
@@ -127,7 +129,7 @@ class ChurnRiskService
     public function getChurnStats(int $gymId): array
     {
         // Get all active members with necessary relationships
-        $members = GymMember::where('gym_id', $gymId)
+        $members = GymMember::query()->where('gym_id', $gymId)
             ->membershipActive()
             ->with(['lastAttendance', 'membershipPlan', 'latestPayment'])
             ->get();

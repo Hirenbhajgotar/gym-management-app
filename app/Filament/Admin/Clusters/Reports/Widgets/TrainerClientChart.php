@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -29,7 +32,7 @@ class TrainerClientChart extends BaseChartWidget
      */
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -41,14 +44,14 @@ class TrainerClientChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
         $cacheKey = ReportCacheService::WIDGET_TRAINER_CLIENTS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $trainers = Trainer::where('gym_id', $gymId)
+            $trainers = Trainer::query()->where('gym_id', $gymId)
                 ->withCount(['members' => fn ($q) => $q->membershipActive()])
                 ->orderByDesc('members_count')
                 ->limit(10) // Top 10 trainers

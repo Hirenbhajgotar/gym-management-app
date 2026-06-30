@@ -13,10 +13,12 @@ use App\Models\WhatsAppPackage;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
+use Exception;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -78,7 +80,7 @@ class PurchaseCredits extends BasePage implements HasActions
     {
         $gymId = $this->getGymId();
 
-        $this->creditBalance = WhatsAppMessageCredit::where('gym_id', $gymId)->first();
+        $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
         $this->packages = WhatsAppPackage::query()->active()
             ->ordered()
@@ -90,7 +92,7 @@ class PurchaseCredits extends BasePage implements HasActions
 
     private function loadSurchargeData(): void
     {
-        $billingService = new WhatsAppBillingService(new RazorpayService);
+        $billingService = new WhatsAppBillingService(new RazorpayService());
         $surcharge = $billingService->getTwilioNumberSurcharge($this->getGymId());
 
         $this->showSurcharge = (bool) $surcharge['eligible'];
@@ -129,16 +131,14 @@ class PurchaseCredits extends BasePage implements HasActions
     public function initiatePayment(): void
     {
         try {
-            $package = WhatsAppPackage::find($this->selectedPackageId);
+            $package = WhatsAppPackage::query()->find($this->selectedPackageId);
 
-            if (! $package) {
-                throw new \Exception('Package not found');
-            }
+            throw_unless($package, Exception::class, 'Package not found');
 
             $gym = $this->getGym();
             $user = Auth::user();
 
-            $razorpayService = new RazorpayService;
+            $razorpayService = new RazorpayService();
 
             $totalAmount = $package->selling_price;
 
@@ -182,7 +182,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 'package_name' => $package->name,
                 'message_count' => $package->message_count,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::info('Payment Init Failed: ' . $e->getMessage());
             Notification::make()
                 ->title('Payment Init Failed')
@@ -199,12 +199,10 @@ class PurchaseCredits extends BasePage implements HasActions
         try {
             // Reconstruct component state from Payment DB record if lost
             // (e.g., user navigated away mid-payment and came back)
-            if (empty($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
-                $paymentRecord = Payment::where('razorpay_order_id', $razorpayOrderId)->first();
+            if (blank($this->razorpayOrder['order_id']) && $razorpayOrderId !== '') {
+                $paymentRecord = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
 
-                if (! $paymentRecord) {
-                    throw new \Exception('Payment session expired. Please try again.');
-                }
+                throw_unless($paymentRecord, Exception::class, 'Payment session expired. Please try again.');
 
                 $this->razorpayOrder = [
                     'order_id' => $paymentRecord->razorpay_order_id,
@@ -214,11 +212,9 @@ class PurchaseCredits extends BasePage implements HasActions
             }
 
             // Guard: verify we have the required state before proceeding
-            if (empty($this->razorpayOrder['order_id']) || ! $this->selectedPackageId) {
-                throw new \Exception('Payment session data is missing. Please try again.');
-            }
+            throw_if(blank($this->razorpayOrder['order_id']) || ! $this->selectedPackageId, Exception::class, 'Payment session data is missing. Please try again.');
 
-            $razorpayService = new RazorpayService;
+            $razorpayService = new RazorpayService();
 
             $payment = $razorpayService->verifyPayment(
                 $this->razorpayOrder['order_id'],
@@ -239,7 +235,7 @@ class PurchaseCredits extends BasePage implements HasActions
 
                 if ($result['success']) {
                     if ($this->phoneNumberSurcharge > 0) {
-                        $phone = WhatsAppPhoneNumber::whereHas('account', function ($query) {
+                        $phone = WhatsAppPhoneNumber::query()->whereHas('account', function (Builder $query) {
                             $query->where('gym_id', $this->getGymId());
                         })->first();
 
@@ -266,7 +262,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 $this->selectedPackageId = null;
                 $this->razorpayOrder = [];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Payment verification failed', [
                 'error' => $e->getMessage(),
                 'razorpay_order_id' => $this->razorpayOrder['order_id'] ?? 'N/A',
@@ -292,7 +288,7 @@ class PurchaseCredits extends BasePage implements HasActions
     public function claimWelcomeCredits(): void
     {
         try {
-            $whatsAppBillingService = new WhatsAppBillingService(new RazorpayService);
+            $whatsAppBillingService = new WhatsAppBillingService(new RazorpayService());
 
             $whatsAppBillingService->addWelcomeCredits($this->getGymId());
 
@@ -309,7 +305,7 @@ class PurchaseCredits extends BasePage implements HasActions
                 navigate: true
             );
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Failed to Claim Credits')
                 ->body($e->getMessage())
@@ -348,9 +344,7 @@ class PurchaseCredits extends BasePage implements HasActions
     {
         $tenant = Filament::getTenant();
 
-        if (! $tenant instanceof Gym) {
-            throw new \Exception('No gym tenant context available.');
-        }
+        throw_unless($tenant instanceof Gym, Exception::class, 'No gym tenant context available.');
 
         return $tenant;
     }

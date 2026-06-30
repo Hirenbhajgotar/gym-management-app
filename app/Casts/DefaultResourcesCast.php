@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
@@ -8,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @deprecated Only used by the deprecated {@see \App\Models\PermissionSetting} model.
  *             Will be removed when PermissionSetting is deleted.
+ *
+ * @implements CastsAttributes<array, string>
  */
 class DefaultResourcesCast implements CastsAttributes
 {
@@ -28,6 +32,10 @@ class DefaultResourcesCast implements CastsAttributes
      */
     public function set(Model $model, string $key, mixed $value, array $attributes): mixed
     {
+        if (! is_array($value)) {
+            $value = [];
+        }
+
         $structuredValue = [
             'resources' => $value['resources'] ?? [],
             'widgets' => $value['widgets'] ?? [],

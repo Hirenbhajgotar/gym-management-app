@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Jobs\SendLowWhatsAppCreditNotificationJob;
@@ -25,18 +27,20 @@ class CheckLowWhatsAppCreditsCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        $credits = WhatsAppMessageCredit::where('is_low_credit_notified', false)->get();
+        $credits = WhatsAppMessageCredit::query()->where('is_low_credit_notified', false)->get();
 
         $count = 0;
         foreach ($credits as $credit) {
             if ($credit->getBalance() <= config('app.low_whatsapp_message_balance_threshold')) {
-                SendLowWhatsAppCreditNotificationJob::dispatch($credit);
+                dispatch(new SendLowWhatsAppCreditNotificationJob($credit));
                 $count++;
             }
         }
 
         $this->info("Dispatched low credit notifications for {$count} gyms.");
+
+        return self::SUCCESS;
     }
 }

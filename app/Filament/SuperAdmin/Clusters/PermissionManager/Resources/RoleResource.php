@@ -1,19 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\PermissionManager;
-use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages;
-use App\Models\Permission;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages\CreateRole;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages\EditRole;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages\ListRoles;
+use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\RoleResource\Pages\ViewRole;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Tables;
-use Filament\Tables\Columns\TagsColumn;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -116,9 +123,9 @@ class RoleResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make()
                     ->before(function (Role $record) {
                         // Detach all permissions and users before deletion
                         $record->permissions()->detach();
@@ -126,8 +133,8 @@ class RoleResource extends BaseResource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->before(function ($records) {
                             foreach ($records as $record) {
                                 $record->permissions()->detach();
@@ -148,13 +155,16 @@ class RoleResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListRoles::route('/'),
-            'create' => Pages\CreateRole::route('/create'),
-            'view' => Pages\ViewRole::route('/{record}'),
-            'edit' => Pages\EditRole::route('/{record}/edit'),
+            'index' => ListRoles::route('/'),
+            'create' => CreateRole::route('/create'),
+            'view' => ViewRole::route('/{record}'),
+            'edit' => EditRole::route('/{record}/edit'),
         ];
     }
 
+    /**
+     * @return Builder<\App\Models\Role>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

@@ -9,6 +9,7 @@ use App\DTOs\WhatsAppTemplates\TemplateFetchResult;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
@@ -37,7 +38,7 @@ class WhatsAppTemplateManager
             return null;
         }
 
-        return WhatsAppAccount::where('gym_id', $this->tenantId)->first();
+        return WhatsAppAccount::query()->where('gym_id', $this->tenantId)->first();
     }
 
     private function getClient(): ?Client
@@ -110,7 +111,7 @@ class WhatsAppTemplateManager
                 templates: $templates,
                 count: count($templates),
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch WhatsApp templates', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,
@@ -166,17 +167,14 @@ class WhatsAppTemplateManager
 
             $synced = 0;
             foreach (($result->templates ?? []) as $template) {
-                $record = WhatsAppTemplate::updateOrCreate(
-                    [
-                        'gym_id' => $this->tenantId,
-                        'name' => $template['friendly_name'],
-                    ],
-                    [
-                        'variables' => $template['variables'],
-                        'status' => WhatsAppTemplateStatusEnum::APPROVED,
-                        'is_active' => true,
-                    ],
-                );
+                $record = WhatsAppTemplate::query()->updateOrCreate([
+                    'gym_id' => $this->tenantId,
+                    'name' => $template['friendly_name'],
+                ], [
+                    'variables' => $template['variables'],
+                    'status' => WhatsAppTemplateStatusEnum::APPROVED,
+                    'is_active' => true,
+                ]);
                 if ($record) {
                     $record->twilio_template_sid = (string) ($template['sid'] ?? '');
                     $record->save();
@@ -189,7 +187,7 @@ class WhatsAppTemplateManager
                 synced: $synced,
                 message: "Successfully synced {$synced} templates",
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to sync templates to database', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId,
@@ -208,7 +206,7 @@ class WhatsAppTemplateManager
             return null;
         }
 
-        return WhatsAppTemplate::where('gym_id', $this->tenantId)
+        return WhatsAppTemplate::query()->where('gym_id', $this->tenantId)
             ->where('name', $templateName)
             ->where('status', 'approved')
             ->where('is_active', true)

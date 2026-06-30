@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\PaymentStatus;
@@ -26,7 +28,7 @@ class CheckMembershipExpiry extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Checking for expired memberships...');
 
@@ -63,5 +65,7 @@ class CheckMembershipExpiry extends Command
         $this->info("Updated {$expiredPaymentsCount} member payments to expired status.");
 
         $this->info('Membership expiry check completed.');
+
+        return self::SUCCESS;
     }
 }

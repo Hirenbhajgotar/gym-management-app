@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Events\BiometricConsentGiven;
 use App\Http\Requests\BiometricConsentStoreRequest;
 use App\Models\BiometricConsent;
 use App\Models\GymMember;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -48,7 +51,7 @@ class BiometricConsentController extends Controller
 
         // Try to create consent - handle race condition where another request creates first
         try {
-            $consent = BiometricConsent::create([
+            $consent = BiometricConsent::query()->create([
                 'gym_member_id' => $gymMember->id,
                 'gym_id' => $gymMember->gym_id,
                 'ip_address' => $request->ip(),
@@ -58,7 +61,7 @@ class BiometricConsentController extends Controller
 
             // Only fire event when create actually succeeds
             event(new BiometricConsentGiven($gymMember, $consent));
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Check for duplicate key error (MySQL error code 1062 or SQLSTATE 23000)
             if ($e->getCode() === '23000' || ($e->errorInfo[1] ?? null) === 1062) {
                 // Another request created the consent first - reload and return success

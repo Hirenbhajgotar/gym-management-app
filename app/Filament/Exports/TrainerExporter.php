@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Exports;
 
 use App\Models\Trainer;
@@ -31,7 +33,8 @@ class TrainerExporter extends Exporter
                 ->label('Basic Salary')
                 ->getStateUsing(fn ($record) => $record->basic_salary),
             ExportColumn::make('pt_salary_per_member')
-                ->label('PT Salary/Member'),
+                ->label('PT Commission Rate (%)')
+                ->getStateUsing(fn ($record) => $record->pt_salary_per_member . '%'),
             ExportColumn::make('total_earnings')
                 ->label('Total Earnings')
                 ->getStateUsing(fn ($record) => $record->total_earnings),

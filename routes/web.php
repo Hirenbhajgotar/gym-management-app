@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\BiometricConsentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MemberInvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SharedReportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WhatsApp\EmbeddedSignupController;
 use App\Livewire\Frontend\BlogDetail;
@@ -21,7 +24,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Volt\Volt;
 
 Route::get('/', HomeController::class)->name('home');
 
@@ -39,7 +41,7 @@ Route::get('/profile', ProfileController::class)
 
 Route::get('/thank-you', function () {
     if (! session()->has('success')) {
-        return redirect()->route('home');
+        return to_route('home');
     }
 
     return view('thank-you');
@@ -55,7 +57,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/clear-cache', function () {
         Artisan::call('optimize:clear');
 
-        return redirect()->route('home');
+        return to_route('home');
     })->name('clear-cache');
 
     // Download failed rows CSV
@@ -84,28 +86,23 @@ Route::middleware(['auth'])->group(function () {
             ->danger()
             ->send();
 
-        return redirect()
-            ->route('filament.admin.resources.gym-members.index')
+        return to_route('filament.admin.resources.gym-members.index')
             ->with('error', 'File not found.');
     })->name('download.failed.rows');
 
     Route::get('/filament/failed-import-download/{importId}', function ($importId) {
-        $import = Import::where('id', $importId)
+        $import = Import::query()->where('id', $importId)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
         // Check if file path exists and is valid
-        if (empty($import->file_path) || $import->file_path === 'N/A') {
-            abort(404, 'No failed rows report available for this import.');
-        }
+        abort_if(blank($import->file_path) || $import->file_path === 'N/A', 404, 'No failed rows report available for this import.');
 
         // Build the full path to the file in storage/app/public
         $fullPath = storage_path('app/public/' . $import->file_path);
 
         // Check if file exists
-        if (! file_exists($fullPath)) {
-            abort(404, 'File not found.');
-        }
+        abort_unless(file_exists($fullPath), 404, 'File not found.');
 
         $fileName = basename($import->file_path);
 
@@ -122,9 +119,7 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/download-sample/{file}', function ($file, Request $request) {
     $fileName = $request->get('fileName', 'sample.xlsx');
     $path = 'import/templates/xls/' . $file;
-    if (! Storage::disk('public')->exists($path)) {
-        abort(404);
-    }
+    abort_unless(Storage::disk('public')->exists($path), 404);
 
     return Storage::disk('public')->download($path, $fileName);
 })->name('download.sample');
@@ -187,7 +182,7 @@ Route::get('/download-sample-excel/{type}', [ImportController::class, 'downloadS
 
 // Shared Reports Routes (public access)
 Route::prefix('shared-reports')->name('shared-reports.')->group(function () {
-    Route::get('/{token}', [App\Http\Controllers\SharedReportController::class, 'show'])->name('show');
+    Route::get('/{token}', [SharedReportController::class, 'show'])->name('show');
 });
 
 // Biometric Consent Routes (public, signed URL protected)

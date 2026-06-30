@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessMetaTemplateWebhook;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +27,7 @@ class WhatsAppTemplateWebhookController extends Controller
      * Meta sends a GET request with hub_mode, hub_verify_token, and hub_challenge
      * to verify the endpoint during webhook setup.
      */
-    public function verifyMetaWebhook(Request $request): \Illuminate\Http\Response|JsonResponse
+    public function verifyMetaWebhook(Request $request): Response|JsonResponse
     {
         $hubMode = $request->input('hub_mode');
         $hubVerifyToken = $request->input('hub_verify_token');
@@ -146,18 +148,12 @@ class WhatsAppTemplateWebhookController extends Controller
                     ]);
 
                     // Dispatch job for async processing
-                    ProcessMetaTemplateWebhook::dispatch(
-                        $wabaId,
-                        $metaTemplateId,
-                        $event,
-                        $reason,
-                        $previousEvent
-                    );
+                    dispatch(new ProcessMetaTemplateWebhook($wabaId, $metaTemplateId, $event, $reason, $previousEvent));
                 }
             }
 
             return response()->json(['status' => 'success'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WhatsApp template webhook processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

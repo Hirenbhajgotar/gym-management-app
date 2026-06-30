@@ -11,14 +11,13 @@ use App\Notifications\WhatsAppTemplateApprovedNotification;
 use App\Notifications\WhatsAppTemplateRejectedNotification;
 use App\Notifications\WhatsAppTemplateStatusChangedNotification;
 use App\Services\Support\WhatsAppTemplateStatusMapper;
-use Illuminate\Bus\Queueable;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Processes Meta template status webhook events asynchronously.
@@ -29,7 +28,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     /**
      * The number of times the job may be attempted.
@@ -72,7 +71,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         $account = Cache::flexible("whatsapp:template:account:waba_id:{$this->wabaId}", [30, 120], function () {
-            return WhatsAppAccount::where('waba_id', $this->wabaId)->first();
+            return WhatsAppAccount::query()->where('waba_id', $this->wabaId)->first();
         });
 
         if (! $account) {
@@ -84,7 +83,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
         }
         // Find the template by Meta's template ID
         $template = Cache::flexible("whatsapp:template:gym_id:{$account->gym_id}:template_id:{$this->metaTemplateId}", [30, 120], function () use ($account) {
-            return WhatsAppTemplate::where('gym_id', $account->gym_id)->where('meta_template_id', $this->metaTemplateId)->first();
+            return WhatsAppTemplate::query()->where('gym_id', $account->gym_id)->where('meta_template_id', $this->metaTemplateId)->first();
         });
 
         if (! $template) {
@@ -178,7 +177,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
                 'new_status' => $newStatus->value,
                 'notified_user_id' => $owner->id,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log but don't fail the job - notification failure shouldn't block status updates
             Log::error('ProcessMetaTemplateWebhook: notification failed', [
                 'template_id' => $template->id,
@@ -190,7 +189,7 @@ class ProcessMetaTemplateWebhook implements ShouldBeUnique, ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ProcessMetaTemplateWebhook: job failed', [
             'meta_template_id' => $this->metaTemplateId,

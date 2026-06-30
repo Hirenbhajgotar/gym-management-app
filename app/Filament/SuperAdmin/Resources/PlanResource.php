@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
@@ -8,9 +10,24 @@ use App\Filament\SuperAdmin\Resources\PlanResource\Pages\CreatePlan;
 use App\Filament\SuperAdmin\Resources\PlanResource\Pages\EditPlan;
 use App\Filament\SuperAdmin\Resources\PlanResource\Pages\ListPlans;
 use App\Models\Plan;
-use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -45,12 +62,12 @@ class PlanResource extends BaseResource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Tabs::make('Plan Management')
+            Tabs::make('Plan Management')
                 ->tabs([
-                    Forms\Components\Tabs\Tab::make('Basic Information')
+                    Tab::make('Basic Information')
                         ->icon('heroicon-o-information-circle')
                         ->schema([
-                            Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->required()
                                 ->maxLength(255)
                                 ->reactive()
@@ -66,7 +83,7 @@ class PlanResource extends BaseResource
                                 ) {
                                     $set('slug', Str::slug($state));
                                 }),
-                            Forms\Components\TextInput::make('slug')
+                            TextInput::make('slug')
                                 ->required()
                                 ->maxLength(255)
                                 ->unique(
@@ -87,12 +104,12 @@ class PlanResource extends BaseResource
                                         $set('slug', Str::slug($record->name));
                                     }
                                 }),
-                            Forms\Components\TextInput::make('badge')
+                            TextInput::make('badge')
                                 ->maxLength(255)
                                 ->helperText(
                                     'Optional badge text like "Popular" or "Best Value"',
                                 ),
-                            Forms\Components\RichEditor::make('description')
+                            RichEditor::make('description')
                                 ->maxLength(5000)
                                 ->columnSpanFull()
                                 ->label('Plan Description')
@@ -101,17 +118,17 @@ class PlanResource extends BaseResource
                                 )
                                 ->hint('Preview available below')
                                 ->live(onBlur: true),
-                            Forms\Components\Toggle::make('is_enterprise')
+                            Toggle::make('is_enterprise')
                                 ->label('Enterprise Plan')
                                 ->helperText('Check this for enterprise pricing (Contact Us)')
                                 ->reactive(),
                         ])
                         ->columns(2),
-                    Forms\Components\Tabs\Tab::make('Pricing')
+                    Tab::make('Pricing')
                         ->icon('heroicon-o-currency-dollar')
                         ->schema([
-                            Forms\Components\Grid::make(2)->schema([
-                                Forms\Components\TextInput::make(
+                            Grid::make(2)->schema([
+                                TextInput::make(
                                     'price_monthly',
                                 )
                                     ->numeric()
@@ -121,7 +138,7 @@ class PlanResource extends BaseResource
                                     ->label('Monthly Price')
                                     ->placeholder('0.00')
                                     ->helperText('Monthly subscription price'),
-                                Forms\Components\TextInput::make('price_yearly')
+                                TextInput::make('price_yearly')
                                     ->numeric()
                                     ->prefix('$')
                                     ->minValue(0)
@@ -130,7 +147,7 @@ class PlanResource extends BaseResource
                                     ->placeholder('0.00')
                                     ->helperText('Yearly subscription price'),
                             ]),
-                            Forms\Components\Select::make('currency')
+                            Select::make('currency')
                                 ->options([
                                     'USD' => 'United States Dollar (USD)',
                                     'EUR' => 'Euro (EUR)',
@@ -142,7 +159,7 @@ class PlanResource extends BaseResource
                                 ->helperText(
                                     'Select the currency for this plan',
                                 ),
-                            Forms\Components\TextInput::make('trial_days')
+                            TextInput::make('trial_days')
                                 ->numeric()
                                 ->minValue(0)
                                 ->nullable()
@@ -152,13 +169,13 @@ class PlanResource extends BaseResource
                                     'Number of trial days (leave empty for no trial)',
                                 ),
                         ]),
-                    Forms\Components\Tabs\Tab::make('Features')
+                    Tab::make('Features')
                         ->icon('heroicon-o-star')
                         ->schema([
-                            Forms\Components\Repeater::make('features')
+                            Repeater::make('features')
                                 ->relationship('features')
                                 ->schema([
-                                    Forms\Components\TextInput::make(
+                                    TextInput::make(
                                         'feature_name',
                                     )
                                         ->required()
@@ -167,11 +184,11 @@ class PlanResource extends BaseResource
                                         ->placeholder(
                                             'e.g., "Unlimited Access"',
                                         ),
-                                    Forms\Components\TextInput::make('value')
+                                    TextInput::make('value')
                                         ->maxLength(255)
                                         ->label('Feature Value')
                                         ->placeholder('e.g., "Yes" or "10 GB"'),
-                                    Forms\Components\RichEditor::make(
+                                    RichEditor::make(
                                         'brief_description',
                                     )->label('Feature Description'),
                                 ])
@@ -201,7 +218,7 @@ class PlanResource extends BaseResource
                         ! $get('price_yearly')
                     ) {
                         $set('is_active', false);
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->warning()
                             ->title('Price Required')
                             ->body(
@@ -210,7 +227,7 @@ class PlanResource extends BaseResource
                             ->send();
                     }
                 }),
-            Forms\Components\Toggle::make('is_active')
+            Toggle::make('is_active')
                 ->default(true)
                 ->label('Active Status')
                 ->helperText('Toggle to enable or disable this plan'),
@@ -221,38 +238,38 @@ class PlanResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('slug')->searchable(),
-                Tables\Columns\TextColumn::make('price_monthly')
+                TextColumn::make('name')->searchable(),
+                TextColumn::make('slug')->searchable(),
+                TextColumn::make('price_monthly')
                     ->money(fn ($record) => $record->currency->value)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('price_yearly')
+                TextColumn::make('price_yearly')
                     ->money(fn ($record) => $record->currency->value)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('currency'),
-                Tables\Columns\ToggleColumn::make('is_active'),
-                Tables\Columns\ToggleColumn::make('is_enterprise'),
-                Tables\Columns\TextColumn::make('trial_days')
+                TextColumn::make('currency'),
+                ToggleColumn::make('is_active'),
+                ToggleColumn::make('is_enterprise'),
+                TextColumn::make('trial_days')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextInputColumn::make('badge'),
-                Tables\Columns\TextColumn::make('created_at')
+                TextInputColumn::make('badge'),
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([Tables\Filters\TernaryFilter::make('is_active')])
+            ->filters([TernaryFilter::make('is_active')])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

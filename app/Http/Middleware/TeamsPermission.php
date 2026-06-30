@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Models\Gym;
@@ -14,7 +16,7 @@ class TeamsPermission
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request):Response  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -27,7 +29,7 @@ class TeamsPermission
 
             // Check if we have a tenant parameter in the route
             if ($request->route() && $request->route()->parameter('tenant')) {
-                $tenantModel = app(config('filament.tenant_model', Gym::class));
+                $tenantModel = resolve(config('filament.tenant_model', Gym::class));
                 $tenant = $tenantModel::where('slug', $request->route()->parameter('tenant'))->first();
             }
 

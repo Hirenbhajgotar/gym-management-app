@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * Diagnostic test WITHOUT RefreshDatabase to verify pre-existing table state.
@@ -45,7 +46,7 @@ class DatabaseWithoutRefreshDatabaseTest extends TestCase
                 $actualDb->db,
                 "Connected to wrong database: {$actualDb->db} (expected gym_app_test)"
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fail("MySQL connection failed: {$e->getMessage()}");
         }
     }

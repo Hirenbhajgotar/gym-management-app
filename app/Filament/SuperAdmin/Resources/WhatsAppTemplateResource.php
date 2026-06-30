@@ -1,19 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\BaseResources\BaseResource;
-use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
+use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages\CreateWhatsAppTemplate;
+use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages\EditWhatsAppTemplate;
+use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages\ListWhatsAppTemplates;
 use App\Jobs\PushWhatsAppTemplateToGymJob;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
-use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -52,6 +69,9 @@ class WhatsAppTemplateResource extends BaseResource
         }) ?: null;
     }
 
+    /**
+     * @return Builder<WhatsAppTemplate>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -63,9 +83,9 @@ class WhatsAppTemplateResource extends BaseResource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Template Details')
+                Section::make('Template Details')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
@@ -73,13 +93,13 @@ class WhatsAppTemplateResource extends BaseResource
                             ->placeholder('e.g., payment_reminder')
                             ->helperText('Lowercase, underscores only. This is the internal name used by WhatsApp API.'),
 
-                        Forms\Components\TextInput::make('display_name')
+                        TextInput::make('display_name')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Payment Reminder')
                             ->helperText('A friendly name for easy identification.'),
 
-                        Forms\Components\Select::make('category')
+                        Select::make('category')
                             ->options([
                                 'utility' => '🔧 Utility — Transactional messages',
                                 'marketing' => '📢 Marketing — Promotional messages',
@@ -90,23 +110,23 @@ class WhatsAppTemplateResource extends BaseResource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Template Body')
+                Section::make('Template Body')
                     ->description('Write your message template. Use {{1}}, {{2}}, etc. for dynamic variables.')
                     ->schema([
-                        Forms\Components\Textarea::make('body')
+                        Textarea::make('body')
                             ->required()
                             ->rows(6)
                             ->maxLength(1024)
                             ->live(debounce: 500)
                             ->placeholder('Hi {{1}}, your membership at {{2}} is due for renewal on {{3}}. Please renew to continue enjoying our services.')
-                            ->helperText(fn (Forms\Get $get) => new HtmlString(
+                            ->helperText(fn (Get $get) => new HtmlString(
                                 '<span class="text-xs">'
                                 . 'Characters: <strong>' . strlen($get('body') ?? '') . '/1024</strong>'
                                 . ' | Variables detected: <strong>' . preg_match_all('/\{\{\d+\}\}/', $get('body') ?? '') . '</strong>'
                                 . '</span>'
                             )),
 
-                        Forms\Components\Placeholder::make('variable_helper')
+                        Placeholder::make('variable_helper')
                             ->label('')
                             ->content(new HtmlString('
                                 <div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 p-3 text-xs space-y-2">
@@ -122,10 +142,10 @@ class WhatsAppTemplateResource extends BaseResource
                             ')),
 
                         // Dynamic Variable Placeholders
-                        Forms\Components\Section::make('Variable Placeholders')
+                        Section::make('Variable Placeholders')
                             ->description('Define what each variable represents to help users fill in the correct values.')
                             ->schema([
-                                Forms\Components\Placeholder::make('variable_placeholder_info')
+                                Placeholder::make('variable_placeholder_info')
                                     ->label('')
                                     ->content(new HtmlString('
                                         <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
@@ -133,12 +153,12 @@ class WhatsAppTemplateResource extends BaseResource
                                         </div>
                                     ')),
                             ])
-                            ->schema(function (Forms\Get $get) {
+                            ->schema(function (Get $get) {
                                 $body = $get('body') ?? '';
                                 preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
                                 $variableNumbers = array_unique($matches[1] ?? []);
 
-                                if (empty($variableNumbers)) {
+                                if (blank($variableNumbers)) {
                                     return [];
                                 }
 
@@ -155,26 +175,26 @@ class WhatsAppTemplateResource extends BaseResource
                                 foreach ($variableNumbers as $num) {
                                     $defaults = $defaultData[$num] ?? ['placeholder' => 'Variable ' . $num, 'name' => 'variable_' . $num, 'example' => 'Example ' . $num, 'type' => 'text'];
 
-                                    $fields[] = Forms\Components\Grid::make(4)
+                                    $fields[] = Grid::make(4)
                                         ->schema([
-                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.variable')
+                                            TextInput::make('variable_placeholder.' . $num . '.variable')
                                                 ->label('{{' . $num . '}}')
                                                 ->readonly()
                                                 ->default('{{' . $num . '}}')
                                                 ->columnSpan(1),
-                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.placeholder')
+                                            TextInput::make('variable_placeholder.' . $num . '.placeholder')
                                                 ->label('Placeholder')
                                                 ->placeholder($defaults['placeholder'])
                                                 ->live(debounce: 500)
                                                 ->helperText('Display name')
                                                 ->columnSpan(1),
-                                            Forms\Components\TextInput::make('variable_placeholder.' . $num . '.example')
+                                            TextInput::make('variable_placeholder.' . $num . '.example')
                                                 ->label('Example')
                                                 ->placeholder($defaults['example'])
                                                 ->live(debounce: 500)
                                                 ->helperText('Sample value')
                                                 ->columnSpan(1),
-                                            Forms\Components\Select::make('variable_placeholder.' . $num . '.type')
+                                            Select::make('variable_placeholder.' . $num . '.type')
                                                 ->label('Type')
                                                 ->options([
                                                     'text' => 'Text',
@@ -190,14 +210,14 @@ class WhatsAppTemplateResource extends BaseResource
 
                                 return $fields;
                             })
-                            ->visible(fn (Forms\Get $get) => ! empty($get('body')) && preg_match_all('/\{\{(\d+)\}\}/', $get('body') ?? '', $matches) > 0),
+                            ->visible(fn (Get $get) => filled($get('body')) && preg_match_all('/\{\{(\d+)\}\}/', $get('body') ?? '', $matches) > 0),
 
-                        Forms\Components\Placeholder::make('message_preview')
+                        Placeholder::make('message_preview')
                             ->label('📱 Message Preview')
-                            ->content(function (Forms\Get $get) {
+                            ->content(function (Get $get) {
                                 $body = $get('body') ?? '';
 
-                                if (empty($body)) {
+                                if (blank($body)) {
                                     return new HtmlString('<div class="text-gray-400 italic text-sm">Start typing your message to see a preview...</div>');
                                 }
 
@@ -216,9 +236,9 @@ class WhatsAppTemplateResource extends BaseResource
                                 foreach (range(1, 20) as $num) {
                                     $key = '{{' . $num . '}}';
                                     if (str_contains($body, $key)) {
-                                        if (isset($variablePlaceholder[$num]['example']) && ! empty($variablePlaceholder[$num]['example'])) {
+                                        if (isset($variablePlaceholder[$num]['example']) && filled($variablePlaceholder[$num]['example'])) {
                                             $sampleValues[$key] = $variablePlaceholder[$num]['example'];
-                                        } elseif (isset($variablePlaceholder[$num]['placeholder']) && ! empty($variablePlaceholder[$num]['placeholder'])) {
+                                        } elseif (isset($variablePlaceholder[$num]['placeholder']) && filled($variablePlaceholder[$num]['placeholder'])) {
                                             $sampleValues[$key] = $variablePlaceholder[$num]['placeholder'];
                                         } else {
                                             $sampleValues[$key] = $defaultSampleValues[$key] ?? 'Variable ' . $num;
@@ -244,13 +264,13 @@ class WhatsAppTemplateResource extends BaseResource
                                     </div>
                                 ');
                             })
-                            ->visible(fn (Forms\Get $get) => ! empty($get('body'))),
+                            ->visible(fn (Get $get) => filled($get('body'))),
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make('Status')
+                Section::make('Status')
                     ->schema([
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options([
                                 'draft' => 'Draft',
                                 'pending' => 'Pending Approval',
@@ -269,14 +289,14 @@ class WhatsAppTemplateResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('display_name')
+                TextColumn::make('display_name')
                     ->label('Template')
                     ->searchable()
                     ->sortable()
                     ->description(fn (WhatsAppTemplate $record) => $record->name)
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('category')
+                TextColumn::make('category')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucfirst($state))
                     ->color(fn (string $state) => match ($state) {
@@ -285,29 +305,29 @@ class WhatsAppTemplateResource extends BaseResource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('variable_count')
+                TextColumn::make('variable_count')
                     ->label('Variables')
                     ->sortable()
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('body')
+                TextColumn::make('body')
                     ->label('Preview')
                     ->limit(50)
                     ->tooltip(fn (WhatsAppTemplate $record) => $record->body),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options(WhatsAppTemplateStatusEnum::class),
-                Tables\Filters\SelectFilter::make('category')
+                SelectFilter::make('category')
                     ->options([
                         'utility' => 'Utility',
                         'marketing' => 'Marketing',
@@ -315,7 +335,7 @@ class WhatsAppTemplateResource extends BaseResource
             ])
             ->actions([
                 ActionGroup::make([
-                    Tables\Actions\Action::make('push')
+                    Action::make('push')
                         ->label('Push to All Gyms')
                         ->icon('heroicon-o-cloud-arrow-up')
                         ->color('primary')
@@ -323,11 +343,11 @@ class WhatsAppTemplateResource extends BaseResource
                         ->modalHeading('Push Template to All Gyms')
                         ->modalDescription(fn (WhatsAppTemplate $record) => "This will copy \"{$record->display_name}\" to all gyms with active users that don't already have a template with the same name. Existing templates with the same name will NOT be overwritten.")
                         ->before(function (WhatsAppTemplate $record) {
-                            $gymCount = Gym::whereHas('users', function ($query) {
+                            $gymCount = Gym::query()->whereHas('users', function (Builder $query) {
                                 $query->where('users.is_active', true);
                             })->count();
 
-                            PushWhatsAppTemplateToGymJob::dispatch($record->id);
+                            dispatch(new PushWhatsAppTemplateToGymJob($record->id));
 
                             Notification::make()
                                 ->success()
@@ -336,27 +356,27 @@ class WhatsAppTemplateResource extends BaseResource
                                 ->send();
                         }),
 
-                    Tables\Actions\EditAction::make(),
+                    EditAction::make(),
 
-                    Tables\Actions\DeleteAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('push_bulk')
+                BulkActionGroup::make([
+                    BulkAction::make('push_bulk')
                         ->label('Push Selected to All Gyms')
                         ->icon('heroicon-o-cloud-arrow-up')
                         ->requiresConfirmation()
                         ->modalHeading('Push Templates to All Gyms')
                         ->modalDescription('This will copy selected templates to all gyms with active users that don\'t already have templates with the same names.')
                         ->before(function ($records) {
-                            $gymCount = Gym::whereHas('users', function ($query) {
+                            $gymCount = Gym::query()->whereHas('users', function (Builder $query) {
                                 $query->where('users.is_active', true);
                             })->count();
                             $totalJobs = $gymCount * $records->count();
 
                             foreach ($records as $record) {
-                                PushWhatsAppTemplateToGymJob::dispatch($record->id);
+                                dispatch(new PushWhatsAppTemplateToGymJob($record->id));
                             }
 
                             Notification::make()
@@ -365,7 +385,7 @@ class WhatsAppTemplateResource extends BaseResource
                                 ->body("{$totalJobs} template-gym jobs have been dispatched to the queue.")
                                 ->send();
                         }),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
@@ -384,9 +404,9 @@ class WhatsAppTemplateResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWhatsAppTemplates::route('/'),
-            'create' => Pages\CreateWhatsAppTemplate::route('/create'),
-            'edit' => Pages\EditWhatsAppTemplate::route('/{record}/edit'),
+            'index' => ListWhatsAppTemplates::route('/'),
+            'create' => CreateWhatsAppTemplate::route('/create'),
+            'edit' => EditWhatsAppTemplate::route('/{record}/edit'),
         ];
     }
 }

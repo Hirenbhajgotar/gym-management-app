@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Filament\SuperAdmin;
 
 use App\Enums\SubscriptionStatus;
@@ -77,7 +79,7 @@ class AssignPlanTest extends TestCase
             'price' => $this->plan->price_monthly,
         ]);
 
-        $subscription = Subscription::where('user_id', $this->gymOwner->id)->first();
+        $subscription = Subscription::query()->where('user_id', $this->gymOwner->id)->first();
         $this->assertNotNull($subscription);
 
         $this->assertDatabaseHas('subscription_features', [

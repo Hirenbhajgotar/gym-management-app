@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
@@ -7,6 +9,7 @@ use App\Enums\ExpenseStatus;
 use App\Filament\BaseWidgets\BaseStatsOverviewWidget;
 use App\Helpers\Number as HelpersNumber;
 use App\Models\Expense;
+use App\Models\Gym;
 use App\Services\DashboardCacheService;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -32,7 +35,7 @@ class ExpenseStatsWidget extends BaseStatsOverviewWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -43,7 +46,7 @@ class ExpenseStatsWidget extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var \App\Models\Gym|null $gym */
+        /** @var Gym|null $gym */
         $gym = Filament::getTenant();
 
         if (! $gym) {

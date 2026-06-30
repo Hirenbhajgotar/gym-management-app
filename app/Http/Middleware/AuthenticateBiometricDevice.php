@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Models\BiometricDevice;
@@ -22,7 +24,7 @@ class AuthenticateBiometricDevice
 
         $plainToken = substr($authHeader, 7);
 
-        if (empty($plainToken)) {
+        if (blank($plainToken)) {
             return response()->json([
                 'error' => 'Unauthorized',
                 'message' => 'Empty token',

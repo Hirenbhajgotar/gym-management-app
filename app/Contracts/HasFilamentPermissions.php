@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-use App\Enums\DefaultRole;
-
 /**
  * Interface for Filament resources, pages, and widgets that participate
  * in automatic permission discovery and generation.

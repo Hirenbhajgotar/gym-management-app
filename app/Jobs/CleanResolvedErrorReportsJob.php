@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\ErrorReport;
-use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CleanResolvedErrorReportsJob implements ShouldQueue
 {
@@ -35,7 +39,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $cutoffDate = Carbon::now()->subDays(15);
+            $cutoffDate = Date::now()->subDays(15);
 
             $deletedCount = ErrorReport::resolved()
                 ->where('updated_at', '<', $cutoffDate)
@@ -45,7 +49,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
                 'deleted_count' => $deletedCount,
                 'cutoff_date' => $cutoffDate->format('Y-m-d H:i:s'),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to clean resolved error reports', [
                 'exception' => $e,
             ]);
@@ -54,7 +58,7 @@ class CleanResolvedErrorReportsJob implements ShouldQueue
         }
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('CleanResolvedErrorReportsJob failed permanently', [
             'exception' => $exception,

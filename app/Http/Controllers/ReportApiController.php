@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Filament\Admin\Clusters\Reports\Pages\AttendanceReports;
@@ -7,12 +9,13 @@ use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
 use App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
 use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ReportApiController extends Controller
 {
-    use \App\Traits\HasTenantAccess;
+    use HasTenantAccess;
 
     public function members(Request $request): JsonResponse
     {
@@ -69,7 +72,7 @@ class ReportApiController extends Controller
     {
         $gymId = $this->getGymId();
 
-        $report = new $reportClass;
+        $report = new $reportClass();
         $report->manualGymId = $gymId;
         $report->filters = $request->only(['date_range', 'start_date', 'end_date']);
         $report->mount();

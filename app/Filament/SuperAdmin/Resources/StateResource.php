@@ -1,16 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\Location;
-use App\Filament\SuperAdmin\Resources\StateResource\Pages;
+use App\Filament\SuperAdmin\Resources\StateResource\Pages\ListStates;
 use App\Models\Country;
 use App\Models\State;
-use Filament\Forms;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -36,10 +46,13 @@ class StateResource extends BaseResource
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 
+    /**
+     * @return Builder<State>
+     */
     public static function getEloquentQuery(): Builder
     {
         // Fetch active country's record
-        return parent::getEloquentQuery()->whereHas('country', function ($country) {
+        return parent::getEloquentQuery()->whereHas('country', function (\Illuminate\Contracts\Database\Query\Builder $country) {
             $country->where('status', 1);
         });
 
@@ -55,19 +68,19 @@ class StateResource extends BaseResource
     public static function getFormSchema()
     {
         return [
-            Forms\Components\Select::make('country_id')
-                ->options(Country::active()->get()->pluck('name', 'id'))
+            Select::make('country_id')
+                ->options(Country::query()->active()->get()->pluck('name', 'id'))
                 ->required()
                 ->searchable()
                 ->createOptionForm(CountryResource::getFormSchema())
                 ->createOptionUsing(function (array $data) {
                     // Create the new country and return its ID
-                    $country = Country::create($data);
+                    $country = Country::query()->create($data);
 
                     return $country->id;
                 })
                 ->placeholder('Select or create a country'),
-            Forms\Components\TextInput::make('name')
+            TextInput::make('name')
                 ->required()
                 ->maxLength(255)
                 ->default(null)
@@ -75,7 +88,7 @@ class StateResource extends BaseResource
                 ->afterStateUpdated(function ($state, callable $set) {
                     $set('slug', Str::slug($state));
                 }),
-            Forms\Components\TextInput::make('slug')
+            TextInput::make('slug')
                 ->required()
                 ->maxLength(255)
                 ->default(null)
@@ -85,7 +98,7 @@ class StateResource extends BaseResource
                         $set('slug', Str::slug($record->name));
                     }
                 }),
-            Forms\Components\Toggle::make('states.status')
+            Toggle::make('states.status')
                 ->default(true),
         ];
     }
@@ -100,36 +113,36 @@ class StateResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('country.name')
+                TextColumn::make('country.name')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('states.status')
+                IconColumn::make('states.status')
                     ->boolean(),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('country_id')
+                SelectFilter::make('country_id')
                     ->relationship('country', 'name')
                     ->label('Country'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -144,7 +157,7 @@ class StateResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListStates::route('/'),
+            'index' => ListStates::route('/'),
             // 'create' => Pages\CreateState::route('/create'),
             // 'edit' => Pages\EditState::route('/{record}/edit'),
         ];

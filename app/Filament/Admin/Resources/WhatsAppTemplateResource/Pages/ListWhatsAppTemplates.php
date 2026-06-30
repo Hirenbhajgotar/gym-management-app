@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
 use App\Models\WhatsAppTemplate;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
@@ -20,7 +23,7 @@ class ListWhatsAppTemplates extends ListRecords
     {
         return [
             // Import from Global Defaults
-            Actions\Action::make('importDefault')
+            Action::make('importDefault')
                 ->label('Import Default Templates')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
@@ -40,7 +43,7 @@ class ListWhatsAppTemplates extends ListRecords
                 ])
                 ->action(fn (array $data) => $this->importDefaultTemplatesAction($data)),
 
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('New Template')
                 ->icon('heroicon-o-plus'),
         ];
@@ -61,7 +64,7 @@ class ListWhatsAppTemplates extends ListRecords
 
         $selectedNames = $data['template_names'] ?? [];
 
-        if (empty($selectedNames)) {
+        if (blank($selectedNames)) {
             Notification::make()
                 ->info()
                 ->title('No Selection')
@@ -73,7 +76,7 @@ class ListWhatsAppTemplates extends ListRecords
 
         $globalDefaults = WhatsAppTemplate::getDefaults();
 
-        $existingNames = WhatsAppTemplate::where('gym_id', $tenant->id)
+        $existingNames = WhatsAppTemplate::query()->where('gym_id', $tenant->id)
             ->pluck('name')
             ->toArray();
 
@@ -100,9 +103,9 @@ class ListWhatsAppTemplates extends ListRecords
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ])->toArray();
+            ])->all();
 
-            WhatsAppTemplate::insert($importData);
+            WhatsAppTemplate::query()->insert($importData);
 
             Cache::forget(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id);
         }

@@ -8,6 +8,7 @@ use App\Enums\WhatsAppProviderTypeEnum;
 use App\Jobs\SyncWabaStatus;
 use App\Models\WhatsAppAccount;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Sync WhatsApp Business Account (WABA) status from Meta API.
@@ -57,7 +58,7 @@ class SyncWabaStatusCommand extends Command
 
         // Exclude recently synced accounts unless --force is used
         if (! $force) {
-            $query->where(function ($q) {
+            $query->where(function (Builder $q) {
                 $q->whereNull('waba_status_synced_at')
                     ->orWhere('waba_status_synced_at', '<', now()->subHour());
             });
@@ -86,10 +87,10 @@ class SyncWabaStatusCommand extends Command
                         $account->id,
                         $account->gym_id,
                         $account->waba_id,
-                        $account->status?->value ?? 'pending',
+                        $account->status->value ?? 'pending',
                         $account->waba_status_synced_at?->diffForHumans() ?? 'never',
                     ];
-                })->toArray()
+                })->all()
             );
 
             return Command::SUCCESS;
@@ -100,7 +101,7 @@ class SyncWabaStatusCommand extends Command
 
         foreach ($accounts as $account) {
             // Dispatch the sync job
-            SyncWabaStatus::dispatch($account->id);
+            dispatch(new SyncWabaStatus($account->id));
             $bar->advance();
         }
 

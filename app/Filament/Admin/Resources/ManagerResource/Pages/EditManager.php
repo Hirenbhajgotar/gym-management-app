@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
 use App\Filament\Admin\Resources\ManagerResource;
-use App\Models\Address;
 use App\Models\EmployeeDetail;
 use App\Models\User;
 use Filament\Actions;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Edit Manager Page.
@@ -36,9 +36,9 @@ class EditManager extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make()
+            ViewAction::make()
                 ->icon('heroicon-o-eye'),
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->icon('heroicon-o-trash'),
         ];
     }
@@ -140,7 +140,7 @@ class EditManager extends EditRecord
     {
         $employeeData = $data['employeeDetails'] ?? null;
 
-        if (! is_array($employeeData) || empty($employeeData)) {
+        if (! is_array($employeeData) || blank($employeeData)) {
             return;
         }
 
@@ -151,7 +151,7 @@ class EditManager extends EditRecord
         if ($employeeDetails) {
             $employeeDetails->update($employeeData);
         } else {
-            EmployeeDetail::create([
+            EmployeeDetail::query()->create([
                 ...$employeeData,
                 'user_id' => $record->id,
             ]);
@@ -167,7 +167,7 @@ class EditManager extends EditRecord
     {
         $addressData = $data['address'] ?? null;
 
-        if (! is_array($addressData) || empty($addressData)) {
+        if (! is_array($addressData) || blank($addressData)) {
             return;
         }
 

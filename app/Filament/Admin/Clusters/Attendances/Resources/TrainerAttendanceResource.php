@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Attendances\Resources;
 
-use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
+use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\CreateTrainerAttendance;
+use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\EditTrainerAttendance;
+use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages\ListTrainerAttendances;
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Widgets\TrainerAttendanceStats;
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Filament\BaseResources\BaseAttendanceResource;
@@ -52,9 +56,9 @@ class TrainerAttendanceResource extends BaseAttendanceResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListTrainerAttendances::route('/'),
-            'create' => Pages\CreateTrainerAttendance::route('/create'),
-            'edit' => Pages\EditTrainerAttendance::route('/{record}/edit'),
+            'index' => ListTrainerAttendances::route('/'),
+            'create' => CreateTrainerAttendance::route('/create'),
+            'edit' => EditTrainerAttendance::route('/{record}/edit'),
         ];
     }
 

@@ -1,12 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Listeners;
 
+use App\Models\User;
 use App\Models\UserLoginLog;
+use App\Services\LoginActivityService;
+use Filament\Events\TenantSet;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * Listener to log user login activity.
@@ -23,7 +30,7 @@ class LogUserLogin
 
     public function handleLogin(Login $event): void
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = $event->user;
 
         // Skip if user is null
@@ -49,10 +56,10 @@ class LogUserLogin
         $gym = null;
 
         try {
-            if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::isServing()) {
-                $gym = \Filament\Facades\Filament::getTenant();
+            if (class_exists(Filament::class) && Filament::isServing()) {
+                $gym = Filament::getTenant();
             }
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             // Ignore if tenant is not set yet
         }
 
@@ -72,13 +79,13 @@ class LogUserLogin
         }
 
         // Mark any existing active sessions as logged out using the service
-        $loginService = app(\App\Services\LoginActivityService::class);
+        $loginService = resolve(LoginActivityService::class);
         $loginService->markSessionAsLoggedOut($user->id);
         $ipAddress = $this->getIpAddress($request);
         $userAgent = $request->userAgent();
         $deviceType = $this->detectDeviceType($userAgent);
 
-        UserLoginLog::create([
+        UserLoginLog::query()->create([
             'user_id' => $user->id,
             'gym_id' => $gym->id,
             'login_at' => now(),
@@ -99,7 +106,7 @@ class LogUserLogin
         }
 
         // Mark the current session as logged out
-        UserLoginLog::where('user_id', $user->id)
+        UserLoginLog::query()->where('user_id', $user->id)
             ->where('is_current_session', true)
             ->whereNull('logged_out_at')
             ->update([
@@ -127,7 +134,7 @@ class LogUserLogin
      */
     protected function detectDeviceType(?string $userAgent): ?string
     {
-        if (empty($userAgent)) {
+        if (blank($userAgent)) {
             return null;
         }
 
@@ -179,17 +186,17 @@ class LogUserLogin
     /**
      * Handle the tenant set event to update the active session's gym.
      */
-    public function handleTenantSet(\Filament\Events\TenantSet $event): void
+    public function handleTenantSet(TenantSet $event): void
     {
         $user = $event->getUser();
         $tenant = $event->getTenant();
 
-        if (! $user || ! $tenant) {
+        if (! $tenant) {
             return;
         }
 
         // Update the current session's gym_id to match the newly active tenant
-        UserLoginLog::where('user_id', $user->id)
+        UserLoginLog::query()->where('user_id', $user->id)
             ->where('is_current_session', true)
             ->whereNull('logged_out_at')
             ->latest('login_at')

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\WhatsAppMessageCredit;
@@ -25,7 +27,7 @@ class LowWhatsAppCreditNotification extends Notification implements ShouldQueue
     {
         $balance = number_format($this->credit->getBalanceInDollars(), 2);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Gym\'s WhatsApp Message Credits Are Low - Action Required')
             ->greeting('Hello ' . ($notifiable->name ?? 'Gym Owner') . ',')
             ->line('Your WhatsApp message credit balance is running low.')

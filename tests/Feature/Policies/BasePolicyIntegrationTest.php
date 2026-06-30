@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Policies;
 
-use App\Policies\BaseEmployeePolicy;
 use App\Policies\BiometricDevicePolicy;
 use App\Policies\GymMemberAttendancePolicy;
 use App\Policies\ReportGoalPolicy;
@@ -46,11 +47,11 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
     {
         setPermissionsTeamId($this->testGym->id);
         $this->managerUser->revokePermissionTo(
-            Permission::firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
         );
 
         $this->assertFalse(
-            (new $policyClass)->viewAny($this->managerUser),
+            (new $policyClass())->viewAny($this->managerUser),
             "{$policyClass}::viewAny should return false without '{$permissionSlug}'",
         );
     }
@@ -61,11 +62,11 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
     {
         setPermissionsTeamId($this->testGym->id);
         $this->managerUser->givePermissionTo(
-            Permission::firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
         );
 
         $this->assertTrue(
-            (new $policyClass)->viewAny($this->managerUser->fresh()),
+            (new $policyClass())->viewAny($this->managerUser->fresh()),
             "{$policyClass}::viewAny should return true with '{$permissionSlug}'",
         );
     }

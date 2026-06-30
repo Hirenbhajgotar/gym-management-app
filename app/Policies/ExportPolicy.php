@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Enums\DefaultRole;
@@ -82,6 +84,10 @@ class ExportPolicy
     private function resolveKey(?string $exporterClass, string $action): ?string
     {
         if (! $exporterClass || ! class_exists($exporterClass)) {
+            return null;
+        }
+
+        if (! method_exists($exporterClass, 'getModel')) {
             return null;
         }
 

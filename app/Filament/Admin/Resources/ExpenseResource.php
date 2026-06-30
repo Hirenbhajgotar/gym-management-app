@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
@@ -7,14 +9,38 @@ use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
 use App\Enums\RecurringFrequency;
-use App\Filament\Admin\Resources\ExpenseResource\Pages;
+use App\Filament\Admin\Resources\ExpenseResource\Pages\CreateExpense;
+use App\Filament\Admin\Resources\ExpenseResource\Pages\EditExpense;
+use App\Filament\Admin\Resources\ExpenseResource\Pages\ListExpenses;
+use App\Filament\Admin\Resources\ExpenseResource\Pages\ViewExpense;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Gym;
+use App\Models\User;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -50,32 +76,32 @@ class ExpenseResource extends BaseResource
 
     public static function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Expense Details')
+                Section::make('Expense Details')
                     ->icon('phosphor-money')
                     ->description('Record expense information')
                     ->schema([
-                        Forms\Components\Hidden::make('gym_id')
+                        Hidden::make('gym_id')
                             ->default($gym->id),
 
-                        Forms\Components\Hidden::make('user_id')
+                        Hidden::make('user_id')
                             ->default($user->id),
 
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Electricity Bill January')
                             ->autofocus()
                             ->columnSpanFull(),
 
-                        Forms\Components\Select::make('expense_category_id')
+                        Select::make('expense_category_id')
                             ->label('Category')
                             ->options(fn () => ExpenseCategory::query()
                                 ->availableForGym($gym->id)
@@ -91,16 +117,16 @@ class ExpenseResource extends BaseResource
                             ->searchable()
                             ->required()
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                TextInput::make('name')
                                     ->required()
                                     ->maxLength(255),
-                                Forms\Components\Hidden::make('gym_id')
+                                Hidden::make('gym_id')
                                     ->default($gym->id),
-                                Forms\Components\Hidden::make('is_system')
+                                Hidden::make('is_system')
                                     ->default(false),
                             ])
                             ->createOptionUsing(function (array $data) use ($gym) {
-                                return ExpenseCategory::create([
+                                return ExpenseCategory::query()->create([
                                     'gym_id' => $gym->id,
                                     'name' => $data['name'],
                                     'is_active' => true,
@@ -108,16 +134,16 @@ class ExpenseResource extends BaseResource
                                 ])->id;
                             }),
 
-                        Forms\Components\DatePicker::make('expense_date')
+                        DatePicker::make('expense_date')
                             ->label('Date')
                             ->required()
                             ->default(now())
                             ->maxDate(now())
                             ->native(false),
 
-                        Forms\Components\Grid::make(3)
+                        Grid::make(3)
                             ->schema([
-                                Forms\Components\TextInput::make('amount')
+                                TextInput::make('amount')
                                     ->required()
                                     ->numeric()
                                     ->minValue(0.01)
@@ -125,19 +151,19 @@ class ExpenseResource extends BaseResource
                                     ->prefix(fn ($get) => Currency::tryFrom($get('currency') ?? 'INR')?->getSymbol() ?? '₹')
                                     ->placeholder('0.00'),
 
-                                Forms\Components\Select::make('currency')
+                                Select::make('currency')
                                     ->options(Currency::toSelectOptions())
                                     ->default('INR')
                                     ->required()
                                     ->reactive(),
 
-                                Forms\Components\Select::make('payment_method')
+                                Select::make('payment_method')
                                     ->options(ExpensePaymentMethod::toSelectOptions())
                                     ->default(ExpensePaymentMethod::CASH->value)
                                     ->required(),
                             ]),
 
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->maxLength(1000)
                             ->placeholder('Additional details about this expense...')
                             ->rows(3)
@@ -145,21 +171,21 @@ class ExpenseResource extends BaseResource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Vendor Information')
+                Section::make('Vendor Information')
                     ->icon('phosphor-storefront')
                     ->description('Optional vendor/supplier details')
                     ->schema([
-                        Forms\Components\TextInput::make('vendor_name')
+                        TextInput::make('vendor_name')
                             ->label('Vendor Name')
                             ->maxLength(255)
                             ->placeholder('e.g., ABC Suppliers'),
 
-                        Forms\Components\TextInput::make('vendor_contact')
+                        TextInput::make('vendor_contact')
                             ->label('Contact')
                             ->maxLength(255)
                             ->placeholder('Phone or email'),
 
-                        Forms\Components\TextInput::make('reference_number')
+                        TextInput::make('reference_number')
                             ->label('Invoice/Receipt Number')
                             ->maxLength(255)
                             ->placeholder('e.g., INV-2026-001'),
@@ -167,11 +193,11 @@ class ExpenseResource extends BaseResource
                     ->columns(3)
                     ->collapsed(),
 
-                Forms\Components\Section::make('Attachments')
+                Section::make('Attachments')
                     ->icon('phosphor-paperclip')
                     ->description('Upload receipts or invoices')
                     ->schema([
-                        Forms\Components\FileUpload::make('attachments')
+                        FileUpload::make('attachments')
                             ->label('Receipt/Invoice')
                             ->multiple()
                             ->maxFiles(5)
@@ -185,22 +211,22 @@ class ExpenseResource extends BaseResource
                     ])
                     ->collapsed(),
 
-                Forms\Components\Section::make('Recurring Settings')
+                Section::make('Recurring Settings')
                     ->icon('phosphor-repeat')
                     ->description('Set up recurring expense')
                     ->schema([
-                        Forms\Components\Toggle::make('is_recurring')
+                        Toggle::make('is_recurring')
                             ->label('This is a recurring expense')
                             ->reactive()
                             ->default(false),
 
-                        Forms\Components\Select::make('recurring_frequency')
+                        Select::make('recurring_frequency')
                             ->label('Frequency')
                             ->options(RecurringFrequency::toSelectOptions())
                             ->visible(fn ($get) => $get('is_recurring'))
                             ->required(fn ($get) => $get('is_recurring')),
 
-                        Forms\Components\DatePicker::make('next_due_date')
+                        DatePicker::make('next_due_date')
                             ->label('Next Due Date')
                             ->visible(fn ($get) => $get('is_recurring'))
                             ->minDate(now()->addDay())
@@ -213,92 +239,92 @@ class ExpenseResource extends BaseResource
 
     public static function table(Table $table): Table
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('expense_date')
+                TextColumn::make('expense_date')
                     ->label('Date')
                     ->date('d M Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->limit(40)
                     ->description(fn ($record) => $record->vendor_name),
 
-                Tables\Columns\TextColumn::make('category.name')
+                TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
                     ->color(fn ($record) => $record->category?->color ?? 'gray')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency ?? 'INR')
                     ->sortable()
                     ->alignEnd()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('payment_method')
+                TextColumn::make('payment_method')
                     ->label('Method')
                     ->badge()
                     ->color('gray')
                     ->formatStateUsing(fn ($state) => $state?->getLabel() ?? '-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('user.name')
+                TextColumn::make('user.name')
                     ->label('Submitted By')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('approvedBy.name')
+                TextColumn::make('approvedBy.name')
                     ->label('Approved By')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\IconColumn::make('is_recurring')
+                IconColumn::make('is_recurring')
                     ->label('Recurring')
                     ->boolean()
                     ->trueIcon('phosphor-repeat')
                     ->falseIcon('')
                     ->alignCenter(),
 
-                Tables\Columns\IconColumn::make('attachments')
+                IconColumn::make('attachments')
                     ->label('')
                     ->icon('phosphor-paperclip')
-                    ->visible(fn ($record) => ! empty($record->attachments))
+                    ->visible(fn ($record) => filled($record?->attachments))
                     ->alignCenter(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options(ExpenseStatus::toSelectOptions())
                     ->multiple(),
 
-                Tables\Filters\SelectFilter::make('expense_category_id')
+                SelectFilter::make('expense_category_id')
                     ->label('Category')
                     ->relationship('category', 'name')
                     ->preload()
                     ->multiple(),
 
-                Tables\Filters\SelectFilter::make('payment_method')
+                SelectFilter::make('payment_method')
                     ->options(ExpensePaymentMethod::toSelectOptions()),
 
                 DateRangeFilter::make('expense_date')
                     ->label('Date Range'),
 
-                Tables\Filters\TernaryFilter::make('is_recurring')
+                TernaryFilter::make('is_recurring')
                     ->label('Recurring')
                     ->placeholder('All')
                     ->trueLabel('Recurring only')
                     ->falseLabel('One-time only'),
 
-                Tables\Filters\SelectFilter::make('user_id')
+                SelectFilter::make('user_id')
                     ->label('Submitted By')
                     ->relationship('user', 'name')
                     ->visible(fn () => $user->hasAnyRole([
@@ -307,13 +333,13 @@ class ExpenseResource extends BaseResource
                     ])),
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make()
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make()
                         ->visible(fn ($record) => $record->canEdit()),
 
                     // Approval Actions
-                    Tables\Actions\Action::make('submit')
+                    Action::make('submit')
                         ->label('Submit for Approval')
                         ->icon('phosphor-paper-plane-tilt')
                         ->color('info')
@@ -324,7 +350,7 @@ class ExpenseResource extends BaseResource
                         ->action(fn ($record) => $record->submit())
                         ->successNotificationTitle('Expense submitted for approval'),
 
-                    Tables\Actions\Action::make('approve')
+                    Action::make('approve')
                         ->label('Approve')
                         ->icon('phosphor-check-circle')
                         ->color('success')
@@ -335,13 +361,13 @@ class ExpenseResource extends BaseResource
                         ->action(fn ($record) => $record->approve($user))
                         ->successNotificationTitle('Expense approved'),
 
-                    Tables\Actions\Action::make('reject')
+                    Action::make('reject')
                         ->label('Reject')
                         ->icon('phosphor-x-circle')
                         ->color('danger')
                         ->visible(fn ($record) => $record->canApprove() && $user->can('reject', $record))
                         ->form([
-                            Forms\Components\Textarea::make('rejection_reason')
+                            Textarea::make('rejection_reason')
                                 ->label('Reason for Rejection')
                                 ->required()
                                 ->maxLength(500)
@@ -350,7 +376,7 @@ class ExpenseResource extends BaseResource
                         ->action(fn ($record, array $data) => $record->reject($user, $data['rejection_reason']))
                         ->successNotificationTitle('Expense rejected'),
 
-                    Tables\Actions\Action::make('mark_paid')
+                    Action::make('mark_paid')
                         ->label('Mark as Paid')
                         ->icon('phosphor-coins')
                         ->color('info')
@@ -359,13 +385,13 @@ class ExpenseResource extends BaseResource
                         ->action(fn ($record) => $record->markAsPaid())
                         ->successNotificationTitle('Expense marked as paid'),
 
-                    Tables\Actions\DeleteAction::make()
+                    DeleteAction::make()
                         ->visible(fn ($record) => $record->isDraft()),
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('approve_selected')
+                BulkActionGroup::make([
+                    BulkAction::make('approve_selected')
                         ->label('Approve Selected')
                         ->icon('phosphor-check-circle')
                         ->color('success')
@@ -376,7 +402,7 @@ class ExpenseResource extends BaseResource
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\DeleteBulkAction::make()
+                    DeleteBulkAction::make()
                         ->visible(fn () => $user->hasRole(DefaultRole::GYM_OWNER->value)),
                 ]),
             ])
@@ -394,19 +420,22 @@ class ExpenseResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListExpenses::route('/'),
-            'create' => Pages\CreateExpense::route('/create'),
-            'view' => Pages\ViewExpense::route('/{record}'),
-            'edit' => Pages\EditExpense::route('/{record}/edit'),
+            'index' => ListExpenses::route('/'),
+            'create' => CreateExpense::route('/create'),
+            'view' => ViewExpense::route('/{record}'),
+            'edit' => EditExpense::route('/{record}/edit'),
         ];
     }
 
+    /**
+     * @return Builder<Expense>
+     */
     public static function getEloquentQuery(): Builder
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $query = parent::getEloquentQuery()->where('gym_id', $gym?->id);
@@ -421,7 +450,7 @@ class ExpenseResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return Cache::flexible(Expense::NAVIGATION_BADGE_CACHE_KEY . $gym?->id, [3600, 86400], function () use ($gym) {

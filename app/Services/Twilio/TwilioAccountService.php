@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Twilio;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Interfaces\AccountManagementInterface;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -68,7 +71,7 @@ class TwilioAccountService implements AccountManagementInterface
 
                 $messagingService = $subClient->messaging->v1->services->create("Gym_{$gymId}_SERVICE");
 
-                WhatsAppAccount::updateOrCreate([
+                WhatsAppAccount::query()->updateOrCreate([
                     'gym_id' => $gymId,
                 ], [
                     'twilio_account_sid' => $subaccount->sid,
@@ -225,8 +228,8 @@ class TwilioAccountService implements AccountManagementInterface
                 Cache::forget("twilio:account_status:{$gymId}");
 
                 return [
-                    'success' => empty($errors),
-                    'message' => empty($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
+                    'success' => blank($errors),
+                    'message' => blank($errors) ? 'All Twilio resources cleaned up' : 'Cleanup completed with errors',
                     'cleaned' => $cleaned,
                     'errors' => $errors,
                 ];
@@ -236,7 +239,7 @@ class TwilioAccountService implements AccountManagementInterface
                 'success' => false,
                 'message' => 'Account cleanup is currently in progress. Please wait.',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during Twilio cleanup', [
                 'gym_id' => $gymId,
                 'error' => $e->getMessage(),
@@ -280,9 +283,7 @@ class TwilioAccountService implements AccountManagementInterface
                                 'phone_number' => $phoneNumber->phone_number,
                             ]);
                         } catch (RestException $e) {
-                            if ($e->getStatusCode() !== 404) {
-                                throw $e;
-                            }
+                            throw_if($e->getStatusCode() !== 404, $e);
                         }
                     }
 
@@ -291,15 +292,13 @@ class TwilioAccountService implements AccountManagementInterface
                         try {
                             $subClient->incomingPhoneNumbers($incomingPhoneSid)->delete();
                         } catch (RestException $e) {
-                            if ($e->getStatusCode() !== 404) {
-                                throw $e;
-                            }
+                            throw_if($e->getStatusCode() !== 404, $e);
                         }
                     }
 
                     $phoneNumber->update(['status' => 'released']);
                     $released++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $failed++;
                     $lastError = $e->getMessage();
 
@@ -309,7 +308,7 @@ class TwilioAccountService implements AccountManagementInterface
                     ]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -387,15 +386,13 @@ class TwilioAccountService implements AccountManagementInterface
     /**
      * Get account or fail.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function getAccountOrFail(int $gymId): WhatsAppAccount
     {
-        $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+        $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
-        if (! $account) {
-            throw new \Exception('WhatsApp account not found for this gym');
-        }
+        throw_unless($account, Exception::class, 'WhatsApp account not found for this gym');
 
         return $account;
     }

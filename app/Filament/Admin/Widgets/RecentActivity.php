@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\GymMember;
@@ -9,6 +11,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 
 class RecentActivity extends BaseWidget
@@ -50,7 +53,7 @@ class RecentActivity extends BaseWidget
                         GymMember::class,
                         MemberPayment::class,
                     ])
-                    ->whereHasMorph('subject', GymMember::class, function ($query) {
+                    ->whereHasMorph('subject', GymMember::class, function (Builder $query) {
                         $query->whereHas('gym');
                     })
                     ->orWhereHasMorph('subject', MemberPayment::class, function ($query) {

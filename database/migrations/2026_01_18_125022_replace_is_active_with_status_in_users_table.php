@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class() extends Migration
 {
     /**
      * Run the migrations.
@@ -19,12 +22,12 @@ return new class extends Migration
         });
 
         // Migrate existing data
-        \Illuminate\Support\Facades\DB::table('users')->chunkById(100, function ($users) {
+        DB::table('users')->chunkById(100, function ($users) {
             foreach ($users as $user) {
                 // is_active: 1 -> status: 1 (Active)
                 // is_active: 0 -> status: 0 (Inactive)
                 $status = $user->is_active ? 1 : 0;
-                \Illuminate\Support\Facades\DB::table('users')
+                DB::table('users')
                     ->where('id', $user->id)
                     ->update(['status' => $status]);
             }

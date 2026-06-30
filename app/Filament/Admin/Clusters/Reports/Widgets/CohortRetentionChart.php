@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseWidget;
@@ -28,7 +30,7 @@ class CohortRetentionChart extends BaseWidget
 
     public function getCohortData(): array
     {
-        return $this->getMemberCohortData($this->months)->toArray();
+        return $this->getMemberCohortData($this->months)->all();
     }
 
     /**
@@ -38,7 +40,7 @@ class CohortRetentionChart extends BaseWidget
     {
         $cohorts = $this->getCohortData();
 
-        if (empty($cohorts)) {
+        if (blank($cohorts)) {
             return 0;
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\User;
@@ -21,7 +23,7 @@ class AccountDeactivatedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Account has been Deactivated')
             ->greeting("Hello {$this->user->name}!")
             ->line('Your account has been deactivated by an administrator.')

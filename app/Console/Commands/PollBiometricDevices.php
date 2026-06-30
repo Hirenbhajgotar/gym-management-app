@@ -8,6 +8,7 @@ use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\Services\CheckInService;
 use App\Events\DoorControllerUnreachable;
 use App\Models\BiometricDevice;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +24,7 @@ class PollBiometricDevices extends Command
     ): int {
         $this->info('Starting biometric device polling...');
 
-        $devices = BiometricDevice::where('status', 'active')
+        $devices = BiometricDevice::query()->where('status', 'active')
             ->where('connection_mode', 'poll')
             ->get();
 
@@ -84,7 +85,7 @@ class PollBiometricDevices extends Command
 
             // Do NOT update last_polled_at in placeholder path - only mark as polled after real fetch
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("  Polling failed: {$e->getMessage()}");
             Log::error("Poll failed for device {$device->id}", [
                 'error' => $e->getMessage(),

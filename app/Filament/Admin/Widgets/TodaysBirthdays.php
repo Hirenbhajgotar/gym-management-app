@@ -1,12 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\BaseWidgets\BaseTableWidget;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
+use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 
@@ -20,7 +26,7 @@ class TodaysBirthdays extends BaseTableWidget
 
     protected function getListeners(): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId = $tenant?->id;
 
@@ -50,25 +56,25 @@ class TodaysBirthdays extends BaseTableWidget
                     ->orderBy('name', 'asc')
             )
             ->columns([
-                \Filament\Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label('Name')
                     ->description(function (GymMember $record) {
-                        /** @var \Carbon\Carbon $dob */
+                        /** @var Carbon $dob */
                         $dob = $record->dob;
 
                         return $dob->format('F j, Y');
                     }),
-                \Filament\Tables\Columns\TextColumn::make('dob')
+                TextColumn::make('dob')
                     ->label('Age')
                     ->getStateUsing(function (GymMember $record) {
-                        /** @var \Carbon\Carbon $dob */
+                        /** @var Carbon $dob */
                         $dob = $record->dob;
 
                         return $dob->age . ' Years Old';
                     }),
             ])
             ->actions([
-                \Filament\Tables\Actions\Action::make('wish')
+                Action::make('wish')
                     ->label('Wish Happy Birthday')
                     ->icon('phosphor-gift')
                     ->color('success')

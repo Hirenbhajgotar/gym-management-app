@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use BadMethodCallException;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -178,10 +180,10 @@ class ExchangeRateService
             $currency = substr($method, 2);
             $amount = $arguments[0] ?? 0.0;
 
-            return (float) $this->convert((float) $amount, $currency);
+            return $this->convert((float) $amount, $currency);
         }
 
-        throw new \BadMethodCallException("Method {$method} does not exist on " . static::class);
+        throw new BadMethodCallException("Method {$method} does not exist on " . static::class);
     }
 
     /**
@@ -191,7 +193,7 @@ class ExchangeRateService
     {
         $rate = $this->getRate($currency);
 
-        return (float) round($usdAmount * $rate, 4);
+        return round($usdAmount * $rate, 4);
     }
 
     /**
@@ -256,7 +258,7 @@ class ExchangeRateService
             if ($response->successful()) {
                 $rates = (array) $response->json('rates');
 
-                if (! empty($rates)) {
+                if (filled($rates)) {
                     // Cache with flexible TTL (SWR pattern)
                     // Cache will be valid for at least 1 hour, at most 12 hours
                     Cache::flexible(
@@ -278,7 +280,7 @@ class ExchangeRateService
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to fetch exchange rate', [
                 'error' => $e->getMessage(),
             ]);

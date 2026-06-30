@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -10,6 +12,7 @@ use App\Services\IndiaMartLeadProcessor;
 use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -43,7 +46,7 @@ class WebhookTestController extends Controller
 
             // Get the processor instance
             $processorClass = $this->processors[$platform];
-            $processor = app($processorClass);
+            $processor = resolve($processorClass);
 
             // Get configuration for the platform
             $config = $this->getConfig($request, $platform);
@@ -89,7 +92,7 @@ class WebhookTestController extends Controller
                 'platform' => $platform,
                 'test_data' => $testData,
             ], 422);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Test {$platform} webhook processing failed", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -134,13 +137,13 @@ class WebhookTestController extends Controller
                 'configured' => true,
                 'is_active' => $config->is_active,
                 'webhook_url' => $this->getWebhookUrl($platform),
-                'verification_status' => $this->checkVerificationStatus($config, $platform),
+                'verification_status' => $this->checkVerificationStatus($config),
                 'config_id' => $config->id,
                 'last_updated' => $config->updated_at,
             ];
 
             return response()->json($status);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Failed to get verification status for {$platform}", [
                 'error' => $e->getMessage(),
                 'platform' => $platform,
@@ -288,14 +291,14 @@ class WebhookTestController extends Controller
     private function getConfig(Request $request, string $platform): ?TenantSocialConfig
     {
         // For testing, we'll use the first available gym's ID
-        $gym = Gym::first();
+        $gym = Gym::query()->first();
         if (! $gym) {
             Log::error('No gym found for testing webhook configuration.');
 
             return null;
         }
 
-        $query = TenantSocialConfig::where('gym_id', $gym->id)
+        $query = TenantSocialConfig::query()->where('gym_id', $gym->id)
             ->where('platform', $platform)
             ->where('is_active', true);
 
@@ -334,13 +337,13 @@ class WebhookTestController extends Controller
     /**
      * Check verification status for platform
      */
-    private function checkVerificationStatus(TenantSocialConfig $config, string $platform): array
+    private function checkVerificationStatus(TenantSocialConfig $config): array
     {
         $status = [
-            'webhook_verify_token' => ! empty($config->webhook_verify_token),
-            'api_key_configured' => ! empty($config->api_key),
-            'webhook_url_configured' => ! empty($config->webhook_url),
-            'page_id_configured' => ! empty($config->page_id),
+            'webhook_verify_token' => filled($config->webhook_verify_token),
+            'api_key_configured' => filled($config->api_key),
+            'webhook_url_configured' => filled($config->webhook_url),
+            'page_id_configured' => filled($config->page_id),
             'app_id_configured' => isset($config->config['app_id']),
         ];
 

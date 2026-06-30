@@ -1,19 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
+use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ListWhatsAppAccounts;
 use App\Filament\SuperAdmin\Resources\WhatsAppAccountResource\Pages\ViewWhatsAppAccount;
 use App\Models\WhatsAppAccount;
 use App\Services\WhatsAppBillingService;
-use Filament\Forms;
-use Filament\Infolists;
+use Exception;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
 class WhatsAppAccountResource extends BaseResource
@@ -33,7 +45,7 @@ class WhatsAppAccountResource extends BaseResource
         return false;
     }
 
-    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canDelete(Model $record): bool
     {
         return false;
     }
@@ -60,65 +72,65 @@ class WhatsAppAccountResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('gym.name')
+                TextColumn::make('gym.name')
                     ->searchable()
                     ->sortable()
                     ->label('Gym'),
 
-                Tables\Columns\TextColumn::make('business_name')
+                TextColumn::make('business_name')
                     ->searchable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('twilio_account_sid')
+                TextColumn::make('twilio_account_sid')
                     ->label('Twilio SID')
                     ->copyable()
                     ->limit(20)
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('verification_status')
+                TextColumn::make('verification_status')
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('phoneNumber.phone_number')
+                TextColumn::make('phoneNumber.phone_number')
                     ->label('Phone Number')
                     ->default('—')
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(\App\Enums\WhatsAppAccountStatusEnum::class),
-                Tables\Filters\SelectFilter::make('verification_status')
-                    ->options(\App\Enums\WhatsAppAccountVerificationStatusEnum::class),
+                SelectFilter::make('status')
+                    ->options(WhatsAppAccountStatusEnum::class),
+                SelectFilter::make('verification_status')
+                    ->options(WhatsAppAccountVerificationStatusEnum::class),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('adjustCredits')
+                ViewAction::make(),
+                Action::make('adjustCredits')
                     ->label('Adjust Credits')
                     ->icon('heroicon-o-banknotes')
                     ->color('warning')
                     ->form([
-                        Forms\Components\TextInput::make('amount')
+                        TextInput::make('amount')
                             ->numeric()
                             ->required()
                             ->label('Credit Amount')
                             ->helperText('Positive to add, negative to deduct'),
-                        Forms\Components\Textarea::make('reason')
+                        Textarea::make('reason')
                             ->required()
                             ->label('Reason')
                             ->maxLength(500),
                     ])
                     ->action(function (WhatsAppAccount $record, array $data): void {
                         try {
-                            $service = app(WhatsAppBillingService::class);
+                            $service = resolve(WhatsAppBillingService::class);
                             $service->adjustCredits(
                                 (string) $record->gym_id,
                                 (int) $data['amount'],
@@ -130,7 +142,7 @@ class WhatsAppAccountResource extends BaseResource
                                 ->title('Credits Adjusted')
                                 ->body("Adjusted {$data['amount']} credits for {$record->gym->name}.")
                                 ->send();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Notification::make()
                                 ->danger()
                                 ->title('Adjustment Failed')
@@ -145,51 +157,51 @@ class WhatsAppAccountResource extends BaseResource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Account Details')
+                Section::make('Account Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('gym.name')
+                        TextEntry::make('gym.name')
                             ->label('Gym'),
-                        Infolists\Components\TextEntry::make('business_name'),
-                        Infolists\Components\TextEntry::make('business_email'),
-                        Infolists\Components\TextEntry::make('twilio_account_sid')
+                        TextEntry::make('business_name'),
+                        TextEntry::make('business_email'),
+                        TextEntry::make('twilio_account_sid')
                             ->label('Twilio SID')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('waba_id')
+                        TextEntry::make('waba_id')
                             ->label('WABA ID')
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->badge(),
-                        Infolists\Components\TextEntry::make('verification_status')
+                        TextEntry::make('verification_status')
                             ->badge(),
-                        Infolists\Components\TextEntry::make('verified_at')
+                        TextEntry::make('verified_at')
                             ->dateTime()
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->dateTime(),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Phone Numbers')
+                Section::make('Phone Numbers')
                     ->schema([
-                        Infolists\Components\RepeatableEntry::make('phoneNumber')
+                        RepeatableEntry::make('phoneNumber')
                             ->schema([
-                                Infolists\Components\TextEntry::make('phone_number')
+                                TextEntry::make('phone_number')
                                     ->label('Number'),
-                                Infolists\Components\TextEntry::make('display_name')
+                                TextEntry::make('display_name')
                                     ->label('Display Name')
                                     ->default('—'),
-                                Infolists\Components\TextEntry::make('status')
+                                TextEntry::make('status')
                                     ->badge(),
                             ])->columns(3),
                     ]),
 
-                Infolists\Components\Section::make('Templates')
+                Section::make('Templates')
                     ->schema([
-                        Infolists\Components\RepeatableEntry::make('templates')
+                        RepeatableEntry::make('templates')
                             ->schema([
-                                Infolists\Components\TextEntry::make('name'),
-                                Infolists\Components\TextEntry::make('category')
+                                TextEntry::make('name'),
+                                TextEntry::make('category')
                                     ->badge(),
-                                Infolists\Components\TextEntry::make('status')
+                                TextEntry::make('status')
                                     ->badge(),
                             ])->columns(3),
                     ]),

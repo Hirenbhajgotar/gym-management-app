@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\ManagerResource\Pages;
 
 use App\Filament\Admin\Resources\ManagerResource;
+use App\Models\User;
 use Filament\Resources\Pages\ListRecords;
 
 class ListManagers extends ListRecords
@@ -21,9 +24,9 @@ class ListManagers extends ListRecords
         ];
     }
 
-    public function getUser(): \App\Models\User
+    public function getUser(): User
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return $user;

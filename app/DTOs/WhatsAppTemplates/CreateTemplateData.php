@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace App\DTOs\WhatsAppTemplates;
 
+use InvalidArgumentException;
+
+/**
+ * @phpstan-type CreateTemplateDataArray array{name: string, display_name: string, body: string, category: string, variable_placeholder?: array<string, mixed>|null, is_default?: bool|null}
+ */
 readonly class CreateTemplateData
 {
+    /**
+     * @param  array<string, mixed>|null  $variable_placeholder
+     */
     public function __construct(
         public string $name,
         public string $display_name,
@@ -15,6 +23,9 @@ readonly class CreateTemplateData
         public ?bool $is_default = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return array_filter([
@@ -27,12 +38,15 @@ readonly class CreateTemplateData
         ], fn ($value) => $value !== null);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
-            name: $data['name'] ?? throw new \InvalidArgumentException('Missing required field: name'),
-            display_name: $data['display_name'] ?? throw new \InvalidArgumentException('Missing required field: display_name'),
-            body: $data['body'] ?? throw new \InvalidArgumentException('Missing required field: body'),
+            name: $data['name'] ?? throw new InvalidArgumentException('Missing required field: name'),
+            display_name: $data['display_name'] ?? throw new InvalidArgumentException('Missing required field: display_name'),
+            body: $data['body'] ?? throw new InvalidArgumentException('Missing required field: body'),
             category: $data['category'] ?? 'utility',
             variable_placeholder: $data['variable_placeholder'] ?? null,
             is_default: $data['is_default'] ?? null,

@@ -1,8 +1,27 @@
 {
     "preset": "laravel",
     "rules": {
+        "array_push": true,
+        "backtick_to_shell_exec": true,
+        "declare_strict_types": true,
+        "lowercase_keywords": true,
+        "lowercase_static_reference": true,
+        "modernize_types_casting": true,
+        "new_with_parentheses": true,
+        "no_useless_else": true,
+        "no_multiple_statements_per_line": true,
+        "self_accessor": true,
+        "self_static_accessor": true,
+        "strict_comparison": true,
+        "modifier_keywords": true,
+        "phpdoc_types_no_duplicates": true,
         "concat_space": {
             "spacing": "one"
+        },
+        "global_namespace_import": {
+            "import_classes": true,
+            "import_constants": true,
+            "import_functions": true
         }
     }
 }

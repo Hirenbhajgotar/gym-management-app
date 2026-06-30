@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\BusinessType;
@@ -92,10 +94,7 @@ class BusinessTypeSeeder extends Seeder
         ];
 
         foreach ($businessTypes as $businessType) {
-            BusinessType::updateOrCreate(
-                ['slug' => $businessType['slug']],
-                $businessType
-            );
+            BusinessType::query()->updateOrCreate(['slug' => $businessType['slug']], $businessType);
         }
     }
 }

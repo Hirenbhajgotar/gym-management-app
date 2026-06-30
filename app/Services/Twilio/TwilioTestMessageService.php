@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Twilio;
 
 use App\Interfaces\TestMessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -34,7 +37,7 @@ class TwilioTestMessageService implements TestMessagingInterface
     public function sendTestWhatsAppMessage(int $gymId, ?string $to = null): array
     {
         try {
-            $account = WhatsAppAccount::where('gym_id', $gymId)->first();
+            $account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
 
             if (! $account) {
                 return [
@@ -43,15 +46,15 @@ class TwilioTestMessageService implements TestMessagingInterface
                 ];
             }
 
-            if (empty($account->twilio_account_sid) || empty($account->twilio_auth_token)) {
+            if (blank($account->twilio_account_sid) || blank($account->twilio_auth_token)) {
                 return [
                     'success' => false,
                     'error' => 'Twilio credentials are not configured.',
                 ];
             }
 
-            $gym = Gym::find($gymId);
-            $gym = Gym::find($gymId);
+            $gym = Gym::query()->find($gymId);
+            $gym = Gym::query()->find($gymId);
             $gymName = $gym?->name ?? 'Your Gym';
 
             $phoneNumberRecord = $account->phoneNumber()->first();
@@ -100,7 +103,7 @@ class TwilioTestMessageService implements TestMessagingInterface
                 'error' => $result['error'] ?? null,
                 'requires_template' => $result['requires_template'] ?? false,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send test WhatsApp message', [
                 'gym_id' => $gymId ?? null,
                 'error' => $e->getMessage(),

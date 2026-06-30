@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\Subscription;
@@ -31,7 +33,7 @@ class SubscriptionSuspended extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Your Subscription Has Been Suspended')
             ->greeting("Hi {$notifiable->name},")
             ->line('Your subscription has been suspended due to a payment issue or policy violation.')

@@ -1,18 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages\Tenancy;
 
 use App\Forms\Components\AddressForm;
 use App\Models\Gym;
+use Closure;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\EditTenantProfile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
@@ -29,7 +34,7 @@ class EditGymProfile extends EditTenantProfile
             ->schema([
                 Tabs::make('Tabs')
                     ->tabs([
-                        Tabs\Tab::make('General')
+                        Tab::make('General')
                             ->icon('heroicon-o-building-storefront')
                             ->schema([
                                 FileUpload::make('logo')
@@ -66,7 +71,7 @@ class EditGymProfile extends EditTenantProfile
                             ])
                             ->columns(2),
 
-                        Tabs\Tab::make('Security')
+                        Tab::make('Security')
                             ->icon('heroicon-o-lock-closed')
                             ->schema([
                                 Grid::make()
@@ -78,8 +83,8 @@ class EditGymProfile extends EditTenantProfile
                                             // ->dehydrated(false)
                                             ->requiredWith('new_password')
                                             ->rule(function () {
-                                                return function (string $attribute, $value, \Closure $fail) {
-                                                    if (! \Illuminate\Support\Facades\Hash::check($value, auth()->user()->password)) {
+                                                return function (string $attribute, $value, Closure $fail) {
+                                                    if (! Hash::check($value, auth()->user()->password)) {
                                                         $fail('The provided password does not match your current password.');
                                                     }
                                                 };
@@ -120,7 +125,7 @@ class EditGymProfile extends EditTenantProfile
     {
         $data = $this->form->getState();
 
-        if (! empty($data['new_password'])) {
+        if (filled($data['new_password'])) {
             $user = auth()->user();
 
             $user->password = $data['new_password'];

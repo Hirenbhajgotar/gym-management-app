@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\PlanResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\PlanResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPlan extends EditRecord
@@ -12,7 +14,7 @@ class EditPlan extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        return [DeleteAction::make()];
     }
 
     protected function getRedirectUrl(): string

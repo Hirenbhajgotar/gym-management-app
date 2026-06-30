@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Pages;
 
 use App\Enums\DefaultRole;
 use App\Enums\ExpensePaymentMethod;
 use App\Enums\ExpenseStatus;
+use App\Exports\ExpenseReportExport;
 use App\Filament\Admin\Clusters\Reports;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseCategoryChart;
 use App\Filament\Admin\Pages\ExpenseReports\Widgets\ExpenseMonthlyTrendChart;
@@ -13,15 +16,20 @@ use App\Filament\BasePages\BasePage;
 use App\Interfaces\ShareableReport;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Gym;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
+use Livewire\Attributes\Computed;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ExpenseReportsCluster extends BasePage implements HasForms, ShareableReport
@@ -64,7 +72,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function mount(): void
     {
-        if (empty($this->filters)) {
+        if (blank($this->filters)) {
             $this->filters = [
                 'start_date' => now()->startOfYear()->format('Y-m-d'),
                 'end_date' => now()->format('Y-m-d'),
@@ -77,37 +85,37 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function form(Form $form): Form
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
 
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Filters')
+                Section::make('Report Filters')
                     ->schema([
-                        Forms\Components\DatePicker::make('start_date')
+                        DatePicker::make('start_date')
                             ->default(now()->startOfYear())
                             ->native(false),
 
-                        Forms\Components\DatePicker::make('end_date')
+                        DatePicker::make('end_date')
                             ->default(now())
                             ->native(false),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options(ExpenseStatus::toSelectOptions())
                             ->placeholder('All Statuses')
                             ->multiple(),
 
-                        Forms\Components\Select::make('category_id')
+                        Select::make('category_id')
                             ->label('Category')
                             ->options(
-                                ExpenseCategory::where('gym_id', $gym?->id)
+                                ExpenseCategory::query()->where('gym_id', $gym?->id)
                                     ->active()
                                     ->pluck('name', 'id')
                             )
                             ->placeholder('All Categories')
                             ->multiple(),
 
-                        Forms\Components\Select::make('payment_method')
+                        Select::make('payment_method')
                             ->options(ExpensePaymentMethod::toSelectOptions())
                             ->placeholder('All Methods'),
                     ])
@@ -151,22 +159,22 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
                 ->count();
 
             // Pending expenses
-            $pendingAmount = Expense::where('gym_id', $gymId)
+            $pendingAmount = Expense::query()->where('gym_id', $gymId)
                 ->where('status', ExpenseStatus::PENDING)
                 ->sum('amount');
 
-            $pendingCount = Expense::where('gym_id', $gymId)
+            $pendingCount = Expense::query()->where('gym_id', $gymId)
                 ->where('status', ExpenseStatus::PENDING)
                 ->count();
 
             // This month vs last month
-            $thisMonthExpenses = Expense::where('gym_id', $gymId)
+            $thisMonthExpenses = Expense::query()->where('gym_id', $gymId)
                 ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                 ->whereMonth('expense_date', now()->month)
                 ->whereYear('expense_date', now()->year)
                 ->sum('amount');
 
-            $lastMonthExpenses = Expense::where('gym_id', $gymId)
+            $lastMonthExpenses = Expense::query()->where('gym_id', $gymId)
                 ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
                 ->whereMonth('expense_date', now()->subMonth()->month)
                 ->whereYear('expense_date', now()->subMonth()->year)
@@ -201,7 +209,8 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         });
     }
 
-    public function getExpensesProperty(): Collection
+    #[Computed]
+    public function expenses(): Collection
     {
         return $this->getFilteredExpensesQuery()
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
@@ -210,7 +219,8 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             ->get();
     }
 
-    public function getCategoryBreakdownProperty(): Collection
+    #[Computed]
+    public function categoryBreakdown(): Collection
     {
         $totalAmount = $this->expenses->sum('amount');
 
@@ -254,13 +264,13 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
 
     public function exportToExcel()
     {
-        /** @var \App\Models\Gym $gym */
-        $gym = \App\Models\Gym::find($this->getGymId());
+        /** @var Gym $gym */
+        $gym = Gym::query()->find($this->getGymId());
 
         $filename = 'expense-report-' . $gym->slug . '-' . now()->format('Y-m-d') . '.xlsx';
 
         return Excel::download(
-            new \App\Exports\ExpenseReportExport(
+            new ExpenseReportExport(
                 $this->expenses,
                 $this->categoryBreakdown,
                 $this->filters
@@ -297,7 +307,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
     public function getBudgetVarianceData(): array
     {
         $gymId = $this->getGymId();
-        $categories = ExpenseCategory::where('gym_id', $gymId)->active()->get();
+        $categories = ExpenseCategory::query()->where('gym_id', $gymId)->active()->get();
 
         // Optimized: Single query to get all filtered expenses grouped by category
         $expensesByCategory = $this->getFilteredExpensesQuery()
@@ -333,7 +343,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        return Expense::where('gym_id', $gymId)
+        return Expense::query()->where('gym_id', $gymId)
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as count")
@@ -342,12 +352,12 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             ->get()
             ->map(function ($item) {
                 return [
-                    'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                    'month' => Date::parse($item->month . '-01')->format('M Y'),
                     'total' => $item->total,
                     'count' => $item->count,
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -359,7 +369,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
         $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
         $gymId = $this->getGymId();
 
-        $monthlyData = Expense::where('gym_id', $gymId)
+        $monthlyData = Expense::query()->where('gym_id', $gymId)
             ->whereIn('status', [ExpenseStatus::APPROVED, ExpenseStatus::PAID])
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
@@ -386,7 +396,7 @@ class ExpenseReportsCluster extends BasePage implements HasForms, ShareableRepor
             }
 
             $trends[] = [
-                'month' => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'),
+                'month' => Date::parse($item->month . '-01')->format('M Y'),
                 'value' => $currentValue,
                 'change_percent' => $changePercent,
                 'trend' => $trend,

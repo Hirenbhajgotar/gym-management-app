@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Filament Permission Auto-Discovery Configuration
  *

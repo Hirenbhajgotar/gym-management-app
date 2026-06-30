@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Services;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Enums\AttendanceStatus;
+use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class OfflineSyncService
 {
@@ -40,7 +43,7 @@ class OfflineSyncService
 
     protected function processEvent(array $event, BiometricDevice $device, $provider): array
     {
-        $capturedAt = Carbon::parse($event['captured_at']);
+        $capturedAt = Date::parse($event['captured_at']);
         $sample = new BiometricSample(
             type: $event['biometric_type'],
             data: $event['data'],
@@ -57,7 +60,7 @@ class OfflineSyncService
         }
 
         // Step 2: Load ALL BiometricTemplates for this gym and biometric type
-        $templates = BiometricTemplate::where('gym_id', $device->gym_id)
+        $templates = BiometricTemplate::query()->where('gym_id', $device->gym_id)
             ->where('biometric_type', $event['biometric_type'])
             ->where('is_active', true)
             ->with('gymMember')
@@ -118,7 +121,7 @@ class OfflineSyncService
         }
 
         // Step 6: Create or update attendance with offline timestamps (idempotent)
-        if (empty($event['offline_id'])) {
+        if (blank($event['offline_id'])) {
             // Derive deterministic ID from event properties
             $offlineId = hash('sha256', $device->id . '|' . $event['captured_at'] . '|' . ($event['biometric_type'] ?? ''));
         } else {
@@ -126,7 +129,7 @@ class OfflineSyncService
         }
 
         // Check for existing attendance (prevent duplicates from retry)
-        $existingAttendance = \App\Models\Attendances::where('device_id', $device->id)
+        $existingAttendance = Attendances::query()->where('device_id', $device->id)
             ->where('offline_id', $offlineId)
             ->first();
 

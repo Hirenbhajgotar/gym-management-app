@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\TrainerResource\Pages;
 
 use App\Filament\Admin\Resources\TrainerResource;
@@ -18,7 +20,7 @@ class CreateTrainer extends CreateRecord
         $data['gym_id'] = $this->getGymId();
 
         // Generate avatar if no profile photo is uploaded
-        if (empty($data['profile_photo'])) {
+        if (blank($data['profile_photo'])) {
             $data['profile_photo'] = AvatarService::generate($data['name']);
         }
 

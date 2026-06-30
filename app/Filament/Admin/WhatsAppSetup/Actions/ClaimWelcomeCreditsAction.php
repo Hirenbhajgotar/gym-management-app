@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
 use App\Models\WhatsAppMessageCredit;
 use App\Services\WhatsAppBillingService;
+use Exception;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 
 class ClaimWelcomeCreditsAction
@@ -24,20 +28,18 @@ class ClaimWelcomeCreditsAction
         $gymId = $this->page->getGymId();
         $rateLimiterKey = $this->rateLimiterKey($gymId);
 
-        if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
-            throw new \Exception('Welcome credits have already been claimed for this gym.');
-        }
+        throw_if(RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS), Exception::class, 'Welcome credits have already been claimed for this gym.');
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
 
-        app(WhatsAppBillingService::class)->addWelcomeCredits($this->page->getGymId());
-        $this->page->creditBalance = WhatsAppMessageCredit::where('gym_id', $this->page->getGymId())->first();
+        resolve(WhatsAppBillingService::class)->addWelcomeCredits($this->page->getGymId());
+        $this->page->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $this->page->getGymId())->first();
         $this->page->welcomeCreditsClaimed = true;
         if ($this->page->whatsappAccount) {
             $this->page->whatsappAccount->update(['status' => 'active']);
             $this->page->whatsappAccount->refresh();
         }
         $this->page->viewState = 'active';
-        \Filament\Notifications\Notification::make()->title('Welcome Credits Claimed!')->success()->send();
+        Notification::make()->title('Welcome Credits Claimed!')->success()->send();
     }
 }

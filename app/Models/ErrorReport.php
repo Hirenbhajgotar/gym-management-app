@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\ErrorCategory;
@@ -8,9 +10,11 @@ use App\Enums\ErrorStatus;
 use App\Observers\ErrorReportObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -25,39 +29,39 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $user_description
  * @property ErrorPriority|null $priority
  * @property int $duplicate_count
- * @property \Illuminate\Support\Carbon|null $last_occurrence
- * @property \Illuminate\Support\Carbon $occurred_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User|null $user
+ * @property Carbon|null $last_occurrence
+ * @property Carbon $occurred_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User|null $user
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport autoReported()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport frequent()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport highPriority()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport investigating()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport pending()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport recent()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport resolved()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport userReported()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereCategory($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereContext($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereDuplicateCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorHash($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorMessage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereErrorType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereLastOccurrence($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereOccurredAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport wherePriority($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereStackTrace($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ErrorReport whereUserId($value)
+ * @method static Builder<static>|ErrorReport autoReported()
+ * @method static Builder<static>|ErrorReport frequent()
+ * @method static Builder<static>|ErrorReport highPriority()
+ * @method static Builder<static>|ErrorReport investigating()
+ * @method static Builder<static>|ErrorReport newModelQuery()
+ * @method static Builder<static>|ErrorReport newQuery()
+ * @method static Builder<static>|ErrorReport pending()
+ * @method static Builder<static>|ErrorReport query()
+ * @method static Builder<static>|ErrorReport recent()
+ * @method static Builder<static>|ErrorReport resolved()
+ * @method static Builder<static>|ErrorReport userReported()
+ * @method static Builder<static>|ErrorReport whereCategory($value)
+ * @method static Builder<static>|ErrorReport whereContext($value)
+ * @method static Builder<static>|ErrorReport whereCreatedAt($value)
+ * @method static Builder<static>|ErrorReport whereDuplicateCount($value)
+ * @method static Builder<static>|ErrorReport whereErrorHash($value)
+ * @method static Builder<static>|ErrorReport whereErrorMessage($value)
+ * @method static Builder<static>|ErrorReport whereErrorType($value)
+ * @method static Builder<static>|ErrorReport whereId($value)
+ * @method static Builder<static>|ErrorReport whereLastOccurrence($value)
+ * @method static Builder<static>|ErrorReport whereOccurredAt($value)
+ * @method static Builder<static>|ErrorReport wherePriority($value)
+ * @method static Builder<static>|ErrorReport whereStackTrace($value)
+ * @method static Builder<static>|ErrorReport whereStatus($value)
+ * @method static Builder<static>|ErrorReport whereUpdatedAt($value)
+ * @method static Builder<static>|ErrorReport whereUserDescription($value)
+ * @method static Builder<static>|ErrorReport whereUserId($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperErrorReport
@@ -93,15 +97,21 @@ class ErrorReport extends Model
         'last_occurrence',
     ];
 
-    protected $casts = [
-        'context' => 'array',
-        'occurred_at' => 'datetime',
-        'last_occurrence' => 'datetime',
-        'status' => ErrorStatus::class,
-        'priority' => ErrorPriority::class,
-        'category' => ErrorCategory::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'context' => 'array',
+            'occurred_at' => 'datetime',
+            'last_occurrence' => 'datetime',
+            'status' => ErrorStatus::class,
+            'priority' => ErrorPriority::class,
+            'category' => ErrorCategory::class,
+        ];
+    }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\SocialPlatform;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -34,46 +39,46 @@ use Illuminate\Support\Facades\Crypt;
  * @property int|null $reply_delay_minutes
  * @property int|null $debug_mode
  * @property int|null $rate_limit
- * @property \Illuminate\Support\Carbon|null $token_expires_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User|null $assignedUser
+ * @property Carbon|null $token_expires_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User|null $assignedUser
  * @property-read mixed $masked_token
- * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SocialMediaWebhookLog> $webhookLogs
+ * @property-read Gym $gym
+ * @property-read Collection<int, SocialMediaWebhookLog> $webhookLogs
  * @property-read int|null $webhook_logs_count
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig active()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig byPlatform($platform)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAccessToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAdditionalConfig($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAppId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAppSecret($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereAutoReplyEnabled($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereDebugMode($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereEmailAcknowledgmentEnabled($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereEmailTemplate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereFormId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereFormName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePageId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePageName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePhoneNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePhoneNumberId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig wherePlatform($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereRateLimit($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereReplyDelayMinutes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereSmsAcknowledgmentEnabled($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereSmsTemplate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereTokenExpiresAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TenantSocialConfig whereWebhookVerifyToken($value)
+ * @method static Builder<static>|TenantSocialConfig active()
+ * @method static Builder<static>|TenantSocialConfig byPlatform($platform)
+ * @method static Builder<static>|TenantSocialConfig newModelQuery()
+ * @method static Builder<static>|TenantSocialConfig newQuery()
+ * @method static Builder<static>|TenantSocialConfig query()
+ * @method static Builder<static>|TenantSocialConfig whereAccessToken($value)
+ * @method static Builder<static>|TenantSocialConfig whereAdditionalConfig($value)
+ * @method static Builder<static>|TenantSocialConfig whereAppId($value)
+ * @method static Builder<static>|TenantSocialConfig whereAppSecret($value)
+ * @method static Builder<static>|TenantSocialConfig whereAutoReplyEnabled($value)
+ * @method static Builder<static>|TenantSocialConfig whereCreatedAt($value)
+ * @method static Builder<static>|TenantSocialConfig whereDebugMode($value)
+ * @method static Builder<static>|TenantSocialConfig whereEmailAcknowledgmentEnabled($value)
+ * @method static Builder<static>|TenantSocialConfig whereEmailTemplate($value)
+ * @method static Builder<static>|TenantSocialConfig whereFormId($value)
+ * @method static Builder<static>|TenantSocialConfig whereFormName($value)
+ * @method static Builder<static>|TenantSocialConfig whereGymId($value)
+ * @method static Builder<static>|TenantSocialConfig whereId($value)
+ * @method static Builder<static>|TenantSocialConfig whereIsActive($value)
+ * @method static Builder<static>|TenantSocialConfig wherePageId($value)
+ * @method static Builder<static>|TenantSocialConfig wherePageName($value)
+ * @method static Builder<static>|TenantSocialConfig wherePhoneNumber($value)
+ * @method static Builder<static>|TenantSocialConfig wherePhoneNumberId($value)
+ * @method static Builder<static>|TenantSocialConfig wherePlatform($value)
+ * @method static Builder<static>|TenantSocialConfig whereRateLimit($value)
+ * @method static Builder<static>|TenantSocialConfig whereReplyDelayMinutes($value)
+ * @method static Builder<static>|TenantSocialConfig whereSmsAcknowledgmentEnabled($value)
+ * @method static Builder<static>|TenantSocialConfig whereSmsTemplate($value)
+ * @method static Builder<static>|TenantSocialConfig whereTokenExpiresAt($value)
+ * @method static Builder<static>|TenantSocialConfig whereUpdatedAt($value)
+ * @method static Builder<static>|TenantSocialConfig whereWebhookVerifyToken($value)
  *
  * @mixin \Eloquent
  */
@@ -108,12 +113,15 @@ class TenantSocialConfig extends Model
         'rate_limit',
     ];
 
-    protected $casts = [
-        'additional_config' => 'array',
-        'is_active' => 'boolean',
-        'token_expires_at' => 'datetime',
-        'platform' => SocialPlatform::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'additional_config' => 'array',
+            'is_active' => 'boolean',
+            'token_expires_at' => 'datetime',
+            'platform' => SocialPlatform::class,
+        ];
+    }
 
     // Encrypt sensitive data
     protected function accessToken(): Attribute
@@ -137,6 +145,9 @@ class TenantSocialConfig extends Model
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
@@ -144,18 +155,20 @@ class TenantSocialConfig extends Model
 
     /**
      * Get the webhook logs for this social media configuration.
+     *
+     * @return HasMany<SocialMediaWebhookLog, $this>
      */
     public function webhookLogs(): HasMany
     {
         return $this->hasMany(SocialMediaWebhookLog::class, 'tenant_social_config_id');
     }
 
-    public function scopeActive($query)
+    protected function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeByPlatform($query, $platform)
+    protected function scopeByPlatform($query, $platform)
     {
         return $query->where('platform', $platform);
     }
@@ -165,17 +178,18 @@ class TenantSocialConfig extends Model
         return $this->token_expires_at && $this->token_expires_at->isPast();
     }
 
-    public function getMaskedTokenAttribute()
+    protected function maskedToken(): Attribute
     {
-        if (! $this->access_token) {
-            return null;
-        }
+        return Attribute::make(get: function () {
+            if (! $this->access_token) {
+                return null;
+            }
+            $token = $this->access_token;
+            if (strlen($token) > 10) {
+                return substr($token, 0, 6) . '...' . substr($token, -4);
+            }
 
-        $token = $this->access_token;
-        if (strlen($token) > 10) {
-            return substr($token, 0, 6) . '...' . substr($token, -4);
-        }
-
-        return '***';
+            return '***';
+        });
     }
 }

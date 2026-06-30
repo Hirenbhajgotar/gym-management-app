@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\ErrorReportResource;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditErrorReport extends EditRecord
@@ -13,7 +16,7 @@ class EditErrorReport extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('copyMarkdown')
+            Action::make('copyMarkdown')
                 ->label('Copy as Markdown')
                 ->icon('heroicon-o-clipboard-document')
                 ->action(function ($livewire) {
@@ -29,7 +32,7 @@ class EditErrorReport extends EditRecord
                             .send();
                     ");
                 }),
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

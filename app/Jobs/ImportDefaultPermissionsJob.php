@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\PermissionSetting;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
+use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -13,6 +16,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ImportDefaultPermissionsJob implements ShouldQueue
 {
@@ -56,7 +60,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
             Log::info('Default permissions import completed successfully', [
                 'target_role' => $this->targetRole,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error($e);
 
             throw $e;
@@ -65,7 +69,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
 
     private function showNotification(): void
     {
-        $recipient = User::where('id', $this->userId)->first();
+        $recipient = User::query()->where('id', $this->userId)->first();
 
         if (! $recipient) {
             return;
@@ -93,10 +97,10 @@ class ImportDefaultPermissionsJob implements ShouldQueue
      */
     protected function importPermissionsForRole(string $roleName): void
     {
-        $defaultPermissions = app(RolesAndPermissionsService::class)->getDefaultPermissions($roleName);
+        $defaultPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions($roleName);
 
-        if (! empty($defaultPermissions)) {
-            PermissionSetting::updateOrCreate([
+        if (filled($defaultPermissions)) {
+            PermissionSetting::query()->updateOrCreate([
                 'role' => $roleName,
             ], [
                 'default_permissions' => $defaultPermissions,
@@ -111,10 +115,10 @@ class ImportDefaultPermissionsJob implements ShouldQueue
      */
     protected function importPermissionsForAllRoles(): void
     {
-        $defaultRolesPermissions = app(RolesAndPermissionsService::class)->getDefaultPermissions();
+        $defaultRolesPermissions = resolve(RolesAndPermissionsService::class)->getDefaultPermissions();
 
         foreach ($defaultRolesPermissions as $role => $permissions) {
-            PermissionSetting::updateOrCreate([
+            PermissionSetting::query()->updateOrCreate([
                 'role' => $role,
             ], [
                 'default_permissions' => $permissions,
@@ -125,7 +129,7 @@ class ImportDefaultPermissionsJob implements ShouldQueue
     /**
      * Handle a job failure.
      */
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('ImportDefaultPermissionsJob failed', [
             'target_role' => $this->targetRole,

@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\LeadResource\Pages;
 
+use App\Enums\LeadStatus;
 use App\Filament\Admin\Resources\LeadResource;
 use App\Models\Lead;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\LeadConversionService;
 use Exception;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -139,7 +144,7 @@ class ViewLead extends ViewRecord
 
                         Tab::make('Conversion')
                             ->icon('phosphor-check-circle')
-                            ->visible(fn (Lead $record): bool => $record->status === \App\Enums\LeadStatus::CONVERTED)
+                            ->visible(fn (Lead $record): bool => $record->status === LeadStatus::CONVERTED)
                             ->schema([
                                 Section::make('Conversion Details')
                                     ->description('Information about the lead conversion to member')
@@ -176,18 +181,18 @@ class ViewLead extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()
+            EditAction::make()
                 ->icon('phosphor-pencil'),
 
-            Actions\Action::make('convertToMember')
+            Action::make('convertToMember')
                 ->label('Convert to Member')
                 ->icon('phosphor-check-circle')
                 ->color('success')
-                ->visible(fn (Lead $record): bool => $record->status !== \App\Enums\LeadStatus::CONVERTED)
+                ->visible(fn (Lead $record): bool => $record->status !== LeadStatus::CONVERTED)
                 ->form(LeadResource::getConvertToMemberFormSchema())
                 ->action(function (Lead $record, array $data) {
                     try {
-                        $conversionService = app(LeadConversionService::class);
+                        $conversionService = resolve(LeadConversionService::class);
                         $gymMember = $conversionService->convert($record, [
                             'membership_plan_id' => $data['membership_plan_id'],
                             'conversion_date' => $data['conversion_date'] ?? now(),
@@ -203,7 +208,7 @@ class ViewLead extends ViewRecord
                             ->success()
                             ->send();
 
-                        return redirect()->route('filament.admin.resources.gym-members.edit', ['tenant' => $record->gym->slug, 'record' => $gymMember->id]);
+                        return to_route('filament.admin.resources.gym-members.edit', ['tenant' => $record->gym->slug, 'record' => $gymMember->id]);
                     } catch (Exception $e) {
                         Log::error($e->getMessage());
 
@@ -215,7 +220,7 @@ class ViewLead extends ViewRecord
                     }
                 }),
 
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->icon('phosphor-trash'),
         ];
     }

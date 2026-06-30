@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Frontend;
 
 use App\Models\CmsPage;
@@ -22,7 +24,7 @@ class CmsPageController extends Component
         $slug = $this->slug;
 
         $page = Cache::flexible(CmsPage::CMS_PAGE_CACHE_KEY . $slug, [86400, 172800], function () use ($slug) {
-            return CmsPage::where('slug', $slug)
+            return CmsPage::query()->where('slug', $slug)
                 ->where('is_published', true)
                 ->firstOrFail();
         });

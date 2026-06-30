@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -16,7 +19,7 @@ class OnboardingSchema
                 ->description('Connect your gym with members through WhatsApp')
                 ->schema([
                     Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.onboarding-hero')->render())),
-                    \Filament\Forms\Components\Actions::make([
+                    Actions::make([
                         Action::make('start_setup')
                             ->label('Start Setup')
                             ->color('primary')

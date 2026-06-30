@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
 use App\Enums\Currency;
@@ -19,7 +21,7 @@ class MembershipPlansImport extends BaseImporter implements ShouldQueue
     public function processRow($row): void
     {
         MembershipPlan::withoutEvents(function () use ($row) {
-            MembershipPlan::create([
+            MembershipPlan::query()->create([
                 'gym_id' => $this->tenantId,
                 'name' => $row['name'],
                 'description' => $row['description'] ?? null,

@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource\Pages;
 
 use App\Filament\Admin\Clusters\Attendances\Resources\TrainerAttendanceResource;
-use Carbon\Carbon;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 class ListTrainerAttendances extends ListRecords
 {
@@ -16,7 +18,7 @@ class ListTrainerAttendances extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
         ];
@@ -33,16 +35,16 @@ class ListTrainerAttendances extends ListRecords
 
         return [
             'today' => Tab::make('Today')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereDate('created_at', Carbon::today()))
-                ->badge($resource::getEloquentQuery()->whereDate('created_at', Carbon::today())->count()),
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereDate('created_at', Date::today()))
+                ->badge($resource::getEloquentQuery()->whereDate('created_at', Date::today())->count()),
 
             'week' => Tab::make('This Week')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]))
-                ->badge($resource::getEloquentQuery()->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count()),
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereBetween('created_at', [Date::now()->startOfWeek(), Date::now()->endOfWeek()]))
+                ->badge($resource::getEloquentQuery()->whereBetween('created_at', [Date::now()->startOfWeek(), Date::now()->endOfWeek()])->count()),
 
             'month' => Tab::make('This Month')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]))
-                ->badge($resource::getEloquentQuery()->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])->count()),
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereBetween('created_at', [Date::now()->startOfMonth(), Date::now()->endOfMonth()]))
+                ->badge($resource::getEloquentQuery()->whereBetween('created_at', [Date::now()->startOfMonth(), Date::now()->endOfMonth()])->count()),
 
             'all' => Tab::make('All')
                 ->badge($resource::getEloquentQuery()->count()),

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\Lead;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -27,7 +30,7 @@ class LeadSourceChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -37,7 +40,7 @@ class LeadSourceChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->subMonths(6)->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $distribution = Lead::where('gym_id', $gymId)
+            $distribution = Lead::query()->where('gym_id', $gymId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->selectRaw('source, COUNT(*) as count')
                 ->groupBy('source')

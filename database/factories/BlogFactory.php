@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\BlogCategoryEnum;
@@ -7,6 +9,9 @@ use App\Models\Blog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<Blog>
+ */
 class BlogFactory extends Factory
 {
     protected $model = Blog::class;

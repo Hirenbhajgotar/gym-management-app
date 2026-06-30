@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\Currency;
@@ -9,16 +11,26 @@ use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
 use App\Models\User;
 use App\Rules\ValidEmailDomain;
-use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Pages\Concerns\HasWizard;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -163,7 +175,7 @@ abstract class BaseEmployeeResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('profile_photo')
+                ImageColumn::make('profile_photo')
                     ->circular()
                     ->extraImgAttributes(['loading' => 'lazy'])
                     ->label(''),
@@ -176,7 +188,7 @@ abstract class BaseEmployeeResource extends BaseResource
                     ->copyMessage('Email copied successfully')
                     ->icon('heroicon-o-envelope'),
 
-                Tables\Columns\ToggleColumn::make('email_verified_at')
+                ToggleColumn::make('email_verified_at')
                     ->label('Email Verified')
                     ->onIcon('heroicon-o-check-badge')
                     ->offIcon('heroicon-o-exclamation-triangle')
@@ -189,11 +201,11 @@ abstract class BaseEmployeeResource extends BaseResource
                         ]);
                     }),
 
-                Tables\Columns\TextColumn::make('phone')
+                TextColumn::make('phone')
                     ->searchable()
                     ->icon('heroicon-o-phone'),
 
-                Tables\Columns\TextColumn::make('employeeDetails.hire_date')
+                TextColumn::make('employeeDetails.hire_date')
                     ->date()
                     ->sortable(),
 
@@ -208,8 +220,8 @@ abstract class BaseEmployeeResource extends BaseResource
             ])
             ->actions(static::getTableActions())
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('id', 'DESC');
@@ -225,19 +237,19 @@ abstract class BaseEmployeeResource extends BaseResource
     public static function getSteps()
     {
         return [
-            Wizard\Step::make('Personal Information')
+            Step::make('Personal Information')
                 ->icon('heroicon-o-user')
                 ->completedIcon('heroicon-o-check')
                 ->description('Basic personal details')
                 ->schema(static::getPersonalInformationSchema()),
 
-            Wizard\Step::make('Employment Details')
+            Step::make('Employment Details')
                 ->icon('heroicon-o-briefcase')
                 ->completedIcon('heroicon-o-check')
                 ->description('Job-related information')
                 ->schema(static::getEmployeeDetailsSchema()),
 
-            Wizard\Step::make('Account Setup')
+            Step::make('Account Setup')
                 ->icon('heroicon-o-lock-closed')
                 ->completedIcon('heroicon-o-check')
                 ->description('Login credentials and final setup')
@@ -252,7 +264,7 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->description('Enter the ' . strtolower(static::getLabel()) . ' personal information')
                 ->icon('heroicon-o-identification')
                 ->schema([
-                    Forms\Components\FileUpload::make('profile_photo')
+                    FileUpload::make('profile_photo')
                         ->image()
                         ->avatar()
                         ->imageEditor()
@@ -263,7 +275,7 @@ abstract class BaseEmployeeResource extends BaseResource
 
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('name')
+                            TextInput::make('name')
                                 ->label('Full Name')
                                 ->required()
                                 ->maxLength(50)
@@ -274,10 +286,10 @@ abstract class BaseEmployeeResource extends BaseResource
 
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('email')
+                            TextInput::make('email')
                                 ->label('Email Address')
                                 ->email()
-                                ->rule(new ValidEmailDomain)
+                                ->rule(new ValidEmailDomain())
                                 ->required()
                                 ->unique(User::class, 'email', ignoreRecord: true)
                                 ->maxLength(100)
@@ -298,7 +310,7 @@ abstract class BaseEmployeeResource extends BaseResource
 
                     Grid::make(3)
                         ->schema([
-                            Forms\Components\DatePicker::make('employeeDetails.date_of_birth')
+                            DatePicker::make('employeeDetails.date_of_birth')
                                 ->label('Date of Birth')
                                 ->native(false)
                                 ->closeOnDateSelection(true)
@@ -307,13 +319,13 @@ abstract class BaseEmployeeResource extends BaseResource
                                 ->prefixIcon('heroicon-o-calendar-days')
                                 ->native(false),
 
-                            Forms\Components\Select::make('employeeDetails.gender')
+                            Select::make('employeeDetails.gender')
                                 ->label('Gender')
                                 ->required()
                                 ->options(GenderEnum::class)
                                 ->prefixIcon('heroicon-o-users'),
 
-                            Forms\Components\Select::make('employeeDetails.marital_status')
+                            Select::make('employeeDetails.marital_status')
                                 ->label('Marital Status')
                                 ->options(MaritalStatusEnum::class)
                                 ->prefixIcon('heroicon-o-heart'),
@@ -326,13 +338,13 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('employeeDetails.emergency_contact_name')
+                            TextInput::make('employeeDetails.emergency_contact_name')
                                 ->label('Emergency Contact Name')
                                 ->maxLength(100)
                                 ->placeholder('John Doe')
                                 ->prefixIcon('heroicon-o-user'),
 
-                            Forms\Components\Select::make('employeeDetails.emergency_contact_relationship')
+                            Select::make('employeeDetails.emergency_contact_relationship')
                                 ->label('Relationship')
                                 ->options([
                                     'spouse' => 'Spouse',
@@ -356,7 +368,7 @@ abstract class BaseEmployeeResource extends BaseResource
                                     lenient: true,
                                 ),
 
-                            Forms\Components\TextInput::make('employeeDetails.emergency_contact_email')
+                            TextInput::make('employeeDetails.emergency_contact_email')
                                 ->label('Emergency Contact Email')
                                 ->email()
                                 ->maxLength(100)
@@ -384,7 +396,7 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\DatePicker::make('employeeDetails.hire_date')
+                            DatePicker::make('employeeDetails.hire_date')
                                 ->label('Hire Date')
                                 ->required()
                                 ->default(now())
@@ -397,7 +409,7 @@ abstract class BaseEmployeeResource extends BaseResource
 
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\Select::make('employeeDetails.employment_type')
+                            Select::make('employeeDetails.employment_type')
                                 ->label('Employment Type')
                                 ->required()
                                 ->options([
@@ -409,7 +421,7 @@ abstract class BaseEmployeeResource extends BaseResource
                                 ->default('full_time')
                                 ->prefixIcon('heroicon-o-clock'),
 
-                            Forms\Components\TextInput::make('employeeDetails.monthly_salary')
+                            TextInput::make('employeeDetails.monthly_salary')
                                 ->label('Monthly Salary')
                                 ->numeric()
                                 ->prefix(static::getSalaryPrefix())
@@ -424,7 +436,7 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->description(static::getLabel() . ' capabilities')
                 ->icon('heroicon-o-key')
                 ->schema([
-                    Forms\Components\CheckboxList::make('employeeDetails.skills')
+                    CheckboxList::make('employeeDetails.skills')
                         ->label('Skills & Competencies')
                         ->options(static::getSkillsOptions())
                         ->columns(2)
@@ -442,7 +454,7 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('password')
+                            TextInput::make('password')
                                 ->label('Password')
                                 ->revealable()
                                 ->password()
@@ -470,7 +482,7 @@ abstract class BaseEmployeeResource extends BaseResource
                                         })
                                 ),
 
-                            Forms\Components\TextInput::make('passwordConfirmation')
+                            TextInput::make('passwordConfirmation')
                                 ->label('Confirm Password')
                                 ->password()
                                 ->required(fn (string $operation): bool => $operation === 'create')
@@ -488,14 +500,14 @@ abstract class BaseEmployeeResource extends BaseResource
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Forms\Components\Toggle::make('is_active')
+                            Toggle::make('is_active')
                                 ->label('Account Active')
                                 ->helperText('Enable/disable account access')
                                 ->default(true)
                                 ->onIcon('heroicon-o-check-circle')
                                 ->offIcon('heroicon-o-x-circle'),
 
-                            Forms\Components\Toggle::make('email_verified_at')
+                            Toggle::make('email_verified_at')
                                 ->label('Email Verified')
                                 ->helperText('Mark email as verified')
                                 // ->default(fn($record) => !is_null($record?->email_verified_at))
@@ -504,7 +516,7 @@ abstract class BaseEmployeeResource extends BaseResource
                                 ->offIcon('heroicon-o-exclamation-triangle'),
                         ]),
 
-                    Forms\Components\Textarea::make('notes')
+                    Textarea::make('notes')
                         ->label('Additional Notes')
                         ->placeholder('Any additional information about this ' . strtolower(static::getLabel()))
                         ->rows(3)

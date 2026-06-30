@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\DTOs;
 
 use App\Models\Attendances;
@@ -27,11 +29,11 @@ readonly class CheckInResult
 
     public static function denied(string $reason): self
     {
-        return new self(false, 'denied', $reason, null, null);
+        return new self(false, 'denied', $reason, null);
     }
 
     public static function suspicious(?string $reason, ?Attendances $attendance): self
     {
-        return new self(true, 'suspicious', $reason, $attendance, null);
+        return new self(true, 'suspicious', $reason, $attendance);
     }
 }

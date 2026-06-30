@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\Services\OfflineSyncService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OfflineSyncRequest;
+use App\Models\BiometricDevice;
 use Illuminate\Http\JsonResponse;
 
 class BiometricOfflineSyncController extends Controller
@@ -15,7 +18,7 @@ class BiometricOfflineSyncController extends Controller
 
     public function sync(OfflineSyncRequest $request): JsonResponse
     {
-        /** @var \App\Models\BiometricDevice $device */
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
         $events = $request->validated('events');

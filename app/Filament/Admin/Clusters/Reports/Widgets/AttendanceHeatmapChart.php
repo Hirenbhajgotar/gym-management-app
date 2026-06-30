@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Filament\BaseWidgets\BaseChartWidget;
 use App\Models\Attendances;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
 
@@ -17,7 +20,7 @@ class AttendanceHeatmapChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -29,7 +32,7 @@ class AttendanceHeatmapChart extends BaseChartWidget
 
             $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            $distribution = Attendances::where('gym_id', $gymId)
+            $distribution = Attendances::query()->where('gym_id', $gymId)
                 ->whereBetween('check_in_time', [$startDate, $endDate . ' 23:59:59'])
                 ->selectRaw('DAYOFWEEK(check_in_time) as day, COUNT(*) as count')
                 ->groupBy('day')

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
 use App\Jobs\ImportWhatsAppTemplatesJob;
+use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -31,7 +34,7 @@ class ConnectExistingWabaAction
         if (RateLimiter::tooManyAttempts($rateLimiterKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($rateLimiterKey);
             $minutes = ceil($seconds / 60);
-            throw new \Exception("Too many connection attempts. Please try again in {$minutes} minute(s).");
+            throw new Exception("Too many connection attempts. Please try again in {$minutes} minute(s).");
         }
 
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
@@ -50,9 +53,9 @@ class ConnectExistingWabaAction
                 $this->page->refresh();
                 Notification::make()->title('WABA Connected')->success()->send();
             } else {
-                throw new \Exception($result['error'] ?? 'Failed');
+                throw new Exception($result['error'] ?? 'Failed');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('WABA Connect Error', ['e' => $e]);
             Notification::make()->title('Connection Failed')->body($e->getMessage())->danger()->send();
         }

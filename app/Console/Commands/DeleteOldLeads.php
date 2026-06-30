@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\LeadStatus;
@@ -27,7 +29,7 @@ class DeleteOldLeads extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $cutoffDate = now()->subMonths(2);
         $totalDeleted = 0;
@@ -41,25 +43,27 @@ class DeleteOldLeads extends Command
             ->chunkById(500, function ($leads) use (&$totalDeleted) {
                 $leadIds = $leads->pluck('id')->toArray();
 
-                if (empty($leadIds)) {
+                if (blank($leadIds)) {
                     return;
                 }
 
                 $count = count($leadIds);
 
                 // Delete related FollowUps
-                FollowUp::whereIn('lead_id', $leadIds)->delete();
+                FollowUp::query()->whereIn('lead_id', $leadIds)->delete();
 
                 // Delete related LeadConversions
-                LeadConversion::whereIn('lead_id', $leadIds)->delete();
+                LeadConversion::query()->whereIn('lead_id', $leadIds)->delete();
 
                 // Delete Leads
-                Lead::whereIn('id', $leadIds)->delete();
+                Lead::query()->whereIn('id', $leadIds)->delete();
 
                 $totalDeleted += $count;
                 $this->info("Deleted batch of {$count} leads and related data.");
             });
 
         $this->info("Cleanup complete. Total leads deleted: {$totalDeleted}.");
+
+        return self::SUCCESS;
     }
 }

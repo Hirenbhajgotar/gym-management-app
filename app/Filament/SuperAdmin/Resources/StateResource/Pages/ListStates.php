@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\StateResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\StateResource;
 use App\Models\State;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,14 +18,14 @@ class ListStates extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 
     public function getTabs(): array
     {
         /**
-         * @var \Illuminate\Database\Eloquent\Builder $counts
+         * @var Builder $counts
          */
         $counts = State::query()
             ->selectRaw('

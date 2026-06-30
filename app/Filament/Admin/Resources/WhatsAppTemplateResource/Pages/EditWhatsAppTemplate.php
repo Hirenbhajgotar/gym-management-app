@@ -6,10 +6,13 @@ namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+use RuntimeException;
 
 class EditWhatsAppTemplate extends EditRecord
 {
@@ -19,7 +22,7 @@ class EditWhatsAppTemplate extends EditRecord
     {
         return [
             // Resubmit for Approval (only for rejected templates)
-            Actions\Action::make('resubmit')
+            Action::make('resubmit')
                 ->label('Resubmit for Approval')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
@@ -55,7 +58,7 @@ class EditWhatsAppTemplate extends EditRecord
                                 ->body('Your updated template has not been submitted for Meta approval.')
                                 ->send();
                         }
-                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                    } catch (InvalidArgumentException|RuntimeException $e) {
                         Log::error('Template resubmission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()
@@ -66,7 +69,7 @@ class EditWhatsAppTemplate extends EditRecord
                 }),
 
             // Submit for Approval (only for draft templates)
-            Actions\Action::make('submit')
+            Action::make('submit')
                 ->label('Submit for Approval')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('primary')
@@ -96,7 +99,7 @@ class EditWhatsAppTemplate extends EditRecord
                                 ->body('Your template has not been submitted for Meta approval.')
                                 ->send();
                         }
-                    } catch (\InvalidArgumentException|\RuntimeException $e) {
+                    } catch (InvalidArgumentException|RuntimeException $e) {
                         Log::error('Template submission failed with exception', ['template_id' => $this->record->id, 'error' => $e->getMessage()]);
                         Notification::make()
                             ->danger()
@@ -106,7 +109,7 @@ class EditWhatsAppTemplate extends EditRecord
                     }
                 }),
 
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->visible(fn () => ! $this->record->is_default && ! $this->record->isApproved()),
         ];
     }

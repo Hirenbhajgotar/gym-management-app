@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\Gym;
 use App\Models\WhatsappTemplate;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PushWhatsAppTemplateToGymJob implements ShouldQueue
 {
@@ -26,7 +31,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
 
     public function handle(): void
     {
-        $template = WhatsappTemplate::find($this->templateId);
+        $template = WhatsappTemplate::query()->find($this->templateId);
 
         if (! $template) {
             Log::warning('PushWhatsAppTemplateToGymJob: Template not found', [
@@ -59,16 +64,16 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
         ]);
     }
 
-    protected function getActiveGyms(): \Illuminate\Database\Eloquent\Collection
+    protected function getActiveGyms(): Collection
     {
-        return Gym::whereHas('users', function ($query) {
+        return Gym::query()->whereHas('users', function (Builder $query) {
             $query->where('users.is_active', true);
         })->get();
     }
 
     protected function pushTemplateToGym(WhatsappTemplate $template, Gym $gym): void
     {
-        $exists = WhatsappTemplate::where('gym_id', $gym->id)
+        $exists = WhatsappTemplate::query()->where('gym_id', $gym->id)
             ->where('name', $template->name)
             ->exists();
 
@@ -82,7 +87,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
             return;
         }
 
-        WhatsappTemplate::create([
+        WhatsappTemplate::query()->create([
             'gym_id' => $gym->id,
             'name' => $template->name,
             'display_name' => $template->display_name,
@@ -102,7 +107,7 @@ class PushWhatsAppTemplateToGymJob implements ShouldQueue
         ]);
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('PushWhatsAppTemplateToGymJob permanently failed', [
             'template_id' => $this->templateId,

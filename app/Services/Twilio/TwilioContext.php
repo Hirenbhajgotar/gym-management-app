@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Twilio;
 
 use App\Models\WhatsAppAccount;
@@ -42,13 +44,11 @@ class TwilioContext
         $this->masterAccountSid = (string) config('services.twilio.master_sid', '');
         $this->masterAuthToken = (string) config('services.twilio.master_token', '');
 
-        if (empty($this->masterAccountSid) || empty($this->masterAuthToken)) {
-            throw new Exception('Twilio credentials not configured');
-        }
+        throw_if(blank($this->masterAccountSid) || blank($this->masterAuthToken), Exception::class, 'Twilio credentials not configured');
 
         // Eager load account and phone number (skip for global operations without gym context)
         if ($gymId !== null) {
-            $this->account = WhatsAppAccount::where('gym_id', $gymId)->first();
+            $this->account = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
             $this->phoneNumber = $this->account?->phoneNumber;
         }
     }
@@ -83,9 +83,7 @@ class TwilioContext
      */
     public function getAccountOrFail(): WhatsAppAccount
     {
-        if (! $this->account) {
-            throw new Exception('WhatsApp account not found for this gym');
-        }
+        throw_unless($this->account, Exception::class, 'WhatsApp account not found for this gym');
 
         return $this->account;
     }
@@ -129,9 +127,7 @@ class TwilioContext
             );
         }
 
-        if (! $this->account) {
-            throw new Exception('No WhatsApp account found for this gym');
-        }
+        throw_unless($this->account, Exception::class, 'No WhatsApp account found for this gym');
 
         return $this->subAccountClient = new Client(
             $this->account->twilio_account_sid,
@@ -161,6 +157,6 @@ class TwilioContext
 
     public function hasActivePhoneNumber(): bool
     {
-        return ! empty($this->phoneNumber?->phone_number);
+        return filled($this->phoneNumber?->phone_number);
     }
 }

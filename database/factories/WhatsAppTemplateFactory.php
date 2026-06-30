@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\WhatsAppTemplateStatusEnum;
@@ -8,7 +10,7 @@ use App\Models\WhatsAppTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WhatsAppTemplate>
+ * @extends Factory<WhatsAppTemplate>
  */
 class WhatsAppTemplateFactory extends Factory
 {
@@ -18,11 +20,11 @@ class WhatsAppTemplateFactory extends Factory
     {
         return [
             'gym_id' => Gym::factory(),
-            'meta_template_id' => $this->faker->uuid(),
-            'name' => $this->faker->unique()->word(),
-            'display_name' => $this->faker->sentence(3),
-            'body' => $this->faker->paragraph(),
-            'category' => $this->faker->randomElement(['marketing', 'utility', 'authentication']),
+            'meta_template_id' => fake()->uuid(),
+            'name' => fake()->unique()->word(),
+            'display_name' => fake()->sentence(3),
+            'body' => fake()->paragraph(),
+            'category' => fake()->randomElement(['marketing', 'utility', 'authentication']),
             'status' => WhatsAppTemplateStatusEnum::PENDING,
             'is_active' => true,
         ];

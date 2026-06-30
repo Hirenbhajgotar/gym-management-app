@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\RequestContact;
@@ -39,7 +41,7 @@ class RequestDemoNotification extends Notification implements ShouldQueue
     {
         $appName = config('app.name', 'Fluxfitness');
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('New Demo Request - ' . $this->requestContact->name)
             ->greeting('Hello Admin,')
             ->line('You have received a new demo request.')

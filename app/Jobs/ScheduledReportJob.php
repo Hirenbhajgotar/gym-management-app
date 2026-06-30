@@ -1,20 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\ScheduledReport;
 use App\Services\ReportPdfGenerator;
-use Illuminate\Bus\Queueable;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ScheduledReportJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     /**
      * Create a new job instance.
@@ -51,9 +52,9 @@ class ScheduledReportJob implements ShouldQueue
             // Update last run
             $this->scheduledReport->update(['last_run_at' => now()]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log failure
-            \Illuminate\Support\Facades\Log::error('Scheduled report failed: ' . $e->getMessage());
+            Log::error('Scheduled report failed: ' . $e->getMessage());
             // Optionally notify admin or user
         }
     }

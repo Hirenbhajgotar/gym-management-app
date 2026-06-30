@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Filament\StaffPanel;
 
 use App\Models\Gym;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -24,7 +27,7 @@ abstract class StaffPanelTestCase extends TestCase
     {
         parent::setUp();
 
-        $database = $this->app['config']->get('database.connections.mysql.database');
+        $database = $this->app->make('config')->get('database.connections.mysql.database');
 
         if ($database === 'gym_app') {
             $this->fail('SAFETY: Tests are targeting the production database "gym_app". Aborting to prevent data loss.');
@@ -55,7 +58,7 @@ abstract class StaffPanelTestCase extends TestCase
             'manager' => $this->managerUser,
             'receptionist' => $this->receptionistUser,
         ] as $roleName => $user) {
-            $role = Role::firstOrCreate([
+            $role = Role::query()->firstOrCreate([
                 'name' => $roleName,
                 'guard_name' => 'web',
                 'gym_id' => $this->testGym->id,
@@ -74,14 +77,14 @@ abstract class StaffPanelTestCase extends TestCase
         }
 
         setPermissionsTeamId($this->testGym->id);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         Filament::setCurrentPanel(Filament::getPanel('staff'));
     }
 
-    protected function grantPermission(User $user, string $name): \Spatie\Permission\Contracts\Permission
+    protected function grantPermission(User $user, string $name): Permission
     {
-        $permission = \App\Models\Permission::firstOrCreate([
+        $permission = \App\Models\Permission::query()->firstOrCreate([
             'name' => $name,
             'guard_name' => 'web',
         ]);
@@ -94,7 +97,7 @@ abstract class StaffPanelTestCase extends TestCase
             }
         }
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $permission;
     }

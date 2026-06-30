@@ -1,20 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Jobs\ImportDefaultPermissionsJob;
 use App\Models\PermissionSetting;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
-use Filament\Notifications\Events\DatabaseNotificationsSent;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class ImportDefaultPermissionsJobTest extends \Tests\TestCase
+class ImportDefaultPermissionsJobTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -49,7 +49,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         // Mock auth to return a user ID
         $this->actingAs($this->createUser());
 
-        $job = new ImportDefaultPermissionsJob(null, null);
+        $job = new ImportDefaultPermissionsJob();
 
         $this->assertInstanceOf(ImportDefaultPermissionsJob::class, $job);
     }
@@ -147,13 +147,13 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
             ->shouldReceive('getDefaultPermissions')
             ->with($roleName)
             ->once()
-            ->andThrow(new \Exception($exceptionMessage));
+            ->andThrow(new Exception($exceptionMessage));
 
         //        Log::shouldReceive('info')->times(1);
         //        Log::shouldReceive('error')->times(1);
 
         // Act & Assert
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
         $job = new ImportDefaultPermissionsJob($roleName, $userId);
@@ -171,10 +171,10 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
             ->shouldReceive('getDefaultPermissions')
             ->withNoArgs()
             ->once()
-            ->andThrow(new \Exception($exceptionMessage));
+            ->andThrow(new Exception($exceptionMessage));
 
         // Act & Assert
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
         $job = new ImportDefaultPermissionsJob(null, $userId);
@@ -221,7 +221,7 @@ class ImportDefaultPermissionsJobTest extends \Tests\TestCase
         // Arrange
         $roleName = 'admin';
         $userId = 1;
-        $exception = new \Exception('Test exception');
+        $exception = new Exception('Test exception');
 
         //        Log::shouldReceive('error')->times(1);
 

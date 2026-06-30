@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Providers\MetaWhatsAppProvider;
@@ -13,6 +15,7 @@ use Illuminate\Queue\Middleware\RateLimitedWithRedis;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SendMessageChunkJob implements ShouldQueue
 {
@@ -155,7 +158,7 @@ class SendMessageChunkJob implements ShouldQueue
                 ];
 
                 $variables = $recipient['resolved_variables'];
-                if (! empty($variables)) {
+                if (filled($variables)) {
                     $payload['template']['components'] = [
                         [
                             'type' => 'body',
@@ -232,7 +235,7 @@ class SendMessageChunkJob implements ShouldQueue
                     'message_id' => $result['message_id'] ?? null,
                     'error' => $result['success'] ? null : ($result['error'] ?? 'Unknown error'),
                 ];
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $results[$i] = [
                     'success' => false,
                     'error' => $e->getMessage(),
@@ -293,7 +296,7 @@ class SendMessageChunkJob implements ShouldQueue
         array $failureReasons,
         array $messageSids,
     ): void {
-        if (empty($successIds) && empty($failedIds)) {
+        if (blank($successIds) && blank($failedIds)) {
             return;
         }
 

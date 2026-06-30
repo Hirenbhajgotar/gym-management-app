@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Wizard\Step;
@@ -14,7 +17,7 @@ class WelcomeCreditsStep
         return Step::make('Welcome Credits')
             ->schema([
                 Placeholder::make('')->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.welcome-credits')->render())),
-                \Filament\Forms\Components\Actions::make([
+                Actions::make([
                     Action::make('claimWelcome')
                         ->label($page->welcomeCreditsClaimed ? 'Credits Claimed' : 'Claim Welcome Credits')
                         ->color('success')

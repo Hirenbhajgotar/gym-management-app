@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Actions;
 
 use App\Services\ErrorReportService;
@@ -35,7 +37,7 @@ class ReportErrorAction
                     ->columnSpanFull(),
             ])
             ->action(function (array $data) use ($errorMessage, $exception) {
-                $errorReportService = app(ErrorReportService::class);
+                $errorReportService = resolve(ErrorReportService::class);
 
                 if ($exception) {
                     $errorReportService->reportException($exception, $data['description'] ?? null);

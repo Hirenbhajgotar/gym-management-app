@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Pages;
 
 use App\Enums\DefaultRole;
@@ -17,7 +19,6 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Pages\Page;
 
 /**
  * WhatsApp Setup page — thin orchestrator (~60 lines).
@@ -42,7 +43,7 @@ class WhatsAppSetup extends BasePage implements HasActions, HasForms
      *
      * @var MetaWhatsAppProvider|TwilioWhatsAppProvider|null
      */
-    protected $cachedProvider = null;
+    protected $cachedProvider;
 
     public function defaultRolePermissions(): array
     {

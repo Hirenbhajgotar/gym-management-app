@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\CityResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\CityResource;
 use App\Models\City;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +18,7 @@ class ListCities extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 
@@ -24,7 +26,7 @@ class ListCities extends ListRecords
     {
         // Fetch counts in a single query
         /**
-         * @var \Illuminate\Database\Eloquent\Builder $counts
+         * @var Builder $counts
          */
         $counts = City::query()
             ->selectRaw('

@@ -1,15 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Observers\TrainerObserver;
+use Database\Factories\TrainerFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -26,17 +33,17 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property numeric|null $basic_salary
  * @property numeric|null $pt_salary_per_member
  * @property string|null $currency
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendances> $attendances
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Attendances> $attendances
  * @property-read int|null $attendances_count
  * @property-read float $total_earnings
- * @property-read \App\Models\Gym $gym
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GymMember> $members
+ * @property-read Gym $gym
+ * @property-read Collection<int, GymMember> $members
  * @property-read int|null $members_count
  *
  * @method static Builder<static>|Trainer available()
- * @method static \Database\Factories\TrainerFactory factory($count = null, $state = [])
+ * @method static TrainerFactory factory($count = null, $state = [])
  * @method static Builder<static>|Trainer newModelQuery()
  * @method static Builder<static>|Trainer newQuery()
  * @method static Builder<static>|Trainer query()
@@ -62,7 +69,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[ObservedBy([TrainerObserver::class])]
 class Trainer extends Model
 {
-    /** @use HasFactory<\Database\Factories\TrainerFactory> */
+    /** @use HasFactory<TrainerFactory> */
     use HasFactory;
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'trainer_navigation_badge_count_';
@@ -83,34 +90,68 @@ class Trainer extends Model
         'profile_photo',
     ];
 
-    protected $casts = [
-        'is_available' => 'boolean',
-        'basic_salary' => 'decimal:2',
-        'pt_salary_per_member' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_available' => 'boolean',
+            'basic_salary' => 'decimal:2',
+            'pt_salary_per_member' => 'decimal:2',
+        ];
+    }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return HasMany<GymMember, $this>
+     */
     public function members(): HasMany
     {
         return $this->hasMany(GymMember::class);
     }
 
-    public function scopeAvailable(Builder $query): Builder
+    protected function scopeAvailable(Builder $query): Builder
     {
         return $query->where('is_available', 1);
     }
 
-    public function getTotalEarningsAttribute(): float
+    protected function totalEarnings(): Attribute
     {
-        $assignedMembersCount = $this->members()->count();
+        return Attribute::make(get: function () {
+            $basicSalary = (float) ($this->basic_salary ?? 0);
+            $rate = (float) ($this->pt_salary_per_member ?? 0);
 
-        return $this->basic_salary + ($this->pt_salary_per_member * $assignedMembersCount);
+            if ($rate <= 0) {
+                return $basicSalary;
+            }
+
+            $ptEarnings = $this->members->reduce(function (float $carry, $member) use ($rate) {
+                // Only consider completed payments within the member's current membership period
+                $paymentsInPeriod = $member->payments->filter(function ($payment) use ($member) {
+                    return $payment->payment_date
+                        && $member->membership_start
+                        && $member->membership_end
+                        && $payment->payment_date->between($member->membership_start, $member->membership_end)
+                        && $payment->status === PaymentStatus::COMPLETED;
+                });
+
+                $totalPaid = (float) $paymentsInPeriod->sum('amount');
+
+                return $carry + ($totalPaid * $rate / 100);
+            }, 0.0);
+
+            return $basicSalary + $ptEarnings;
+        });
     }
 
+    /**
+     * @return MorphMany<Attendances, $this>
+     */
     public function attendances(): MorphMany
     {
         return $this->morphMany(Attendances::class, 'attendanceable');

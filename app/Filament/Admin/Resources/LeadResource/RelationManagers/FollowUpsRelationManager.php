@@ -1,22 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\LeadResource\RelationManagers;
 
 use App\Enums\FollowUpStatus;
 use App\Enums\InteractionType;
 use App\Models\FollowUp;
 use App\Models\Gym;
+use App\Models\User;
 use App\Notifications\LeadFollowUpNotification;
 use App\Traits\HasTenantAccess;
+use Exception;
 use Filament\Facades\Filament;
-use Filament\Forms;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -57,7 +74,7 @@ class FollowUpsRelationManager extends RelationManager
         $currentGym = Filament::getTenant();
 
         return [
-            Forms\Components\Hidden::make('gym_id')
+            Hidden::make('gym_id')
                 ->default($currentGym?->id ?? null),
 
             Section::make('Follow-Up Details')
@@ -65,7 +82,7 @@ class FollowUpsRelationManager extends RelationManager
                 ->description('Schedule and track follow-ups with leads')
                 ->schema([
                     Grid::make(2)->schema([
-                        Forms\Components\Select::make('type')
+                        Select::make('type')
                             ->label('Interaction Type')
                             ->options(InteractionType::class)
                             ->required()
@@ -73,13 +90,13 @@ class FollowUpsRelationManager extends RelationManager
                             ->placeholder('Select interaction type')
                             ->helperText('Choose how you will interact with this lead'),
 
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options(FollowUpStatus::class)
                             ->required()
                             ->default(FollowUpStatus::PENDING->value)
                             ->helperText('Current status of this follow-up'),
 
-                        Forms\Components\DateTimePicker::make('scheduled_date')
+                        DateTimePicker::make('scheduled_date')
                             ->label('Scheduled Date & Time')
                             ->required()
                             ->native(false)
@@ -89,7 +106,7 @@ class FollowUpsRelationManager extends RelationManager
                             ->minDate(now())
                             ->helperText('When should this follow-up happen?'),
 
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->label('Assigned To')
                             ->options(fn () => Gym::getCurrentTenantUsers()
                                 ->pluck('users.name', 'users.id')
@@ -101,7 +118,7 @@ class FollowUpsRelationManager extends RelationManager
                             ->helperText('Who is responsible for this follow-up?'),
                     ]),
 
-                    Forms\Components\RichEditor::make('notes')
+                    RichEditor::make('notes')
                         ->label('Follow-Up Notes')
                         ->placeholder('Add any relevant notes or context for this follow-up...')
                         ->columnSpanFull()
@@ -132,32 +149,32 @@ class FollowUpsRelationManager extends RelationManager
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('type')
+            TextColumn::make('type')
                 ->label('Type')
                 ->badge()
                 ->sortable()
                 ->searchable(),
 
-            Tables\Columns\TextColumn::make('scheduled_date')
+            TextColumn::make('scheduled_date')
                 ->label('Scheduled')
                 ->dateTime('M d, Y h:i A')
                 ->sortable()
                 ->badge()
                 ->color(fn (FollowUp $record) => $this->getScheduleDateColor($record)),
 
-            Tables\Columns\TextColumn::make('status')
+            TextColumn::make('status')
                 ->badge()
                 ->sortable()
                 ->searchable(),
 
-            Tables\Columns\TextColumn::make('user.name')
+            TextColumn::make('user.name')
                 ->label('Assigned To')
                 ->sortable()
                 ->searchable()
                 ->icon('heroicon-o-user')
                 ->iconColor('primary'),
 
-            Tables\Columns\TextColumn::make('created_at')
+            TextColumn::make('created_at')
                 ->label('Created')
                 ->dateTime('M d, Y')
                 ->sortable()
@@ -171,22 +188,22 @@ class FollowUpsRelationManager extends RelationManager
     protected function getTableFilters(): array
     {
         return [
-            Tables\Filters\SelectFilter::make('status')
+            SelectFilter::make('status')
                 ->options(FollowUpStatus::class)
                 ->placeholder('All Statuses')
                 ->label('Status'),
 
-            Tables\Filters\SelectFilter::make('type')
+            SelectFilter::make('type')
                 ->options(InteractionType::class)
                 ->placeholder('All Types')
                 ->label('Interaction Type'),
 
-            Tables\Filters\SelectFilter::make('user_id')
+            SelectFilter::make('user_id')
                 ->options(fn () => $this->getTenantUsers())
                 ->placeholder('All Users')
                 ->label('Assigned To'),
 
-            Tables\Filters\Filter::make('overdue')
+            Filter::make('overdue')
                 ->label('Overdue')
                 ->query(fn (Builder $query) => $query
                     ->where('scheduled_date', '<', now())
@@ -194,7 +211,7 @@ class FollowUpsRelationManager extends RelationManager
                 )
                 ->toggle(),
 
-            Tables\Filters\Filter::make('upcoming')
+            Filter::make('upcoming')
                 ->label('Upcoming (Next 7 Days)')
                 ->query(fn (Builder $query) => $query
                     ->whereBetween('scheduled_date', [now(), now()->addDays(7)])
@@ -210,7 +227,7 @@ class FollowUpsRelationManager extends RelationManager
     protected function getHeaderActions(): array
     {
         return [
-            Tables\Actions\CreateAction::make()
+            CreateAction::make()
                 ->icon('heroicon-o-plus')
                 ->modalHeading('Schedule New Follow-Up')
                 ->successNotificationTitle('Follow-Up Scheduled')
@@ -224,15 +241,15 @@ class FollowUpsRelationManager extends RelationManager
     protected function getTableActions(): array
     {
         return [
-            Tables\Actions\ActionGroup::make([
-                Tables\Actions\EditAction::make()
+            ActionGroup::make([
+                EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
                     ->modalHeading(fn (FollowUp $record) => "Edit Follow-Up - {$record->type->getLabel()}")
                     ->successNotificationTitle('Follow-Up Updated')
                     ->after(fn (FollowUp $followUp) => $this->handleFollowUpUpdated($followUp)),
 
-                Tables\Actions\Action::make('complete')
+                Action::make('complete')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn (FollowUp $record) => $record->status === FollowUpStatus::PENDING)
@@ -242,7 +259,7 @@ class FollowUpsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Yes, Complete It')
                     ->action(fn (FollowUp $record) => $this->markAsCompleted($record)),
 
-                Tables\Actions\Action::make('miss')
+                Action::make('miss')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn (FollowUp $record) => $record->status === FollowUpStatus::PENDING)
@@ -252,7 +269,7 @@ class FollowUpsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Yes, Mark as Missed')
                     ->action(fn (FollowUp $record) => $this->markAsMissed($record)),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->modalHeading('Delete Follow-Up')
@@ -273,15 +290,15 @@ class FollowUpsRelationManager extends RelationManager
     protected function getBulkActions(): array
     {
         return [
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\BulkAction::make('complete')
+            BulkActionGroup::make([
+                BulkAction::make('complete')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
                     ->deselectRecordsAfterCompletion()
                     ->action(fn ($records) => $this->bulkMarkAsCompleted($records)),
 
-                Tables\Actions\DeleteBulkAction::make()
+                DeleteBulkAction::make()
                     ->modalHeading('Delete Follow-Ups')
                     ->modalDescription('Are you sure you want to delete the selected follow-ups?'),
             ]),
@@ -336,7 +353,7 @@ class FollowUpsRelationManager extends RelationManager
     {
         try {
             $followUp->user->notify(new LeadFollowUpNotification($followUp));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send follow-up notification', [
                 'follow_up_id' => $followUp->id,
                 'error' => $e->getMessage(),
@@ -428,7 +445,7 @@ class FollowUpsRelationManager extends RelationManager
                     ELSE 3
                 END
             ")
-            ->orderBy('scheduled_date', 'asc');
+            ->oldest('scheduled_date');
     }
 
     /**
@@ -436,7 +453,7 @@ class FollowUpsRelationManager extends RelationManager
      */
     protected function sendNotification(string $title, string $body, string $type = 'success'): void
     {
-        /** @var \App\Models\User $recipient */
+        /** @var User $recipient */
         $recipient = auth()->user();
 
         $notification = Notification::make()

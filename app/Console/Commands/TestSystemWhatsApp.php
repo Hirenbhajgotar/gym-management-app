@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Services\TwilioWhatsAppService;
+use Exception;
 use Illuminate\Console\Command;
 
 class TestSystemWhatsApp extends Command
@@ -24,7 +27,7 @@ class TestSystemWhatsApp extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $phone = $this->argument('phone');
         $message = $this->option('message') ?? 'Hello! This is a test message from system tenant (super-admin).';
@@ -71,18 +74,18 @@ class TestSystemWhatsApp extends Command
                 }
 
                 return Command::SUCCESS;
-            } else {
-                $this->error('❌ Message sending failed!');
-                $this->newLine();
-                $this->error('Error: ' . ($result['error'] ?? 'Unknown error'));
-
-                if (isset($result['code'])) {
-                    $this->error('Error Code: ' . $result['code']);
-                }
-
-                return Command::FAILURE;
             }
-        } catch (\Exception $e) {
+            $this->error('❌ Message sending failed!');
+            $this->newLine();
+            $this->error('Error: ' . ($result['error'] ?? 'Unknown error'));
+
+            if (isset($result['code'])) {
+                $this->error('Error Code: ' . $result['code']);
+            }
+
+            return Command::FAILURE;
+
+        } catch (Exception $e) {
             $this->error('❌ Exception occurred!');
             $this->error($e->getMessage());
             $this->newLine();

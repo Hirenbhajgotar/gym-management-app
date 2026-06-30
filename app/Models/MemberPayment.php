@@ -1,17 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
 use App\Observers\MemberPaymentObserver;
+use Database\Factories\MemberPaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
@@ -26,38 +33,38 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $payment_method
  * @property PaymentStatus|null $status
  * @property string|null $notes
- * @property \Illuminate\Support\Carbon|null $payment_date
- * @property \Illuminate\Support\Carbon|null $membership_start
- * @property \Illuminate\Support\Carbon|null $membership_end
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $payment_date
+ * @property Carbon|null $membership_start
+ * @property Carbon|null $membership_end
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
  * @property-read mixed $formatted_amount
- * @property-read \App\Models\Gym|null $gym
- * @property-read \App\Models\GymMember|null $member
- * @property-read \App\Models\MembershipPlan|null $membershipPlan
+ * @property-read Gym|null $gym
+ * @property-read GymMember|null $member
+ * @property-read MembershipPlan|null $membershipPlan
  *
- * @method static \Database\Factories\MemberPaymentFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereCurrency($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereInvoiceNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereInvoicePath($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMemberId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipEnd($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipPlanId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereMembershipStart($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment wherePaymentDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment wherePaymentMethod($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberPayment whereUpdatedAt($value)
+ * @method static MemberPaymentFactory factory($count = null, $state = [])
+ * @method static Builder<static>|MemberPayment newModelQuery()
+ * @method static Builder<static>|MemberPayment newQuery()
+ * @method static Builder<static>|MemberPayment query()
+ * @method static Builder<static>|MemberPayment whereAmount($value)
+ * @method static Builder<static>|MemberPayment whereCreatedAt($value)
+ * @method static Builder<static>|MemberPayment whereCurrency($value)
+ * @method static Builder<static>|MemberPayment whereGymId($value)
+ * @method static Builder<static>|MemberPayment whereId($value)
+ * @method static Builder<static>|MemberPayment whereInvoiceNumber($value)
+ * @method static Builder<static>|MemberPayment whereInvoicePath($value)
+ * @method static Builder<static>|MemberPayment whereMemberId($value)
+ * @method static Builder<static>|MemberPayment whereMembershipEnd($value)
+ * @method static Builder<static>|MemberPayment whereMembershipPlanId($value)
+ * @method static Builder<static>|MemberPayment whereMembershipStart($value)
+ * @method static Builder<static>|MemberPayment whereNotes($value)
+ * @method static Builder<static>|MemberPayment wherePaymentDate($value)
+ * @method static Builder<static>|MemberPayment wherePaymentMethod($value)
+ * @method static Builder<static>|MemberPayment whereStatus($value)
+ * @method static Builder<static>|MemberPayment whereUpdatedAt($value)
  *
  * @mixin \Eloquent
  * @mixin IdeHelperMemberPayment
@@ -83,14 +90,17 @@ class MemberPayment extends Model
         'invoice_path',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'payment_date' => 'date',
-        'membership_start' => 'date',
-        'membership_end' => 'date',
-        'status' => PaymentStatus::class,
-        'currency' => Currency::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'payment_date' => 'date',
+            'membership_start' => 'date',
+            'membership_end' => 'date',
+            'status' => PaymentStatus::class,
+            'currency' => Currency::class,
+        ];
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -113,16 +123,25 @@ class MemberPayment extends Model
         };
     }
 
+    /**
+     * @return BelongsTo<GymMember, $this>
+     */
     public function member(): BelongsTo
     {
         return $this->belongsTo(GymMember::class);
     }
 
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
     }
 
+    /**
+     * @return BelongsTo<MembershipPlan, $this>
+     */
     public function membershipPlan(): BelongsTo
     {
         return $this->belongsTo(MembershipPlan::class);

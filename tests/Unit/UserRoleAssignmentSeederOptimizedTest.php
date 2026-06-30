@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Enums\DefaultRole;
 use App\Models\Gym;
-use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
-use Spatie\Permission\Models\Role;
+use ReflectionClass;
 use Tests\TestCase;
 
 class UserRoleAssignmentSeederOptimizedTest extends TestCase
@@ -28,11 +30,11 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     {
         parent::setUp();
 
-        $this->seeder = new UserRoleAssignmentSeeder;
+        $this->seeder = new UserRoleAssignmentSeeder();
         $this->mockCommand = Mockery::mock(Command::class);
 
         // Use reflection to set the protected command property
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $commandProperty = $reflection->getProperty('command');
         $commandProperty->setAccessible(true);
         $commandProperty->setValue($this->seeder, $this->mockCommand);
@@ -84,14 +86,14 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
             'gym_id' => null,
         ]);
 
-        $user = User::where('email', 'admin@example.com')->first();
+        $user = User::query()->where('email', 'admin@example.com')->first();
         $this->assertTrue($user->hasRole(DefaultRole::SUPER_ADMIN->value));
     }
 
     #[Test]
     public function it_creates_demo_users_for_selected_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('choice')
             ->once()
@@ -155,8 +157,8 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_demo_users_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('choice')
             ->once()
@@ -235,7 +237,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_validates_existing_email()
     {
-        User::create([
+        User::query()->create([
             'name' => 'Existing User',
             'email' => 'existing@example.com',
             'password' => Hash::make('password'),
@@ -304,7 +306,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureGlobalRolesExist');
         $method->setAccessible(true);
 
@@ -333,12 +335,12 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_ensures_tenant_roles_exist_for_specific_gym()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureTenantRolesExist');
         $method->setAccessible(true);
 
@@ -357,13 +359,13 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_ensures_tenant_roles_exist_for_all_gyms()
     {
-        $gym1 = Gym::create(['name' => 'Gym 1', 'slug' => 'gym-1']);
-        $gym2 = Gym::create(['name' => 'Gym 2', 'slug' => 'gym-2']);
+        $gym1 = Gym::query()->create(['name' => 'Gym 1', 'slug' => 'gym-1']);
+        $gym2 = Gym::query()->create(['name' => 'Gym 2', 'slug' => 'gym-2']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Use reflection to call private method
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('ensureTenantRolesExist');
         $method->setAccessible(true);
 
@@ -384,12 +386,12 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_trainer_profiles()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureTenantRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -410,12 +412,12 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_creates_member_profiles()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create roles first
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $ensureRolesMethod = $reflection->getMethod('ensureTenantRolesExist');
         $ensureRolesMethod->setAccessible(true);
         $ensureRolesMethod->invoke($this->seeder, $gym->id);
@@ -452,10 +454,10 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_assigns_roles_to_existing_users()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         // Create a user without roles
-        $user = User::create([
+        $user = User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
@@ -507,7 +509,7 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
         $this->mockFinalSummary();
 
         // Force an exception by making the database unavailable
-        DB::shouldReceive('beginTransaction')->andThrow(new \Exception('Database connection failed'));
+        DB::shouldReceive('beginTransaction')->andThrow(new Exception('Database connection failed'));
 
         $this->seeder->run();
     }
@@ -515,12 +517,12 @@ class UserRoleAssignmentSeederOptimizedTest extends TestCase
     #[Test]
     public function it_uses_default_role_enum_consistently()
     {
-        $gym = Gym::create(['name' => 'Test Gym', 'slug' => 'test-gym']);
+        $gym = Gym::query()->create(['name' => 'Test Gym', 'slug' => 'test-gym']);
 
         $this->mockCommand->shouldReceive('info')->withAnyArgs()->zeroOrMoreTimes();
 
         // Create demo users
-        $reflection = new \ReflectionClass($this->seeder);
+        $reflection = new ReflectionClass($this->seeder);
         $method = $reflection->getMethod('getDemoUsersData');
         $method->setAccessible(true);
         $demoUsers = $method->invoke($this->seeder, $gym->id);

@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Events\LeadCreated;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
+use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -43,8 +48,8 @@ abstract class SocialMediaLeadProcessor
      */
     protected function getTenantConfig(string $identifier): ?TenantSocialConfig
     {
-        return TenantSocialConfig::where('platform', $this->platform)
-            ->where(function ($query) use ($identifier) {
+        return TenantSocialConfig::query()->where('platform', $this->platform)
+            ->where(function (Builder $query) use ($identifier) {
                 $query->where('page_id', $identifier)
                     ->orWhere('form_id', $identifier)
                     ->orWhere('phone_number_id', $identifier);
@@ -61,10 +66,10 @@ abstract class SocialMediaLeadProcessor
         try {
             // Validate required fields
             $validator = Validator::make($leadData, [
-                'name' => 'required|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'phone' => 'nullable|string|max:20',
-                'gym_id' => 'required|exists:gyms,id',
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:20'],
+                'gym_id' => ['required', 'exists:gyms,id'],
             ]);
 
             if ($validator->fails()) {
@@ -78,12 +83,12 @@ abstract class SocialMediaLeadProcessor
             }
 
             // Check for duplicate leads (same email or phone within 30 days)
-            $existingLead = Lead::where('gym_id', $leadData['gym_id'])
-                ->where(function ($query) use ($leadData) {
-                    if (! empty($leadData['email'])) {
+            $existingLead = Lead::query()->where('gym_id', $leadData['gym_id'])
+                ->where(function (Builder $query) use ($leadData) {
+                    if (filled($leadData['email'])) {
                         $query->where('email', $leadData['email']);
                     }
-                    if (! empty($leadData['phone'])) {
+                    if (filled($leadData['phone'])) {
                         $query->orWhere('phone', $leadData['phone']);
                     }
                 })
@@ -107,7 +112,7 @@ abstract class SocialMediaLeadProcessor
             }
 
             // Create new lead
-            $lead = Lead::create([
+            $lead = Lead::query()->create([
                 'name' => $leadData['name'],
                 'email' => $leadData['email'] ?? null,
                 'phone' => $this->formatPhoneNumber($leadData['phone'] ?? ''),
@@ -127,10 +132,10 @@ abstract class SocialMediaLeadProcessor
             ]);
 
             // Trigger lead created event for notifications
-            event(new \App\Events\LeadCreated($lead));
+            event(new LeadCreated($lead));
 
             return $lead;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create lead from social media', [
                 'platform' => $this->platform,
                 'error' => $e->getMessage(),
@@ -150,7 +155,7 @@ abstract class SocialMediaLeadProcessor
             'facebook' => LeadSource::FACEBOOK,
             'instagram' => LeadSource::INSTAGRAM,
             'whatsapp' => LeadSource::WHATSAPP,
-            'indiamart' => LeadSource::INDIAMART,
+            // 'indiamart' => LeadSource::INDIAMART,
             'justdial' => LeadSource::JUSTDIAL,
             default => LeadSource::SOCIAL_MEDIA,
         };
@@ -177,11 +182,11 @@ abstract class SocialMediaLeadProcessor
      */
     protected function mergeNotes(?string $existingNotes, string $newNotes): string
     {
-        if (empty($newNotes)) {
+        if (blank($newNotes)) {
             return $existingNotes ?? '';
         }
 
-        if (empty($existingNotes)) {
+        if (blank($existingNotes)) {
             return $newNotes;
         }
 

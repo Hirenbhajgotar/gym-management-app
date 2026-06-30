@@ -1,11 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\PermissionSetting;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
+/**
+ * @extends Factory<PermissionSetting>
+ */
 class PermissionSettingFactory extends Factory
 {
     protected $model = PermissionSetting::class;
@@ -13,11 +18,11 @@ class PermissionSettingFactory extends Factory
     public function definition(): array
     {
         return [
-            'role' => $this->faker->word(),
-            'default_resources' => $this->faker->word(),
-            'default_permissions' => $this->faker->words(),
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
+            'role' => fake()->word(),
+            'default_resources' => fake()->word(),
+            'default_permissions' => fake()->words(),
+            'created_at' => Date::now(),
+            'updated_at' => Date::now(),
         ];
     }
 }

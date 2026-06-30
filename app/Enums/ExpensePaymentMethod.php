@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasIcon;
@@ -28,7 +30,7 @@ enum ExpensePaymentMethod: string implements HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::CASH => 'phosphor-money',
@@ -48,7 +50,7 @@ enum ExpensePaymentMethod: string implements HasIcon, HasLabel
     {
         return collect(self::cases())->mapWithKeys(
             fn (self $case) => [$case->value => $case->getLabel()]
-        )->toArray();
+        )->all();
     }
 
     /**

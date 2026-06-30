@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\DefaultRole;
 use App\Models\GymMember;
+use App\Notifications\BirthdayNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -26,9 +29,9 @@ class BirthdayNotificationCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        GymMember::whereMonth('dob', now()->month)
+        GymMember::query()->whereMonth('dob', now()->month)
             ->whereDay('dob', now()->day)
             ->with(['gym', 'gym.users' => function ($query) {
                 $query->wherePivot('role', DefaultRole::GYM_OWNER->value);
@@ -42,7 +45,7 @@ class BirthdayNotificationCommand extends Command
                     }
 
                     $member->notify(
-                        new \App\Notifications\BirthdayNotification($member),
+                        new BirthdayNotification($member),
                     );
 
                     Cache::put($cacheKey, true, now()->endOfDay());

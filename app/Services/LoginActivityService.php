@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 /**
  * Service for querying user login activity.
@@ -25,7 +29,7 @@ class LoginActivityService
      */
     public function getUserIdsByRoles(array $roles): Collection
     {
-        return User::whereHas('gyms', function ($query) use ($roles) {
+        return User::query()->whereHas('gyms', function (Builder $query) use ($roles) {
             $query->whereIn('gym_user.role', $roles);
         })->pluck('users.id');
     }
@@ -35,7 +39,7 @@ class LoginActivityService
      */
     public function getLoginsForUser(int $userId, ?Carbon $from = null, ?Carbon $to = null): Collection
     {
-        $query = UserLoginLog::where('user_id', $userId);
+        $query = UserLoginLog::query()->where('user_id', $userId);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -45,7 +49,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        return $query->orderByDesc('login_at')->get();
+        return $query->latest('login_at')->get();
     }
 
     /**
@@ -55,21 +59,21 @@ class LoginActivityService
      */
     public function getLoginStats(int $userId): array
     {
-        $today = now()->startOfDay();
+        $today = today();
         $weekStart = now()->startOfWeek();
         $monthStart = now()->startOfMonth();
 
         return [
-            'today' => UserLoginLog::where('user_id', $userId)
+            'today' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $today)
                 ->count(),
-            'week' => UserLoginLog::where('user_id', $userId)
+            'week' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $weekStart)
                 ->count(),
-            'month' => UserLoginLog::where('user_id', $userId)
+            'month' => UserLoginLog::query()->where('user_id', $userId)
                 ->where('login_at', '>=', $monthStart)
                 ->count(),
-            'all_time' => UserLoginLog::where('user_id', $userId)->count(),
+            'all_time' => UserLoginLog::query()->where('user_id', $userId)->count(),
         ];
     }
 
@@ -78,7 +82,7 @@ class LoginActivityService
      */
     public function getLoginsForGym(int $gymId, ?Carbon $from = null, ?Carbon $to = null): Collection
     {
-        $query = UserLoginLog::where('gym_id', $gymId);
+        $query = UserLoginLog::query()->where('gym_id', $gymId);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -88,7 +92,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        return $query->with('user')->orderByDesc('login_at')->get();
+        return $query->with('user')->latest('login_at')->get();
     }
 
     /**
@@ -102,7 +106,7 @@ class LoginActivityService
             return collect();
         }
 
-        $query = UserLoginLog::whereIn('user_id', $userIds);
+        $query = UserLoginLog::query()->whereIn('user_id', $userIds);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -122,7 +126,7 @@ class LoginActivityService
     {
         $query = UserLoginLog::with(['user', 'gym']);
 
-        if (! empty($filters['role'])) {
+        if (filled($filters['role'])) {
             $userIds = $this->getUserIdsByRoles([$filters['role']]);
             if ($userIds->isNotEmpty()) {
                 $query->whereIn('user_id', $userIds);
@@ -131,19 +135,19 @@ class LoginActivityService
             }
         }
 
-        if (! empty($filters['gym_id'])) {
+        if (filled($filters['gym_id'])) {
             $query->where('gym_id', $filters['gym_id']);
         }
 
-        if (! empty($filters['from'])) {
-            $query->where('login_at', '>=', Carbon::parse($filters['from']));
+        if (filled($filters['from'])) {
+            $query->where('login_at', '>=', Date::parse($filters['from']));
         }
 
-        if (! empty($filters['to'])) {
-            $query->where('login_at', '<=', Carbon::parse($filters['to']));
+        if (filled($filters['to'])) {
+            $query->where('login_at', '<=', Date::parse($filters['to']));
         }
 
-        return $query->orderByDesc('login_at')->limit($limit)->get();
+        return $query->latest('login_at')->limit($limit)->get();
     }
 
     /**
@@ -166,7 +170,7 @@ class LoginActivityService
             ];
         }
 
-        $query = UserLoginLog::whereIn('user_id', $staffUserIds);
+        $query = UserLoginLog::query()->whereIn('user_id', $staffUserIds);
 
         if ($from) {
             $query->where('login_at', '>=', $from);
@@ -176,7 +180,7 @@ class LoginActivityService
             $query->where('login_at', '<=', $to);
         }
 
-        $today = now()->startOfDay();
+        $today = today();
         $weekStart = now()->startOfWeek();
         $monthStart = now()->startOfMonth();
 

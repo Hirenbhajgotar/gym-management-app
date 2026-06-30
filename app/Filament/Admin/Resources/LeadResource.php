@@ -1,25 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
-use App\Filament\Admin\Resources\LeadResource\Pages;
+use App\Filament\Admin\Resources\LeadResource\Pages\CreateLead;
+use App\Filament\Admin\Resources\LeadResource\Pages\EditLead;
+use App\Filament\Admin\Resources\LeadResource\Pages\ListLeads;
+use App\Filament\Admin\Resources\LeadResource\Pages\ViewLead;
 use App\Filament\Admin\Resources\LeadResource\RelationManagers\FollowUpsRelationManager;
 use App\Filament\BaseResources\BaseResource;
 use App\Models\Gym;
 use App\Models\Lead;
+use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
 use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use libphonenumber\PhoneNumberType;
@@ -75,7 +91,7 @@ class LeadResource extends BaseResource
                 Grid::make(3)->schema([
                     TextInput::make('name')->required(),
                     TextInput::make('email')->email()
-                        ->rule(new ValidEmailDomain)
+                        ->rule(new ValidEmailDomain())
                         ->required(),
                     PhoneInput::make('phone')
                         ->required()
@@ -86,20 +102,20 @@ class LeadResource extends BaseResource
                 ]),
 
                 Grid::make(2)->schema([
-                    Forms\Components\Hidden::make('status')
+                    Hidden::make('status')
                         ->default(LeadStatus::NEW)
                         ->visibleOn('create'),
 
-                    Forms\Components\Select::make('status')
+                    Select::make('status')
                         ->options(LeadStatus::class)
                         ->visibleOn('edit')
                         ->required(),
 
-                    Forms\Components\Select::make('source')
+                    Select::make('source')
                         ->options(LeadSource::class)
                         ->required(),
 
-                    Forms\Components\Select::make('created_by')
+                    Select::make('created_by')
                         ->label('Created By')
                         ->options(
                             fn () => Gym::getCurrentTenantUsers()->pluck(
@@ -110,11 +126,11 @@ class LeadResource extends BaseResource
                         ->searchable()
                         ->default(auth()->id()),
 
-                    Forms\Components\TagsInput::make('interest')->placeholder(
+                    TagsInput::make('interest')->placeholder(
                         'Add interests (e.g., Yoga, Weight Loss)',
                     ),
 
-                    Forms\Components\TagsInput::make('tags')
+                    TagsInput::make('tags')
                         ->placeholder(
                             'Add tags (e.g., High Priority, Referral)',
                         )
@@ -122,10 +138,10 @@ class LeadResource extends BaseResource
                         ->suggestions(
                             collect(LeadTag::cases())
                                 ->map(fn (LeadTag $tag) => $tag->getLabel())
-                                ->toArray(),
+                                ->all(),
                         ),
                 ]),
-                Forms\Components\Textarea::make('notes')
+                Textarea::make('notes')
                     ->label('Conversion Notes')
                     ->rows(6)
                     ->placeholder(
@@ -155,21 +171,21 @@ class LeadResource extends BaseResource
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                Tables\Filters\SelectFilter::make('status')->options(
+                SelectFilter::make('status')->options(
                     LeadStatus::class,
                 ),
-                Tables\Filters\SelectFilter::make('source')->options(
+                SelectFilter::make('source')->options(
                     LeadSource::class,
                 ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -182,26 +198,26 @@ class LeadResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListLeads::route('/'),
-            'create' => Pages\CreateLead::route('/create'),
-            'view' => Pages\ViewLead::route('/{record}'),
-            'edit' => Pages\EditLead::route('/{record}/edit'),
+            'index' => ListLeads::route('/'),
+            'create' => CreateLead::route('/create'),
+            'view' => ViewLead::route('/{record}'),
+            'edit' => EditLead::route('/{record}/edit'),
         ];
     }
 
     public static function getConvertToMemberFormSchema(): array
     {
         return [
-            Forms\Components\Group::make()
+            Group::make()
                 ->schema([
-                    Forms\Components\Section::make('Membership Details')
+                    Section::make('Membership Details')
                         ->icon('heroicon-o-ticket')
                         ->description('Configure membership settings')
                         ->schema([
-                            Forms\Components\Hidden::make('gym_id')
+                            Hidden::make('gym_id')
                                 ->default(fn () => Filament::getTenant()?->id ?? null),
 
-                            Forms\Components\Select::make('trainer_id')
+                            Select::make('trainer_id')
                                 ->label('Assign Trainer')
                                 ->options(function (callable $get) {
                                     $gymId = Filament::getTenant()->id ?? null;
@@ -209,7 +225,7 @@ class LeadResource extends BaseResource
                                         return [];
                                     }
 
-                                    return \App\Models\Trainer::where('gym_id', $gymId)
+                                    return Trainer::query()->where('gym_id', $gymId)
                                         ->available()
                                         ->pluck('name', 'id')
                                         ->prepend('None', null);
@@ -226,7 +242,7 @@ class LeadResource extends BaseResource
 
                     ...GymMemberResource::getPaymentFormSchema(),
 
-                    Forms\Components\RichEditor::make('conversion_notes')
+                    RichEditor::make('conversion_notes')
                         ->label('Conversion Notes')
                         ->placeholder(
                             'Add any relevant notes about the conversion...',

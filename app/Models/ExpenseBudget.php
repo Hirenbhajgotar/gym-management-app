@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Observers\ExpenseBudgetObserver;
@@ -7,11 +9,14 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
@@ -23,20 +28,20 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property numeric $amount
  * @property string $currency
  * @property string $period
- * @property \Illuminate\Support\Carbon $start_date
- * @property \Illuminate\Support\Carbon $end_date
+ * @property Carbon $start_date
+ * @property Carbon $end_date
  * @property int $alert_threshold
  * @property bool $alert_sent
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
- * @property-read \App\Models\ExpenseCategory|null $category
+ * @property-read ExpenseCategory|null $category
  * @property-read mixed $formatted_amount
  * @property-read mixed $formatted_remaining_amount
  * @property-read mixed $formatted_spent_amount
- * @property-read \App\Models\Gym $gym
+ * @property-read Gym $gym
  *
  * @method static Builder<static>|ExpenseBudget active()
  * @method static Builder<static>|ExpenseBudget current()
@@ -108,7 +113,7 @@ class ExpenseBudget extends Model
 
     public function getDescriptionForEvent(string $eventName): string
     {
-        $amount = Number::currency($this->amount, in: $this->currency);
+        $amount = Number::currency((float) $this->amount, in: $this->currency);
 
         return match ($eventName) {
             'created' => "Budget '{$this->name}' of {$amount} was created",
@@ -121,12 +126,17 @@ class ExpenseBudget extends Model
     // ========================================
     // Relationships
     // ========================================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class);
     }
 
+    /**
+     * @return BelongsTo<ExpenseCategory, $this>
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
@@ -233,7 +243,7 @@ class ExpenseBudget extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => Number::currency($this->amount, in: $this->currency),
+            get: fn () => Number::currency((float) $this->amount, in: $this->currency),
         );
     }
 
@@ -281,7 +291,7 @@ class ExpenseBudget extends Model
             $startDate = now()->setYear($year)->setMonth($month)->startOfMonth();
             $endDate = $startDate->copy()->endOfMonth();
 
-            $budgets[] = static::create([
+            $budgets[] = static::query()->create([
                 'gym_id' => $gymId,
                 'expense_category_id' => $categoryId,
                 'name' => "{$name} - " . $startDate->format('F Y'),

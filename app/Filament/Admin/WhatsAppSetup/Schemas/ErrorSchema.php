@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -16,7 +19,7 @@ class ErrorSchema
                 ->description('There was an issue with your WhatsApp setup.')
                 ->schema([
                     Placeholder::make('error_message')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.error-state')->render())),
-                    \Filament\Forms\Components\Actions::make([
+                    Actions::make([
                         Action::make('retry')->label('Retry Setup')->color('primary')->action('startSetupAction'),
                     ])->alignCenter(),
                 ]),

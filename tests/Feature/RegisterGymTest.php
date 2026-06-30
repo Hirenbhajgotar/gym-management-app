@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Enums\DefaultRole;
@@ -9,12 +11,9 @@ use App\Models\Country;
 use App\Models\Gym;
 use App\Models\State;
 use App\Models\User;
-use App\Services\RolesAndPermissionsService;
 use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Mockery;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -23,13 +22,13 @@ class RegisterGymTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @var \App\Models\User */
+    /** @var User */
     protected $superAdmin;
 
-    /** @var \App\Models\User */
+    /** @var User */
     protected $gymOwner;
 
-    /** @var \App\Models\Gym */
+    /** @var Gym */
     protected $tenant;
 
     protected function setUp(): void
@@ -37,8 +36,8 @@ class RegisterGymTest extends TestCase
         parent::setUp();
 
         // Create the required roles once
-        Role::firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::SUPER_ADMIN->value, 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => DefaultRole::GYM_OWNER->value, 'guard_name' => 'web']);
 
         // Super-admin can do anything (panel access is tested elsewhere)
         $this->superAdmin = User::factory()->create();
@@ -146,7 +145,7 @@ class RegisterGymTest extends TestCase
 
         // Act: Instantiate RegisterGym and set authenticated user
         $this->actingAs($this->gymOwner);
-        $registerGym = new RegisterGym;
+        $registerGym = new RegisterGym();
 
         // Assert: hasReachedGymLimit returns true
         $result = $this->invokeProtectedMethod($registerGym, 'hasReachedGymLimit');

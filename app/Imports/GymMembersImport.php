@@ -1,14 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Rules\ValidPhone;
-use Carbon\Carbon;
+use Exception;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -29,11 +34,11 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return Model|null
      */
     public function model(array $row)
     {
-        $plan = MembershipPlan::where('gym_id', $this->gymId)
+        $plan = MembershipPlan::query()->where('gym_id', $this->gymId)
             ->where('name', $row['membership_plan_name'])
             ->first();
 
@@ -52,8 +57,8 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
             'weight' => $row['weight'] ?? null,
             'height' => $row['height'] ?? null,
             'age' => $row['age'] ?? null,
-            'dob' => $row['dob'] ? Carbon::parse($row['dob']) : null,
-            'membership_start' => $row['membership_start'] ? Carbon::parse($row['membership_start']) : now(),
+            'dob' => $row['dob'] ? Date::parse($row['dob']) : null,
+            'membership_start' => $row['membership_start'] ? Date::parse($row['membership_start']) : now(),
             'gym_membership_plan_id' => $plan->id,
         ]);
 
@@ -62,7 +67,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
 
         // Create payment record if payment data exists
         if (isset($row['payment_amount']) && $row['payment_amount'] > 0) {
-            MemberPayment::create([
+            MemberPayment::query()->create([
                 'member_id' => $member->id,
                 'membership_plan_id' => $plan->id,
                 'amount' => $row['payment_amount'],
@@ -70,7 +75,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                 'payment_method' => $row['payment_method'] ?? 'cash',
                 'status' => $row['payment_status'] ?? 'completed',
                 'notes' => $row['payment_notes'] ?? null,
-                'payment_date' => $row['payment_date'] ? Carbon::parse($row['payment_date']) : now(),
+                'payment_date' => $row['payment_date'] ? Date::parse($row['payment_date']) : now(),
             ]);
         }
 
@@ -82,7 +87,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:gym_members,email',
-            'phone' => ['nullable', 'max:255', new ValidPhone],
+            'phone' => ['nullable', 'max:255', new ValidPhone()],
             'address' => 'nullable|string|max:65535',
             'weight' => 'nullable|numeric|min:0|max:500',
             'height' => 'nullable|numeric|min:0|max:300',
@@ -103,14 +108,14 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
     {
         return [
             AfterImport::class => function (AfterImport $event) {
-                if (! empty($this->failedRows)) {
+                if (filled($this->failedRows)) {
                     try {
                         // Ensure imports directory exists
                         $importsDir = storage_path('app/imports');
                         if (! File::exists($importsDir)) {
                             File::makeDirectory($importsDir, 0755, true);
                         } elseif (! is_writable($importsDir)) {
-                            throw new \Exception('Imports directory is not writable: ' . $importsDir);
+                            throw new Exception('Imports directory is not writable: ' . $importsDir);
                         }
 
                         // Generate failed rows CSV
@@ -119,9 +124,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                         $fileName = "failed_rows_{$timestamp}.csv";
                         $path = storage_path($filePath . $fileName);
                         $file = fopen($path, 'w');
-                        if ($file === false) {
-                            throw new \Exception('Failed to open file for writing: ' . $path);
-                        }
+                        throw_if($file === false, Exception::class, 'Failed to open file for writing: ' . $path);
                         $headers = array_merge(array_keys($this->failedRows[0]), ['error']);
                         fputcsv($file, $headers);
                         foreach ($this->failedRows as $row) {
@@ -139,7 +142,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                             ->title('Some rows failed to import')
                             ->body('The membership plan was not found for the selected gym in some rows.')
                             ->actions([
-                                \Filament\Notifications\Actions\Action::make('download')
+                                Action::make('download')
                                     ->label('Download Failed Rows')
                                     ->url(route('download.failed.rows', ['file' => $fileName]))
                                     ->openUrlInNewTab(),
@@ -149,7 +152,7 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
                             ->send();
 
                         event(new DatabaseNotificationsSent($recipient));
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $recipient = auth()->user();
                         Notification::make()
                             ->title('Import partially failed')

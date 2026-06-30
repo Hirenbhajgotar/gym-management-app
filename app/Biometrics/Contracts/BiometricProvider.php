@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Biometrics\Contracts;
 
 use App\Biometrics\DTOs\BiometricSample;
@@ -17,6 +19,7 @@ interface BiometricProvider
 
     public function deleteTemplate(TemplateRef $ref): bool;
 
+    /** @return array<int, string> */
     public function getSupportedTypes(): array;
 
     public function isAvailable(): bool;

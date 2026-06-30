@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
 use App\Enums\SubscriptionStatus;
@@ -9,6 +11,7 @@ use App\Notifications\SubscriptionCreated;
 use App\Notifications\SubscriptionExpired;
 use App\Notifications\SubscriptionReactivated;
 use App\Notifications\SubscriptionSuspended;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class SubscriptionObserver
@@ -25,7 +28,7 @@ class SubscriptionObserver
         // Send welcome notification
         try {
             $subscription->user->notify(new SubscriptionCreated($subscription));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error(
                 "Failed to send subscription created notification: {$e->getMessage()}",
             );
@@ -81,7 +84,7 @@ class SubscriptionObserver
                 ),
                 default => null,
             };
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error(
                 "Failed to send subscription status change notification: {$e->getMessage()}",
             );

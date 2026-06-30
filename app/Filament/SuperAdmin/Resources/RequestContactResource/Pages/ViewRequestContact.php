@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Resources\RequestContactResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\RequestContactResource;
 use App\Models\RequestContact;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewRequestContact extends ViewRecord
@@ -14,13 +19,13 @@ class ViewRequestContact extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('markAsContacted')
+            Action::make('markAsContacted')
                 ->label('Mark as Contacted')
                 ->icon('heroicon-m-check-circle')
                 ->color('success')
                 ->visible(fn (RequestContact $record): bool => ! $record->is_contacted)
                 ->form([
-                    \Filament\Forms\Components\Textarea::make('admin_notes')
+                    Textarea::make('admin_notes')
                         ->label('Notes (optional)')
                         ->rows(3),
                 ])
@@ -29,8 +34,8 @@ class ViewRequestContact extends ViewRecord
                     $this->refreshFormData(['is_contacted', 'contacted_at', 'admin_notes']);
                 })
                 ->successNotificationTitle('Marked as contacted'),
-            Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

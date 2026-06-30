@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Enums\DefaultRole;
@@ -53,7 +55,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->createPerGymRoles();
 
         // Flush cache AFTER all inserts are complete
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->info('✅ Roles and permissions seeded successfully!');
 
@@ -70,7 +72,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $discoveredPermissions = $this->rolesService->discoverFilamentPermissions();
 
         foreach ($discoveredPermissions as $permissionName) {
-            $permission = ModelsPermission::firstOrCreate([
+            $permission = ModelsPermission::query()->firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => $guardName,
             ]);
@@ -88,7 +90,7 @@ class RolesAndPermissionsSeeder extends Seeder
     private function createSuperAdminRole(array $allPermissions): void
     {
         $guardName = config('filament-permissions.guard_name', 'web');
-        $superAdminRole = Role::firstOrCreate([
+        $superAdminRole = Role::query()->firstOrCreate([
             'name' => DefaultRole::SUPER_ADMIN->value,
             'guard_name' => $guardName,
         ]);
@@ -114,7 +116,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $discoveredAssignments = $this->rolesService->getDiscoveredDefaultRoleAssignments();
 
-        Gym::chunk(50, function ($gyms) use ($tenantRoles, $requiredRoles, $guardName, &$rolesCreated, &$permissionsAssigned, $discoveredAssignments) {
+        Gym::query()->chunk(50, function ($gyms) use ($tenantRoles, $requiredRoles, $guardName, &$rolesCreated, &$permissionsAssigned, $discoveredAssignments) {
             if ($gyms->isEmpty()) {
                 $this->info('   ⚠️ No gyms found. Skipping per-gym roles.');
 
@@ -122,13 +124,13 @@ class RolesAndPermissionsSeeder extends Seeder
             }
 
             foreach ($gyms as $gym) {
-                $existingRoles = Role::where('gym_id', $gym->id)
+                $existingRoles = Role::query()->where('gym_id', $gym->id)
                     ->whereIn('name', $requiredRoles)
                     ->pluck('name')
                     ->toArray();
 
                 $missingRoles = array_diff($requiredRoles, $existingRoles);
-                if (empty($missingRoles)) {
+                if (blank($missingRoles)) {
                     continue;
                 }
 
@@ -140,10 +142,10 @@ class RolesAndPermissionsSeeder extends Seeder
                     'updated_at' => now(),
                 ], $missingRoles);
 
-                Role::insert($roleData);
+                Role::query()->insert($roleData);
                 $rolesCreated += count($roleData);
 
-                $createdRoles = Role::whereIn('name', array_column($roleData, 'name'))
+                $createdRoles = Role::query()->whereIn('name', array_column($roleData, 'name'))
                     ->where('gym_id', $gym->id)
                     ->pluck('id', 'name');
 
@@ -157,8 +159,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     $defaultPermissions = $discoveredAssignments[$role->value]
                         ?? $this->rolesService->getDynamicDefaultPermissions($role->value);
 
-                    if (! empty($defaultPermissions)) {
-                        $permissionIds = Permission::whereIn('name', $defaultPermissions)->pluck('id');
+                    if (filled($defaultPermissions)) {
+                        $permissionIds = Permission::query()->whereIn('name', $defaultPermissions)->pluck('id');
                         $roleId = $createdRoles[$role->value];
 
                         foreach ($permissionIds as $permissionId) {
@@ -170,7 +172,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     }
                 }
 
-                if (! empty($permissionInsertData)) {
+                if (filled($permissionInsertData)) {
                     foreach (array_chunk($permissionInsertData, 500) as $chunk) {
                         DB::table('role_has_permissions')->insertOrIgnore($chunk);
                     }
@@ -187,10 +189,10 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function displaySummary(): void
     {
-        $totalPermissions = Permission::count();
-        $totalRoles = Role::count();
-        $globalRoles = Role::whereNull('gym_id')->count();
-        $gymRoles = Role::whereNotNull('gym_id')->count();
+        $totalPermissions = Permission::query()->count();
+        Role::query()->count();
+        $globalRoles = Role::query()->whereNull('gym_id')->count();
+        $gymRoles = Role::query()->whereNotNull('gym_id')->count();
         $pivotCount = DB::table('role_has_permissions')->count();
 
         $this->info('');

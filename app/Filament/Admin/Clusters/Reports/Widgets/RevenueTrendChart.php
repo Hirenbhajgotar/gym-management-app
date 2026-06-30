@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\PaymentStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 
 class RevenueTrendChart extends BaseChartWidget
 {
@@ -33,7 +37,7 @@ class RevenueTrendChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -43,7 +47,7 @@ class RevenueTrendChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $data = MemberPayment::where('gym_id', $gymId)
+            $data = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereBetween('payment_date', [$startDate, $endDate])
                 ->selectRaw("DATE_FORMAT(payment_date, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as count")
@@ -51,7 +55,7 @@ class RevenueTrendChart extends BaseChartWidget
                 ->orderBy('month')
                 ->get();
 
-            $labels = $data->map(fn ($item) => \Carbon\Carbon::parse($item->month . '-01')->format('M Y'))->toArray();
+            $labels = $data->map(fn ($item) => Date::parse($item->month . '-01')->format('M Y'))->all();
             $totals = $data->pluck('total')->toArray();
             $counts = $data->pluck('count')->toArray();
 

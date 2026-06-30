@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
+use Exception;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +27,7 @@ class ExportDownloadMiddleware
             ]);
 
             if ($exportId) {
-                $export = Export::find($exportId);
+                $export = Export::query()->find($exportId);
 
                 if ($export) {
                     // Check authorization
@@ -146,21 +149,17 @@ class ExportDownloadMiddleware
 
                     return true;
                 }
+                Log::error('ExportDownloadMiddleware: File not found in any path', [
+                    'checked_paths' => $pathsToCheck,
+                    'disk_root' => $disk->path(''),
+                ]);
 
-                if (! $found) {
-                    Log::error('ExportDownloadMiddleware: File not found in any path', [
-                        'checked_paths' => $pathsToCheck,
-                        'disk_root' => $disk->path(''),
-                    ]);
-
-                    return false;
-                }
-            } else {
-                Log::info('ExportDownloadMiddleware: Exact match found');
+                return false;
             }
+            Log::info('ExportDownloadMiddleware: Exact match found');
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Export file validation failed with exception', [
                 'export_id' => $export->id,
                 'exception' => $e->getMessage(),

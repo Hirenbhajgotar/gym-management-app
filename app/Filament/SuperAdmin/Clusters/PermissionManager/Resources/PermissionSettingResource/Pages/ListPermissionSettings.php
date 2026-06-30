@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource\Pages;
 
 use App\Filament\SuperAdmin\Clusters\PermissionManager\Resources\PermissionSettingResource;
 use App\Jobs\ImportDefaultPermissionsJob;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
@@ -15,7 +18,7 @@ class ListPermissionSettings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('importPermissions')
+            Action::make('importPermissions')
                 ->label('Import Permissions')
                 ->color('info')
                 ->icon('heroicon-o-cloud-arrow-down')
@@ -24,7 +27,7 @@ class ListPermissionSettings extends ListRecords
                 ->modalHeading('Import Default Permissions')
                 ->modalDescription('This will import default permissions for all roles based on their permission settings. This process will run in the background.')
                 ->action(function (): void {
-                    ImportDefaultPermissionsJob::dispatch(null, auth()->id());
+                    dispatch(new ImportDefaultPermissionsJob(null, auth()->id()));
 
                     Notification::make()
                         ->title('Permissions Import Queued')
@@ -33,7 +36,7 @@ class ListPermissionSettings extends ListRecords
                         ->send();
                 }),
 
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

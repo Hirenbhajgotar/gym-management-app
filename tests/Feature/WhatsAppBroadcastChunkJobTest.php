@@ -62,15 +62,12 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         // Return null wabaId/accessToken so sendViaHttpPool() falls back to
         // sendSequential(), which calls sendTemplateMessage() on the provider
         // (preserving existing mock expectations).
-        if ($mockProvider instanceof Mockery\LegacyMockInterface) {
-            $contextMock = Mockery::mock(MetaContext::class);
-            $contextMock->shouldReceive('getWabaId')->andReturn(null);
-            $contextMock->shouldReceive('getAccessToken')->andReturn(null);
-            $contextMock->shouldReceive('getApiBaseUrl')->andReturn('https://graph.facebook.com/v22.0');
-            $mockProvider->shouldReceive('getContext')
-                ->andReturn($contextMock);
-        }
-
+        $contextMock = Mockery::mock(MetaContext::class);
+        $contextMock->shouldReceive('getWabaId')->andReturn(null);
+        $contextMock->shouldReceive('getAccessToken')->andReturn(null);
+        $contextMock->shouldReceive('getApiBaseUrl')->andReturn('https://graph.facebook.com/v22.0');
+        $mockProvider->shouldReceive('getContext')
+            ->andReturn($contextMock);
         $job = Mockery::mock(
             SendMessageChunkJob::class . '[resolveProvider]',
             [$broadcastId, $recipientChunk, $templateData, $gymId, $skipCreditDeduction],
@@ -114,7 +111,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $job->handle();
 
-        $updatedRecipients = WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcast->id)->get();
+        $updatedRecipients = WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcast->id)->get();
         foreach ($updatedRecipients as $recipient) {
             $this->assertEquals('sent', $recipient->status->value);
         }
@@ -203,7 +200,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $job->handle();
 
-        $updatedRecipients = WhatsAppBroadcastRecipient::where('whatsapp_broadcast_id', $this->broadcast->id)
+        $updatedRecipients = WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcast->id)
             ->orderBy('id')
             ->get();
 

@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\WabaSetupSessionStatusEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -15,31 +20,33 @@ use Illuminate\Support\Str;
  * @property string|null $meta_response
  * @property string|null $waba_id
  * @property string|null $phone_number_id
- * @property \Illuminate\Support\Carbon $expires_at
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gym $gym
+ * @property Carbon $expires_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gym $gym
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereCompletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereExpiresAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereGymId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereMetaResponse($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession wherePhoneNumberId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereSessionId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WabaSetupSession whereWabaId($value)
+ * @method static Builder<static>|WabaSetupSession newModelQuery()
+ * @method static Builder<static>|WabaSetupSession newQuery()
+ * @method static Builder<static>|WabaSetupSession query()
+ * @method static Builder<static>|WabaSetupSession whereCompletedAt($value)
+ * @method static Builder<static>|WabaSetupSession whereCreatedAt($value)
+ * @method static Builder<static>|WabaSetupSession whereExpiresAt($value)
+ * @method static Builder<static>|WabaSetupSession whereGymId($value)
+ * @method static Builder<static>|WabaSetupSession whereId($value)
+ * @method static Builder<static>|WabaSetupSession whereMetaResponse($value)
+ * @method static Builder<static>|WabaSetupSession wherePhoneNumberId($value)
+ * @method static Builder<static>|WabaSetupSession whereSessionId($value)
+ * @method static Builder<static>|WabaSetupSession whereStatus($value)
+ * @method static Builder<static>|WabaSetupSession whereUpdatedAt($value)
+ * @method static Builder<static>|WabaSetupSession whereWabaId($value)
  *
  * @mixin \Eloquent
  */
 class WabaSetupSession extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'gym_id',
         'session_id',
@@ -63,7 +70,9 @@ class WabaSetupSession extends Model
     // =========================
     // Relationships
     // =========================
-
+    /**
+     * @return BelongsTo<Gym, $this>
+     */
     public function gym(): BelongsTo
     {
         return $this->belongsTo(Gym::class, 'gym_id');
@@ -75,7 +84,7 @@ class WabaSetupSession extends Model
 
     public static function createForGym(int $gymId): self
     {
-        return self::create([
+        return self::query()->create([
             'gym_id' => $gymId,
             'session_id' => Str::uuid()->toString(),
             'status' => WabaSetupSessionStatusEnum::PENDING,

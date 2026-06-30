@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasColor;
@@ -12,7 +14,7 @@ enum NotificationVerificationStatusEnum: string implements HasColor, HasLabel
     case VERIFIED = 'verified';
     case FAILED = 'failed';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::PENDING => 'Pending',
@@ -22,7 +24,7 @@ enum NotificationVerificationStatusEnum: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): ?string
+    public function getColor(): string
     {
         return match ($this) {
             self::PENDING => 'gray',

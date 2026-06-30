@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Events\LeadCreated;
@@ -10,17 +12,15 @@ use App\Services\InstagramLeadProcessor;
 use App\Services\JustDialLeadProcessor;
 use App\Services\SocialMediaLeadProcessor;
 use App\Services\WhatsAppLeadProcessor;
-use Illuminate\Bus\Queueable;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ProcessSocialMediaLead implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     /**
      * The number of times the job may be attempted.
@@ -69,7 +69,7 @@ class ProcessSocialMediaLead implements ShouldQueue
 
             if (! $processor) {
                 Log::error('No processor available for platform', ['platform' => $this->platform]);
-                $this->fail(new \Exception("No processor available for platform: {$this->platform}"));
+                $this->fail(new Exception("No processor available for platform: {$this->platform}"));
 
                 return;
             }
@@ -108,7 +108,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 }
 
                 // Retry for other failures
-                $this->fail(new \Exception("Lead creation failed for platform: {$this->platform}"));
+                $this->fail(new Exception("Lead creation failed for platform: {$this->platform}"));
             }
         } catch (Throwable $e) {
             Log::error('Social media lead processing job failed', [
@@ -157,11 +157,11 @@ class ProcessSocialMediaLead implements ShouldQueue
     private function getProcessor(string $platform): ?SocialMediaLeadProcessor
     {
         return match ($platform) {
-            'facebook' => app(FacebookLeadProcessor::class),
-            'instagram' => app(InstagramLeadProcessor::class),
-            'whatsapp' => app(WhatsAppLeadProcessor::class),
-            'indiamart' => app(IndiaMartLeadProcessor::class),
-            'justdial' => app(JustDialLeadProcessor::class),
+            'facebook' => resolve(FacebookLeadProcessor::class),
+            'instagram' => resolve(InstagramLeadProcessor::class),
+            'whatsapp' => resolve(WhatsAppLeadProcessor::class),
+            'indiamart' => resolve(IndiaMartLeadProcessor::class),
+            'justdial' => resolve(JustDialLeadProcessor::class),
             default => null,
         };
     }
@@ -193,7 +193,7 @@ class ProcessSocialMediaLead implements ShouldQueue
 
             // Update lead source tracking
             $this->updateLeadSourceTracking($lead, $platform);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Post-processing failed for social media lead', [
                 'lead_id' => $lead->id,
                 'platform' => $platform,
@@ -251,7 +251,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 $stats[$platform] = ($stats[$platform] ?? 0) + 1;
                 $gym->update(['lead_source_stats' => $stats]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to update lead source tracking', [
                 'lead_id' => $lead->id,
                 'platform' => $platform,
@@ -266,7 +266,7 @@ class ProcessSocialMediaLead implements ShouldQueue
     private function isValidationError(array $data): bool
     {
         // Check for obvious validation issues
-        if (empty($data['name']) && empty($data['phone']) && empty($data['email'])) {
+        if (blank($data['name']) && blank($data['phone']) && blank($data['email'])) {
             return true;
         }
 
@@ -320,7 +320,7 @@ class ProcessSocialMediaLead implements ShouldQueue
                 'attempts' => $this->attempts(),
                 'data' => $this->leadData,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Ignore logging errors to prevent infinite loops
         }
     }

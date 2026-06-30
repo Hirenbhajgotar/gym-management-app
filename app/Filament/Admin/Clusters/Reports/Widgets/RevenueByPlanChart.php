@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Clusters\Reports\Widgets;
 
 use App\Enums\PaymentStatus;
 use App\Filament\BaseWidgets\BaseChartWidget;
+use App\Models\Gym;
 use App\Models\MemberPayment;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
@@ -31,7 +34,7 @@ class RevenueByPlanChart extends BaseChartWidget
 
     protected function getData(): array
     {
-        /** @var \App\Models\Gym $gym */
+        /** @var Gym $gym */
         $gym = Filament::getTenant();
         $gymId = $gym?->id;
 
@@ -41,7 +44,7 @@ class RevenueByPlanChart extends BaseChartWidget
             $startDate = $this->filters['start_date'] ?? now()->startOfYear()->format('Y-m-d');
             $endDate = $this->filters['end_date'] ?? now()->format('Y-m-d');
 
-            $distribution = MemberPayment::where('gym_id', $gymId)
+            $distribution = MemberPayment::query()->where('gym_id', $gymId)
                 ->where('status', PaymentStatus::COMPLETED)
                 ->whereBetween('payment_date', [$startDate, $endDate])
                 ->with('membershipPlan')

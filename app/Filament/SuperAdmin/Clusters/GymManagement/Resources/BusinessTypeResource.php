@@ -1,16 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\SuperAdmin\Clusters\GymManagement\Resources;
 
 use App\Enums\DefaultRole;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Clusters\GymManagement;
-use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages;
+use App\Filament\SuperAdmin\Clusters\GymManagement\Resources\BusinessTypeResource\Pages\ListBusinessTypes;
 use App\Models\BusinessType;
-use Filament\Forms;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -40,7 +47,7 @@ class BusinessTypeResource extends BaseResource
             ->schema([
                 Section::make()
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->label('Business Type Name')
                             ->required()
                             ->maxLength(100)
@@ -54,7 +61,7 @@ class BusinessTypeResource extends BaseResource
                                 $set('slug', Str::slug($state));
                             }),
 
-                        Forms\Components\TextInput::make('slug')
+                        TextInput::make('slug')
                             ->label('Slug')
                             ->required()
                             ->maxLength(100)
@@ -65,7 +72,7 @@ class BusinessTypeResource extends BaseResource
                             ->dehydrated()
                             ->columnSpan(['lg' => 2]),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->label('Active Status')
                             ->required()
                             ->default(true)
@@ -86,7 +93,7 @@ class BusinessTypeResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->sortable()->searchable(),
 
                 ToggleColumn::make('is_active')
@@ -96,12 +103,12 @@ class BusinessTypeResource extends BaseResource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -116,7 +123,7 @@ class BusinessTypeResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBusinessTypes::route('/'),
+            'index' => ListBusinessTypes::route('/'),
             // 'create' => Pages\CreateBusinessType::route('/create'),
             // 'edit' => Pages\EditBusinessType::route('/{record}/edit'),
         ];
