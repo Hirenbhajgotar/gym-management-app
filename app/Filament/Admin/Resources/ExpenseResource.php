@@ -298,7 +298,7 @@ class ExpenseResource extends BaseResource
                 IconColumn::make('attachments')
                     ->label('')
                     ->icon('phosphor-paperclip')
-                    ->visible(fn ($record) => filled($record->attachments))
+                    ->visible(fn ($record) => filled($record?->attachments))
                     ->alignCenter(),
             ])
             ->filters([

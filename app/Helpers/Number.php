@@ -18,6 +18,8 @@ class Number
      */
     public static function abbreviateCurrency($value, $maxValue = 50000, $in = 'INR')
     {
+        $value = (float) $value;
+
         if (! $value) {
             // If the value is 0, return the formatted currency.
             return SupportNumber::currency($value, in: $in);

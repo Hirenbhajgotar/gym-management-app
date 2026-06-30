@@ -17,7 +17,7 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -106,7 +106,7 @@ trait HasReportFilters
     /**
      * Calculate percentage change between two values.
      */
-    protected function calculatePercentageChange(float|int $current, float|int $previous): float
+    protected function calculatePercentageChange(float|int|string $current, float|int|string $previous): float
     {
         if ($previous <= 0) {
             return $current > 0 ? 100 : 0;
@@ -265,7 +265,7 @@ trait HasReportFilters
                         // Count how many from this cohort were still active
                         $retainedCount = DB::table('gym_members')
                             ->whereIn('id', $cohortMembers)
-                            ->where(function (Builder $query) use ($checkMonth) {
+                            ->where(function (QueryBuilder $query) use ($checkMonth) {
                                 $query->where('membership_end', '>=', $checkMonth->endOfMonth())
                                     ->orWhereNull('membership_end');
                             })

@@ -140,7 +140,7 @@ class ReportGoalResource extends BaseResource
                             return $state . '%';
                         }
 
-                        return number_format($state, 0);
+                        return number_format((float) $state, 0);
                     })
                     ->sortable(),
 

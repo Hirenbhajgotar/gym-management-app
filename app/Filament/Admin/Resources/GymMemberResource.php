@@ -170,8 +170,8 @@ class GymMemberResource extends BaseResource
                             return 'Not Set';
                         }
 
-                        $now = now(); // June 1, 2025
-                        $membershipEnd = Date::parse(date('Y-m-d', strtotime($state)));
+                        $now = now();
+                        $membershipEnd = $state;
 
                         // Check if membership has already expired
                         if ($now->greaterThan($membershipEnd)) {

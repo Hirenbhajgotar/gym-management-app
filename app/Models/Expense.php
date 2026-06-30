@@ -175,7 +175,7 @@ class Expense extends Model
 
     public function getDescriptionForEvent(string $eventName): string
     {
-        $amount = Number::currency($this->amount, in: $this->currency);
+        $amount = Number::currency((float) $this->amount, in: $this->currency);
 
         return match ($eventName) {
             'created' => "Expense '{$this->title}' of {$amount} was created",
@@ -418,7 +418,7 @@ class Expense extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => Number::currency($this->amount, in: $this->currency),
+            get: fn () => Number::currency((float) $this->amount, in: $this->currency),
         );
     }
 

@@ -185,7 +185,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
                 'active' => $activeMembers,
                 'expired' => $expiredMembers,
                 'with_trainer' => $withTrainer,
-                'avg_duration_days' => round($avgDuration ?? 0),
+                'avg_duration_days' => round((float) ($avgDuration ?? 0)),
                 'retention_rate' => $retentionRate,
                 'active_rate' => $totalMembers > 0 ? round(($activeMembers / $totalMembers) * 100, 1) : 0,
             ];
