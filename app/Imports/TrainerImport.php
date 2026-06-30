@@ -14,7 +14,7 @@ class TrainerImport extends BaseImporter implements ShouldQueue
 {
     protected static ?string $model = Trainer::class;
 
-    public function __construct(public string $tenantId)
+    public function __construct(public int $tenantId)
     {
         parent::__construct();
     }
@@ -38,11 +38,11 @@ class TrainerImport extends BaseImporter implements ShouldQueue
             'email' => $formattedRow['email'] ?? null,
             'phone' => $formattedRow['phone'] ?? null,
             'specialization' => $formattedRow['specialization'] ?? null,
-            'experience_years' => $formattedRow['experience_years'] ? (int) $formattedRow['experience_years'] : 0,
+            'experience_years' => isset($formattedRow['experience_years']) ? (int) $formattedRow['experience_years'] : null,
             'is_available' => $isAvailable,
             'available_hours' => $formattedRow['available_hours'] ?? null,
-            'basic_salary' => $formattedRow['basic_salary'] ? (float) $formattedRow['basic_salary'] : 0,
-            'pt_salary_per_member' => $formattedRow['pt_salary_per_member'] ? (float) $formattedRow['pt_salary_per_member'] : 0,
+            'basic_salary' => isset($formattedRow['basic_salary']) ? (float) $formattedRow['basic_salary'] : 0,
+            'pt_salary_per_member' => isset($formattedRow['pt_salary_per_member']) ? (float) $formattedRow['pt_salary_per_member'] : 0,
             'currency' => $formattedRow['currency'] ?? Currency::INR->value,
         ];
 

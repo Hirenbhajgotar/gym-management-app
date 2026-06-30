@@ -45,29 +45,19 @@ class TrainerResource extends BaseResource
 
     protected static ?string $navigationGroup = 'Users';
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with('members')
+            ->withCount('members');
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return Cache::flexible(Trainer::NAVIGATION_BADGE_CACHE_KEY . Filament::getTenant()->id, [21600, 604800], function () {
             return (string) (static::$model)::query()->count();
         }) ?: null;
     }
-
-    // public static function getEloquentQuery(): Builder
-    // {
-    //     $query = parent::getEloquentQuery()
-    //         ->select('trainers.*')
-    //         ->join('gyms', function ($join) {
-    //             $join->on('trainers.gym_id', '=', 'gyms.id');
-    //         })
-    //         ->with(['gym', 'members'])
-    //         ->withCount('members');
-
-    //     if (auth()->user()->hasRole('gym_owner')) {
-    //         $query->whereIn('gyms.owner_id', [auth()->id()]);
-    //     }
-
-    //     return $query;
-    // }
 
     public static function form(Form $form): Form
     {
