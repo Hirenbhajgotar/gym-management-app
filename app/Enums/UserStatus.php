@@ -13,7 +13,7 @@ enum UserStatus: int implements HasColor, HasLabel
     case ACTIVE = 1;
     case UNDER_REVIEW = 2;
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::INACTIVE => 'Inactive',
@@ -22,7 +22,7 @@ enum UserStatus: int implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::INACTIVE => 'danger',

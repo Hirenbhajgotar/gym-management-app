@@ -27,7 +27,7 @@ class CheckLowWhatsAppCreditsCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $credits = WhatsAppMessageCredit::query()->where('is_low_credit_notified', false)->get();
 
@@ -40,5 +40,7 @@ class CheckLowWhatsAppCreditsCommand extends Command
         }
 
         $this->info("Dispatched low credit notifications for {$count} gyms.");
+
+        return self::SUCCESS;
     }
 }

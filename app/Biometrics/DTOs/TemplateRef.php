@@ -6,6 +6,9 @@ namespace App\Biometrics\DTOs;
 
 readonly class TemplateRef
 {
+    /**
+     * @param  array<string, mixed>  $meta
+     */
     public function __construct(
         public string $provider,
         public string $externalId,
@@ -14,7 +17,8 @@ readonly class TemplateRef
 
     public static function fromJson(string $json): self
     {
-        $data = json_decode($json, true);
+        /** @var array{provider: string, external_id: string, meta?: array<string, mixed>} $data */
+        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 
         return new self(
             provider: $data['provider'],
@@ -29,6 +33,6 @@ readonly class TemplateRef
             'provider' => $this->provider,
             'external_id' => $this->externalId,
             'meta' => $this->meta,
-        ]);
+        ], JSON_THROW_ON_ERROR);
     }
 }

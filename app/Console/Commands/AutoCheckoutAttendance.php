@@ -29,7 +29,7 @@ class AutoCheckoutAttendance extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $gymId = $this->option('gym-id');
         $hoursThreshold = (int) $this->option('hours');

@@ -45,6 +45,9 @@ class TrainerResource extends BaseResource
 
     protected static ?string $navigationGroup = 'Users';
 
+    /**
+     * @return Builder<Trainer>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

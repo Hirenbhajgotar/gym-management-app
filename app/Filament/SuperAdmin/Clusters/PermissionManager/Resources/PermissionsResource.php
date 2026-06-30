@@ -29,6 +29,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 
 class PermissionsResource extends BaseResource
@@ -153,8 +154,10 @@ class PermissionsResource extends BaseResource
                 DeleteAction::make()
                     ->before(function (Permission $record) {
                         // Detach all roles and users before deletion
-                        $record->roles()->detach();
-                        $record->users()->detach();
+                        DB::transaction(function () use ($record) {
+                            $record->roles()->detach();
+                            $record->users()->detach();
+                        });
                     }),
             ])
             ->bulkActions([
@@ -162,8 +165,10 @@ class PermissionsResource extends BaseResource
                     DeleteBulkAction::make()
                         ->before(function ($records) {
                             foreach ($records as $record) {
-                                $record->roles()->detach();
-                                $record->users()->detach();
+                                DB::transaction(function () use ($record) {
+                                    $record->roles()->detach();
+                                    $record->users()->detach();
+                                });
                             }
                         }),
                 ]),
@@ -187,6 +192,9 @@ class PermissionsResource extends BaseResource
         ];
     }
 
+    /**
+     * @return Builder<\App\Models\Permission>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

@@ -84,19 +84,24 @@ trait ResolvesExportImportPermission
             return null;
         }
 
+        /** @var class-string $modelClass */
         $modelClass = $class::getModel();
 
         if (! $modelClass || ! class_exists($modelClass)) {
             return null;
         }
 
+        /** @var object|null $policy */
         $policy = Gate::getPolicyFor($modelClass);
 
-        if (! $policy || ! method_exists($policy, 'getTableName')) {
+        if ($policy === null || ! method_exists($policy, 'getTableName')) {
             return null;
         }
 
-        return "{$prefix}_{$policy::getTableName()}";
+        /** @var string $tableName */
+        $tableName = $policy::getTableName();
+
+        return "{$prefix}_{$tableName}";
     }
 
     /**
@@ -118,6 +123,7 @@ trait ResolvesExportImportPermission
 
         // Fallback: read protected property via reflection
         try {
+            /** @var ReflectionClass<$this> $ref */
             $ref = new ReflectionClass($this);
             $current = $ref;
             $property = null;
@@ -127,7 +133,9 @@ trait ResolvesExportImportPermission
                     $property = $current->getProperty($propertyName);
                     break;
                 }
-                $current = $current->getParentClass() ?: null;
+                /** @var ReflectionClass<$this>|false $parent */
+                $parent = $current->getParentClass();
+                $current = $parent ?: null;
             }
 
             if (! $property) {

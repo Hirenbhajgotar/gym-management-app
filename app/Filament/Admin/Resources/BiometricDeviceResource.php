@@ -110,6 +110,9 @@ class BiometricDeviceResource extends BaseResource
         return $user->can("view_any_{$slug}");
     }
 
+    /**
+     * @return Builder<BiometricDevice>
+     */
     public static function getEloquentQuery(): Builder
     {
         $tenant = Filament::getTenant();

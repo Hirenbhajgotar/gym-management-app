@@ -162,6 +162,9 @@ class RoleResource extends BaseResource
         ];
     }
 
+    /**
+     * @return Builder<\App\Models\Role>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

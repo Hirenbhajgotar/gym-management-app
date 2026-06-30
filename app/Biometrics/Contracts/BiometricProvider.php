@@ -19,6 +19,7 @@ interface BiometricProvider
 
     public function deleteTemplate(TemplateRef $ref): bool;
 
+    /** @return array<int, string> */
     public function getSupportedTypes(): array;
 
     public function isAvailable(): bool;

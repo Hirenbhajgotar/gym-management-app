@@ -69,6 +69,9 @@ abstract class BaseAttendanceResource extends BaseResource
         return auth()->check();
     }
 
+    /**
+     * @return Builder<\App\Models\Attendances>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

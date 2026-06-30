@@ -211,6 +211,9 @@ class ReportGoalResource extends BaseResource
         ];
     }
 
+    /**
+     * @return Builder<ReportGoal>
+     */
     public static function getEloquentQuery(): Builder
     {
         /** @var Gym $gym */

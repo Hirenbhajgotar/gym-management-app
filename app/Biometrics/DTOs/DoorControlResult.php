@@ -8,6 +8,9 @@ use Carbon\Carbon;
 
 readonly class DoorControlResult
 {
+    /**
+     * @param  array<string, mixed>  $raw
+     */
     public function __construct(
         public bool $success,
         public string $status,
@@ -37,6 +40,9 @@ readonly class DoorControlResult
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $raw
+     */
     public static function failed(string $reason, array $raw = []): self
     {
         return new self(

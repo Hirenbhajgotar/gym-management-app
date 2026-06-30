@@ -6,6 +6,9 @@ namespace App\DTOs\WhatsAppTemplates;
 
 use JsonSerializable;
 
+/**
+ * @phpstan-type TemplatePlaceholderArray array{placeholder: string, name: string, example: string, type: string, source: string}
+ */
 readonly class TemplatePlaceholder implements JsonSerializable
 {
     public function __construct(
@@ -16,6 +19,9 @@ readonly class TemplatePlaceholder implements JsonSerializable
         public string $source,
     ) {}
 
+    /**
+     * @return array<string, string>
+     */
     public function toArray(): array
     {
         return [
@@ -27,11 +33,17 @@ readonly class TemplatePlaceholder implements JsonSerializable
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): static
     {
         return new static(

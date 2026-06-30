@@ -69,6 +69,9 @@ class WhatsAppTemplateResource extends BaseResource
         }) ?: null;
     }
 
+    /**
+     * @return Builder<WhatsAppTemplate>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

@@ -14,6 +14,7 @@ class BiometricProviderRegistry
      */
     public function resolve(string $providerType, array $config = []): BiometricProvider
     {
+        /** @var class-string<BiometricProvider>|null $class */
         $class = config("biometrics.providers.{$providerType}");
 
         throw_if($class === null, InvalidArgumentException::class, "Unsupported biometric provider: {$providerType}");
@@ -26,8 +27,14 @@ class BiometricProviderRegistry
         return config("biometrics.providers.{$providerType}") !== null;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getSupportedProviders(): array
     {
-        return array_keys(config('biometrics.providers', []));
+        /** @var array<string, class-string<BiometricProvider>>|null $providers */
+        $providers = config('biometrics.providers');
+
+        return array_keys($providers ?? []);
     }
 }

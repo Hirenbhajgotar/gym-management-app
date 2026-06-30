@@ -32,7 +32,7 @@ class SendSubscriptionExpiryAlerts extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Checking for expiring subscriptions and trials...');
 
@@ -42,6 +42,8 @@ class SendSubscriptionExpiryAlerts extends Command
         $this->processExpiredTrials();
 
         $this->info('Subscription expiry alerts sent successfully.');
+
+        return self::SUCCESS;
     }
 
     /**

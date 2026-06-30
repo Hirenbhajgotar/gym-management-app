@@ -14,7 +14,7 @@ enum ErrorStatus: string implements HasColor, HasIcon, HasLabel
     case INVESTIGATING = 'investigating';
     case RESOLVED = 'resolved';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::PENDING => 'Pending',
@@ -23,7 +23,7 @@ enum ErrorStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::PENDING => 'warning',
@@ -32,7 +32,7 @@ enum ErrorStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::PENDING => 'heroicon-o-pause-circle',

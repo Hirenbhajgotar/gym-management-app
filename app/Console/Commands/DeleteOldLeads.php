@@ -29,7 +29,7 @@ class DeleteOldLeads extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $cutoffDate = now()->subMonths(2);
         $totalDeleted = 0;
@@ -63,5 +63,7 @@ class DeleteOldLeads extends Command
             });
 
         $this->info("Cleanup complete. Total leads deleted: {$totalDeleted}.");
+
+        return self::SUCCESS;
     }
 }

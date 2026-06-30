@@ -14,7 +14,7 @@ enum BlogCategoryEnum: string implements HasLabel
     case BUSINESS_GROWTH = 'business_growth';
     case CASE_STUDIES = 'case_studies';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::GYM_MANAGEMENT_SOFTWARE => 'Gym Management Software',
@@ -25,6 +25,9 @@ enum BlogCategoryEnum: string implements HasLabel
         };
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function toSelectArray(): array
     {
         $labels = collect(self::cases())->mapWithKeys(

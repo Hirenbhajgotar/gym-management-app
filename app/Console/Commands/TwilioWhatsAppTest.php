@@ -14,7 +14,7 @@ class TwilioWhatsAppTest extends Command
 
     protected $description = 'Send a test Twilio WhatsApp message';
 
-    public function handle()
+    public function handle(): int
     {
         $phone = $this->argument('phone');
         $message = $this->option('message') ?? 'Hello! This is a test message from your gym app.';
@@ -37,6 +37,10 @@ class TwilioWhatsAppTest extends Command
             }
         } catch (Exception $e) {
             $this->error('❌ Exception: ' . $e->getMessage());
+
+            return self::FAILURE;
         }
+
+        return self::SUCCESS;
     }
 }

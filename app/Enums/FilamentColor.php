@@ -51,7 +51,7 @@ enum FilamentColor: string implements HasColor, HasLabel
         return $this->value;
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return $this->value;
     }
@@ -81,6 +81,8 @@ enum FilamentColor: string implements HasColor, HasLabel
     /**
      * Get all colors with their hex values.
      * Format: ['gray' => '#6b7280', 'primary' => '#3b82f6', ...]
+     *
+     * @return array<string, string>
      */
     public static function all(): array
     {

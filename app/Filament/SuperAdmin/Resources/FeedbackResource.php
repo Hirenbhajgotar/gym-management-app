@@ -72,7 +72,9 @@ class FeedbackResource extends BaseResource
             ]);
     }
 
-    // Or in your resource/controller
+    /**
+     * @return Builder<Feedback>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['user.roles']);

@@ -30,7 +30,7 @@ enum ExpensePaymentMethod: string implements HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::CASH => 'phosphor-money',

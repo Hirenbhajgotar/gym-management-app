@@ -12,13 +12,17 @@ trait ResolvesPolicyTableName
 {
     public function resolvePolicyTableName(string $modelClass): ?string
     {
+        /** @var object|null $policy */
         $policy = Gate::getPolicyFor($modelClass);
 
-        if (! $policy || ! method_exists($policy, 'getTableName')) {
+        if ($policy === null || ! method_exists($policy, 'getTableName')) {
             return null;
         }
 
-        return $policy::getTableName();
+        /** @var string $tableName */
+        $tableName = $policy::getTableName();
+
+        return $tableName;
     }
 
     protected function safeReflection(string $className): ?ReflectionClass

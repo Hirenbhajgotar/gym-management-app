@@ -14,6 +14,9 @@ readonly class TemplateSubmissionResult
         public ?string $error = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         $result = ['success' => $this->success];
@@ -35,6 +38,9 @@ readonly class TemplateSubmissionResult
         return $result;
     }
 
+    /**
+     * @param  array<string, mixed>  $response
+     */
     public static function fromTwilioResponse(array $response): self
     {
         return new self(

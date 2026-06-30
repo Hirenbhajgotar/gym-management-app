@@ -105,6 +105,9 @@ class WhatsAppTemplateResource extends BaseResource
         return true;
     }
 
+    /**
+     * @return Builder<WhatsAppTemplate>
+     */
     public static function getEloquentQuery(): Builder
     {
         $tenant = Filament::getTenant();

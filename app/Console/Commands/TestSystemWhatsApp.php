@@ -27,7 +27,7 @@ class TestSystemWhatsApp extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $phone = $this->argument('phone');
         $message = $this->option('message') ?? 'Hello! This is a test message from system tenant (super-admin).';

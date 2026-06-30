@@ -427,6 +427,9 @@ class ExpenseResource extends BaseResource
         ];
     }
 
+    /**
+     * @return Builder<Expense>
+     */
     public static function getEloquentQuery(): Builder
     {
         /** @var Gym $gym */

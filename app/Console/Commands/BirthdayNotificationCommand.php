@@ -29,7 +29,7 @@ class BirthdayNotificationCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         GymMember::query()->whereMonth('dob', now()->month)
             ->whereDay('dob', now()->day)

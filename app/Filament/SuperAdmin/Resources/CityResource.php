@@ -47,6 +47,9 @@ class CityResource extends BaseResource
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 
+    /**
+     * @return Builder<City>
+     */
     public static function getEloquentQuery(): Builder
     {
         // Fetch active state's record

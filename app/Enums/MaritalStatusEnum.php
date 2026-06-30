@@ -13,7 +13,7 @@ enum MaritalStatusEnum: string implements HasLabel
     case DIVORCED = 'divorced';
     case WIDOWED = 'widowed';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::SINGLE => 'Single',

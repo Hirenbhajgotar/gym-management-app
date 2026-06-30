@@ -87,7 +87,7 @@ class SyncWabaStatusCommand extends Command
                         $account->id,
                         $account->gym_id,
                         $account->waba_id,
-                        $account->status?->value ?? 'pending',
+                        $account->status->value ?? 'pending',
                         $account->waba_status_synced_at?->diffForHumans() ?? 'never',
                     ];
                 })->all()

@@ -29,7 +29,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::TRIAL => 'info',
@@ -41,7 +41,7 @@ enum SubscriptionStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::TRIAL => 'heroicon-m-clock',

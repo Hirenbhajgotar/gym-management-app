@@ -269,6 +269,9 @@ class ExpenseCategoryResource extends BaseResource
         }) ?: null;
     }
 
+    /**
+     * @return Builder<ExpenseCategory>
+     */
     public static function getEloquentQuery(): Builder
     {
         /** @var Gym $gym */

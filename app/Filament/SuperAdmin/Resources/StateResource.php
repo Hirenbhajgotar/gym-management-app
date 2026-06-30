@@ -46,6 +46,9 @@ class StateResource extends BaseResource
         return $user->hasRole(DefaultRole::SUPER_ADMIN->value);
     }
 
+    /**
+     * @return Builder<State>
+     */
     public static function getEloquentQuery(): Builder
     {
         // Fetch active country's record

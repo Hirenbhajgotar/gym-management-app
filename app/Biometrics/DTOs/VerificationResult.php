@@ -6,6 +6,9 @@ namespace App\Biometrics\DTOs;
 
 readonly class VerificationResult
 {
+    /**
+     * @param  array<string, mixed>  $raw
+     */
     public function __construct(
         public bool $matched,
         public float $confidence,

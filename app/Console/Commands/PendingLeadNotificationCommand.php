@@ -29,7 +29,7 @@ class PendingLeadNotificationCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         // Get leads that are pending for 2+ days with no recent follow-ups
         $pendingLeads = Lead::with(['gym.users'])->whereIn('status', [
@@ -64,5 +64,7 @@ class PendingLeadNotificationCommand extends Command
         }
 
         $this->info('Pending lead reminders sent successfully.');
+
+        return self::SUCCESS;
     }
 }

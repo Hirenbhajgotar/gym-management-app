@@ -27,20 +27,22 @@ use Throwable;
 
 abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQueue, ToCollection, WithChunkReading, WithHeadingRow
 {
-    protected $successfulRows = 0;
+    protected int $successfulRows = 0;
 
-    protected $failedRows = 0;
+    protected int $failedRows = 0;
 
-    protected $failedData = [];
+    /** @var array<int, array<string, mixed>> */
+    protected array $failedData = [];
 
-    protected $importRecord;
+    protected ?Import $importRecord = null;
 
-    protected $failedFilePath;
+    protected ?string $failedFilePath = null;
 
-    protected $expectedHeaders = [];
+    /** @var array<int, string> */
+    protected array $expectedHeaders = [];
 
     // Property to be defined in child classes
-    public $importModel;
+    public ?string $importModel = null;
 
     /**
      * @throws Exception
@@ -48,9 +50,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     public function __construct()
     {
         // Ensure the importModel property is defined in the child class
-        if (! isset($this->importModel)) {
-            throw new Exception("The $this->importModel property must be defined in the child import class: " . static::class);
-        }
+        throw_if($this->importModel === null, Exception::class, 'The importModel property must be defined in the child import class: ' . static::class);
 
         // Verify the model class exists
         if (! class_exists($this->importModel)) {
@@ -81,6 +81,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     public function collection(Collection $collection): void
     {
         // Filter out empty rows
+        /** @var Collection<int, Collection<int|string, mixed>> $filteredCollection */
         $filteredCollection = $collection->filter(function ($row) {
             return filled(array_filter($row->toArray()));
         });
@@ -88,12 +89,14 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         $this->beforeCollection($filteredCollection);
 
         foreach ($filteredCollection as $row) {
+            /** @var array<string, mixed> $data */
             $data = $row->toArray();
 
             // Validate the row using the rules defined in the child class
             $validator = Validator::make($data, $this->rules());
             if ($validator->fails()) {
                 $this->failedRows++;
+                /** @var array<string, mixed> $failedRow */
                 $failedRow = $data;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
                 $this->failedData[] = $failedRow;
@@ -108,6 +111,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
                     $this->successfulRows++;
                 } catch (Exception $e) {
                     $this->failedRows++;
+                    /** @var array<string, mixed> $failedRow */
                     $failedRow = $data;
                     $failedRow['error'] = $e->getMessage();
                     $this->failedData[] = $failedRow;
@@ -134,10 +138,11 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     }
 
     // Implement WithValidation's rules method
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
-        // // Child classes must implement this method
-        // throw new \Exception('The rules() method must be implemented in the child import class: ' . static::class);
         return [];
     }
 
@@ -156,9 +161,15 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
     }
 
     // Abstract method for child classes to implement row processing
-    abstract protected function processRow($row);
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    abstract protected function processRow(array $row): void;
 
     // Method to set expected headers (to be called by child classes)
+    /**
+     * @param  array<int, string>  $headers
+     */
     protected function setExpectedHeaders(array $headers): void
     {
         $this->expectedHeaders = $headers;
@@ -169,20 +180,30 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         $fileName = 'failed_rows_' . $this->importRecord->id . '_' . now()->timestamp . '.xlsx';
         $filePath = 'failed_imports/' . $fileName;
 
-        Excel::store(new class($this->failedData) implements FromArray, WithHeadings
+        $exportable = new class($this->failedData) implements FromArray, WithHeadings
         {
-            protected $data;
+            /** @var array<int, array<string, mixed>> */
+            protected array $data;
 
+            /**
+             * @param  array<int, array<string, mixed>>  $data
+             */
             public function __construct(array $data)
             {
                 $this->data = $data;
             }
 
+            /**
+             * @return array<int, array<string, mixed>>
+             */
             public function array(): array
             {
                 return $this->data;
             }
 
+            /**
+             * @return array<int, string>
+             */
             public function headings(): array
             {
                 if (blank($this->data)) {
@@ -191,7 +212,9 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
 
                 return array_keys($this->data[0]); // Includes 'error' column
             }
-        }, $filePath, 'public');
+        };
+
+        Excel::store($exportable, $filePath, 'public');
 
         $this->failedFilePath = $filePath;
     }
@@ -214,7 +237,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         $this->sendNotification();
     }
 
-    protected function sendNotification()
+    protected function sendNotification(): void
     {
         $successfulRows = number_format($this->successfulRows) . ' ' . Str::plural('row', $this->successfulRows);
         $message = "Your import has completed and {$successfulRows} imported.";
@@ -236,7 +259,7 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
             $message .= " {$failedRows} failed to import.";
 
             $downloadUrl = route('filament.failed-import.download', [
-                'importId' => $this->importRecord?->id,
+                'importId' => $this->importRecord->id,
             ]);
 
             Notification::make()
@@ -264,39 +287,38 @@ abstract class BaseExcelImport extends EnhancedDefaultImport implements ShouldQu
         event(new DatabaseNotificationsSent($recipient));
     }
 
-    public function failed(Throwable $exception)
+    public function failed(Throwable $exception): void
     {
         if ($this->importRecord) {
             $this->importRecord->update([
                 'completed_at' => now(),
                 'file_path' => 'N/A',
             ]);
-        }
 
-        // Retrieve the user using the user_id from the Import record
-        $recipient = User::query()->find($this->importRecord->user_id);
+            // Retrieve the user using the user_id from the Import record
+            $recipient = User::query()->find($this->importRecord->user_id);
 
-        if ($recipient) {
+            if ($recipient) {
+                Notification::make()
+                    ->danger()
+                    ->title('Import Failed')
+                    ->body('An error occurred while processing your import: ' . $exception->getMessage())
+                    ->sendToDatabase($recipient)
+                    ->send();
 
-            Notification::make()
-                ->danger()
-                ->title('Import Failed')
-                ->body('An error occurred while processing your import: ' . $exception->getMessage())
-                ->sendToDatabase($recipient)
-                ->send();
+                event(new DatabaseNotificationsSent($recipient));
+            } else {
+                Notification::make()
+                    ->danger()
+                    ->title('Import Failed')
+                    ->body('An error occurred while processing your import: ' . $exception->getMessage())
+                    ->send();
 
-            event(new DatabaseNotificationsSent($recipient));
-        } else {
-            Notification::make()
-                ->danger()
-                ->title('Import Failed')
-                ->body('An error occurred while processing your import: ' . $exception->getMessage())
-                ->send();
-
-            Log::warning('User not found for import failure notification.', [
-                'import_id' => $this->importRecord->id,
-                'user_id' => $this->importRecord->user_id,
-            ]);
+                Log::warning('User not found for import failure notification.', [
+                    'import_id' => $this->importRecord->id,
+                    'user_id' => $this->importRecord->user_id,
+                ]);
+            }
         }
     }
 }

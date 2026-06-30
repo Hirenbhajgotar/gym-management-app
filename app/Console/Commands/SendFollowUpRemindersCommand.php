@@ -28,7 +28,7 @@ class SendFollowUpRemindersCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         // Get follow-ups scheduled for today and pending
         $followUps = FollowUp::with(['user', 'lead', 'gym.whatsAppAccount', 'gym.users'])
@@ -38,11 +38,13 @@ class SendFollowUpRemindersCommand extends Command
 
         foreach ($followUps as $followUp) {
             // Assuming FollowUp has a relationship 'assignees'
-            $assignee = $followUp?->user;
+            $assignee = $followUp->user;
 
             $assignee->notify(new FollowUpReminderNotification($followUp));
         }
 
         $this->info('Follow-up reminders sent successfully.');
+
+        return self::SUCCESS;
     }
 }

@@ -64,7 +64,7 @@ enum PermissionCategory: string implements HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::USER, self::MANAGER => 'heroicon-o-users',

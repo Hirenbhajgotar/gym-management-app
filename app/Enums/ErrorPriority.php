@@ -15,7 +15,7 @@ enum ErrorPriority: string implements HasColor, HasIcon, HasLabel
     case HIGH = 'high';
     case CRITICAL = 'critical';
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return match ($this) {
             self::LOW => 'Low Priority',
@@ -25,7 +25,7 @@ enum ErrorPriority: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getDescriptiveLabel(): ?string
+    public function getDescriptiveLabel(): string
     {
         return match ($this) {
             self::LOW => 'Low - Minor inconvenience',
@@ -35,7 +35,7 @@ enum ErrorPriority: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
             self::LOW => 'gray',
@@ -45,7 +45,7 @@ enum ErrorPriority: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string
     {
         return match ($this) {
             self::LOW => 'heroicon-o-exclamation-circle',
