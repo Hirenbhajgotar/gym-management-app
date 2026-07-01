@@ -50,6 +50,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
@@ -721,6 +722,8 @@ class GymMemberResource extends BaseResource
 
     public static function getDetailsFormSchema(): array
     {
+        $tenant = Filament::getTenant();
+
         return [
             FileUpload::make('profile_photo')
                 ->image()
@@ -740,7 +743,7 @@ class GymMemberResource extends BaseResource
 
             TextInput::make('email')
                 ->email()
-                ->required()
+                ->nullable()
                 ->maxLength(255)
                 ->unique(GymMember::class, 'email', ignoreRecord: true)
                 ->rules(['email:rfc', new ValidEmailDomain()])
@@ -755,10 +758,17 @@ class GymMemberResource extends BaseResource
             PhoneInput::make('phone')
                 ->defaultCountry('IN')
                 ->required()
+                ->unique(GymMember::class, 'phone', ignoreRecord: true, modifyRuleUsing: function (Unique $rule) use ($tenant) {
+                    if ($tenant) {
+                        return $rule->where('gym_id', is_int($tenant->getKey()) ? $tenant->getKey() : 0);
+                    }
+
+                    return $rule;
+                })
                 ->validateFor(
-                    country: ['IN', 'PK', 'BD', 'US'], // default: 'AUTO'
-                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE], // default: null
-                    lenient: true, // default: false
+                    country: ['IN', 'PK', 'BD', 'US'],
+                    type: [PhoneNumberType::MOBILE, PhoneNumberType::FIXED_LINE],
+                    lenient: true,
                 )
                 ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 

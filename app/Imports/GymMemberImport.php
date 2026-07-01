@@ -8,7 +8,7 @@ use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Helpers\DateHelper;
-use App\Helpers\Number;
+use App\Helpers\ParserHelper;
 use App\Models\City;
 use App\Models\Gym;
 use App\Models\GymMember;
@@ -30,6 +30,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     protected array $dateColumns = [
         'dob',
         'membership_start',
+        'membership_end',
     ];
 
     public function __construct(public string $tenantId)
@@ -42,6 +43,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         return [
             'dob' => NumberFormat::FORMAT_DATE_YYYYMMDD,
             'membership_start' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'membership_end' => NumberFormat::FORMAT_DATE_YYYYMMDD,
         ];
     }
 
@@ -65,9 +67,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $row['age'] = DateHelper::calculateAge($row['dob']);
         }
 
-        if (isset($row['phone'])) {
-            $row['phone'] = Number::clearPhoneNumberFormat($row['phone']);
-        }
+        $row['phone'] = ParserHelper::formatPhoneNumberWithCountryCode(is_string($row['phone'] ?? null) ? $row['phone'] : '');
 
         $profileImagePath = null;
         if (isset($row['name'])) {
@@ -78,8 +78,8 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'profile_photo' => $profileImagePath,
-            'email' => $row['email'],
-            'phone' => $row['phone'] ?? null,
+            'email' => $row['email'] ?? null,
+            'phone' => $row['phone'],
             'weight' => $row['weight'] ?? null,
             'height' => $row['height'] ?? null,
             'age' => $row['age'] ?? null,
@@ -92,8 +92,41 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         ]);
 
         if ($membershipPlan) {
-            $membershipStart = $row['membership_start'] ? Date::parse($row['membership_start']) : now();
-            $membershipEnd = $membershipStart->copy()->addMonths($membershipPlan->duration);
+            $membershipStart = null;
+            $membershipEnd = null;
+
+            if (isset($row['membership_start']) && ! isset($row['membership_end'])) {
+                $membershipStart = $row['membership_start']
+                    ? Date::parse(
+                        is_string($row['membership_start'])
+                            ? $row['membership_start']
+                            : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
+                    : now();
+
+                $membershipEnd = $membershipStart->copy()->addMonths($membershipPlan->duration ?? 0);
+            } elseif (isset($row['membership_end']) && ! isset($row['membership_start'])) {
+                $membershipEnd = Date::parse(
+                    is_string($row['membership_end'])
+                        ? $row['membership_end']
+                        : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format']));
+
+                $membershipStart = $membershipEnd->copy()->subMonths($membershipPlan->duration ?? 0);
+            } elseif (isset($row['membership_end']) && isset($row['membership_start'])) {
+                $membershipStart = $row['membership_start']
+                    ? Date::parse(
+                        is_string($row['membership_start'])
+                            ? $row['membership_start']
+                            : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
+                    : now();
+
+                $membershipEnd = $row['membership_end']
+                    ? Date::parse(
+                        is_string($row['membership_end'])
+                            ? $row['membership_end']
+                            : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format']))
+
+                    : $membershipStart->copy()->addMonths($membershipPlan->duration ?? 0);
+            }
 
             $gymMember->payments()->create([
                 'gym_id' => $this->tenantId,
@@ -120,8 +153,8 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:gym_members,email'],
-            'phone' => ['nullable', 'max:20'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:gym_members,email'],
+            'phone' => ['required', 'max:20', Rule::unique('gym_members', 'phone')->where('gym_id', $this->tenantId)],
             'address' => ['nullable', 'string'],
             'weight' => ['nullable', 'numeric'],
             'height' => ['nullable', 'numeric'],
@@ -130,6 +163,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'city' => ['nullable', 'string', 'exists:cities,slug'],
             'zip_code' => ['nullable', 'max:20'],
             'membership_start' => ['nullable', 'date'],
+            'membership_end' => ['nullable', 'date'],
             'payment_status' => ['nullable', 'string', Rule::enum(PaymentStatus::class)],
             'membership_plan' => ['nullable', 'string'],
             'trainer_email' => ['nullable', 'string', 'exists:trainers,email'],

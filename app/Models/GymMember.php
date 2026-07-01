@@ -29,8 +29,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property int $gym_id
  * @property string $name
  * @property string|null $profile_photo
- * @property string $email
- * @property string|null $phone
+ * @property string|null $email
+ * @property string $phone
  * @property int|null $age
  * @property \Illuminate\Support\Carbon|null $dob
  * @property \Illuminate\Support\Carbon|null $membership_start

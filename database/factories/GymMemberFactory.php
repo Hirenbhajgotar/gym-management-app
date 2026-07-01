@@ -24,7 +24,7 @@ class GymMemberFactory extends Factory
             'name' => fake()->name(),
             'profile_photo' => fake()->imageUrl(200, 200, 'people'),
             'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->phoneNumber(),
+            'phone' => fake()->unique()->phoneNumber(),
             'age' => rand(18, 60),
             'dob' => fake()->dateTimeBetween('-60 years', '-18 years'),
             'membership_start' => $membershipStart,
