@@ -179,7 +179,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     'data' => json_encode($failedRow),
                     'validation_error' => $failedRow['error'],
                 ]);
-
+            } else {
                 try {
                     // If validation passes, process the row.
                     Log::info('Processing row: ');
@@ -261,7 +261,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 'exception' => $e,
             ]);
 
-            return 'There is an issue at DB Lavel, Please try again or contact support';
+            return 'There is an issue at DB Level, Please try again or contact support';
         }
 
         // Application-level exceptions from child importers are kept as-is
