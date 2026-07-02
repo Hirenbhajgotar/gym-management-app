@@ -18,6 +18,8 @@ enum PaymentStatus: string implements HasColor, HasIcon, HasLabel
 
     case EXPIRED = 'expired';
 
+    case PARTIAL = 'partial';
+
     public function getLabel(): string
     {
         return match ($this) {
@@ -25,6 +27,7 @@ enum PaymentStatus: string implements HasColor, HasIcon, HasLabel
             self::COMPLETED => 'Completed',
             self::FAILED => 'Failed',
             self::EXPIRED => 'Expired',
+            self::PARTIAL => 'Partial',
         };
     }
 
@@ -35,6 +38,7 @@ enum PaymentStatus: string implements HasColor, HasIcon, HasLabel
             self::COMPLETED => 'success',
             self::FAILED => 'danger',
             self::EXPIRED => 'danger',
+            self::PARTIAL => 'warning',
         };
     }
 
@@ -45,11 +49,14 @@ enum PaymentStatus: string implements HasColor, HasIcon, HasLabel
             self::COMPLETED => 'heroicon-m-check-badge',
             self::FAILED => 'heroicon-m-x-circle',
             self::EXPIRED => 'heroicon-m-clock',
+            self::PARTIAL => 'heroicon-m-adjustments-horizontal',
         };
     }
 
     /**
      * Get options array for Filament select components
+     *
+     * @return array<string, string>
      */
     public static function toSelectOptions(): array
     {

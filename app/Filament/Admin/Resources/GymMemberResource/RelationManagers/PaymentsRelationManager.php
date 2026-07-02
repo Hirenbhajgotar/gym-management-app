@@ -12,6 +12,7 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Traits\HasTenantAccess;
 use Closure;
+use DB;
 use Exception;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -25,12 +26,14 @@ use Filament\Forms\Form;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -72,9 +75,22 @@ class PaymentsRelationManager extends RelationManager
                         TextInput::make('amount')
                             ->numeric()
                             ->required()
-                            ->prefix(fn ($get) => $this->getCurrencySymbol($get))
+                            ->prefix(fn (callable $get) => $this->getCurrencySymbol($get))
                             ->minValue(0)
                             ->step(0.01)
+                            ->disabled()
+                            ->dehydrated()
+                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
+                        TextInput::make('amount_paid')
+                            ->label('Amount Paid Now')
+                            ->numeric()
+                            ->required()
+                            ->prefix(fn (callable $get) => $this->getCurrencySymbol($get))
+                            ->minValue(0)
+                            ->step(0.01)
+                            ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
+                            ->default(fn (callable $get) => $get('amount') ?? 0)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                         Select::make('currency')
@@ -136,8 +152,41 @@ class PaymentsRelationManager extends RelationManager
                     ->color('success'),
 
                 TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency->value)
+                    ->money(function (?MemberPayment $record) {
+                        return $record?->currency?->value ?? Currency::INR->value;
+                    })
                     ->summarize(Sum::make()),
+
+                TextColumn::make('total_paid')
+                    ->label('Total Paid')
+                    ->money(function (MemberPayment $record) {
+                        return $record->currency->value ?? Currency::INR->value;
+                    })
+                    ->summarize(
+                        Summarizer::make()
+                            ->label('Sum')
+                            ->using(function (\Illuminate\Database\Query\Builder $query): float {
+                                return (float) $query->join(
+                                    'member_payment_transactions',
+                                    'member_payments.id',
+                                    '=',
+                                    'member_payment_transactions.member_payment_id',
+                                )
+                                    ->where('member_payment_transactions.status', 'completed')
+                                    ->sum('member_payment_transactions.amount');
+                            })
+                    ),
+
+                TextColumn::make('remaining_amount')
+                    ->label('Remaining')
+                    ->money(function (MemberPayment $record) {
+                        return $record->currency->value ?? Currency::INR->value;
+                    }),
+
+                TextColumn::make('transactions_count')
+                    ->label('Payments')
+                    ->counts('transactions')
+                    ->badge(),
 
                 TextColumn::make('payment_method')
                     ->badge()
@@ -159,21 +208,95 @@ class PaymentsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->label('Add Payment')
                     ->steps([
-                        $this->getPasswordConfirmationStep(),
+                        // $this->getPasswordConfirmationStep(),
                         $this->getPaymentDetailsStep('Enter payment information'),
                     ])
                     ->action(fn (array $data) => $this->handleCreatePayment($data)),
             ])
             ->actions([
+                Action::make('record_installment')
+                    ->label('Record Payment')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('success')
+                    ->visible(fn (MemberPayment $record) => ! $record->is_fully_paid)
+                    ->form([
+                        TextInput::make('amount')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1)
+                            ->maxValue(fn (MemberPayment $record) => $record->remaining_amount)
+                            ->suffix(fn (MemberPayment $record) => 'Max: ' . number_format($record->remaining_amount, 2)),
+                        Select::make('payment_method')
+                            ->options(PaymentMethod::toSelectOptions())
+                            ->required()
+                            ->default(PaymentMethod::CASH->value),
+                        DatePicker::make('transaction_date')
+                            ->required()
+                            ->default(now()),
+                        Textarea::make('notes')
+                            ->maxLength(65535)
+                            ->rows(2),
+                    ])
+                    ->action(function (array $data, MemberPayment $record) {
+                        DB::transaction(function () use ($data, $record) {
+                            $record = MemberPayment::query()->lockForUpdate()->findOrFail($record->id);
+
+                            if ($data['amount'] > $record->remaining_amount) {
+                                Notification::make()
+                                    ->title('Invalid Payment Amount')
+                                    ->body('Payment amount exceeds remaining amount.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $record->transactions()->create([
+                                'member_payment_id' => $record->id,
+                                'amount' => $data['amount'],
+                                'payment_method' => $data['payment_method'],
+                                'transaction_date' => $data['transaction_date'],
+                                'status' => 'completed',
+                                'notes' => $data['notes'] ?? null,
+                                'currency' => $record->currency,
+                            ]);
+
+                            $record->syncStatusFromTransactions();
+
+                            $member = $record->member;
+                            if ($member) {
+                                /** @var PaymentStatus|null $paymentStatus */
+                                $paymentStatus = $record->status;
+                                $member->update([
+                                    'payment_status' => $paymentStatus?->value,
+                                    'latest_payment_at' => $data['transaction_date'],
+                                ]);
+                            }
+
+                            // if ($record->gym_id) {
+                            //     MemberPaymentObserver::clearPaymentCaches($record->gym_id);
+                            // }
+
+                            Notification::make()
+                                ->success()
+                                ->title('Payment Recorded')
+                                ->body('Payment recorded successfully.')
+                                ->send();
+                        });
+                    }),
+
                 EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
                     ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
-                    ->visible(fn ($record) => $record->status->value !== PaymentStatus::EXPIRED->value)
+                    ->visible(function (MemberPayment $record) {
+                        return $record->status?->value !== PaymentStatus::EXPIRED->value;
+                    })
                     ->before(fn ($record) => $this->preventExpiredPaymentEdit($record))
                     ->steps([
-                        $this->getPasswordConfirmationStep(),
+                        // $this->getPasswordConfirmationStep(),
                         $this->getPaymentDetailsStep('Update payment information'),
                     ])
                     ->action(fn (array $data, $record) => $this->handleUpdatePayment($data, $record)),
@@ -278,6 +401,7 @@ class PaymentsRelationManager extends RelationManager
         $start = $get('membership_start') ?? now();
         $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
         $set('amount', $plan->price);
+        $set('amount_paid', $plan->price);
     }
 
     /**
@@ -304,7 +428,7 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function getCurrencySymbol(callable $get): string
     {
-        $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+        $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
 
         return $currency?->getSymbol() ?? Currency::INR->getSymbol();
     }
@@ -314,25 +438,44 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function handleCreatePayment(array $data): void
     {
-        /** @var GymMember $member */
-        $member = $this->ownerRecord;
+        DB::transaction(function () use ($data) {
+            /** @var GymMember $member */
+            $member = $this->ownerRecord;
+            $member = GymMember::query()->lockForUpdate()->findOrFail($member->id);
 
-        // Get and expire previous completed payment
-        $lastPayment = $this->getLastCompletedPayment($member->id);
+            $lastPayment = $this->getLastCompletedPayment($member->id, lock: true);
 
-        // Create the new payment
-        $paymentData = collect($data)->except(['password'])->toArray();
-        $this->getRelationship()->create($paymentData);
+            $amountPaid = $data['amount_paid'] ?? $data['amount'];
+            $paymentData = collect($data)->except(['password', 'amount_paid'])->toArray();
 
-        // Update member with new payment data
-        $this->updateMemberFromPayment($member, $paymentData);
+            /** @var MemberPayment $payment */
+            $payment = $this->getRelationship()->create($paymentData);
 
-        // Expire previous payment if exists
-        if ($lastPayment) {
-            $this->expirePayment($lastPayment);
-        }
+            $payment->transactions()->create([
+                'member_payment_id' => $payment->id,
+                'amount' => $amountPaid,
+                'payment_method' => $data['payment_method'],
+                'transaction_date' => $data['payment_date'],
+                'status' => 'completed',
+                'currency' => $data['currency'] ?? null,
+            ]);
 
-        $this->sendNotification('Payment Created', 'The payment has been created successfully.');
+            $payment->syncStatusFromTransactions();
+
+            /** @var PaymentStatus|null $paymentStatus */
+            $paymentStatus = $payment->status;
+            $this->updateMemberFromPayment($member, array_merge($paymentData, ['status' => $paymentStatus instanceof PaymentStatus ? $paymentStatus->value : null]));
+
+            if ($lastPayment) {
+                $this->expirePayment($lastPayment);
+            }
+
+            // if ($member->gym_id) {
+            //     MemberPaymentObserver::clearPaymentCaches($member->gym_id);
+            // }
+
+            $this->sendNotification('Payment Created', 'The payment has been created successfully.');
+        });
     }
 
     /**
@@ -340,12 +483,15 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function handleUpdatePayment(array $data, MemberPayment $record): void
     {
-        $paymentData = collect($data)->except(['password'])->toArray();
-        $record->update($paymentData);
+        DB::transaction(function () use ($data, $record) {
+            $record = MemberPayment::query()->lockForUpdate()->findOrFail($record->id);
+            $paymentData = collect($data)->except(['password'])->toArray();
+            $record->update($paymentData);
 
-        /** @var GymMember $member */
-        $member = $this->ownerRecord;
-        $this->updateMemberFromPayment($member, $paymentData);
+            /** @var GymMember $member */
+            $member = $this->ownerRecord;
+            $this->updateMemberFromPayment($member, $paymentData);
+        });
 
         $this->sendNotification('Payment Updated', 'The payment has been updated successfully.');
     }
@@ -360,19 +506,25 @@ class PaymentsRelationManager extends RelationManager
             'membership_start' => $paymentData['membership_start'] ?? $member->membership_start,
             'membership_end' => $paymentData['membership_end'] ?? $member->membership_end,
             'gym_membership_plan_id' => $paymentData['membership_plan_id'] ?? $member->gym_membership_plan_id,
+            'latest_payment_at' => $paymentData['payment_date'] ?? $member->latest_payment_at ?? null,
         ]);
     }
 
     /**
      * Get last completed payment for a member
      */
-    protected function getLastCompletedPayment(int $memberId): ?MemberPayment
+    protected function getLastCompletedPayment(int $memberId, bool $lock = false): ?MemberPayment
     {
-        return $this->getRelationship()
+        $query = $this->getRelationship()
             ->where('member_id', $memberId)
-            ->where('status', PaymentStatus::COMPLETED->value)
-            ->latest('payment_date')
-            ->first();
+            ->where('status', PaymentStatus::COMPLETED)
+            ->latest('payment_date');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 
     /**
@@ -380,7 +532,7 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function expirePayment(MemberPayment $payment): void
     {
-        $payment->update(['status' => PaymentStatus::EXPIRED->value]);
+        $payment->update(['status' => PaymentStatus::EXPIRED]);
     }
 
     /**
@@ -388,7 +540,9 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function preventExpiredPaymentEdit(MemberPayment $record): void
     {
-        if ($record->status->value !== PaymentStatus::EXPIRED->value) {
+        /** @var PaymentStatus|null $status */
+        $status = $record->status;
+        if ($status === null || $status->value !== PaymentStatus::EXPIRED->value) {
             return;
         }
 
@@ -407,8 +561,11 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function canDeletePayment(MemberPayment $record): bool
     {
+        /** @var PaymentStatus|null $status */
+        $status = $record->status;
+
         return auth()->user()->hasPermissionTo('delete_gym_member')
-            && $record->status->value !== PaymentStatus::EXPIRED->value;
+            && ($status === null || $status->value !== PaymentStatus::EXPIRED->value);
     }
 
     /**
@@ -417,7 +574,7 @@ class PaymentsRelationManager extends RelationManager
     protected function sortPayments(Builder $query): Builder
     {
         return $query
-            ->orderByRaw("CASE WHEN status = 'completed' THEN 0 ELSE 1 END")
+            ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [PaymentStatus::COMPLETED->value])
             ->latest('payment_date')->latest();
     }
 

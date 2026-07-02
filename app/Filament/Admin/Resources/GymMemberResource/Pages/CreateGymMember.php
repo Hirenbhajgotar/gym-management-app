@@ -11,6 +11,7 @@ use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
+use DB;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -28,8 +29,10 @@ class CreateGymMember extends CreateRecord
 
     protected static string $resource = GymMemberResource::class;
 
+    /** @var array<string, mixed> */
     protected $paymentData = [];
 
+    /** @var array<string, mixed> */
     protected $measurementData = [];
 
     public function form(Form $form): Form
@@ -59,6 +62,7 @@ class CreateGymMember extends CreateRecord
             'gym_id' => $data['gym_id'] ?? null,
             'membership_plan_id' => $data['membership_plan_id'] ?? null,
             'amount' => $data['amount'] ?? null,
+            'amount_paid' => $data['amount_paid'] ?? $data['amount'] ?? null,
             'currency' => $data['currency'] ?? null,
             'payment_method' => $data['payment_method'] ?? null,
             'membership_start' => $data['membership_start'] ?? null,
@@ -68,10 +72,10 @@ class CreateGymMember extends CreateRecord
             'notes' => $data['notes'] ?? null,
         ];
 
-        // Remove payment-related fields and measurement fields from the GymMember data
         unset(
             $data['membership_plan_id'],
             $data['amount'],
+            $data['amount_paid'],
             $data['currency'],
             $data['payment_method'],
             $data['membership_start'],
@@ -88,61 +92,79 @@ class CreateGymMember extends CreateRecord
 
     protected function afterCreate(): void
     {
-        /** @var GymMember $member */
-        $member = $this->record;
+        DB::transaction(function () {
+            /** @var GymMember $member */
+            $member = $this->record;
 
-        // Create measurement if provided
-        if (filled($this->measurementData['weight']) && filled($this->measurementData['height'])) {
-            $member->measurements()->create([
-                'weight' => $this->measurementData['weight'],
-                'height' => $this->measurementData['height'],
-                'measured_at' => now(),
-            ]);
-        }
+            // Create measurement if provided
+            if (filled($this->measurementData['weight']) && filled($this->measurementData['height'])) {
+                $member->measurements()->create([
+                    'weight' => $this->measurementData['weight'],
+                    'height' => $this->measurementData['height'],
+                    'measured_at' => now(),
+                ]);
+            }
 
-        // Create the payment if payment data is provided
-        if (filled($this->paymentData['membership_plan_id'])) {
-            $payment = $member->payments()->create([
-                'member_id' => $member->id,
-                'gym_id' => $member->gym_id,
-                'membership_plan_id' => $this->paymentData['membership_plan_id'],
-                'amount' => $this->paymentData['amount'],
-                'currency' => $this->paymentData['currency'],
-                'payment_method' => $this->paymentData['payment_method'],
-                'membership_start' => $this->paymentData['membership_start'],
-                'membership_end' => $this->paymentData['membership_end'],
-                'status' => $this->paymentData['status'],
-                'payment_date' => $this->paymentData['payment_date'],
-                'notes' => $this->paymentData['notes'],
-            ]);
-
-            // Update the member's payment_status and membership dates
-            $member->update([
-                'gym_membership_plan_id' => $this->paymentData['membership_plan_id'],
-                'membership_start' => $this->paymentData['membership_start'],
-                'membership_end' => $this->paymentData['membership_end'],
-                'payment_status' => $this->paymentData['status'],
-                'latest_payment_at' => $this->paymentData['payment_date'],
-            ]);
-
-            // Chain Invoice Generation and Welcome Notification
-            Bus::chain([
-                new GenerateInvoiceJob($payment),
-                new SendNotificationJob($member, new WelcomeNotification($member)),
-            ])->dispatch();
-
-        } else {
-            // If no payment, just send the notification immediately
-            // Ensure required member data is available before sending
-            if (blank($member->email)) {
-                Log::warning('No email provided for gym member', [
+            // Create the payment if payment data is provided
+            if (filled($this->paymentData['membership_plan_id'])) {
+                /** @var array<string, mixed> $data */
+                $data = $this->paymentData;
+                $payment = $member->payments()->create([
                     'member_id' => $member->id,
+                    'gym_id' => $member->gym_id,
+                    'membership_plan_id' => $data['membership_plan_id'],
+                    'amount' => $data['amount'],
+                    'currency' => $data['currency'],
+                    'payment_method' => $data['payment_method'],
+                    'membership_start' => $data['membership_start'],
+                    'membership_end' => $data['membership_end'],
+                    'status' => $data['status'],
+                    'payment_date' => $data['payment_date'],
+                    'notes' => $data['notes'],
                 ]);
 
-                return;
+                $amountPaid = $data['amount_paid'] ?? $data['amount'];
+                $payment->transactions()->create([
+                    'member_payment_id' => $payment->id,
+                    'amount' => $amountPaid,
+                    'payment_method' => $data['payment_method'],
+                    'transaction_date' => $data['payment_date'],
+                    'status' => 'completed',
+                    'currency' => $data['currency'],
+                ]);
+
+                $payment->syncStatusFromTransactions();
+
+                $member->update([
+                    'gym_membership_plan_id' => $data['membership_plan_id'],
+                    'membership_start' => $data['membership_start'],
+                    'membership_end' => $data['membership_end'],
+                    'payment_status' => $payment->status?->value,
+                    'latest_payment_at' => $data['payment_date'],
+                ]);
+
+                // if ($member->gym_id) {
+                //     MemberPaymentObserver::clearPaymentCaches($member->gym_id);
+                // }
+
+                Bus::chain([
+                    new GenerateInvoiceJob($payment),
+                    new SendNotificationJob($member, new WelcomeNotification($member)),
+                ])->dispatch();
+
+            } else {
+                // If no payment, just send the notification immediately
+                // Ensure required member data is available before sending
+                if (blank($member->email)) {
+                    Log::warning('No email provided for gym member', [
+                        'member_id' => $member->id,
+                    ]);
+
+                    return;
+                }
+                dispatch(new SendNotificationJob($member, new WelcomeNotification($member)));
             }
-            dispatch(new SendNotificationJob($member, new WelcomeNotification($member)));
-        }
+        });
     }
 
     protected function getRedirectUrl(): string

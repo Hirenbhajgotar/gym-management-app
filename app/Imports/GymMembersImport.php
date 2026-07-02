@@ -51,8 +51,8 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
         $member = new GymMember([
             'gym_id' => $this->gymId,
             'name' => $row['name'],
-            'email' => $row['email'],
-            'phone' => $row['phone'] ?? null,
+            'email' => $row['email'] ?? null,
+            'phone' => $row['phone'],
             'address' => $row['address'] ?? null,
             'weight' => $row['weight'] ?? null,
             'height' => $row['height'] ?? null,
@@ -86,8 +86,8 @@ class GymMembersImport implements ToModel, WithEvents, WithHeadingRow, WithValid
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:gym_members,email',
-            'phone' => ['nullable', 'max:255', new ValidPhone()],
+            'email' => 'nullable|email|unique:gym_members,email',
+            'phone' => ['required', 'max:255', new ValidPhone()],
             'address' => 'nullable|string|max:65535',
             'weight' => 'nullable|numeric|min:0|max:500',
             'height' => 'nullable|numeric|min:0|max:300',

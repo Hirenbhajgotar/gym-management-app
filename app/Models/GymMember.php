@@ -10,6 +10,8 @@ use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,8 +31,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property int $gym_id
  * @property string $name
  * @property string|null $profile_photo
- * @property string $email
- * @property string|null $phone
+ * @property string|null $email
+ * @property string $phone
  * @property int|null $age
  * @property \Illuminate\Support\Carbon|null $dob
  * @property \Illuminate\Support\Carbon|null $membership_start
@@ -61,6 +63,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read \App\Models\Gym $gym
  * @property-read \App\Models\Attendances|null $lastAttendance
  * @property-read \App\Models\MemberPayment|null $latestPayment
+ * @property-read float $total_payments_amount
+ * @property-read float $outstanding_balance
  * @property-read \App\Models\Lead|null $lead
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MemberMeasurement> $measurements
  * @property-read int|null $measurements_count
@@ -114,6 +118,14 @@ class GymMember extends Model
     public const NAVIGATION_BADGE_CACHE_KEY = 'gym_member_navigation_badge_count_';
 
     public const MEMBER_WEIGHT_PROGRESS_CACHE_KEY = 'member_weight_progress_';
+
+    /**
+     * Request-local cache for payments+transactions so total_payments_amount
+     * and outstanding_balance don't each fire their own query.
+     *
+     * @var Collection<int, MemberPayment>|null
+     */
+    private ?Collection $paymentsWithTransactionsCache = null;
 
     protected $fillable = [
         'gym_id',
@@ -282,6 +294,13 @@ class GymMember extends Model
 
     public function activeBiometricConsent(): ?BiometricConsent
     {
+        if ($this->relationLoaded('biometricConsents')) {
+            return $this->biometricConsents
+                ->where('gym_id', $this->gym_id)
+                ->whereNull('revoked_at')
+                ->first();
+        }
+
         return $this->biometricConsents()
             ->where('gym_id', $this->gym_id)
             ->whereNull('revoked_at')
@@ -468,27 +487,79 @@ class GymMember extends Model
     }
 
     /**
+     * Persist the unfreeze if a time-based freeze has expired.
+     * Call this explicitly from a scheduled command / job — NOT from
+     * read paths — since it writes to the DB and sends a notification.
+     */
+    public function autoUnfreezeIfExpired(): bool
+    {
+        if ($this->is_frozen && $this->frozen_until && $this->frozen_until->isPast()) {
+            $this->unfreeze();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if member can access gym facilities
      * Combines membership status, payment status, and freeze status
      */
     public function canAccessGym(): bool
     {
-        // Check if membership is active
         if (! $this->membership_end || $this->membership_end->isPast()) {
             return false;
         }
 
-        // Check if payment is completed
-        if ($this->payment_status !== PaymentStatus::COMPLETED) {
+        if ($this->payment_status === null || ! in_array($this->payment_status, [PaymentStatus::COMPLETED, PaymentStatus::PARTIAL], true)) {
             return false;
         }
 
-        // Check if frozen
         if ($this->isFrozen()) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Load payments with their transactions once per request, whether
+     * accessed via total_payments_amount, outstanding_balance, or both.
+     *
+     * @return Collection<int, MemberPayment>
+     */
+    protected function loadPaymentsWithTransactions(): Collection
+    {
+        if ($this->relationLoaded('payments')) {
+            return $this->payments;
+        }
+
+        return $this->paymentsWithTransactionsCache ??= $this->payments()->with('transactions')->get();
+    }
+
+    /** @return Attribute<float, never> */
+    protected function totalPaymentsAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->loadPaymentsWithTransactions()
+                ->sum(fn (MemberPayment $payment) => $payment->total_paid),
+        );
+    }
+
+    /** @return Attribute<float, never> */
+    protected function outstandingBalance(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $payments = $this->loadPaymentsWithTransactions();
+
+                $totalPlans = (float) $payments->sum('amount');
+                $totalPaid = (float) $payments->sum(fn (MemberPayment $payment) => $payment->total_paid);
+
+                return max(0, $totalPlans - $totalPaid);
+            },
+        );
     }
 
     /**
