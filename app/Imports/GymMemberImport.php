@@ -12,16 +12,21 @@ use App\Helpers\ParserHelper;
 use App\Models\City;
 use App\Models\Gym;
 use App\Models\GymMember;
+use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Services\AvatarService;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use RuntimeException;
 
 class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFormatting
 {
@@ -33,7 +38,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         'membership_end',
     ];
 
-    public function __construct(public string $tenantId)
+    public function __construct(public int $tenantId)
     {
         parent::__construct();
     }
@@ -49,19 +54,24 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
     public function processRow($row): void
     {
-        $membershipPlan = null;
-        if (isset($row['membership_plan'])) {
-            $membershipPlan = MembershipPlan::query()->where('name', $row['membership_plan'])->first();
+        $lock = Cache::lock("gym_member_import:{$this->tenantId}", 60);
+        $lockAcquired = $lock->block(30);
 
-            if (! $membershipPlan) {
-                throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
-            }
-        }
+        throw_unless($lockAcquired, RuntimeException::class, 'Could not acquire import lock. Another import is in progress for this gym.');
 
-        $trainer = null;
-        if (isset($row['trainer_email'])) {
-            $trainer = Trainer::query()->where('email', $row['trainer_email'])->first();
+        try {
+            DB::transaction(function () use ($row) {
+                $this->processRowInTransaction($row);
+            }, 3);
+        } finally {
+            $lock->release();
         }
+    }
+
+    protected function processRowInTransaction(array $row): void
+    {
+        $membershipPlan = $this->resolveMembershipPlan($row);
+        $trainer = $this->resolveTrainer($row);
 
         if (isset($row['dob'])) {
             $row['age'] = DateHelper::calculateAge($row['dob']);
@@ -75,7 +85,16 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $profileImagePath = resolve(AvatarService::class)->generate($row['name']);
         }
 
-        $gymMember = GymMember::query()->create([
+        $membershipStart = null;
+        $membershipEnd = null;
+
+        if ($membershipPlan) {
+            $dates = $this->calculateMembershipDates($row, $membershipPlan);
+            $membershipStart = $dates['start'];
+            $membershipEnd = $dates['end'];
+        }
+
+        $memberData = [
             'gym_id' => $this->tenantId,
             'name' => $row['name'],
             'profile_photo' => $profileImagePath,
@@ -85,85 +104,325 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'height' => $row['height'] ?? null,
             'age' => $row['age'] ?? null,
             'dob' => $row['dob'] ?? null,
-            'membership_start' => $row['membership_start'] ?? now(),
-            'payment_status' => $row['payment_status'] ?? PaymentStatus::PENDING,
+            'membership_start' => $membershipStart ?? $row['membership_start'] ?? now(),
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
             'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
-        ]);
+        ];
+
+        $gymMember = GymMember::query()
+            ->where('gym_id', $this->tenantId)
+            ->where('email', $memberData['email'])
+            ->where('phone', $memberData['phone'])
+            ->lockForUpdate()
+            ->first();
+
+        $isNewMember = false;
+
+        if ($gymMember) {
+            $gymMember->update($memberData);
+        } else {
+            $gymMember = GymMember::query()->create($memberData);
+            $isNewMember = true;
+        }
 
         if ($membershipPlan) {
-            $membershipStart = null;
-            $membershipEnd = null;
-
-            if (isset($row['membership_start']) && ! isset($row['membership_end'])) {
-                $membershipStart = $row['membership_start']
-                    ? Date::parse(
-                        is_string($row['membership_start'])
-                            ? $row['membership_start']
-                            : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
-                    : now();
-
-                $membershipEnd = $membershipStart->copy()->addMonths($membershipPlan->duration ?? 0);
-            } elseif (isset($row['membership_end']) && ! isset($row['membership_start'])) {
-                $membershipEnd = Date::parse(
-                    is_string($row['membership_end'])
-                        ? $row['membership_end']
-                        : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format']));
-
-                $membershipStart = $membershipEnd->copy()->subMonths($membershipPlan->duration ?? 0);
-            } elseif (isset($row['membership_end']) && isset($row['membership_start'])) {
-                $membershipStart = $row['membership_start']
-                    ? Date::parse(
-                        is_string($row['membership_start'])
-                            ? $row['membership_start']
-                            : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
-                    : now();
-
-                $membershipEnd = $row['membership_end']
-                    ? Date::parse(
-                        is_string($row['membership_end'])
-                            ? $row['membership_end']
-                            : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format']))
-
-                    : $membershipStart->copy()->addMonths($membershipPlan->duration ?? 0);
-            }
-
-            $payment = $gymMember->payments()->create([
-                'gym_id' => $this->tenantId,
-                'membership_plan_id' => $membershipPlan->id,
-                'amount' => $membershipPlan->price,
-                'currency' => $membershipPlan->currency ?? Currency::INR,
-                'payment_method' => PaymentMethod::CASH,
-                'status' => $row['payment_status'] ?? PaymentStatus::PENDING,
-                'notes' => 'Imported via Excel',
-                'payment_date' => now(),
-                'membership_start' => $membershipStart,
-                'membership_end' => $membershipEnd,
-            ]);
-
-            $amountPaid = $row['payment_amount_paid'] ?? $membershipPlan->price;
-            $payment->transactions()->create([
-                'member_payment_id' => $payment->id,
-                'amount' => $amountPaid,
-                'currency' => $membershipPlan->currency ?? Currency::INR,
-                'payment_method' => PaymentMethod::CASH,
-                'transaction_date' => now(),
-                'status' => 'completed',
-                'notes' => 'Imported via Excel',
-            ]);
-
-            $payment->syncStatusFromTransactions();
-
-            $gymMember->update([
-                'payment_status' => $payment->status?->value,
-            ]);
+            $this->handleMemberPayment($gymMember, $membershipPlan, $row, $membershipStart, $membershipEnd, $isNewMember);
         }
 
         if (isset($row['address'])) {
-            $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
+            $this->handleAddress($gymMember, $row);
+        }
+    }
 
-            $gymMember->address()->create(['street' => $row['address'], 'city' => $city?->id ?? null, 'state' => $city?->state_id ?? null, 'country' => $city?->state?->country_id ?? null, 'postal_code' => $row['zip_code'] ?? null]);
+    protected function resolveMembershipPlan(array $row): ?MembershipPlan
+    {
+        if (! isset($row['membership_plan'])) {
+            return null;
+        }
+
+        $membershipPlan = MembershipPlan::query()->where('name', $row['membership_plan'])->first();
+
+        if (! $membershipPlan) {
+            throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
+        }
+
+        return $membershipPlan;
+    }
+
+    protected function resolveTrainer(array $row): ?Trainer
+    {
+        if (! isset($row['trainer_email'])) {
+            return null;
+        }
+
+        return Trainer::query()->where('email', $row['trainer_email'])->first();
+    }
+
+    protected function calculateMembershipDates(array $row, MembershipPlan $plan): array
+    {
+        $hasStart = isset($row['membership_start']);
+        $hasEnd = isset($row['membership_end']);
+
+        if ($hasStart && ! $hasEnd) {
+            $start = $row['membership_start']
+                ? Date::parse(is_string($row['membership_start']) ? $row['membership_start'] : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
+                : now();
+
+            $end = $start->copy()->addMonths($plan->duration ?? 0);
+
+            return ['start' => $start, 'end' => $end];
+        }
+
+        if ($hasEnd && ! $hasStart) {
+            $end = Date::parse(
+                is_string($row['membership_end']) ? $row['membership_end'] : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format'])
+            );
+
+            $start = $end->copy()->subMonths($plan->duration ?? 0);
+
+            return ['start' => $start, 'end' => $end];
+        }
+
+        if ($hasEnd && $hasStart) {
+            $start = $row['membership_start']
+                ? Date::parse(is_string($row['membership_start']) ? $row['membership_start'] : throw ValidationException::withMessages(['membership_start' => 'Invalid membership start date format']))
+                : now();
+
+            $end = $row['membership_end']
+                ? Date::parse(is_string($row['membership_end']) ? $row['membership_end'] : throw ValidationException::withMessages(['membership_end' => 'Invalid membership end date format']))
+                : $start->copy()->addMonths($plan->duration ?? 0);
+
+            return ['start' => $start, 'end' => $end];
+        }
+
+        $start = now();
+        $end = $start->copy()->addMonths($plan->duration ?? 0);
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    protected function calculatePaymentAmounts(array $row, float $planPrice): array
+    {
+        // If pending_payment is explicitly provided, use it to calculate amounts
+        // pending_payment = remaining amount to be paid
+        // total_paid = planPrice - pending_payment
+        if (isset($row['pending_payment']) && is_numeric($row['pending_payment'])) {
+            $pendingPayment = max(0, (float) $row['pending_payment']);
+            $totalPaid = max(0, $planPrice - $pendingPayment);
+            $currentPayment = 0; // No additional payment in this import unless specified
+
+            // Auto-infer payment_status from pending_payment if not explicitly set
+            if (! isset($row['payment_status'])) {
+                if ($pendingPayment <= 0) {
+                    $row['payment_status'] = PaymentStatus::COMPLETED->value;
+                } elseif ($pendingPayment >= $planPrice) {
+                    $row['payment_status'] = PaymentStatus::PENDING->value;
+                } else {
+                    $row['payment_status'] = PaymentStatus::PARTIAL->value;
+                }
+            }
+
+            return [$totalPaid, $currentPayment];
+        }
+
+        // Fall back to explicit total_paid and payment_amount_paid
+        $totalPaid = $row['total_paid'] ?? 0;
+        $currentPayment = $row['payment_amount_paid'] ?? 0;
+
+        return [$totalPaid, $currentPayment];
+    }
+
+    protected function handleMemberPayment(
+        GymMember $gymMember,
+        MembershipPlan $membershipPlan,
+        array $row,
+        ?Carbon $membershipStart,
+        ?Carbon $membershipEnd,
+        bool $isNewMember
+    ): void {
+        $planPrice = $membershipPlan->price;
+        $paymentStatus = $row['payment_status'] ?? PaymentStatus::PENDING;
+
+        // Calculate total_paid and currentPayment from pending_payment if provided
+        // pending_payment = remaining amount to be paid
+        // total_paid = planPrice - pending_payment
+        [$totalPaid, $currentPayment] = $this->calculatePaymentAmounts($row, $planPrice);
+
+        $existingPayment = null;
+
+        if (! $isNewMember) {
+            $existingPayment = $gymMember->payments()
+                ->where('membership_plan_id', $membershipPlan->id)
+                ->whereIn('status', [PaymentStatus::PENDING, PaymentStatus::PARTIAL, PaymentStatus::COMPLETED])
+                ->lockForUpdate()
+                ->latest()
+                ->first();
+        }
+
+        $currency = $membershipPlan->currency ?? Currency::INR;
+
+        if ($existingPayment) {
+            $this->updateExistingPayment($existingPayment, $row, $paymentStatus, $totalPaid, $currentPayment, $membershipStart, $membershipEnd);
+        } else {
+            $payment = $this->createNewPayment($gymMember, $membershipPlan, $paymentStatus, $totalPaid, $currentPayment, $planPrice, $currency, $membershipStart, $membershipEnd);
+
+            $gymMember->update([
+                'payment_status' => $payment->status?->value,
+                'latest_payment_at' => $payment->payment_date,
+            ]);
+        }
+    }
+
+    protected function createNewPayment(
+        GymMember $gymMember,
+        MembershipPlan $membershipPlan,
+        PaymentStatus $paymentStatus,
+        float $totalPaid,
+        float $currentPayment,
+        float $planPrice,
+        Currency $currency,
+        ?Carbon $membershipStart,
+        ?Carbon $membershipEnd
+    ): MemberPayment {
+        $payment = $gymMember->payments()->create([
+            'gym_id' => $this->tenantId,
+            'membership_plan_id' => $membershipPlan->id,
+            'amount' => $planPrice,
+            'currency' => $currency,
+            'payment_method' => PaymentMethod::CASH,
+            'status' => $paymentStatus,
+            'notes' => 'Imported via Excel',
+            'payment_date' => now(),
+            'membership_start' => $membershipStart,
+            'membership_end' => $membershipEnd,
+        ]);
+
+        $this->createPaymentTransactions($payment, $paymentStatus, $totalPaid, $currentPayment, $planPrice, $currency);
+        $payment->syncStatusFromTransactions();
+
+        return $payment;
+    }
+
+    protected function updateExistingPayment(
+        MemberPayment $payment,
+        array $row,
+        PaymentStatus $paymentStatus,
+        float $totalPaid,
+        float $currentPayment,
+        ?Carbon $membershipStart,
+        ?Carbon $membershipEnd
+    ): void {
+        $payment->update([
+            'status' => $paymentStatus,
+            'notes' => 'Updated via Excel import',
+            'payment_date' => now(),
+            'membership_start' => $membershipStart ?? $payment->membership_start,
+            'membership_end' => $membershipEnd ?? $payment->membership_end,
+        ]);
+
+        if (in_array($paymentStatus, [PaymentStatus::PARTIAL, PaymentStatus::COMPLETED], true) && $currentPayment > 0) {
+            $payment->transactions()->create([
+                'member_payment_id' => $payment->id,
+                'amount' => min($currentPayment, $payment->remaining_amount),
+                'currency' => $payment->currency,
+                'payment_method' => PaymentMethod::CASH,
+                'transaction_date' => now(),
+                'status' => 'completed',
+                'notes' => 'Imported via Excel - additional payment',
+            ]);
+
+            $payment->syncStatusFromTransactions();
+        }
+
+        $payment->member->update([
+            'payment_status' => $payment->status?->value,
+            'latest_payment_at' => $payment->payment_date,
+        ]);
+    }
+
+    protected function createPaymentTransactions(
+        MemberPayment $payment,
+        PaymentStatus $paymentStatus,
+        float $totalPaid,
+        float $currentPayment,
+        float $planPrice,
+        Currency $currency
+    ): void {
+        match ($paymentStatus) {
+            PaymentStatus::COMPLETED => $this->createCompletedTransaction($payment, $totalPaid, $planPrice, $currency),
+            PaymentStatus::PARTIAL => $this->createPartialTransactions($payment, $totalPaid, $currentPayment, $planPrice, $currency),
+            default => null,
+        };
+    }
+
+    private function createCompletedTransaction(
+        MemberPayment $payment,
+        float $totalPaid,
+        float $planPrice,
+        Currency $currency
+    ): void {
+        $amountToRecord = $totalPaid > 0 ? min($totalPaid, $planPrice) : $planPrice;
+
+        $payment->transactions()->create([
+            'member_payment_id' => $payment->id,
+            'amount' => $amountToRecord,
+            'currency' => $currency,
+            'payment_method' => PaymentMethod::CASH,
+            'transaction_date' => now(),
+            'status' => 'completed',
+            'notes' => 'Imported via Excel - full payment',
+        ]);
+    }
+
+    private function createPartialTransactions(
+        MemberPayment $payment,
+        float $totalPaid,
+        float $currentPayment,
+        float $planPrice,
+        Currency $currency
+    ): void {
+        if ($totalPaid > 0) {
+            $payment->transactions()->create([
+                'member_payment_id' => $payment->id,
+                'amount' => min($totalPaid, $planPrice),
+                'currency' => $currency,
+                'payment_method' => PaymentMethod::CASH,
+                'transaction_date' => now()->subDays(1),
+                'status' => 'completed',
+                'notes' => 'Imported via Excel - historical payments',
+            ]);
+        }
+
+        if ($currentPayment > 0) {
+            $payment->transactions()->create([
+                'member_payment_id' => $payment->id,
+                'amount' => min($currentPayment, $payment->remaining_amount),
+                'currency' => $currency,
+                'payment_method' => PaymentMethod::CASH,
+                'transaction_date' => now(),
+                'status' => 'completed',
+                'notes' => 'Imported via Excel - current payment',
+            ]);
+        }
+    }
+
+    protected function handleAddress(GymMember $gymMember, array $row): void
+    {
+        $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
+
+        $addressData = [
+            'street' => $row['address'],
+            'city' => $city?->id ?? null,
+            'state' => $city?->state_id ?? null,
+            'country' => $city?->state?->country_id ?? null,
+            'postal_code' => $row['zip_code'] ?? null,
+        ];
+
+        if ($gymMember->address) {
+            $gymMember->address()->update($addressData);
+        } else {
+            $gymMember->address()->create($addressData);
         }
     }
 
@@ -183,7 +442,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'membership_start' => ['nullable', 'date'],
             'membership_end' => ['nullable', 'date'],
             'payment_status' => ['nullable', 'string', Rule::enum(PaymentStatus::class)],
+            'total_paid' => ['nullable', 'numeric', 'min:0'],
             'payment_amount_paid' => ['nullable', 'numeric', 'min:0'],
+            'pending_payment' => ['nullable', 'numeric', 'min:0'],
             'membership_plan' => ['nullable', 'string'],
             'trainer_email' => ['nullable', 'string', 'exists:trainers,email'],
         ];
