@@ -55,12 +55,14 @@ class GymMemberExporter extends Exporter
             ExportColumn::make('outstanding_balance')
                 ->label('Outstanding Balance')
                 ->formatStateUsing(function (GymMember $record): float {
-                    $totalPlans = (float) $record->payments()->sum('amount');
+                    $totalPlans = (float) $record->payments->sum('amount');
                     /** @var float $totalPaid */
-                    $totalPaid = $record->payments()
-                        ->with('transactions')
-                        ->get()
-                        ->sum(fn ($payment) => $payment->total_paid);
+                    $totalPaid = $record->payments
+                        ->loadMissing('transactions')
+                        ->sum(fn ($payment) => $payment->transactions
+                            ->where('status', 'completed')
+                            ->sum('amount')
+                        );
 
                     return max(0, $totalPlans - $totalPaid);
                 }),
