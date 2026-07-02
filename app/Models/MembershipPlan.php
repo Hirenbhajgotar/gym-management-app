@@ -73,6 +73,7 @@ class MembershipPlan extends Model
     {
         return [
             'price' => 'decimal:2',
+            'duration' => 'integer',
             'is_active' => 'boolean',
             'currency' => Currency::class,
         ];

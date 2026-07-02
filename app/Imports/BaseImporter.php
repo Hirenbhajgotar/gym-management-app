@@ -12,11 +12,13 @@ use Filament\Actions\Imports\Models\Import;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Database\QueryException;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
@@ -177,7 +179,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                     'data' => json_encode($failedRow),
                     'validation_error' => $failedRow['error'],
                 ]);
-            } else {
+
                 try {
                     // If validation passes, process the row.
                     Log::info('Processing row: ');
@@ -189,12 +191,14 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                         'exception' => $e,
                     ]);
                     $this->failedRows++;
-                    $failedRow = $data;
-                    $failedRow['error'] = $e->getMessage();
+                    $failedRow = $rowData;
+                    $errorMessage = $this->sanitizeErrorMessage($e);
+                    $failedRow['error'] = $errorMessage;
+
                     FailedImportRow::query()->create([
                         'import_id' => $this->importRecord->id,
                         'data' => json_encode($failedRow),
-                        'validation_error' => $e->getMessage(),
+                        'validation_error' => $errorMessage,
                     ]);
                 }
             }
@@ -241,6 +245,31 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
     }
 
     /**
+     * Sanitize an exception message for user-facing output.
+     *
+     * Strips raw SQL and internal system details from exceptions
+     * so the failed-rows CSV only contains meaningful errors.
+     */
+    protected function sanitizeErrorMessage(Exception $e): string
+    {
+        if ($e instanceof ValidationException) {
+            return $e->getMessage();
+        }
+
+        if ($e instanceof QueryException) {
+            Log::warning('QueryException during import row processing', [
+                'exception' => $e,
+            ]);
+
+            return 'There is an issue at DB Lavel, Please try again or contact support';
+        }
+
+        // Application-level exceptions from child importers are kept as-is
+        // (they should already be meaningful messages like "Membership plan not found.")
+        return $e->getMessage();
+    }
+
+    /**
      * Perform actions after the entire collection has been processed.
      *
      * This method is called after all rows in the collection have been processed.
@@ -263,6 +292,22 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
 
         // Send a notification to the user about the import status.
         $this->sendNotification();
+    }
+
+    /**
+     * Escape a single field value for safe CSV output.
+     *
+     * Wraps the value in double quotes if it contains a comma, double-quote,
+     * or newline. Double-quotes within the value are escaped by doubling them.
+     */
+    private function escapeCsvField(string $value): string
+    {
+        //  || str_contains($value, "\n") || str_contains($value, "\r")
+        if (str_contains($value, ',') || str_contains($value, '"')) {
+            return '"' . str_replace('"', '""', $value) . '"';
+        }
+
+        return $value;
     }
 
     /**
@@ -295,24 +340,18 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
 
             $csvContent = '';
 
-            // Add headers
+            // Add headers (apply CSV escaping in case column names contain special characters)
             $firstRow = json_decode($failedRows->first()->data, true);
-            $csvContent .= implode(',', array_keys($firstRow)) . "\n";
+            $csvContent .= implode(',', array_map(
+                fn (string $header): string => $this->escapeCsvField($header),
+                array_keys($firstRow),
+            )) . "\n";
 
             // Add data rows
             foreach ($failedRows as $failedRow) {
                 $data = json_decode($failedRow->data, true);
                 $csvContent .= implode(',', array_map(function (mixed $value): string {
-                    // Cast to string to handle non-string types (int, float, etc.)
-                    // that may come from json_decode when importing numeric data.
-                    $value = (string) $value;
-
-                    // Escape commas and quotes in CSV
-                    if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, "\n") || str_contains($value, "\r")) {
-                        return '"' . str_replace('"', '""', $value) . '"';
-                    }
-
-                    return $value;
+                    return $this->escapeCsvField(is_scalar($value) ? (string) $value : '');
                 }, $data)) . "\n";
             }
 
@@ -352,13 +391,13 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         $message = "Your import has completed and {$successfulRows} imported.";
 
         // Find the user who initiated the import.
-        $recipient = User::query()->find($this->importRecord->user_id);
+        $recipient = User::query()->find($this->importRecord?->user_id);
 
         // If the user is not found, log a warning and exit.
         if (! $recipient) {
             Log::warning('User not found for import notification.', [
-                'import_id' => $this->importRecord->id,
-                'user_id' => $this->importRecord->user_id,
+                'import_id' => $this->importRecord?->id,
+                'user_id' => $this->importRecord?->user_id,
             ]);
 
             return;
@@ -429,6 +468,8 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      */
     public function failed(Throwable $exception): void
     {
+        $importId = $this->importRecord?->id;
+
         // If there is an import record, mark it as completed with an error status.
         if ($this->importRecord) {
             $this->importRecord->update([
@@ -437,8 +478,10 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             ]);
         }
 
-        // Find the user who initiated the import.
-        $recipient = User::query()->find($this->importRecord->user_id);
+        // Find the user who initiated the import (only if we have a record with a user_id).
+        $recipient = $this->importRecord?->user_id
+            ? User::query()->find($this->importRecord->user_id)
+            : null;
 
         // If the user is found, send a failure notification.
         if ($recipient) {
@@ -453,14 +496,14 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
         } else {
             // If the user is not found, log a warning.
             Log::warning('User not found for import failure notification.', [
-                'import_id' => $this->importRecord->id,
-                'user_id' => $this->importRecord->user_id,
+                'import_id' => $importId,
+                'user_id' => $this->importRecord?->user_id,
             ]);
         }
 
         // Log the exception for debugging purposes.
         Log::error('Import failed with exception: ' . $exception->getMessage(), [
-            'import_id' => $this->importRecord->id ?? null,
+            'import_id' => $importId,
             'exception' => $exception,
         ]);
     }
