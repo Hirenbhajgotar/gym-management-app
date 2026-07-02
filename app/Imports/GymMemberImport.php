@@ -420,7 +420,10 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
     protected function handleAddress(GymMember $gymMember, array $row): void
     {
-        $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
+        $city = null;
+        if (isset($row['city'])) {
+            $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
+        }
 
         $addressData = [
             'street' => $row['address'],
@@ -441,7 +444,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:gym_members,email'],
+            'email' => ['nullable', 'string', 'email', 'max:255'],
             'phone' => ['required', 'max:20', Rule::unique('gym_members', 'phone')->where('gym_id', $this->tenantId)],
             'address' => ['nullable', 'string'],
             'weight' => ['nullable', 'numeric'],
