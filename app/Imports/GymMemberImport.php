@@ -67,7 +67,8 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $row['age'] = DateHelper::calculateAge($row['dob']);
         }
 
-        $row['phone'] = ParserHelper::formatPhoneNumberWithCountryCode(is_string($row['phone'] ?? null) ? $row['phone'] : '');
+        $phone = isset($row['phone']) ? (string) $row['phone'] : '';
+        $row['phone'] = ParserHelper::formatPhoneNumberWithCountryCode($phone);
 
         $profileImagePath = null;
         if (isset($row['name'])) {

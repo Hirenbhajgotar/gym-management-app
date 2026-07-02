@@ -10,6 +10,7 @@ use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
+use App\Observers\MemberPaymentObserver;
 use App\Traits\HasTenantAccess;
 use Closure;
 use DB;
@@ -275,9 +276,9 @@ class PaymentsRelationManager extends RelationManager
                                 ]);
                             }
 
-                            // if ($record->gym_id) {
-                            //     MemberPaymentObserver::clearPaymentCaches($record->gym_id);
-                            // }
+                            if ($record->gym_id) {
+                                MemberPaymentObserver::clearPaymentCaches($record->gym_id);
+                            }
 
                             Notification::make()
                                 ->success()
