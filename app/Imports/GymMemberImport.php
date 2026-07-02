@@ -52,7 +52,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         ];
     }
 
-    public function processRow($row): void
+    public function processRow(array $row): void
     {
         $lock = Cache::lock("gym_member_import:{$this->tenantId}", 60);
         $lockAcquired = $lock->block(30);
@@ -159,6 +159,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         return Trainer::query()->where('email', $row['trainer_email'])->first();
     }
 
+    /**
+     * @return array{start: Carbon, end: Carbon}
+     */
     protected function calculateMembershipDates(array $row, MembershipPlan $plan): array
     {
         $hasStart = isset($row['membership_start']);
@@ -202,35 +205,39 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         return ['start' => $start, 'end' => $end];
     }
 
+    /**
+     * @return array{0: float, 1: float, 2: PaymentStatus}
+     */
     protected function calculatePaymentAmounts(array $row, float $planPrice): array
     {
         // If pending_payment is explicitly provided, use it to calculate amounts
         // pending_payment = remaining amount to be paid
         // total_paid = planPrice - pending_payment
         if (isset($row['pending_payment']) && is_numeric($row['pending_payment'])) {
-            $pendingPayment = max(0, (float) $row['pending_payment']);
-            $totalPaid = max(0, $planPrice - $pendingPayment);
-            $currentPayment = 0; // No additional payment in this import unless specified
+            $pendingPayment = max(0.0, (float) $row['pending_payment']);
+            $totalPaid = max(0.0, $planPrice - $pendingPayment);
+            $currentPayment = 0.0; // No additional payment in this import unless specified
 
             // Auto-infer payment_status from pending_payment if not explicitly set
-            if (! isset($row['payment_status'])) {
-                if ($pendingPayment <= 0) {
-                    $row['payment_status'] = PaymentStatus::COMPLETED->value;
-                } elseif ($pendingPayment >= $planPrice) {
-                    $row['payment_status'] = PaymentStatus::PENDING->value;
-                } else {
-                    $row['payment_status'] = PaymentStatus::PARTIAL->value;
-                }
-            }
+            $paymentStatus = isset($row['payment_status']) && is_string($row['payment_status'])
+                ? PaymentStatus::from($row['payment_status'])
+                : match (true) {
+                    $pendingPayment <= 0 => PaymentStatus::COMPLETED,
+                    $pendingPayment >= $planPrice => PaymentStatus::PENDING,
+                    default => PaymentStatus::PARTIAL,
+                };
 
-            return [$totalPaid, $currentPayment];
+            return [$totalPaid, $currentPayment, $paymentStatus];
         }
 
         // Fall back to explicit total_paid and payment_amount_paid
-        $totalPaid = $row['total_paid'] ?? 0;
-        $currentPayment = $row['payment_amount_paid'] ?? 0;
+        $totalPaid = isset($row['total_paid']) && is_numeric($row['total_paid']) ? (float) $row['total_paid'] : 0.0;
+        $currentPayment = isset($row['payment_amount_paid']) && is_numeric($row['payment_amount_paid']) ? (float) $row['payment_amount_paid'] : 0.0;
+        $paymentStatus = isset($row['payment_status']) && is_string($row['payment_status'])
+            ? PaymentStatus::from($row['payment_status'])
+            : PaymentStatus::PENDING;
 
-        return [$totalPaid, $currentPayment];
+        return [$totalPaid, $currentPayment, $paymentStatus];
     }
 
     protected function handleMemberPayment(
@@ -241,13 +248,13 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         ?Carbon $membershipEnd,
         bool $isNewMember
     ): void {
-        $planPrice = $membershipPlan->price;
-        $paymentStatus = $row['payment_status'] ?? PaymentStatus::PENDING;
+        $planPrice = (float) $membershipPlan->price;
+        // $paymentStatus = $row['payment_status'] ?? PaymentStatus::PENDING;
 
-        // Calculate total_paid and currentPayment from pending_payment if provided
-        // pending_payment = remaining amount to be paid
-        // total_paid = planPrice - pending_payment
-        [$totalPaid, $currentPayment] = $this->calculatePaymentAmounts($row, $planPrice);
+        // $paymentStatus now comes out of calculatePaymentAmounts() so the
+        // pending_payment-based auto-inference actually takes effect, and
+        // the value is guaranteed to be a PaymentStatus enum (not a raw string).
+        [$totalPaid, $currentPayment, $paymentStatus] = $this->calculatePaymentAmounts($row, $planPrice);
 
         $existingPayment = null;
 
@@ -260,10 +267,13 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
                 ->first();
         }
 
+        /**
+         * @var Currency $currency
+         */
         $currency = $membershipPlan->currency ?? Currency::INR;
 
         if ($existingPayment) {
-            $this->updateExistingPayment($existingPayment, $row, $paymentStatus, $totalPaid, $currentPayment, $membershipStart, $membershipEnd);
+            $this->updateExistingPayment($existingPayment, $paymentStatus, $totalPaid, $currentPayment, $membershipStart, $membershipEnd);
         } else {
             $payment = $this->createNewPayment($gymMember, $membershipPlan, $paymentStatus, $totalPaid, $currentPayment, $planPrice, $currency, $membershipStart, $membershipEnd);
 
@@ -306,7 +316,6 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
     protected function updateExistingPayment(
         MemberPayment $payment,
-        array $row,
         PaymentStatus $paymentStatus,
         float $totalPaid,
         float $currentPayment,
@@ -335,10 +344,12 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $payment->syncStatusFromTransactions();
         }
 
-        $payment->member->update([
-            'payment_status' => $payment->status?->value,
-            'latest_payment_at' => $payment->payment_date,
-        ]);
+        if ($payment->member) {
+            $payment->member->update([
+                'payment_status' => $payment->status?->value,
+                'latest_payment_at' => $payment->payment_date,
+            ]);
+        }
     }
 
     protected function createPaymentTransactions(
