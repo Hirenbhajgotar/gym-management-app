@@ -77,7 +77,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $row['age'] = DateHelper::calculateAge($row['dob']);
         }
 
-        $phone = isset($row['phone']) ? (string) $row['phone'] : '';
+        $phone = isset($row['phone']) && is_scalar($row['phone']) ? (string) $row['phone'] : '';
         $row['phone'] = ParserHelper::formatPhoneNumberWithCountryCode($phone);
 
         $profileImagePath = null;
@@ -421,7 +421,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     protected function handleAddress(GymMember $gymMember, array $row): void
     {
         $city = null;
-        if (isset($row['city'])) {
+        if (isset($row['city']) && filled($row['city'])) {
             $city = City::with('state')->where('slug', Str::slug($row['city']))->first();
         }
 

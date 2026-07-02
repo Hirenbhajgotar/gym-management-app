@@ -59,7 +59,7 @@ class MembershipPlanResource extends BaseResource
                     ->sortable(),
 
                 TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency)
+                    ->money(fn ($record) => $record->currency?->value ?? 'INR')
                     ->sortable(),
 
                 ToggleColumn::make('is_active')
