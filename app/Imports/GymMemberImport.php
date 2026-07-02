@@ -128,7 +128,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
                     : $membershipStart->copy()->addMonths($membershipPlan->duration ?? 0);
             }
 
-            $gymMember->payments()->create([
+            $payment = $gymMember->payments()->create([
                 'gym_id' => $this->tenantId,
                 'membership_plan_id' => $membershipPlan->id,
                 'amount' => $membershipPlan->price,
@@ -139,6 +139,23 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
                 'payment_date' => now(),
                 'membership_start' => $membershipStart,
                 'membership_end' => $membershipEnd,
+            ]);
+
+            $amountPaid = $row['payment_amount_paid'] ?? $membershipPlan->price;
+            $payment->transactions()->create([
+                'member_payment_id' => $payment->id,
+                'amount' => $amountPaid,
+                'currency' => $membershipPlan->currency ?? Currency::INR,
+                'payment_method' => PaymentMethod::CASH,
+                'transaction_date' => now(),
+                'status' => 'completed',
+                'notes' => 'Imported via Excel',
+            ]);
+
+            $payment->syncStatusFromTransactions();
+
+            $gymMember->update([
+                'payment_status' => $payment->status?->value,
             ]);
         }
 
@@ -165,6 +182,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'membership_start' => ['nullable', 'date'],
             'membership_end' => ['nullable', 'date'],
             'payment_status' => ['nullable', 'string', Rule::enum(PaymentStatus::class)],
+            'payment_amount_paid' => ['nullable', 'numeric', 'min:0'],
             'membership_plan' => ['nullable', 'string'],
             'trainer_email' => ['nullable', 'string', 'exists:trainers,email'],
         ];

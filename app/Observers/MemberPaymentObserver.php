@@ -8,6 +8,7 @@ use App\Events\Reports\RevenueStatsUpdated;
 use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
+use Exception;
 
 class MemberPaymentObserver
 {
@@ -15,6 +16,22 @@ class MemberPaymentObserver
         protected ReportCacheService $reportCacheService,
         protected DashboardCacheService $dashboardCacheService
     ) {}
+
+    public static function clearPaymentCaches(int $gymId): void
+    {
+        try {
+            $service = resolve(ReportCacheService::class);
+            $dashboardService = resolve(DashboardCacheService::class);
+
+            $service->invalidateRevenueReports($gymId);
+            $service->invalidateInsights($gymId);
+            $dashboardService->invalidateRevenueWidgets($gymId);
+
+            broadcast(new RevenueStatsUpdated($gymId));
+        } catch (Exception $e) {
+            logger()->error('Failed to clear payment caches: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Handle the MemberPayment "created" event.

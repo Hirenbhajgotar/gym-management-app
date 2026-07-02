@@ -45,6 +45,8 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
@@ -123,9 +125,9 @@ class GymMemberResource extends BaseResource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(function ($query) {
+            ->modifyQueryUsing(function (EloquentBuilder $query) {
                 // Eager-load biometric consent existence to avoid N+1 queries
-                $query->withExists(['biometricConsents' => function ($query) {
+                $query->withExists(['biometricConsents' => function (EloquentBuilder $query) {
                     $query->whereColumn('biometric_consents.gym_id', 'gym_members.gym_id')
                         ->whereNull('revoked_at');
                 }]);
@@ -278,7 +280,7 @@ class GymMemberResource extends BaseResource
             ])
             ->filters([
                 SelectFilter::make('gym_membership_plan_id')
-                    ->relationship('membershipPlan', 'name', function ($query) {
+                    ->relationship('membershipPlan', 'name', function (EloquentBuilder $query) {
                         if (filament()->getId() === 'admin') {
                             if (auth()->user()->hasRole('gym_owner')) {
                                 return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
@@ -295,18 +297,21 @@ class GymMemberResource extends BaseResource
                 SelectFilter::make('payment_status')
                     ->options([
                         'paid' => 'Paid',
+                        'partial' => 'Partial',
                         'unpaid' => 'Unpaid',
                         'expire' => 'Expired',
                     ])
-                    ->query(function ($query, array $state) {
+                    ->query(function (EloquentBuilder $query, array $state) {
                         $value = $state['value'];
                         if (! $value) {
                             return;
                         }
 
-                        $query->where(function ($query) use ($value) {
+                        $query->where(function (EloquentBuilder $query) use ($value) {
                             if ($value === 'paid') {
                                 $query->where('payment_status', PaymentStatus::COMPLETED);
+                            } elseif ($value === 'partial') {
+                                $query->where('payment_status', PaymentStatus::PARTIAL);
                             } elseif ($value === 'unpaid') {
                                 $query->whereIn('payment_status', [
                                     PaymentStatus::PENDING,
@@ -325,23 +330,24 @@ class GymMemberResource extends BaseResource
                         'frozen' => 'Frozen',
                         'not_frozen' => 'Not Frozen',
                     ])
-                    ->query(function ($query, array $state) {
+                    ->query(function (EloquentBuilder $query, array $state) {
+
                         $value = $state['value'];
                         if (! $value) {
                             return;
                         }
                         if ($value === 'frozen') {
-                            $query->where(function ($q) {
+                            $query->where(function (Builder $q) {
                                 $q->where('is_frozen', true)
-                                    ->where(function ($q2) {
+                                    ->where(function (Builder $q2) {
                                         $q2->whereNull('frozen_until')
                                             ->orWhere('frozen_until', '>=', now());
                                     });
                             });
                         } elseif ($value === 'not_frozen') {
-                            $query->where(function ($q) {
+                            $query->where(function (Builder $q) {
                                 $q->where('is_frozen', false)
-                                    ->orWhere(function ($q2) {
+                                    ->orWhere(function (Builder $q2) {
                                         $q2->where('is_frozen', true)
                                             ->whereNotNull('frozen_until')
                                             ->where('frozen_until', '<', now());
@@ -370,7 +376,7 @@ class GymMemberResource extends BaseResource
                             ->required()
                             ->rules([
                                 'required',
-                                fn ($get) => function ($attribute, $value, $fail) {
+                                fn (callable $get) => function ($attribute, $value, Closure $fail) {
                                     if (! Hash::check($value, auth()->user()->password)) {
                                         $fail('The password is incorrect.');
                                     }
@@ -485,20 +491,20 @@ class GymMemberResource extends BaseResource
                                 ->send();
                         }),
 
-                    Action::make('open_consent_page')
-                        ->label('Open on Tablet (Walk-in)')
-                        ->icon('heroicon-o-device-tablet')
-                        ->color('gray')
-                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
-                        ->url(fn (GymMember $record) => URL::temporarySignedRoute(
-                            'biometric.consent.show',
-                            now()->addHours(1),
-                            [
-                                'gym_member_id' => $record->id,
-                                'gym_id' => $record->gym_id,
-                            ]
-                        ))
-                        ->openUrlInNewTab(),
+                    // Action::make('open_consent_page')
+                    //     ->label('Open on Tablet (Walk-in)')
+                    //     ->icon('heroicon-o-device-tablet')
+                    //     ->color('gray')
+                    //     ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
+                    //     ->url(fn (GymMember $record) => URL::temporarySignedRoute(
+                    //         'biometric.consent.show',
+                    //         now()->addHours(1),
+                    //         [
+                    //             'gym_member_id' => $record->id,
+                    //             'gym_id' => $record->gym_id,
+                    //         ]
+                    //     ))
+                    //     ->openUrlInNewTab(),
 
                     Action::make('revoke_consent')
                         ->label('Revoke Biometric Consent')
@@ -788,9 +794,10 @@ class GymMemberResource extends BaseResource
                 ->numeric()
                 ->suffix('cm')
                 ->step(0.01)
-                ->minValue(0)
-                ->maxValue(300)
+                ->minValue(50)
+                ->maxValue(250)
                 ->placeholder('e.g., 175')
+                ->helperText('Enter height in centimeters (e.g., 175 for 1.75m)')
                 ->visible(fn ($livewire) => $livewire instanceof CreateGymMember),
 
             DatePicker::make('dob')
@@ -872,7 +879,7 @@ class GymMemberResource extends BaseResource
                 ->placeholder('Select a plan')
                 ->reactive()
                 ->required()
-                ->afterStateUpdated(function ($state, callable $set, $get) {
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     if ($state) {
                         $plan = MembershipPlan::query()->find($state);
                         if ($plan && $plan->duration) {
@@ -919,7 +926,7 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->default(now())
                 ->reactive()
-                ->afterStateUpdated(function ($state, callable $set, $get) {
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     $planId = $get('membership_plan_id');
                     if ($planId && $state) {
                         $plan = MembershipPlan::query()->find($planId);
@@ -947,13 +954,30 @@ class GymMemberResource extends BaseResource
                     TextInput::make('amount')
                         ->numeric()
                         ->required()
-                        ->prefix(function ($get) {
-                            $currency = Currency::tryFrom($get('currency') ?? Currency::INR->value);
+                        ->prefix(function (callable $get): string {
+                            $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
 
                             return $currency?->getSymbol() ?? Currency::INR->getSymbol();
                         })
                         ->minValue(0)
                         ->step(0.01)
+                        ->disabled()
+                        ->dehydrated()
+                        ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
+
+                    TextInput::make('amount_paid')
+                        ->label('Amount Paid Now')
+                        ->numeric()
+                        ->required()
+                        ->prefix(function (callable $get): string {
+                            $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
+
+                            return $currency?->getSymbol() ?? Currency::INR->getSymbol();
+                        })
+                        ->minValue(0)
+                        ->step(0.01)
+                        ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
+                        ->default(fn (callable $get) => $get('amount') ?? 0)
                         ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
                     Select::make('currency')
