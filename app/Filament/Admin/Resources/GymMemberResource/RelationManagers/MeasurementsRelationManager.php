@@ -60,7 +60,8 @@ class MeasurementsRelationManager extends RelationManager
                 ->suffix('cm')
                 ->numeric()
                 ->required()
-                ->minValue(0)
+                ->minValue(50)
+                ->maxValue(250)
                 ->live(onBlur: true)
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     self::updateBmi($get, $set);
@@ -120,7 +121,7 @@ class MeasurementsRelationManager extends RelationManager
                 TextColumn::make('bmi')
                     ->label('BMI')
                     ->badge()
-                    ->color(fn ($state) => BmiHelper::getColor($state))
+                    ->color(fn ($state) => BmiHelper::getColor((float) $state))
                     ->description(fn ($record) => $record->status ?? ''),
 
                 TextColumn::make('notes')

@@ -61,7 +61,7 @@ class MemberProgressChart extends BaseChartWidget
                 'datasets' => [
                     [
                         'label' => 'Health Score',
-                        'data' => $measurements->map(fn ($m) => BmiHelper::calculateHealthScore($m->bmi))->toArray(),
+                        'data' => $measurements->map(fn ($m) => BmiHelper::calculateHealthScore((float) $m->bmi))->toArray(),
                         'borderColor' => '#10b981',
                         'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                         'tension' => 0.4,

@@ -9,12 +9,14 @@ use App\Enums\PaymentStatus;
 use App\Observers\MemberPaymentObserver;
 use Database\Factories\MemberPaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Number;
 use Spatie\Activitylog\LogOptions;
@@ -40,10 +42,14 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Activity> $activities
  * @property-read int|null $activities_count
+ * @property-read float $total_paid
+ * @property-read float $remaining_amount
+ * @property-read bool $is_fully_paid
  * @property-read mixed $formatted_amount
  * @property-read Gym|null $gym
  * @property-read GymMember|null $member
  * @property-read MembershipPlan|null $membershipPlan
+ * @property-read Collection<int, MemberPaymentTransaction> $transactions
  *
  * @method static MemberPaymentFactory factory($count = null, $state = [])
  * @method static Builder<static>|MemberPayment newModelQuery()
@@ -73,6 +79,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class MemberPayment extends Model
 {
     use HasFactory, LogsActivity;
+
+    public const DEFAULT_CURRENCY = Currency::INR;
 
     protected $fillable = [
         'gym_id',
@@ -148,12 +156,90 @@ class MemberPayment extends Model
     }
 
     /**
+     * @return HasMany<MemberPaymentTransaction, $this>
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(MemberPaymentTransaction::class);
+    }
+
+    /**
+     * Eager-load a completed-transactions sum for list/table views to avoid
+     * per-row N+1 queries. Use alongside `total_paid_sum` instead of the
+     * `total_paid` accessor when rendering collections.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    #[Scope]
+    protected function withPaymentTotals(Builder $query): Builder
+    {
+        return $query->withSum(
+            ['transactions as total_paid_sum' => fn (Builder $q) => $q->where('status', 'completed')],
+            'amount'
+        );
+    }
+
+    /** @return Attribute<float, never> */
+    protected function totalPaid(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->relationLoaded('transactions')) {
+                    $paidAmount = $this->transactions
+                        ->where('status', 'completed')
+                        ->sum('amount');
+
+                    return is_numeric($paidAmount) ? (float) $paidAmount : 0.0;
+                }
+
+                // Aggregate at the DB level instead of hydrating rows just to sum them.
+                return (float) $this->transactions()
+                    ->where('status', 'completed')
+                    ->sum('amount');
+            }
+        );
+    }
+
+    /** @return Attribute<float, never> */
+    protected function remainingAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => max(0, (float) $this->amount - $this->total_paid),
+        );
+    }
+
+    /** @return Attribute<bool, never> */
+    protected function isFullyPaid(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->remaining_amount <= 0,
+        );
+    }
+
+    public function syncStatusFromTransactions(): void
+    {
+        $status = match (true) {
+            $this->is_fully_paid => PaymentStatus::COMPLETED,
+            $this->total_paid > 0 => PaymentStatus::PARTIAL,
+            default => PaymentStatus::PENDING,
+        };
+
+        if ($this->status !== $status) {
+            $this->update(['status' => $status]);
+        }
+    }
+
+    /**
      * Get formatted amount
      */
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => Number::currency($this->amount, in: $this->currency->value),
+            get: fn () => Number::currency(
+                (float) $this->amount,
+                in: $this->currency->value ?? self::DEFAULT_CURRENCY->value
+            ),
         );
     }
 }

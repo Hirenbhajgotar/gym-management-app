@@ -66,9 +66,12 @@ class MemberMeasurement extends Model
 
     protected static function booted()
     {
-        static::saving(function ($measurement) {
+        static::saving(function (MemberMeasurement $measurement) {
             if ($measurement->weight && $measurement->height) {
-                $measurement->bmi = BmiHelper::calculateBmi($measurement->weight, $measurement->height);
+                $weight = $measurement->weight ?? 0.0;
+                $height = $measurement->height ?? 0.0;
+
+                $measurement->bmi = BmiHelper::calculateBmi($weight, $height);
             }
         });
     }
@@ -85,7 +88,7 @@ class MemberMeasurement extends Model
     {
         return Attribute::make(
             get: function () {
-                $bmi = $this->bmi;
+                $bmi = (float) $this->bmi;
                 if (! $bmi) {
                     return null;
                 }

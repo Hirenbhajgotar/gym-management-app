@@ -6,22 +6,31 @@ namespace App\Helpers;
 
 class BmiHelper
 {
+    /** Maximum BMI value allowed by database column (decimal(5,2) = 999.99) */
+    private const MAX_BMI = 999.99;
+
     /**
      * Calculate BMI based on weight and height.
      *
-     * @param  float  $weight  Weight in kilograms.
-     * @param  float  $height  Height in centimeters.
+     * @param  float|string  $weight  Weight in kilograms.
+     * @param  float|string  $height  Height in centimeters.
      * @return float|null BMI value or null if weight/height is invalid.
      */
-    public static function calculateBmi(float $weight, float $height): ?float
+    public static function calculateBmi(float|string $weight, float|string $height): ?float
     {
+        $weight = (float) $weight;
+        $height = (float) $height;
+
         if ($weight <= 0 || $height <= 0) {
             return null;
         }
 
         $heightInMeters = $height / 100;
 
-        return round($weight / ($heightInMeters ** 2), 1);
+        $bmi = round($weight / ($heightInMeters ** 2), 1);
+
+        // Cap BMI at database column maximum to prevent overflow
+        return $bmi > self::MAX_BMI ? self::MAX_BMI : $bmi;
     }
 
     /**
