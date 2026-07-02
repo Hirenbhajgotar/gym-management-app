@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Currency;
 use App\Observers\MembershipPlanObserver;
 use Database\Factories\MembershipPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -23,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property numeric|null $price
  * @property int|null $duration
- * @property string|null $currency
+ * @property Currency|null $currency
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -73,6 +74,7 @@ class MembershipPlan extends Model
         return [
             'price' => 'decimal:2',
             'is_active' => 'boolean',
+            'currency' => Currency::class,
         ];
     }
 
