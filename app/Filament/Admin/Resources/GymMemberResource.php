@@ -766,7 +766,7 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->unique(GymMember::class, 'phone', ignoreRecord: true, modifyRuleUsing: function (Unique $rule) use ($tenant) {
                     if ($tenant) {
-                        return $rule->where('gym_id', is_int($tenant->getKey()) ? $tenant->getKey() : 0);
+                        return $rule->where('gym_id', $tenant->getKey());
                     }
 
                     return $rule;
