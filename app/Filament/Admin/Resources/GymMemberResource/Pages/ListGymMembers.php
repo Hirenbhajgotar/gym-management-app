@@ -8,11 +8,14 @@ use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Exports\GymMemberExporter;
+use App\Filament\Imports\GymMemberImporter;
 use App\Imports\GymMemberImport;
 use App\Models\GymMember;
 use App\Models\User;
 use Filament\Actions\CreateAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Actions\ImportAction as ActionsImportAction;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 
 class ListGymMembers extends ListRecords
@@ -36,7 +39,15 @@ class ListGymMembers extends ListRecords
                     urlOrData: url('import/templates/xls/member-sample.xlsx'),
                     fileName: 'member-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
-                ),
+                )
+                ->visible(config('app.custom_import_action')),
+
+            ActionsImportAction::make()
+                ->importer(GymMemberImporter::class)
+                ->options([
+                    'tenantId' => Filament::getTenant()?->id,
+                ])
+                ->visible(! config('app.custom_import_action')),
 
             CreateAction::make()
                 ->icon('heroicon-o-plus-circle')

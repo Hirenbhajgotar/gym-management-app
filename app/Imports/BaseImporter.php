@@ -64,6 +64,14 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
     }
 
     /**
+     * Get the Import record tracking this import session.
+     */
+    public function getImportRecord(): ?Import
+    {
+        return $this->importRecord;
+    }
+
+    /**
      * BaseImporter constructor.
      *
      * Initializes the import process by sending a notification to the user
@@ -163,6 +171,9 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                 return ! is_null($value) && $value !== '';
             });
 
+            // Transform data before validation (phone formatting, etc.).
+            $this->transformForValidation($data);
+
             // Transform date columns before validation.
             $this->transformDates($data);
 
@@ -223,6 +234,20 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
 
         // Perform actions after the collection has been processed.
         $this->afterCollection($filteredCollection);
+    }
+
+    /**
+     * Transform data before validation.
+     *
+     * Override in subclasses to apply transformations such as phone formatting,
+     * string normalization, etc. before validation rules are checked.
+     * This ensures rules like Rule::unique check the actual stored value.
+     *
+     * @param  array  $data  The row data to transform (passed by reference).
+     */
+    protected function transformForValidation(array &$data): void
+    {
+        // No-op by default; subclasses may override.
     }
 
     /**

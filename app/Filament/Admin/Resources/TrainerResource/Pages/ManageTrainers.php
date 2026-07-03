@@ -39,6 +39,12 @@ class ManageTrainers extends ManageRecords
                     sampleButtonLabel: 'Download Sample File'
                 ),
 
+            // ActionsImportAction::make()
+            //     ->importer(TrainerImporter::class)
+            //     ->options([
+            //         'gym_id' => Filament::getTenant()?->id,
+            //     ]),
+
             CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary'),
