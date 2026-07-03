@@ -161,7 +161,7 @@ class PaymentsRelationManager extends RelationManager
                 TextColumn::make('total_paid')
                     ->label('Total Paid')
                     ->money(function (MemberPayment $record) {
-                        return $record->currency?->value ?? Currency::INR->value;
+                        return $record?->currency?->value ?? Currency::INR->value;
                     })
                     ->summarize(
                         Summarizer::make()
