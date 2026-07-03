@@ -22,26 +22,28 @@ class TrainerImporter extends Importer
             ImportColumn::make('email')
                 ->rules(['email', 'max:255']),
             ImportColumn::make('phone')
-                ->rules(['max:255']),
+                ->rules(['nullable', 'max:255']),
             ImportColumn::make('specialization')
-                ->rules(['max:255']),
+                ->rules(['nullable', 'max:255']),
             ImportColumn::make('experience_years')
                 ->numeric()
-                ->rules(['integer']),
-            ImportColumn::make('certifications'),
+                ->rules(['nullable', 'integer']),
+            ImportColumn::make('certifications')
+                ->rules(['nullable']),
             ImportColumn::make('is_available')
                 ->boolean()
-                ->rules(['boolean']),
-            ImportColumn::make('available_hours'),
+                ->rules(['nullable', 'boolean']),
+            ImportColumn::make('available_hours')
+                ->rules(['nullable']),
             ImportColumn::make('basic_salary')
                 ->numeric()
-                ->rules(['integer']),
+                ->rules(['nullable', 'integer']),
             ImportColumn::make('pt_salary_per_member')
                 ->label('PT Commission Rate (%)')
                 ->numeric()
-                ->rules(['numeric', 'min:0', 'max:100']),
+                ->rules(['nullable', 'numeric', 'min:0', 'max:100']),
             ImportColumn::make('currency')
-                ->rules(['max:255']),
+                ->rules(['nullable', 'max:255']),
         ];
     }
 
@@ -51,15 +53,15 @@ class TrainerImporter extends Importer
 
         $trainer->fill([
             'name' => $this->data['name'],
-            'phone' => $this->data['phone'],
-            'specialization' => $this->data['specialization'],
-            'experience_years' => $this->data['experience_years'],
-            'certifications' => $this->data['certifications'],
-            'is_available' => $this->data['is_available'],
-            'available_hours' => $this->data['available_hours'],
-            'basic_salary' => $this->data['basic_salary'],
-            'pt_salary_per_member' => $this->data['pt_salary_per_member'],
-            'currency' => $this->data['currency'],
+            'phone' => $this->data['phone'] ?? null,
+            'specialization' => $this->data['specialization'] ?? null,
+            'experience_years' => $this->data['experience_years'] ?? null,
+            'certifications' => $this->data['certifications'] ?? null,
+            'is_available' => $this->data['is_available'] ?? null,
+            'available_hours' => $this->data['available_hours'] ?? null,
+            'basic_salary' => $this->data['basic_salary'] ?? null,
+            'pt_salary_per_member' => $this->data['pt_salary_per_member'] ?? null,
+            'currency' => $this->data['currency'] ?? null,
             'gym_id' => $this->options['gym_id'],
         ]);
 
