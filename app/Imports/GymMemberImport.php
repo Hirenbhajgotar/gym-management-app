@@ -43,6 +43,18 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         parent::__construct();
     }
 
+    /**
+     * Transform data before validation so the unique phone rule
+     * checks against the formatted (stored) phone value.
+     */
+    protected function transformForValidation(array &$data): void
+    {
+        if (isset($data['phone'])) {
+            $phone = is_scalar($data['phone']) ? (string) $data['phone'] : '';
+            $data['phone'] = ParserHelper::formatPhoneNumberWithCountryCode($phone);
+        }
+    }
+
     public function columnFormats(): array
     {
         return [
@@ -77,9 +89,6 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $row['age'] = DateHelper::calculateAge($row['dob']);
         }
 
-        $phone = isset($row['phone']) && is_scalar($row['phone']) ? (string) $row['phone'] : '';
-        $row['phone'] = ParserHelper::formatPhoneNumberWithCountryCode($phone);
-
         $profileImagePath = null;
         if (isset($row['name'])) {
             $profileImagePath = resolve(AvatarService::class)->generate($row['name']);
@@ -110,21 +119,21 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
         ];
 
-        $gymMember = GymMember::query()
+        $existingMember = GymMember::query()
             ->where('gym_id', $this->tenantId)
             ->where('email', $memberData['email'])
             ->where('phone', $memberData['phone'])
             ->lockForUpdate()
             ->first();
 
-        $isNewMember = false;
-
-        if ($gymMember) {
-            $gymMember->update($memberData);
-        } else {
-            $gymMember = GymMember::query()->create($memberData);
-            $isNewMember = true;
+        if ($existingMember) {
+            throw ValidationException::withMessages([
+                'phone' => 'A member with this phone number and email already exists.',
+            ]);
         }
+
+        $gymMember = GymMember::query()->create($memberData);
+        $isNewMember = true;
 
         if ($membershipPlan) {
             $this->handleMemberPayment($gymMember, $membershipPlan, $row, $membershipStart, $membershipEnd, $isNewMember);

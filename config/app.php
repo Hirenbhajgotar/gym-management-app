@@ -150,4 +150,6 @@ return [
     ],
 
     'transaction_deadlock_max_attempts' => (int) env('TRANSACTION_DEADLOCK_MAX_ATTEMPTS', 3),
+
+    'custom_import_action' => (bool) env('CUSTOM_IMPORT_ACTION', true),
 ];

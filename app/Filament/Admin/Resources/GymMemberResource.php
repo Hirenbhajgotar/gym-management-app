@@ -73,7 +73,7 @@ class GymMemberResource extends BaseResource
         }
 
         return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [21600, 604800], function () {
-            return (string) (static::$model)::query()->count();
+            return (string) (static::$model)::query()->notFrozen()->membershipActive()->count();
         }) ?: null;
     }
 
