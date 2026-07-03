@@ -8,11 +8,14 @@ use App\Filament\Actions\ExportAction;
 use App\Filament\Actions\ImportAction;
 use App\Filament\Admin\Resources\TrainerResource;
 use App\Filament\Exports\TrainerExporter;
+use App\Filament\Imports\TrainerImporter;
 use App\Imports\TrainerImport;
 use App\Models\Trainer;
 use App\Models\User;
 use Filament\Actions\CreateAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
+use Filament\Actions\ImportAction as ActionsImportAction;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,6 +41,12 @@ class ManageTrainers extends ManageRecords
                     urlOrData: url('import/templates/xls/trainers-sample.xlsx'),
                     sampleButtonLabel: 'Download Sample File'
                 ),
+
+            // ActionsImportAction::make()
+            //     ->importer(TrainerImporter::class)
+            //     ->options([
+            //         'gym_id' => Filament::getTenant()?->id,
+            //     ]),
 
             CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
