@@ -161,7 +161,7 @@ class PaymentsRelationManager extends RelationManager
                 TextColumn::make('total_paid')
                     ->label('Total Paid')
                     ->money(function (MemberPayment $record) {
-                        return $record->currency->value ?? Currency::INR->value;
+                        return $record->currency?->value ?? Currency::INR->value;
                     })
                     ->summarize(
                         Summarizer::make()
@@ -291,7 +291,7 @@ class PaymentsRelationManager extends RelationManager
                 EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan->name}")
+                    ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan?->name}")
                     ->visible(function (MemberPayment $record) {
                         return $record->status?->value !== PaymentStatus::EXPIRED->value;
                     })

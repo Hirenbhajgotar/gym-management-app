@@ -172,7 +172,7 @@ class GymMemberImporter extends Importer
             $record->profile_photo = resolve(AvatarService::class)->generate($this->data['name']);
         }
 
-        $record->user_id = Gym::query()->find($tenantId)?->owner?->id ?? $record->user_id;
+        $record->user_id = Gym::query()->find($tenantId)?->owner()?->id ?? $record->user_id;
 
         // The fillRecordUsing closures cannot use $this because getColumns() is
         // static, so we reconstruct stashed values here from data already on the
