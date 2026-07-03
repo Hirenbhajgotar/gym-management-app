@@ -62,8 +62,11 @@ class GymMemberImporter extends Importer
                 // We resolve + stash the plan ourselves (instead of using
                 // relationship()) because we also need its price/duration/
                 // currency later on to build the payment ledger entry.
-                ->fillRecordUsing(function (GymMember $record, string $state): void {
-                    $plan = MembershipPlan::query()->where('name', $state)->first();
+                ->fillRecordUsing(function (GymMember $record, string $state, array $options): void {
+                    $plan = MembershipPlan::query()
+                        ->where('gym_id', $options['tenantId'])
+                        ->where('name', $state)
+                        ->first();
 
                     throw_unless($plan, RowImportFailedException::class, "Membership plan [{$state}] not found.");
 
@@ -100,12 +103,15 @@ class GymMemberImporter extends Importer
                 ->label('Trainer Email')
                 ->rules(['nullable', 'string', 'exists:trainers,email'])
                 ->guess(['trainer email', 'trainer e-mail', 'trainer'])
-                ->fillRecordUsing(function (GymMember $record, ?string $state): void {
+                ->fillRecordUsing(function (GymMember $record, ?string $state, array $options): void {
                     if (blank($state)) {
                         return;
                     }
 
-                    $trainer = Trainer::query()->where('email', $state)->first();
+                    $trainer = Trainer::query()
+                        ->where('gym_id', $options['tenantId'])
+                        ->where('email', $state)
+                        ->first();
 
                     $record->trainer_id = $trainer?->id;
                 }),
@@ -166,7 +172,7 @@ class GymMemberImporter extends Importer
             $record->profile_photo = resolve(AvatarService::class)->generate($this->data['name']);
         }
 
-        $record->user_id = Gym::query()->find($tenantId)?->owner()->id ?? $record->user_id;
+        $record->user_id = Gym::query()->find($tenantId)?->owner?->id ?? $record->user_id;
 
         // The fillRecordUsing closures cannot use $this because getColumns() is
         // static, so we reconstruct stashed values here from data already on the
@@ -174,7 +180,9 @@ class GymMemberImporter extends Importer
         $this->membershipEndInput = $this->data['membership_end'] ?? null;
 
         if ($record->gym_membership_plan_id) {
-            $this->membershipPlan = MembershipPlan::query()->find($record->gym_membership_plan_id);
+            $this->membershipPlan = MembershipPlan::query()
+                ->where('gym_id', $tenantId)
+                ->find($record->gym_membership_plan_id);
         }
 
         if ($this->membershipPlan) {
@@ -259,7 +267,9 @@ class GymMemberImporter extends Importer
     protected function handleMemberPayment(): void
     {
         $gymMember = $this->record;
+
         $plan = $this->membershipPlan;
+
         $planPrice = (float) $plan->price;
 
         [$totalPaid, $paymentStatus] = $this->calculatePaymentAmounts($planPrice);
