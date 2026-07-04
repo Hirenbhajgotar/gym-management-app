@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
+use Rector\Transform\Rector\String_\StringToClassConstantRector;
 use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 use RectorLaravel\Rector\Empty_\EmptyToBlankAndFilledFuncRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
@@ -24,6 +25,10 @@ return RectorConfig::configure()
     ])
     ->withSkip([
         __DIR__ . '/app/Permissions/TeamPermissionRegistrar.php',
+        StringToClassConstantRector::class => [
+            __DIR__ . '/routes/auth.php',
+            __DIR__ . '/tests/Feature/Auth/AuthenticationTest.php',
+        ],
     ])
     ->withSets([
         SetList::DEAD_CODE,
