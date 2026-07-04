@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\GymMember;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -81,7 +80,6 @@ class WhatsAppVariableResolver
     /**
      * Resolve all template variables using actual data from the provided context.
      *
-     * @param  array{member?: GymMember, custom?: array<string, string>}  $context
      * @return array<string, string> Variables keyed by 1-indexed string (e.g., {"1": "John", "2": "FitZone"})
      */
     public function resolve(WhatsAppTemplate $template, array $context = []): array

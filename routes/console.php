@@ -33,7 +33,10 @@ Schedule::command('exports:clean-invalid')->weekly();
 Schedule::command('followups:send-reminders')->daily();
 
 // Send pending lead reminders daily
-Schedule::command('leads:send-pending-reminders')->daily();
+Schedule::command('leads:send-pending-reminders')
+    ->daily()
+    ->withoutOverlapping(1440)
+    ->onOneServer();
 
 // Cleanup soft-deleted templates older than 15 days
 Schedule::command('app:cleanup-whatsapp-templates')->dailyAt('04:00');
