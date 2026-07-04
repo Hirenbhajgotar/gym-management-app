@@ -151,6 +151,11 @@ class GymMember extends Model
         'frozen_by',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -168,9 +173,12 @@ class GymMember extends Model
 
     protected static function booted()
     {
-        static::saving(function ($member) {
+        static::saving(function (self $member) {
+            $member->loadMissing('membershipPlan');
+
             if ($member->membership_start && $member->gym_membership_plan_id) {
                 $plan = $member->membershipPlan;
+
                 if ($plan && $plan->duration) {
                     $member->membership_end = Date::parse($member->membership_start)->addMonths($plan->duration);
                 }
