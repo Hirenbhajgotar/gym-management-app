@@ -12,14 +12,18 @@ use App\Filament\Imports\GymMemberImporter;
 use App\Imports\GymMemberImport;
 use App\Models\GymMember;
 use App\Models\User;
+use App\Traits\HasTenantAccess;
 use Filament\Actions\CreateAction;
 use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Actions\ImportAction as ActionsImportAction;
-use Filament\Facades\Filament;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListGymMembers extends ListRecords
 {
+    use HasTenantAccess;
+
     protected static string $resource = GymMemberResource::class;
 
     protected function getHeaderActions(): array
@@ -40,14 +44,16 @@ class ListGymMembers extends ListRecords
                     fileName: 'member-sample.xlsx',
                     sampleButtonLabel: 'Download Sample File'
                 )
-                ->visible(config('app.custom_import_action')),
+                ->visible(config()->boolean('app.custom_import_action')),
 
             ActionsImportAction::make()
                 ->importer(GymMemberImporter::class)
+                ->label('Import Members')
+                ->icon('heroicon-o-arrow-down-tray')
                 ->options([
-                    'tenantId' => Filament::getTenant()?->id,
+                    'tenantId' => $this->getGymId(),
                 ])
-                ->visible(! config('app.custom_import_action')),
+                ->visible(! config()->boolean('app.custom_import_action')),
 
             CreateAction::make()
                 ->icon('heroicon-o-plus-circle')
@@ -68,5 +74,19 @@ class ListGymMembers extends ListRecords
         $user = auth()->user();
 
         return $user;
+    }
+
+    public function getTabs(): array
+    {
+        return [
+            'active' => Tab::make('Active')
+                ->modifyQueryUsing(function (Builder $query) {
+                    $query->membershipActive();
+                }),
+            'expired' => Tab::make('Expired')
+                ->modifyQueryUsing(function (Builder $query) {
+                    $query->membershipExpired();
+                }),
+        ];
     }
 }
