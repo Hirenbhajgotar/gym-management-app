@@ -32,9 +32,7 @@ trait HasTenantAccess
         /** @var Gym|null $gym */
         $gym = $this->getGym();
 
-        if (! $gym) {
-            throw new RuntimeException('No tenant available');
-        }
+        throw_unless($gym, RuntimeException::class, 'No tenant available');
 
         return $gym->id;
     }
@@ -47,9 +45,7 @@ trait HasTenantAccess
         /** @var Gym|null $gym */
         $gym = $this->getGym();
 
-        if (! $gym) {
-            throw new RuntimeException('No tenant available');
-        }
+        throw_unless($gym, RuntimeException::class, 'No tenant available');
 
         return $gym->slug;
     }
