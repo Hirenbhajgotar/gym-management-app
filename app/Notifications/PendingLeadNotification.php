@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class PendingLeadNotification extends BaseTenantNotification
 {
-    private readonly User $owner;
+    private readonly ?User $owner;
 
     /**
      * Create a new notification instance.
@@ -33,6 +33,8 @@ class PendingLeadNotification extends BaseTenantNotification
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param  User  $notifiable
      */
     public function toMail(object $notifiable): MailMessage
     {
@@ -56,6 +58,8 @@ class PendingLeadNotification extends BaseTenantNotification
 
     /**
      * Get the WhatsApp representation of the notification.
+     *
+     * @param  User  $notifiable
      */
     public function toWhatsapp(object $notifiable): ?array
     {

@@ -59,6 +59,8 @@ class MembershipPlan extends Model
 {
     use HasFactory;
 
+    public const NAVIGATION_BADGE_CACHE_KEY = 'nav_badge:membership_plan:tenant_id:';
+
     protected $fillable = [
         'gym_id',
         'name',

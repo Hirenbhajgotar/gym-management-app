@@ -6,6 +6,7 @@ namespace App\Traits;
 
 use App\Models\Gym;
 use Filament\Facades\Filament;
+use RuntimeException;
 
 /**
  * Trait for type-safe tenant access in Filament components
@@ -15,9 +16,9 @@ trait HasTenantAccess
     /**
      * Get the current gym tenant with proper type hinting
      */
-    public function getGym(): Gym
+    public function getGym(): ?Gym
     {
-        /** @var Gym $gym */
+        /** @var Gym|null $gym */
         $gym = Filament::getTenant();
 
         return $gym;
@@ -28,15 +29,24 @@ trait HasTenantAccess
      */
     public function getGymId(): int|string
     {
-        return $this->getGym()->id;
+        /** @var Gym|null $gym */
+        $gym = $this->getGym();
 
+        throw_unless($gym, RuntimeException::class, 'No tenant available');
+
+        return $gym->id;
     }
 
     /**
      * Get the current gym slug
      */
-    public function getTenantSlug(): string
+    public function getTenantSlug(): ?string
     {
-        return $this->getGym()->slug;
+        /** @var Gym|null $gym */
+        $gym = $this->getGym();
+
+        throw_unless($gym, RuntimeException::class, 'No tenant available');
+
+        return $gym->slug;
     }
 }
