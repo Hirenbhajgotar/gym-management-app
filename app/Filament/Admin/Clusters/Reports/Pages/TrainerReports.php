@@ -18,6 +18,7 @@ use App\Services\ReportCacheService;
 use App\Traits\HasReportFilters;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class TrainerReports extends BasePage implements ShareableReport
@@ -71,7 +72,7 @@ class TrainerReports extends BasePage implements ShareableReport
             $activeTrainers = Trainer::query()->where('gym_id', $gymId)->where('is_available', true)->count();
 
             // Total members with trainers
-            $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)->whereNotNull('trainer_id')->count();
+            $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)->membershipActive()->whereNotNull('trainer_id')->count();
             $totalActiveMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
 
             // Average clients per trainer
@@ -92,7 +93,7 @@ class TrainerReports extends BasePage implements ShareableReport
 
             // Top trainer by client count
             $topTrainer = Trainer::query()->where('gym_id', $gymId)
-                ->withCount('members')
+                ->withCount(['members' => fn (Builder $q) => $q->membershipActive()])
                 ->orderByDesc('members_count')
                 ->first();
 

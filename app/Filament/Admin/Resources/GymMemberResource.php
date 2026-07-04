@@ -72,8 +72,11 @@ class GymMemberResource extends BaseResource
             return null;
         }
 
-        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [21600, 604800], function () {
-            return (string) (static::$model)::query()->notFrozen()->membershipActive()->count();
+        /** @var string $tenantKey */
+        $tenantKey = $tenant->getKey();
+
+        return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenantKey, [21600, 604800], function () {
+            return (string) GymMember::query()->notFrozen()->membershipActive()->count();
         }) ?: null;
     }
 
@@ -142,19 +145,20 @@ class GymMemberResource extends BaseResource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('email')
-                    ->searchable()
-                    ->copyable()
-                    ->copyMessage('Email copied!')
-                    ->icon('heroicon-o-envelope')
-                    ->color('gray'),
-
                 TextColumn::make('phone')
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Phone copied!')
                     ->icon('heroicon-o-phone')
                     ->color('gray'),
+
+                TextColumn::make('email')
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessage('Email copied!')
+                    ->icon('heroicon-o-envelope')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('membershipPlan.name')
                     ->label('Plan')
@@ -165,7 +169,8 @@ class GymMemberResource extends BaseResource
                     ->date()
                     ->badge()
                     ->icon('heroicon-o-calendar')
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('membership_end')
                     ->formatStateUsing(function ($state) {
@@ -249,13 +254,14 @@ class GymMemberResource extends BaseResource
 
                 TextColumn::make('biometric_consent_status')
                     ->label('Biometric Consent')
-                    ->getStateUsing(fn (GymMember $record) => $record->biometric_consents_exists ? 'Consented' : 'Pending')
+                    ->getStateUsing(fn (GymMember $record) => $record->hasActiveBiometricConsent() ? 'Consented' : 'Pending')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
                         'Consented' => 'success',
                         'Pending' => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_frozen')
                     ->label('Frozen')
@@ -264,13 +270,15 @@ class GymMemberResource extends BaseResource
                     ->falseIcon('heroicon-o-play')
                     ->trueColor('warning')
                     ->falseColor('gray')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('frozen_until')
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
-                    ->visible(fn ($record) => $record?->is_frozen ?? true),
+                    ->visible(fn ($record) => $record?->is_frozen ?? true)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 // Tables\Columns\TextColumn::make('payments_sum_amount')
                 //     ->label('Total Paid')
                 //     ->money('INR')
@@ -451,7 +459,7 @@ class GymMemberResource extends BaseResource
                         ->label('Resend Consent Email')
                         ->icon('heroicon-o-envelope')
                         ->color('info')
-                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
                             && filled($record->email)
                         )
                         ->action(function (GymMember $record) {
@@ -468,7 +476,7 @@ class GymMemberResource extends BaseResource
                         ->label('Copy Consent Link')
                         ->icon('heroicon-o-link')
                         ->color('gray')
-                        ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
+                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
                         ->action(function (GymMember $record, $livewire) {
                             $url = URL::temporarySignedRoute(
                                 'biometric.consent.show',
@@ -495,7 +503,7 @@ class GymMemberResource extends BaseResource
                     //     ->label('Open on Tablet (Walk-in)')
                     //     ->icon('heroicon-o-device-tablet')
                     //     ->color('gray')
-                    //     ->visible(fn (GymMember $record) => ! $record->biometric_consents_exists)
+                    //     ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
                     //     ->url(fn (GymMember $record) => URL::temporarySignedRoute(
                     //         'biometric.consent.show',
                     //         now()->addHours(1),
@@ -510,7 +518,7 @@ class GymMemberResource extends BaseResource
                         ->label('Revoke Biometric Consent')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
-                        ->visible(fn (GymMember $record) => $record->biometric_consents_exists)
+                        ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
                         ->requiresConfirmation()
                         ->modalHeading('Revoke Biometric Consent')
                         ->modalDescription(
@@ -765,11 +773,10 @@ class GymMemberResource extends BaseResource
                 ->defaultCountry('IN')
                 ->required()
                 ->unique(GymMember::class, 'phone', ignoreRecord: true, modifyRuleUsing: function (Unique $rule) use ($tenant) {
-                    if ($tenant) {
-                        return $rule->where('gym_id', $tenant->getKey());
-                    }
-
-                    return $rule;
+                    /**
+                     * @var Gym $tenant
+                     */
+                    return $rule->where('gym_id', $tenant->id);
                 })
                 ->validateFor(
                     country: ['IN', 'PK', 'BD', 'US'],

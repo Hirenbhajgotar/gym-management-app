@@ -27,6 +27,7 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class MembershipPlanResource extends BaseResource
 {
@@ -35,6 +36,22 @@ class MembershipPlanResource extends BaseResource
     protected static ?string $navigationLabel = 'Membership Plans';
 
     protected static ?string $navigationGroup = 'Gym Management';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $tenant = Filament::getTenant();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        /** @var string $tenantKey */
+        $tenantKey = $tenant->getKey();
+
+        return Cache::flexible(MembershipPlan::NAVIGATION_BADGE_CACHE_KEY . $tenantKey, [21600, 604800], function () {
+            return (string) MembershipPlan::query()->isActive()->count();
+        }) ?: null;
+    }
 
     public static function form(Form $form): Form
     {
@@ -59,7 +76,7 @@ class MembershipPlanResource extends BaseResource
                     ->sortable(),
 
                 TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency?->value ?? 'INR')
+                    ->money(fn (MembershipPlan $record) => $record?->currency->value ?? 'INR')
                     ->sortable(),
 
                 ToggleColumn::make('is_active')

@@ -98,6 +98,11 @@ class MemberPayment extends Model
         'invoice_path',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -122,6 +127,8 @@ class MemberPayment extends Model
     public function getDescriptionForEvent(string $eventName): string
     {
         $payment = $this->formatted_amount;
+
+        $this->loadMissing('member');
 
         return match ($eventName) {
             'created' => "Payment of {$payment} received from {$this->member?->name}",

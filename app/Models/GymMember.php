@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
@@ -150,6 +151,11 @@ class GymMember extends Model
         'frozen_by',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -167,9 +173,12 @@ class GymMember extends Model
 
     protected static function booted()
     {
-        static::saving(function ($member) {
+        static::saving(function (self $member) {
+            $member->loadMissing('membershipPlan');
+
             if ($member->membership_start && $member->gym_membership_plan_id) {
                 $plan = $member->membershipPlan;
+
                 if ($plan && $plan->duration) {
                     $member->membership_end = Date::parse($member->membership_start)->addMonths($plan->duration);
                 }
@@ -309,7 +318,14 @@ class GymMember extends Model
 
     public function hasActiveBiometricConsent(): bool
     {
-        return $this->activeBiometricConsent() !== null;
+        if (array_key_exists('biometric_consents_exists', $this->attributes)) {
+            return (bool) $this->attributes['biometric_consents_exists'];
+        }
+
+        return $this->biometricConsents()
+            ->where('gym_id', $this->gym_id)
+            ->whereNull('revoked_at')
+            ->exists();
     }
 
     // =========================
@@ -477,7 +493,9 @@ class GymMember extends Model
         }
 
         // If frozen until is set and has passed, auto-unfreeze
-        if ($this->frozen_until && $this->frozen_until->isPast()) {
+        $frozenUntil = $this->frozen_until;
+        /** @var Carbon|null $frozenUntil */
+        if ($frozenUntil !== null && $frozenUntil->isPast()) {
             $this->unfreeze();
 
             return false;
@@ -493,7 +511,9 @@ class GymMember extends Model
      */
     public function autoUnfreezeIfExpired(): bool
     {
-        if ($this->is_frozen && $this->frozen_until && $this->frozen_until->isPast()) {
+        $frozenUntil = $this->frozen_until;
+        /** @var Carbon|null $frozenUntil */
+        if ($this->is_frozen && $frozenUntil !== null && $frozenUntil->isPast()) {
             $this->unfreeze();
 
             return true;
@@ -508,7 +528,9 @@ class GymMember extends Model
      */
     public function canAccessGym(): bool
     {
-        if (! $this->membership_end || $this->membership_end->isPast()) {
+        $membershipEnd = $this->membership_end;
+        /** @var Carbon|null $membershipEnd */
+        if ($membershipEnd === null || $membershipEnd->isPast()) {
             return false;
         }
 
@@ -554,8 +576,8 @@ class GymMember extends Model
             get: function () {
                 $payments = $this->loadPaymentsWithTransactions();
 
-                $totalPlans = (float) $payments->sum('amount');
-                $totalPaid = (float) $payments->sum(fn (MemberPayment $payment) => $payment->total_paid);
+                $totalPlans = $payments->sum(fn (MemberPayment $payment): float => (float) $payment->amount);
+                $totalPaid = $payments->sum(fn (MemberPayment $payment): float => $payment->total_paid);
 
                 return max(0, $totalPlans - $totalPaid);
             },

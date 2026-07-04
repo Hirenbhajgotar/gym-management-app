@@ -1135,18 +1135,6 @@ parameters:
 			path: app/Console/Commands/GenerateFavicons.php
 
 		-
-			message: '#^Method App\\Console\\Commands\\GenerateSitemap\:\:buildIndex\(\) has parameter \$model with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Console/Commands/GenerateSitemap.php
-
-		-
-			message: '#^Parameter \#1 \$tag of method Spatie\\Sitemap\\Sitemap\:\:add\(\) expects iterable\|Spatie\\Sitemap\\Contracts\\Sitemapable\|Spatie\\Sitemap\\Tags\\Url\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Console/Commands/GenerateSitemap.php
-
-		-
 			message: '#^Binary operation "\." between ''Current roles\: '' and mixed results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1
