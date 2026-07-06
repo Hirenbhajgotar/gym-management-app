@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotification;
@@ -145,11 +144,12 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
     // Relationships
     // =========================
     /**
-     * @return BelongsToMany<Gym, $this, Pivot>
+     * @return BelongsToMany<Gym, $this, GymUser>
      */
     public function gyms(): BelongsToMany
     {
         return $this->belongsToMany(Gym::class, 'gym_user')
+            ->using(GymUser::class)
             ->withPivot(['role', 'active'])
             ->withTimestamps();
     }

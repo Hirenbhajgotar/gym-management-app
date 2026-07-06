@@ -11,10 +11,11 @@ use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 
 abstract class BaseTenantNotification extends Notification implements HasGymContext, ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
     protected Gym $gym;
 
