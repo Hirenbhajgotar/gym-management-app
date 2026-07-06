@@ -26,7 +26,7 @@ class ReportPdfChartDataTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->gym = Gym::factory()->create(['owner_id' => $this->user->id]);
+        $this->gym = Gym::factory()->create();
     }
 
     public function test_lead_reports_has_chart_data_methods(): void

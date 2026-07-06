@@ -18,7 +18,7 @@ class LeadConversionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_lead_can_be_converted_to_member_with_notes_and_payment()
+    public function test_lead_can_be_converted_to_member_with_notes_and_payment(): void
     {
         // 1. Setup
         $gym = Gym::factory()->create();
@@ -62,8 +62,8 @@ class LeadConversionTest extends TestCase
             'notes' => 'Member seemed interested in personal training later.',
         ]);
 
-        $this->assertDatabaseHas('payments', [
-            'gym_member_id' => $member->id,
+        $this->assertDatabaseHas('member_payments', [
+            'member_id' => $member->id,
             'amount' => 1000,
             'notes' => 'Payment notes for the receipt.',
         ]);

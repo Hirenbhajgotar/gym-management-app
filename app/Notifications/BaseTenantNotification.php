@@ -59,7 +59,8 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getGymWhatsAppConfig(): ?array
     {
-        $whatsAppAccount = $this->gym?->whatsAppAccount;
+        $this->gym->loadMissing('whatsAppAccount');
+        $whatsAppAccount = $this->gym->whatsAppAccount;
 
         if (! $whatsAppAccount) {
             return null;
