@@ -53,17 +53,15 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     #[Test]
     public function test_command_is_registered(): void
     {
-        $this->assertTrue(
-            $this->artisan('whatsapp:import-templates', ['--help' => true])
-                ->expectsOutputToContain('whatsapp:import-templates')
-                ->isSuccessful()
-        );
+        $this->artisanCommand('whatsapp:import-templates', ['--help' => true])
+            ->expectsOutputToContain('whatsapp:import-templates')
+            ->assertSuccessful();
     }
 
     #[Test]
     public function test_help_shows_options(): void
     {
-        $this->artisan('whatsapp:import-templates', ['--help' => true])
+        $this->artisanCommand('whatsapp:import-templates', ['--help' => true])
             ->assertSuccessful()
             ->expectsOutputToContain('--gym')
             ->expectsOutputToContain('--sync');
@@ -74,12 +72,12 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     {
         Queue::fake();
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $this->gym->id])
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $this->gym->id])
             ->assertSuccessful()
-            ->expectsOutputToContain("Gym ID: {$this->gym->id}")
-            ->expectsOutputToContain('Job dispatched');
+            ->expectsOutputToContain("Importing templates for Gym: {$this->gym->name}")
+            ->expectsOutputToContain('Job dispatched to queue: whatsapp-templates');
 
-        Queue::assertPushed(ImportWhatsAppTemplatesJob::class, function ($job) {
+        Queue::assertPushed(ImportWhatsAppTemplatesJob::class, function (ImportWhatsAppTemplatesJob $job) {
             return $job->gymId === $this->gym->id;
         });
     }
@@ -89,7 +87,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     {
         Queue::fake();
 
-        $this->artisan('whatsapp:import-templates', [
+        $this->artisanCommand('whatsapp:import-templates', [
             '--gym' => $this->gym->id,
             '--sync' => true,
         ])
@@ -113,7 +111,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
             'provider_type' => WhatsAppProviderTypeEnum::TWILIO,
         ]);
 
-        $this->artisan('whatsapp:import-templates')
+        $this->artisanCommand('whatsapp:import-templates')
             ->assertSuccessful()
             ->expectsOutputToContain('Found 2 gym(s)')
             ->expectsOutputToContain('Jobs dispatched/synced: 2');
@@ -124,8 +122,8 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     #[Test]
     public function test_shows_error_for_nonexistent_gym(): void
     {
-        $this->artisan('whatsapp:import-templates', ['--gym' => 99999])
-            ->assertSuccessful()
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => 99999])
+            ->assertFailed()
             ->expectsOutputToContain('not found');
     }
 
@@ -134,8 +132,8 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     {
         $gymWithoutAccount = Gym::factory()->create();
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $gymWithoutAccount->id])
-            ->assertSuccessful()
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $gymWithoutAccount->id])
+            ->assertFailed()
             ->expectsOutputToContain('does not have a WhatsApp account');
     }
 
@@ -149,14 +147,14 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
             'gym_id' => $inactiveGym->id,
             'twilio_account_sid' => 'ACinactive_sid',
             'twilio_auth_token' => 'inactive_token',
-            'status' => WhatsAppAccountStatusEnum::INACTIVE,
+            'status' => WhatsAppAccountStatusEnum::REJECTED,
             'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
             'provider_type' => WhatsAppProviderTypeEnum::TWILIO,
         ]);
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $inactiveGym->id])
-            ->assertSuccessful()
-            ->expectsOutputToContain('does not have a WhatsApp account');
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $inactiveGym->id])
+            ->assertFailed()
+            ->expectsOutputToContain('does not have an active or verified WhatsApp account');
     }
 
     #[Test]
@@ -168,7 +166,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
         $this->whatsappAccount->waba_id = 'test_waba_abc';
         $this->whatsappAccount->save();
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $this->gym->id])
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $this->gym->id])
             ->assertSuccessful()
             ->expectsOutputToContain('Provider:')
             ->expectsOutputToContain('Meta WABA');
@@ -179,7 +177,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     {
         Queue::fake();
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $this->gym->id, '--sync' => true])
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $this->gym->id, '--sync' => true])
             ->assertSuccessful()
             ->expectsOutputToContain('Running in synchronous mode');
     }
@@ -190,7 +188,7 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
         // Delete the account so no gyms have WhatsApp accounts
         $this->whatsappAccount->delete();
 
-        $this->artisan('whatsapp:import-templates')
+        $this->artisanCommand('whatsapp:import-templates')
             ->assertSuccessful()
             ->expectsOutputToContain('No gyms with WhatsApp accounts found');
     }
@@ -200,12 +198,23 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     {
         Queue::fake();
 
-        $this->artisan('whatsapp:import-templates', ['--gym' => $this->gym->id])
+        $this->artisanCommand('whatsapp:import-templates', ['--gym' => $this->gym->id])
             ->assertSuccessful()
             ->expectsOutputToContain('whatsapp-templates');
 
-        Queue::assertPushed(ImportWhatsAppTemplatesJob::class, function ($job) {
+        Queue::assertPushed(ImportWhatsAppTemplatesJob::class, function (ImportWhatsAppTemplatesJob $job) {
             return $job->queue() === 'whatsapp-templates';
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     */
+    private function artisanCommand(string $command, array $parameters = []): \Illuminate\Testing\PendingCommand
+    {
+        $result = $this->artisan($command, $parameters);
+        assert($result instanceof \Illuminate\Testing\PendingCommand);
+
+        return $result;
     }
 }

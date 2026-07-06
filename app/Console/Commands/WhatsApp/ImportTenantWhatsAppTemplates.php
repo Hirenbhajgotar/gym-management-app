@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands\WhatsApp;
 
+use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
@@ -48,7 +50,7 @@ class ImportTenantWhatsAppTemplates extends Command
     public function handle(): int
     {
         $gymId = $this->option('gym');
-        $sync = (bool) $this->option('sync');
+        $sync = $this->option('sync');
 
         if ($sync) {
             $this->warn('Running in synchronous mode. For production, use async job dispatch instead.');
@@ -206,8 +208,8 @@ class ImportTenantWhatsAppTemplates extends Command
     private function getGymsWithWhatsAppAccounts(): Collection
     {
         return Gym::query()->whereHas('whatsAppAccount', function (Builder $query) {
-            $query->where('is_active', true)
-                ->where('is_verified', true);
+            $query->where('status', WhatsAppAccountStatusEnum::ACTIVE)
+                ->where('verification_status', WhatsAppAccountVerificationStatusEnum::VERIFIED);
         })->with('whatsAppAccount')->orderBy('id')->get();
     }
 
@@ -217,8 +219,8 @@ class ImportTenantWhatsAppTemplates extends Command
     private function getWhatsAppAccount(int $gymId): ?WhatsAppAccount
     {
         return WhatsAppAccount::query()->where('gym_id', $gymId)
-            ->where('is_active', true)
-            ->where('is_verified', true)
+            ->where('status', WhatsAppAccountStatusEnum::ACTIVE)
+            ->where('verification_status', WhatsAppAccountVerificationStatusEnum::VERIFIED)
             ->first();
     }
 }
