@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\GymMemberResource;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
 use App\Models\GymMember;
+use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
@@ -62,6 +63,7 @@ class CreateGymMember extends CreateRecord
             'gym_id' => $data['gym_id'] ?? null,
             'membership_plan_id' => $data['membership_plan_id'] ?? null,
             'amount' => $data['amount'] ?? null,
+            'discount_amount' => $data['discount_amount'] ?? 0,
             'amount_paid' => $data['amount_paid'] ?? $data['amount'] ?? null,
             'currency' => $data['currency'] ?? null,
             'payment_method' => $data['payment_method'] ?? null,
@@ -75,6 +77,7 @@ class CreateGymMember extends CreateRecord
         unset(
             $data['membership_plan_id'],
             $data['amount'],
+            $data['discount_amount'],
             $data['amount_paid'],
             $data['currency'],
             $data['payment_method'],
@@ -95,6 +98,14 @@ class CreateGymMember extends CreateRecord
         DB::transaction(function () {
             /** @var GymMember $member */
             $member = $this->record;
+            $member = GymMember::query()->lockForUpdate()->findOrFail($member->id);
+
+            /** @var MembershipPlan $plan */
+            $plan = MembershipPlan::query()->findOrFail($this->paymentData['membership_plan_id']);
+
+            $rawDiscount = $this->paymentData['discount_amount'] ?? 0;
+            $discountAmount = (float) (is_numeric($rawDiscount) ? $rawDiscount : 0);
+            $freshAmount = ((float) $plan->price) - $discountAmount;
 
             // Create measurement if provided
             if (filled($this->measurementData['weight']) && filled($this->measurementData['height'])) {
@@ -109,11 +120,13 @@ class CreateGymMember extends CreateRecord
             if (filled($this->paymentData['membership_plan_id'])) {
                 /** @var array<string, mixed> $data */
                 $data = $this->paymentData;
+                $data['amount'] = max(0, $freshAmount);
                 $payment = $member->payments()->create([
                     'member_id' => $member->id,
                     'gym_id' => $member->gym_id,
                     'membership_plan_id' => $data['membership_plan_id'],
                     'amount' => $data['amount'],
+                    'discount_amount' => $data['discount_amount'] ?? 0,
                     'currency' => $data['currency'],
                     'payment_method' => $data['payment_method'],
                     'membership_start' => $data['membership_start'],

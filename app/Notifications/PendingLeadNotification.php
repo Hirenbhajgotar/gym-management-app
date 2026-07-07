@@ -12,18 +12,16 @@ use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PendingLeadNotification extends BaseTenantNotification
 {
-    private readonly ?User $owner;
-
     /**
      * Create a new notification instance.
      */
     public function __construct(public Lead $lead)
     {
         $this->gym = $lead->gym;
-        $this->owner = $this->gym->owner();
     }
 
     protected function getNotificationType(): string
@@ -51,7 +49,7 @@ class PendingLeadNotification extends BaseTenantNotification
             ->line('Created: ' . $this->lead->created_at->format('M d, Y'))
             ->action(
                 'View Lead',
-                url("/admin/{$this->gym?->slug}/leads/{$this->lead->id}"),
+                url("/admin/{$this->gym->slug}/leads/{$this->lead->id}"),
             )
             ->line('Please follow up with this lead as soon as possible.');
     }
@@ -68,7 +66,7 @@ class PendingLeadNotification extends BaseTenantNotification
         }
 
         // Ensure member has a phone number
-        $phoneNumber = $this->getRecipientPhoneNumber();
+        $phoneNumber = $this->getRecipientPhoneNumber($notifiable);
         if (! $phoneNumber) {
             return null;
         }
@@ -94,13 +92,16 @@ class PendingLeadNotification extends BaseTenantNotification
                         '1' => $notifiable->name ?? 'Staff',
                         '2' => $this->lead->name ?? '',
                         '3' => $this->lead->phone ?? '',
-                        '4' => $this->lead->notes ?? $this->lead->status->getLabel() ?? '',
+                        '4' => Str::limit($this->lead->notes ?? $this->lead->status->getLabel() ?? '', 100),
                     ],
                 ]),
             ];
         } catch (Exception $e) {
             Log::error('Failed to prepare WhatsApp message', [
                 'error' => $e->getMessage(),
+                'lead_id' => $this->lead->id,
+                'gym_id' => $this->gym->id,
+                'notifiable_id' => $notifiable->id ?? null,
             ]);
 
             return null;
@@ -125,20 +126,26 @@ class PendingLeadNotification extends BaseTenantNotification
             'Created: ' .
             $this->lead->created_at->format('M d, Y');
 
-        // Sandbox mode uses a fixed test number
+        $to = config()->string('services.twilio.sandbox_number');
+
+        if (blank($to)) {
+            Log::error('Twilio sandbox number is not configured in .env');
+            throw new Exception('Twilio sandbox number is not configured');
+        }
+
         return [
-            'to' => config('services.twilio.sandbox_number', '+919265098227'),
+            'to' => $to,
             'body' => $message,
         ];
     }
 
-    private function getRecipientPhoneNumber(): ?string
+    private function getRecipientPhoneNumber(object $notifiable): ?string
     {
-        // Ensure lead has a phone number
-        $phoneNumber = $this->owner?->phone;
+        /** @var User $notifiable */
+        $phoneNumber = $notifiable->phone ?? null;
         if (! $phoneNumber) {
             Log::warning('Owner has no phone number for WhatsApp', [
-                'owner_id' => $this->owner?->id,
+                'owner_id' => $notifiable->id ?? null,
             ]);
 
             return null;

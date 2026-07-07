@@ -7,6 +7,8 @@ namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Filament\Admin\Resources\GymMemberResource;
+use App\Jobs\GenerateInvoiceJob;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
@@ -59,7 +61,7 @@ class PaymentsRelationManager extends RelationManager
                     ->description('Record a payment for this member')
                     ->schema([
                         Hidden::make('member_id')
-                            ->default(fn ($livewire) => $livewire->ownerRecord->id),
+                            ->default(fn (RelationManager $livewire) => $livewire->ownerRecord->getKey()),
 
                         Hidden::make('gym_id')
                             ->default(fn ($livewire) => $this->getGymId()),
@@ -83,13 +85,37 @@ class PaymentsRelationManager extends RelationManager
                             ->dehydrated()
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
+                        TextInput::make('discount_amount')
+                            ->label('Discount')
+                            ->numeric()
+                            ->prefix('-')
+                            ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(function (callable $get) {
+                                $planId = $get('membership_plan_id');
+                                if (! $planId) {
+                                    return null;
+                                }
+
+                                /** @var MembershipPlan|null $plan */
+                                $plan = MembershipPlan::query()->find($planId);
+
+                                return $get('amount') ?? $plan->price ?? 0;
+                            })
+                            ->default(0)
+                            ->reactive()
+                            ->live(debounce: 400)
+                            ->afterStateUpdated(GymMemberResource::getDiscountCallback())
+                            ->helperText('Optional: enter any discount to subtract from the plan price.'),
+
                         TextInput::make('amount_paid')
                             ->label('Amount Paid Now')
                             ->numeric()
                             ->required()
                             ->prefix(fn (callable $get) => $this->getCurrencySymbol($get))
-                            ->minValue(0)
                             ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(fn (callable $get) => $get('amount') ?? 0)
                             ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
                             ->default(fn (callable $get) => $get('amount') ?? 0)
                             ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
@@ -154,14 +180,14 @@ class PaymentsRelationManager extends RelationManager
 
                 TextColumn::make('amount')
                     ->money(function (?MemberPayment $record) {
-                        return $record?->currency?->value ?? Currency::INR->value;
+                        return $record?->currency->value ?? Currency::INR->value;
                     })
                     ->summarize(Sum::make()),
 
                 TextColumn::make('total_paid')
                     ->label('Total Paid')
                     ->money(function (MemberPayment $record) {
-                        return $record?->currency?->value ?? Currency::INR->value;
+                        return $record->currency->value ?? Currency::INR->value;
                     })
                     ->summarize(
                         Summarizer::make()
@@ -291,7 +317,11 @@ class PaymentsRelationManager extends RelationManager
                 EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->modalHeading(fn ($record) => "Edit Payment #{$record->id} - {$record->membershipPlan?->name}")
+                    ->modalHeading(fn (MemberPayment $record): string => sprintf(
+                        'Edit Payment #%d - %s',
+                        $record->id,
+                        $record->membershipPlan->name ?? 'Unknown Plan',
+                    ))
                     ->visible(function (MemberPayment $record) {
                         return $record->status?->value !== PaymentStatus::EXPIRED->value;
                     })
@@ -394,6 +424,7 @@ class PaymentsRelationManager extends RelationManager
             return;
         }
 
+        /** @var MembershipPlan|null $plan */
         $plan = MembershipPlan::query()->find($state);
         if (! $plan || ! $plan->duration) {
             return;
@@ -402,6 +433,7 @@ class PaymentsRelationManager extends RelationManager
         $start = $get('membership_start') ?? now();
         $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
         $set('amount', $plan->price);
+        $set('discount_amount', 0);
         $set('amount_paid', $plan->price);
     }
 
@@ -416,6 +448,7 @@ class PaymentsRelationManager extends RelationManager
             return;
         }
 
+        /** @var MembershipPlan|null $plan */
         $plan = MembershipPlan::query()->find($planId);
         if (! $plan || ! $plan->duration) {
             return;
@@ -444,6 +477,14 @@ class PaymentsRelationManager extends RelationManager
             $member = $this->ownerRecord;
             $member = GymMember::query()->lockForUpdate()->findOrFail($member->id);
 
+            /** @var MembershipPlan $plan */
+            $plan = MembershipPlan::query()->findOrFail($data['membership_plan_id']);
+
+            $rawDiscount = $data['discount_amount'] ?? 0;
+            $discountAmount = (float) (is_numeric($rawDiscount) ? $rawDiscount : 0);
+            $freshAmount = ((float) $plan->price) - $discountAmount;
+            $data['amount'] = max(0, $freshAmount);
+
             $lastPayment = $this->getLastCompletedPayment($member->id, lock: true);
 
             $amountPaid = $data['amount_paid'] ?? $data['amount'];
@@ -471,9 +512,7 @@ class PaymentsRelationManager extends RelationManager
                 $this->expirePayment($lastPayment);
             }
 
-            // if ($member->gym_id) {
-            //     MemberPaymentObserver::clearPaymentCaches($member->gym_id);
-            // }
+            dispatch(new GenerateInvoiceJob($payment));
 
             $this->sendNotification('Payment Created', 'The payment has been created successfully.');
         });
@@ -486,6 +525,17 @@ class PaymentsRelationManager extends RelationManager
     {
         DB::transaction(function () use ($data, $record) {
             $record = MemberPayment::query()->lockForUpdate()->findOrFail($record->id);
+
+            if ($data['membership_plan_id'] ?? null) {
+                /** @var MembershipPlan $plan */
+                $plan = MembershipPlan::query()->findOrFail($data['membership_plan_id']);
+
+                $rawDiscount = $data['discount_amount'] ?? 0;
+                $discountAmount = (float) (is_numeric($rawDiscount) ? $rawDiscount : 0);
+                $freshAmount = ((float) $plan->price) - $discountAmount;
+                $data['amount'] = max(0, $freshAmount);
+            }
+
             $paymentData = collect($data)->except(['password'])->toArray();
             $record->update($paymentData);
 

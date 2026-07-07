@@ -712,7 +712,7 @@ class GymMemberResource extends BaseResource
             //             return false;
             //         }),
             // ])
-            ->defaultSort('name')
+            ->defaultSort('id', 'desc')
             ->striped();
     }
 
@@ -888,11 +888,14 @@ class GymMemberResource extends BaseResource
                 ->required()
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     if ($state) {
+                        /** @var MembershipPlan|null $plan */
                         $plan = MembershipPlan::query()->find($state);
                         if ($plan && $plan->duration) {
                             $start = $get('membership_start') ?? now();
                             $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
                             $set('amount', $plan->price);
+                            $set('discount_amount', 0);
+                            $set('amount_paid', $plan->price);
                         }
                     }
                 })
@@ -936,6 +939,7 @@ class GymMemberResource extends BaseResource
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     $planId = $get('membership_plan_id');
                     if ($planId && $state) {
+                        /** @var MembershipPlan|null $plan */
                         $plan = MembershipPlan::query()->find($planId);
                         if ($plan && $plan->duration) {
                             $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
@@ -972,6 +976,29 @@ class GymMemberResource extends BaseResource
                         ->dehydrated()
                         ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
 
+                    TextInput::make('discount_amount')
+                        ->label('Discount')
+                        ->numeric()
+                        ->prefix('-')
+                        ->minValue(0)
+                        ->maxValue(function (callable $get) {
+                            $planId = $get('membership_plan_id');
+                            if (! $planId) {
+                                return null;
+                            }
+
+                            /** @var MembershipPlan|null $plan */
+                            $plan = MembershipPlan::query()->find($planId);
+
+                            return $get('amount') ?? $plan->price ?? 0;
+                        })
+                        ->step(0.01)
+                        ->default(0)
+                        ->reactive()
+                        ->live(debounce: 400)
+                        ->afterStateUpdated(self::getDiscountCallback())
+                        ->helperText('Optional: enter any discount to subtract from the plan price.'),
+
                     TextInput::make('amount_paid')
                         ->label('Amount Paid Now')
                         ->numeric()
@@ -982,6 +1009,7 @@ class GymMemberResource extends BaseResource
                             return $currency?->getSymbol() ?? Currency::INR->getSymbol();
                         })
                         ->minValue(0)
+                        ->maxValue(fn (callable $get) => $get('amount') ?? 0)
                         ->step(0.01)
                         ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
                         ->default(fn (callable $get) => $get('amount') ?? 0)
@@ -1026,5 +1054,27 @@ class GymMemberResource extends BaseResource
                 ])
                 ->columns(2),
         ];
+    }
+
+    public static function getDiscountCallback(): Closure
+    {
+        return function ($state, callable $set, callable $get): void {
+            $planId = $get('membership_plan_id');
+            if (! $planId) {
+                return;
+            }
+
+            /** @var MembershipPlan|null $plan */
+            $plan = MembershipPlan::query()->find($planId);
+            if (! $plan) {
+                return;
+            }
+
+            $discount = (float) (is_numeric($state) ? $state : 0);
+            $finalAmount = max(0, ((float) $plan->price) - $discount);
+
+            $set('amount', $finalAmount);
+            $set('amount_paid', $finalAmount);
+        };
     }
 }

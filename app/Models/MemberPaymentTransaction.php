@@ -42,6 +42,11 @@ class MemberPaymentTransaction extends Model
         'notes',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

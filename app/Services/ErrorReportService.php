@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
+use App\Services\ErrorReporting\ExceptionMarkdownFormatter;
+use App\Services\ErrorReporting\RequestOriginResolver;
 use Error;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,12 +28,26 @@ use Throwable;
 
 class ErrorReportService
 {
-    public function reportError(string $errorMessage, ?string $userDescription = null, ?Throwable $exception = null, string $errorType = 'user_reported', string $priority = 'medium', string $errorCategory = 'other', ?string $exceptionId = null): ErrorReport
-    {
-        try {
-            $context = $this->buildContext(); // Collect context data once
+    public function __construct(
+        private readonly RequestOriginResolver $originResolver,
+        private readonly ExceptionMarkdownFormatter $markdownFormatter,
+        private readonly ExceptionStorageService $exceptionStorage,
+    ) {}
 
-            // Handle exception or exception ID data
+    public function reportError(
+        string $errorMessage,
+        ?string $userDescription = null,
+        ?Throwable $exception = null,
+        string $errorType = 'user_reported',
+        string $priority = ErrorPriority::MEDIUM->value,
+        string $errorCategory = ErrorCategory::OTHER->value,
+        ?string $exceptionId = null,
+    ): ErrorReport {
+        try {
+            /** @var array{requested_url: string, origin_url: string, livewire_component: string|null} $origin */
+            $origin = $this->originResolver->resolve(request());
+            $context = $this->buildContext($origin);
+
             $exceptionData = $this->extractExceptionData($exception, $exceptionId);
 
             $context['file'] = $exceptionData['file'];
@@ -39,8 +56,12 @@ class ErrorReportService
             $stackTrace = $exceptionData['stackTrace'];
             $errorHash = $exceptionData['errorHash'];
 
+            $markdownReport = $exception
+                ? $this->markdownFormatter->format($exception, request(), $origin)
+                : null;
+
             if ($exceptionId) {
-                resolve(ExceptionStorageService::class)->clearExceptionStorageData($exceptionId);
+                $this->exceptionStorage->clearExceptionStorageData($exceptionId);
             }
 
             return ErrorReport::query()->create([
@@ -49,7 +70,12 @@ class ErrorReportService
                 'error_message' => $errorMessage,
                 'error_hash' => $errorHash,
                 'stack_trace' => $stackTrace,
+                'markdown_report' => $markdownReport,
                 'context' => $context,
+                'origin_url' => $origin['origin_url'],
+                'livewire_component' => $origin['livewire_component'],
+                'php_version' => PHP_VERSION,
+                'laravel_version' => app()->version(),
                 'user_description' => $userDescription,
                 'priority' => $priority,
                 'category' => $errorCategory,
@@ -69,9 +95,12 @@ class ErrorReportService
     {
         $priority = $this->determinePriority($exception);
 
-        // Check if this error has already been reported recently
-        if ($this->isDuplicateError($exception) && $reportType === 'auto_reported') {
-            return $this->incrementDuplicateCount($exception);
+        if ($reportType === 'auto_reported') {
+            $duplicate = $this->findAndIncrementDuplicate($exception);
+
+            if ($duplicate) {
+                return $duplicate;
+            }
         }
 
         return $this->reportError(
@@ -79,15 +108,20 @@ class ErrorReportService
             userDescription: $userDescription,
             exception: $exception,
             errorType: $reportType,
-            priority: $priority
+            priority: $priority,
         );
     }
 
-    public function manuallyReportException(?string $userDescription = null, string $priority = 'medium', string $errorCategory = 'other', string $errorType = 'user_reported', ?string $exceptionId = null): ErrorReport
-    {
+    public function manuallyReportException(
+        ?string $userDescription = null,
+        string $priority = 'medium',
+        string $errorCategory = 'other',
+        string $errorType = 'user_reported',
+        ?string $exceptionId = null,
+    ): ErrorReport {
         $exceptionData = $this->extractExceptionData(exceptionId: $exceptionId);
 
-        $errorMessage = $exceptionData['errorMessage'] ?? 'Error message not available or stored. Please check storage.';
+        $errorMessage = $exceptionData['errorMessage'] ?: 'Error message not available or stored. Please check storage.';
 
         return $this->reportError(
             errorMessage: $errorMessage,
@@ -100,12 +134,14 @@ class ErrorReportService
     }
 
     /**
-     * Builds the context array with request data
+     * @param  array<string, string|null>  $origin
      */
-    private function buildContext(): array
+    private function buildContext(array $origin): array
     {
         return [
-            'url' => request()->url(),
+            'requested_url' => $origin['requested_url'],
+            'origin_url' => $origin['origin_url'],
+            'livewire_component' => $origin['livewire_component'],
             'method' => request()->method(),
             'user_agent' => request()->header('User-Agent'),
             'ip' => request()->ip(),
@@ -115,32 +151,30 @@ class ErrorReportService
         ];
     }
 
-    /**
-     * Extracts stack trace and error hash from exception or exception ID
-     */
     private function extractExceptionData(?Throwable $exception = null, ?string $exceptionId = null): array
     {
         $stackTrace = null;
         $errorHash = null;
         $file = null;
         $line = null;
-        $exception_class = null;
+        $exceptionClass = null;
         $errorMessage = '';
 
         if ($exceptionId) {
-            $exceptionData = resolve(ExceptionStorageService::class)->retrieve($exceptionId);
+            $exceptionData = $this->exceptionStorage->retrieve($exceptionId);
+
             if ($exceptionData) {
                 $stackTrace = $exceptionData['trace'] ?? null;
-                $file = $exceptionData['file'];
-                $line = $exceptionData['line'];
-                $exception_class = $exceptionData['class'];
-                $errorMessage = $exceptionData['message'];
+                $file = $exceptionData['file'] ?? null;
+                $line = $exceptionData['line'] ?? null;
+                $exceptionClass = $exceptionData['class'] ?? null;
+                $errorMessage = $exceptionData['message'] ?? '';
             }
         } elseif ($exception) {
             $stackTrace = $exception->getTraceAsString();
             $file = $exception->getFile();
             $line = $exception->getLine();
-            $exception_class = get_class($exception);
+            $exceptionClass = get_class($exception);
             $errorHash = $this->generateErrorHash($exception);
             $errorMessage = $exception->getMessage();
         }
@@ -150,7 +184,7 @@ class ErrorReportService
             'stackTrace' => $stackTrace,
             'file' => $file,
             'line' => $line,
-            'exceptionClass' => $exception_class,
+            'exceptionClass' => $exceptionClass,
             'errorHash' => $errorHash,
         ];
     }
@@ -159,11 +193,11 @@ class ErrorReportService
     {
         $sensitiveFields = ['password', 'password_confirmation', 'token', 'api_key', 'secret'];
 
-        foreach ($sensitiveFields as $field) {
-            if (isset($data[$field])) {
-                $data[$field] = '***REDACTED***';
+        array_walk_recursive($data, function (&$value, $key) use ($sensitiveFields) {
+            if (is_string($key) && in_array(strtolower($key), $sensitiveFields, true)) {
+                $value = '***REDACTED***';
             }
-        }
+        });
 
         return $data;
     }
@@ -171,16 +205,14 @@ class ErrorReportService
     public function determinePriority(Throwable $exception): string
     {
         try {
-            // Critical errors
             if ($exception instanceof Error) {
                 return ErrorPriority::CRITICAL->value;
             }
 
-            // Critical database errors
             if ($exception instanceof QueryException) {
-                // Check for specific critical database errors
                 $errorCode = $exception->getCode();
-                if (in_array($errorCode, ['HY000', '42000', '42S02'])) {
+
+                if (in_array($errorCode, ['HY000', '42000', '42S02'], true)) {
                     return ErrorPriority::CRITICAL->value;
                 }
 
@@ -207,11 +239,11 @@ class ErrorReportService
                 return ErrorPriority::HIGH->value;
             }
 
-            // Memory/timeout errors
+            $message = $exception->getMessage();
             if (
-                strpos($exception->getMessage(), 'memory') !== false ||
-                strpos($exception->getMessage(), 'timeout') !== false ||
-                strpos($exception->getMessage(), 'execution time') !== false
+                str_contains($message, 'memory') ||
+                str_contains($message, 'timeout') ||
+                str_contains($message, 'execution time')
             ) {
                 return ErrorPriority::HIGH->value;
             }
@@ -222,25 +254,34 @@ class ErrorReportService
                 'error' => $e->getMessage(),
             ]);
 
-            return 'medium'; // Fallback to string value
+            return ErrorPriority::MEDIUM->value;
         }
     }
 
     /**
-     * Check if this error has been reported recently (within last hour)
+     * Ek hi query me duplicate check + increment kar dete hai —
+     * pehle do alag queries chal rahi thi (isDuplicateError + incrementDuplicateCount)
+     * jisme race condition ka chance bhi tha.
      */
-    private function isDuplicateError(Throwable $exception): bool
+    private function findAndIncrementDuplicate(Throwable $exception): ?ErrorReport
     {
         $errorHash = $this->generateErrorHash($exception);
 
-        return ErrorReport::query()->where('error_hash', $errorHash)
+        $affected = ErrorReport::query()
+            ->where('error_hash', $errorHash)
             ->where('created_at', '>', now()->subHour())
-            ->exists();
+            ->increment('duplicate_count', 1, ['last_occurrence' => now()]);
+
+        if ($affected > 0) {
+            return ErrorReport::query()
+                ->where('error_hash', $errorHash)
+                ->where('created_at', '>', now()->subHour())
+                ->first();
+        }
+
+        return null;
     }
 
-    /**
-     * Generate a unique hash for the error to detect duplicates
-     */
     private function generateErrorHash(Throwable $exception): string
     {
         $data = [
@@ -253,69 +294,32 @@ class ErrorReportService
         return hash('sha256', json_encode($data));
     }
 
-    /**
-     * Increment the duplicate count for an existing error
-     */
-    private function incrementDuplicateCount(Throwable $exception): ErrorReport
-    {
-        $errorHash = $this->generateErrorHash($exception);
-
-        $errorReport = ErrorReport::query()->where('error_hash', $errorHash)
-            ->where('created_at', '>', now()->subHour())
-            ->first();
-
-        if ($errorReport) {
-            $errorReport->increment('duplicate_count');
-            $errorReport->update(['last_occurrence' => now()]);
-        }
-
-        return $errorReport;
-    }
-
-    /**
-     * Determine if the exception should be auto-reported
-     */
     public function shouldAutoReport(Throwable $exception): bool
     {
-        // Always report critical errors
         if ($exception instanceof Error) {
             return true;
         }
 
-        // Report database errors
-        if (
-            $exception instanceof QueryException ||
-            $exception instanceof PDOException
-        ) {
+        if ($exception instanceof QueryException || $exception instanceof PDOException) {
             return true;
         }
 
-        // Report 5xx HTTP errors
         if ($exception instanceof HttpException && $exception->getStatusCode() >= 500) {
             return true;
         }
 
-        // Report custom application exceptions
-        // if ($exception instanceof \App\Exceptions\CustomException) {
-        //     return true;
-        // }
-
-        // Report file system errors
         if ($exception instanceof FilesystemException) {
             return true;
         }
 
-        // Report mail errors
         if ($exception instanceof TransportException) {
             return true;
         }
 
-        // Report queue job failures
         if ($exception instanceof MaxAttemptsExceededException) {
             return true;
         }
 
-        // Skip 4xx errors and validation errors
         if ($exception instanceof HttpException && $exception->getStatusCode() < 500) {
             return false;
         }
@@ -324,41 +328,27 @@ class ErrorReportService
             return false;
         }
 
-        // Report other exceptions by default
         return true;
     }
 
-    /**
-     * Determine if we should skip auto-reporting for this exception
-     */
     public function shouldSkipAutoReporting(Throwable $exception): bool
     {
-        // Skip if in testing environment
         if (app()->environment('testing')) {
             return true;
         }
 
-        // Skip authentication errors
         if ($exception instanceof AuthenticationException) {
             return true;
         }
 
-        // Skip authorization errors
         if ($exception instanceof AuthorizationException) {
             return true;
         }
 
-        // Skip maintenance mode
-        // if ($exception instanceof \Illuminate\Foundation\Http\Exceptions\MaintenanceModeException) {
-        //     return true;
-        // }
-
-        // Skip throttling errors
         if ($exception instanceof ThrottleRequestsException) {
             return true;
         }
 
-        // Skip model not found (404 errors)
         if ($exception instanceof ModelNotFoundException) {
             return true;
         }
@@ -366,7 +356,6 @@ class ErrorReportService
         return false;
     }
 
-    // Helper functions (you can move these to a separate class if needed)
     public function renderJsonResponse(Throwable $exception)
     {
         $status = 500;
@@ -392,12 +381,10 @@ class ErrorReportService
 
     public function renderFilamentError($request, Throwable $exception)
     {
-        // For development, show the detailed error
         if (config('app.debug')) {
-            return null; // Let Laravel handle it
+            return null;
         }
 
-        // For production, show a user-friendly error page
         if ($exception instanceof HttpException) {
             $status = $exception->getStatusCode();
 

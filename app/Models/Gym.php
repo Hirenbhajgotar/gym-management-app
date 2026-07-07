@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -95,11 +94,12 @@ class Gym extends Model
     // Relationships
     // =========================
     /**
-     * @return BelongsToMany<User, $this, Pivot>
+     * @return BelongsToMany<User, $this, GymUser>
      */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'gym_user')
+            ->using(GymUser::class)
             ->withPivot(['role', 'active'])
             ->withTimestamps();
     }

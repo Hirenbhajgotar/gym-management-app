@@ -73,7 +73,6 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static>|MemberPayment whereUpdatedAt($value)
  *
  * @mixin \Eloquent
- * @mixin IdeHelperMemberPayment
  */
 #[ObservedBy([MemberPaymentObserver::class])]
 class MemberPayment extends Model
@@ -87,6 +86,7 @@ class MemberPayment extends Model
         'member_id',
         'membership_plan_id',
         'amount',
+        'discount_amount',
         'currency',
         'payment_method',
         'status',
@@ -107,6 +107,7 @@ class MemberPayment extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'payment_date' => 'date',
             'membership_start' => 'date',
             'membership_end' => 'date',
