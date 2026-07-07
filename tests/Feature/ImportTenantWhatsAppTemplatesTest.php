@@ -12,6 +12,7 @@ use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Testing\PendingCommand;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -210,10 +211,10 @@ class ImportTenantWhatsAppTemplatesTest extends TestCase
     /**
      * @param  array<string, mixed>  $parameters
      */
-    private function artisanCommand(string $command, array $parameters = []): \Illuminate\Testing\PendingCommand
+    private function artisanCommand(string $command, array $parameters = []): PendingCommand
     {
         $result = $this->artisan($command, $parameters);
-        assert($result instanceof \Illuminate\Testing\PendingCommand);
+        assert($result instanceof PendingCommand);
 
         return $result;
     }
