@@ -267,18 +267,19 @@ class ErrorReportService
     {
         $errorHash = $this->generateErrorHash($exception);
 
-        $errorReport = ErrorReport::query()
+        $affected = ErrorReport::query()
             ->where('error_hash', $errorHash)
             ->where('created_at', '>', now()->subHour())
-            ->lockForUpdate()
-            ->first();
+            ->increment('duplicate_count', 1, ['last_occurrence' => now()]);
 
-        if ($errorReport) {
-            $errorReport->increment('duplicate_count');
-            $errorReport->update(['last_occurrence' => now()]);
+        if ($affected > 0) {
+            return ErrorReport::query()
+                ->where('error_hash', $errorHash)
+                ->where('created_at', '>', now()->subHour())
+                ->first();
         }
 
-        return $errorReport;
+        return null;
     }
 
     private function generateErrorHash(Throwable $exception): string

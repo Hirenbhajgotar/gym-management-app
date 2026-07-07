@@ -478,7 +478,7 @@ class PaymentsRelationManager extends RelationManager
             $member = GymMember::query()->lockForUpdate()->findOrFail($member->id);
 
             /** @var MembershipPlan $plan */
-            $plan = MembershipPlan::query()->lockForUpdate()->findOrFail($data['membership_plan_id']);
+            $plan = MembershipPlan::query()->findOrFail($data['membership_plan_id']);
 
             $rawDiscount = $data['discount_amount'] ?? 0;
             $discountAmount = (float) (is_numeric($rawDiscount) ? $rawDiscount : 0);
@@ -528,7 +528,7 @@ class PaymentsRelationManager extends RelationManager
 
             if ($data['membership_plan_id'] ?? null) {
                 /** @var MembershipPlan $plan */
-                $plan = MembershipPlan::query()->lockForUpdate()->findOrFail($data['membership_plan_id']);
+                $plan = MembershipPlan::query()->findOrFail($data['membership_plan_id']);
 
                 $rawDiscount = $data['discount_amount'] ?? 0;
                 $discountAmount = (float) (is_numeric($rawDiscount) ? $rawDiscount : 0);

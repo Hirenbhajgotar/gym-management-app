@@ -13,7 +13,6 @@ use App\Notifications\PendingLeadNotification;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PendingLeadNotificationCommand extends Command
@@ -93,11 +92,8 @@ class PendingLeadNotificationCommand extends Command
             return false;
         }
 
-        DB::transaction(function () use ($owner, $lead) {
-            $owner->notify(new PendingLeadNotification($lead));
-
-            $lead->update(['last_reminded_at' => now()]);
-        });
+        $owner->notify(new PendingLeadNotification($lead));
+        $lead->update(['last_reminded_at' => now()]);
 
         $this->line("Sent reminder for lead: {$lead->name}");
 
