@@ -39,6 +39,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property int $created_by
  * @property int|null $updated_by
  * @property Carbon|null $last_follow_up_date
+ * @property Carbon|null $last_reminded_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read LeadConversion|null $conversion
@@ -101,6 +102,7 @@ class Lead extends Model implements Sortable
         'interest',
         'tags',
         'last_follow_up_date',
+        'last_reminded_at',
         'order_column',
         'notes',
         'created_by',
@@ -112,6 +114,11 @@ class Lead extends Model implements Sortable
         'sort_when_creating' => true,
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -121,6 +128,7 @@ class Lead extends Model implements Sortable
             'interest' => 'array',
             'tags' => 'array',
             'last_follow_up_date' => 'datetime',
+            'last_reminded_at' => 'datetime',
         ];
     }
 

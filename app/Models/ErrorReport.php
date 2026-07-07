@@ -95,8 +95,18 @@ class ErrorReport extends Model
         'error_hash',
         'duplicate_count',
         'last_occurrence',
+        'markdown_report',
+        'origin_url',
+        'livewire_component',
+        'php_version',
+        'laravel_version',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -167,11 +177,35 @@ class ErrorReport extends Model
 
     public function toMarkdown(): string
     {
+        if ($this->markdown_report) {
+            return $this->markdown_report;
+        }
+
+        return $this->buildLegacyMarkdown();
+    }
+
+    private function buildLegacyMarkdown(): string
+    {
         $markdown = "### Error: {$this->error_message}\n\n";
         $markdown .= "**Type:** {$this->error_type}\n";
         $markdown .= '**Status:** ' . ($this->status?->value ?? 'N/A') . "\n";
         $markdown .= '**Priority:** ' . ($this->priority?->value ?? 'N/A') . "\n";
         $markdown .= '**Occurred:** ' . ($this->occurred_at?->toDateTimeString() ?? 'N/A') . "\n\n";
+
+        $originUrl = $this->origin_url
+            ?? ($this->context['origin_url'] ?? null)
+            ?? ($this->context['url'] ?? null);
+
+        if (filled($originUrl) && is_string($originUrl)) {
+            $markdown .= "**Origin URL:** {$originUrl}\n";
+        }
+
+        $component = $this->livewire_component ?? ($this->context['livewire_component'] ?? null);
+        if (filled($component) && is_string($component)) {
+            $markdown .= "**Livewire/Filament Component:** `{$component}`\n";
+        }
+
+        $markdown .= "\n";
 
         if ($this->user) {
             $markdown .= "**User:** {$this->user->name} ({$this->user->email})\n\n";

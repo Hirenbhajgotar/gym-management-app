@@ -94,6 +94,8 @@ class PendingLeadNotificationCommandTest extends TestCase
             PendingLeadNotification::class,
             fn (PendingLeadNotification $notification) => $notification->lead->id === $lead->id,
         );
+
+        $this->assertNotNull($lead->fresh()?->last_reminded_at);
     }
 
     #[Test]
@@ -255,6 +257,56 @@ class PendingLeadNotificationCommandTest extends TestCase
         $this->runCommand('leads:send-pending-reminders')
             ->expectsOutputToContain('Done. Sent: 3, Skipped: 0')
             ->assertExitCode(0);
+    }
+
+    #[Test]
+    public function it_skips_leads_reminded_recently(): void
+    {
+        Notification::fake();
+
+        ['gym' => $gym] = $this->createGymWithOwner();
+
+        Lead::factory()->create([
+            'gym_id' => $gym->id,
+            'status' => LeadStatus::NEW,
+            'created_at' => now()->subDays(3),
+            'last_follow_up_date' => null,
+            'last_reminded_at' => now()->subDay(),
+        ]);
+
+        $this->runCommand('leads:send-pending-reminders')
+            ->expectsOutputToContain('Done. Sent: 0, Skipped: 0')
+            ->assertExitCode(0);
+
+        Notification::assertSentTimes(PendingLeadNotification::class, 0);
+    }
+
+    #[Test]
+    public function it_sends_reminders_for_leads_reminded_more_than_2_days_ago(): void
+    {
+        Notification::fake();
+
+        ['gym' => $gym, 'owner' => $owner] = $this->createGymWithOwner();
+
+        $lead = Lead::factory()->create([
+            'gym_id' => $gym->id,
+            'status' => LeadStatus::NEW,
+            'created_at' => now()->subDays(5),
+            'last_follow_up_date' => null,
+            'last_reminded_at' => now()->subDays(3),
+        ]);
+
+        $this->runCommand('leads:send-pending-reminders')
+            ->expectsOutputToContain('Done. Sent: 1, Skipped: 0')
+            ->assertExitCode(0);
+
+        Notification::assertSentTo(
+            $owner,
+            PendingLeadNotification::class,
+            fn (PendingLeadNotification $notification) => $notification->lead->id === $lead->id,
+        );
+
+        $this->assertNotNull($lead->fresh()?->last_reminded_at);
     }
 
     private function runCommand(string $command): PendingCommand

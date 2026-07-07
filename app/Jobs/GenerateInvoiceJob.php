@@ -41,6 +41,8 @@ class GenerateInvoiceJob implements ShouldQueue
                 'error' => $e->getMessage(),
                 'payment_id' => $this->payment->id,
             ]);
+
+            throw $e;
         }
     }
 }

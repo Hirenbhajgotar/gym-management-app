@@ -11,10 +11,11 @@ use App\Services\WhatsAppTemplateManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 
 abstract class BaseTenantNotification extends Notification implements HasGymContext, ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
     protected Gym $gym;
 
@@ -58,7 +59,12 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getGymWhatsAppConfig(): ?array
     {
-        $whatsAppAccount = $this->gym?->whatsAppAccount;
+        if (! $this->gym) {
+            return null;
+        }
+
+        $this->gym->loadMissing('whatsAppAccount');
+        $whatsAppAccount = $this->gym->whatsAppAccount;
 
         if (! $whatsAppAccount) {
             return null;

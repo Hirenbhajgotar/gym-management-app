@@ -7,16 +7,17 @@ namespace Tests\Feature\Policies;
 use App\Models\User;
 use App\Policies\LeadPolicy;
 use PHPUnit\Framework\Attributes\Test;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\Feature\Filament\StaffPanel\StaffPanelTestCase;
+
+use function assert;
 
 class LeadPolicyTest extends StaffPanelTestCase
 {
     #[Test]
     public function view_any_returns_false_when_user_lacks_view_any_lead_permission(): void
     {
-        $this->assertFalse($this->managerUser->fresh()->can('view_any_lead'));
+        $this->assertFalse($this->managerUser->fresh()?->can('view_any_lead'));
 
         $this->assertFalse(
             (new LeadPolicy())->viewAny($this->managerUser),
@@ -27,14 +28,13 @@ class LeadPolicyTest extends StaffPanelTestCase
     #[Test]
     public function view_any_returns_true_when_user_has_view_any_lead_permission(): void
     {
-        setPermissionsTeamId($this->testGym->id);
+        $this->grantPermission($this->managerUser, 'view_any_lead');
 
-        $this->managerUser->givePermissionTo(
-            Permission::query()->firstOrCreate(['name' => 'view_any_lead', 'guard_name' => 'web']),
-        );
+        $freshUser = $this->managerUser->fresh();
+        assert($freshUser instanceof User);
 
         $this->assertTrue(
-            (new LeadPolicy())->viewAny($this->managerUser->fresh()),
+            (new LeadPolicy())->viewAny($freshUser),
             'viewAny should return true when view_any_lead permission is granted',
         );
     }

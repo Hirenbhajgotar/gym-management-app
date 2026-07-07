@@ -83,14 +83,42 @@ class ErrorReportResource extends BaseResource
 
                 Section::make('Technical Details')
                     ->schema([
-                        Textarea::make('stack_trace')
-                            ->label('Stack Trace')
+                        TextInput::make('origin_url')
+                            ->label('Origin URL')
+                            ->helperText('Original URL of the page where error occurred')
                             ->disabled()
-                            ->rows(15),
+                            ->columnSpanFull(),
+
+                        TextInput::make('livewire_component')
+                            ->label('Livewire/Filament Component')
+                            ->disabled(),
+
+                        TextInput::make('php_version')
+                            ->label('PHP Version')
+                            ->disabled(),
+
+                        TextInput::make('laravel_version')
+                            ->label('Laravel Version')
+                            ->disabled(),
+
+                        Textarea::make('markdown_report')
+                            ->label('Full Markdown Report')
+                            ->helperText('Copy as Markdown action isi field ko clipboard pe bhejta hai.')
+                            ->disabled()
+                            ->rows(20)
+                            ->columnSpanFull(),
+
+                        Textarea::make('stack_trace')
+                            ->label('Raw Stack Trace')
+                            ->disabled()
+                            ->rows(10)
+                            ->columnSpanFull(),
 
                         KeyValue::make('context')
-                            ->disabled(),
+                            ->disabled()
+                            ->columnSpanFull(),
                     ])
+                    ->columns(2)
                     ->collapsible(),
             ]);
     }
