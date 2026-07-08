@@ -21,6 +21,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -43,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::preventLazyLoading(! app()->isProduction());
+
+        $this->configureCommands();
 
         FilamentColor::register([
             'primary' => Color::Amber,
@@ -110,5 +113,10 @@ class AppServiceProvider extends ServiceProvider
         Notification::extend('filament', function ($app) {
             return new FilamentChannel();
         });
+    }
+
+    public function configureCommands(): void
+    {
+        DB::prohibitDestructiveCommands(app()->isProduction());
     }
 }

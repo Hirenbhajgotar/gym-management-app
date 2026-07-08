@@ -182,6 +182,8 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             if ($validator->fails()) {
                 // If validation fails, record the failed row and error message.
                 $this->failedRows++;
+
+                /** @var array<string, mixed> $failedRow */
                 $failedRow = $rowData;
                 $failedRow['error'] = implode(', ', $validator->errors()->all());
 
@@ -202,6 +204,8 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
                         'exception' => $e,
                     ]);
                     $this->failedRows++;
+
+                    /** @var array<string, mixed> $failedRow */
                     $failedRow = $rowData;
                     $errorMessage = $this->sanitizeErrorMessage($e);
                     $failedRow['error'] = $errorMessage;
@@ -243,7 +247,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
      * string normalization, etc. before validation rules are checked.
      * This ensures rules like Rule::unique check the actual stored value.
      *
-     * @param  array  $data  The row data to transform (passed by reference).
+     * @param  array<string, mixed>  $data
      */
     protected function transformForValidation(array &$data): void
     {
@@ -368,7 +372,7 @@ abstract class BaseImporter implements ToCollection, WithBatchInserts, WithChunk
             // Add headers (apply CSV escaping in case column names contain special characters)
             $firstRow = json_decode($failedRows->first()->data, true);
             $csvContent .= implode(',', array_map(
-                fn (string $header): string => $this->escapeCsvField($header),
+                fn (mixed $header): string => $this->escapeCsvField(is_scalar($header) ? (string) $header : ''),
                 array_keys($firstRow),
             )) . "\n";
 

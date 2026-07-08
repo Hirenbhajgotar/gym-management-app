@@ -26,7 +26,7 @@ class MembershipPlanResourceTest extends TestCase
     private function grantMembershipPlanAccess(User $user): void
     {
         foreach (['view_any_membership_plan', 'view_membership_plan'] as $name) {
-            $permission = Permission::firstOrCreate([
+            $permission = Permission::query()->firstOrCreate([
                 'name' => $name,
                 'guard_name' => 'web',
             ]);
