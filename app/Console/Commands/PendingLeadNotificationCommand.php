@@ -31,7 +31,7 @@ class PendingLeadNotificationCommand extends Command
 
             $this->info('Scanning for pending leads requiring reminders...');
 
-            Lead::with(['gym.users'])
+            Lead::with(['gym.users', 'gym.whatsAppAccount'])
                 ->whereIn('status', [
                     LeadStatus::NEW,
                     LeadStatus::CONTACTED,
