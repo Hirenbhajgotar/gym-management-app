@@ -190,7 +190,7 @@ class GymMemberResource extends BaseResource
                         return $membershipEnd->toFormattedDateString(); // e.g., "Aug 15, 2025"
                     })
                     ->badge()
-                    ->icon(function (string $state): string {
+                    ->icon(function (?string $state): string {
                         if (! $state) {
                             return 'heroicon-o-calendar'; // Default icon for "Not Set"
                         }
@@ -212,7 +212,7 @@ class GymMemberResource extends BaseResource
                         // Default icon for more than 2 months
                         return 'heroicon-o-calendar';
                     })
-                    ->color(function (string $state): string {
+                    ->color(function (?string $state): string {
                         if (! $state) {
                             return 'gray'; // Default color for "Not Set"
                         }
@@ -657,7 +657,7 @@ class GymMemberResource extends BaseResource
                 ->native(false)
                 ->closeOnDateSelection(true)
                 ->reactive()
-                ->afterStateUpdated(function (string $state, callable $set): void {
+                ->afterStateUpdated(function (?string $state, callable $set): void {
                     if ($state) {
                         /** @var Carbon $dob */
                         $dob = Date::parse($state);
@@ -681,8 +681,8 @@ class GymMemberResource extends BaseResource
                     $options = Trainer::query()
                         ->available()
                         ->pluck('name', 'id')
-                        ->prepend('None')
-                        ->all(); // Allow "No Trainer" option
+                        ->prepend('None', null)  // Allow "No Trainer" option
+                        ->all();
 
                     return $options;
                 })

@@ -72,7 +72,7 @@ class MeasurementsRelationManager extends RelationManager
                 ->label('BMI')
                 ->disabled()
                 ->dehydrated(false) // We calculate this in the model
-                ->suffix(fn (float $state) => self::getBmiStatus($state)),
+                ->suffix(fn (?float $state) => $state ? self::getBmiStatus($state) : null),
 
             Textarea::make('notes')
                 ->columnSpanFull(),
