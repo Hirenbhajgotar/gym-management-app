@@ -29,6 +29,8 @@ enum Currency: string implements HasLabel
 
     /**
      * Get options array for Filament select components
+     *
+     * @return array<string, string>
      */
     public static function toSelectOptions(): array
     {

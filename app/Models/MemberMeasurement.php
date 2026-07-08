@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\GymMember $gymMember
- * @property-read mixed $status
+ * @property-read string|null $status
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MemberMeasurement newQuery()
@@ -54,6 +54,11 @@ class MemberMeasurement extends Model
         'notes',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -84,10 +89,13 @@ class MemberMeasurement extends Model
         return $this->belongsTo(GymMember::class);
     }
 
+    /**
+     * @return Attribute<string, never>
+     */
     protected function status(): Attribute
     {
         return Attribute::make(
-            get: function () {
+            get: function (): ?string {
                 $bmi = (float) $this->bmi;
                 if (! $bmi) {
                     return null;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\Admin\Resources\GymMemberResource\Forms\PaymentForm;
 use App\Jobs\GenerateInvoiceJob;
 use App\Jobs\SendNotificationJob;
 use App\Models\GymMember;
@@ -13,7 +14,6 @@ use App\Models\Trainer;
 use App\Notifications\Member\WelcomeNotification;
 use App\Traits\HasTenantAccess;
 use DB;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
@@ -21,6 +21,7 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 
@@ -52,6 +53,9 @@ class CreateGymMember extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $data['gym_id'] = $this->getGymId();
+        $data['user_id'] = Auth::id();
+
         // Store measurement data
         $this->measurementData = [
             'weight' => $data['weight'] ?? null,
@@ -60,7 +64,7 @@ class CreateGymMember extends CreateRecord
 
         // Store payment data for use in afterCreate
         $this->paymentData = [
-            'gym_id' => $data['gym_id'] ?? null,
+            'gym_id' => $data['gym_id'],
             'membership_plan_id' => $data['membership_plan_id'] ?? null,
             'amount' => $data['amount'] ?? null,
             'discount_amount' => $data['discount_amount'] ?? 0,
@@ -200,48 +204,39 @@ class CreateGymMember extends CreateRecord
                 ->icon('heroicon-o-ticket')
                 ->description('Configure membership settings')
                 ->schema([
-                    Section::make()->schema($this->getMembershipFormSchema())->columns(),
+                    Section::make('Membership Details')
+                        ->icon('heroicon-o-ticket')
+                        ->description('Configure membership settings')
+                        ->schema([
+                            Select::make('trainer_id')
+                                ->label('Assign Trainer')
+                                ->options(function (callable $get) {
+                                    return Trainer::query()->where('gym_id', $this->getGymId())
+                                        ->available()
+                                        ->pluck('name', 'id')
+                                        ->prepend('None', null); // Allow "No Trainer" option
+                                })
+                                ->reactive()
+                                ->nullable()
+                                ->afterStateHydrated(function ($state, callable $set, $record) {
+                                    if (! $state && $record) {
+                                        $set('trainer_id', null);
+                                    }
+                                })
+                                ->helperText('Leave as "None" if the member does not want a personal trainer.'),
 
+                            ...PaymentForm::only(['membership_plan_id', 'membership_start', 'membership_end']),
+                        ])
+                        ->columns(2),
+
+                    Section::make('Payment Details')
+                        ->icon('heroicon-o-credit-card')
+                        ->description('Record the member\'s payment')
+                        ->schema([
+                            ...PaymentForm::only(['amount', 'discount_amount', 'amount_paid', 'currency', 'payment_method', 'status', 'payment_date', 'notes']),
+                        ])
+                        ->columns(2),
                 ]),
-        ];
-    }
-
-    public function getMembershipFormSchema(): array
-    {
-        return [
-            Hidden::make('user_id')
-                ->default(fn () => auth()->id()),
-
-            Section::make('Membership Details')
-                ->icon('heroicon-o-ticket')
-                ->description('Configure membership settings')
-                ->schema([
-                    Hidden::make('gym_id')
-                        ->default(fn () => $this->getGymId()),
-
-                    Select::make('trainer_id')
-                        ->label('Assign Trainer')
-                        ->options(function (callable $get) {
-                            return Trainer::query()->where('gym_id', $this->getGymId())
-                                ->available()
-                                ->pluck('name', 'id')
-                                ->prepend('None', null); // Allow "No Trainer" option
-                        })
-                        ->reactive()
-                        ->nullable()
-                        ->afterStateHydrated(function ($state, callable $set, $record) {
-                            if (! $state && $record) {
-                                $set('trainer_id', null);
-                            }
-                        })
-                        ->helperText('Leave as "None" if the member does not want a personal trainer.'),
-
-                    ...GymMemberResource::getMembershipPlanFormSchema($this->getGymId()),
-                ])
-                ->columns(2),
-
-            ...GymMemberResource::getPaymentFormSchema(),
-
         ];
     }
 }

@@ -21,7 +21,6 @@ class EditGymMember extends EditRecord
 
     protected function getHeaderActions(): array
     {
-
         return [
             Action::make('view_invoice')
                 ->label('View Invoice')

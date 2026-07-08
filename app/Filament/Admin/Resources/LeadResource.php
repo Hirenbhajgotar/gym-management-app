@@ -8,6 +8,7 @@ use App\Enums\DefaultRole;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Enums\LeadTag;
+use App\Filament\Admin\Resources\GymMemberResource\Forms\PaymentForm;
 use App\Filament\Admin\Resources\LeadResource\Pages\CreateLead;
 use App\Filament\Admin\Resources\LeadResource\Pages\EditLead;
 use App\Filament\Admin\Resources\LeadResource\Pages\ListLeads;
@@ -73,13 +74,17 @@ class LeadResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
 
         if (! $tenant) {
             return null;
         }
 
-        return Cache::flexible(Lead::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [21600, 604800], function () {
+        /** @var string $tenantKey */
+        $tenantKey = $tenant->getKey();
+
+        return Cache::flexible(Lead::NAVIGATION_BADGE_CACHE_KEY . $tenantKey, [21600, 604800], function () {
             return (string) (static::$model)::query()->where('status', LeadStatus::NEW)->count();
         }) ?: null;
     }
@@ -215,12 +220,12 @@ class LeadResource extends BaseResource
                         ->description('Configure membership settings')
                         ->schema([
                             Hidden::make('gym_id')
-                                ->default(fn () => Filament::getTenant()?->id ?? null),
+                                ->default(fn () => Filament::getTenant()?->getKey() ?? null),
 
                             Select::make('trainer_id')
                                 ->label('Assign Trainer')
                                 ->options(function (callable $get) {
-                                    $gymId = Filament::getTenant()->id ?? null;
+                                    $gymId = Filament::getTenant()?->getKey() ?? null;
                                     if (! $gymId) {
                                         return [];
                                     }
@@ -234,13 +239,17 @@ class LeadResource extends BaseResource
                                 ->nullable()
                                 ->helperText('Leave as "None" if the member does not want a personal trainer.'),
 
-                            ...GymMemberResource::getMembershipPlanFormSchema(function () {
-                                return Filament::getTenant()->id ?? null;
-                            }),
+                            ...PaymentForm::only(['membership_plan_id', 'membership_start', 'membership_end']),
                         ])
                         ->columns(2),
 
-                    ...GymMemberResource::getPaymentFormSchema(),
+                    Section::make('Payment Details')
+                        ->icon('heroicon-o-credit-card')
+                        ->description('Record the member\'s payment')
+                        ->schema([
+                            ...PaymentForm::only(['amount', 'discount_amount', 'amount_paid', 'currency', 'payment_method', 'status', 'payment_date', 'notes']),
+                        ])
+                        ->columns(2),
 
                     RichEditor::make('conversion_notes')
                         ->label('Conversion Notes')
