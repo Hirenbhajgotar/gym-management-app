@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
 use App\Helpers\BmiHelper;
+use App\Models\MemberMeasurement;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -71,7 +72,7 @@ class MeasurementsRelationManager extends RelationManager
                 ->label('BMI')
                 ->disabled()
                 ->dehydrated(false) // We calculate this in the model
-                ->suffix(fn ($state) => self::getBmiStatus($state)),
+                ->suffix(fn (float $state) => self::getBmiStatus($state)),
 
             Textarea::make('notes')
                 ->columnSpanFull(),
@@ -80,8 +81,8 @@ class MeasurementsRelationManager extends RelationManager
 
     public static function updateBmi(callable $get, callable $set)
     {
-        $weight = $get('weight');
-        $height = $get('height');
+        $weight = is_numeric($get('weight')) ? (float) $get('weight') : 0.0;
+        $height = is_numeric($get('height')) ? (float) $get('height') : 0.0;
 
         if ($weight && $height) {
             $bmi = BmiHelper::calculateBmi($weight, $height);
@@ -121,8 +122,8 @@ class MeasurementsRelationManager extends RelationManager
                 TextColumn::make('bmi')
                     ->label('BMI')
                     ->badge()
-                    ->color(fn ($state) => BmiHelper::getColor((float) $state))
-                    ->description(fn ($record) => $record->status ?? ''),
+                    ->color(fn (float $state) => BmiHelper::getColor($state))
+                    ->description(fn (MemberMeasurement $record): string => $record->status ?? ''),
 
                 TextColumn::make('notes')
                     ->limit(30),

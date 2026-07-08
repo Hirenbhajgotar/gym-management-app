@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Enums\Currency;
 use App\Enums\DefaultRole;
-use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Events\BiometricConsentRevoked;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
@@ -20,7 +18,6 @@ use App\Forms\Components\AddressForm;
 use App\Jobs\SendBiometricConsentEmail;
 use App\Models\Gym;
 use App\Models\GymMember;
-use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
 use Closure;
@@ -28,12 +25,10 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
@@ -47,6 +42,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
@@ -116,10 +112,6 @@ class GymMemberResource extends BaseResource
                 ->schema([
                     Section::make()
                         ->schema(static::getDetailsFormSchema())
-                        ->columns(2),
-
-                    Section::make()
-                        ->schema(static::getMembershipFormSchema())
                         ->columns(2),
                 ]),
         ];
@@ -198,7 +190,7 @@ class GymMemberResource extends BaseResource
                         return $membershipEnd->toFormattedDateString(); // e.g., "Aug 15, 2025"
                     })
                     ->badge()
-                    ->icon(function ($state) {
+                    ->icon(function (string $state): string {
                         if (! $state) {
                             return 'heroicon-o-calendar'; // Default icon for "Not Set"
                         }
@@ -220,7 +212,7 @@ class GymMemberResource extends BaseResource
                         // Default icon for more than 2 months
                         return 'heroicon-o-calendar';
                     })
-                    ->color(function ($state) {
+                    ->color(function (string $state): string {
                         if (! $state) {
                             return 'gray'; // Default color for "Not Set"
                         }
@@ -564,154 +556,6 @@ class GymMemberResource extends BaseResource
                 //         ]),
                 // ]),
             ])
-            // ->headerActions([
-            //     Tables\Actions\Action::make('export_members')
-            //         ->label('Export Members')
-            //         ->icon('heroicon-o-arrow-down-tray')
-            //         ->color('success')
-            //         ->form(function () {
-            //             $user = auth()->user();
-            //             $gymCount = 0;
-            //             if (filament()->getId() === 'admin') {
-            //                 $gymCount = $user->hasRole('gym_owner') ? $user->gyms()->count() : 0;
-            //             } else if (filament()->getId() === 'staff') {
-            //                 $gymCount = $user->gyms()->count();
-            //             }
-
-            //             if ($gymCount > 1) {
-            //                 return [
-            //                     Forms\Components\Select::make('gym_id')
-            //                         ->label('Select Gym')
-            //                         ->options(function () {
-            //                             return auth()->user()->gyms()->get()->pluck('name', 'id');
-            //                         })
-            //                         ->required()
-            //                         ->placeholder('Choose a gym to export members'),
-            //                 ];
-            //             }
-
-            //             return [];
-            //         })
-            //         ->action(function (array $data) {
-            //             $user = auth()->user();
-            //             $gymId = null;
-
-            //             if (filament()->getId() === 'admin') {
-            //                 if ($user->hasRole('gym_owner')) {
-            //                     $gymCount = $user->gyms()->count();
-            //                     if ($gymCount > 1) {
-            //                         $gymId = $data['gym_id'];
-            //                     } else {
-            //                         $gymId = $user->gyms()->first()?->id;
-            //                     }
-            //                 }
-            //             } else if (filament()->getId() === 'staff') {
-            //                 $gymCount = $user->gyms()->count();
-            //                 if ($gymCount > 1) {
-            //                     $gymId = $data['gym_id'];
-            //                 } else {
-            //                     $gymId = $user->gyms()->first()?->id;
-            //                 }
-            //             }
-
-            //             return Excel::download(new MembersExport($gymId), 'members-' . now()->format('Y-m-d-H-i-s') . '.csv');
-            //         })
-            //         ->requiresConfirmation(),
-            //     Tables\Actions\ActionGroup::make([ // Group the download actions
-            //         Tables\Actions\Action::make('download_csv_template')
-            //             ->label('Download CSV Template')
-            //             ->icon('heroicon-o-document-arrow-down')
-            //             ->action(fn() => response()->download(resource_path('views/templates/gym_members_import_template.csv')))
-            //             ->color('info'),
-            //         Tables\Actions\Action::make('download_xlsx_template')
-            //             ->label('Download Excel Template')
-            //             ->icon('heroicon-o-document-arrow-down')
-            //             ->action(function () {
-            //                 $path = resource_path('views/templates/gym_members_import_xlsx_template.xlsx');
-            //                 if (! file_exists($path)) {
-            //                     // Optionally create a basic one on the fly if it doesn't exist
-            //                     // Or just throw an error/notification
-
-            //                     Notification::make()
-            //                         ->title('Template Not Found')
-            //                         ->body('The Excel template file could not be found.')
-            //                         ->danger()
-            //                         ->sendToDatabase(auth()->user())
-            //                         ->send();
-
-            //                     return null; // Stop execution
-            //                 }
-
-            //                 return response()->download($path);
-            //             })
-            //             ->color('success'),
-
-            //     ])
-            //         ->label('Download Templates')
-            //         ->icon('heroicon-o-document-arrow-down')
-            //         ->button() // Display as a button with a dropdown
-            //         ->color('warning'), // Color for the main group button
-
-            //     Tables\Actions\Action::make('import')
-            //         ->label('Import Members')
-            //         ->icon('heroicon-o-document-plus')
-            //         ->form([
-            //             Forms\Components\Select::make('gym_id')
-            //                 ->relationship('gym', 'name', function ($query) {
-            //                     if (filament()->getId() === 'admin') {
-            //                         if (auth()->user()->hasRole('gym_owner')) {
-            //                             return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-            //                         }
-            //                     } else if (filament()->getId() === 'staff') {
-            //                         // Staff can see all gyms
-            //                         return $query->whereIn('id', auth()->user()->gyms()->get()->pluck('id'));
-            //                     }
-
-            //                     return $query;
-            //                 })
-            //                 ->required(),
-            //             Forms\Components\FileUpload::make('file')
-            //                 ->label('Upload CSV/XLS')
-            //                 ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
-            //                 ->required()
-            //                 ->storeFiles(false) // Prevent automatic storage
-            //                 ->getUploadedFileNameForStorageUsing(
-            //                     fn($file) => 'imports/' . $file->getClientOriginalName()
-            //                 ),
-            //         ])
-            //         ->action(function (array $data) {
-            //             try {
-            //                 $file = $data['file']; // TemporaryUploadedFile object
-            //                 $filePath = $file->getRealPath(); // Get the actual file path (e.g., C:\Users\SID\AppData\Local\Temp\phpEB47.tmp)
-
-            //                 if (! file_exists($filePath)) {
-            //                     throw new \Exception('Uploaded file not found.');
-            //                 }
-            //                 Excel::import(new GymMembersImport($data['gym_id']), $filePath);
-            //             } catch (\Exception $e) {
-            //                 Log::error('Import failed:', ['error' => $e->getMessage()]);
-            //                 $recipient = auth()->user();
-            //                 Notification::make()
-            //                     ->title('Import failed')
-            //                     ->body($e->getMessage())
-            //                     ->danger()
-            //                     ->sendToDatabase($recipient)
-            //                     ->send();
-
-            //                 event(new DatabaseNotificationsSent($recipient));
-            //             }
-            //         })
-            //         ->requiresConfirmation()
-            //         ->visible(function () {
-            //             $user = auth()->user();
-            //             if (filament()->getId() === 'admin') {
-            //                 return $user->hasRole('gym_owner') || $user->hasRole('super_admin');
-            //             } else if (filament()->getId() === 'staff') {
-            //                 return true; // Staff can import members
-            //             }
-            //             return false;
-            //         }),
-            // ])
             ->defaultSort('id', 'desc')
             ->striped();
     }
@@ -813,10 +657,11 @@ class GymMemberResource extends BaseResource
                 ->native(false)
                 ->closeOnDateSelection(true)
                 ->reactive()
-                ->afterStateUpdated(function ($state, callable $set) {
+                ->afterStateUpdated(function (string $state, callable $set): void {
                     if ($state) {
+                        /** @var Carbon $dob */
                         $dob = Date::parse($state);
-                        $age = floor($dob->diffInYears(now())); // Calculate age based on current date
+                        $age = (int) floor($dob->diffInYears(now())); // Calculate age based on current date
                         $set('age', $age);
                     } else {
                         $set('age', null); // Clear age if dob is empty
@@ -828,253 +673,28 @@ class GymMemberResource extends BaseResource
                 ->minValue(0)
                 ->maxValue(150)
                 ->placeholder('e.g., 25'),
-        ];
-    }
 
-    public static function getMembershipFormSchema(): array
-    {
-        return [
-            Hidden::make('user_id')
-                ->default(fn () => auth()->id()),
-
-            Section::make('Membership Details')
-                ->icon('heroicon-o-ticket')
-                ->description('Configure membership settings')
-                ->schema([
-                    Hidden::make('gym_id')
-                        ->default(function () {
-                            /** @var Gym|null $tenant */
-                            $tenant = Filament::getTenant();
-
-                            return $tenant?->id;
-                        }),
-
-                    Select::make('trainer_id')
-                        ->label('Assign Trainer')
-                        ->options(function (callable $get) {
-                            // $gymId = $get('gym_id');
-                            // if (!$gymId) {
-                            //     return [];
-                            // }
-                            /** @var Gym|null $tenant */
-                            $tenant = Filament::getTenant();
-                            $gymId = $tenant?->id;
-
-                            return Trainer::query()->where('gym_id', $gymId)
-                                ->available()
-                                ->pluck('name', 'id')
-                                ->prepend('None', null); // Allow "No Trainer" option
-                        })
-                        ->reactive()
-                        ->nullable()
-                        ->afterStateHydrated(function ($state, callable $set, $record) {
-                            if (! $state && $record) {
-                                $set('trainer_id', null);
-                            }
-                        })
-                        ->helperText('Leave as "None" if the member does not want a personal trainer.'),
-                ])
-                ->columns(2),
-        ];
-    }
-
-    public static function getMembershipPlanFormSchema(Closure|int|string|null $gymId = null): array
-    {
-        return [
-            Select::make('membership_plan_id')
-                ->label('Membership Plan')
-                ->placeholder('Select a plan')
-                ->reactive()
-                ->required()
-                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                    if ($state) {
-                        /** @var MembershipPlan|null $plan */
-                        $plan = MembershipPlan::query()->find($state);
-                        if ($plan && $plan->duration) {
-                            $start = $get('membership_start') ?? now();
-                            $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
-                            $set('amount', $plan->price);
-                            $set('discount_amount', 0);
-                            $set('amount_paid', $plan->price);
-                        }
-                    }
-                })
-                ->options(function () use ($gymId) {
-                    $gymId = $gymId instanceof Closure ? $gymId() : $gymId;
-                    if (! $gymId) {
-                        /** @var Gym|null $tenant */
-                        $tenant = Filament::getTenant();
-                        $gymId = $tenant?->id;
-                    }
-
-                    return MembershipPlan::query()
-                        ->where('gym_id', $gymId)
-                        ->where('is_active', true)
+            Select::make('trainer_id')
+                ->label('Assign Trainer')
+                ->options(function (callable $get): array {
+                    /** @var array<int|string, string|null> $options */
+                    $options = Trainer::query()
+                        ->available()
                         ->pluck('name', 'id')
-                        ->toArray();
+                        ->prepend('None')
+                        ->all(); // Allow "No Trainer" option
+
+                    return $options;
                 })
-                ->dehydrated(true)
-                ->createOptionForm([
-                    Section::make('Plan Details')
-                        ->icon('heroicon-o-ticket')
-                        ->description('Create a membership plan for your gym')
-                        ->schema(MembershipPlanResource::planFormSchema())
-                        ->columns(2),
-                ])
-                ->createOptionUsing(function (array $data) {
-                    // Create the new state and return its ID
-                    $state = MembershipPlan::query()->create($data);
-
-                    return $state->id;
-                }),
-
-            DatePicker::make('membership_start')
-                ->placeholder('Select start date')
-                ->native(false)
-                ->closeOnDateSelection(true)
-                ->live()
-                ->required()
-                ->default(now())
                 ->reactive()
-                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                    $planId = $get('membership_plan_id');
-                    if ($planId && $state) {
-                        /** @var MembershipPlan|null $plan */
-                        $plan = MembershipPlan::query()->find($planId);
-                        if ($plan && $plan->duration) {
-                            $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
-                        }
+                ->nullable()
+                ->afterStateHydrated(function ($state, callable $set, $record): void {
+                    if (! $state && $record) {
+                        $set('trainer_id', null);
                     }
-                }),
-            DatePicker::make('membership_end')
-                ->placeholder('Auto-calculated based on plan')
-                ->native(false)
-                ->closeOnDateSelection(true)
-                ->required()
-                ->default(now()),
+                })
+                ->helperText('Leave as "None" if the member does not want a personal trainer.')
+                ->hidden(fn (string $operation): bool => $operation === 'create'),
         ];
-    }
-
-    public static function getPaymentFormSchema(): array
-    {
-        return [
-            Section::make('Payment Details')
-                ->icon('heroicon-o-credit-card')
-                ->description('Record the member\'s payment')
-                ->schema([
-                    TextInput::make('amount')
-                        ->numeric()
-                        ->required()
-                        ->prefix(function (callable $get): string {
-                            $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
-
-                            return $currency?->getSymbol() ?? Currency::INR->getSymbol();
-                        })
-                        ->minValue(0)
-                        ->step(0.01)
-                        ->disabled()
-                        ->dehydrated()
-                        ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                    TextInput::make('discount_amount')
-                        ->label('Discount')
-                        ->numeric()
-                        ->prefix('-')
-                        ->minValue(0)
-                        ->maxValue(function (callable $get) {
-                            $planId = $get('membership_plan_id');
-                            if (! $planId) {
-                                return null;
-                            }
-
-                            /** @var MembershipPlan|null $plan */
-                            $plan = MembershipPlan::query()->find($planId);
-
-                            return $get('amount') ?? $plan->price ?? 0;
-                        })
-                        ->step(0.01)
-                        ->default(0)
-                        ->reactive()
-                        ->live(debounce: 400)
-                        ->afterStateUpdated(self::getDiscountCallback())
-                        ->helperText('Optional: enter any discount to subtract from the plan price.'),
-
-                    TextInput::make('amount_paid')
-                        ->label('Amount Paid Now')
-                        ->numeric()
-                        ->required()
-                        ->prefix(function (callable $get): string {
-                            $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
-
-                            return $currency?->getSymbol() ?? Currency::INR->getSymbol();
-                        })
-                        ->minValue(0)
-                        ->maxValue(fn (callable $get) => $get('amount') ?? 0)
-                        ->step(0.01)
-                        ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
-                        ->default(fn (callable $get) => $get('amount') ?? 0)
-                        ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                    Select::make('currency')
-                        ->options(collect(Currency::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
-                        ))
-                        ->required()
-                        ->default(Currency::INR->value)
-                        ->reactive(),
-
-                    Select::make('payment_method')
-                        ->options(collect(PaymentMethod::cases())->mapWithKeys(
-                            fn ($method) => [$method->value => $method->getLabel()]
-                        ))
-                        ->required()
-                        ->default(PaymentMethod::CASH->value),
-
-                    ToggleButtons::make('status')
-                        ->inline()
-                        ->options(collect(PaymentStatus::cases())
-                            ->filter(fn ($status) => $status !== PaymentStatus::EXPIRED)
-                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                            ->all()
-                        )
-                        ->required(),
-
-                    DatePicker::make('payment_date')
-                        ->native(false)
-                        ->closeOnDateSelection(true)
-                        ->required()
-                        ->default(now()),
-
-                    Textarea::make('notes')
-                        ->maxLength(65535)
-                        ->placeholder('e.g., Paid via UPI ID: user@upi')
-                        ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'])
-                        ->rows(3)
-                        ->columnSpanFull(),
-                ])
-                ->columns(2),
-        ];
-    }
-
-    public static function getDiscountCallback(): Closure
-    {
-        return function ($state, callable $set, callable $get): void {
-            $planId = $get('membership_plan_id');
-            if (! $planId) {
-                return;
-            }
-
-            /** @var MembershipPlan|null $plan */
-            $plan = MembershipPlan::query()->find($planId);
-            if (! $plan) {
-                return;
-            }
-
-            $discount = (float) (is_numeric($state) ? $state : 0);
-            $finalAmount = max(0, ((float) $plan->price) - $discount);
-
-            $set('amount', $finalAmount);
-            $set('amount_paid', $finalAmount);
-        };
     }
 }

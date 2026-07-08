@@ -7,7 +7,7 @@ namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Filament\Admin\Resources\GymMemberResource;
+use App\Filament\Admin\Resources\GymMemberResource\Forms\PaymentForm;
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
@@ -23,8 +23,6 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
-use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
@@ -41,7 +39,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class PaymentsRelationManager extends RelationManager
@@ -56,6 +54,14 @@ class PaymentsRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Section::make('Membership Details')
+                    ->icon('heroicon-o-ticket')
+                    ->description('Configure membership settings')
+                    ->schema([
+                        ...PaymentForm::only(['membership_plan_id', 'membership_start', 'membership_end']),
+                    ])
+                    ->columns(2),
+
                 Section::make('Payment Details')
                     ->icon('heroicon-o-credit-card')
                     ->description('Record a payment for this member')
@@ -66,106 +72,11 @@ class PaymentsRelationManager extends RelationManager
                         Hidden::make('gym_id')
                             ->default(fn ($livewire) => $this->getGymId()),
 
-                        Select::make('membership_plan_id')
-                            ->label('Membership Plan')
-                            ->placeholder('Select a membership plan')
-                            ->reactive()
-                            ->required()
-                            ->afterStateUpdated(fn ($state, callable $set, $get) => $this->updateMembershipDates($state, $set, $get))
-                            ->options(fn () => $this->getActiveMembershipPlans())
-                            ->dehydrated(true),
-
-                        TextInput::make('amount')
-                            ->numeric()
-                            ->required()
-                            ->prefix(fn (callable $get) => $this->getCurrencySymbol($get))
-                            ->minValue(0)
-                            ->step(0.01)
-                            ->disabled()
-                            ->dehydrated()
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                        TextInput::make('discount_amount')
-                            ->label('Discount')
-                            ->numeric()
-                            ->prefix('-')
-                            ->step(0.01)
-                            ->minValue(0)
-                            ->maxValue(function (callable $get) {
-                                $planId = $get('membership_plan_id');
-                                if (! $planId) {
-                                    return null;
-                                }
-
-                                /** @var MembershipPlan|null $plan */
-                                $plan = MembershipPlan::query()->find($planId);
-
-                                return $get('amount') ?? $plan->price ?? 0;
-                            })
-                            ->default(0)
-                            ->reactive()
-                            ->live(debounce: 400)
-                            ->afterStateUpdated(GymMemberResource::getDiscountCallback())
-                            ->helperText('Optional: enter any discount to subtract from the plan price.'),
-
-                        TextInput::make('amount_paid')
-                            ->label('Amount Paid Now')
-                            ->numeric()
-                            ->required()
-                            ->prefix(fn (callable $get) => $this->getCurrencySymbol($get))
-                            ->step(0.01)
-                            ->minValue(0)
-                            ->maxValue(fn (callable $get) => $get('amount') ?? 0)
-                            ->helperText('Enter the amount the member is paying now. If less than the plan price, remaining balance will be tracked.')
-                            ->default(fn (callable $get) => $get('amount') ?? 0)
-                            ->extraInputAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                        Select::make('currency')
-                            ->options(Currency::class)
-                            ->required()
-                            ->default(Currency::INR->value)
-                            ->reactive(),
-
-                        Select::make('payment_method')
-                            ->options(PaymentMethod::toSelectOptions())
-                            ->required()
-                            ->default(PaymentMethod::CASH->value),
-
-                        DatePicker::make('membership_start')
-                            ->placeholder('Select start date')
-                            ->native(false)
-                            ->closeOnDateSelection(true)
-                            ->live()
-                            ->required()
-                            ->default(now())
-                            ->reactive()
-                            ->afterStateUpdated(fn ($state, callable $set, $get) => $this->updateEndDate($state, $set, $get)),
-
-                        DatePicker::make('membership_end')
-                            ->placeholder('Auto-calculated based on plan')
-                            ->native(false)
-                            ->closeOnDateSelection(true)
-                            ->required(),
-
-                        ToggleButtons::make('status')
-                            ->inline()
-                            ->options(PaymentStatus::class)
-                            ->required(),
-
-                        Textarea::make('notes')
-                            ->maxLength(65535)
-                            ->placeholder('e.g., Paid via UPI ID: user@upi')
-                            ->extraAttributes(['class' => 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']),
-
-                        DatePicker::make('payment_date')
-                            ->native(false)
-                            ->closeOnDateSelection(true)
-                            ->required()
-                            ->default(now()),
+                        ...PaymentForm::only(['amount', 'discount_amount', 'amount_paid', 'payment_method', 'payment_date', 'currency', 'status', 'notes']),
                     ])
                     ->columns(2),
             ])
-            ->columns(1);
+            ->columns(null);
     }
 
     public function table(Table $table): Table
@@ -210,10 +121,11 @@ class PaymentsRelationManager extends RelationManager
                         return $record->currency->value ?? Currency::INR->value;
                     }),
 
-                TextColumn::make('transactions_count')
-                    ->label('Payments')
-                    ->counts('transactions')
-                    ->badge(),
+                TextColumn::make('discount_amount')
+                    ->label('Discount')
+                    ->money(function (MemberPayment $record) {
+                        return $record->currency->value ?? Currency::INR->value;
+                    }),
 
                 TextColumn::make('payment_method')
                     ->badge()
@@ -226,6 +138,22 @@ class PaymentsRelationManager extends RelationManager
                     ->date()
                     ->badge()
                     ->color('gray'),
+
+                TextColumn::make('currency')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('membership_start')
+                    ->date()
+                    ->badge()
+                    ->icon('heroicon-o-calendar')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('membership_end')
+                    ->date()
+                    ->badge()
+                    ->icon('heroicon-o-calendar')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 SelectFilter::make('payment_method')
@@ -236,10 +164,6 @@ class PaymentsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Add Payment')
-                    ->steps([
-                        // $this->getPasswordConfirmationStep(),
-                        $this->getPaymentDetailsStep('Enter payment information'),
-                    ])
                     ->action(fn (array $data) => $this->handleCreatePayment($data)),
             ])
             ->actions([
@@ -326,10 +250,6 @@ class PaymentsRelationManager extends RelationManager
                         return $record->status?->value !== PaymentStatus::EXPIRED->value;
                     })
                     ->before(fn ($record) => $this->preventExpiredPaymentEdit($record))
-                    ->steps([
-                        // $this->getPasswordConfirmationStep(),
-                        $this->getPaymentDetailsStep('Update payment information'),
-                    ])
                     ->action(fn (array $data, $record) => $this->handleUpdatePayment($data, $record)),
 
                 DeleteAction::make()
@@ -351,28 +271,6 @@ class PaymentsRelationManager extends RelationManager
     }
 
     /**
-     * Get password confirmation step for wizards
-     */
-    protected function getPasswordConfirmationStep(): Step
-    {
-        return Step::make('Password Confirmation')
-            ->icon('heroicon-o-lock-closed')
-            ->description('Please enter your password to confirm this action')
-            ->schema([$this->getPasswordField()]);
-    }
-
-    /**
-     * Get payment details step for wizards
-     */
-    protected function getPaymentDetailsStep(string $description): Step
-    {
-        return Step::make('Payment Details')
-            ->icon('heroicon-o-credit-card')
-            ->description($description)
-            ->schema($this->form(new Form($this))->getComponents());
-    }
-
-    /**
      * Get password input field with validation
      */
     protected function getPasswordField(): TextInput
@@ -389,82 +287,11 @@ class PaymentsRelationManager extends RelationManager
             ->rules([
                 'required',
                 fn () => function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! Hash::check($value, auth()->user()->password)) {
+                    if (! Hash::check($value, Auth::user()->password)) {
                         $fail('The password is incorrect.');
                     }
                 },
             ]);
-    }
-
-    /**
-     * Get active membership plans for the member's gym
-     */
-    protected function getActiveMembershipPlans(): array
-    {
-        /** @var GymMember $member */
-        $member = $this->ownerRecord;
-
-        if (! $member->gym_id) {
-            return [];
-        }
-
-        return MembershipPlan::query()
-            ->where('gym_id', $member->gym_id)
-            ->where('is_active', true)
-            ->pluck('name', 'id')
-            ->toArray();
-    }
-
-    /**
-     * Update membership dates based on selected plan
-     */
-    protected function updateMembershipDates(mixed $state, callable $set, callable $get): void
-    {
-        if (! $state) {
-            return;
-        }
-
-        /** @var MembershipPlan|null $plan */
-        $plan = MembershipPlan::query()->find($state);
-        if (! $plan || ! $plan->duration) {
-            return;
-        }
-
-        $start = $get('membership_start') ?? now();
-        $set('membership_end', Date::parse($start)->addMonths($plan->duration)->toDateString());
-        $set('amount', $plan->price);
-        $set('discount_amount', 0);
-        $set('amount_paid', $plan->price);
-    }
-
-    /**
-     * Update end date when start date changes
-     */
-    protected function updateEndDate(mixed $state, callable $set, callable $get): void
-    {
-        $planId = $get('membership_plan_id');
-
-        if (! $planId || ! $state) {
-            return;
-        }
-
-        /** @var MembershipPlan|null $plan */
-        $plan = MembershipPlan::query()->find($planId);
-        if (! $plan || ! $plan->duration) {
-            return;
-        }
-
-        $set('membership_end', Date::parse($state)->addMonths($plan->duration)->toDateString());
-    }
-
-    /**
-     * Get currency symbol based on selected currency
-     */
-    protected function getCurrencySymbol(callable $get): string
-    {
-        $currency = Currency::tryFrom(is_string($get('currency')) ? $get('currency') : Currency::INR->value);
-
-        return $currency?->getSymbol() ?? Currency::INR->getSymbol();
     }
 
     /**
@@ -615,7 +442,7 @@ class PaymentsRelationManager extends RelationManager
         /** @var PaymentStatus|null $status */
         $status = $record->status;
 
-        return auth()->user()->hasPermissionTo('delete_gym_member')
+        return Auth::user()->hasPermissionTo('delete_gym_member')
             && ($status === null || $status->value !== PaymentStatus::EXPIRED->value);
     }
 
@@ -634,7 +461,7 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function sendNotification(string $title, string $body): void
     {
-        $recipient = auth()->user();
+        $recipient = Auth::user();
 
         Notification::make()
             ->success()
