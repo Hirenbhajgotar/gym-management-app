@@ -16,7 +16,7 @@ class CmsPageController extends Component
     #[Locked]
     public string $slug;
 
-    public function mount(string $slug)
+    public function mount(string $slug): void
     {
         $this->slug = $slug;
     }

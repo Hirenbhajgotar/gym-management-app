@@ -12,6 +12,7 @@ use App\Notifications\AccountDeactivatedNotification;
 use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -50,18 +51,24 @@ class UserNotificationObserver implements ShouldHandleEventsAfterCommit
     {
         try {
             $user->notify(new AccountActivatedNotification($user));
-            Notification::make()
-                ->success()
-                ->title('Account Activated')
-                ->body('User has been notified.')
-                ->send();
+
+            if (Auth::check() && ! app()->runningInConsole()) {
+                Notification::make()
+                    ->success()
+                    ->title('Account Activated')
+                    ->body('User has been notified.')
+                    ->send();
+            }
         } catch (Exception $e) {
             Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-            Notification::make()
-                ->danger()
-                ->title('Failed to send notification')
-                ->body($e->getMessage())
-                ->send();
+
+            if (Auth::check() && ! app()->runningInConsole()) {
+                Notification::make()
+                    ->danger()
+                    ->title('Failed to send notification')
+                    ->body($e->getMessage())
+                    ->send();
+            }
         }
     }
 
@@ -69,18 +76,24 @@ class UserNotificationObserver implements ShouldHandleEventsAfterCommit
     {
         try {
             $user->notify(new AccountDeactivatedNotification($user));
-            Notification::make()
-                ->warning()
-                ->title('Account Deactivated')
-                ->body('User has been notified.')
-                ->send();
+
+            if (Auth::check() && ! app()->runningInConsole()) {
+                Notification::make()
+                    ->warning()
+                    ->title('Account Deactivated')
+                    ->body('User has been notified.')
+                    ->send();
+            }
         } catch (Exception $e) {
             Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-            Notification::make()
-                ->danger()
-                ->title('Failed to send notification')
-                ->body($e->getMessage())
-                ->send();
+
+            if (Auth::check() && ! app()->runningInConsole()) {
+                Notification::make()
+                    ->danger()
+                    ->title('Failed to send notification')
+                    ->body($e->getMessage())
+                    ->send();
+            }
         }
     }
 }

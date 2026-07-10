@@ -23,7 +23,7 @@ class Toast extends Component
 
     public bool $showSuccess = false;
 
-    public function mount()
+    public function mount(): void
     {
         // Check for session flash messages on mount
         $this->error = is_string(session('error')) ? session('error') : null;
@@ -39,7 +39,7 @@ class Toast extends Component
     }
 
     #[On('show-toast')]
-    public function showToast($type, $message)
+    public function showToast(string $type, mixed $message): void
     {
         $message = is_string($message) ? $message : '';
 
@@ -53,14 +53,14 @@ class Toast extends Component
     }
 
     #[On('show-success')]
-    public function showSuccess($message)
+    public function showSuccess(mixed $message): void
     {
         $this->success = is_string($message) ? $message : '';
         $this->showSuccess = true;
     }
 
     #[On('show-error')]
-    public function showError($message)
+    public function showError(mixed $message): void
     {
         $this->error = is_string($message) ? $message : '';
         $this->showError = true;
