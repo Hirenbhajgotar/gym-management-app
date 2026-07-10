@@ -7,14 +7,16 @@ namespace App\Livewire\Frontend;
 use App\Models\CmsPage;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('frontend.layouts.app_new')]
 class CmsPageController extends Component
 {
-    public $slug;
+    #[Locked]
+    public string $slug;
 
-    public function mount($slug)
+    public function mount(string $slug)
     {
         $this->slug = $slug;
     }
