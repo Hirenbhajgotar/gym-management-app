@@ -24,7 +24,7 @@
         >
             <div class="flex items-start justify-between">
                 <div class="flex-1">
-                    {{ $error }}
+                    {{ is_string($error) ? $error : '' }}
                 </div>
                 <button
                     @click="showError = false"
@@ -52,7 +52,7 @@
         >
             <div class="flex items-start justify-between">
                 <div class="flex-1">
-                    {{ $success }}
+                    {{ is_string($success) ? $success : '' }}
                 </div>
                 <button
                     @click="showSuccess = false"
