@@ -57,7 +57,7 @@ class LoginActivityTest extends TestCase
 
         // Authenticate as super admin
         $this->actingAs($this->superAdmin);
-        Filament::setCurrentPanel('super-admin');
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
     }
 
     public function test_page_loads_successfully(): void
@@ -117,7 +117,7 @@ class LoginActivityTest extends TestCase
         ]);
 
         Livewire::test(LoginActivity::class)
-            ->set('tableFilters', ['role' => 'gym_owner'])
+            ->set('tableFilters', ['role' => ['role' => 'gym_owner']])
             ->assertStatus(200)
             ->assertSee('192.168.1.1')
             ->assertDontSee('192.168.1.2');
@@ -149,10 +149,29 @@ class LoginActivityTest extends TestCase
         ]);
 
         Livewire::test(LoginActivity::class)
-            ->set('tableFilters', ['gym_id' => $this->gym->id])
+            ->set('tableFilters', ['gym_id' => ['value' => $this->gym->id]])
             ->assertStatus(200)
             ->assertSee('192.168.1.1')
             ->assertDontSee('192.168.1.2');
+    }
+
+    public function test_session_duration_handles_fractional_minutes(): void
+    {
+        // A duration with sub-second precision makes diffInMinutes() return a float,
+        // which previously triggered "intdiv(): Argument #1 must be of type int".
+        $log = UserLoginLog::query()->create([
+            'user_id' => $this->gymOwner->id,
+            'gym_id' => $this->gym->id,
+            'login_at' => now()->subMinutes(95)->microsecond(500000),
+            'ip_address' => '192.168.1.1',
+            'device_type' => 'desktop',
+            'login_method' => 'password',
+        ]);
+
+        $duration = $log->session_duration;
+
+        $this->assertIsString($duration);
+        $this->assertStringContainsString('h', $duration);
     }
 
     public function test_non_staff_roles_not_tracked(): void
@@ -179,6 +198,8 @@ class LoginActivityTest extends TestCase
         $stats = $service->getAggregateStats();
 
         // Member logins should not be counted
-        $this->assertArrayNotHasKey('gym_member', $stats['by_role'] ?? []);
+        /** @var array<int|string, mixed> $byRole */
+        $byRole = $stats['by_role'] ?? [];
+        $this->assertArrayNotHasKey('gym_member', $byRole);
     }
 }
