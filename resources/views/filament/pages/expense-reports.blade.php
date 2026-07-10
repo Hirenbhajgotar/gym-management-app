@@ -214,7 +214,7 @@
                                     {{ $expense->payment_method?->getLabel() ?? '-' }}
                                 </td>
                                 <td class="py-2 px-3 text-right font-medium text-gray-900 dark:text-white">
-                                    {{ Number::currency($expense->amount, in: $expense->currency) }}
+                                    {{ Number::currency((float) $expense->amount, in: $expense->currency) }}
                                 </td>
                             </tr>
                         @endforeach

@@ -214,7 +214,7 @@ class CreateGymMember extends CreateRecord
                                     return Trainer::query()->where('gym_id', $this->getGymId())
                                         ->available()
                                         ->pluck('name', 'id')
-                                        ->prepend('None', null); // Allow "No Trainer" option
+                                        ->all();
                                 })
                                 ->reactive()
                                 ->nullable()

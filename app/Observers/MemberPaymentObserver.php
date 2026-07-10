@@ -9,8 +9,9 @@ use App\Models\MemberPayment;
 use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
 use Exception;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class MemberPaymentObserver
+class MemberPaymentObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService,

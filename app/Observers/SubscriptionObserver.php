@@ -12,9 +12,10 @@ use App\Notifications\SubscriptionExpired;
 use App\Notifications\SubscriptionReactivated;
 use App\Notifications\SubscriptionSuspended;
 use Exception;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Log;
 
-class SubscriptionObserver
+class SubscriptionObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the Subscription "created" event.

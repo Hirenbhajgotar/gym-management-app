@@ -9,9 +9,11 @@ use App\Services\ErrorReportService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -88,7 +90,23 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Custom exception rendering
-        $exceptions->render(function (Throwable $e, $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
+            // Tampered or otherwise invalid Livewire payload — reject as a 400
+            // instead of surfacing a 500. This is an attacker probe / corrupted
+            // client state, not an application bug, so we don't want a stack trace.
+            if ($e instanceof CorruptComponentPayloadException) {
+                if ($request->expectsJson() || $request->header('X-Livewire')) {
+                    return response()->json([
+                        'error' => true,
+                        'message' => 'Invalid request payload.',
+                        'status' => 400,
+                        'timestamp' => now()->toISOString(),
+                    ], 400);
+                }
+
+                abort(400);
+            }
+
             $errorReportService = app(ErrorReportService::class);
 
             // For API requests, always return JSON

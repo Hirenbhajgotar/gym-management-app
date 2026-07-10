@@ -81,10 +81,10 @@
                         <div class="mb-2">
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-gray-600 dark:text-gray-400">
-                                    Spent: {{ Number::currency($budget['spent'], in: $budget['currency']) }}
+                                    Spent: {{ Number::currency((float) $budget['spent'], in: $budget['currency']) }}
                                 </span>
                                 <span class="text-gray-500 dark:text-gray-500">
-                                    of {{ Number::currency($budget['amount'], in: $budget['currency']) }}
+                                    of {{ Number::currency((float) $budget['amount'], in: $budget['currency']) }}
                                 </span>
                             </div>
                             <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
@@ -98,9 +98,9 @@
                         <div class="flex justify-between items-center text-xs">
                             <span class="{{ $budget['remaining'] >= 0 ? 'text-success-600' : 'text-danger-600' }}">
                                 @if($budget['remaining'] >= 0)
-                                    {{ Number::currency($budget['remaining'], in: $budget['currency']) }} remaining
+                                    {{ Number::currency((float) $budget['remaining'], in: $budget['currency']) }} remaining
                                 @else
-                                    {{ Number::currency(abs($budget['remaining']), in: $budget['currency']) }} over budget
+                                    {{ Number::currency(abs((float) $budget['remaining']), in: $budget['currency']) }} over budget
                                 @endif
                             </span>
                             <span class="text-gray-400 dark:text-gray-500">

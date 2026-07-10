@@ -103,7 +103,7 @@ class ErrorReportResource extends BaseResource
 
                         Textarea::make('markdown_report')
                             ->label('Full Markdown Report')
-                            ->helperText('Copy as Markdown action isi field ko clipboard pe bhejta hai.')
+                            ->helperText('The Copy as Markdown action sends the contents of this field to the clipboard.')
                             ->disabled()
                             ->rows(20)
                             ->columnSpanFull(),

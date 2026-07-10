@@ -118,7 +118,7 @@ class UserLoginLog extends Model
         return Attribute::make(
             get: function () {
                 $endTime = $this->logged_out_at ?? now();
-                $diffInMinutes = $this->login_at->diffInMinutes($endTime);
+                $diffInMinutes = (int) $this->login_at->diffInMinutes($endTime);
 
                 if ($diffInMinutes < 1) {
                     return 'Less than a minute';

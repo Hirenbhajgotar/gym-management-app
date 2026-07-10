@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Models\MemberMeasurement;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-class MemberMeasurementObserver
+class MemberMeasurementObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the MemberMeasurement "created" event.

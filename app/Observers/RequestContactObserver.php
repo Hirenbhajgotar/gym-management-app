@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\RequestContact;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class RequestContactObserver
+class RequestContactObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the RequestContact "created" event.

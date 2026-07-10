@@ -7,8 +7,9 @@ namespace App\Observers;
 use App\Helpers\ParserHelper;
 use App\Models\WhatsAppAccount;
 use App\Providers\WhatsAppProviderFactory;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class WhatsAppAccountObserver
+class WhatsAppAccountObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the WhatsAppAccount "created" event.

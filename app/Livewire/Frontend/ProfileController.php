@@ -17,11 +17,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportRedirects\Redirector;
 
 class ProfileController extends Component
 {
+    #[Locked]
     public ?int $selectedPlan = null;
 
     public bool $renewingPlan = false;

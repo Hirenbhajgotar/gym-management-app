@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Models\WhatsAppTemplate;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
-class WhatsAppTemplateObserver
+class WhatsAppTemplateObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the WhatsAppTemplate "created" event.

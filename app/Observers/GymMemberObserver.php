@@ -13,9 +13,10 @@ use App\Models\ReportGoal;
 use App\Services\AvatarService;
 use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
-class GymMemberObserver
+class GymMemberObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService,

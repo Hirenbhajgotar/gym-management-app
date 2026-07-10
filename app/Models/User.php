@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
+use App\Observers\UserNotificationObserver;
 use App\Observers\UserObserver;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -92,7 +93,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin \Eloquent
  */
-#[ObservedBy([UserObserver::class])]
+#[ObservedBy([UserObserver::class, UserNotificationObserver::class])]
 class User extends Authenticatable implements FilamentUser, HasName, HasTenants, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -225,6 +226,23 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
         return Attribute::make(
             get: fn () => $this->status === UserStatus::ACTIVE,
         );
+    }
+
+    /**
+     * Keep is_active in sync with status at the model level so it is always
+     * applied synchronously, independent of any observers.
+     *
+     * @return Attribute<UserStatus, mixed>
+     */
+    protected function status(): Attribute
+    {
+        return Attribute::make(set: function ($value) {
+            $status = $value instanceof UserStatus
+                ? $value
+                : (is_int($value) || is_string($value) ? UserStatus::tryFrom($value) : null);
+
+            return ['status' => $value, 'is_active' => $status === UserStatus::ACTIVE];
+        });
     }
 
     // =========================

@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\CmsPage;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class CmsPageObserver
+class CmsPageObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the CmsPage "created" event.
