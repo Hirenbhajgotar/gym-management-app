@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\BiometricDevice;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class BiometricDeviceObserver
+class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the BiometricDevice "created" event.

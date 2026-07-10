@@ -157,6 +157,28 @@ class Expense extends Model
         ];
     }
 
+    /**
+     * Default currency and gym-owner auto-approval.
+     *
+     * Applied on the model so it always runs synchronously before insert,
+     * independent of any observer, allowing ExpenseObserver to defer its
+     * side effects (cache invalidation / broadcasts) until after commit.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Expense $expense): void {
+            if (blank($expense->currency)) {
+                $expense->currency = 'INR';
+            }
+
+            if ($expense->user_id && $expense->shouldAutoApprove()) {
+                $expense->status = ExpenseStatus::APPROVED;
+                $expense->approved_by_id = $expense->user_id;
+                $expense->approved_at = now();
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

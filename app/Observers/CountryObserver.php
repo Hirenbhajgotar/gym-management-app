@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\Country;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class CountryObserver
+class CountryObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the Country "created" event.

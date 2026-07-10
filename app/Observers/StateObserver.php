@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\State;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class StateObserver
+class StateObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the State "created" event.

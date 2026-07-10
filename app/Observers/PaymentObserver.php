@@ -8,8 +8,9 @@ use App\Events\Reports\RevenueStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Payment;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class PaymentObserver
+class PaymentObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService

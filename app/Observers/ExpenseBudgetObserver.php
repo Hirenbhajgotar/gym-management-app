@@ -8,8 +8,9 @@ use App\Events\Reports\ExpenseStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\ExpenseBudget;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class ExpenseBudgetObserver
+class ExpenseBudgetObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService

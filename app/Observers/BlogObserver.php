@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\Blog;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class BlogObserver
+class BlogObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the Blog "created" event.

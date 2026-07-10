@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\Plan;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class PlanObserver
+class PlanObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the Plan "created" event.

@@ -10,9 +10,11 @@ use App\Services\TwilioAccountManager;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-class GymObserver
+class GymObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the Gym "created" event.
@@ -21,7 +23,7 @@ class GymObserver
     {
         resolve(GymSettingService::class)->createDefaultSettings($gym);
 
-        $recipient = $gym->owner() ?? auth()->user();
+        $recipient = $gym->owner() ?? Auth::user();
 
         if ($recipient) {
             Notification::make()
@@ -130,7 +132,7 @@ class GymObserver
      */
     public function deleted(Gym $gym): void
     {
-        $recipient = $gym->owner() ?? auth()->user();
+        $recipient = $gym->owner() ?? Auth::user();
 
         if ($recipient) {
             $gymName = $gym->name;

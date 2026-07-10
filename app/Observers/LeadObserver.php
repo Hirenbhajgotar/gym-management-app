@@ -9,9 +9,10 @@ use App\Helpers\ParserHelper;
 use App\Models\Lead;
 use App\Models\ReportGoal;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
-class LeadObserver
+class LeadObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService

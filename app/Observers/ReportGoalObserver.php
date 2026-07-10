@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Models\ReportGoal;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
-class ReportGoalObserver
+class ReportGoalObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the ReportGoal "created" event.
@@ -32,11 +33,6 @@ class ReportGoalObserver
     {
         $this->clearCache($reportGoal);
     }
-
-    /**
-     * Handle events after all transactions are committed.
-     */
-    public $afterCommit = true;
 
     protected function clearCache(ReportGoal $reportGoal): void
     {
