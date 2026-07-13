@@ -128,7 +128,7 @@ class Payment extends Model
 
     public function getDescriptionForEvent(string $eventName): string
     {
-        $amount = Number::currency((float) $this->amount, in: $this->currency->value);
+        $amount = Number::currency((float) $this->amount, in: $this->currency->value ?? Currency::INR->value);
 
         return match ($eventName) {
             'created' => "Payment of {$amount} created for {$this->gym?->name} ({$this->payment_type})",
@@ -224,7 +224,7 @@ class Payment extends Model
     protected function formattedAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => Number::currency((float) $this->amount, in: $this->currency->value),
+            get: fn () => Number::currency((float) $this->amount, in: $this->currency->value ?? Currency::INR->value),
         );
     }
 
