@@ -9,12 +9,11 @@ use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\User;
 use Exception;
-use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class UserObserver implements ShouldHandleEventsAfterCommit
+class UserObserver
 {
     /**
      * Handle the User "created" event.
