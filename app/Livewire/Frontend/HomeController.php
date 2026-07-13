@@ -7,13 +7,15 @@ namespace App\Livewire\Frontend;
 use App\Models\Plan;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Title('Gym Management Software for Indian Gyms | FluxFitness')]
 class HomeController extends Component
 {
-    public $selectedPlan;
+    #[Locked]
+    public ?int $selectedPlan = null;
 
     #[Layout('frontend.layouts.app_new')]
     public function render()

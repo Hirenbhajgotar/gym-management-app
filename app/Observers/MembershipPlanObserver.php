@@ -7,8 +7,9 @@ namespace App\Observers;
 use App\Models\MembershipPlan;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class MembershipPlanObserver
+class MembershipPlanObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the MembershipPlan "created" event.

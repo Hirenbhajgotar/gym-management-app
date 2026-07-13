@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\WhatsAppPackage;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class WhatsAppPackageObserver
+class WhatsAppPackageObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the WhatsAppPackage "created" event.

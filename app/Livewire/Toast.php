@@ -4,37 +4,45 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Toast extends Component
 {
-    public $error;
+    // `error` and `success` are only ever written server-side (session flash on
+    // mount, or dispatched events). They must never be settable via client
+    // `updates`, which is how a malformed/array payload reached htmlspecialchars().
+    #[Locked]
+    public ?string $error = null;
 
-    public $success;
+    #[Locked]
+    public ?string $success = null;
 
-    public $showError = false;
+    public bool $showError = false;
 
-    public $showSuccess = false;
+    public bool $showSuccess = false;
 
-    public function mount()
+    public function mount(): void
     {
         // Check for session flash messages on mount
-        $this->error = session('error');
-        $this->success = session('success');
+        $this->error = is_string(session('error')) ? session('error') : null;
+        $this->success = is_string(session('success')) ? session('success') : null;
 
-        if ($this->error) {
+        if ($this->error !== null) {
             $this->showError = true;
         }
 
-        if ($this->success) {
+        if ($this->success !== null) {
             $this->showSuccess = true;
         }
     }
 
     #[On('show-toast')]
-    public function showToast($type, $message)
+    public function showToast(string $type, mixed $message): void
     {
+        $message = is_string($message) ? $message : '';
+
         if ($type === 'success') {
             $this->success = $message;
             $this->showSuccess = true;
@@ -45,16 +53,16 @@ class Toast extends Component
     }
 
     #[On('show-success')]
-    public function showSuccess($message)
+    public function showSuccess(mixed $message): void
     {
-        $this->success = $message;
+        $this->success = is_string($message) ? $message : '';
         $this->showSuccess = true;
     }
 
     #[On('show-error')]
-    public function showError($message)
+    public function showError(mixed $message): void
     {
-        $this->error = $message;
+        $this->error = is_string($message) ? $message : '';
         $this->showError = true;
     }
 

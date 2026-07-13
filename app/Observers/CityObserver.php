@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\City;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class CityObserver
+class CityObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the City "created" event.

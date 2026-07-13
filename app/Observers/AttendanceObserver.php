@@ -8,8 +8,9 @@ use App\Events\Reports\AttendanceStatsUpdated;
 use App\Models\Attendances;
 use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class AttendanceObserver
+class AttendanceObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService,

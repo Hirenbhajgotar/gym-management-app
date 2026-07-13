@@ -8,8 +8,9 @@ use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Trainer;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class TrainerObserver
+class TrainerObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService

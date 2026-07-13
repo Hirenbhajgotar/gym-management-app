@@ -6,8 +6,9 @@ namespace App\Observers;
 
 use App\Helpers\ParserHelper;
 use App\Models\ErrorReport;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class ErrorReportObserver
+class ErrorReportObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the ErrorReport "created" event.

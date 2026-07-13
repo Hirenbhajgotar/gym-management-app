@@ -65,7 +65,7 @@ class ExceptionMarkdownFormatter
         $lines[] = '';
         $lines[] = '- **Method**: ' . $request->method();
         $lines[] = '- **Requested endpoint**: ' . $origin['requested_url'];
-        $lines[] = '- **Origin URL (asli page)**: ' . $origin['origin_url'];
+        $lines[] = '- **Origin URL**: ' . $origin['origin_url'];
 
         if ($origin['livewire_component']) {
             $lines[] = '- **Livewire/Filament Component**: `' . $origin['livewire_component'] . '`';

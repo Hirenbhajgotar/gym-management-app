@@ -681,7 +681,6 @@ class GymMemberResource extends BaseResource
                     $options = Trainer::query()
                         ->available()
                         ->pluck('name', 'id')
-                        ->prepend('None', null)  // Allow "No Trainer" option
                         ->all();
 
                     return $options;

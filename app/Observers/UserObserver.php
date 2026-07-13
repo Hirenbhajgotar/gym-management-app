@@ -5,30 +5,16 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Enums\DefaultRole;
-use App\Enums\UserStatus;
 use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\User;
-use App\Notifications\AccountActivatedNotification;
-use App\Notifications\AccountDeactivatedNotification;
 use Exception;
-use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UserObserver
 {
-    /**
-     * Handle the User "saving" event.
-     */
-    public function saving(User $user): void
-    {
-        if ($user->isDirty('status')) {
-            $user->is_active = $user->status === UserStatus::ACTIVE;
-        }
-    }
-
     /**
      * Handle the User "created" event.
      */
@@ -43,10 +29,6 @@ class UserObserver
     public function updated(User $user): void
     {
         $this->clearCache();
-
-        if ($user->wasChanged('status')) {
-            $this->handleAccountStatusChange($user);
-        }
     }
 
     /**
@@ -232,62 +214,5 @@ class UserObserver
     {
         ParserHelper::clearCache(User::NAVIGATION_BADGE_CACHE_KEY);
         ParserHelper::clearCache(User::ALL_SUPER_ADMINS_CACHE_KEY);
-    }
-
-    private function handleAccountStatusChange(User $user): void
-    {
-        $isGymOwner = $user->gyms()->wherePivot('role', DefaultRole::GYM_OWNER->value)->exists();
-
-        if (! $isGymOwner) {
-            return;
-        }
-
-        if ($user->status === UserStatus::ACTIVE) {
-            $this->sendAccountActivateNotification($user);
-        } elseif ($user->status === UserStatus::INACTIVE) {
-            $this->sendAccountDeactivateNotification($user);
-        }
-    }
-
-    private function sendAccountActivateNotification(User $user): void
-    {
-        if ($user) {
-            try {
-                $user->notify(new AccountActivatedNotification($user));
-                Notification::make()
-                    ->success()
-                    ->title('Account Activated')
-                    ->body('User has been notified.')
-                    ->send();
-            } catch (Exception $e) {
-                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                Notification::make()
-                    ->danger()
-                    ->title('Failed to send notification')
-                    ->body($e->getMessage())
-                    ->send();
-            }
-        }
-    }
-
-    private function sendAccountDeactivateNotification(User $user): void
-    {
-        if ($user) {
-            try {
-                $user->notify(new AccountDeactivatedNotification($user));
-                Notification::make()
-                    ->warning()
-                    ->title('Account Deactivated')
-                    ->body('User has been notified.')
-                    ->send();
-            } catch (Exception $e) {
-                Log::error('Failed to send notification', ['user' => $user, 'error' => $e->getMessage()]);
-                Notification::make()
-                    ->danger()
-                    ->title('Failed to send notification')
-                    ->body($e->getMessage())
-                    ->send();
-            }
-        }
     }
 }

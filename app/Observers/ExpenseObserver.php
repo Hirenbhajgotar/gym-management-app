@@ -4,38 +4,20 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\ExpenseStatus;
 use App\Events\Reports\ExpenseStatsUpdated;
 use App\Events\Reports\RevenueStatsUpdated;
 use App\Helpers\ParserHelper;
 use App\Models\Expense;
 use App\Services\DashboardCacheService;
 use App\Services\ReportCacheService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class ExpenseObserver
+class ExpenseObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected ReportCacheService $reportCacheService,
         protected DashboardCacheService $dashboardCacheService
     ) {}
-
-    /**
-     * Handle the Expense "creating" event.
-     */
-    public function creating(Expense $expense): void
-    {
-        // Set default currency if not provided
-        if (blank($expense->currency)) {
-            $expense->currency = 'INR';
-        }
-
-        // Auto-approve for gym owners
-        if ($expense->user && $expense->shouldAutoApprove()) {
-            $expense->status = ExpenseStatus::APPROVED;
-            $expense->approved_by_id = $expense->user_id;
-            $expense->approved_at = now();
-        }
-    }
 
     /**
      * Handle the Expense "created" event.

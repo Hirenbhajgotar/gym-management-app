@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\FilesystemException;
+use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 use PDOException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -334,6 +335,13 @@ class ErrorReportService
     public function shouldSkipAutoReporting(Throwable $exception): bool
     {
         if (app()->environment('testing')) {
+            return true;
+        }
+
+        // Tampered/corrupted Livewire payloads are attacker probes (or stale
+        // client state after a key rotation), not application bugs. Don't
+        // create error reports or page on-call for them.
+        if ($exception instanceof CorruptComponentPayloadException) {
             return true;
         }
 
