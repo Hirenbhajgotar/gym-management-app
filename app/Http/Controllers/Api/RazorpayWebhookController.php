@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\PaymentCompleted;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\WhatsAppCreditTransaction;
@@ -76,7 +77,7 @@ class RazorpayWebhookController
 
             // Return 200 to prevent Razorpay from retrying
             // (we've logged the error for manual review)
-            return response()->json(['status' => 'error'], 200);
+            return response()->json(['status' => 'error'], 401);
         }
     }
 
@@ -112,6 +113,13 @@ class RazorpayWebhookController
                 'status' => 'completed',
                 'paid_at' => now(),
             ]);
+        }
+
+        // Subscription payments are provisioned asynchronously by the
+        // SubscriptionProvisioner listener (idempotent) so that the same
+        // event delivered twice never creates a duplicate subscription.
+        if (str_starts_with((string) $payment->payment_type, 'subscription_')) {
+            event(new PaymentCompleted($payment->id));
         }
 
         // Handle gym owner registration
@@ -203,6 +211,8 @@ class RazorpayWebhookController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            throw $e;
         }
     }
 

@@ -61,7 +61,8 @@ Route::middleware(['auth'])->group(function () {
     })->name('clear-cache');
 
     // Download failed rows CSV
-    Route::get('/download-failed-rows/{file}', function ($file) {
+    Route::get('/download-failed-rows/{file}', function (string $file) {
+        // $file = is_string($file) ? $file : '';
         Log::info(
             'Attempting to download failed rows CSV',
             ['file' => $file],
@@ -116,9 +117,10 @@ Route::middleware(['auth'])->group(function () {
     // Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-Route::get('/download-sample/{file}', function ($file, Request $request) {
-    $fileName = $request->get('fileName', 'sample.xlsx');
+Route::get('/download-sample/{file}', function (string $file, Request $request) {
+    $fileName = $request->string('fileName', 'sample.xlsx')->toString();
     $path = 'import/templates/xls/' . $file;
+
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return Storage::disk('public')->download($path, $fileName);
@@ -149,9 +151,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/member/invoice/{payment}', [MemberInvoiceController::class, 'show'])->name('member.invoice.show');
 });
 
-// Razorpay Webhook (no auth required)
-Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
-
 // Sitemap Route
 Route::get('/{filename}.xml', function (string $filename) {
     $path = public_path($filename . '.xml');
@@ -163,7 +162,7 @@ Route::get('/{filename}.xml', function (string $filename) {
     }
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
-})->whereIn('filename', config('sitemap.allowed_filenames', []))->name('sitemap');
+})->whereIn('filename', config()->array('sitemap.allowed_filenames', []))->name('sitemap');
 
 // WhatsApp Embedded Signup Routes
 Route::middleware(['auth'])->prefix('whatsapp/embedded-signup')->name('whatsapp.embedded-signup.')->group(function () {

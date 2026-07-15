@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace App\Livewire\Frontend;
 
 use App\Enums\SubscriptionStatus;
+use App\Models\CheckoutSession;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\PriceResolver;
 use App\Services\SubscriptionService;
 use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -37,15 +40,11 @@ class ProfileController extends Component
     #[Layout('frontend.layouts.profile')]
     public function render(): View
     {
-        $user = auth()
-            ->user()
-            ->load(['roles', 'gyms']);
+        $user = Auth::user()->load(['roles', 'gyms.address']);
 
         // Get only active subscription
         $subscription = $user->subscription();
         $currentPlan = $subscription?->plan;
-
-        // dd($subscription->wasTrial(), $user->hasUsedTrial());
 
         $allPlans = Cache::flexible(Plan::PROFILE_ALL_PLANS_CACHE_KEY, [now()->addDay(), now()->addWeek()], function () {
             return Plan::with(['features'])
@@ -73,9 +72,16 @@ class ProfileController extends Component
         $this->selectingPlan = true;
 
         $plan = Plan::with(['features'])->findOrFail($planId);
+
+        /** @var User $user */
         $user = auth()->user();
 
-        $this->clearSessionData();
+        // Check if user already has an active subscription
+        $activeSubscription = Subscription::query()->where('user_id', $user->id)
+            ->active()
+            ->first();
+
+        throw_if($activeSubscription, Exception::class, 'User already has an active subscription');
 
         // Check if user can get a free trial
         $hasUsedTrial = $user->hasUsedTrial();
@@ -110,18 +116,31 @@ class ProfileController extends Component
             }
         }
 
-        // For paid plans, proceed to checkout
-        session(['selected_plan_id' => $plan->id]);
+        // For paid plans, create a checkout session and redirect with its token.
+        $price = resolve(PriceResolver::class)->resolve($plan, 'yearly');
 
-        // Redirect to checkout
-        return to_route('subscriptions.checkout');
+        $session = CheckoutSession::query()->create([
+            'token' => CheckoutSession::generateToken(),
+            'user_id' => $user->id,
+            'type' => CheckoutSession::TYPE_NEW,
+            'plan_id' => $plan->id,
+            'billing_cycle' => 'yearly',
+            'amount' => $price['amount'],
+            'currency' => $price['currency'],
+            'status' => CheckoutSession::STATUS_PENDING,
+            'expires_at' => now()->addMinutes(30),
+            'metadata' => ['trial_days' => 0, 'has_used_trial_before' => $hasUsedTrial],
+        ]);
+
+        return to_route('subscriptions.checkout', ['token' => $session->token]);
     }
 
     public function upgradePlan(int $planId): mixed
     {
         $this->upgradingPlan = true;
 
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         $currentSubscription = $user->subscription();
 
         // Check if user can upgrade (has active subscription)
@@ -135,25 +154,39 @@ class ProfileController extends Component
             return null;
         }
 
-        // $newPlan = Plan::findOrFail($planId);
+        $newPlan = Plan::query()->findOrFail($planId);
 
-        // Check if the new plan is actually an upgrade (higher price)
-        // if ($newPlan->price_yearly <= $currentSubscription->plan->price_yearly) {
-        //     session()->flash('error', 'Please select a higher-tier plan to upgrade.');
-        //     $this->upgradingPlan = false;
-        //     return;
-        // }
+        $cycle = $currentSubscription->billing_cycle;
+        $newPrice = resolve(PriceResolver::class)->resolve($newPlan, $cycle)['amount'];
 
-        $this->clearSessionData();
+        // Charge only the prorated difference when proration is enabled (G10).
+        if (config()->boolean('subscriptions.proration_enabled')) {
+            $totalDays = $cycle === 'yearly' ? 365 : 30;
+            $remaining = max(0, now()->diffInDays($currentSubscription->current_period_end, false));
+            $credit = $currentSubscription->price * $remaining / $totalDays;
+            $amount = max(0, round($newPrice - $credit, 2));
+        } else {
+            $amount = $newPrice;
+        }
 
-        // Store upgrade information in session
-        session([
-            'upgrade_plan_id' => $planId,
-            'current_subscription_id' => $currentSubscription->id,
+        $session = CheckoutSession::query()->create([
+            'token' => CheckoutSession::generateToken(),
+            'user_id' => $user->id,
+            'type' => CheckoutSession::TYPE_UPGRADE,
+            'plan_id' => $newPlan->id,
+            'subscription_id' => $currentSubscription->id,
+            'billing_cycle' => $cycle,
+            'amount' => $amount,
+            'currency' => $currentSubscription->currency,
+            'status' => CheckoutSession::STATUS_PENDING,
+            'expires_at' => now()->addMinutes(30),
+            'metadata' => [
+                'from_plan' => $currentSubscription->plan->name,
+                'to_plan' => $newPlan->name,
+            ],
         ]);
 
-        // Redirect to checkout for upgrade
-        return to_route('subscriptions.checkout');
+        return to_route('subscriptions.checkout', ['token' => $session->token]);
     }
 
     public function renewPlan(): mixed
@@ -170,9 +203,8 @@ class ProfileController extends Component
             ->where(function (Builder $query) {
                 $query->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE])
                     ->orWhere(function (Builder $q) {
-                        $q->where('status', 'expired')->whereNotNull(
-                            'trial_ends_at',
-                        ); // Expired trials can be renewed
+                        $q->where('status', SubscriptionStatus::EXPIRED)
+                            ->whereNotNull('trial_ends_at'); // Expired trials can be renewed
                     });
             })
             ->first();
@@ -184,28 +216,25 @@ class ProfileController extends Component
             return null;
         }
 
-        /** @var Subscription $subscription */
-        $this->clearSessionData();
+        // Charge the CURRENT effective plan price, not the stale price stored on
+        // the subscription at signup (fixes G1: renewal pays old price).
+        $price = resolve(PriceResolver::class)->resolve($subscription->plan, $subscription->billing_cycle);
 
-        // Store renewal information in session
-        session([
-            'renew_plan_id' => $subscription->plan_id,
-            'renew_subscription_id' => $subscription->id,
+        $session = CheckoutSession::query()->create([
+            'token' => CheckoutSession::generateToken(),
+            'user_id' => $user->id,
+            'type' => CheckoutSession::TYPE_RENEWAL,
+            'plan_id' => $subscription->plan_id,
+            'subscription_id' => $subscription->id,
+            'billing_cycle' => $subscription->billing_cycle,
+            'amount' => $price['amount'],
+            'currency' => $subscription->currency,
+            'status' => CheckoutSession::STATUS_PENDING,
+            'expires_at' => now()->addMinutes(30),
+            'metadata' => [],
         ]);
 
-        // Redirect to subscription checkout for renewal
-        return to_route('subscriptions.checkout');
-    }
-
-    private function clearSessionData(): void
-    {
-        session()->forget([
-            'renew_plan_id',
-            'renew_subscription_id',
-            'upgrade_plan_id',
-            'current_subscription_id',
-            'selected_plan_id',
-        ]);
+        return to_route('subscriptions.checkout', ['token' => $session->token]);
     }
 
     public function logout(): RedirectResponse|Redirector

@@ -97,6 +97,7 @@ class Payment extends Model
         'refund_amount',
         'invoice_number',
         'invoice_path',
+        'provisioned_at',
     ];
 
     /**
@@ -110,6 +111,7 @@ class Payment extends Model
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'provisioned_at' => 'datetime',
             'refund_amount' => 'decimal:2',
             'metadata' => 'array',
             'status' => PaymentStatus::class,

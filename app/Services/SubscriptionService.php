@@ -48,7 +48,8 @@ class SubscriptionService
             // Check if user can get a free trial
             $hasUsedTrial = $lockedUser->hasUsedTrial();
 
-            $billingCycle = $options['billing_cycle'] ?? 'monthly';
+            /** @var string $billingCycle */
+            $billingCycle = $options['billing_cycle'] ?? 'yearly';
 
             $trialDays = 0;
             if (isset($options['trial_days'])) {
@@ -62,16 +63,13 @@ class SubscriptionService
             }
 
             // Determine status - allow override for admin assignments
-            $status = $options['force_status'] ?? (
-                $trialDays > 0
-                ? SubscriptionStatus::TRIAL
-                : SubscriptionStatus::ACTIVE
-            );
+            $status = $options['force_status'] ?? ($trialDays > 0 ? SubscriptionStatus::TRIAL : SubscriptionStatus::ACTIVE);
 
             $metadata = null;
             if (isset($options['metadata']) && filled($options['metadata'])) {
                 $metadata = $options['metadata'];
             }
+            $priceResolver = resolve(PriceResolver::class)->resolve($lockedPlan, $billingCycle);
 
             // Create subscription
             $subscription = Subscription::query()->create([
@@ -79,10 +77,8 @@ class SubscriptionService
                 'plan_id' => $lockedPlan->id,
                 'status' => $status,
                 'billing_cycle' => $billingCycle,
-                'price' => $billingCycle === 'yearly'
-                    ? $lockedPlan->price_yearly
-                    : $lockedPlan->price_monthly,
-                'currency' => $lockedPlan->currency,
+                'price' => $priceResolver['amount'],
+                'currency' => $priceResolver['currency'],
                 'trial_ends_at' => $trialDays > 0 ? Date::now()->addDays($trialDays) : null,
                 'current_period_start' => Date::now(),
                 'current_period_end' => $this->calculatePeriodEnd(
@@ -102,34 +98,23 @@ class SubscriptionService
     /**
      * Create a pending subscription for failed/incomplete payments
      */
-    public function createPendingSubscription(
-        User $user,
-        Plan $plan,
-        array $options = [],
-    ): Subscription {
+    public function createPendingSubscription(User $user, Plan $plan, array $options = []): Subscription
+    {
+        /** @var string $billingCycle */
         $billingCycle = $options['billing_cycle'] ?? 'monthly';
 
-        return DB::transaction(function () use (
-            $user,
-            $plan,
-            $billingCycle,
-        ) {
+        return DB::transaction(function () use ($user, $plan, $billingCycle) {
             // Create subscription with PENDING status
             $subscription = Subscription::query()->create([
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'status' => SubscriptionStatus::PENDING,
                 'billing_cycle' => $billingCycle,
-                'price' => $billingCycle === 'yearly'
-                    ? $plan->price_yearly
-                    : $plan->price_monthly,
+                'price' => $billingCycle === 'yearly' ? $plan->price_yearly : $plan->price_monthly,
                 'currency' => $plan->currency,
                 'trial_ends_at' => null, // No trial for pending subscriptions
                 'current_period_start' => Date::now(),
-                'current_period_end' => $this->calculatePeriodEnd(
-                    Date::now(),
-                    $billingCycle,
-                ),
+                'current_period_end' => $this->calculatePeriodEnd(Date::now(), $billingCycle),
             ]);
 
             // Create feature snapshots
@@ -159,59 +144,80 @@ class SubscriptionService
     /**
      * Cancel a subscription
      */
-    public function cancelSubscription(
-        Subscription $subscription,
-        bool $immediately = false,
-    ): bool {
-        throw_unless($subscription->isActive(), Exception::class, 'Subscription is not active');
+    public function cancelSubscription(Subscription $subscription, bool $immediately = false): bool
+    {
+        return DB::transaction(function () use ($subscription, $immediately) {
+            $lockedSubscription = Subscription::query()->where('id', $subscription->id)->lockForUpdate()->first();
 
-        $trialEnd = $subscription->trial_ends_at?->isFuture()
-            ? now()
-            : $subscription->trial_ends_at;
+            throw_unless($lockedSubscription && $lockedSubscription->isActive(), Exception::class, 'Subscription is not active');
 
-        $updateData = [
-            'status' => SubscriptionStatus::CANCELLED,
-            'cancelled_at' => Date::now(),
-            'trial_ends_at' => $trialEnd ?? null,
-        ];
+            $trialEnd = $lockedSubscription->trial_ends_at?->isFuture()
+                ? now()
+                : $lockedSubscription->trial_ends_at;
 
-        if ($immediately) {
-            $updateData['ends_at'] = Date::now();
-            $updateData['current_period_end'] = Date::now();
-        } else {
-            $updateData['ends_at'] = $subscription->current_period_end;
-        }
+            $updateData = [
+                'status' => SubscriptionStatus::CANCELLED,
+                'cancelled_at' => Date::now(),
+                'trial_ends_at' => $trialEnd ?? null,
+            ];
 
-        return $subscription->update($updateData);
+            if ($immediately) {
+                $updateData['ends_at'] = Date::now();
+                $updateData['current_period_end'] = Date::now();
+            } else {
+                $updateData['ends_at'] = $lockedSubscription->current_period_end;
+            }
+
+            return $lockedSubscription->update($updateData);
+        });
     }
 
     /**
-     * Renew a subscription
+     * Renew a subscription. The charged amount is snapshotted onto the
+     * subscription so the stored price always reflects what was actually paid
+     * (G1), and the new period starts from the later of the current end or now
+     * so lapsed subscriptions do not lose the expired interval (G5).
      */
-    public function renewSubscription(Subscription $subscription): bool
+    public function renewSubscription(Subscription $subscription, ?float $chargedAmount = null): bool
     {
-        // if (! $subscription->isActive()) {
-        //     return false;
-        // }
+        return DB::transaction(function () use ($subscription, $chargedAmount) {
+            $lockedSubscription = Subscription::query()
+                ->with('plan')
+                ->where('id', $subscription->id)
+                ->lockForUpdate()
+                ->first();
 
-        $newPeriodStart = $subscription->current_period_end ?? Date::now();
-        $newPeriodEnd = $this->calculatePeriodEnd(
-            $newPeriodStart,
-            $subscription->billing_cycle,
-        );
+            throw_unless($lockedSubscription, Exception::class, 'Subscription not found');
 
-        // If subscription is still in trial period, end it immediately by setting trial_ends_at to now
-        // Otherwise, keep the existing trial_ends_at value
-        $trialEnd = $subscription->trial_ends_at?->isFuture()
-            ? now()
-            : $subscription->trial_ends_at;
+            $cycle = $lockedSubscription->billing_cycle;
 
-        return $subscription->update([
-            'current_period_start' => $newPeriodStart,
-            'current_period_end' => $newPeriodEnd,
-            'status' => SubscriptionStatus::ACTIVE, // Ensure it's active after renewal
-            'trial_ends_at' => $trialEnd,
-        ]);
+            $newPeriodStart = ($lockedSubscription->current_period_end?->isFuture())
+                ? $lockedSubscription->current_period_end
+                : Date::now();
+
+            $newPeriodEnd = $this->calculatePeriodEnd($newPeriodStart, $cycle);
+
+            $trialEnd = $lockedSubscription->trial_ends_at?->isFuture()
+                ? now()
+                : $lockedSubscription->trial_ends_at;
+
+            /** @var Plan $plan */
+            $plan = $lockedSubscription->plan;
+            $priceResolver = resolve(PriceResolver::class)->resolve($plan, $cycle);
+
+            $lockedSubscription->update([
+                'current_period_start' => $newPeriodStart,
+                'current_period_end' => $newPeriodEnd,
+                'status' => SubscriptionStatus::ACTIVE,
+                'price' => $chargedAmount ?? $priceResolver['amount'],
+                'currency' => $priceResolver['currency'],
+                'trial_ends_at' => $trialEnd,
+            ]);
+
+            $this->syncFeatureSnapshots($lockedSubscription, $plan);
+
+            return true;
+        });
     }
 
     /**
@@ -224,22 +230,17 @@ class SubscriptionService
     ): Subscription {
         throw_unless($subscription->isActive(), Exception::class, 'Subscription is not active');
 
-        $billingCycle =
-            $options['billing_cycle'] ?? $subscription->billing_cycle;
+        /** @var string $billingCycle */
+        $billingCycle = $options['billing_cycle'] ?? $subscription->billing_cycle;
         $prorate = $options['prorate'] ?? false;
 
-        DB::transaction(function () use (
-            $subscription,
-            $newPlan,
-            $billingCycle,
-            $prorate,
-        ) {
+        DB::transaction(function () use ($subscription, $newPlan, $billingCycle, $prorate) {
+            $priceResolver = resolve(PriceResolver::class)->resolve($newPlan, $billingCycle);
+
             $updateData = [
                 'plan_id' => $newPlan->id,
                 'billing_cycle' => $billingCycle,
-                'price' => $billingCycle === 'yearly'
-                    ? $newPlan->price_yearly
-                    : $newPlan->price_monthly,
+                'price' => $priceResolver['amount'],
             ];
 
             // If proration is enabled, adjust the current period
@@ -304,18 +305,55 @@ class SubscriptionService
     }
 
     /**
-     * Check and update expired subscriptions
+     * Check and update expired subscriptions.
+     *
+     * Paid (non-trial) subscriptions get a grace period: they stay ACTIVE and
+     * keep feature access until grace_period_ends_at passes, at which point
+     * they are flipped to EXPIRED. Trials are expired immediately.
      */
     public function checkExpiredSubscriptions(): int
     {
-        $expiredSubscriptions = Subscription::active()
-            ->where('current_period_end', '<', Date::now())
+        $graceDays = config()->integer('subscriptions.grace_days', 0);
+
+        // First, expire anything whose grace period has elapsed.
+        $count = 0;
+        $expired = Subscription::query()
+            ->where('status', SubscriptionStatus::ACTIVE)
+            ->whereNotNull('grace_period_ends_at')
+            ->where('grace_period_ends_at', '<', Date::now())
             ->get();
 
-        $count = 0;
-        foreach ($expiredSubscriptions as $subscription) {
+        foreach ($expired as $subscription) {
             $this->expireSubscription($subscription);
             $count++;
+        }
+
+        // Then, subscriptions past their period with no grace set yet get one.
+        if ($graceDays > 0) {
+            $dueForGrace = Subscription::active()
+                ->where('current_period_end', '<', Date::now())
+                ->whereNull('grace_period_ends_at')
+                ->get();
+
+            foreach ($dueForGrace as $subscription) {
+                $endsAt = $subscription->current_period_end;
+
+                if ($endsAt !== null) {
+                    $subscription->update([
+                        'grace_period_ends_at' => $endsAt->copy()->addDays($graceDays),
+                    ]);
+                }
+            }
+        } else {
+            $due = Subscription::active()
+                ->where('current_period_end', '<', Date::now())
+                ->whereNull('grace_period_ends_at')
+                ->get();
+
+            foreach ($due as $subscription) {
+                $this->expireSubscription($subscription);
+                $count++;
+            }
         }
 
         return $count;
@@ -399,6 +437,12 @@ class SubscriptionService
     /**
      * Create feature snapshots for a subscription
      */
+    private function syncFeatureSnapshots(Subscription $subscription, Plan $plan): void
+    {
+        $subscription->features()->delete();
+        $this->createFeatureSnapshots($subscription, $plan);
+    }
+
     private function createFeatureSnapshots(Subscription $subscription, Plan $plan): void
     {
         $features = $plan->features->map(fn ($planFeature) => [
