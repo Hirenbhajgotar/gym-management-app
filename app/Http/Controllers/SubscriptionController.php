@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentStatus;
-use App\Events\PaymentCompleted;
 use App\Models\CheckoutSession;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -13,6 +12,7 @@ use App\Models\Subscription;
 use App\Services\GymOwnerRegistrationService;
 use App\Services\PriceResolver;
 use App\Services\RazorpayService;
+use App\Services\SubscriptionProvisioningService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -143,15 +143,21 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature,
             );
 
-            throw_if((int) $verifiedPayment?->user_id !== Auth::id(), Exception::class, 'Unauthorized payment');
+            throw_unless($verifiedPayment, Exception::class, 'Payment verification failed');
 
-            throw_unless($verifiedPayment && $verifiedPayment->isCompleted(), Exception::class, 'Payment verification failed');
+            throw_if((int) $verifiedPayment->user_id !== Auth::id(), Exception::class, 'Unauthorized payment');
 
-            // Provision the subscription asynchronously. The webhook also
-            // dispatches this event, so the listener is idempotent and a
-            // double delivery never creates a duplicate subscription.
+            throw_unless($verifiedPayment->isCompleted(), Exception::class, 'Payment verification failed');
+
+            // Provision the subscription synchronously for the interactive
+            // flow so the success message below is only shown once a real,
+            // active subscription exists. The webhook path still uses the
+            // queued event (idempotent, with the reconcile command as safety
+            // net); the service here and there share the same idempotent path.
+            // Only subscription payments are provisioned here — gym owner
+            // registration is handled separately by the webhook.
             if (str_starts_with((string) $verifiedPayment->payment_type, 'subscription_')) {
-                event(new PaymentCompleted($verifiedPayment->id));
+                resolve(SubscriptionProvisioningService::class)->provision($verifiedPayment->id);
             }
 
             $successMessage = match ($verifiedPayment->payment_type) {
@@ -177,9 +183,8 @@ class SubscriptionController extends Controller
     /**
      * Complete a pending renewal payment
      */
-    public function completePendingPayment(
-        string $orderId,
-    ): View|RedirectResponse {
+    public function completePendingPayment(string $orderId): View|RedirectResponse
+    {
         // Find the payment record
         $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 

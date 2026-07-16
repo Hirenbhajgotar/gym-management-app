@@ -21,8 +21,12 @@ return [
     // price is charged (legacy behaviour).
     'proration_enabled' => false,
 
-    // Allowed difference (in paisa / minor units) between the amount Razorpay
-    // reports as captured and the amount we created the order for, before a
-    // payment is flagged for manual review instead of being provisioned.
+    // Allowed difference (in RUPEES) between the captured amount and order
+    // amount before a payment is held for manual review. Stored amounts are in
+    // rupees (decimal(10,2)), so 100 = ₹100.00 tolerance.
     'amount_mismatch_tolerance' => 100,
+
+    // How many days back the scheduled app:reconcile-subscriptions command
+    // looks for completed-but-unprovisioned payments.
+    'reconcile_window_days' => 7,
 ];

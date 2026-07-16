@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\WhatsAppCreditTransaction;
 use App\Services\GymOwnerRegistrationService;
+use App\Services\NotificationService;
 use App\Services\RazorpayService;
 use App\Services\WhatsAppBillingService;
 use Exception;
@@ -77,7 +78,7 @@ class RazorpayWebhookController
 
             // Return 200 to prevent Razorpay from retrying
             // (we've logged the error for manual review)
-            return response()->json(['status' => 'error'], 401);
+            return response()->json(['status' => 'error'], 200);
         }
     }
 
@@ -117,9 +118,23 @@ class RazorpayWebhookController
 
         // Subscription payments are provisioned asynchronously by the
         // SubscriptionProvisioner listener (idempotent) so that the same
-        // event delivered twice never creates a duplicate subscription.
+        // event delivered twice never creates a duplicate subscription. The
+        // queued listener's failure is the safety net: if the queue is
+        // stalled, the scheduled app:reconcile-subscriptions command later
+        // provisions these orphans. Alert ops now so a stuck queue is visible.
         if (str_starts_with((string) $payment->payment_type, 'subscription_')) {
             event(new PaymentCompleted($payment->id));
+
+            Log::info('Queued subscription provisioning for completed payment', [
+                'payment_id' => $payment->id,
+                'payment_type' => $payment->payment_type,
+            ]);
+
+            NotificationService::notifyAdmins(
+                title: 'Subscription payment queued for provisioning',
+                message: "Payment {$payment->id} ({$payment->payment_type}) was captured and queued for provisioning.",
+                type: 'warning',
+            );
         }
 
         // Handle gym owner registration

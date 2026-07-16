@@ -54,8 +54,8 @@ class ProfileController extends Component
                 ->get();
         });
 
-        $latestPayments = Cache::flexible(Payment::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . auth()->id(), [now()->addDay(), now()->addWeek()], function () {
-            return auth()->user()->payments()->latest()->take(5)->get();
+        $latestPayments = Cache::flexible(Payment::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . Auth::id(), [now()->addDay(), now()->addWeek()], function () {
+            return Auth::user()->payments()->latest()->take(5)->get();
         });
 
         return view('livewire.frontend.profile-controller', [
@@ -74,7 +74,7 @@ class ProfileController extends Component
         $plan = Plan::with(['features'])->findOrFail($planId);
 
         /** @var User $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Check if user already has an active subscription
         $activeSubscription = Subscription::query()->where('user_id', $user->id)
@@ -196,7 +196,7 @@ class ProfileController extends Component
         /**
          * @var User $user
          */
-        $user = auth()->user();
+        $user = Auth::user();
         // Get active subscription or expired trial subscription that can be renewed
         $subscription = $user
             ->subscriptions()
@@ -241,7 +241,7 @@ class ProfileController extends Component
     {
         $this->loggingOut = true;
 
-        auth()->logout();
+        Auth::logout();
         session()->invalidate();
         session()->regenerateToken();
 
@@ -250,7 +250,7 @@ class ProfileController extends Component
 
     public function downloadInvoice(int $paymentId)
     {
-        $payment = Payment::query()->where('user_id', auth()->id())
+        $payment = Payment::query()->where('user_id', Auth::id())
             ->findOrFail($paymentId);
 
         return resolve(InvoiceService::class)->downloadInvoice($payment);
