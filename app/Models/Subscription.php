@@ -232,13 +232,6 @@ class Subscription extends Model
         return (int) Date::now()->diffInDays($this->current_period_end, false);
     }
 
-    public function getCurrentPrice(): float
-    {
-        return $this->billing_cycle === 'yearly'
-            ? $this->plan->price_yearly ?? 0
-            : $this->plan->price_monthly ?? 0;
-    }
-
     public function getSubscriptionFeature(
         string $featureName,
     ): ?SubscriptionFeature {

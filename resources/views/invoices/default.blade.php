@@ -206,10 +206,15 @@
                 <td class="w-half align-top">
                     <div class="info-label">Billed To</div>
                     <div class="info-content">
-                        <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
 
-                        <div class="text-gray-600">{{ $user->email }}</div>
-                        <div class="text-gray-600">{{ $user->phone }}</div>
+                        @if($user)
+                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
+                            <div class="text-gray-600">{{ $user->email }}</div>
+                            <div class="text-gray-600">{{ $user->phone }}</div>
+                        @else
+                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $gym->name ?? 'Gym Owner' }}</div>
+                            <div class="text-gray-600">{{ $payment->metadata['owner_email'] ?? '' }}</div>
+                        @endif
 
                         @if($gym && $gym->address)
                             <div class="mt-4 text-gray-600">

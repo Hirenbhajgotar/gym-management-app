@@ -115,6 +115,25 @@ class Plan extends Model
     }
 
     /**
+     * @return HasMany<PlanPrice, $this>
+     */
+    public function prices(): HasMany
+    {
+        return $this->hasMany(PlanPrice::class);
+    }
+
+    public function currentPrice(string $cycle): ?float
+    {
+        $row = $this->prices()->whereNull('effective_to')->latest('effective_from')->first();
+
+        $raw = $cycle === 'yearly'
+            ? ($row !== null ? $row->price_yearly : $this->price_yearly)
+            : ($row !== null ? $row->price_monthly : $this->price_monthly);
+
+        return $raw === null ? null : (float) $raw;
+    }
+
+    /**
      * Check if the plan has a free trial
      */
     public function hasTrial(): bool

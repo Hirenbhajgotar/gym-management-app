@@ -6,10 +6,12 @@ namespace Tests\Feature\Frontend;
 
 use App\Livewire\Frontend\HomeController;
 use App\Services\ErrorReportService;
+use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Features\SupportReleaseTokens\ReleaseToken;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use Livewire\Mechanisms\HandleComponents\Checksum;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -45,6 +47,66 @@ class HomeControllerTest extends TestCase
         $service = resolve(ErrorReportService::class);
 
         $this->assertTrue($service->shouldSkipAutoReporting(new CorruptComponentPayloadException()));
+    }
+
+    #[Test]
+    public function it_skips_auto_reporting_for_unknown_livewire_method_calls(): void
+    {
+        // Calls to non-existent Livewire component methods (e.g. the legacy
+        // Livewire v2 "emit" method) are attacker probes, not app bugs, so
+        // they must not create error reports (or page on-call).
+        /** @var ErrorReportService $service */
+        $service = resolve(ErrorReportService::class);
+
+        $this->assertTrue($service->shouldSkipAutoReporting(new MethodNotFoundException('emit')));
+    }
+
+    #[Test]
+    public function it_rejects_an_unknown_livewire_method_call_with_a_400_instead_of_a_500(): void
+    {
+        // Mirrors the production probe: a hand-crafted /livewire/update POST that
+        // calls the legacy Livewire v2 "emit" method, which does not exist in v3.
+        // Livewire throws MethodNotFoundException; we must answer 400 (no 500,
+        // no stack trace, no error report).
+        $snapshot = [
+            'data' => ['selectedPlan' => null],
+            'memo' => [
+                'id' => 'test-component-id',
+                'name' => 'frontend.home-controller',
+                'path' => '/',
+                'method' => 'GET',
+                'release' => ReleaseToken::generate(HomeController::class),
+                'children' => [],
+                'scripts' => [],
+                'assets' => [],
+                'errors' => [],
+                'locale' => 'en',
+            ],
+        ];
+        $snapshot['checksum'] = Checksum::generate($snapshot);
+
+        $token = 'test-csrf-token';
+
+        $this->withSession(['_token' => $token])
+            ->withHeader('X-CSRF-TOKEN', $token)
+            ->withHeader('X-Livewire', 'true')
+            ->postJson('/livewire/update', [
+                'components' => [
+                    [
+                        'snapshot' => json_encode($snapshot),
+                        'updates' => [],
+                        'calls' => [
+                            [
+                                'path' => null,
+                                'method' => 'emit',
+                                'params' => ['system', 'id'],
+                            ],
+                        ],
+                    ],
+                ],
+                '_token' => $token,
+            ])
+            ->assertStatus(400);
     }
 
     #[Test]

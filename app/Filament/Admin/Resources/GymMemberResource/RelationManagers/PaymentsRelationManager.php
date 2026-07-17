@@ -339,7 +339,7 @@ class PaymentsRelationManager extends RelationManager
                 $this->expirePayment($lastPayment);
             }
 
-            dispatch(new GenerateInvoiceJob($payment));
+            dispatch(new GenerateInvoiceJob($payment, 'member_payment'));
 
             $this->sendNotification('Payment Created', 'The payment has been created successfully.');
         });

@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\FilesystemException;
+use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 use PDOException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -342,6 +343,13 @@ class ErrorReportService
         // client state after a key rotation), not application bugs. Don't
         // create error reports or page on-call for them.
         if ($exception instanceof CorruptComponentPayloadException) {
+            return true;
+        }
+
+        // Calls to non-existent Livewire component methods (e.g. the legacy
+        // Livewire v2 "emit" method) are attacker probes / stale client state,
+        // not application bugs. Don't create error reports or page on-call.
+        if ($exception instanceof MethodNotFoundException) {
             return true;
         }
 

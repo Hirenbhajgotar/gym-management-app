@@ -21,19 +21,35 @@ class RazorpayService
     public function __construct()
     {
         $this->api = new Api(
-            config('services.razorpay.key_id'),
-            config('services.razorpay.key_secret')
+            config()->string('services.razorpay.key_id'),
+            config()->string('services.razorpay.key_secret')
         );
     }
 
     /**
      * Create a Razorpay order
+     *
+     * @param array{
+     *     amount: float|int|string|null,
+     *     currency?: string,
+     *     receipt?: string,
+     *     user_id?: int|null,
+     *     subscription_id?: int|null,
+     *     plan_id?: int|null,
+     *     payment_type: string|null,
+     *     description?: string,
+     *     notes?: array,
+     *     gym_id?: int|null,
+     *     package_id?: int|null
+     * } $data
+     * @return array{order_id: string, amount: int, currency: string, key: string, payment_id: int}
      */
     public function createOrder(array $data): array
     {
         try {
-            // Amount should be in paisa (multiply by 100)
-            $amount = (int) ($data['amount'] * 100);
+            // Amount should be in paisa (multiply by 100). Round to avoid
+            // floating-point truncation (e.g. 999.99 * 100 = 99998.999...).
+            $amount = $this->toPaisa((float) $data['amount']);
 
             $orderData = [
                 'receipt' => $data['receipt'] ?? uniqid(),
@@ -48,6 +64,15 @@ class RazorpayService
 
             $razorpayOrder = $this->api->order->create($orderData);
 
+            // The Razorpay SDK is untyped, so its response is mixed. Pin the
+            // scalar fields we return to their concrete types.
+            /** @var string $orderId */
+            $orderId = $razorpayOrder->id;
+            /** @var int $orderAmount */
+            $orderAmount = $razorpayOrder->amount;
+            /** @var string $orderCurrency */
+            $orderCurrency = $razorpayOrder->currency;
+
             // Create payment record
             $paymentData = [
                 'razorpay_order_id' => $razorpayOrder->id,
@@ -59,12 +84,7 @@ class RazorpayService
             ];
 
             // Handle different payment types
-            if (
-                $data['payment_type'] === 'subscription_renewal' ||
-                $data['payment_type'] === 'subscription_upgrade' ||
-                $data['payment_type'] === 'subscription_new' ||
-                $data['payment_type'] === 'gym_owner_registration'
-            ) {
+            if (in_array($data['payment_type'], ['subscription_renewal', 'subscription_upgrade', 'subscription_new', 'gym_owner_registration'], true)) {
                 $paymentData['user_id'] = $data['user_id'] ?? null;
                 $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'subscription_id' => $data['subscription_id'] ?? null,
@@ -73,7 +93,7 @@ class RazorpayService
                 ]);
             } else {
                 // WhatsApp package payments
-                $paymentData['gym_id'] = $data['gym_id'];
+                $paymentData['gym_id'] = $data['gym_id'] ?? null;
                 $paymentData['user_id'] = $data['user_id'] ?? null;
                 $paymentData['metadata'] = array_merge($paymentData['metadata'], [
                     'package_id' => $data['package_id'] ?? $data['notes']['package_id'] ?? null,
@@ -92,10 +112,10 @@ class RazorpayService
             ]);
 
             return [
-                'order_id' => $razorpayOrder->id,
-                'amount' => $razorpayOrder->amount,
-                'currency' => $razorpayOrder->currency,
-                'key' => config('services.razorpay.key_id'),
+                'order_id' => $orderId,
+                'amount' => $orderAmount,
+                'currency' => $orderCurrency,
+                'key' => config()->string('services.razorpay.key_id'),
                 'payment_id' => $payment->id,
             ];
         } catch (Exception $e) {
@@ -109,9 +129,18 @@ class RazorpayService
     }
 
     /**
+     * Convert a currency amount to paisa, rounding to the nearest integer to
+     * avoid floating-point truncation (e.g. 999.99 * 100 = 99998.999...).
+     */
+    protected function toPaisa(float $amount): int
+    {
+        return (int) round($amount * 100);
+    }
+
+    /**
      * Verify payment signature
      */
-    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): Payment
+    public function verifyPayment(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): ?Payment
     {
         try {
             $attributes = [
@@ -124,19 +153,21 @@ class RazorpayService
 
             // Update payment record
             $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
-            if ($payment) {
-                $payment->update([
-                    'razorpay_payment_id' => $razorpayPaymentId,
-                    'razorpay_signature' => $razorpaySignature,
-                    'status' => 'completed',
-                    'paid_at' => now(),
-                ]);
-
-                Log::info('Payment verified successfully', [
-                    'payment_id' => $payment->id,
-                    'razorpay_payment_id' => $razorpayPaymentId,
-                ]);
+            if (! $payment) {
+                return null;
             }
+
+            $payment->update([
+                'razorpay_payment_id' => $razorpayPaymentId,
+                'razorpay_signature' => $razorpaySignature,
+                'status' => 'completed',
+                'paid_at' => now(),
+            ]);
+
+            Log::info('Payment verified successfully', [
+                'payment_id' => $payment->id,
+                'razorpay_payment_id' => $razorpayPaymentId,
+            ]);
 
             return $payment->fresh();
         } catch (Exception $e) {
@@ -148,17 +179,16 @@ class RazorpayService
 
             // Update payment status to failed
             $payment = Payment::query()->where('razorpay_order_id', $razorpayOrderId)->first();
-            if ($payment) {
-                $payment->update([
-                    'status' => 'failed',
-                    'razorpay_payment_id' => $razorpayPaymentId,
-                    'razorpay_signature' => $razorpaySignature,
-                ]);
-
-                return $payment->fresh();
+            if (! $payment) {
+                return null;
             }
+            $payment->update([
+                'status' => 'failed',
+                'razorpay_payment_id' => $razorpayPaymentId,
+                'razorpay_signature' => $razorpaySignature,
+            ]);
 
-            throw $e;
+            return $payment->fresh();
         }
     }
 

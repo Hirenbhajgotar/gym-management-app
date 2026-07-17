@@ -237,11 +237,21 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
     protected function status(): Attribute
     {
         return Attribute::make(set: function ($value) {
-            $status = $value instanceof UserStatus
-                ? $value
-                : (is_int($value) || is_string($value) ? UserStatus::tryFrom($value) : null);
+            if ($value instanceof UserStatus) {
+                $status = $value;
+                $raw = $value->value;
+            } elseif (is_int($value)) {
+                $status = UserStatus::tryFrom($value);
+                $raw = $value;
+            } elseif (is_string($value) && ctype_digit($value)) {
+                $raw = (int) $value;
+                $status = UserStatus::tryFrom($raw);
+            } else {
+                $status = null;
+                $raw = $value;
+            }
 
-            return ['status' => $value, 'is_active' => $status === UserStatus::ACTIVE];
+            return ['status' => $raw, 'is_active' => $status === UserStatus::ACTIVE];
         });
     }
 

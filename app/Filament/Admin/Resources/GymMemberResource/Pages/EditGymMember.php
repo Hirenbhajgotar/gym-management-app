@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Admin\Resources\GymMemberResource\Widgets\MemberProgressChart;
 use App\Models\GymMember;
@@ -13,6 +14,7 @@ use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class EditGymMember extends EditRecord
@@ -27,7 +29,8 @@ class EditGymMember extends EditRecord
                 ->icon('heroicon-o-document-text')
                 ->url(fn (GymMember $member) => $member->latestPayment ? route('member.invoice.show', $member->latestPayment) : null)
                 ->openUrlInNewTab()
-                ->visible(fn (GymMember $member) => $member->latestPayment()->exists() && $member->latestPayment->invoice_path),
+                ->visible(fn (GymMember $member) => $member->latestPayment()->exists() && $member->latestPayment->invoice_path)
+                ->authorize(fn (): bool => Auth::user()?->hasAnyRole([DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::GYM_OWNER]) === true),
 
             DeleteAction::make()
                 ->after(function (GymMember $member) {

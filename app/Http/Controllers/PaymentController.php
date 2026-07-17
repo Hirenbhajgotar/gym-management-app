@@ -7,14 +7,10 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateInvoiceJob;
 use App\Models\Gym;
 use App\Models\Payment;
-use App\Models\Subscription;
 use App\Models\WhatsAppCreditTransaction;
 use App\Models\WhatsAppPackage;
-use App\Notifications\PaymentFailedNotification;
-use App\Notifications\RenewalSuccessNotification;
 use App\Services\InvoiceService;
 use App\Services\RazorpayService;
-use App\Services\SubscriptionService;
 use App\Services\WhatsAppBillingService;
 use App\Traits\HasTenantAccess;
 use Exception;
@@ -64,7 +60,7 @@ class PaymentController extends Controller
             }
 
             $orderData = $this->razorpayService->createOrder([
-                'amount' => $package->price,
+                'amount' => is_numeric($package->price) ? (float) $package->price : 0.0,
                 'currency' => 'INR',
                 'receipt' => 'WAP-' . $package->id . '-' . time(),
                 'gym_id' => $gym->id,
@@ -140,7 +136,6 @@ class PaymentController extends Controller
                 'success' => true,
                 'message' => 'Payment verified and package purchased successfully.',
                 'payment_id' => $verifiedPayment->razorpay_payment_id,
-                // 'redirect_url' => route('filament.admin.pages.settings', ['tenant' => $tenant->slug, 'tab' => 'whatsapp']),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -155,71 +150,6 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Payment verification failed. Please contact support.',
             ], 500);
-        }
-    }
-
-    /**
-     * Handle Razorpay webhook
-     */
-    public function handleWebhook(Request $request): JsonResponse
-    {
-        try {
-            $payload = $request->all();
-            $expectedSignature = $request->header('X-Razorpay-Signature');
-
-            // Verify webhook signature
-            $secret = config('services.razorpay.webhook_secret');
-            if ($secret) {
-                // $generatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
-                $generatedSignature = hash_hmac('sha256', $request->getContent(), $secret);
-
-                if (! hash_equals($generatedSignature, $expectedSignature)) {
-                    Log::warning('Invalid webhook signature', ['payload' => $payload]);
-
-                    return response()->json(['status' => 'error'], 400);
-                }
-            }
-
-            $this->razorpayService->handleWebhook($payload);
-
-            // Process completed payments
-            if (($payload['event'] ?? null) === 'payment.captured') {
-                $paymentEntity = $payload['payment']['entity'] ?? null;
-                if ($paymentEntity) {
-                    $payment = Payment::query()->where('razorpay_order_id', $paymentEntity['order_id'])->first();
-                    if ($payment) {
-                        if ($payment->payment_type === 'whatsapp_package') {
-                            $this->processWhatsAppPackagePurchase($payment);
-                        } elseif (str_starts_with($payment->payment_type, 'subscription_')) {
-                            $this->processSubscriptionPayment($payment);
-                        }
-                    }
-                }
-            }
-
-            // Handle failed payments
-            if (($payload['event'] ?? null) === 'payment.failed') {
-                $paymentEntity = $payload['payment']['entity'] ?? null;
-                if ($paymentEntity) {
-                    $payment = Payment::query()->where('razorpay_order_id', $paymentEntity['order_id'])->first();
-                    if ($payment) {
-                        Log::warning('Payment failed via webhook', [
-                            'payment_id' => $payment->id,
-                            'razorpay_payment_id' => $paymentEntity['id'],
-                            'gym_id' => $payment->gym_id,
-                        ]);
-                    }
-                }
-            }
-
-            return response()->json(['status' => 'ok']);
-        } catch (Exception $e) {
-            Log::error('Webhook processing failed', [
-                'error' => $e->getMessage(),
-                'payload' => $request->all(),
-            ]);
-
-            return response()->json(['status' => 'error'], 500);
         }
     }
 
@@ -287,65 +217,6 @@ class PaymentController extends Controller
     }
 
     /**
-     * Process subscription payment
-     */
-    private function processSubscriptionPayment(Payment $payment): void
-    {
-        $subscriptionId = $payment->metadata['subscription_id'] ?? null;
-
-        if (! $subscriptionId) {
-            Log::error('Subscription ID not found in payment metadata', ['payment_id' => $payment->id]);
-
-            return;
-        }
-
-        $subscription = Subscription::query()->find($subscriptionId);
-        if (! $subscription) {
-            Log::error('Subscription not found', ['subscription_id' => $subscriptionId, 'payment_id' => $payment->id]);
-
-            return;
-        }
-
-        $subscriptionService = resolve(SubscriptionService::class);
-
-        try {
-            DB::beginTransaction();
-
-            // Renew the subscription
-            $subscriptionService->renewSubscription($subscription);
-
-            // Clear pending renewal metadata
-            $metadata = $subscription->metadata ?? [];
-            unset($metadata['pending_renewal_order_id'], $metadata['pending_renewal_payment_id'], $metadata['pending_renewal_created_at']);
-            $subscription->update(['metadata' => $metadata]);
-
-            // Send success notification
-            $subscription->user->notify(new RenewalSuccessNotification($subscription));
-
-            DB::commit();
-
-            Log::info('Subscription payment processed successfully', [
-                'payment_id' => $payment->id,
-                'subscription_id' => $subscriptionId,
-                'user_id' => $subscription->user_id,
-            ]);
-
-            // Generate invoice
-            dispatch(new GenerateInvoiceJob($payment));
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to process subscription payment', [
-                'payment_id' => $payment->id,
-                'subscription_id' => $subscriptionId,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Send failure notification
-            $subscription->user->notify(new PaymentFailedNotification($subscription));
-        }
-    }
-
-    /**
      * Process WhatsApp package purchase
      */
     private function processWhatsAppPackagePurchase(Payment $payment): void
@@ -401,7 +272,7 @@ class PaymentController extends Controller
                     'gym_id' => $payment->gym_id,
                 ]);
 
-                dispatch(new GenerateInvoiceJob($payment));
+                dispatch(new GenerateInvoiceJob($payment, 'payment'));
             } else {
                 Log::error('Failed to process WhatsApp package purchase', [
                     'payment_id' => $payment->id,

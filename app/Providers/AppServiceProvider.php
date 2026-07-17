@@ -6,9 +6,11 @@ namespace App\Providers;
 
 use App\Events\BiometricConsentGiven;
 use App\Events\BiometricConsentRevoked;
+use App\Events\PaymentCompleted;
 use App\Listeners\HandleConsentRevoked;
 use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
+use App\Listeners\SubscriptionProvisioner;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
@@ -104,6 +106,13 @@ class AppServiceProvider extends ServiceProvider
         FacadesEvent::listen(
             BiometricConsentRevoked::class,
             HandleConsentRevoked::class
+        );
+
+        // Provision a subscription once its payment is completed. The listener
+        // is idempotent, so a webhook redelivery never creates a duplicate.
+        FacadesEvent::listen(
+            PaymentCompleted::class,
+            SubscriptionProvisioner::class
         );
 
         Notification::extend('whatsapp', function ($app) {

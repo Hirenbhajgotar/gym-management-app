@@ -55,6 +55,13 @@ Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 // Check for expired memberships daily
 Schedule::command('gym:check-membership-expiry')->daily();
 
+// Reconcile completed subscription payments that were never provisioned
+// (e.g. webhook listener failed, queue down). Catches orphans quickly.
+Schedule::command('app:reconcile-subscriptions')
+    ->everyTenMinutes()
+    ->withoutOverlapping(10)  // 10 min lock
+    ->onOneServer();
+
 // Clean deleted gym owners daily
 Schedule::command('owners:clean-deleted')->dailyAt('02:00');
 
