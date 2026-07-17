@@ -336,6 +336,13 @@ class SubscriptionService
                 ->get();
 
             foreach ($dueForGrace as $subscription) {
+                if ($subscription->status === SubscriptionStatus::TRIAL) {
+                    $this->expireSubscription($subscription);
+                    $count++;
+
+                    continue;
+                }
+
                 $endsAt = $subscription->current_period_end;
 
                 if ($endsAt !== null) {

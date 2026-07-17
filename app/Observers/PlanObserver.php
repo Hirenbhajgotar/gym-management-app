@@ -70,16 +70,18 @@ class PlanObserver implements ShouldHandleEventsAfterCommit
      */
     protected function snapshotPrice(Plan $plan): void
     {
+        $now = now();
+
         PlanPrice::query()->where('plan_id', $plan->id)
             ->whereNull('effective_to')
-            ->update(['effective_to' => now()]);
+            ->update(['effective_to' => $now]);
 
         PlanPrice::query()->create([
             'plan_id' => $plan->id,
             'currency' => $plan->currency,
             'price_monthly' => $plan->price_monthly,
             'price_yearly' => $plan->price_yearly,
-            'effective_from' => now(),
+            'effective_from' => $now,
             'effective_to' => null,
         ]);
     }
