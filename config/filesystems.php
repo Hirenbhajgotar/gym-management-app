@@ -80,4 +80,6 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    'invoice_disk' => env('INVOICE_DISK', 'local'),
+
 ];

@@ -1,0 +1,87 @@
+reviews:
+  profile: assertive
+
+  path_instructions:
+    - path: "app/Http/Controllers/**"
+      instructions: |
+        - Ensure controllers are thin and delegate to services/actions
+        - Check for missing authorization (policies/gates)
+        - Verify all user input is validated via Form Requests
+        - Look for database queries in loops (N+1)
+        - Flag any business logic embedded in controllers
+
+    - path: "app/Models/**"
+      instructions: |
+        - Verify $fillable or $guarded is defined
+        - Check relationships for correct types and foreign keys
+        - Look for missing query scopes on complex queries
+        - Ensure soft deletes are handled correctly
+        - Check for missing casts or incorrect type definitions
+
+    - path: "app/Services/**"
+      instructions: |
+        - CRITICAL: Check for race conditions in read-modify-write patterns
+        - Verify database transactions wrap multi-step operations
+        - Ensure idempotency for critical operations (payments, inventory)
+        - Check for proper exception handling and custom exceptions
+        - Validate business logic completeness (edge cases, state transitions)
+
+    - path: "app/Jobs/**"
+      instructions: |
+        - Ensure jobs are idempotent (safe to retry)
+        - Check for unique job constraints where needed
+        - Verify failed job handling
+        - Look for database transactions held during external API calls
+        - Check for memory leaks on large datasets
+
+    - path: "app/Actions/**"
+      instructions: |
+        - Verify single responsibility principle
+        - Check for race condition prevention
+        - Ensure database transactions for multi-step writes
+        - Validate business logic correctness and completeness
+
+    - path: "routes/**"
+      instructions: |
+        - Check for route model binding correctness
+        - Verify middleware application (auth, throttle, etc.)
+        - Look for state-changing GET routes (should be POST/PUT/DELETE)
+        - Ensure API routes have proper versioning
+
+    - path: "database/migrations/**"
+      instructions: |
+        - Verify foreign keys with proper onDelete/onUpdate
+        - Check indexing strategy for performance
+        - Ensure down() migrations are reversible
+        - Look for potential data loss in alter operations
+        - Check for missing unique constraints on business-critical fields
+
+    - path: "tests/**"
+      instructions: |
+        - Verify feature tests cover business logic, not just HTTP 200
+        - Check for race condition tests on critical paths
+        - Ensure idempotency tests for retry scenarios
+        - Look for edge cases and failure path coverage
+        - Verify test data setup doesn't leak between tests
+
+  path_filters:
+    - "!vendor/**"
+    - "!node_modules/**"
+    - "!storage/**"
+    - "!bootstrap/cache/**"
+    - "!public/build/**"
+    - "!public/hot"
+    - "!*.lock"
+    - "!*.min.js"
+    - "!*.min.css"
+
+  tools:
+    betterleaks: true
+    presidio: true
+
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - "WIP"
+      - "Draft"
+      - "DO NOT MERGE"

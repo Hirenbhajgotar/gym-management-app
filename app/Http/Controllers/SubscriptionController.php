@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Jobs\GenerateInvoiceJob;
+use App\Enums\PaymentStatus;
+use App\Models\CheckoutSession;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\GymOwnerRegistrationService;
+use App\Services\PriceResolver;
 use App\Services\RazorpayService;
-use App\Services\SubscriptionService;
+use App\Services\SubscriptionProvisioningService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -21,7 +25,6 @@ class SubscriptionController extends Controller
 {
     public function __construct(
         protected RazorpayService $razorpayService,
-        protected SubscriptionService $subscriptionService,
         protected GymOwnerRegistrationService $gymOwnerRegistrationService
     ) {}
 
@@ -30,57 +33,79 @@ class SubscriptionController extends Controller
      */
     public function checkout(Request $request): View
     {
-        // Handle different checkout types
-        $checkoutType = $this->determineCheckoutType();
+        $token = $request->query('token');
 
-        if ($checkoutType === 'renewal') {
-            return $this->handleRenewalCheckout();
-        } elseif ($checkoutType === 'upgrade') {
-            return $this->handleUpgradeCheckout();
-        } elseif ($checkoutType === 'new') {
-            return $this->handleNewSubscriptionCheckout();
-        }
+        $orderData = DB::transaction(function () use ($token) {
+            $session = CheckoutSession::query()
+                ->where('token', $token)
+                ->where('user_id', Auth::id())
+                ->valid()
+                ->with(['plan', 'subscription.plan'])
+                ->lockForUpdate()
+                ->first();
 
-        abort(400, 'Invalid checkout type');
-    }
+            abort_unless($session !== null, 404, 'Invalid or expired checkout session');
 
-    private function determineCheckoutType(): string
-    {
-        if (session()->has('renew_subscription_id')) {
-            return 'renewal';
-        } elseif (session()->has('upgrade_plan_id')) {
-            return 'upgrade';
-        } elseif (session()->has('selected_plan_id')) {
-            return 'new';
-        }
+            // Idempotency: an order was already created for this session
+            // (e.g. on first page load) — reuse it instead of minting a new
+            // one on every refresh.
+            if (filled($session->razorpay_order_id)) {
+                return [
+                    'order_id' => $session->razorpay_order_id,
+                    'amount' => $session->razorpay_order_amount,
+                    'session' => $session,
+                ];
+            }
 
-        return 'unknown';
-    }
+            /** @var Plan $plan */
+            $plan = $session->plan;
 
-    private function handleRenewalCheckout(): View
-    {
-        $subscriptionId = session('renew_subscription_id');
-        $planId = session('renew_plan_id');
+            $paymentType = match ($session->type) {
+                CheckoutSession::TYPE_UPGRADE => 'subscription_upgrade',
+                CheckoutSession::TYPE_RENEWAL => 'subscription_renewal',
+                default => 'subscription_new',
+            };
 
-        $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $plan = Plan::query()->findOrFail($planId);
+            $razorpayPayment = $this->razorpayService->createOrder([
+                'amount' => $session->amount,
+                'currency' => $session->currency->value,
+                'receipt' => 'CS-' . $session->id . '-' . uniqid(),
+                'user_id' => $session->user_id,
+                'subscription_id' => $session->subscription_id,
+                'plan_id' => $session->plan_id,
+                'payment_type' => $paymentType,
+                'description' => match ($session->type) {
+                    CheckoutSession::TYPE_UPGRADE => "Upgrade to {$plan->name} plan",
+                    CheckoutSession::TYPE_RENEWAL => "Renewal of {$plan->name} subscription",
+                    default => "New {$plan->name} subscription",
+                },
+                'notes' => [
+                    'checkout_session_token' => $session->token,
+                    'user_id' => $session->user_id,
+                    'plan_name' => $plan->name,
+                    'billing_cycle' => $session->billing_cycle,
+                ],
+            ]);
 
-        // Create Razorpay order for renewal
-        $orderData = $this->razorpayService->createOrder([
-            'amount' => $subscription->price,
-            'currency' => $subscription->currency,
-            'receipt' => 'SUB-REN-' . $subscription->id . '-' . uniqid(),
-            'user_id' => $subscription->user_id,
-            'subscription_id' => $subscription->id,
-            'plan_id' => $plan->id,
-            'payment_type' => 'subscription_renewal',
-            'description' => "Renewal of {$plan->name} subscription",
-            'notes' => [
-                'subscription_id' => $subscription->id,
-                'plan_name' => $plan->name,
-                'billing_cycle' => $subscription->billing_cycle,
-            ],
-        ]);
+            // Persist so a reload reuses this exact order instead of creating another.
+            $session->update([
+                'razorpay_order_id' => $razorpayPayment['order_id'],
+                'razorpay_order_amount' => $razorpayPayment['amount'],
+            ]);
+
+            return [
+                'order_id' => $razorpayPayment['order_id'],
+                'amount' => $razorpayPayment['amount'],
+                'session' => $session,
+            ];
+        });
+
+        $session = $orderData['session'];
+        /** @var Plan $plan */
+        $plan = $session->plan;
+        /** @var Subscription|null $subscription */
+        $subscription = $session->subscription;
+        $trialDaysRaw = $session->metadata['trial_days'] ?? 0;
 
         return view('subscriptions.checkout', [
             'orderId' => $orderData['order_id'],
@@ -88,95 +113,21 @@ class SubscriptionController extends Controller
             'key' => config('services.razorpay.key_id'),
             'subscription' => $subscription,
             'plan' => $plan,
-            'checkoutType' => 'renewal',
-            'title' => 'Renew Subscription',
-        ]);
-    }
-
-    private function handleUpgradeCheckout(): View
-    {
-        $planId = session('upgrade_plan_id');
-        $subscriptionId = session('current_subscription_id');
-
-        $subscription = Subscription::with('plan')->findOrFail($subscriptionId);
-        $newPlan = Plan::query()->findOrFail($planId);
-
-        // For upgrades, charge the full amount of the new plan
-        $upgradeAmount = $newPlan->price_yearly;
-
-        $orderData = $this->razorpayService->createOrder([
-            'amount' => $upgradeAmount,
-            'currency' => $subscription->currency,
-            'receipt' => 'SUB-UPG-' . $subscription->id . '-' . time(),
-            'user_id' => $subscription->user_id,
-            'subscription_id' => $subscription->id,
-            'plan_id' => $newPlan->id,
-            'payment_type' => 'subscription_upgrade',
-            'description' => "Upgrade to {$newPlan->name} plan",
-            'notes' => [
-                'subscription_id' => $subscription->id,
-                'from_plan' => $subscription?->plan?->name,
-                'to_plan' => $newPlan?->name,
-                'plan_name' => $newPlan?->name,
-            ],
-        ]);
-
-        return view('subscriptions.checkout', [
-            'orderId' => $orderData['order_id'],
-            'amount' => $orderData['amount'],
-            'key' => config('services.razorpay.key_id'),
-            'subscription' => $subscription,
-            'plan' => $newPlan,
-            'checkoutType' => 'upgrade',
-            'title' => 'Upgrade Plan',
-        ]);
-    }
-
-    private function handleNewSubscriptionCheckout(): View
-    {
-        $planId = session('selected_plan_id');
-        $plan = Plan::query()->findOrFail($planId);
-        $user = auth()->user();
-
-        // Check if user has already used a trial
-        $hasUsedTrial = $user->hasUsedTrial();
-        $trialDays =
-            ! $hasUsedTrial && $plan->trial_days ? $plan->trial_days : 0;
-        $amount = $trialDays > 0 ? 0 : $plan->price_yearly;
-
-        $orderData = $this->razorpayService->createOrder([
-            'amount' => $amount,
-            'currency' => $plan->currency,
-            'receipt' => 'SUB-NEW-' . $user->id . '-' . time(),
-            'user_id' => $user->id,
-            'plan_id' => $plan->id,
-            'payment_type' => 'subscription_new',
-            'description' => "New {$plan->name} subscription" .
-                ($trialDays > 0 ? ' (with trial)' : ''),
-            'notes' => [
-                'user_id' => $user->id,
-                'plan_name' => $plan->name,
-                'trial_days' => $trialDays,
-                'has_used_trial_before' => $hasUsedTrial,
-            ],
-        ]);
-
-        return view('subscriptions.checkout', [
-            'orderId' => $orderData['order_id'],
-            'amount' => $orderData['amount'],
-            'key' => config('services.razorpay.key_id'),
-            'plan' => $plan,
-            'checkoutType' => 'new',
-            'trialDays' => $trialDays,
-            'hasUsedTrial' => $hasUsedTrial,
-            'title' => 'New Subscription',
+            'checkoutType' => $session->type,
+            'title' => match ($session->type) {
+                CheckoutSession::TYPE_UPGRADE => 'Upgrade Plan',
+                CheckoutSession::TYPE_RENEWAL => 'Renew Subscription',
+                default => 'New Subscription',
+            },
+            'trialDays' => is_numeric($trialDaysRaw) ? (int) $trialDaysRaw : 0,
+            'hasUsedTrial' => (bool) ($session->metadata['has_used_trial_before'] ?? false),
         ]);
     }
 
     /**
      * Verify payment and complete subscription action
      */
-    public function verifyPayment(Request $request)
+    public function verifyPayment(Request $request): RedirectResponse
     {
         $request->validate([
             'razorpay_order_id' => ['required', 'string'],
@@ -192,32 +143,29 @@ class SubscriptionController extends Controller
                 $request->razorpay_signature,
             );
 
+            throw_unless($verifiedPayment, Exception::class, 'Payment verification failed');
+
+            throw_if((int) $verifiedPayment->user_id !== Auth::id(), Exception::class, 'Unauthorized payment');
+
             throw_unless($verifiedPayment->isCompleted(), Exception::class, 'Payment verification failed');
 
-            $checkoutType = $this->determineCheckoutType();
-
-            if ($checkoutType === 'renewal') {
-                $this->processRenewal();
-            } elseif ($checkoutType === 'upgrade') {
-                $this->processUpgrade();
-            } elseif ($checkoutType === 'new') {
-                $this->processNewSubscription();
+            // Provision the subscription synchronously for the interactive
+            // flow so the success message below is only shown once a real,
+            // active subscription exists. The webhook path still uses the
+            // queued event (idempotent, with the reconcile command as safety
+            // net); the service here and there share the same idempotent path.
+            // Only subscription payments are provisioned here — gym owner
+            // registration is handled separately by the webhook.
+            if (str_starts_with((string) $verifiedPayment->payment_type, 'subscription_')) {
+                resolve(SubscriptionProvisioningService::class)->provision($verifiedPayment->id);
             }
 
-            // Clear session data
-            $this->clearSessionData();
-
-            $successMessage = match ($checkoutType) {
-                'renewal' => 'Subscription renewed successfully!',
-                'upgrade' => 'Subscription upgraded successfully!',
-                'new' => 'Subscription created successfully!',
+            $successMessage = match ($verifiedPayment->payment_type) {
+                'subscription_renewal' => 'Subscription renewed successfully!',
+                'subscription_upgrade' => 'Subscription upgraded successfully!',
+                'subscription_new' => 'Subscription created successfully!',
                 default => 'Payment processed successfully!',
             };
-
-            // Generate invoice
-            if ($verifiedPayment->isCompleted()) {
-                dispatch(new GenerateInvoiceJob($verifiedPayment));
-            }
 
             return to_route('profile')
                 ->with('success', $successMessage);
@@ -225,7 +173,6 @@ class SubscriptionController extends Controller
             Log::error('Subscription payment verification failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->razorpay_order_id,
-                'checkout_type' => $this->determineCheckoutType(),
             ]);
 
             return to_route('profile')
@@ -233,62 +180,24 @@ class SubscriptionController extends Controller
         }
     }
 
-    private function processRenewal(): void
-    {
-        $subscriptionId = session('renew_subscription_id');
-        $subscription = Subscription::query()->findOrFail($subscriptionId);
-
-        $this->subscriptionService->renewSubscription($subscription);
-    }
-
-    private function processUpgrade(): void
-    {
-        $planId = session('upgrade_plan_id');
-        $subscriptionId = session('current_subscription_id');
-
-        $subscription = Subscription::query()->findOrFail($subscriptionId);
-        $newPlan = Plan::query()->findOrFail($planId);
-        $user = $subscription?->user;
-
-        // Cancel the current subscription immediately
-        $this->subscriptionService->cancelSubscription($subscription, true);
-
-        // Create new subscription with the upgraded plan (no trial since user already used trial)
-        $this->subscriptionService->createSubscription($user, $newPlan, [
-            'billing_cycle' => $subscription->billing_cycle,
-            'trial_days' => 0, // Explicitly prevent trial usage for upgrades
-        ]);
-    }
-
-    private function processNewSubscription(): void
-    {
-        $planId = session('selected_plan_id');
-        $plan = Plan::query()->findOrFail($planId);
-        $user = auth()->user();
-
-        $this->subscriptionService->createSubscription($user, $plan, [
-            'billing_cycle' => 'yearly',
-        ]);
-    }
-
     /**
      * Complete a pending renewal payment
      */
-    public function completePendingPayment(
-        string $orderId,
-    ): View|RedirectResponse {
+    public function completePendingPayment(string $orderId): View|RedirectResponse
+    {
         // Find the payment record
         $payment = Payment::query()->where('razorpay_order_id', $orderId)->first();
 
         abort_if(! $payment || $payment->user_id !== auth()->id(), 404, 'Payment not found');
 
         // Find the subscription
+        /** @var Subscription|null $subscription */
         $subscription = Subscription::query()->find($payment->metadata['subscription_id'] ?? null);
 
         abort_if(! $subscription || $subscription->user_id !== auth()->id(), 404, 'Subscription not found');
 
         // Check if payment is still pending
-        if ($payment->status !== 'pending') {
+        if ($payment->status !== PaymentStatus::PENDING) {
             return to_route('profile')
                 ->with('info', 'This payment has already been processed.');
         }
@@ -317,25 +226,36 @@ class SubscriptionController extends Controller
                 ->with('error', 'Registration data not found. Please start again.');
         }
 
+        /** @var Plan $plan */
         $plan = Plan::query()->findOrFail($registrationData['selected_plan_id']);
 
-        // Create Razorpay order with complete registration data in metadata
-        $orderData = $this->razorpayService->createOrder([
-            'amount' => $plan->price_yearly,
-            'currency' => $plan->currency,
-            'receipt' => 'GYM-REG-' . uniqid(),
-            'payment_type' => 'gym_owner_registration',
-            'description' => "Gym Owner Registration - {$plan->name}",
-            'notes' => [
-                'plan_name' => $plan->name,
-                'user_name' => $registrationData['name'],
-                'owner_email' => $registrationData['email'],
-            ],
-            // Store complete registration data for webhook to access
-            'metadata' => [
-                'registration_data' => $registrationData,
-            ],
-        ]);
+        $priceResolver = resolve(PriceResolver::class)->resolve($plan, 'yearly');
+        try {
+            // Create Razorpay order with complete registration data in metadata
+            $orderData = $this->razorpayService->createOrder([
+                'amount' => $priceResolver['amount'],
+                'currency' => $priceResolver['currency']->value,
+                'receipt' => 'GYM-REG-' . uniqid(),
+                'payment_type' => 'gym_owner_registration',
+                'description' => "Gym Owner Registration - {$plan->name}",
+                'notes' => [
+                    'plan_name' => $plan->name,
+                    'user_name' => $registrationData['name'],
+                    'owner_email' => $registrationData['email'],
+                ],
+                // Store complete registration data for webhook to access
+                'metadata' => [
+                    'registration_data' => $registrationData,
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::error('Razorpay order creation failed on gym owner checkout', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return to_route('gym.register')
+                ->with('error', 'The payment service is temporarily unavailable. Please try again.');
+        }
 
         return view('subscriptions.checkout', [
             'orderId' => $orderData['order_id'],
@@ -352,7 +272,7 @@ class SubscriptionController extends Controller
     /**
      * Verify gym owner registration payment and complete setup
      */
-    public function verifyGymOwnerPayment(Request $request)
+    public function verifyGymOwnerPayment(Request $request): RedirectResponse
     {
         $request->validate([
             'razorpay_order_id' => ['required', 'string'],
@@ -397,27 +317,5 @@ class SubscriptionController extends Controller
             return to_route('gym.register')
                 ->with('error', 'Payment verification failed. Please try again or contact support.');
         }
-    }
-
-    /**
-     * Create gym owner, gym, and subscription from registration data
-     * Delegates to GymOwnerRegistrationService for business logic
-     *
-     * @deprecated This method delegates to GymOwnerRegistrationService. Use the service directly instead.
-     */
-    public function createGymOwnerFromRegistrationData(array $registrationData, ?Payment $payment = null): array
-    {
-        return $this->gymOwnerRegistrationService->createFromRegistrationData($registrationData, $payment);
-    }
-
-    private function clearSessionData(): void
-    {
-        session()->forget([
-            'renew_plan_id',
-            'renew_subscription_id',
-            'upgrade_plan_id',
-            'current_subscription_id',
-            'selected_plan_id',
-        ]);
     }
 }

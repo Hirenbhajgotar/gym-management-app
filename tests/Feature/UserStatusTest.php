@@ -13,7 +13,7 @@ class UserStatusTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function user_is_active_is_synced_from_status_on_creation()
+    public function test_user_is_active_is_synced_from_status_on_creation()
     {
         $user = User::factory()->create([
             'status' => UserStatus::ACTIVE,
@@ -31,7 +31,7 @@ class UserStatusTest extends TestCase
         $this->assertEquals(UserStatus::INACTIVE, $inactiveUser->status);
     }
 
-    public function user_is_active_is_synced_from_status_on_update()
+    public function test_user_is_active_is_synced_from_status_on_update()
     {
         $user = User::factory()->create([
             'status' => UserStatus::ACTIVE,
@@ -51,7 +51,7 @@ class UserStatusTest extends TestCase
         $this->assertTrue($user->fresh()->is_active);
     }
 
-    public function active_scope_queries_status_column()
+    public function test_active_scope_queries_status_column()
     {
         $activeUser = User::factory()->create(['status' => UserStatus::ACTIVE, 'email' => 'active@test.com']);
         $inactiveUser = User::factory()->create(['status' => UserStatus::INACTIVE, 'email' => 'inactive@test.com']);
@@ -62,7 +62,38 @@ class UserStatusTest extends TestCase
         $this->assertFalse($activeUsers->contains($inactiveUser));
     }
 
-    public function is_active_accessor_works_correctly()
+    public function test_status_mutator_accepts_string_backed_value_from_form()
+    {
+        // Filament form submits the backed enum value as a string (e.g. "1").
+        $user = User::factory()->create([
+            'status' => '1',
+            'email' => 'stringstatus@example.com',
+        ]);
+
+        $this->assertEquals(UserStatus::ACTIVE, $user->status);
+        $this->assertTrue($user->is_active);
+
+        $inactive = User::factory()->create([
+            'status' => '0',
+            'email' => 'stringstatus2@example.com',
+        ]);
+
+        $this->assertEquals(UserStatus::INACTIVE, $inactive->status);
+        $this->assertFalse($inactive->is_active);
+    }
+
+    public function test_status_mutator_accepts_integer_backed_value()
+    {
+        $user = User::factory()->create([
+            'status' => 1,
+            'email' => 'intstatus@example.com',
+        ]);
+
+        $this->assertEquals(UserStatus::ACTIVE, $user->status);
+        $this->assertTrue($user->is_active);
+    }
+
+    public function test_is_active_accessor_works_correctly()
     {
         $user = User::factory()->create(['status' => UserStatus::ACTIVE]);
         $this->assertTrue($user->isActive); // Using the accessor (if it's defined as attribute)

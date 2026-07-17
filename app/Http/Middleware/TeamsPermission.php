@@ -8,6 +8,7 @@ use App\Models\Gym;
 use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -41,7 +42,7 @@ class TeamsPermission
 
     private function setTeamId($tenantId = null)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if ($tenantId) {
             Session::put('permission_team_id', $tenantId);

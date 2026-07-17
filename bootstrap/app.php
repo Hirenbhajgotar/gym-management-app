@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -94,7 +95,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Tampered or otherwise invalid Livewire payload — reject as a 400
             // instead of surfacing a 500. This is an attacker probe / corrupted
             // client state, not an application bug, so we don't want a stack trace.
-            if ($e instanceof CorruptComponentPayloadException) {
+            // The same applies to calls on non-existent component methods (e.g. the
+            // legacy Livewire v2 "emit" method) which Livewire rejects with a
+            // MethodNotFoundException.
+            if ($e instanceof CorruptComponentPayloadException || $e instanceof MethodNotFoundException) {
                 if ($request->expectsJson() || $request->header('X-Livewire')) {
                     return response()->json([
                         'error' => true,
