@@ -65,14 +65,18 @@
             <tr>
                 <td class="w-half align-top">
                     <div class="info-label">Billed To</div>
-                    <div class="font-bold text-gray-900 mb-2">{{ $user->name }}</div>
-                    <div class="text-gray-600">{{ $user->email }}</div>
-                    <div class="text-gray-600">{{ $user->phone }}</div>
-                    @if($user->address)
-                        <div class="mt-4 text-gray-600">
-                            {{ $user->address->street }}<br>
-                            {{ $user->address->city?->name }}, {{ $user->address->state?->name }} {{ $user->address->postal_code }}
-                        </div>
+                    @if($user)
+                        <div class="font-bold text-gray-900 mb-2">{{ $user->name }}</div>
+                        <div class="text-gray-600">{{ $user->email }}</div>
+                        <div class="text-gray-600">{{ $user->phone }}</div>
+                        @if($user->address)
+                            <div class="mt-4 text-gray-600">
+                                {{ $user->address->street }}<br>
+                                {{ $user->address->city?->name }}, {{ $user->address->state?->name }} {{ $user->address->postal_code }}
+                            </div>
+                        @endif
+                    @else
+                        <div class="font-bold text-gray-900 mb-2">{{ $gym->name ?? 'Gym' }}</div>
                     @endif
                 </td>
                 <td class="w-half align-top text-right">

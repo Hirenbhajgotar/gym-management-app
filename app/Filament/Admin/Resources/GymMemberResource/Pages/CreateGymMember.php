@@ -165,7 +165,7 @@ class CreateGymMember extends CreateRecord
                 // }
 
                 Bus::chain([
-                    new GenerateInvoiceJob($payment),
+                    new GenerateInvoiceJob($payment, 'member_payment'),
                     new SendNotificationJob($member, new WelcomeNotification($member)),
                 ])->dispatch();
 

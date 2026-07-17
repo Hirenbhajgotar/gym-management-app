@@ -272,7 +272,7 @@ class PaymentController extends Controller
                     'gym_id' => $payment->gym_id,
                 ]);
 
-                dispatch(new GenerateInvoiceJob($payment));
+                dispatch(new GenerateInvoiceJob($payment, 'payment'));
             } else {
                 Log::error('Failed to process WhatsApp package purchase', [
                     'payment_id' => $payment->id,

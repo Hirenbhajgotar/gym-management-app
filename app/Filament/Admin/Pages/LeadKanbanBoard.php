@@ -159,7 +159,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 }
 
                 FollowUp::query()->create([
-                    'gym_id' => $this->getGym()->id,
+                    'gym_id' => $this->getGym()?->id,
                     'lead_id' => $record->id,
                     'type' => $data['type'],
                     'scheduled_date' => $data['scheduled_date'],
@@ -214,7 +214,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
                 // Send welcome notification and generate invoice if payment exists
                 if ($member->latestPayment) {
                     Bus::chain([
-                        new GenerateInvoiceJob($member->latestPayment),
+                        new GenerateInvoiceJob($member->latestPayment, 'member_payment'),
                         new SendNotificationJob($member, new WelcomeNotification($member)),
                     ])->dispatch();
                 } else {
@@ -332,7 +332,7 @@ class LeadKanbanBoard extends KanbanBoard implements HasActions, HasForms
             return;
         }
 
-        if (in_array($currentLead->status, [LeadStatus::CONVERTED, LeadStatus::LOST]) && $currentLead->status->value !== $status) {
+        if (in_array($currentLead->status, [LeadStatus::CONVERTED, LeadStatus::LOST], true) && $currentLead->status->value !== $status) {
             // Prevent direct drag-and-drop to 'Converted' column
             Notification::make()
                 ->title('Action Not Allowed')

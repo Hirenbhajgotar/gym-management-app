@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Contracts\InvoiceablePayment;
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
 use App\Observers\PaymentObserver;
@@ -75,7 +76,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @mixin \Eloquent
  */
 #[ObservedBy([PaymentObserver::class])]
-class Payment extends Model
+class Payment extends Model implements InvoiceablePayment
 {
     use HasFactory, LogsActivity;
 
@@ -154,6 +155,56 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getInvoiceOwner(): ?Model
+    {
+        return $this->user;
+    }
+
+    public function getGym(): ?Gym
+    {
+        return $this->gym;
+    }
+
+    public function getInvoiceKey(): int
+    {
+        return $this->id;
+    }
+
+    public function getOwnerId(): ?int
+    {
+        return $this->user_id;
+    }
+
+    public function getInvoiceNumber(): ?string
+    {
+        return $this->invoice_number;
+    }
+
+    public function getInvoicePath(): ?string
+    {
+        return $this->invoice_path;
+    }
+
+    public function getCreatedAt(): ?Carbon
+    {
+        return $this->created_at;
+    }
+
+    public function setInvoiceNumber(string $number): void
+    {
+        $this->invoice_number = $number;
+    }
+
+    public function setInvoicePath(string $path): void
+    {
+        $this->invoice_path = $path;
+    }
+
+    public function saveInvoiceMetaQuietly(): void
+    {
+        $this->saveQuietly();
     }
 
     /**

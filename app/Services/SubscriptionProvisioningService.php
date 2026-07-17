@@ -96,7 +96,7 @@ final class SubscriptionProvisioningService
                 $session->update(['status' => CheckoutSession::STATUS_COMPLETED]);
             }
 
-            dispatch(new GenerateInvoiceJob($payment));
+            dispatch(new GenerateInvoiceJob($payment, 'payment'));
         } catch (Exception $e) {
             Log::error('Subscription provisioning failed', [
                 'payment_id' => $payment->id,
