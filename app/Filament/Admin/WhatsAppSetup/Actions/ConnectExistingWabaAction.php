@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use Exception;
 use Filament\Notifications\Notification;
@@ -17,7 +18,7 @@ class ConnectExistingWabaAction
 
     private const DECAY_SECONDS = 600;
 
-    public function __construct(public $page) {}
+    public function __construct(public WhatsAppSetup $page) {}
 
     private function rateLimiterKey(int|string $gymId): string
     {
@@ -26,7 +27,12 @@ class ConnectExistingWabaAction
 
     public function __invoke(): void
     {
-        $this->page->form->validate(['manual_phone_number' => 'required|phone:INTERNATIONAL', 'waba_id' => 'required|regex:/^\d{15}$/', 'waba_phone_number_id' => 'required|regex:/^\d{15}$/', 'meta_access_token' => 'required|string']);
+        $this->page->form->validate([
+            'manual_phone_number' => 'required|phone:INTERNATIONAL',
+            'waba_id' => 'required|regex:/^\d{15}$/',
+            'waba_phone_number_id' => 'required|regex:/^\d{15}$/',
+            'meta_access_token' => 'required|string',
+        ]);
 
         $gymId = $this->page->getGymId();
         $rateLimiterKey = $this->rateLimiterKey($gymId);

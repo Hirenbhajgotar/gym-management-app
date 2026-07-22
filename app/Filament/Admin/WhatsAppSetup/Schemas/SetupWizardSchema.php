@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
+use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Filament\Admin\WhatsAppSetup\Steps\ProviderSelectionStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\TemplatesStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\TwilioAccountStep;
@@ -54,7 +55,7 @@ class SetupWizardSchema
      */
     public const WABA_WELCOME_CREDITS_STEP = 4;
 
-    public static function make($page): array
+    public static function make(WhatsAppSetup $page): array
     {
         return [
             Wizard::make([

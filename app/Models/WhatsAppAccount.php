@@ -203,6 +203,11 @@ class WhatsAppAccount extends Model
         return $this->verification_status === WhatsAppAccountVerificationStatusEnum::REJECTED;
     }
 
+    public function isPendingReview(): bool
+    {
+        return $this->verification_status === WhatsAppAccountVerificationStatusEnum::PENDING;
+    }
+
     public function hasPhoneNumber(): bool
     {
         return $this->phoneNumber()->exists();

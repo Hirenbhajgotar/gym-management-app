@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
 use App\Enums\WhatsAppProviderTypeEnum;
+use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
 use Exception;
@@ -23,7 +24,7 @@ use Notification;
 
 class WabaAccountStep
 {
-    public static function make($page): Step
+    public static function make(WhatsAppSetup $page): Step
     {
         return Step::make('WhatsApp Business')
             ->visible(fn () => ($page->data['provider_type'] ?? $page->selectedProvider) === WhatsAppProviderTypeEnum::WABA->value)
@@ -68,7 +69,8 @@ class WabaAccountStep
                                 ->label('WABA ID')
                                 ->required()
                                 ->placeholder('123456789012345')
-                                ->regex('/^\d{15}$/'),
+                                ->minLength(12)
+                                ->maxLength(20),
 
                             TextInput::make('manual_phone_number')
                                 ->label('WhatsApp Phone Number')
@@ -81,7 +83,8 @@ class WabaAccountStep
                             ->label('WhatsApp Phone Number ID')
                             ->required()
                             ->placeholder('123456789012345')
-                            ->regex('/^\d{15}$/'),
+                            ->minLength(12)
+                            ->maxLength(20),
 
                         TextInput::make('meta_access_token')
                             ->label('Meta Access Token')
@@ -111,15 +114,16 @@ class WabaAccountStep
                     $page->whatsappAccount->isInReview() ||
                     $page->whatsappAccount->isWabaRestricted() ||
                     $page->whatsappAccount->isWabaSuspended() ||
-                    $page->whatsappAccount->isWabaBlocked()
+                    $page->whatsappAccount->isWabaBlocked() ||
+                    $page->whatsappAccount->isPendingReview()
                 )) {
                     return;
                 }
 
                 try {
-                    if ($page->data['waba_connection_method'] === 'embedded_signup') {
+                    if (($page->data['waba_connection_method'] ?? null) === 'embedded_signup') {
                         (new StartEmbeddedSignupAction($page))();
-                    } elseif ($page->data['waba_connection_method'] === 'manual_connect') {
+                    } elseif (($page->data['waba_connection_method'] ?? null) === 'manual_connect') {
                         (new ConnectExistingWabaAction($page))();
                     }
                 } catch (Exception $e) {

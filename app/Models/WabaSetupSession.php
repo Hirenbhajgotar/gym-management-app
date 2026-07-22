@@ -107,6 +107,15 @@ class WabaSetupSession extends Model
         return $this->status === WabaSetupSessionStatusEnum::COMPLETED;
     }
 
+    /**
+     * A session can only be consumed once it is still PENDING and has not expired.
+     * Consumed/expired sessions must be rejected to prevent OAuth state replay.
+     */
+    public function isConsumable(): bool
+    {
+        return $this->isPending() && ! $this->isExpired();
+    }
+
     public function markAsCompleted(array $metaResponse): void
     {
         $this->update([
