@@ -24,5 +24,7 @@ class DatabaseSeeder extends Seeder
             BusinessTypeSeeder::class,
             WhatsAppDefaultTemplatesSeeder::class,
         ]);
+
+        $this->command->info('Please run `php artisan app:seed-owner-data` to seed owner with sample gym data.');
     }
 }
