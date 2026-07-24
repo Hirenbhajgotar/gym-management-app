@@ -16,7 +16,22 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 
-return Application::configure(basePath: dirname(__DIR__))
+$isTestingMode = (isset($_SERVER['ARGV']) && is_array($_SERVER['ARGV']) && in_array('--env=testing', $_SERVER['ARGV'], true))
+    || getenv('APP_ENV') === 'testing'
+    || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing')
+    || (isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'testing');
+
+if ($isTestingMode) {
+    putenv('APP_ENV=testing');
+    $_ENV['APP_ENV'] = 'testing';
+    $_SERVER['APP_ENV'] = 'testing';
+
+    putenv('DB_DATABASE=gym_app_test');
+    $_ENV['DB_DATABASE'] = 'gym_app_test';
+    $_SERVER['DB_DATABASE'] = 'gym_app_test';
+}
+
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
         commands: __DIR__ . '/../routes/console.php',
@@ -145,3 +160,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // });
     })
     ->create();
+
+$app->booted(function ($app): void {
+    if ($app->environment('testing')) {
+        $db = $app->make('config')->get('database.connections.mysql.database');
+
+        if ($db === 'gym_app') {
+            throw new RuntimeException('SAFETY VIOLATION: Application is in testing mode but database connection resolves to "gym_app". Aborting.');
+        }
+    }
+});
+
+return $app;
