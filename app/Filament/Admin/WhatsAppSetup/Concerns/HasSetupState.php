@@ -23,6 +23,9 @@ trait HasSetupState
      *     business_description?: string,
      *     waba_connection_method?: string,
      *     waba_id?: string,
+     *     meta_access_token?: string,
+     *     waba_phone_number_id?: string,
+     *     manual_phone_number?: string,
      *     ...
      * }
      */

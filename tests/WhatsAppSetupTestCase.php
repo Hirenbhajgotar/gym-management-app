@@ -9,30 +9,21 @@ use App\Models\Gym;
 use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Base test case for the WhatsAppSetup suite.
  *
- * The project's global `Tests\TestCase` uses `RefreshDatabase`, which runs
- * `migrate:fresh` on every test class. In this environment `migrate:fresh`
- * cannot complete (a pre-existing migration foreign-key ordering bug), so the
- * suite cannot boot.
- *
- * This base intentionally uses `DatabaseTransactions` instead: it wraps each
- * test in a database transaction and rolls it back on teardown, so tests run
- * against the already-migrated `gym_app_test` database with NO destructive
- * commands (no migrate:fresh, no migrate:reset, no db:seed) against any
- * database.
- *
- * The same production-database safety guard from `Tests\TestCase` is kept:
- * if the resolved connection ever points at `gym_app`, the test aborts.
+ * Uses `RefreshDatabase` to ensure a clean, fully-migrated test database
+ * for every test. The same production-database safety guard from
+ * `Tests\TestCase` is kept: if the resolved connection ever points at
+ * `gym_app`, the test aborts.
  */
 abstract class WhatsAppSetupTestCase extends BaseTestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {

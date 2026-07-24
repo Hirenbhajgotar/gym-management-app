@@ -125,6 +125,7 @@ return [
     'editor' => 'antigravity',
 
     'default_country_code' => '+91',
+    'default_country_iso' => 'IN',
 
     'contact_email' => env('CONTACT_EMAIL', 'contact.fluxfitness@gmail.com'),
     'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
