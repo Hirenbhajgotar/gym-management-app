@@ -115,7 +115,8 @@ class WabaAccountStep
                     $page->whatsappAccount->isWabaRestricted() ||
                     $page->whatsappAccount->isWabaSuspended() ||
                     $page->whatsappAccount->isWabaBlocked() ||
-                    $page->whatsappAccount->isPendingReview()
+                    $page->whatsappAccount->isPendingReview() ||
+                    $page->whatsappAccount->isNotVerified()
                 )) {
                     return;
                 }

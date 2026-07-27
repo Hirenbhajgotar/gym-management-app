@@ -92,7 +92,7 @@ class SeedSampleDataCommand extends Command
 
     private function createGymOwner(): User
     {
-        $owner = User::query()->firstOrCreate(
+        return User::query()->firstOrCreate(
             ['email' => 'bhajgotar8918514@gmail.com'],
             [
                 'name' => 'Joy',
@@ -102,8 +102,6 @@ class SeedSampleDataCommand extends Command
                 'email_verified_at' => now(),
             ]
         );
-
-        return $owner;
     }
 
     private function createGym(User $owner): Gym
@@ -159,7 +157,7 @@ class SeedSampleDataCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Trainer>
+     * @return Collection<int, Trainer>
      */
     private function createTrainers(Gym $gym): Collection
     {
@@ -198,7 +196,7 @@ class SeedSampleDataCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, MembershipPlan>
+     * @return Collection<int, MembershipPlan>
      */
     private function createMembershipPlans(Gym $gym): Collection
     {
@@ -226,9 +224,9 @@ class SeedSampleDataCommand extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Trainer>  $trainers
-     * @param  \Illuminate\Support\Collection<int, MembershipPlan>  $plans
-     * @return \Illuminate\Support\Collection<int, GymMember>
+     * @param  Collection<int, Trainer>  $trainers
+     * @param  Collection<int, MembershipPlan>  $plans
+     * @return Collection<int, GymMember>
      */
     private function createGymMembers(Gym $gym, Collection $trainers, Collection $plans): Collection
     {
@@ -260,8 +258,8 @@ class SeedSampleDataCommand extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, GymMember>  $members
-     * @param  \Illuminate\Support\Collection<int, MembershipPlan>  $plans
+     * @param  Collection<int, GymMember>  $members
+     * @param  Collection<int, MembershipPlan>  $plans
      */
     private function createMemberPayments(
         Collection $members,
@@ -294,9 +292,9 @@ class SeedSampleDataCommand extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Trainer>  $trainers
-     * @param  \Illuminate\Support\Collection<int, MembershipPlan>  $plans
-     * @param  \Illuminate\Support\Collection<int, GymMember>  $members
+     * @param  Collection<int, Trainer>  $trainers
+     * @param  Collection<int, MembershipPlan>  $plans
+     * @param  Collection<int, GymMember>  $members
      */
     private function displaySummary(
         User $owner,

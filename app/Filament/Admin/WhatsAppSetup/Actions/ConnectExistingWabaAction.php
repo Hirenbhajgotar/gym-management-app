@@ -63,15 +63,27 @@ class ConnectExistingWabaAction
             $result = $provider->connectManualWaba((int) $gymId, $data['waba_id'] ?? '', $data['manual_phone_number'] ?? '', $data['meta_access_token'] ?? '', $data['waba_phone_number_id'] ?? '', $businessData);
             if ($result['success']) {
                 // Import existing Meta templates as DRAFT records
-                $job = new ImportWhatsAppTemplatesJob((int) $gymId);
-                $job->onQueue('whatsapp-templates');
-                dispatch($job);
+                Log::info('ConnectExistingWabaAction: dispatching template import', [
+                    'gym_id' => $gymId,
+                    'waba_id' => $data['waba_id'] ?? null,
+                ]);
+                dispatch(new ImportWhatsAppTemplatesJob((int) $gymId));
 
-                $this->page->refresh();
-                Notification::make()->title('WABA Connected')->success()->send();
-            } else {
-                throw new Exception($result['error'] ?? 'Failed');
+                Notification::make()
+                    ->title('WABA Connected')
+                    ->body('Your WhatsApp Business Account has been connected successfully. Your Meta templates are now being imported.')
+                    ->success()
+                    ->send();
+
+                // Redirect to self to trigger a full mount() cycle.
+                // A simple refresh() is insufficient here because it does not
+                // reload whatsappAccount or recalculate viewState, leaving the
+                // wizard still showing the connection form.
+                $this->page->redirect(route('filament.admin.pages.whats-app-setup', ['tenant' => $this->page->getTenantSlug()]));
+
+                return;
             }
+            throw new Exception($result['error'] ?? 'Failed');
         } catch (Exception $e) {
             Log::error('WABA Connect Error', ['e' => $e]);
             Notification::make()->title('Connection Failed')->body($e->getMessage())->danger()->send();

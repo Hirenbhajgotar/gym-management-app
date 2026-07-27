@@ -59,9 +59,7 @@ class ImportWhatsAppTemplates extends Command
 
         $this->info("Importing templates for Gym ID: {$gymId}...");
 
-        $job = new ImportWhatsAppTemplatesJob((int) $gymId);
-        $job->onQueue('whatsapp-templates');
-        dispatch($job);
+        dispatch(new ImportWhatsAppTemplatesJob((int) $gymId));
 
         $this->info('Job dispatched to queue: whatsapp-templates');
         $this->info('Run `php artisan queue:work` to process.');

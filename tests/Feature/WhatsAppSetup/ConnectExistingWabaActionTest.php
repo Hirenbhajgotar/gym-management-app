@@ -286,9 +286,8 @@ class ConnectExistingWabaActionTest extends WhatsAppSetupTestCase
         $expectationProvider = $pageMock->shouldReceive('getProvider');
         $expectationProvider->andReturn($providerMock);
 
-        /** @var Expectation $expectationRefresh */
-        $expectationRefresh = $pageMock->shouldReceive('refresh');
-        $expectationRefresh->once();
+        $pageMock->shouldReceive('getTenantSlug')->once()->andReturn('test-gym');
+        $pageMock->shouldReceive('redirect')->once();
 
         /** @var Testable $component */
         $component = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
@@ -339,9 +338,8 @@ class ConnectExistingWabaActionTest extends WhatsAppSetupTestCase
         $expectationProvider = $pageMock->shouldReceive('getProvider');
         $expectationProvider->andReturn($providerMock);
 
-        /** @var Expectation $expectationRefresh */
-        $expectationRefresh = $pageMock->shouldReceive('refresh');
-        $expectationRefresh->once();
+        $pageMock->shouldReceive('getTenantSlug')->once()->andReturn('test-gym');
+        $pageMock->shouldReceive('redirect')->once();
 
         /** @var Testable $component */
         $component = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);

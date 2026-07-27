@@ -168,9 +168,7 @@ class EmbeddedSignupController extends Controller
         // so we must NOT land the user on the templates step yet — the templates
         // may not exist. Let the wizard's determineSetupStep() advance naturally
         // once the import completes.
-        $job = new ImportWhatsAppTemplatesJob($gym->id);
-        $job->onQueue('whatsapp-templates');
-        dispatch($job);
+        dispatch(new ImportWhatsAppTemplatesJob($gym->id));
 
         return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 2])
             ->with('success', 'WABA connected manually. Importing your templates…')
