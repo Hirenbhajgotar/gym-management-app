@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands\WhatsApp;
 
-use App\Enums\WhatsAppAccountStatusEnum;
-use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -101,7 +99,12 @@ class ImportTenantWhatsAppTemplates extends Command
             return self::FAILURE;
         }
 
-        if (! $account->isActive() || ! $account->isVerified()) {
+        if ($account->isWabaRestricted() || $account->isWabaBlocked() || $account->isWabaSuspended()) {
+            Log::warning('ImportWhatsAppTemplatesJob: WhatsApp account is in a non-functional state', [
+                'gym_id' => $gymId,
+                'status' => $account->status->value ?? 'unknown',
+                'verification_status' => $account->verification_status->value ?? 'unknown',
+            ]);
             $this->error("Gym {$gym->name} does not have an active or verified WhatsApp account.");
 
             return self::FAILURE;
@@ -117,6 +120,9 @@ class ImportTenantWhatsAppTemplates extends Command
 
         try {
             dispatch(new ImportWhatsAppTemplatesJob($gymId));
+            // $job = new ImportWhatsAppTemplatesJob($gymId);
+            // $job->onQueue('whatsapp-templates');
+            // dispatch($job);
         } catch (Throwable $e) {
             $this->error("Failed to dispatch import job for Gym {$gym->name}: {$e->getMessage()}");
 
@@ -156,7 +162,12 @@ class ImportTenantWhatsAppTemplates extends Command
                 continue;
             }
 
-            if (! $account->isActive() || ! $account->isVerified()) {
+            if ($account->isWabaRestricted() || $account->isWabaBlocked() || $account->isWabaSuspended()) {
+                Log::warning('ImportWhatsAppTemplatesJob: WhatsApp account is in a non-functional state', [
+                    'gym_id' => $gym->id,
+                    'status' => $account->status->value ?? 'unknown',
+                    'verification_status' => $account->verification_status->value ?? 'unknown',
+                ]);
                 $this->warn("Gym {$gym->name} does not have an active or verified WhatsApp account.");
 
                 $skippedCount++;
@@ -176,6 +187,9 @@ class ImportTenantWhatsAppTemplates extends Command
             } else {
                 try {
                     dispatch(new ImportWhatsAppTemplatesJob($gym->id));
+                    // $job = new ImportWhatsAppTemplatesJob($gym->id);
+                    // $job->onQueue('whatsapp-templates');
+                    // dispatch($job);
                     $this->line('    → Job dispatched to queue');
                 } catch (Throwable $e) {
                     $this->warn("  Failed to dispatch import job for Gym {$gym->name}: {$e->getMessage()}");
@@ -232,10 +246,7 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function getGymsWithWhatsAppAccounts(): Collection
     {
-        return Gym::query()->whereHas('whatsAppAccount', function (Builder $query) {
-            $query->where('status', WhatsAppAccountStatusEnum::ACTIVE)
-                ->where('verification_status', WhatsAppAccountVerificationStatusEnum::VERIFIED);
-        })->with('whatsAppAccount')->orderBy('id')->get();
+        return Gym::query()->whereHas('whatsAppAccount')->with('whatsAppAccount')->orderBy('id')->get();
     }
 
     /**
@@ -243,9 +254,6 @@ class ImportTenantWhatsAppTemplates extends Command
      */
     private function getWhatsAppAccount(int $gymId): ?WhatsAppAccount
     {
-        return WhatsAppAccount::query()->where('gym_id', $gymId)
-            ->where('status', WhatsAppAccountStatusEnum::ACTIVE)
-            ->where('verification_status', WhatsAppAccountVerificationStatusEnum::VERIFIED)
-            ->first();
+        return WhatsAppAccount::query()->where('gym_id', $gymId)->first();
     }
 }
