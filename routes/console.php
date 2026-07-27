@@ -94,8 +94,9 @@ Schedule::call(function () {
     }
 })->everyTenMinutes();
 
+// Temporary comment to fix the sitemap issue
 // Generate sitemap daily at midnight
-Schedule::command('sitemap:generate')->dailyAt('00:00');
+// Schedule::command('sitemap:generate')->dailyAt('00:00');
 
 // Sync WABA status twice daily at 3am and 3pm
 Schedule::command('whatsapp:sync-waba-status')->twiceDailyAt(3, 15);

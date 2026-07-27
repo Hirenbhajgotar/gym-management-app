@@ -16,8 +16,7 @@ class ErrorSchema
     public static function make(WhatsAppSetup $page): array
     {
         return [
-            Section::make('Setup Incomplete')
-                ->description('There was an issue with your WhatsApp setup.')
+            Section::make('')
                 ->schema([
                     Placeholder::make('error_message')->hiddenLabel()->content(fn () => new HtmlString(view('filament.admin.whatsapp-setup.error-state', ['whatsappAccount' => $page->whatsappAccount])->render())),
                     Actions::make([
