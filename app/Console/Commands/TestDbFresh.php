@@ -26,11 +26,13 @@ final class TestDbFresh extends Command
 
     public function handle(): int
     {
+        DB::purge('mysql');
         putenv('DB_DATABASE=' . self::EXPECTED_TEST_DATABASE_NAME);
         $_ENV['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
         $_SERVER['DB_DATABASE'] = self::EXPECTED_TEST_DATABASE_NAME;
 
         $this->laravel->make('config')->set('database.connections.mysql.database', self::EXPECTED_TEST_DATABASE_NAME);
+        DB::reconnect('mysql');
 
         $database = (string) config('database.connections.mysql.database');
         $environment = (string) $this->laravel->environment();
@@ -84,7 +86,10 @@ final class TestDbFresh extends Command
         $this->newLine();
 
         try {
-            DB::connection()->getPdo();
+            // DB::disconnect('mysql');
+            DB::purge('mysql');
+            DB::reconnect('mysql');
+            DB::getPdo();
         } catch (Throwable $e) {
             $this->error('  ABORTED: Cannot connect to the test database.');
             $this->error('  ' . $e->getMessage());
@@ -94,7 +99,10 @@ final class TestDbFresh extends Command
             return self::FAILURE;
         }
 
-        $arguments = [];
+        $arguments = [
+            '--database' => 'mysql',
+            '--drop-views' => true,
+        ];
 
         if ($this->option('seed')) {
             $arguments['--seed'] = true;
@@ -104,15 +112,16 @@ final class TestDbFresh extends Command
             $arguments['--seeder'] = (string) $this->option('seeder');
         }
 
-        if ($this->option('drop-views')) {
-            $arguments['--drop-views'] = true;
-        }
-
         if ($this->option('drop-types')) {
             $arguments['--drop-types'] = true;
         }
 
+        DB::purge('mysql');
+        DB::reconnect('mysql');
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+
         $exitCode = $this->call('migrate:fresh', $arguments);
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         if ($exitCode === 0) {
             $this->newLine();
