@@ -49,7 +49,9 @@ return [
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
+            'database' => ((isset($_SERVER['ARGV']) && is_array($_SERVER['ARGV']) && in_array('--env=testing', $_SERVER['ARGV'], true)) || env('APP_ENV') === 'testing' || getenv('APP_ENV') === 'testing' || (isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'testing'))
+                ? (env('DB_TEST_DATABASE') ?: env('DB_DATABASE_TEST') ?: 'gym_app_test')
+                : env('DB_DATABASE', 'gym_app'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),

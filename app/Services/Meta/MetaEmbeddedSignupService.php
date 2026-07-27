@@ -45,12 +45,15 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
 
     public function handleEmbeddedSignupCallback(string $code, string $state): array
     {
-        $session = WabaSetupSession::query()->where('session_id', $state)->first();
+        $session = WabaSetupSession::query()
+            ->where('session_id', $state)
+            ->lockForUpdate()
+            ->first();
 
-        if (! $session) {
+        if (! $session || ! $session->isConsumable()) {
             return [
                 'success' => false,
-                'error' => 'Invalid session',
+                'error' => 'Invalid or consumed session',
             ];
         }
 
@@ -104,7 +107,9 @@ class MetaEmbeddedSignupService implements EmbeddedSignupInterface
             'phone_number_id' => $phoneNumberId,
         ]);
 
-        $session->markAsCompleted($debugData);
+        $session->markAsCompleted(array_merge($debugData, [
+            'access_token' => $accessToken,
+        ]));
 
         return [
             'success' => true,

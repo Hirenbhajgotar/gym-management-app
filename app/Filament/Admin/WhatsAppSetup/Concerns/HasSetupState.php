@@ -15,7 +15,20 @@ use App\Models\WhatsAppTemplate;
 
 trait HasSetupState
 {
-    /** @var array{provider_type?: string, business_name?: string, ...} */
+    /**
+     * @var array{
+     *     provider_type?: string,
+     *     business_name?: string,
+     *     business_email?: string,
+     *     business_description?: string,
+     *     waba_connection_method?: string,
+     *     waba_id?: string,
+     *     meta_access_token?: string,
+     *     waba_phone_number_id?: string,
+     *     manual_phone_number?: string,
+     *     ...
+     * }
+     */
     public ?array $data = [];
 
     public ?WhatsAppAccount $whatsappAccount = null;
@@ -121,16 +134,27 @@ trait HasSetupState
 
     protected function determineViewState(): void
     {
-        $requestedStep = request()->query('step');
+        // A dedicated `setup_step` query param signals "land on the setup wizard"
+        // after an OAuth/embedded-signup redirect or a forced full-page reload.
+        // We deliberately do NOT reuse the Wizard's own `step` query param
+        // (persisted via persistStepInQueryString) — sharing it caused Livewire
+        // to serialize `step=undefined` into the URL and render a blank wizard.
+        $requestedStep = request()->query('setup_step');
 
-        // If a step is explicitly requested (e.g., after OAuth callback), use it directly.
-        // This handles redirects from EmbeddedSignupController with ?step=N.
-        if ($requestedStep) {
-            abort_if(! $this->isStepAccessible((string) $requestedStep), 403, 'Unauthorized to access this step.');
+        // If a step is explicitly requested (e.g., after OAuth callback), enter the
+        // setup wizard. The actual step shown is always recomputed by
+        // determineSetupStep() so we never land on a stale/invalid position.
+        // We only honor this when an account already exists (setup is in progress);
+        // otherwise an unauthenticated/invalid request simply lands on onboarding.
+        if (($requestedStep !== null && $requestedStep !== '') && $this->whatsappAccount) {
+            $resolved = $this->getStepNumberFromRequestStep((string) $requestedStep);
 
+            if ($resolved !== null && $this->isStepAccessible((string) $resolved)) {
+                $this->setupStep = $resolved;
+            } else {
+                $this->setupStep = $this->determineSetupStep();
+            }
             $this->viewState = 'setup';
-            // $this->setupStep = (int) $requestedStep;
-            $this->setupStep = (int) $this->determineSetupStep();
 
             return;
         }
@@ -193,6 +217,10 @@ trait HasSetupState
             if ($this->accountStatus !== WhatsAppAccountStatusEnum::ACTIVE) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
             }
+
+            if ($this->verificationStatus === WhatsAppAccountVerificationStatusEnum::PENDING) {
+                return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
+            }
         }
 
         // Both providers: phone number is confirmed at this point
@@ -221,7 +249,11 @@ trait HasSetupState
 
     private function isStepAccessible(string $requestedStep): bool
     {
-        $step = (int) $this->getStepNumberFromRequestStep($requestedStep);
+        $step = $this->getStepNumberFromRequestStep($requestedStep);
+
+        if ($step === null) {
+            return false; // Invalid step requested
+        }
 
         if (! $this->whatsappAccount) {
             return $step === 1; // Only provider selection is allowed
@@ -247,15 +279,27 @@ trait HasSetupState
 
             if ($step === SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP) {
                 // Welcome credits step only allowed if templates are created
-                return $this->phoneNumber !== null && $this->templatesCreated;
+                $hasTemplates = WhatsAppTemplate::query()->where('gym_id', $this->getGymId())->exists();
+
+                return $this->phoneNumber !== null && $hasTemplates;
             }
         }
 
         // For WABA users, allow any step after connection
         if ($provider === WhatsAppProviderTypeEnum::WABA) {
-            // Allow WABA-related steps if account is connected
-            // Steps 2 (WABA account), 3 (Templates), 4 (Welcome Credits)
-            return $step >= SetupWizardSchema::WABA_ACCOUNT_STEP && $step <= SetupWizardSchema::WABA_WELCOME_CREDITS_STEP;
+            // Step 2: WABA Account
+            if ($step === SetupWizardSchema::WABA_ACCOUNT_STEP) {
+                return true;
+            }
+            // Step 3: Templates
+            if ($step === SetupWizardSchema::WABA_TEMPLATES_STEP) {
+                return filled($this->whatsappAccount->waba_id)
+                    && $this->accountStatus === WhatsAppAccountStatusEnum::ACTIVE;
+            }
+            // Step 4: Welcome Credits
+            if ($step === SetupWizardSchema::WABA_WELCOME_CREDITS_STEP) {
+                return $this->phoneNumber !== null && $this->templatesCreated;
+            }
         }
 
         // Default: only allow current or previous steps (linear progression)
@@ -264,6 +308,10 @@ trait HasSetupState
 
     private function getStepNumberFromRequestStep(string $queryStep): ?int
     {
+        if (is_numeric($queryStep)) {
+            return (int) $queryStep;
+        }
+
         $provider = $this->whatsappAccount?->provider_type;
 
         return match ($queryStep) {

@@ -116,9 +116,7 @@ class ImportTenantWhatsAppTemplates extends Command
         }
 
         try {
-            $job = new ImportWhatsAppTemplatesJob($gymId);
-            $job->onQueue('whatsapp-templates');
-            dispatch($job);
+            dispatch(new ImportWhatsAppTemplatesJob($gymId));
         } catch (Throwable $e) {
             $this->error("Failed to dispatch import job for Gym {$gym->name}: {$e->getMessage()}");
 
@@ -177,9 +175,7 @@ class ImportTenantWhatsAppTemplates extends Command
                 }
             } else {
                 try {
-                    $job = new ImportWhatsAppTemplatesJob($gym->id);
-                    $job->onQueue('whatsapp-templates');
-                    dispatch($job);
+                    dispatch(new ImportWhatsAppTemplatesJob($gym->id));
                     $this->line('    → Job dispatched to queue');
                 } catch (Throwable $e) {
                     $this->warn("  Failed to dispatch import job for Gym {$gym->name}: {$e->getMessage()}");

@@ -6,13 +6,14 @@ namespace App\Services;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
-use App\Helpers\ParserHelper;
+use App\Helpers\PhoneNumber;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use Exception;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
@@ -290,28 +291,30 @@ class TwilioAccountManager
                 ];
             }
 
-            // 4. Create local phone number record
-            // Note: senderSid is the Channel Sender SID (CN...), not IncomingPhoneNumber SID
-            // Since this is a manual/existing number, we may not have incoming phone number SID
-            WhatsAppPhoneNumber::query()->updateOrCreate(['whatsapp_account_id' => $account->id], [
-                'phone_number' => $phoneNumber,
-                'channel_sender_sid' => $senderSid,
-                'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
-                'status' => 'active', // Since it's existing, we assume it's active or will be handled via status cycles
-            ]);
+            DB::transaction(function () use ($account, $phoneNumber, $senderSid, $wabaId, $metaAccessToken) {
+                // 4. Create local phone number record
+                // Note: senderSid is the Channel Sender SID (CN...), not IncomingPhoneNumber SID
+                // Since this is a manual/existing number, we may not have incoming phone number SID
+                WhatsAppPhoneNumber::query()->updateOrCreate(['whatsapp_account_id' => $account->id], [
+                    'phone_number' => $phoneNumber,
+                    'channel_sender_sid' => $senderSid,
+                    'country_code' => PhoneNumber::getIsoCountryCode($phoneNumber) ?? config()->string('app.default_country_iso', 'IN'),
+                    'status' => 'active', // Since it's existing, we assume it's active or will be handled via status cycles
+                ]);
 
-            // 5. Update account details
-            $updateData = [
-                'waba_id' => $wabaId,
-                'embedded_signup_completed' => false,
-                'status' => WhatsAppAccountStatusEnum::PENDING,
-            ];
+                // 5. Update account details
+                $updateData = [
+                    'waba_id' => $wabaId,
+                    'embedded_signup_completed' => false,
+                    'status' => WhatsAppAccountStatusEnum::PENDING,
+                ];
 
-            if ($metaAccessToken) {
-                $updateData['meta_access_token'] = $metaAccessToken;
-            }
+                if ($metaAccessToken) {
+                    $updateData['meta_access_token'] = $metaAccessToken;
+                }
 
-            $account->update($updateData);
+                $account->update($updateData);
+            }, 5);
 
             return [
                 'success' => true,
@@ -402,7 +405,7 @@ class TwilioAccountManager
                 ], [
                     'phone_number_sid' => $existing->sid, // IncomingPhoneNumber SID (PN...)
                     'channel_sender_sid' => $channelSenderSid, // Channel Sender SID (CN...)
-                    'country_code' => $existing->isoCountry ?? 'US',
+                    'country_code' => PhoneNumber::getIsoCountryCode($existing->phoneNumber ?? '') ?? 'US',
                     'friendly_name' => $existing->friendlyName,
                     'locality' => $existing->locality,
                     'region' => $existing->region,
@@ -439,7 +442,7 @@ class TwilioAccountManager
                 'phone_number' => $incomingNumber->phoneNumber,
                 'phone_number_sid' => $incomingNumber->sid, // IncomingPhoneNumber SID (PN...)
                 'channel_sender_sid' => $channelSenderSid, // Channel Sender SID (CN...)
-                'country_code' => $incomingNumber->isoCountry ?? 'US',
+                'country_code' => PhoneNumber::getIsoCountryCode($incomingNumber->phoneNumber ?? '') ?? 'US',
                 'friendly_name' => $incomingNumber->friendlyName,
                 'locality' => $incomingNumber->locality,
                 'region' => $incomingNumber->region,
@@ -539,7 +542,7 @@ class TwilioAccountManager
                 'phone_number' => $phoneNumber,
                 'channel_sender_sid' => $sender->sid, // Channel Sender SID (CN...)
                 // phone_number_sid remains empty for BYOD since it's not a purchased Twilio number
-                'country_code' => ParserHelper::getCountryCode($phoneNumber) ?? 'IN',
+                'country_code' => PhoneNumber::getIsoCountryCode($phoneNumber) ?? config()->string('app.default_country_iso', 'IN'),
                 'status' => 'purchased',
             ]);
 
@@ -593,7 +596,7 @@ class TwilioAccountManager
                 ]);
 
             WhatsAppPhoneNumber::query()->where('whatsapp_account_id', $account->id)
-                ->where('phone_number_sid', $senderSid)
+                ->where('channel_sender_sid', $senderSid)
                 ->update(['status' => 'active']);
 
             $account->update([
@@ -1330,7 +1333,7 @@ class TwilioAccountManager
     protected function getOrCreateVerifyService(Client $client, string $accountSid): string
     {
         $tenantId = WhatsAppAccount::query()->where('twilio_account_sid', $accountSid)->value('gym_id')
-            ?? (Filament::getTenant()->id ?? 'unknown');
+            ?? Filament::getTenant()?->getKey() ?? 'unknown';
 
         $friendlyName = "Verify Service for {$tenantId}";
 

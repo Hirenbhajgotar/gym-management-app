@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-use Exception;
+use App\Helpers\PhoneNumber as HelpersPhoneNumber;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
-use Propaganistas\LaravelPhone\PhoneNumber;
 
 class ParserHelper
 {
@@ -25,26 +24,9 @@ class ParserHelper
      *
      * @throws InvalidArgumentException
      */
-    public static function formatPhoneNumberWithCountryCode(string|Stringable $phone, $defaultCountryCode = null): string
+    public static function formatPhoneNumberWithCountryCode(string|Stringable $phone, ?string $defaultCountryCode = null): string
     {
-        $phone = (string) $phone;
-
-        // 1. Strip everything that is not a digit or a leading "+"
-        $clean = preg_replace("/(?!^\+)\D/", '', $phone);
-
-        // 2. If the number already starts with "+" we are done
-        if (str_starts_with($clean, '+')) {
-            return $clean;
-        }
-
-        // 3. Otherwise prepend the default country code
-        $countryCode =
-            $defaultCountryCode ?? config('app.default_country_code', '+91'); // fallback to +91
-
-        // Ensure we have a single "+" and no spaces
-        $countryCode = '+' . ltrim($countryCode, '+');
-
-        return $countryCode . $clean;
+        return HelpersPhoneNumber::formatPhoneNumberWithCountryCode($phone, $defaultCountryCode);
     }
 
     /**
@@ -53,7 +35,7 @@ class ParserHelper
      */
     public static function normalizePhoneNumber(string $phone): string
     {
-        return preg_replace('/\D/', '', $phone);
+        return HelpersPhoneNumber::normalizePhoneNumber($phone);
     }
 
     /**
@@ -71,14 +53,7 @@ class ParserHelper
      */
     public static function getCountryCode(string $phoneNumber, ?string $defaultCountryCode = null): ?string
     {
-        try {
-            $formattedNumber = self::formatPhoneNumberWithCountryCode($phoneNumber, $defaultCountryCode);
-            $phone = new PhoneNumber($formattedNumber);
-
-            return $phone->getCountry();
-        } catch (Exception $e) {
-            return null;
-        }
+        return HelpersPhoneNumber::getIsoCountryCode($phoneNumber, $defaultCountryCode);
     }
 
     public static function getDurationLabel(int $months): string
