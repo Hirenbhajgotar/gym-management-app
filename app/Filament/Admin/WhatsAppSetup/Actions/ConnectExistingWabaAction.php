@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
+use App\Filament\Admin\Pages\WhatsAppSetup;
+use App\Interfaces\WabaSetupInterface;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
 
 class ConnectExistingWabaAction
 {
@@ -17,7 +20,7 @@ class ConnectExistingWabaAction
 
     private const DECAY_SECONDS = 600;
 
-    public function __construct(public $page) {}
+    public function __construct(public WhatsAppSetup $page) {}
 
     private function rateLimiterKey(int|string $gymId): string
     {
@@ -26,7 +29,12 @@ class ConnectExistingWabaAction
 
     public function __invoke(): void
     {
-        $this->page->form->validate(['manual_phone_number' => 'required|phone:INTERNATIONAL', 'waba_id' => 'required|regex:/^\d{15}$/', 'waba_phone_number_id' => 'required|regex:/^\d{15}$/', 'meta_access_token' => 'required|string']);
+        Validator::make($this->page->data ?? [], [
+            'manual_phone_number' => ['required', 'phone:INTERNATIONAL'],
+            'waba_id' => ['required', 'regex:/^\d{15,18}$/'],
+            'waba_phone_number_id' => ['required', 'regex:/^\d{15,18}$/'],
+            'meta_access_token' => ['required', 'string', 'min:10'],
+        ])->validate();
 
         $gymId = $this->page->getGymId();
         $rateLimiterKey = $this->rateLimiterKey($gymId);
@@ -40,21 +48,42 @@ class ConnectExistingWabaAction
         RateLimiter::hit($rateLimiterKey, self::DECAY_SECONDS);
 
         try {
-            $data = $this->page->data;
+            $provider = $this->page->getProvider();
+            throw_unless($provider instanceof WabaSetupInterface, Exception::class, 'WhatsApp provider does not support manual WABA connection.');
+
+            $data = $this->page->data ?? [];
             $user = Auth::user();
-            $businessData = ['business_name' => $data['business_name'] ?? $user?->name, 'business_email' => $data['business_email'] ?? $user?->email];
-            $result = $this->page->getProvider()->connectManualWaba($gymId, $data['waba_id'], $data['manual_phone_number'], $data['meta_access_token'], $data['waba_phone_number_id'], $businessData);
+            $userName = $user?->name;
+            $userEmail = $user?->email;
+            $businessData = [
+                'business_name' => $data['business_name'] ?? $userName ?? '',
+                'business_email' => $data['business_email'] ?? $userEmail ?? '',
+                'business_description' => $data['business_description'] ?? '',
+            ];
+            $result = $provider->connectManualWaba((int) $gymId, $data['waba_id'] ?? '', $data['manual_phone_number'] ?? '', $data['meta_access_token'] ?? '', $data['waba_phone_number_id'] ?? '', $businessData);
             if ($result['success']) {
                 // Import existing Meta templates as DRAFT records
-                $job = new ImportWhatsAppTemplatesJob($gymId);
-                $job->onQueue('whatsapp-templates');
-                dispatch($job);
+                Log::info('ConnectExistingWabaAction: dispatching template import', [
+                    'gym_id' => $gymId,
+                    'waba_id' => $data['waba_id'] ?? null,
+                ]);
+                dispatch(new ImportWhatsAppTemplatesJob((int) $gymId));
 
-                $this->page->refresh();
-                Notification::make()->title('WABA Connected')->success()->send();
-            } else {
-                throw new Exception($result['error'] ?? 'Failed');
+                Notification::make()
+                    ->title('WABA Connected')
+                    ->body('Your WhatsApp Business Account has been connected successfully. Your Meta templates are now being imported.')
+                    ->success()
+                    ->send();
+
+                // Redirect to self to trigger a full mount() cycle.
+                // A simple refresh() is insufficient here because it does not
+                // reload whatsappAccount or recalculate viewState, leaving the
+                // wizard still showing the connection form.
+                $this->page->redirect(route('filament.admin.pages.whats-app-setup', ['tenant' => $this->page->getTenantSlug()]));
+
+                return;
             }
+            throw new Exception($result['error'] ?? 'Failed');
         } catch (Exception $e) {
             Log::error('WABA Connect Error', ['e' => $e]);
             Notification::make()->title('Connection Failed')->body($e->getMessage())->danger()->send();

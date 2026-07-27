@@ -125,6 +125,7 @@ return [
     'editor' => 'antigravity',
 
     'default_country_code' => '+91',
+    'default_country_iso' => 'IN',
 
     'contact_email' => env('CONTACT_EMAIL', 'contact.fluxfitness@gmail.com'),
     'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
@@ -152,4 +153,5 @@ return [
     'transaction_deadlock_max_attempts' => (int) env('TRANSACTION_DEADLOCK_MAX_ATTEMPTS', 3),
 
     'custom_import_action' => (bool) env('CUSTOM_IMPORT_ACTION', true),
+    'test_password' => (string) env('TEST_PASSWORD', 'password'),
 ];

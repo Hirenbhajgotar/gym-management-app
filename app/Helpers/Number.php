@@ -33,12 +33,4 @@ class Number
         // If the value is greater than the maximum, abbreviate the number.
         return SupportNumber::abbreviate($value, maxPrecision: 2);
     }
-
-    /**
-     * Clear phone number formats.
-     */
-    public static function clearPhoneNumberFormat(string $phoneNumber): string
-    {
-        return preg_replace('/[^0-9]/', '', $phoneNumber);
-    }
 }

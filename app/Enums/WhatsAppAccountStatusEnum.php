@@ -95,11 +95,18 @@ enum WhatsAppAccountStatusEnum: string implements HasColor, HasIcon, HasLabel
      */
     public static function fromMetaReviewStatus(?string $status): self
     {
-        return match ($status) {
-            'APPROVED' => self::ACTIVE,
+        if ($status === null || $status === '' || strtoupper($status) === 'NONE') {
+            return self::PENDING;
+        }
+
+        return match (strtoupper($status)) {
+            'APPROVED', 'ACTIVE' => self::ACTIVE,
             'REJECTED' => self::REJECTED,
-            'PENDING' => self::PENDING,
+            'PENDING', 'IN_REVIEW' => self::PENDING,
             'DISABLED' => self::RESTRICTED,
+            'SUSPENDED' => self::SUSPENDED,
+            'BLOCKED' => self::BLOCKED,
+            'BANNED' => self::BANNED,
             default => self::logAndFallback($status),
         };
     }

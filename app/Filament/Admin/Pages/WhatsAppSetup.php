@@ -19,10 +19,13 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * WhatsApp Setup page — thin orchestrator (~60 lines).
  * All state, schemas, and actions are delegated to traits.
+ *
+ * @property Form $form Resolved dynamically via InteractsWithForms __get()
  */
 class WhatsAppSetup extends BasePage implements HasActions, HasForms
 {
@@ -52,7 +55,7 @@ class WhatsAppSetup extends BasePage implements HasActions, HasForms
 
     public static function canAccess(array $parameters = []): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (! $user) {
             return false;

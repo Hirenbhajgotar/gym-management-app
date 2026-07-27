@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\Hash;
  */
 class UserFactory extends Factory
 {
-    protected $model = User::class;
+    protected static ?string $password;
 
     public function definition(): array
     {
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'password' => Hash::make('password'),
+            'password' => static::$password ??= Hash::make('password'),
             'status' => UserStatus::ACTIVE,
             'is_active' => true, // Explicitly keeping it true as well, though observer would sync it.
         ];

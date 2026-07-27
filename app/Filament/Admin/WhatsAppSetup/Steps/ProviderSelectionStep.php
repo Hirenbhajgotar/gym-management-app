@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\WhatsAppSetup\Steps;
 
 use App\Enums\WhatsAppProviderTypeEnum;
+use App\Filament\Admin\Pages\WhatsAppSetup;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
@@ -13,7 +14,7 @@ use Illuminate\Support\HtmlString;
 
 class ProviderSelectionStep
 {
-    public static function make($page): Step
+    public static function make(WhatsAppSetup $page): Step
     {
         return Step::make('Select Provider')
             ->schema([

@@ -16,6 +16,8 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
     case VERIFIED = 'verified';
     case NOT_VERIFIED = 'not_verified';
     case REJECTED = 'rejected';
+    case FAILED = 'failed';
+    case EXPIRED = 'expired';
 
     public function getLabel(): string
     {
@@ -25,6 +27,8 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
             self::VERIFIED => 'Verified',
             self::NOT_VERIFIED => 'Not Verified',
             self::REJECTED => 'Rejected',
+            self::FAILED => 'Failed',
+            self::EXPIRED => 'Expired',
         };
     }
 
@@ -36,6 +40,8 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
             self::VERIFIED => 'success',
             self::NOT_VERIFIED => 'warning',
             self::REJECTED => 'danger',
+            self::FAILED => 'danger',
+            self::EXPIRED => 'danger',
         };
     }
 
@@ -47,6 +53,8 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
             self::VERIFIED => 'heroicon-o-check-circle',
             self::NOT_VERIFIED => 'heroicon-o-exclamation-triangle',
             self::REJECTED => 'heroicon-o-x-mark',
+            self::FAILED => 'heroicon-o-x-mark',
+            self::EXPIRED => 'heroicon-o-x-mark',
         };
     }
 
@@ -55,11 +63,17 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
      */
     public static function fromMetaVerificationStatus(?string $status): self
     {
-        return match ($status) {
+        if ($status === null || $status === '' || strtoupper($status) === 'NONE') {
+            return self::NOT_VERIFIED;
+        }
+
+        return match (strtoupper($status)) {
             'VERIFIED' => self::VERIFIED,
-            'NOT_VERIFIED' => self::NOT_VERIFIED,
-            'IN_REVIEW' => self::IN_REVIEW,
+            'NOT_VERIFIED', 'UNVERIFIED' => self::NOT_VERIFIED,
+            'IN_REVIEW', 'PENDING' => self::IN_REVIEW,
             'REJECTED' => self::REJECTED,
+            'FAILED' => self::FAILED,
+            'EXPIRED' => self::EXPIRED,
             default => self::logAndFallback($status),
         };
     }
@@ -71,6 +85,6 @@ enum WhatsAppAccountVerificationStatusEnum: string implements HasColor, HasIcon,
             'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
         ]);
 
-        return self::PENDING;
+        return self::NOT_VERIFIED;
     }
 }

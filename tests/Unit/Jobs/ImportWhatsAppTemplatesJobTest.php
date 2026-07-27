@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Jobs;
 
-use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
+use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
-use App\Services\Meta\MetaTemplateService;
-use App\Services\Twilio\TwilioTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
-use Mockery\MockInterface;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -38,17 +36,12 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             'twilio_account_sid' => 'ACtest_unit_sid',
             'twilio_auth_token' => 'test_unit_auth_token',
             'waba_id' => 'test_waba_123',
-            'status' => 'active',
-            'verification_status' => 'verified',
+            'meta_access_token' => 'test_meta_token_123',
+            'status' => WhatsAppAccountStatusEnum::ACTIVE,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED,
             'business_name' => 'Test Unit Gym',
             'business_email' => 'testunit@gym.com',
         ]);
-    }
-
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
     }
 
     #[Test]
@@ -87,7 +80,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
     #[Test]
     public function test_skips_inactive_account(): void
     {
-        $this->whatsappAccount->status = 'inactive';
+        $this->whatsappAccount->status = WhatsAppAccountStatusEnum::SUSPENDED;
         $this->whatsappAccount->save();
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id);
@@ -99,9 +92,9 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
     }
 
     #[Test]
-    public function test_skips_unverified_account(): void
+    public function test_skips_restricted_account(): void
     {
-        $this->whatsappAccount->verification_status = 'unverified';
+        $this->whatsappAccount->status = WhatsAppAccountStatusEnum::RESTRICTED;
         $this->whatsappAccount->save();
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id);
@@ -110,6 +103,200 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $this->assertDatabaseMissing('whatsapp_templates', [
             'gym_id' => $this->gym->id,
         ]);
+    }
+
+    #[Test]
+    public function test_skips_banned_account(): void
+    {
+        $this->whatsappAccount->status = WhatsAppAccountStatusEnum::BANNED;
+        $this->whatsappAccount->save();
+
+        $job = new ImportWhatsAppTemplatesJob($this->gym->id);
+        $job->handle();
+
+        $this->assertDatabaseMissing('whatsapp_templates', [
+            'gym_id' => $this->gym->id,
+        ]);
+    }
+
+    #[Test]
+    public function test_imports_templates_for_unverified_account(): void
+    {
+        $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::TWILIO;
+        $this->whatsappAccount->verification_status = WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED;
+        $this->whatsappAccount->save();
+
+        $twilioTemplates = [
+            [
+                'sid' => 'HXunverified_sid',
+                'friendly_name' => 'Unverified Template',
+                'types' => [
+                    'twilio/text' => [
+                        'body' => 'Template body for unverified account.',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->mockTwilioApiTemplates($twilioTemplates);
+
+        $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
+        $job->handle();
+
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
+
+        $this->assertCount(1, $templates);
+        $this->assertEquals('Unverified Template', $templates->first()?->name);
+    }
+
+    #[Test]
+    public function test_imports_templates_for_pending_account(): void
+    {
+        $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::WABA;
+        $this->whatsappAccount->status = WhatsAppAccountStatusEnum::PENDING;
+        $this->whatsappAccount->verification_status = WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED;
+        $this->whatsappAccount->save();
+
+        $metaTemplates = [
+            [
+                'id' => 'meta_pending_1',
+                'name' => 'Pending Account Template',
+                'status' => 'APPROVED',
+                'category' => 'UTILITY',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'Template from pending account.',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->mockMetaApiTemplates($metaTemplates);
+
+        $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::WABA);
+        $job->handle();
+
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
+
+        $this->assertCount(1, $templates);
+        $this->assertEquals('Pending Account Template', $templates->first()?->name);
+    }
+
+    #[Test]
+    public function test_syncs_status_from_meta_templates(): void
+    {
+        $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::WABA;
+        $this->whatsappAccount->waba_id = 'test_waba_456';
+        $this->whatsappAccount->save();
+
+        $metaTemplates = [
+            [
+                'id' => 'meta_template_1',
+                'name' => 'Appointment Confirmation',
+                'status' => 'APPROVED',
+                'category' => 'APPOINTMENT_UPDATE',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'Your appointment is confirmed for {{1}}.',
+                    ],
+                ],
+            ],
+            [
+                'id' => 'meta_template_2',
+                'name' => 'Welcome Message',
+                'status' => 'PENDING',
+                'category' => 'MARKETING',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'Welcome to our gym!',
+                    ],
+                ],
+            ],
+            [
+                'id' => 'meta_template_3',
+                'name' => 'Rejected Template',
+                'status' => 'REJECTED',
+                'category' => 'UTILITY',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'This was rejected.',
+                    ],
+                ],
+            ],
+            [
+                'id' => 'meta_template_4',
+                'name' => 'Disabled Template',
+                'status' => 'DISABLED',
+                'category' => 'UTILITY',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'This was disabled.',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->mockMetaApiTemplates($metaTemplates);
+
+        $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::WABA);
+        $job->handle();
+
+        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
+
+        $this->assertCount(4, $templates);
+
+        $approved = $templates->firstWhere('name', 'Appointment Confirmation');
+        $this->assertNotNull($approved);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::APPROVED, $approved->status);
+
+        $pending = $templates->firstWhere('name', 'Welcome Message');
+        $this->assertNotNull($pending);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::PENDING, $pending->status);
+
+        $rejected = $templates->firstWhere('name', 'Rejected Template');
+        $this->assertNotNull($rejected);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::REJECTED, $rejected->status);
+
+        $disabled = $templates->firstWhere('name', 'Disabled Template');
+        $this->assertNotNull($disabled);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::DISABLED, $disabled->status);
+    }
+
+    #[Test]
+    public function test_meta_template_falls_back_to_draft_when_status_missing(): void
+    {
+        $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::WABA;
+        $this->whatsappAccount->waba_id = 'test_waba_456';
+        $this->whatsappAccount->save();
+
+        $metaTemplates = [
+            [
+                'id' => 'meta_template_no_status',
+                'name' => 'No Status Template',
+                'category' => 'UTILITY',
+                'components' => [
+                    [
+                        'type' => 'BODY',
+                        'text' => 'No status field provided.',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->mockMetaApiTemplates($metaTemplates);
+
+        $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::WABA);
+        $job->handle();
+
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->first();
+
+        $this->assertNotNull($template);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::DRAFT, $template->status);
     }
 
     #[Test]
@@ -141,16 +328,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             ],
         ];
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) use ($twilioTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->with($this->gym->id)
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $twilioTemplates,
-                    count: 2,
-                ));
-        });
+        $this->mockTwilioApiTemplates($twilioTemplates);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
@@ -163,51 +341,6 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             $this->assertEquals(WhatsAppTemplateStatusEnum::DRAFT, $template->status);
             $this->assertTrue($template->is_active);
         }
-    }
-
-    #[Test]
-    public function test_imports_templates_as_draft_from_meta(): void
-    {
-        $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::WABA;
-        $this->whatsappAccount->waba_id = 'test_waba_456';
-        $this->whatsappAccount->save();
-
-        $metaTemplates = [
-            [
-                'id' => 'meta_template_1',
-                'name' => 'Appointment Confirmation',
-                'category' => 'APPOINTMENT_UPDATE',
-                'components' => [
-                    [
-                        'type' => 'BODY',
-                        'text' => 'Your appointment is confirmed for {{1}}.',
-                    ],
-                ],
-            ],
-        ];
-
-        $this->mock(MetaTemplateService::class, function (MockInterface $mock) use ($metaTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->with($this->gym->id)
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $metaTemplates,
-                    count: 1,
-                ));
-        });
-
-        $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::WABA);
-        $job->handle();
-
-        $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
-
-        $this->assertCount(1, $templates);
-
-        $template = $templates->first();
-        $this->assertEquals(WhatsAppTemplateStatusEnum::DRAFT, $template->status);
-        $this->assertEquals('Appointment Confirmation', $template->name);
-        $this->assertEquals('meta_template_1', $template->meta_template_id);
     }
 
     #[Test]
@@ -235,15 +368,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             ],
         ];
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) use ($twilioTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $twilioTemplates,
-                    count: 1,
-                ));
-        });
+        $this->mockTwilioApiTemplates($twilioTemplates);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
@@ -273,21 +398,14 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             ],
         ];
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) use ($twilioTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $twilioTemplates,
-                    count: 1,
-                ));
-        });
+        $this->mockTwilioApiTemplates($twilioTemplates);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
         $template = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->first();
 
+        $this->assertNotNull($template);
         $this->assertEquals('HXtemplate_sid_123', $template->twilio_template_sid);
         $this->assertNull($template->meta_template_id);
     }
@@ -298,15 +416,9 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
         $this->whatsappAccount->provider_type = WhatsAppProviderTypeEnum::TWILIO;
         $this->whatsappAccount->save();
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->andReturn(new TemplateCollectionResult(
-                    success: false,
-                    templates: [],
-                    error: 'API connection failed',
-                ));
-        });
+        Http::fake([
+            'https://content.twilio.com/v1/Contents*' => Http::response([], 500),
+        ]);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
@@ -334,21 +446,14 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             ],
         ];
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) use ($twilioTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $twilioTemplates,
-                    count: 1,
-                ));
-        });
+        $this->mockTwilioApiTemplates($twilioTemplates);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
 
         $template = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->first();
 
+        $this->assertNotNull($template);
         $this->assertNotNull($template->variables);
         $this->assertIsArray($template->variables);
         $this->assertGreaterThanOrEqual(1, count($template->variables));
@@ -378,15 +483,7 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
             ],
         ];
 
-        $this->mock(TwilioTemplateService::class, function (MockInterface $mock) use ($twilioTemplates) {
-            $mock->shouldReceive('getTemplates')
-                ->once()
-                ->andReturn(new TemplateCollectionResult(
-                    success: true,
-                    templates: $twilioTemplates,
-                    count: 2,
-                ));
-        });
+        $this->mockTwilioApiTemplates($twilioTemplates);
 
         $job = new ImportWhatsAppTemplatesJob($this->gym->id, WhatsAppProviderTypeEnum::TWILIO);
         $job->handle();
@@ -395,6 +492,35 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
 
         // Only the template with a name should be imported
         $this->assertCount(1, $templates);
-        $this->assertEquals('Valid Template', $templates->first()->name);
+        $firstTemplate = $templates->first();
+        $this->assertNotNull($firstTemplate);
+        $this->assertEquals('Valid Template', $firstTemplate->name);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $templates
+     */
+    private function mockMetaApiTemplates(array $templates): void
+    {
+        $wabaId = $this->whatsappAccount->waba_id;
+        $apiVersion = config()->string('services.whatsapp.api_version', 'v25.0');
+
+        Http::fake([
+            "https://graph.facebook.com/{$apiVersion}/{$wabaId}/message_templates*" => Http::response([
+                'data' => $templates,
+            ], 200),
+        ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $templates
+     */
+    private function mockTwilioApiTemplates(array $templates): void
+    {
+        Http::fake([
+            'https://content.twilio.com/v1/Contents*' => Http::response([
+                'contents' => $templates,
+            ], 200),
+        ]);
     }
 }
