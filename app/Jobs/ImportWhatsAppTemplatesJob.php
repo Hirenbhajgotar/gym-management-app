@@ -15,7 +15,6 @@ use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsApp\TemplateFieldMapper;
 use App\Services\WhatsAppTemplateService;
-use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -53,6 +52,9 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
         return "import-whatsapp-templates:gym:{$this->gymId}";
     }
 
+    /**
+     * Execute the job.
+     */
     public function handle(): void
     {
         try {
@@ -101,14 +103,14 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
                 'provider' => $providerType->value ?? 'unknown',
                 'synced_count' => $syncedCount,
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $th) {
             Log::error('ImportWhatsAppTemplatesJob: job failed', [
                 'gym_id' => $this->gymId,
-                'error' => $e->getMessage(),
-                'exception' => $e,
+                'error' => $th->getMessage(),
+                'exception' => $th,
             ]);
 
-            throw $e;
+            throw $th;
         }
     }
 
