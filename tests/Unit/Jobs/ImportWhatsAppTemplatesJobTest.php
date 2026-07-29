@@ -12,6 +12,7 @@ use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -62,6 +63,14 @@ class ImportWhatsAppTemplatesJobTest extends TestCase
 
         $this->assertEquals($job1->uniqueId(), $job2->uniqueId());
         $this->assertNotEquals($job1->uniqueId(), $job3->uniqueId());
+    }
+
+    #[Test]
+    public function test_job_is_queued(): void
+    {
+        $job = new ImportWhatsAppTemplatesJob(1);
+
+        $this->assertInstanceOf(ShouldQueue::class, $job);
     }
 
     #[Test]
