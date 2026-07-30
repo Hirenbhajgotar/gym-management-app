@@ -7,6 +7,7 @@ namespace App\Services\Meta;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppTemplate;
@@ -58,6 +59,29 @@ class MetaTemplateService implements TemplateManagementInterface
      */
     public function submitTemplate(?WhatsAppTemplate $template = null): TemplateSubmissionResult
     {
+        $template = $template?->fresh();
+
+        if (! $template) {
+            return new TemplateSubmissionResult(success: false, error: 'Template no longer exists.');
+        }
+
+        if ($template->status !== WhatsAppTemplateStatusEnum::DRAFT) {
+            return new TemplateSubmissionResult(
+                success: false,
+                error: 'Only draft templates can be submitted. ' . ($template->status?->value ? 'Current status: ' . $template->status->value : ''),
+            );
+        }
+
+        if ($this->context->gymId !== $template->gym_id) {
+            Log::warning('Template gym_id mismatch in submitTemplate', [
+                'template_id' => $template->id,
+                'context_gym' => $this->context->gymId,
+                'template_gym' => $template->gym_id,
+            ]);
+
+            return new TemplateSubmissionResult(success: false, error: 'Template does not belong to this gym.');
+        }
+
         $wabaId = $this->context->getWabaId();
 
         if (! $wabaId) {
@@ -66,18 +90,19 @@ class MetaTemplateService implements TemplateManagementInterface
 
         $account = $this->context->getAccount();
 
-        if (! $account || ! $account->isActive() || ! $account->isVerified()) {
+        if (! $account) {
+            return new TemplateSubmissionResult(success: false, error: 'WhatsApp account not configured for this gym');
+        }
+
+        if ($account->isWabaRestricted() || $account->isWabaBlocked() || $account->isWabaSuspended()) {
             $reason = match (true) {
-                ! $account => 'WhatsApp account not configured for this gym',
-                ! $account->isActive() => 'WhatsApp account is not active',
+                $account->isWabaRestricted() => 'WhatsApp account is restricted. Please contact support for assistance.',
+                $account->isWabaBlocked() => 'WhatsApp account is blocked. Please contact support for assistance.',
+                $account->isWabaSuspended() => 'WhatsApp account is suspended. Please contact support for assistance.',
                 default => 'WhatsApp account is not verified',
             };
 
             return new TemplateSubmissionResult(success: false, error: $reason);
-        }
-
-        if (! $template) {
-            return new TemplateSubmissionResult(success: false, error: 'Template no longer exists.');
         }
 
         $lock = Cache::lock("meta_template_submit:{$template->id}", self::LOCK_TTL);
@@ -90,7 +115,7 @@ class MetaTemplateService implements TemplateManagementInterface
             $response = $this->api->post("/{$wabaId}/message_templates", [
                 'name' => $template->name,
                 'language' => 'en_US',
-                'category' => strtoupper($template->category ?? 'UTILITY'),
+                'category' => strtoupper($template->category->value ?? TemplateCategoryEnum::UTILITY->value),
                 'components' => [
                     [
                         'type' => 'BODY',
@@ -99,28 +124,35 @@ class MetaTemplateService implements TemplateManagementInterface
                 ],
             ]);
 
-            if ($response['success']) {
-                $templateId = isset($response['data']['id']) ? $response['data']['id'] : null;
-
-                if (! $templateId) {
-                    return TemplateSubmissionResult::fromError('Missing template ID in Meta response');
-                }
-
-                $template->meta_template_id = $templateId;
-                $template->status = WhatsAppTemplateStatusEnum::PENDING;
-                $template->save();
-
-                Cache::forget($this->templatesCacheKey());
-
-                return TemplateSubmissionResult::fromMetaResponse(
-                    templateId: $templateId,
-                    status: WhatsAppTemplateStatusEnum::PENDING->value,
-                );
+            if (! $response['success']) {
+                return new TemplateSubmissionResult(success: false, error: $response['error'] ?? 'Failed to submit template');
             }
 
-            return new TemplateSubmissionResult(success: false, error: $response['error'] ?? 'Failed to submit template');
+            $templateId = isset($response['data']['id']) ? $response['data']['id'] : null;
+
+            if (! $templateId) {
+                return TemplateSubmissionResult::fromError('Missing template ID in Meta response');
+            }
+
+            $template->meta_template_id = $templateId;
+            $template->status = WhatsAppTemplateStatusEnum::PENDING;
+            $template->save();
+
+            Cache::forget($this->templatesCacheKey());
+
+            return TemplateSubmissionResult::fromMetaResponse(
+                templateId: $templateId,
+                status: WhatsAppTemplateStatusEnum::PENDING->value,
+            );
         } catch (LockTimeoutException $e) {
             return new TemplateSubmissionResult(success: false, error: 'Template submission is already in progress. Please wait.');
+        } catch (Throwable $th) {
+            Log::error('Template submission failed with exception', [
+                'template_id' => $template->id,
+                'error' => $th->getMessage(),
+            ]);
+
+            return new TemplateSubmissionResult(success: false, error: 'An unexpected error occurred during template submission.');
         } finally {
             $lock?->release();
         }
@@ -131,6 +163,22 @@ class MetaTemplateService implements TemplateManagementInterface
      */
     public function syncTemplateStatus(WhatsAppTemplate $template): void
     {
+        $template = $template->fresh();
+
+        if (! $template) {
+            return;
+        }
+
+        if ($this->context->gymId !== $template->gym_id) {
+            Log::warning('Template gym_id mismatch in syncTemplateStatus', [
+                'template_id' => $template->id,
+                'context_gym' => $this->context->gymId,
+                'template_gym' => $template->gym_id,
+            ]);
+
+            return;
+        }
+
         if (! $template->meta_template_id) {
             return;
         }
