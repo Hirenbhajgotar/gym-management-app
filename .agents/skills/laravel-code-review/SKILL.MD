@@ -2559,7 +2559,7 @@ is an anti-pattern. The current implementation is correct."
 When reviewing code:
 1. **ALWAYS** load `.coderabbit.yaml` and apply path-specific rules
 2. **ALWAYS** load this SKILL.md for Laravel patterns
-3. **ALWAYS** use code-explore subagent for complex files before suggesting
+3. **ALWAYS** use code-explorer subagent for complex files before suggesting
 4. **ALWAYS** check "When NOT to report" rules before flagging an issue
 5. **ONLY** report 🔴 CERTAIN and 🟠 HIGH confidence issues
 6. **NEVER** suggest wrapping external API calls in DB::transaction()
