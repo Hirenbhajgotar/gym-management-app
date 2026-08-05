@@ -33,12 +33,13 @@ class SchemasTest extends WhatsAppSetupTestCase
         $this->assertSame(4, SetupWizardSchema::TWILIO_TEMPLATES_STEP);
         $this->assertSame(5, SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP);
 
-        $this->assertSame(3, SetupWizardSchema::WABA_TEMPLATES_STEP);
-        $this->assertSame(4, SetupWizardSchema::WABA_WELCOME_CREDITS_STEP);
+        $this->assertSame(3, SetupWizardSchema::WABA_BILLING_MODE_STEP);
+        $this->assertSame(4, SetupWizardSchema::WABA_TEMPLATES_STEP);
+        $this->assertSame(5, SetupWizardSchema::WABA_WELCOME_CREDITS_STEP);
     }
 
     #[Test]
-    public function make_returns_a_wizard_with_six_steps(): void
+    public function make_returns_a_wizard_with_seven_steps(): void
     {
         $page = new WhatsAppSetupPageStub();
 
@@ -48,7 +49,7 @@ class SchemasTest extends WhatsAppSetupTestCase
         $this->assertInstanceOf(Wizard::class, $schema[0]);
 
         $steps = $schema[0]->getChildComponents();
-        $this->assertCount(6, $steps);
+        $this->assertCount(7, $steps);
     }
 
     #[Test]

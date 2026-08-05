@@ -123,6 +123,15 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
+        $wabaId = $this->context->getWabaId();
+
+        if (! $wabaId) {
+            return [
+                'success' => false,
+                'error' => 'WABA not configured',
+            ];
+        }
+
         // Find the template
         $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
             ->where('name', $templateName)
@@ -138,15 +147,6 @@ class MetaMessagingService implements MessagingInterface
 
         $this->credits->checkAndDeduct(1);
 
-        $wabaId = $this->context->getWabaId();
-
-        if (! $wabaId) {
-            return [
-                'success' => false,
-                'error' => 'WABA not configured',
-            ];
-        }
-
         // Build template payload
         $templatePayload = [
             'name' => $templateName,
@@ -159,7 +159,7 @@ class MetaMessagingService implements MessagingInterface
                     'parameters' => array_map(
                         fn ($value, $key) => [
                             'type' => 'text',
-                            'parameter' => $value,
+                            'text' => $value,
                         ],
                         $variables,
                         array_keys($variables)
@@ -167,6 +167,7 @@ class MetaMessagingService implements MessagingInterface
                 ],
             ];
         }
+        $templatePayload['language'] = ['code' => 'en'];
 
         $response = $this->api->post("/{$wabaId}/messages", [
             'messaging_product' => 'whatsapp',
@@ -178,7 +179,7 @@ class MetaMessagingService implements MessagingInterface
         if ($response['success']) {
             $messageId = $response['data']['messages'][0]['id'] ?? null;
 
-            $this->credits->logUsage($to, $template->id, $messageId);
+            $this->credits->logUsage($to, $template, $messageId);
             $template->incrementUsage();
 
             return [

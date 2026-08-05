@@ -31,7 +31,7 @@ class WhatsAppTemplateService
 
         $templates = WhatsAppTemplate::getDefaults()->reject(
             function ($template) use ($existingNames): bool {
-                /** @var \App\Models\WhatsAppTemplate $template */
+                /** @var WhatsAppTemplate $template */
                 return in_array($template->name, $existingNames, true);
             }
         );

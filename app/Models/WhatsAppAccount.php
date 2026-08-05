@@ -6,9 +6,11 @@ namespace App\Models;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Observers\WhatsAppAccountObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -39,6 +41,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $business_email
  * @property string|null $business_description
  * @property WhatsAppProviderTypeEnum|null $provider_type
+ * @property WhatsAppBillingModeEnum|null $billing_mode
  * @property Carbon|null $verified_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -78,6 +81,10 @@ use Illuminate\Support\Facades\Crypt;
  * @method bool isWabaActive()
  * @method bool isWabaRestricted()
  * @method bool isSetupComplete()
+ * @method bool isSelfManaged()
+ * @method bool isPayViaApp()
+ * @method bool hasBillingMode()
+ * @method bool requiresCreditCheck()
  *
  * @mixin \Eloquent
  */
@@ -109,6 +116,7 @@ class WhatsAppAccount extends Model
         'business_description',
         'verified_at',
         'provider_type',
+        'billing_mode',
     ];
 
     protected $hidden = [
@@ -124,6 +132,7 @@ class WhatsAppAccount extends Model
             'embedded_signup_completed' => 'boolean',
             'verified_at' => 'datetime',
             'provider_type' => WhatsAppProviderTypeEnum::class,
+            'billing_mode' => WhatsAppBillingModeEnum::class,
             'waba_status_synced_at' => 'datetime',
         ];
     }
@@ -177,6 +186,24 @@ class WhatsAppAccount extends Model
                 : null,
             set: fn ($value) => $value ? Crypt::encrypt($value) : null,
         );
+    }
+
+    /**
+     * @param  Builder<WhatsAppAccount>  $query
+     */
+    #[Scope]
+    protected function selfManageBillingMode(Builder $query): void
+    {
+        $query->where('billing_mode', WhatsAppBillingModeEnum::SELF_MANAGED);
+    }
+
+    /**
+     * @param  Builder<WhatsAppAccount>  $query
+     */
+    #[Scope]
+    protected function payViaAppBillingMode(Builder $query): void
+    {
+        $query->where('billing_mode', WhatsAppBillingModeEnum::PAY_VIA_APP);
     }
 
     // =========================
@@ -345,6 +372,51 @@ class WhatsAppAccount extends Model
     public function setProvider(WhatsAppProviderTypeEnum $provider): void
     {
         $this->update(['provider_type' => $provider]);
+    }
+
+    // =========================
+    // Billing Mode Methods
+    // =========================
+
+    /**
+     * Check if the account uses self-managed billing.
+     * Self-managed means the user pays Meta directly, no credit check/deduction.
+     */
+    public function isSelfManaged(): bool
+    {
+        return $this->billing_mode === WhatsAppBillingModeEnum::SELF_MANAGED;
+    }
+
+    /**
+     * Check if the account uses pay-via-app billing.
+     * Pay-via-app means fluxfitness handles billing, credits are deducted as normal.
+     */
+    public function isPayViaApp(): bool
+    {
+        return $this->billing_mode === WhatsAppBillingModeEnum::PAY_VIA_APP;
+    }
+
+    /**
+     * Check if a billing mode has been explicitly set.
+     * Returns false for Twilio accounts (null billing_mode).
+     */
+    public function hasBillingMode(): bool
+    {
+        return $this->billing_mode !== null;
+    }
+
+    /**
+     * Determine if credit checking is required for this account.
+     * Returns true for pay-via-app, Twilio (null billing_mode), falls back to true for safety.
+     * Returns false only for self-managed accounts.
+     */
+    public function requiresCreditCheck(): bool
+    {
+        if ($this->billing_mode === WhatsAppBillingModeEnum::SELF_MANAGED) {
+            return false;
+        }
+
+        return true;
     }
 
     public function isTwilioWithActiveNumber(): bool

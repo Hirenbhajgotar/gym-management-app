@@ -58,7 +58,7 @@ class TwilioAccountService implements AccountManagementInterface
 
                 $subaccount = $this->context->getMasterClient()
                     ->api->v2010->accounts->create([
-                        'friendlyName' => substr(preg_replace(pattern: "/([^A-Za-z0-9\-_]/", replacement: '', subject: "{$gymId}-{$gymName}"), 0, 100),
+                        'friendlyName' => substr(preg_replace(pattern: "/[^A-Za-z0-9\-_]/", replacement: '', subject: "{$gymId}-{$gymName}"), 0, 100),
                     ]);
 
                 // Create a Messaging Service on the subaccount for WhatsApp Channel Sender registration
@@ -103,6 +103,7 @@ class TwilioAccountService implements AccountManagementInterface
                 'gym_id' => $gymId,
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
+                'e' => $e,
             ]);
 
             $message = $e->getCode() === 21217

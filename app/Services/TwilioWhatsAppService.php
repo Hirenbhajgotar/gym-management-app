@@ -481,7 +481,7 @@ class TwilioWhatsAppService implements WhatsAppServiceInterface
         throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
 
         if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
-            $credit->useWelcomeCredit();
+            $credit->useWelcomeCredit($count);
         } else {
             $credit->deductCredits($count);
         }

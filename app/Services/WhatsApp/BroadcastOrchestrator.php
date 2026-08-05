@@ -7,6 +7,7 @@ namespace App\Services\WhatsApp;
 use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\GymMember;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
@@ -73,52 +74,58 @@ class BroadcastOrchestrator
                 throw new Exception('Unable to send broadcast at this time. Please try again.');
             }
 
-            // === Upfront credit deduction ===
-            // Deduct all required credits atomically within a lock-protected
-            // transaction to prevent race conditions across concurrent broadcasts.
-            DB::beginTransaction();
+            $isSelfManagedBillingMode = WhatsAppAccount::query()
+                ->where('gym_id', $gymId)
+                ->selfManageBillingMode()
+                ->exists();
 
-            try {
-                /** @var WhatsAppMessageCredit|null $creditRecord */
-                $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $gymId)
-                    ->lockForUpdate()
-                    ->first();
+            return DB::transaction(function () use (
+                $isSelfManagedBillingMode,
+                $gymId,
+                $targetCount,
+                &$creditsDeducted,
+                $templateId,
+                $template,
+                $variables,
+                $recipientType,
+                $filters,
+                $scheduleType,
+                $scheduledAt,
+                $selectedMemberIds
+            ) {
+                if (! $isSelfManagedBillingMode) {
+                    // === Upfront credit deduction ===
+                    // Deduct all required credits atomically within a lock-protected
+                    // transaction to prevent race conditions across concurrent broadcasts.
+                    /** @var WhatsAppMessageCredit|null $creditRecord */
+                    $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $gymId)
+                        ->lockForUpdate()
+                        ->first();
 
-                if (! $creditRecord || ! $creditRecord->canSendMessage($targetCount)) {
-                    throw new Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+                    if (! $creditRecord || ! $creditRecord->canSendMessage($targetCount)) {
+                        throw new Exception('Insufficient credits. You need ' . number_format($targetCount) . ' credits.');
+                    }
+
+                    // Handle welcome credits first, then bulk deduction
+                    $welcomeAvailable = $creditRecord->getWelcomeCreditsRemaining();
+
+                    $welcomeToUse = 0;
+                    if ($welcomeAvailable > 0) {
+                        $welcomeToUse = min($welcomeAvailable, $targetCount);
+                        $creditRecord->increment('welcome_credits_used', $welcomeToUse);
+                    }
+                    $paidToDeduct = max(0, $targetCount - $welcomeToUse);
+                    DB::table('whatsapp_message_credits')
+                        ->where('gym_id', $gymId)
+                        ->update([
+                            'used_credits' => DB::raw('used_credits + ' . $paidToDeduct),
+                            'remaining_credits' => DB::raw('remaining_credits - ' . $targetCount),
+                            'last_used_at' => now(),
+                        ]);
+
+                    $creditsDeducted = true;
                 }
 
-                // Handle welcome credits first, then bulk deduction
-                $welcomeAvailable = $creditRecord->getWelcomeCreditsRemaining();
-                $bulkDeduction = $targetCount;
-
-                if ($welcomeAvailable > 0) {
-                    $welcomeToUse = min($welcomeAvailable, $targetCount);
-                    // Using welcome credits: track usage and grant free credits to remaining_credits
-                    $creditRecord->increment('welcome_credits_used', $welcomeToUse);
-                    $creditRecord->increment('remaining_credits', $welcomeToUse);
-                    $bulkDeduction = $targetCount - $welcomeToUse;
-                }
-
-                DB::table('whatsapp_message_credits')
-                    ->where('gym_id', $gymId)
-                    ->update([
-                        'used_credits' => DB::raw('used_credits + ' . $bulkDeduction),
-                        'remaining_credits' => DB::raw('remaining_credits - ' . $bulkDeduction),
-                        'last_used_at' => now(),
-                    ]);
-
-                $creditsDeducted = true;
-                DB::commit();
-            } catch (Exception $e) {
-                DB::rollBack();
-
-                throw $e;
-            }
-
-            DB::beginTransaction();
-
-            try {
                 $broadcast = WhatsAppBroadcast::query()->create([
                     'gym_id' => $gymId,
                     'whatsapp_template_id' => $templateId,
@@ -165,19 +172,14 @@ class BroadcastOrchestrator
                     }
                 });
 
-                DB::commit();
-            } catch (Exception $e) {
-                DB::rollBack();
+                // Dispatch job for immediate broadcasts
+                // after_commit is enabled in config/queue.php
+                if ($scheduleType === 'now') {
+                    dispatch(new SendBroadcastJob($broadcast->id, $gymId, skipCreditDeduction: $creditsDeducted));
+                }
 
-                throw $e;
-            }
-
-            // Dispatch job for immediate broadcasts
-            if ($scheduleType === 'now') {
-                dispatch(new SendBroadcastJob($broadcast->id, $gymId, skipCreditDeduction: $creditsDeducted));
-            }
-
-            return $broadcast;
+                return $broadcast;
+            }, 5);
         } finally {
             $lock->release();
         }

@@ -4,22 +4,28 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
+use App\Actions\WhatsAppAccount\UpdateBillingModeAction;
 use App\Enums\DefaultRole;
+use App\Enums\WhatsAppBillingModeEnum;
 use App\Filament\BasePages\BasePage;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppUsageLog;
+use Exception;
+use Filament\Actions\Action as ActionsAction;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 
+/**
+ * @property-read ?WhatsAppAccount $whatsappAccount
+ */
 class WhatsappDashboard extends BasePage implements HasActions, HasForms
 {
     use InteractsWithActions, InteractsWithForms;
@@ -34,14 +40,6 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
 
     protected static string $view = 'filament.tenant.pages.whatsapp-dashboard';
 
-    public ?WhatsAppAccount $whatsappAccount = null;
-
-    public ?WhatsAppMessageCredit $creditBalance = null;
-
-    public array $usageStats = [];
-
-    public array $recentMessages = [];
-
     public ?array $data = [];
 
     public bool $hasWhatsAppSetup = false;
@@ -54,7 +52,7 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
     // Only access for super_admin, admin and gym_owner
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()?->hasAnyRole([
+        return Auth::user()?->hasAnyRole([
             DefaultRole::SUPER_ADMIN->value,
             DefaultRole::ADMIN->value,
             DefaultRole::GYM_OWNER->value,
@@ -68,17 +66,30 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
 
     private function loadData(): void
     {
-        $gymId = $this->getGymId();
-
-        $this->whatsappAccount = WhatsAppAccount::query()->where('gym_id', $gymId)->first();
         $this->hasWhatsAppSetup = $this->whatsappAccount?->isSetupComplete() ?? false;
-        $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
-
-        $this->usageStats = $this->getUsageStats();
-        $this->recentMessages = $this->getRecentMessages();
     }
 
-    private function getUsageStats(): array
+    #[Computed(persist: true, cache: true)]
+    public function creditBalance(): ?WhatsAppMessageCredit
+    {
+        $gymId = $this->getGymId();
+
+        return WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
+    }
+
+    #[Computed(persist: true, cache: true)]
+    public function whatsappAccount(): ?WhatsAppAccount
+    {
+        $gymId = $this->getGymId();
+
+        return WhatsAppAccount::query()->where('gym_id', $gymId)->first();
+    }
+
+    /**
+     * @return array{messages_this_month: int, delivered: int, failed: int, delivery_rate: int|float}
+     */
+    #[Computed(persist: true, cache: true)]
+    public function usageStats(): array
     {
         $stats = WhatsAppUsageLog::query()->where('gym_id', $this->getGymId())
             ->where('sent_at', '>=', now()->startOfMonth())
@@ -100,121 +111,63 @@ class WhatsappDashboard extends BasePage implements HasActions, HasForms
         ];
     }
 
-    private function getRecentMessages(): array
+    protected function getHeaderActions(): array
     {
-        return WhatsAppUsageLog::query()->where('gym_id', $this->getGymId())
-            ->latest('sent_at')
-            ->limit(5)
-            ->get()
-            ->toArray();
+        return [
+            ActionsAction::make('changeBillingMode')
+                ->label('Change Billing Mode')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->modalHeading('Change Billing Mode')
+                ->modalDescription('Update how Meta WhatsApp charges are handled for this account.')
+                ->modalSubmitActionLabel('Update Billing Mode')
+                ->fillForm(fn (WhatsAppAccount $account): array => [
+                    'newBillingMode' => $account->billing_mode?->value,
+                ])
+                ->form([
+                    Radio::make('newBillingMode')
+                        ->label('Billing Mode')
+                        ->options(WhatsAppBillingModeEnum::class)
+                        ->descriptions(WhatsAppBillingModeEnum::casesToDescriptionsArray())
+                        ->default(fn () => $this->whatsappAccount?->billing_mode?->value)
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $billingMode = $data['newBillingMode'] ?? null;
+
+                    if (! is_string($billingMode) || $billingMode === '') {
+                        Notification::make()->title('No billing mode selected')->danger()->send();
+
+                        return;
+                    }
+
+                    try {
+                        $account = WhatsAppAccount::query()->where('gym_id', $this->getGymId())->first();
+
+                        if (! $account) {
+                            Notification::make()->title('No WhatsApp account found')->danger()->send();
+
+                            return;
+                        }
+
+                        resolve(UpdateBillingModeAction::class)($account, WhatsAppBillingModeEnum::from($billingMode));
+
+                        unset($this->whatsappAccount);
+
+                        Notification::make()
+                            ->title('Billing mode updated successfully')
+                            ->success()
+                            ->send();
+                    } catch (Exception $e) {
+                        Notification::make()
+                            ->title('Failed to update billing mode')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+        ];
     }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Section::make('Credit Balance')
-                    ->schema([
-                        Grid::make(3)->schema([
-                            Placeholder::make('total_credits')
-                                ->label('Total Credits')
-                                ->content(fn () => $this->creditBalance?->total_credits ?? 0),
-
-                            Placeholder::make('remaining_credits')
-                                ->label('Remaining')
-                                ->content(fn () => $this->creditBalance?->remaining_credits ?? 0),
-
-                            Placeholder::make('usage_percentage')
-                                ->label('Usage')
-                                ->content(fn () => ($this->creditBalance?->getUsagePercentage() ?? 0) . '%'),
-                        ]),
-
-                        /*
-                        Forms\Components\ProgressBar::make('credits_usage')
-                            ->label('Credit Usage')
-                            ->value(fn () => $this->creditBalance?->getUsagePercentage() ?? 0)
-                            ->color('success')
-                            ->visible(fn () => $this->creditBalance !== null),
-                        */
-                    ]),
-
-                Section::make('Monthly Usage')
-                    ->schema([
-                        Grid::make(4)->schema([
-                            Placeholder::make('messages')
-                                ->label('Messages Sent')
-                                ->content($this->usageStats['messages_this_month'] ?? 0),
-
-                            Placeholder::make('delivered')
-                                ->label('Delivered')
-                                ->content($this->usageStats['delivered'] ?? 0),
-
-                            Placeholder::make('failed')
-                                ->label('Failed')
-                                ->content($this->usageStats['failed'] ?? 0),
-
-                            Placeholder::make('delivery_rate')
-                                ->label('Delivery Rate')
-                                ->content(($this->usageStats['delivery_rate'] ?? 0) . '%'),
-                        ]),
-                    ]),
-            ])
-            ->statePath('data');
-    }
-
-    // public function sendTestMessageAction(): Action
-    // {
-    //     return Action::make('sendTestMessage')
-    //         ->label('Send Test Message')
-    //         ->color('info')
-    //         ->form([
-    //             PhoneInput::make('phone_number')
-    //                 ->label('Phone Number')
-    //                 ->required()
-    //                 ->defaultCountry('IN')
-    //                 ->placeholder('+91 XXXXX XXXXX'),
-    //         ])
-    //         ->action(fn (array $data) => $this->sendTestMessage($data));
-    // }
-
-    // private function sendTestMessage(array $data): void
-    // {
-    //     try {
-    //         $phoneNumber = $data['phone_number'] ?? null;
-
-    //         if (! $phoneNumber) {
-    //             throw new \Exception('Phone number is required');
-    //         }
-
-    //         $service = new \App\Services\TwilioWhatsAppService((string) $this->getGymId());
-
-    //         $result = $service->sendTemplateMessage(
-    //             $phoneNumber,
-    //             'welcome_message',
-    //             [
-    //                 '1' => $this->getGym()?->name ?? 'Gym',
-    //                 '2' => Auth::user()?->name ?? 'User',
-    //                 '3' => 'Premium',
-    //                 '4' => now()->addDays(30)->format('F j, Y'),
-    //             ]
-    //         );
-
-    //         if ($result['success']) {
-    //             Notification::make()
-    //                 ->title('Test Message Sent!')
-    //                 ->success()
-    //                 ->send();
-    //         } else {
-    //             throw new \Exception($result['error'] ?? 'Failed to send');
-    //         }
-    //     } catch (\Exception $e) {
-    //         Notification::make()
-    //             ->title('Failed to Send')
-    //             ->body($e->getMessage())
-    //             ->danger()
-    //             ->send();
-    //     }
-    // }
 
     public function refresh(): void
     {

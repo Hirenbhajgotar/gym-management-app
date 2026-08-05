@@ -6,6 +6,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
+use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Models\WhatsAppAccount;
 use Exception;
 use Filament\Notifications\Notification;
@@ -19,7 +20,7 @@ class ProcessTwilioAccountAction
 
     private const DECAY_SECONDS = 600;
 
-    public function __construct(public $page) {}
+    public function __construct(public WhatsAppSetup $page) {}
 
     private function rateLimiterKey(int|string $gymId): string
     {

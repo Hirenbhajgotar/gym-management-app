@@ -106,97 +106,86 @@ class OrderService
 ### 1.2 State Machine Validity
 Every entity with states must have valid transitions. Invalid transitions must be blocked.
 
+**Anti-Pattern: Unrestricted state transitions**
 ```php
 // ❌ BAD: Any state can transition to any state
-class Order extends Model
+public function updateStatus(string $newStatus): void
 {
-    public function updateStatus(string $status)
-    {
-        $this->update(['status' => $status]);
-    }
+    $this->status = $newStatus;
+    $this->save();
+}
+// BUG: Shipped order can be set back to Pending
+```
+
+**Pattern: Validated state transitions**
+```php
+// ✅ GOOD: Explicit allowed transitions
+enum OrderStatus: string
+{
+    case PENDING = 'pending';
+    case PROCESSING = 'processing';
+    case SHIPPED = 'shipped';
+    case DELIVERED = 'delivered';
+    case CANCELLED = 'cancelled';
 }
 
-// ✅ GOOD: Validated state transitions
 class Order extends Model
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_PAID = 'paid';
-    const STATUS_PROCESSING = 'processing';
-    const STATUS_SHIPPED = 'shipped';
-    const STATUS_DELIVERED = 'delivered';
-    const STATUS_CANCELLED = 'cancelled';
-    const STATUS_REFUNDED = 'refunded';
-
-    private const VALID_TRANSITIONS = [
-        self::STATUS_PENDING => [self::STATUS_PAID, self::STATUS_CANCELLED],
-        self::STATUS_PAID => [self::STATUS_PROCESSING, self::STATUS_REFUNDED],
-        self::STATUS_PROCESSING => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
-        self::STATUS_SHIPPED => [self::STATUS_DELIVERED, self::STATUS_REFUNDED],
-        self::STATUS_DELIVERED => [self::STATUS_REFUNDED],
-        self::STATUS_CANCELLED => [],
-        self::STATUS_REFUNDED => [],
+    private const ALLOWED_TRANSITIONS = [
+        'pending' => ['processing', 'cancelled'],
+        'processing' => ['shipped', 'cancelled'],
+        'shipped' => ['delivered'],
+        'delivered' => [],
+        'cancelled' => [],
     ];
 
-    public function transitionTo(string $newStatus): void
+    public function transitionTo(OrderStatus $newStatus): void
     {
-        $currentStatus = $this->status;
+        $current = $this->status->value;
+        $next = $newStatus->value;
 
-        if (!isset(self::VALID_TRANSITIONS[$currentStatus])) {
-            throw new InvalidStateException("Unknown current status: {$currentStatus}");
-        }
-
-        if (!in_array($newStatus, self::VALID_TRANSITIONS[$currentStatus], true)) {
+        if (!in_array($next, self::ALLOWED_TRANSITIONS[$current] ?? [], true)) {
             throw new InvalidStateTransitionException(
-                "Cannot transition from '{$currentStatus}' to '{$newStatus}'"
+                "Cannot transition from {$current} to {$next}"
             );
         }
 
-        $this->update(['status' => $newStatus]);
-        OrderStatusChanged::dispatch($this, $currentStatus, $newStatus);
+        $this->status = $newStatus;
+        $this->save();
     }
-
-    public function pay(): void { $this->transitionTo(self::STATUS_PAID); }
-    public function ship(): void { $this->transitionTo(self::STATUS_SHIPPED); }
-    public function cancel(): void { $this->transitionTo(self::STATUS_CANCELLED); }
 }
 ```
 
-### 1.3 Calculation Accuracy
+### 1.3 Money Calculations
 Monetary calculations must use integer cents or Decimal, NEVER float.
 
+**Anti-Pattern: Float for money**
 ```php
-// ❌ BAD: Float arithmetic causes precision errors
-$total = $price * $quantity;
-$tax = $total * 0.18;
+// ❌ BAD: Float precision errors
+$discount = $order->total * 0.1;
+$final = $order->total - $discount;
+```
 
-// ✅ GOOD: Use integer cents
+**Pattern: Integer cents or Money value object**
+```php
+// ✅ GOOD: Integer cents
 class Money
 {
-    public function __construct(private int $amountInCents) {}
+    public function __construct(private int $cents) {}
 
-    public static function fromDecimal(float $amount): self
+    public static function fromDollars(float $dollars): self
     {
-        return new self((int) round($amount * 100));
+        return new self((int) round($dollars * 100));
     }
 
-    public function add(Money $other): self
+    public function discount(float $percent): self
     {
-        return new self($this->amountInCents + $other->amountInCents);
+        return new self((int) round($this->cents * (1 - $percent)));
     }
 
-    public function multiply(float $factor): self
+    public function toDollars(): float
     {
-        return new self((int) round($this->amountInCents * $factor));
-    }
-
-    public function toDecimal(): float
-    {
-        return $this->amountInCents / 100;
-    }
-
-    public function format(): string
-    {
-        return number_format($this->amountInCents / 100, 2);
+        return $this->cents / 100;
     }
 }
 ```
@@ -438,51 +427,49 @@ public function decrementStock(int $productId, int $quantity): bool
 
 ### 2.2 Duplicate Creation Prevention
 
+**Anti-Pattern: Check then create**
 ```php
-// ❌ BAD: Can create duplicates
-public function createSubscription(Request $request)
+// ❌ BAD: Race window between check and create
+public function createUser(string $email): User
 {
-    $user = auth()->user();
-    if ($user->subscriptions()->where('status', 'active')->exists()) {
-        throw new Exception('Already has active subscription');
-    }
-    Subscription::create([
-        'user_id' => $user->id,
-        'plan_id' => $request->plan_id,
-        'status' => 'active',
-    ]);
-}
-
-// ✅ GOOD: Unique constraint at database level
-Schema::create('subscriptions', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained();
-    $table->foreignId('plan_id')->constrained();
-    $table->string('status');
-    $table->timestamps();
-    $table->unique(['user_id', 'status'])->where('status', 'active');
-});
-
-public function createSubscription(Request $request)
-{
-    try {
-        return DB::transaction(function () {
-            return Subscription::create([
-                'user_id' => auth()->id(),
-                'plan_id' => $request->plan_id,
-                'status' => 'active',
-            ]);
-        });
-    } catch (QueryException $e) {
-        if (str_contains($e->getMessage(), 'Duplicate entry')) {
-            throw new DuplicateSubscriptionException('Active subscription already exists');
-        }
-        throw $e;
+    if (!User::where('email', $email)->exists()) {
+        return User::create(['email' => $email]);
     }
 }
 ```
 
-### 2.3 Job Processing Duplicates
+**Pattern: Unique constraint + firstOrCreate**
+```php
+// ✅ GOOD: Database-enforced uniqueness
+// Migration: $table->unique('email');
+
+public function createUser(string $email): User
+{
+    return User::firstOrCreate(['email' => $email]);
+}
+```
+
+### 2.3 Cache Stampede Prevention
+
+**Anti-Pattern: Multiple processes rebuilding cache**
+```php
+// ❌ BAD: Thundering herd
+$value = Cache::remember('expensive_key', 3600, function () {
+    return ExpensiveQuery::run();
+});
+```
+
+**Pattern: Cache lock during rebuild**
+```php
+// ✅ GOOD: Single process rebuilds
+$value = Cache::remember('expensive_key', 3600, function () {
+    return Cache::lock('rebuild:expensive_key', 10)->get(function () {
+        return ExpensiveQuery::run();
+    });
+});
+```
+
+### 2.4 Job Processing Duplicates
 
 ```php
 // ❌ BAD: Job can be processed multiple times
@@ -535,7 +522,7 @@ class ProcessPaymentJob implements ShouldQueue
 }
 ```
 
-### 2.4 Cache Stampede Prevention
+### 2.5 Cache Stampede Prevention
 
 ```php
 // ❌ BAD: Cache stampede
@@ -572,7 +559,7 @@ public function getPopularProducts()
 }
 ```
 
-### 2.5 File Upload Collisions
+### 2.6 File Upload Collisions
 
 ```php
 // ❌ BAD: Filename collision
