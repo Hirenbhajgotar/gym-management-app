@@ -6,6 +6,10 @@ namespace App\Console\Commands;
 
 use App\Models\GymMember;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SendMembershipExpiryAlerts extends Command
 {
@@ -24,32 +28,96 @@ class SendMembershipExpiryAlerts extends Command
     protected $description = 'Send renewal reminders 7 days before, on the day, and 3 days after expiry';
 
     /**
+     * Day offsets (relative to today) for which to send expiry alerts.
+     *
+     * @var array<int>
+     */
+    private const DAY_OFFSETS = [7, 0, -3];
+
+    /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $now = today();
+        $today = today();
+        $totalNotified = 0;
 
-        // 7 days before
+        $this->info('Sending membership expiry alerts...');
+
+        try {
+            foreach (self::DAY_OFFSETS as $offset) {
+                $count = $this->notifyForOffset($offset, $today);
+                $totalNotified += $count;
+
+                $label = $offset > 0
+                    ? "{$offset} days before"
+                    : ($offset === 0
+                        ? 'on the day'
+                        : ($offset * -1) . ' days after');
+
+                $this->info("  {$label}: {$count} notified");
+            }
+
+            $this->info("Total: {$totalNotified} members notified");
+            $this->info('Expiry alerts queued.');
+
+            Log::info('Membership expiry alerts completed', [
+                'total_notified' => $totalNotified,
+                'offsets' => self::DAY_OFFSETS,
+                'date' => $today->toDateString(),
+            ]);
+
+            return self::SUCCESS;
+        } catch (Throwable $e) {
+            $this->error("Membership expiry alerts failed: {$e->getMessage()}");
+            Log::error('Membership expiry alerts failed', [
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return self::FAILURE;
+        }
+    }
+
+    /**
+     * Notify members whose membership ends on the given day offset.
+     */
+    private function notifyForOffset(int $offset, Carbon $today): int
+    {
+        $targetDate = $today->clone()->addDays($offset);
+        $notified = 0;
+
         GymMember::query()
+            ->notFrozen()
+            ->membershipEndingOn($targetDate)
             ->with(['gym'])
-            ->whereDate('membership_end', $now->clone()->addDays(7))
-            ->chunk(200, fn ($members) => $members->each->notifyExpiry(7));
+            ->chunkById(200, function ($members) use ($offset, $today, &$notified) {
+                foreach ($members as $member) {
+                    $cacheKey = "expiry_alert_{$member->id}_{$offset}_{$today->toDateString()}";
 
-        // on the day
-        $members = GymMember::query()
-            ->with(['gym'])
-            ->whereDate('membership_end', $now)
-            ->chunk(200, fn ($members) => $members->each->notifyExpiry(0));
+                    if (Cache::has($cacheKey)) {
+                        Log::info('Skipping duplicate expiry alert', [
+                            'member_id' => $member->id,
+                            'offset' => $offset,
+                        ]);
 
-        // 3 days after (grace)
-        GymMember::query()
-            ->with(['gym'])
-            ->whereDate('membership_end', $now->clone()->subDays(3))
-            ->chunk(200, fn ($members) => $members->each->notifyExpiry(-3));
+                        continue;
+                    }
 
-        $this->info('Expiry alerts queued.');
+                    try {
+                        $member->notifyExpiry($offset);
+                        Cache::put($cacheKey, true, now()->addDay());
+                        $notified++;
+                    } catch (Throwable $e) {
+                        Log::error('Failed to send expiry alert to member', [
+                            'member_id' => $member->id,
+                            'offset' => $offset,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            });
 
-        return self::SUCCESS;
+        return $notified;
     }
 }

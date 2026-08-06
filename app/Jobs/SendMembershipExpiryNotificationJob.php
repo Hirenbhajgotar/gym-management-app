@@ -12,6 +12,10 @@ class SendMembershipExpiryNotificationJob implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+
+    public int $timeout = 30;
+
     /**
      * Create a new job instance.
      */

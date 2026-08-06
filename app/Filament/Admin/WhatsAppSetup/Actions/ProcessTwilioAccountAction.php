@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Actions;
 
-use App\Enums\WhatsAppAccountStatusEnum;
+use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\Pages\WhatsAppSetup;
+use App\Interfaces\AccountManagementInterface;
 use App\Models\WhatsAppAccount;
 use Exception;
 use Filament\Notifications\Notification;
@@ -45,27 +46,25 @@ class ProcessTwilioAccountAction
         $user = Auth::user();
         $data = $this->page->data;
 
-        $existing = WhatsAppAccount::with('phoneNumber')->where('gym_id', $gymId)->first();
-        if ($existing) {
-            $existing->update([
-                'business_name' => $data['business_name'] ?? $gym?->name,
-                'business_email' => $data['business_email'] ?? $user?->email,
-                'business_description' => $data['business_description'] ?? '',
-            ]);
-            $this->page->whatsappAccount = $existing->fresh();
-        } else {
-            $whatsappAccount = WhatsAppAccount::query()->create([
-                'gym_id' => $gymId,
-                'business_name' => $data['business_name'] ?? $gym?->name,
-                'business_email' => $data['business_email'] ?? $user?->email,
-                'business_description' => $data['business_description'] ?? '',
-                'provider_type' => WhatsAppProviderTypeEnum::TWILIO->value,
-                'status' => WhatsAppAccountStatusEnum::PENDING,
-            ]);
-            $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber']);
-        }
+        $whatsappAccount = WhatsAppAccount::query()->updateOrCreate(['gym_id' => $gymId], [
+            'business_name' => $data['business_name'] ?? $gym?->name,
+            'business_email' => $data['business_email'] ?? $user?->email,
+            'business_description' => $data['business_description'] ?? '',
+            'provider_type' => WhatsAppProviderTypeEnum::TWILIO->value,
+            'billing_mode' => WhatsAppBillingModeEnum::PAY_VIA_APP,
+        ]);
+        $this->page->whatsappAccount = $whatsappAccount->load(['phoneNumber'])->fresh();
 
-        $result = $this->page->getProvider()->createSubAccount($gymId, $this->page->whatsappAccount->business_name, $this->page->whatsappAccount->business_email);
+        $provider = $this->page->getProvider();
+
+        throw_unless($provider instanceof AccountManagementInterface, Exception::class, 'The selected provider does not support account management.');
+
+        $businessName = $this->page->whatsappAccount->business_name;
+        $businessEmail = $this->page->whatsappAccount->business_email;
+
+        throw_if($businessName === null || $businessEmail === null, Exception::class, 'Business name and email are required.');
+
+        $result = $provider->createSubAccount((int) $gymId, $businessName, $businessEmail);
 
         if (! $result['success']) {
             throw new Exception($result['error'] ?? 'Failed to create subaccount');

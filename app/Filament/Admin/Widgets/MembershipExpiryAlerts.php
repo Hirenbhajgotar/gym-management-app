@@ -10,11 +10,15 @@ use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Jobs\SendMembershipExpiryNotificationJob;
 use App\Models\Gym;
 use App\Models\GymMember;
+use App\Models\WhatsAppAccount;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Checkbox;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class MembershipExpiryAlerts extends BaseTableWidget
 {
@@ -25,6 +29,13 @@ class MembershipExpiryAlerts extends BaseTableWidget
     protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 3;
+
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null && $user->hasRole(DefaultRole::GYM_OWNER->value);
+    }
 
     public function defaultRolePermissions(): array
     {
@@ -51,16 +62,12 @@ class MembershipExpiryAlerts extends BaseTableWidget
         $this->resetTable();
     }
 
-    public static function canView(): bool
-    {
-        return auth()->user()->hasRole('gym_owner');
-    }
-
     public function table(Table $table): Table
     {
         return $table
             ->query(
                 GymMember::query()
+                    ->with(['gym'])
                     ->where('membership_end', '<=', now()->addDays(15)) // Expired or expiring within 15 days
                     ->orderBy('membership_end', 'asc')
             )
@@ -92,18 +99,44 @@ class MembershipExpiryAlerts extends BaseTableWidget
                 Action::make('sendAlert')
                     ->label('Send Alert')
                     ->icon('heroicon-o-paper-airplane')
-                    ->color('info')
-                    ->action(function (GymMember $record) {
-                        $daysLeft = now()->diffInDays($record->membership_end, false);
+                    ->color('success')
+                    ->action(function (array $data, GymMember $record) {
+                        $cacheKey = "manual_expiry_alert_{$record->id}_" . today()->toDateString();
+                        $forceSend = $data['force_send'] ?? false;
 
+                        if (! Cache::add($cacheKey, true, now()->addDay()) && ! $forceSend) {
+                            Notification::make()
+                                ->title('Alert already sent today')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $daysLeft = now()->diffInDays($record->membership_end, false);
                         dispatch(new SendMembershipExpiryNotificationJob($record, (int) $daysLeft));
 
-                        Notification::make()
-                            ->title('Alert sent successfully')
-                            ->success()
-                            ->send();
+                        Notification::make()->title('Alert sent successfully')->success()->send();
                     })
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->modalIcon('heroicon-o-chat-bubble-oval-left')
+                    ->modalDescription(function (GymMember $record): string {
+                        $whatsappAccount = WhatsAppAccount::query()->where('gym_id', Filament::getTenant()?->getKey())->first();
+                        if (! $whatsappAccount || ! $whatsappAccount->isActive()) {
+                            return "Whatsapp Integration is not enabled. Send Email Notification to {$record->name}";
+                        }
+
+                        $cacheKey = "manual_expiry_alert_{$record->id}_" . today()->toDateString();
+                        $message = "Send Whatsapp Alert Notification to {$record->name}";
+
+                        return Cache::has($cacheKey) ? 'Alert already sent today' : $message;
+                    })
+                    ->form([
+                        Checkbox::make('force_send')
+                            ->label('Force send')
+                            ->default(false)
+                            ->visible(fn (GymMember $record): bool => Cache::has("manual_expiry_alert_{$record->id}_" . today()->toDateString())),
+                    ]),
             ])
             ->headerActions([
                 Action::make('viewAllMembers')
