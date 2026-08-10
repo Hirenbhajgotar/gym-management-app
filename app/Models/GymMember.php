@@ -460,6 +460,18 @@ class GymMember extends Model
         $query->whereDate('membership_end', $date);
     }
 
+    /**
+     * Scope to get members whose birthday is today.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function birthdayToday(Builder $query): void
+    {
+        $query->whereMonth('dob', now()->month)
+            ->whereDay('dob', now()->day);
+    }
+
     // =========================
     // Helper methods
     // =========================

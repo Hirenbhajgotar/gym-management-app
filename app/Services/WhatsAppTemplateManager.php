@@ -208,7 +208,7 @@ class WhatsAppTemplateManager
 
         return WhatsAppTemplate::query()->where('gym_id', $this->tenantId)
             ->where('name', $templateName)
-            ->where('status', 'approved')
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
             ->where('is_active', true)
             ->first();
     }

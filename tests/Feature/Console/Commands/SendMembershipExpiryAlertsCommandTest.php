@@ -210,9 +210,9 @@ final class SendMembershipExpiryAlertsCommandTest extends TestCase
             'is_frozen' => false,
         ]);
 
-        // The command reaches Cache::has() once a matching member is found,
+        // The command reaches Cache::add() once a matching member is found,
         // so forcing it to throw exercises the command's failure path.
-        Cache::shouldReceive('has')
+        Cache::shouldReceive('add')
             ->once()
             ->andThrow(new RuntimeException('DB lost'));
 
