@@ -13,6 +13,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Notifications\WhatsAppChannel;
 use App\Services\NotificationChannelResolver;
 use Illuminate\Database\LazyLoadingViolationException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\TestCase;
  */
 class NotificationChannelResolverTest extends TestCase
 {
+    use RefreshDatabase;
+
     private function createConfiguredWhatsAppAccount(Gym $gym): WhatsAppAccount
     {
         $account = WhatsAppAccount::query()->create([
@@ -39,6 +42,7 @@ class NotificationChannelResolverTest extends TestCase
             'formatted_number' => '(415) 555-1234',
             'twilio_phone_number_sid' => 'PNtest123',
             'verification_status' => 'verified',
+            'country_code' => 'US',
         ]);
 
         return $account;

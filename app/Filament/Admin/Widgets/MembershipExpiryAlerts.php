@@ -101,8 +101,8 @@ class MembershipExpiryAlerts extends BaseTableWidget
                     ->icon('heroicon-o-paper-airplane')
                     ->color('success')
                     ->action(function (array $data, GymMember $record) {
-                        $cacheKey = "manual_expiry_alert_{$record->id}_" . today()->toDateString();
-                        $forceSend = $data['force_send'] ?? false;
+                        $cacheKey = "expiry_alert_{$record->id}_" . today()->toDateString();
+                        $forceSend = (bool) ($data['force_send'] ?? false);
 
                         if (! Cache::add($cacheKey, true, now()->addDay()) && ! $forceSend) {
                             Notification::make()
@@ -114,7 +114,7 @@ class MembershipExpiryAlerts extends BaseTableWidget
                         }
 
                         $daysLeft = now()->diffInDays($record->membership_end, false);
-                        dispatch(new SendMembershipExpiryNotificationJob($record, (int) $daysLeft));
+                        dispatch(new SendMembershipExpiryNotificationJob($record, (int) $daysLeft, $forceSend));
 
                         Notification::make()->title('Alert sent successfully')->success()->send();
                     })
@@ -126,7 +126,7 @@ class MembershipExpiryAlerts extends BaseTableWidget
                             return "Whatsapp Integration is not enabled. Send Email Notification to {$record->name}";
                         }
 
-                        $cacheKey = "manual_expiry_alert_{$record->id}_" . today()->toDateString();
+                        $cacheKey = "expiry_alert_{$record->id}_" . today()->toDateString();
                         $message = "Send Whatsapp Alert Notification to {$record->name}";
 
                         return Cache::has($cacheKey) ? 'Alert already sent today' : $message;
@@ -135,7 +135,7 @@ class MembershipExpiryAlerts extends BaseTableWidget
                         Checkbox::make('force_send')
                             ->label('Force send')
                             ->default(false)
-                            ->visible(fn (GymMember $record): bool => Cache::has("manual_expiry_alert_{$record->id}_" . today()->toDateString())),
+                            ->visible(fn (GymMember $record): bool => Cache::has("expiry_alert_{$record->id}_" . today()->toDateString())),
                     ]),
             ])
             ->headerActions([

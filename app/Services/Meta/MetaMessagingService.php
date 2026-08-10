@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Meta;
 
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\MessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
+use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * Meta Messaging Service.
@@ -112,7 +114,7 @@ class MetaMessagingService implements MessagingInterface
     /**
      * Send a template message.
      */
-    public function sendTemplateMessage(string $to, string $templateName, array $variables = []): array
+    public function sendTemplateMessage(string $to, string $templateIdOrName, array $variables = []): array
     {
         $phoneNumberId = $this->context->getPhoneNumberId();
 
@@ -134,14 +136,18 @@ class MetaMessagingService implements MessagingInterface
 
         // Find the template
         $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
-            ->where('name', $templateName)
-            ->where('status', 'approved')
+            ->where(function (Builder $query) use ($templateIdOrName) {
+                $query->where('meta_template_id', $templateIdOrName)
+                    ->orWhere('twilio_template_sid', $templateIdOrName)
+                    ->orWhere('name', $templateIdOrName);
+            })
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
             ->first();
 
         if (! $template) {
             return [
                 'success' => false,
-                'error' => "Template '{$templateName}' not found or not approved",
+                'error' => "Template '{$templateIdOrName}' not found or not approved",
             ];
         }
 
@@ -149,7 +155,7 @@ class MetaMessagingService implements MessagingInterface
 
         // Build template payload
         $templatePayload = [
-            'name' => $templateName,
+            'name' => $template->name,
         ];
 
         if (filled($variables)) {

@@ -91,11 +91,11 @@ class SendMembershipExpiryAlerts extends Command
             ->notFrozen()
             ->membershipEndingOn($targetDate)
             ->with(['gym'])
-            ->chunkById(200, function ($members) use ($offset, $today, &$notified) {
+            ->chunkById(200, function ($members) use ($offset, &$notified) {
                 foreach ($members as $member) {
-                    $cacheKey = "expiry_alert_{$member->id}_{$offset}_{$today->toDateString()}";
+                    $cacheKey = "expiry_alert_{$member->id}_" . today()->toDateString();
 
-                    if (Cache::has($cacheKey)) {
+                    if (! Cache::add($cacheKey, true, now()->addDay())) {
                         Log::info('Skipping duplicate expiry alert', [
                             'member_id' => $member->id,
                             'offset' => $offset,
@@ -106,7 +106,6 @@ class SendMembershipExpiryAlerts extends Command
 
                     try {
                         $member->notifyExpiry($offset);
-                        Cache::put($cacheKey, true, now()->addDay());
                         $notified++;
                     } catch (Throwable $e) {
                         Log::error('Failed to send expiry alert to member', [

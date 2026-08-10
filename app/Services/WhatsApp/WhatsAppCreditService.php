@@ -152,8 +152,21 @@ class WhatsAppCreditService implements CreditManagementInterface
                 return;
             }
 
+            // Restore welcome credits first (they were consumed first in checkAndDeduct)
+            $welcomeRefund = 0;
+            if ($credit->welcome_credits_used > 0) {
+                $welcomeRefund = min($credit->welcome_credits_used, $count);
+                $credit->decrement('welcome_credits_used', $welcomeRefund);
+            }
+
+            // Remaining count is paid credits
+            $paidRefund = $count - $welcomeRefund;
+
             $credit->increment('remaining_credits', $count);
-            $credit->decrement('used_credits', $count);
+
+            if ($paidRefund > 0) {
+                $credit->decrement('used_credits', $paidRefund);
+            }
         }, 5);
     }
 

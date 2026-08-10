@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\Gym;
+use App\Models\WhatsAppTemplate;
 use App\Notifications\Contracts\HasGymContext;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppTemplateManager;
@@ -59,10 +60,6 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getGymWhatsAppConfig(): ?array
     {
-        if (! $this->gym) {
-            return null;
-        }
-
         $this->gym->loadMissing('whatsAppAccount');
         $whatsAppAccount = $this->gym->whatsAppAccount;
 
@@ -91,7 +88,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
     /**
      * Fetch the WhatsApp template via manager.
      */
-    protected function getWhatsAppTemplate(string $name): ?object
+    protected function getWhatsAppTemplate(string $name): ?WhatsAppTemplate
     {
         $templateManager = new WhatsAppTemplateManager((string) $this->gym->id);
 
