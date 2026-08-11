@@ -67,7 +67,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
             return null;
         }
 
-        if (! $whatsAppAccount->isActive() || ! $whatsAppAccount->isVerified() || ! $whatsAppAccount->hasPhoneNumber()) {
+        if (! $whatsAppAccount->isActive() || ! $whatsAppAccount->hasActivePhoneNumber()) {
             return null;
         }
 

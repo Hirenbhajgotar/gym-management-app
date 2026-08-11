@@ -16,6 +16,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Providers\WhatsAppProviderFactory;
 use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -158,8 +159,7 @@ class MetaWabaService implements WabaSetupInterface
      *     display_phone_number?: string,
      *     verified_name?: string,
      *     business_verification_status?: string,
-     *     code_verification_status?: string,
-     *     certificate?: string,
+     *     phone_number_status?: string,
      *     quality_score?: string,
      *     waba_id?: string,
      *     business_name?: string,
@@ -179,7 +179,7 @@ class MetaWabaService implements WabaSetupInterface
 
         try {
             $phoneResponse = $this->api->get("/{$phoneNumberId}", [
-                'fields' => 'id,display_phone_number,code_verification_status,certificate,verified_name,quality_score',
+                'fields' => 'id,display_phone_number,verified_name,quality_score,status',
             ], $token);
 
             if (! $phoneResponse['success']) {
@@ -191,17 +191,17 @@ class MetaWabaService implements WabaSetupInterface
             ], $token);
 
             $phoneData = $phoneResponse['data'];
+            // $phoneData = Arr::array($phoneResponse, 'data');
             $wabaData = $wabaResponse['success'] ? $wabaResponse['data'] : [];
 
             $phoneId = $phoneData['id'] ?? null;
             $displayPhone = $phoneData['display_phone_number'] ?? null;
             $verifiedName = $phoneData['verified_name'] ?? null;
-            $codeVerification = $phoneData['code_verification_status'] ?? null;
-            $certificate = $phoneData['certificate'] ?? null;
             $qualityScore = $phoneData['quality_score'] ?? null;
             $wabaDataId = $wabaData['id'] ?? null;
             $businessName = $wabaData['business']['name'] ?? $wabaData['name'] ?? $phoneData['verified_name'] ?? null;
             $accountReviewStatus = $wabaData['account_review_status'] ?? null;
+            $phoneNumberStatus = $phoneData['status'] ?? null;
             $businessVerificationStatus = $wabaData['business_verification_status'] ?? null;
             $currency = $wabaData['currency'] ?? null;
             $timezone = $wabaData['timezone'] ?? null;
@@ -222,11 +222,8 @@ class MetaWabaService implements WabaSetupInterface
             if (is_string($businessVerificationStatus)) {
                 $result['business_verification_status'] = $this->mapBusinessVerificationStatus($businessVerificationStatus)->value;
             }
-            if (is_string($codeVerification)) {
-                $result['code_verification_status'] = $codeVerification;
-            }
-            if (is_string($certificate)) {
-                $result['certificate'] = $certificate;
+            if (is_string($phoneNumberStatus)) {
+                $result['phone_number_status'] = $this->mapPhoneNumberStatus($phoneNumberStatus)->value;
             }
             if (is_string($qualityScore)) {
                 $result['quality_score'] = $qualityScore;
@@ -276,6 +273,11 @@ class MetaWabaService implements WabaSetupInterface
     protected function mapWabaStatus(?string $status): WhatsAppAccountStatusEnum
     {
         return WhatsAppAccountStatusEnum::fromMetaReviewStatus($status);
+    }
+
+    protected function mapPhoneNumberStatus(?string $status): WhatsAppPhoneNumberStatusEnum
+    {
+        return WhatsAppPhoneNumberStatusEnum::fromMetaPhoneNumberStatus($status);
     }
 
     protected function normalizePhoneNumber(string $phoneNumber): string

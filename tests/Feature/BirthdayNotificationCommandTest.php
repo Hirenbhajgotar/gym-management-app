@@ -127,7 +127,7 @@ class BirthdayNotificationCommandTest extends TestCase
         $this->createMemberWithTodayBirthday($gym);
 
         // Run command - should not throw even if notification fails
-        /** @var \Illuminate\Testing\PendingCommand $result */
+        /** @var PendingCommand $result */
         $result = $this->artisan('notification:send-birthday-notifications');
         $result->assertSuccessful();
     }

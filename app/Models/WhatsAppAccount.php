@@ -245,6 +245,11 @@ class WhatsAppAccount extends Model
         return $this->phoneNumber()->exists();
     }
 
+    public function hasActivePhoneNumber(): bool
+    {
+        return $this->phoneNumber()->active()->exists();
+    }
+
     public function isEmbeddedSignupComplete(): bool
     {
         return $this->embedded_signup_completed === true;
