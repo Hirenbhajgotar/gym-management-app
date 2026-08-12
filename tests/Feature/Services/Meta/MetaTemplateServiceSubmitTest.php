@@ -69,6 +69,19 @@ final class MetaTemplateServiceSubmitTest extends TestCase
             'status' => WhatsAppTemplateStatusEnum::DRAFT,
             'is_active' => true,
         ]);
+
+        // Default: a name-lookup finds nothing in Meta, so submission proceeds to create.
+        // The collision test overrides the lookup for its specific name. Two-arg matcher
+        // (url + data) so single-argument get calls (e.g. status lookups by id) fall
+        // through to their own per-test mocks.
+        $this->apiMock->shouldReceive('get')
+            ->with(
+                Mockery::on(static fn ($url): bool => is_string($url) && str_contains($url, 'message_templates')),
+                Mockery::on(static fn ($data): bool => is_array($data)
+                    && array_key_exists('name', $data)
+                    && ($data['name'] ?? null) !== 'colliding_template'),
+            )
+            ->andReturn(['success' => true, 'data' => ['data' => []]]);
     }
 
     // ========== GUARD CLAUSE: WABA NOT CONFIGURED ==========
@@ -194,6 +207,7 @@ final class MetaTemplateServiceSubmitTest extends TestCase
         $context = new MetaContext($gym->id);
         /** @var MetaApiClient&MockInterface $apiMock */
         $apiMock = Mockery::mock(MetaApiClient::class);
+        $apiMock->shouldReceive('get')->andReturn(['success' => true, 'data' => ['data' => []]]);
 
         /** @var Expectation $expectation */
         $expectation = $apiMock->shouldReceive('post');
@@ -254,12 +268,17 @@ final class MetaTemplateServiceSubmitTest extends TestCase
             ->with(
                 "/{$wabaId}/message_templates",
                 Mockery::on(function (array $data): bool {
-                    /** @var array{name: string, language: string, category: string, components: array<int, array{type: string, text: string}>} $data */
+                    /** @var array{name: string, language: string, category: string, components: array<int, array{type: string, text: string, example?: array{body_text: array<int, array<int, string>}>}>} $data */
+                    $bodyExample = $data['components'][0]['example']['body_text'][0] ?? null;
+
                     return $data['name'] === 'test_template'
                         && $data['language'] === 'en_US'
                         && $data['category'] === 'UTILITY'
                         && $data['components'][0]['type'] === 'BODY'
-                        && $data['components'][0]['text'] === 'Hello {{1}}, your test is confirmed.';
+                        && $data['components'][0]['text'] === 'Hello {{1}}, your test is confirmed.'
+                        && $bodyExample !== null
+                        && $bodyExample[0] === 'Sample 1'
+                        && ! str_contains($bodyExample[0], '{{1}}');
                 })
             )
             ->once()
@@ -281,6 +300,82 @@ final class MetaTemplateServiceSubmitTest extends TestCase
 
         $this->assertEquals($expectedTemplateId, $this->template->meta_template_id);
         $this->assertEquals(WhatsAppTemplateStatusEnum::PENDING, $this->template->status);
+    }
+
+    // ========== EXAMPLE FIELD BUILT FROM VARIABLE PLACEHOLDERS ==========
+
+    #[Test]
+    public function it_builds_example_from_stored_variable_placeholders(): void
+    {
+        $template = WhatsAppTemplate::query()->create([
+            'gym_id' => $this->gymId,
+            'name' => 'reminder',
+            'display_name' => 'Reminder',
+            'body' => 'Hi {{1}}, your {{2}} plan renews soon.',
+            'status' => WhatsAppTemplateStatusEnum::DRAFT,
+            'is_active' => true,
+            'variable_placeholder' => [
+                '1' => 'Jane',
+                '2' => ['example' => 'Gold Plan', 'placeholder' => '{{2}}'],
+            ],
+        ]);
+
+        $wabaId = 'test_waba_123';
+
+        /** @var Expectation $expectation */
+        $expectation = $this->apiMock->shouldReceive('post');
+        $expectation
+            ->with(
+                "/{$wabaId}/message_templates",
+                Mockery::on(function (array $data): bool {
+                    $bodyExample = $data['components'][0]['example']['body_text'][0] ?? null;
+
+                    return $bodyExample === ['Jane', 'Gold Plan'];
+                })
+            )
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => ['id' => 'meta_1', 'status' => 'PENDING'],
+            ]);
+
+        $result = $this->service->submitTemplate($template);
+
+        $this->assertTrue($result->success);
+    }
+
+    #[Test]
+    public function it_omits_example_when_body_has_no_variables(): void
+    {
+        $template = WhatsAppTemplate::query()->create([
+            'gym_id' => $this->gymId,
+            'name' => 'no_vars',
+            'display_name' => 'No Vars',
+            'body' => 'Your membership is active.',
+            'status' => WhatsAppTemplateStatusEnum::DRAFT,
+            'is_active' => true,
+        ]);
+
+        $wabaId = 'test_waba_123';
+
+        /** @var Expectation $expectation */
+        $expectation = $this->apiMock->shouldReceive('post');
+        $expectation
+            ->with(
+                "/{$wabaId}/message_templates",
+                Mockery::on(function (array $data): bool {
+                    return ! array_key_exists('example', $data['components'][0]);
+                })
+            )
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => ['id' => 'meta_2', 'status' => 'PENDING'],
+            ]);
+
+        $result = $this->service->submitTemplate($template);
+
+        $this->assertTrue($result->success);
     }
 
     // ========== MISSING TEMPLATE ID IN RESPONSE ==========
@@ -375,5 +470,106 @@ final class MetaTemplateServiceSubmitTest extends TestCase
 
         $this->assertFalse($result->success);
         $this->assertEquals('Failed to submit template', $result->error);
+    }
+
+    // ========== NAME COLLISION RESOLUTION ==========
+
+    #[Test]
+    public function it_resolves_name_collision_when_meta_template_id_is_null(): void
+    {
+        $wabaId = 'test_waba_123';
+        $existingMetaId = 'existing_meta_777';
+        $newTemplateId = 'meta_new_999';
+
+        $this->template->update(['name' => 'colliding_template']);
+
+        // Meta already has a rejected template with this name; we find it by name.
+        $this->apiMock->shouldReceive('get')
+            ->with("/{$wabaId}/message_templates", ['name' => 'colliding_template'])
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['data' => [['id' => $existingMetaId, 'status' => 'REJECTED']]]]);
+
+        // Status lookup of the found template (rejected, not approved).
+        $this->apiMock->shouldReceive('get')
+            ->with("/{$existingMetaId}")
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['status' => 'REJECTED']]);
+
+        // Stale template is deleted before resubmission.
+        $this->apiMock->shouldReceive('makeRequest')
+            ->with('delete', "/{$wabaId}/message_templates", ['hsm_id' => $existingMetaId])
+            ->once()
+            ->andReturn(['success' => true]);
+
+        $this->apiMock->shouldReceive('post')
+            ->with("/{$wabaId}/message_templates", Mockery::type('array'))
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['id' => $newTemplateId, 'status' => 'PENDING']]);
+
+        $result = $this->service->submitTemplate($this->template->fresh());
+
+        $this->assertTrue($result->success);
+        $this->template->refresh();
+        $this->assertEquals($newTemplateId, $this->template->meta_template_id);
+        $this->assertEquals(WhatsAppTemplateStatusEnum::PENDING, $this->template->status);
+    }
+
+    #[Test]
+    public function it_deletes_stale_template_and_resubmits_when_meta_template_id_exists(): void
+    {
+        $wabaId = 'test_waba_123';
+        $oldMetaId = 'old_meta_999';
+        $newTemplateId = 'meta_new_888';
+
+        $this->template->meta_template_id = $oldMetaId;
+        $this->template->save();
+
+        $this->apiMock->shouldReceive('get')
+            ->with("/{$oldMetaId}")
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['status' => 'REJECTED']]);
+
+        $this->apiMock->shouldReceive('makeRequest')
+            ->with('delete', "/{$wabaId}/message_templates", ['hsm_id' => $oldMetaId])
+            ->once()
+            ->andReturn(['success' => true]);
+
+        $this->apiMock->shouldReceive('post')
+            ->with("/{$wabaId}/message_templates", Mockery::type('array'))
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['id' => $newTemplateId, 'status' => 'PENDING']]);
+
+        $result = $this->service->submitTemplate($this->template->fresh());
+
+        $this->assertTrue($result->success);
+        $this->template->refresh();
+        $this->assertEquals($newTemplateId, $this->template->meta_template_id);
+    }
+
+    #[Test]
+    public function it_returns_error_when_remote_template_is_already_approved(): void
+    {
+        $wabaId = 'test_waba_123';
+        $oldMetaId = 'old_meta_777';
+
+        $this->template->meta_template_id = $oldMetaId;
+        $this->template->save();
+
+        $this->apiMock->shouldReceive('get')
+            ->with("/{$oldMetaId}")
+            ->once()
+            ->andReturn(['success' => true, 'data' => ['status' => 'APPROVED']]);
+
+        $this->apiMock->shouldReceive('post')
+            ->with("/{$wabaId}/message_templates", Mockery::type('array'))
+            ->never();
+
+        $result = $this->service->submitTemplate($this->template->fresh());
+
+        $this->assertFalse($result->success);
+        $this->assertEquals(
+            'This template is already approved in Meta and cannot be resubmitted. Create a new template instead.',
+            $result->error
+        );
     }
 }

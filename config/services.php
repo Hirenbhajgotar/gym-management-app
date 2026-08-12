@@ -78,6 +78,7 @@ return [
         'api_version' => env('META_API_VERSION', 'v25.0'),
         'welcome_credits' => (int) env('WHATSAPP_WELCOME_CREDITS', 50),
         'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'template_language' => (string) env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
     ],
 
     'meta' => [

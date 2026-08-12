@@ -90,7 +90,7 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     protected function getWhatsAppTemplate(string $name): ?WhatsAppTemplate
     {
-        $templateManager = resolve(WhatsAppTemplateManager::class, ['gymId' => (string) $this->gym->id]);
+        $templateManager = resolve(WhatsAppTemplateManager::class, ['tenantId' => (string) $this->gym->id]);
 
         return $templateManager->getTemplate($name);
     }

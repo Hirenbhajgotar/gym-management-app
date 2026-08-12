@@ -71,17 +71,32 @@ class MembershipExpiryNotification extends BaseTenantNotification
 
         $phoneNumber = $this->getRecipientPhoneNumber();
         if (! $phoneNumber) {
+            Log::warning('Member has no phone number for WhatsApp notification', [
+                'member_id' => $this->member->id,
+                'gym_id' => $this->gym->id,
+            ]);
+
             return null;
         }
 
         try {
             $config = $this->getGymWhatsAppConfig();
             if (! $config) {
+                Log::warning('WhatsApp config not found for notification type: ' . $this->getNotificationType(), [
+                    'member_id' => $this->member->id,
+                    'gym_id' => $this->gym->id,
+                ]);
+
                 return null;
             }
 
             $template = $this->getWhatsAppTemplate($this->getNotificationType());
             if (! $template) {
+                Log::warning('Template not found for notification type: ' . $this->getNotificationType(), [
+                    'member_id' => $this->member->id,
+                    'gym_id' => $this->gym->id,
+                ]);
+
                 return null;
             }
 

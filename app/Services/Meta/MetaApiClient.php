@@ -45,7 +45,48 @@ class MetaApiClient
                 ->$method("{$baseUrl}{$endpoint}", $data);
 
             if ($response->failed()) {
-                $error = $response->json('error.message') ?? $response->body();
+                /** @var array{message?: string, code?: int, error_subcode?: int, error_user_title?: string, error_user_msg?: string, error_data?: array{details?: mixed}} $errorBody */
+                $errorBody = (array) ($response->json('error') ?? []);
+                $message = $errorBody['message'] ?? null;
+                $fallbackBody = $response->body();
+                $error = is_string($message) ? $message : (is_string($fallbackBody) ? $fallbackBody : '');
+
+                $code = $errorBody['code'] ?? null;
+                if (is_int($code)) {
+                    $error = "(#{$code}) {$error}";
+                }
+
+                $metaParts = [];
+
+                $errorSubcode = $errorBody['error_subcode'] ?? null;
+                if (is_int($errorSubcode)) {
+                    $metaParts[] = "subcode={$errorSubcode}";
+                }
+
+                $errorUserTitle = $errorBody['error_user_title'] ?? null;
+                if (is_string($errorUserTitle) && $errorUserTitle !== '') {
+                    $metaParts[] = "title: {$errorUserTitle}";
+                }
+
+                $errorUserMsg = $errorBody['error_user_msg'] ?? null;
+                if (is_string($errorUserMsg) && $errorUserMsg !== '') {
+                    $metaParts[] = $errorUserMsg;
+                }
+
+                if ($metaParts !== []) {
+                    $error .= ' | ' . implode(' | ', $metaParts);
+                }
+
+                $errorData = $errorBody['error_data'] ?? null;
+                $details = is_array($errorData) ? ($errorData['details'] ?? null) : null;
+                if ($details !== null && $details !== []) {
+                    $detailText = is_array($details)
+                        ? (string) json_encode($details)
+                        : (is_scalar($details) ? (string) $details : '');
+                    if ($detailText !== '') {
+                        $error .= ' (' . $detailText . ')';
+                    }
+                }
 
                 return [
                     'success' => false,
@@ -73,6 +114,10 @@ class MetaApiClient
 
     /**
      * Make a GET request.
+     *
+     * @param  string  $endpoint  API endpoint (e.g., '/phone_number_id')
+     * @param  array<string, mixed>  $data  Query parameters
+     * @return array{success: bool, data?: array, error?: string}
      */
     public function get(string $endpoint, array $data = [], ?string $token = null): array
     {
@@ -81,37 +126,13 @@ class MetaApiClient
 
     /**
      * Make a POST request.
+     *
+     * @param  string  $endpoint  API endpoint (e.g., '/messages')
+     * @param  array<string, mixed>  $data  Request payload
+     * @return array{success: bool, data?: array, error?: string}
      */
     public function post(string $endpoint, array $data = [], ?string $token = null): array
     {
         return $this->makeRequest('post', $endpoint, $data, $token);
-    }
-
-    /**
-     * Make a raw HTTP request (for OAuth, etc.)
-     */
-    public function makeRawRequest(string $url, array $params = []): array
-    {
-        try {
-            $response = Http::get($url, $params);
-
-            if ($response->failed()) {
-                return [
-                    'success' => false,
-                    'error' => $response->body(),
-                    'status' => $response->status(),
-                ];
-            }
-
-            return [
-                'success' => true,
-                'data' => $response->json(),
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
-        }
     }
 }

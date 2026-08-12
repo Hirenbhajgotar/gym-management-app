@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Widgets;
 
 use App\Enums\DefaultRole;
+use App\Enums\NotificationType;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Jobs\SendMembershipExpiryNotificationJob;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\WhatsAppAccount;
+use App\Services\WhatsAppTemplateManager;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
 use Filament\Notifications\Notification;
@@ -124,6 +126,16 @@ class MembershipExpiryAlerts extends BaseTableWidget
                         $whatsappAccount = WhatsAppAccount::query()->where('gym_id', Filament::getTenant()?->getKey())->first();
                         if (! $whatsappAccount || ! $whatsappAccount->isActive()) {
                             return "Whatsapp Integration is not enabled. Send Email Notification to {$record->name}";
+                        }
+
+                        /** @var Gym|null $tenant */
+                        $tenant = Filament::getTenant();
+                        $gymId = $tenant?->id;
+
+                        $templateManager = resolve(WhatsAppTemplateManager::class, ['tenantId' => (string) $gymId]);
+
+                        if (! $templateManager->hasActiveTemplate(NotificationType::MEMBERSHIP_EXPIRY->value)) {
+                            return "Whatsapp Membership Expiry Template is not configured yet. Send Email Notification to {$record->name}";
                         }
 
                         $cacheKey = "expiry_alert_{$record->id}_" . today()->toDateString();
