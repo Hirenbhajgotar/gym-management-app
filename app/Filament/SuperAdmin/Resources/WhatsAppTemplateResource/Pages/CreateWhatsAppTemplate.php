@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages;
 
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource;
+use App\Services\Support\TemplateVariableHelper;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateWhatsAppTemplate extends CreateRecord
@@ -13,26 +14,23 @@ class CreateWhatsAppTemplate extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $templateBody = is_string($data['body']) ? $data['body'] : '';
+
         $data['is_default'] = true;
         $data['gym_id'] = null;
-        $data['variable_count'] = preg_match_all('/\{\{\d+\}\}/', $data['body'] ?? '');
-        $data['variables'] = $this->extractVariables($data['body'] ?? '');
+        $data['variable_count'] = preg_match_all('/\{\{\d+\}\}/', $templateBody);
+        $data['variables'] = TemplateVariableHelper::extractVariables($templateBody);
 
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $data['variable_count'] = preg_match_all('/\{\{\d+\}\}/', $data['body'] ?? '');
-        $data['variables'] = $this->extractVariables($data['body'] ?? '');
+        $templateBody = is_string($data['body']) ? $data['body'] : '';
+
+        $data['variable_count'] = preg_match_all('/\{\{\d+\}\}/', $templateBody);
+        $data['variables'] = TemplateVariableHelper::extractVariables($templateBody);
 
         return $data;
-    }
-
-    protected function extractVariables(string $body): array
-    {
-        preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
-
-        return array_unique($matches[0]);
     }
 }

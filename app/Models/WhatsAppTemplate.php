@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Observers\WhatsAppTemplateObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -23,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $display_name
  * @property string|null $body
- * @property string|null $category
+ * @property TemplateCategoryEnum|null $category
  * @property array<array-key, mixed>|null $variables
  * @property int|null $variable_count
  * @property array<array-key, mixed>|null $variable_placeholder
@@ -114,6 +115,7 @@ class WhatsAppTemplate extends Model
             'is_active' => 'boolean',
             'usage_count' => 'integer',
             'last_used_at' => 'datetime',
+            'category' => TemplateCategoryEnum::class,
             'status' => WhatsAppTemplateStatusEnum::class,
         ];
     }
@@ -225,9 +227,7 @@ class WhatsAppTemplate extends Model
 
     public function incrementUsage(): void
     {
-        $this->increment('usage_count');
-        $this->last_used_at = now();
-        $this->save();
+        $this->increment('usage_count', 1, ['last_used_at' => now()]);
     }
 
     public function getVariableNames(): array
@@ -275,8 +275,7 @@ class WhatsAppTemplate extends Model
 
     public static function isExistsForGym(int $gymId): bool
     {
-        return (bool) self::query()
-            ->isActive()
+        return self::query()
             ->where(function ($query) use ($gymId) {
                 $query->where('gym_id', $gymId);
 
@@ -284,6 +283,7 @@ class WhatsAppTemplate extends Model
                     $query->orWhereNull('gym_id');
                 }
             })
+            ->isActive()
             ->exists();
     }
 }

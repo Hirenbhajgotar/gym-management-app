@@ -55,6 +55,7 @@ use Illuminate\Support\Facades\Bus;
  * @method static Builder<static>|WhatsAppBroadcast whereStartedAt($value)
  * @method static Builder<static>|WhatsAppBroadcast whereStatus($value)
  * @method static Builder<static>|WhatsAppBroadcast whereTargetCount($value)
+ * @method static Builder<static>|WhatsAppBroadcast whereWelcomeCreditsUsed($value)
  * @method static Builder<static>|WhatsAppBroadcast whereTargetFilters($value)
  * @method static Builder<static>|WhatsAppBroadcast whereTitle($value)
  * @method static Builder<static>|WhatsAppBroadcast whereUpdatedAt($value)
@@ -172,6 +173,14 @@ class WhatsAppBroadcast extends Model
     public function markAsCancelled(): void
     {
         $this->update(['status' => WhatsAppBroadcastStatusEnum::CANCELLED]);
+    }
+
+    public function markAsFailed(): void
+    {
+        $this->update([
+            'status' => WhatsAppBroadcastStatusEnum::FAILED,
+            'completed_at' => now(),
+        ]);
     }
 
     public function incrementSentCount(): void

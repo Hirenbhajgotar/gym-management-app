@@ -26,6 +26,7 @@ trait HasSetupState
      *     meta_access_token?: string,
      *     waba_phone_number_id?: string,
      *     manual_phone_number?: string,
+     *     billing_mode?: string,
      *     ...
      * }
      */
@@ -41,7 +42,7 @@ trait HasSetupState
 
     public int $setupStep = 1;
 
-    public int $totalSteps = 6;
+    public int $totalSteps = 7;
 
     /** @var array<int, array{phoneNumber: string, friendlyName: string, locality: string, region: string, isoCountry: string}> */
     public array $availableNumbers = [];
@@ -208,6 +209,7 @@ trait HasSetupState
         }
 
         // WABA: Account setup step (Step 2)
+        // WABA: Billing mode step (Step 3) — only for WABA
         if ($provider === WhatsAppProviderTypeEnum::WABA) {
             if (blank($this->whatsappAccount?->waba_id)) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
@@ -220,6 +222,10 @@ trait HasSetupState
 
             if ($this->verificationStatus === WhatsAppAccountVerificationStatusEnum::PENDING) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
+            }
+
+            if (! $this->whatsappAccount?->hasBillingMode()) {
+                return SetupWizardSchema::WABA_BILLING_MODE_STEP; // BillingModeStep
             }
         }
 
@@ -291,12 +297,17 @@ trait HasSetupState
             if ($step === SetupWizardSchema::WABA_ACCOUNT_STEP) {
                 return true;
             }
-            // Step 3: Templates
+            // Step 3: Billing Mode
+            if ($step === SetupWizardSchema::WABA_BILLING_MODE_STEP) {
+                return filled($this->whatsappAccount->waba_id)
+                    && $this->accountStatus === WhatsAppAccountStatusEnum::ACTIVE;
+            }
+            // Step 4: Templates
             if ($step === SetupWizardSchema::WABA_TEMPLATES_STEP) {
                 return filled($this->whatsappAccount->waba_id)
                     && $this->accountStatus === WhatsAppAccountStatusEnum::ACTIVE;
             }
-            // Step 4: Welcome Credits
+            // Step 5: Welcome Credits
             if ($step === SetupWizardSchema::WABA_WELCOME_CREDITS_STEP) {
                 return $this->phoneNumber !== null && $this->templatesCreated;
             }
@@ -320,6 +331,7 @@ trait HasSetupState
             'phone-number' => SetupWizardSchema::TWILIO_PHONE_NUMBER_STEP,
             'templates' => $provider === WhatsAppProviderTypeEnum::TWILIO ? SetupWizardSchema::TWILIO_TEMPLATES_STEP : SetupWizardSchema::WABA_TEMPLATES_STEP,
             'welcome-credits' => $provider === WhatsAppProviderTypeEnum::TWILIO ? SetupWizardSchema::TWILIO_WELCOME_CREDITS_STEP : SetupWizardSchema::WABA_WELCOME_CREDITS_STEP,
+            'billing-mode' => SetupWizardSchema::WABA_BILLING_MODE_STEP,
             'whats-app-business' => SetupWizardSchema::WABA_ACCOUNT_STEP,
             default => null,
         };

@@ -22,6 +22,7 @@ use App\Services\Meta\MetaTemplateService;
 use App\Services\Meta\MetaWabaService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use App\Services\WhatsAppTemplateService;
+use Exception;
 
 /**
  * Meta WhatsApp Business API Provider.
@@ -247,5 +248,29 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
     public function getWabaDetails(string $wabaId, string $accessToken): array
     {
         return $this->wabaSetup()->getWabaDetails($wabaId, $accessToken);
+    }
+
+    /**
+     * Deduct credits for a gym.
+     *
+     * @param  int  $count  Number of credits to deduct
+     *
+     * @throws Exception
+     */
+    public function checkAndDeduct(int $count = 1): void
+    {
+        $this->credits()->checkAndDeduct($count);
+    }
+
+    /**
+     * Refund credits for a gym.
+     *
+     * @param  int  $count  Number of credits to refund
+     *
+     * @throws Exception
+     */
+    public function refund(int $count = 1): void
+    {
+        $this->credits()->refund($count);
     }
 }

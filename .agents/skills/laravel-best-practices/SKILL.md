@@ -252,16 +252,16 @@ class Post extends Model
 
     // Scopes
     #[Scope]
-    public function published(Builder $query): Builder
+    protected function published(Builder $query): void
     {
-        return $query->whereNotNull('published_at')
+        $query->whereNotNull('published_at')
             ->where('published_at', '<=', now());
     }
 
     #[Scope]
-    public function byCategory(Builder $query, int $categoryId): Builder
+    protected function byCategory(Builder $query, int $categoryId): void
     {
-        return $query->where('category_id', $categoryId);
+        $query->where('category_id', $categoryId);
     }
 
     // Accessors & Mutators

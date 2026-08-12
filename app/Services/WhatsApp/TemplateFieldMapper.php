@@ -6,6 +6,7 @@ namespace App\Services\WhatsApp;
 
 use App\DTOs\WhatsAppTemplates\TemplatePlaceholder;
 use App\DTOs\WhatsAppTemplates\TemplateVariable;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Services\Support\TemplateVariableHelper;
@@ -135,9 +136,9 @@ class TemplateFieldMapper
         $category = $templateData['category'] ?? null;
 
         return match ($providerType) {
-            WhatsAppProviderTypeEnum::TWILIO => 'UTILITY',
-            WhatsAppProviderTypeEnum::WABA => strtoupper(is_string($category) ? $category : 'UTILITY'),
-            default => 'UTILITY',
+            WhatsAppProviderTypeEnum::TWILIO => TemplateCategoryEnum::UTILITY->value,
+            WhatsAppProviderTypeEnum::WABA => strtolower(is_string($category) ? $category : TemplateCategoryEnum::UTILITY->value),
+            default => TemplateCategoryEnum::UTILITY->value,
         };
     }
 

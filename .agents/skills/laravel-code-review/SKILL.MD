@@ -106,97 +106,86 @@ class OrderService
 ### 1.2 State Machine Validity
 Every entity with states must have valid transitions. Invalid transitions must be blocked.
 
+**Anti-Pattern: Unrestricted state transitions**
 ```php
 // ❌ BAD: Any state can transition to any state
-class Order extends Model
+public function updateStatus(string $newStatus): void
 {
-    public function updateStatus(string $status)
-    {
-        $this->update(['status' => $status]);
-    }
+    $this->status = $newStatus;
+    $this->save();
+}
+// BUG: Shipped order can be set back to Pending
+```
+
+**Pattern: Validated state transitions**
+```php
+// ✅ GOOD: Explicit allowed transitions
+enum OrderStatus: string
+{
+    case PENDING = 'pending';
+    case PROCESSING = 'processing';
+    case SHIPPED = 'shipped';
+    case DELIVERED = 'delivered';
+    case CANCELLED = 'cancelled';
 }
 
-// ✅ GOOD: Validated state transitions
 class Order extends Model
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_PAID = 'paid';
-    const STATUS_PROCESSING = 'processing';
-    const STATUS_SHIPPED = 'shipped';
-    const STATUS_DELIVERED = 'delivered';
-    const STATUS_CANCELLED = 'cancelled';
-    const STATUS_REFUNDED = 'refunded';
-
-    private const VALID_TRANSITIONS = [
-        self::STATUS_PENDING => [self::STATUS_PAID, self::STATUS_CANCELLED],
-        self::STATUS_PAID => [self::STATUS_PROCESSING, self::STATUS_REFUNDED],
-        self::STATUS_PROCESSING => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
-        self::STATUS_SHIPPED => [self::STATUS_DELIVERED, self::STATUS_REFUNDED],
-        self::STATUS_DELIVERED => [self::STATUS_REFUNDED],
-        self::STATUS_CANCELLED => [],
-        self::STATUS_REFUNDED => [],
+    private const ALLOWED_TRANSITIONS = [
+        'pending' => ['processing', 'cancelled'],
+        'processing' => ['shipped', 'cancelled'],
+        'shipped' => ['delivered'],
+        'delivered' => [],
+        'cancelled' => [],
     ];
 
-    public function transitionTo(string $newStatus): void
+    public function transitionTo(OrderStatus $newStatus): void
     {
-        $currentStatus = $this->status;
+        $current = $this->status->value;
+        $next = $newStatus->value;
 
-        if (!isset(self::VALID_TRANSITIONS[$currentStatus])) {
-            throw new InvalidStateException("Unknown current status: {$currentStatus}");
-        }
-
-        if (!in_array($newStatus, self::VALID_TRANSITIONS[$currentStatus], true)) {
+        if (!in_array($next, self::ALLOWED_TRANSITIONS[$current] ?? [], true)) {
             throw new InvalidStateTransitionException(
-                "Cannot transition from '{$currentStatus}' to '{$newStatus}'"
+                "Cannot transition from {$current} to {$next}"
             );
         }
 
-        $this->update(['status' => $newStatus]);
-        OrderStatusChanged::dispatch($this, $currentStatus, $newStatus);
+        $this->status = $newStatus;
+        $this->save();
     }
-
-    public function pay(): void { $this->transitionTo(self::STATUS_PAID); }
-    public function ship(): void { $this->transitionTo(self::STATUS_SHIPPED); }
-    public function cancel(): void { $this->transitionTo(self::STATUS_CANCELLED); }
 }
 ```
 
-### 1.3 Calculation Accuracy
+### 1.3 Money Calculations
 Monetary calculations must use integer cents or Decimal, NEVER float.
 
+**Anti-Pattern: Float for money**
 ```php
-// ❌ BAD: Float arithmetic causes precision errors
-$total = $price * $quantity;
-$tax = $total * 0.18;
+// ❌ BAD: Float precision errors
+$discount = $order->total * 0.1;
+$final = $order->total - $discount;
+```
 
-// ✅ GOOD: Use integer cents
+**Pattern: Integer cents or Money value object**
+```php
+// ✅ GOOD: Integer cents
 class Money
 {
-    public function __construct(private int $amountInCents) {}
+    public function __construct(private int $cents) {}
 
-    public static function fromDecimal(float $amount): self
+    public static function fromDollars(float $dollars): self
     {
-        return new self((int) round($amount * 100));
+        return new self((int) round($dollars * 100));
     }
 
-    public function add(Money $other): self
+    public function discount(float $percent): self
     {
-        return new self($this->amountInCents + $other->amountInCents);
+        return new self((int) round($this->cents * (1 - $percent)));
     }
 
-    public function multiply(float $factor): self
+    public function toDollars(): float
     {
-        return new self((int) round($this->amountInCents * $factor));
-    }
-
-    public function toDecimal(): float
-    {
-        return $this->amountInCents / 100;
-    }
-
-    public function format(): string
-    {
-        return number_format($this->amountInCents / 100, 2);
+        return $this->cents / 100;
     }
 }
 ```
@@ -338,8 +327,7 @@ class User extends Model
 {
     use SoftDeletes;
 
-    #[Scope]
-    public function active($query)
+    public function scopeActive($query)
     {
         return $query->whereNull('deleted_at');
     }
@@ -348,6 +336,20 @@ class User extends Model
 $activeUsers = User::active()->get();
 $allUsers = User::withTrashed()->get();
 
+// Unique constraints with soft deletes
+Schema::table('users', function (Blueprint $table) {
+    $table->string('deleted_email')->nullable();
+    $table->unique('email');
+});
+
+protected static function booted()
+{
+    static::deleting(function ($user) {
+        $user->deleted_email = $user->email;
+        $user->email = null;
+        $user->save();
+    });
+}
 ```
 
 ### 1.8 Timezone & Locale
@@ -425,51 +427,49 @@ public function decrementStock(int $productId, int $quantity): bool
 
 ### 2.2 Duplicate Creation Prevention
 
+**Anti-Pattern: Check then create**
 ```php
-// ❌ BAD: Can create duplicates
-public function createSubscription(Request $request)
+// ❌ BAD: Race window between check and create
+public function createUser(string $email): User
 {
-    $user = auth()->user();
-    if ($user->subscriptions()->where('status', 'active')->exists()) {
-        throw new Exception('Already has active subscription');
-    }
-    Subscription::create([
-        'user_id' => $user->id,
-        'plan_id' => $request->plan_id,
-        'status' => 'active',
-    ]);
-}
-
-// ✅ GOOD: Unique constraint at database level
-Schema::create('subscriptions', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained();
-    $table->foreignId('plan_id')->constrained();
-    $table->string('status');
-    $table->timestamps();
-    $table->unique(['user_id', 'status'])->where('status', 'active');
-});
-
-public function createSubscription(Request $request)
-{
-    try {
-        return DB::transaction(function () {
-            return Subscription::create([
-                'user_id' => auth()->id(),
-                'plan_id' => $request->plan_id,
-                'status' => 'active',
-            ]);
-        });
-    } catch (QueryException $e) {
-        if (str_contains($e->getMessage(), 'Duplicate entry')) {
-            throw new DuplicateSubscriptionException('Active subscription already exists');
-        }
-        throw $e;
+    if (!User::where('email', $email)->exists()) {
+        return User::create(['email' => $email]);
     }
 }
 ```
 
-### 2.3 Job Processing Duplicates
+**Pattern: Unique constraint + firstOrCreate**
+```php
+// ✅ GOOD: Database-enforced uniqueness
+// Migration: $table->unique('email');
+
+public function createUser(string $email): User
+{
+    return User::firstOrCreate(['email' => $email]);
+}
+```
+
+### 2.3 Cache Stampede Prevention
+
+**Anti-Pattern: Multiple processes rebuilding cache**
+```php
+// ❌ BAD: Thundering herd
+$value = Cache::remember('expensive_key', 3600, function () {
+    return ExpensiveQuery::run();
+});
+```
+
+**Pattern: Cache lock during rebuild**
+```php
+// ✅ GOOD: Single process rebuilds
+$value = Cache::remember('expensive_key', 3600, function () {
+    return Cache::lock('rebuild:expensive_key', 10)->get(function () {
+        return ExpensiveQuery::run();
+    });
+});
+```
+
+### 2.4 Job Processing Duplicates
 
 ```php
 // ❌ BAD: Job can be processed multiple times
@@ -522,7 +522,7 @@ class ProcessPaymentJob implements ShouldQueue
 }
 ```
 
-### 2.4 Cache Stampede Prevention
+### 2.5 Cache Stampede Prevention
 
 ```php
 // ❌ BAD: Cache stampede
@@ -559,7 +559,7 @@ public function getPopularProducts()
 }
 ```
 
-### 2.5 File Upload Collisions
+### 2.6 File Upload Collisions
 
 ```php
 // ❌ BAD: Filename collision
@@ -2245,3 +2245,312 @@ When reviewing code:
 6. **ALWAYS** explain business impact, not just technical
 7. **NEVER** skip a file that matches path filters
 8. **NEVER** ignore path-specific instructions from `.coderabbit.yaml`
+
+---
+
+## 12. False Positive Prevention Guide
+
+### 12.1 Business Logic — When NOT to Flag
+
+```php
+// ✅ DON'T flag: Form Request + Service validation both exist
+class StoreOrderRequest extends FormRequest
+{
+    public function rules() { return ['qty' => 'required|integer|min:1']; }
+}
+
+class OrderService
+{
+    public function create(array $data)
+    {
+        $product = Product::findOrFail($data['product_id']);
+        if ($product->stock < $data['qty']) { // Service validation exists
+            throw new InsufficientStockException();
+        }
+    }
+}
+// DON'T say "missing validation" — it's in both layers
+
+// ✅ DON'T flag: State machine library used
+class Order extends Model
+{
+    use HasStates;
+    // transitions defined in config/state-machines.php
+}
+// DON'T say "missing state validation" — handled by library
+
+// ✅ DON'T flag: Money value object used
+$order->total = Money::fromDecimal(19.99); // Stored as integer cents
+// DON'T say "float precision issue" — Money object handles it
+
+// ✅ DON'T flag: Policy-based auth
+public function show(Order $order)
+{
+    $this->authorize('view', $order); // Policy exists
+}
+// DON'T say "missing authorization" — policy handles it
+
+// ✅ DON'T flag: Soft delete with unique constraint
+Schema::table('users', function ($table) {
+    $table->unique(['email', 'deleted_at']);
+});
+// DON'T say "unique constraint violation on soft delete" — handled
+```
+
+### 12.2 Race Conditions — When NOT to Flag
+
+```php
+// ✅ DON'T flag: Atomic operation
+Product::where('id', 1)->decrement('stock', 5);
+// This is ATOMIC — no race condition possible
+
+// ✅ DON'T flag: Pessimistic locking exists
+DB::transaction(function () {
+    $product = Product::lockForUpdate()->find(1);
+    $product->stock -= 5;
+    $product->save();
+});
+// Already safe with lockForUpdate
+
+// ✅ DON'T flag: Cache lock exists
+$lock = Cache::lock('submit:' . $id, 30);
+if (!$lock->get()) { return; }
+// Already protected against concurrent execution
+
+// ✅ DON'T flag: Unique constraint prevents duplicates
+Schema::table('subscriptions', function ($table) {
+    $table->unique(['user_id', 'status']);
+});
+// Database prevents duplicates — no race condition
+
+// ✅ DON'T flag: Read-only code
+$templates = WhatsAppTemplate::all();
+foreach ($templates as $template) {
+    echo $template->name; // NO writes = NO race conditions
+}
+
+// ✅ DON'T flag: Single-row PK update
+User::where('id', 1)->update(['last_login' => now()]);
+// InnoDB locks the row automatically — atomic
+```
+
+### 12.3 Transactions — When NOT to Flag (CRITICAL)
+
+```php
+// ✅ DON'T flag: External API call OUTSIDE transaction
+$response = Http::post('meta/api', $data); // No DB lock here
+DB::transaction(function () use ($response) {
+    $template->update(['status' => 'pending']);
+});
+// THIS IS CORRECT PATTERN — two-phase commit
+
+// ✅ DON'T flag: Single INSERT
+Order::create([...]);
+// Single operation = no transaction needed
+
+// ✅ DON'T flag: Read-only code
+$orders = Order::where('status', 'pending')->get();
+// No writes = no transaction needed
+
+// ✅ DON'T flag: Already uses afterCommit
+DB::transaction(function () {
+    $order->update(['status' => 'shipped']);
+    DB::afterCommit(function () {
+        event(new OrderShipped($order));
+    });
+});
+// Already correct
+
+// ❌ NEVER suggest this (ANTI-PATTERN):
+DB::transaction(function () {
+    $response = Http::post('api/endpoint', $data); // WRONG!
+    Model::update([...]);
+});
+// If you see code like this, suggest REMOVING transaction, not adding it
+```
+
+### 12.4 Idempotency — When NOT to Flag
+
+```php
+// ✅ DON'T flag: firstOrCreate used
+Order::firstOrCreate(
+    ['idempotency_key' => $key],
+    ['total' => $total]
+);
+// Already idempotent
+
+// ✅ DON'T flag: Unique constraint + try-catch
+try {
+    Payment::create(['transaction_id' => $id]); // UNIQUE
+} catch (QueryException $e) {
+    if (str_contains($e->getMessage(), 'Duplicate')) return;
+}
+// Already idempotent
+
+// ✅ DON'T flag: Job with uniqueFor
+class ProcessJob implements ShouldQueue
+{
+    public $uniqueFor = 3600;
+    public function uniqueId() { return 'job-' . $this->id; }
+}
+// Already idempotent at queue level
+
+// ✅ DON'T flag: Read-only or GET request
+Route::get('/orders/{order}', [OrderController::class, 'show']);
+// GET requests are naturally idempotent
+
+// ✅ DON'T flag: Update with same value
+$order->update(['status' => 'pending']);
+// Running this twice produces same result
+```
+
+### 12.5 Runtime Errors — When NOT to Flag
+
+```php
+// ✅ DON'T flag: Null-safe operator used
+$name = $user?->profile?->name ?? 'Guest';
+// Already safe
+
+// ✅ DON'T flag: Validated input
+$validated = $request->validate(['date' => 'required|date']);
+$date = Carbon::parse($validated['date']);
+// Input is validated — safe to parse
+
+// ✅ DON'T flag: findOrFail used
+$user = User::findOrFail($id);
+// Throws 404 if not found — handled by framework
+
+// ✅ DON'T flag: Optional helper
+$avatar = optional($user->profile)->avatar_url;
+// Already safe
+
+// ✅ DON'T flag: File validated by Form Request
+$request->validate(['avatar' => 'required|image|mimes:jpg,png|max:2048']);
+$path = $request->file('avatar')->store('avatars');
+// File is validated — safe
+
+// ✅ DON'T flag: JSON cast in model
+protected $casts = ['settings' => 'json'];
+// Laravel handles encode/decode — no manual json_decode needed
+
+// ✅ DON'T flag: Memory-safe query
+User::query()->cursor()->each(function ($user) { ... });
+// Already memory-safe
+```
+
+### 12.6 Bugs & Anti-Patterns — When NOT to Flag
+
+```php
+// ✅ DON'T flag: Eager loading exists
+$orders = Order::with(['user', 'items'])->get();
+// Already eager-loaded — no N+1
+
+// ✅ DON'T flag: Small table with Model::all()
+$countries = Country::all(); // 195 rows
+// Acceptable for small lookup tables
+
+// ✅ DON'T flag: env() in config file
+// config/services.php
+'stripe' => ['key' => env('STRIPE_KEY')],
+// Correct usage of env()
+
+// ✅ DON'T flag: Thin controller
+class OrderController extends Controller
+{
+    public function store(CreateOrderRequest $request)
+    {
+        $order = $this->service->create($request->validated());
+        return new OrderResource($order);
+    }
+}
+// 3 lines = thin controller — don't flag
+
+// ✅ DON'T flag: Parameterized raw query
+User::whereRaw("status = ? AND created_at > ?", ['active', $date]);
+// Uses bindings — no SQL injection
+
+// ✅ DON'T flag: $fillable defined
+class User extends Model
+{
+    protected $fillable = ['name', 'email'];
+}
+User::create($request->validated()); // Safe
+```
+
+---
+
+## 13. Deep Analysis Checklist
+
+Before suggesting ANY fix, verify:
+
+### For Business Logic Issues:
+- [ ] I traced the full execution path from controller to DB
+- [ ] I checked if validation exists in Form Request
+- [ ] I checked if validation exists in Service/Action
+- [ ] I verified state transitions are not handled by a library
+- [ ] I verified calculations are not using a value object
+
+### For Race Conditions:
+- [ ] I confirmed the code performs a WRITE operation
+- [ ] I confirmed no atomic operation is used (decrement, update with where)
+- [ ] I confirmed no locking exists (lockForUpdate, Cache::lock)
+- [ ] I confirmed no unique constraint prevents duplicates
+- [ ] I confirmed the code is not read-only
+
+### For Transactions:
+- [ ] I confirmed there are MULTIPLE related DB writes
+- [ ] I confirmed no external API call happens INSIDE the transaction
+- [ ] I confirmed the code is not read-only
+- [ ] I confirmed the code is not a single INSERT/UPDATE
+- [ ] I confirmed afterCommit is not already used for events
+
+### For Idempotency:
+- [ ] I confirmed the operation can be retried (queue job, POST endpoint)
+- [ ] I confirmed no firstOrCreate/unique constraint exists
+- [ ] I confirmed no uniqueFor on job exists
+- [ ] I confirmed the code is not read-only
+
+### For Runtime Errors:
+- [ ] I confirmed no null-safe operator is used
+- [ ] I confirmed no validation exists before the risky operation
+- [ ] I confirmed no findOrFail/optional helper is used
+- [ ] I confirmed no type cast handles the conversion
+
+---
+
+## 14. Agent Self-Correction Protocol
+
+If you previously suggested a fix and now realize it was wrong:
+
+1. **Acknowledge the mistake** in the review
+2. **Explain why the original code was correct**
+3. **Do NOT suggest the incorrect fix again**
+4. **Update your internal model** to avoid the same false positive
+
+Example:
+```
+❌ PREVIOUSLY SUGGESTED (Incorrect):
+"Wrap API call + DB update in transaction"
+
+✅ CORRECTED ANALYSIS:
+"The code correctly uses two-phase commit: API call happens outside 
+the transaction, followed by a short DB update. Wrapping the API call 
+in a transaction would hold DB locks during the HTTP request, which 
+is an anti-pattern. The current implementation is correct."
+```
+
+---
+
+## AGENT FINAL INSTRUCTION (Updated)
+
+When reviewing code:
+1. **ALWAYS** load `.coderabbit.yaml` and apply path-specific rules
+2. **ALWAYS** load this SKILL.md for Laravel patterns
+3. **ALWAYS** use code-explorer subagent for complex files before suggesting
+4. **ALWAYS** check "When NOT to report" rules before flagging an issue
+5. **ONLY** report 🔴 CERTAIN and 🟠 HIGH confidence issues
+6. **NEVER** suggest wrapping external API calls in DB::transaction()
+7. **ALWAYS** provide exact file path and line numbers
+8. **ALWAYS** provide copy-pasteable fixes
+9. **ALWAYS** explain business impact, not just technical
+10. **NEVER** report an issue if you're not 100% certain

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\UpdateTemplateData;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
@@ -23,13 +24,26 @@ class WhatsAppTemplateService
 {
     public function createDefaultTemplates(int $gymId): void
     {
-        $templates = WhatsAppTemplate::getDefaults();
+        $existingNames = WhatsAppTemplate::query()
+            ->where('gym_id', $gymId)
+            ->pluck('name')
+            ->toArray();
+
+        $templates = WhatsAppTemplate::getDefaults()->reject(
+            function ($template) use ($existingNames): bool {
+                /** @var WhatsAppTemplate $template */
+                return in_array($template->name, $existingNames, true);
+            }
+        );
 
         foreach ($templates as $template) {
             $this->createTemplate($gymId, CreateTemplateData::fromArray($template->toArray()));
         }
 
-        Log::info("Default WhatsApp templates created for gym: {$gymId}");
+        Log::info("Default WhatsApp templates created for gym: {$gymId}", [
+            'created_count' => $templates->count(),
+            'skipped_count' => WhatsAppTemplate::getDefaults()->count() - $templates->count(),
+        ]);
     }
 
     public function createTemplate(int $gymId, CreateTemplateData $data): WhatsAppTemplate
@@ -174,7 +188,7 @@ class WhatsAppTemplateService
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post("https://content.twilio.com/v1/Content/{$contentSid}/ApprovalRequests/whatsapp", [
                     'name' => $template->name,
-                    'category' => strtoupper($template->category ?? 'UTILITY'),
+                    'category' => strtoupper($template->category->value ?? TemplateCategoryEnum::UTILITY->value),
                 ]);
 
             if ($approvalResponse->failed()) {
@@ -321,7 +335,7 @@ class WhatsAppTemplateService
         $usedNumbers = [];
 
         foreach ($matches[1] as $number) {
-            if (! in_array($number, $usedNumbers)) {
+            if (! in_array($number, $usedNumbers, true)) {
                 $usedNumbers[] = $number;
                 $variables[] = [
                     'name' => 'variable_' . $number,
@@ -441,7 +455,7 @@ class WhatsAppTemplateService
                         continue;
                     }
 
-                    $category = strtolower($whatsapp['category'] ?? 'utility');
+                    $category = strtolower($whatsapp['category'] ?? TemplateCategoryEnum::UTILITY->value);
                     $rejectionReason = $whatsapp['rejection_reason'] ?? null;
 
                     $attributes = [

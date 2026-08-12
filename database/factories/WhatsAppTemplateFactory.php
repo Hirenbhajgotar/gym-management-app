@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
@@ -24,7 +25,7 @@ class WhatsAppTemplateFactory extends Factory
             'name' => fake()->unique()->word(),
             'display_name' => fake()->sentence(3),
             'body' => fake()->paragraph(),
-            'category' => fake()->randomElement(['marketing', 'utility', 'authentication']),
+            'category' => fake()->randomElement([TemplateCategoryEnum::MARKETING->value, TemplateCategoryEnum::UTILITY->value, TemplateCategoryEnum::AUTHENTICATION->value]),
             'status' => WhatsAppTemplateStatusEnum::PENDING,
             'is_active' => true,
         ];

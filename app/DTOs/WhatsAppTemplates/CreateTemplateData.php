@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTOs\WhatsAppTemplates;
 
+use App\Enums\TemplateCategoryEnum;
 use InvalidArgumentException;
 
 /**
@@ -47,7 +48,7 @@ readonly class CreateTemplateData
             name: $data['name'] ?? throw new InvalidArgumentException('Missing required field: name'),
             display_name: $data['display_name'] ?? throw new InvalidArgumentException('Missing required field: display_name'),
             body: $data['body'] ?? throw new InvalidArgumentException('Missing required field: body'),
-            category: $data['category'] ?? 'utility',
+            category: $data['category'] ?? TemplateCategoryEnum::UTILITY->value,
             variable_placeholder: $data['variable_placeholder'] ?? null,
             is_default: $data['is_default'] ?? null,
         );

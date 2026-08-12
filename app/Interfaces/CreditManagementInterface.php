@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Interfaces;
 
+use Exception;
+
 /**
  * Credit management operations interface.
  *
@@ -39,4 +41,22 @@ interface CreditManagementInterface
      * }
      */
     public function getMonthlyUsage(int $year, int $month): array;
+
+    /**
+     * Deduct credits for a gym.
+     *
+     * @param  int  $count  Number of credits to deduct
+     *
+     * @throws Exception
+     */
+    public function checkAndDeduct(int $count = 1): void;
+
+    /**
+     * Refund credits for a gym.
+     *
+     * @param  int  $count  Number of credits to refund
+     *
+     * @throws Exception
+     */
+    public function refund(int $count = 1): void;
 }

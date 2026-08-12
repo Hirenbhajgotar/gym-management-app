@@ -108,7 +108,7 @@ class WhatsAppMessageCredit extends Model
 
         $welcomeCredits = (int) config('services.whatsapp.welcome_credits', 50);
 
-        return max(0, $welcomeCredits - $this->welcome_credits_used);
+        return max(0, $welcomeCredits - ($this->welcome_credits_used ?? 0));
     }
 
     public function hasWelcomeCredits(): bool
@@ -116,11 +116,13 @@ class WhatsAppMessageCredit extends Model
         return $this->getWelcomeCreditsRemaining() > 0;
     }
 
-    public function useWelcomeCredit(): bool
+    public function useWelcomeCredit(int $count = 1): bool
     {
+        $count = max(1, min($count, $this->getWelcomeCreditsRemaining()));
+
         if ($this->hasWelcomeCredits()) {
-            $this->increment('welcome_credits_used');
-            $this->increment('remaining_credits');
+            $this->increment('welcome_credits_used', $count);
+            $this->decrement('remaining_credits', $count);
             $this->update(['last_used_at' => now()]);
 
             return true;
@@ -148,29 +150,17 @@ class WhatsAppMessageCredit extends Model
         $this->increment('remaining_credits', $count);
     }
 
-    public function claimWelcomeCredits(): void
-    {
-        if (! $this->welcome_credits_claimed) {
-            $this->update([
-                'welcome_credits_claimed' => true,
-                'welcome_credits_used' => 0,
-                'remaining_credits' => 50,
-                'total_credits' => 50,
-            ]);
-        }
-    }
-
     public function getUsagePercentage(): float
     {
         if ($this->total_credits <= 0) {
             return 0;
         }
 
-        return ($this->used_credits / $this->total_credits) * 100;
+        return (($this->used_credits ?? 0) / $this->total_credits) * 100;
     }
 
     public function getBalance(): float
     {
-        return $this->remaining_credits * $this->selling_price_per_msg;
+        return (float) ($this->remaining_credits ?? 0) * (float) ($this->selling_price_per_msg ?? 0);
     }
 }

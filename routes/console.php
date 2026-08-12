@@ -106,3 +106,8 @@ Schedule::command('whatsapp:import-templates')
     ->dailyAt('23:22')
     ->withoutOverlapping(10)  // 10 min lock
     ->onOneServer();
+
+Schedule::command('notification:send-membership-expiry-alerts')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->onOneServer();

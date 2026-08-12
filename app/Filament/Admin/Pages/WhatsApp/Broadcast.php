@@ -9,6 +9,7 @@ use App\Filament\BasePages\BasePage;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppTemplate;
 use App\Providers\WhatsAppProviderFactory;
@@ -431,6 +432,10 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                             ->schema([
                                 Placeholder::make('credits_info')
                                     ->label('Credits Required')
+                                    ->visible(fn () => ! WhatsAppAccount::query()
+                                        ->where('gym_id', $this->getGymId())
+                                        ->selfManageBillingMode()
+                                        ->exists())
                                     ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
 
                                 Actions::make([

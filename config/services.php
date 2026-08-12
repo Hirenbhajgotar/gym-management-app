@@ -76,15 +76,16 @@ return [
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
         'api_version' => env('META_API_VERSION', 'v25.0'),
-        'welcome_credits' => env('WHATSAPP_WELCOME_CREDITS', 50),
+        'welcome_credits' => (int) env('WHATSAPP_WELCOME_CREDITS', 50),
         'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'template_language' => (string) env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
     ],
 
     'meta' => [
         'app_id' => env('META_APP_ID'),
         'app_secret' => (string) env('META_APP_SECRET'),
         'api_version' => env('META_API_VERSION', 'v25.0'),
-        'redirect_uri' => rtrim(config('app.url'), '/') . '/' . ltrim(env('META_REDIRECT_URI', '') ?: '/whatsapp/embedded-signup/callback', '/'),
+        'redirect_uri' => rtrim(config()->string('app.url'), '/') . '/' . ltrim((string) (env('META_REDIRECT_URI', '') ?: '/whatsapp/embedded-signup/callback'), '/'),
         'config_id' => env('META_CONFIG_ID'),
         'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
     ],

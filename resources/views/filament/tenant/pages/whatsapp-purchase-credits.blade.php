@@ -554,7 +554,39 @@
         }
     </style>
 
-    {{-- Hero Section --}}
+    {{-- Self Managed Banner --}}
+    @if($this->isSelfManaged())
+        <div class="wa-credits-container--">
+            <div class="wa-hero">
+                <h1>
+                    Credits Managed by Meta
+                </h1>
+                <p>
+                    You're using <strong>Self Managed</strong> billing. This means Meta WhatsApp charges are handled directly by you through your Meta account — not through our platform.
+                </p>
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 16px; padding: 24px 32px; max-width: 600px; margin: 0 auto;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <x-heroicon-m-information-circle style="width: 24px; height: 24px; color: #d97706; flex-shrink: 0; margin-top: 2px;" />
+                        <div style="text-align: left;">
+                            <p style="font-weight: 700; color: #92400e; margin-bottom: 8px;">Contact Your Meta Account Manager</p>
+                            <p style="color: #92400e; font-size: 0.9rem; line-height: 1.6;">
+                                To purchase message credits, please contact your Meta account manager directly. 
+                                They will assist you with billing and credit top-ups for your WhatsApp Business Account.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 24px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="{{ route('filament.admin.pages.whatsapp-dashboard', ['tenant' => $this->getTenantSlug()]) }}" 
+                       class="wa-btn-outline"
+                       wire:navigate>
+                        <x-heroicon-m-arrow-left style="width: 20px; height: 20px;" />
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    @else
     <div class="wa-credits-container--">
         <div class="wa-hero">
             <h1>
@@ -565,10 +597,6 @@
                 Affordable, fast and secure credit system for high-volume messaging. Connect with your customers globally without breaking the bank.
             </p>
             <div class="wa-cta-group">
-                {{-- <a href="#pricing" class="wa-btn-primary">
-                    Buy Credits Now
-                </a> --}}
-                
                 @if($this->canClaimWelcomeCredits())
                     <button wire:click="claimWelcomeCredits" wire:loading.attr="disabled" class="wa-btn-outline">
                         <span wire:target="claimWelcomeCredits" wire:loading.remove>
@@ -592,7 +620,7 @@
             </div>
 
             <div class="wa-pricing-grid">
-                @foreach($packages as $package)
+                @foreach($this->whatsAppPackages as $package)
                     @php
                         $isPopular = $package['is_popular'] ?? false;
                     @endphp
@@ -672,6 +700,7 @@
         </div>
 
         {{-- How It Works Section --}}
+        @endif
         <div id="how-it-works">
             <div class="wa-section-title">
                 <h2>How It Works</h2>

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\WhatsAppPhoneNumberStatusEnum;
 use App\Enums\WhatsAppPhoneNumberTypesEnum;
 use App\Helpers\PhoneNumber;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -176,6 +177,15 @@ class WhatsAppPhoneNumber extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(WhatsAppAccount::class, 'whatsapp_account_id');
+    }
+
+    /**
+     * @param  Builder<WhatsAppPhoneNumber>  $query
+     */
+    #[Scope]
+    protected function active(Builder $query): void
+    {
+        $query->where('status', WhatsAppPhoneNumberStatusEnum::ACTIVE);
     }
 
     // =========================

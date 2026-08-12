@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use App\Models\Gym;
-use App\Models\User;
-use App\Notifications\Contracts\HasGymContext;
+use App\Interfaces\MessagingInterface;
 use App\Providers\WhatsAppProviderFactory;
-use App\Traits\HasTenantAccess;
+use App\Services\GymContextResolver;
+use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * WhatsApp channel for sending notifications via WhatsApp.
@@ -21,35 +22,95 @@ use Illuminate\Support\Facades\Log;
  */
 class WhatsAppChannel
 {
-    use HasTenantAccess;
+    public function __construct(
+        private readonly GymContextResolver $gymContextResolver,
+    ) {}
 
     /**
-     * Send the given notification.
-     *
-     * @param  mixed  $notifiable
      * @return array<string, mixed>|null
      */
-    public function send($notifiable, Notification $notification)
+    public function send(mixed $notifiable, Notification $notification)
     {
         if (! method_exists($notification, 'toWhatsApp')) {
             return null;
         }
 
-        // Get the WhatsApp message from the notification
+        /**
+         * Get the WhatsApp message from the notification
+         *
+         * @var array<string, mixed>|null $message
+         */
         $message = $notification->toWhatsApp($notifiable);
 
-        if (blank($message) || ! isset($message['to']) || (! isset($message['body']) && ! isset($message['template_sid']))) {
+        if (! is_array($message)) {
             Log::warning('Invalid WhatsApp message format', ['message' => $message]);
 
             return null;
         }
 
-        // Get the gym/tenant ID
-        $gymId = (int) $this->getGymId($notifiable, $notification);
+        $hasTemplateId = Arr::hasAny($message, ['template_sid', 'meta_template_id']);
+
+        if (blank($message) || (! $hasTemplateId && ! Arr::has($message, 'to'))) {
+            Log::warning('Invalid WhatsApp message format', ['message' => $message]);
+
+            return null;
+        }
+
+        if (! is_object($notifiable)) {
+            Log::error('WhatsApp notification notifiable is not an object', [
+                'notification_type' => get_class($notification),
+            ]);
+
+            return null;
+        }
+
+        $gymId = $this->resolveGymId($notifiable, $notification);
+
+        if (! $gymId) {
+            return null;
+        }
+
+        $isSystemMessage = method_exists($notification, 'isSystemMessage') && (bool) $notification->isSystemMessage();
+        $provider = WhatsAppProviderFactory::create($gymId, $isSystemMessage);
+
+        $logContext = [
+            'notifiable_id' => $this->getNotifiableId($notifiable),
+            'gym_id' => $gymId,
+            'provider' => WhatsAppProviderFactory::getProviderForGym($gymId),
+        ];
+
+        try {
+            $sendTo = Arr::string($message, 'to');
+
+            if ($hasTemplateId) {
+                return $this->sendViaTemplate($provider, $sendTo, $message);
+            }
+
+            if (Arr::string($message, 'body')) {
+                return $this->sendViaBody($provider, $sendTo, $message);
+            }
+        } catch (Exception $e) {
+            Log::error('WhatsApp notification encountered an exception', [
+                ...$logContext,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->refundCredit($gymId, $notifiable);
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve the gym ID for the notification.
+     */
+    private function resolveGymId(object $notifiable, Notification $notification): ?int
+    {
+        $gymId = (int) $this->gymContextResolver->resolve($notifiable, $notification);
 
         if (! $gymId) {
             Log::error('Unable to determine gym ID for WhatsApp notification', [
-                'notifiable_id' => $notifiable->id,
+                'notifiable_id' => $this->getNotifiableId($notifiable),
                 'notifiable_type' => get_class($notifiable),
                 'notification_type' => get_class($notification),
             ]);
@@ -57,90 +118,82 @@ class WhatsAppChannel
             return null;
         }
 
-        // Check if this is a system message (super-admin) or owner message
-        $isSystemMessage = method_exists($notification, 'isSystemMessage')
-            ? $notification->isSystemMessage()
-            : false;
+        return $gymId;
+    }
 
-        // Create provider using factory (based on config and system message flag)
-        $provider = WhatsAppProviderFactory::create((int) $gymId, $isSystemMessage);
+    /**
+     * Send a message via template.
+     *
+     * @param  array<string, mixed>  $message
+     * @return array<string, mixed>
+     */
+    private function sendViaTemplate(MessagingInterface $provider, string $sendTo, array $message): array
+    {
+        $templateName = Arr::string($message, 'template_name');
+        $templateSid = Arr::string($message, 'template_sid');
+        $metaTemplateId = Arr::string($message, 'meta_template_id');
+        $templateIdOrName = $metaTemplateId ?: $templateSid ?: $templateName;
 
-        $result = [];
+        /** @var array<string, string> $templateVariables */
+        $templateVariables = Arr::array($message, 'template_variables', []);
 
-        try {
-            // Check if this is a template message or plain text
-            $isTemplate = isset($message['template_sid']) || isset($message['template_name']);
+        /** @var array<string, mixed> $result */
+        $result = $provider->sendTemplateMessage(
+            $sendTo,
+            $templateIdOrName,
+            $templateVariables,
+        );
 
-            if ($isTemplate) {
-                $templateNameOrSid = $message['template_name'] ?? $message['template_sid'];
-                $result = $provider->sendTemplateMessage(
-                    $message['to'],
-                    $templateNameOrSid,
-                    $message['template_variables'] ?? [],
-                );
-            } else {
-                $result = $provider->sendMessage($message['to'], $message['body']);
-            }
-
-            if (! ($result['success'] ?? false)) {
-                Log::error('WhatsApp notification failed', [
-                    'error' => $result['error'] ?? 'Unknown error',
-                    'notifiable_id' => $notifiable->id,
-                    'gym_id' => $gymId,
-                    'provider' => WhatsAppProviderFactory::getProviderName(),
-                ]);
-            }
-        } catch (Exception $e) {
-            Log::error('WhatsApp notification encountered an exception', [
-                'error' => $e->getMessage(),
-                'notifiable_id' => $notifiable->id,
-                'gym_id' => $gymId,
-                'provider' => WhatsAppProviderFactory::getProviderName(),
-            ]);
+        if (! Arr::boolean($result, 'success', false)) {
+            throw new RuntimeException(Arr::string($result, 'error', 'WhatsApp send failed'));
         }
 
         return $result;
     }
 
-    private function getGymId($notifiable, $notification): ?int
+    /**
+     * Send a message via body text.
+     *
+     * @param  array<string, mixed>  $message
+     * @return array<string, mixed>
+     */
+    private function sendViaBody(MessagingInterface $provider, string $sendTo, array $message): array
     {
-        $gymId = null;
+        $body = Arr::string($message, 'body');
 
-        // 1. Check for a getGymId method on the notification
-        if ($notification instanceof HasGymContext) {
-            $gymId = $notification->getGymId($notifiable);
+        /** @var array<string, mixed> $result */
+        $result = $provider->sendMessage($sendTo, $body);
+
+        if (! Arr::boolean($result, 'success', false)) {
+            throw new RuntimeException(Arr::string($result, 'error', 'WhatsApp send failed'));
         }
 
-        // 2. Check the notifiable itself
-        if (! $gymId) {
-            if (isset($notifiable->gym_id)) {
-                $gymId = $notifiable->gym_id;
-            } elseif (method_exists($notifiable, 'gym') && is_object($notifiable) && property_exists($notifiable, 'gym')) {
-                if ($notifiable->gym) {
-                    $gymId = $notifiable?->gym?->id;
-                }
-            }
-        }
+        return $result;
+    }
 
-        // 3. Handle User model with tenants as a fallback
-        if (! $gymId && $notifiable instanceof User) {
-            try {
-                $tenant = $this->getGym();
-                $gymId = $tenant?->id;
-            } catch (Exception $e) {
-                // No tenant set, check if user has exactly one gym
-                if ($notifiable->gyms()->count() === 1) {
-                    /** @var Gym $gym */
-                    $gym = $notifiable->gyms()->first();
-                    $gymId = $gym->id;
-                }
-            }
-        }
+    /**
+     * Safely get the notifiable's ID.
+     */
+    private function getNotifiableId(object $notifiable): ?int
+    {
+        /** @var int|null $id */
+        $id = property_exists($notifiable, 'id') ? $notifiable->id : null;
 
-        if (! $gymId) {
-            return null;
-        }
+        return $id;
+    }
 
-        return (int) $gymId;
+    private function refundCredit(int $gymId, object $notifiable): void
+    {
+        try {
+            $creditService = resolve(WhatsAppCreditService::class, ['gymId' => $gymId]);
+            $creditService->refund(1);
+        } catch (Exception $th) {
+            Log::critical('Failed to refund WhatsApp credit', [
+                'notifiable_id' => $this->getNotifiableId($notifiable),
+                'gym_id' => $gymId,
+                'provider' => WhatsAppProviderFactory::getProviderForGym($gymId),
+                'error' => $th->getMessage(),
+            ]);
+        }
     }
 }

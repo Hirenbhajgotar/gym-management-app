@@ -62,47 +62,55 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 
 class Post extends Model
 {
     // Local scope - called as scopePublished, used as published()
-    public function scopePublished(Builder $query): Builder
+    #[Scope]
+    protected function published(Builder $query): void
     {
-        return $query->where('published', true)
+        $query->where('published', true)
             ->where('published_at', '<=', now());
     }
 
-    public function scopeFeatured(Builder $query): Builder
+    #[Scope]
+    protected function featured(Builder $query): void
     {
-        return $query->where('is_featured', true);
+        $query->where('is_featured', true);
     }
 
-    public function scopeRecent(Builder $query): Builder
+    #[Scope]
+    protected function recent(Builder $query): void
     {
-        return $query->orderBy('published_at', 'desc');
+        $query->orderBy('published_at', 'desc');
     }
 
-    public function scopeByAuthor(Builder $query, User $author): Builder
+    #[Scope]
+    protected function byAuthor(Builder $query, User $author): void
     {
-        return $query->where('author_id', $author->id);
+        $query->where('author_id', $author->id);
     }
 
-    public function scopeInCategory(Builder $query, int|Category $category): Builder
+    #[Scope]
+    protected function inCategory(Builder $query, int|Category $category): void
     {
         $categoryId = $category instanceof Category ? $category->id : $category;
         return $query->where('category_id', $categoryId);
     }
 
     // Dynamic scope with parameters
-    public function scopeCreatedBetween(Builder $query, $start, $end): Builder
+    #[Scope]
+    protected function createdBetween(Builder $query, $start, $end): Buildevoid
     {
-        return $query->whereBetween('created_at', [$start, $end]);
+        $query->whereBetween('created_at', [$start, $end]);
     }
 
     // Scope with optional parameter
-    public function scopePopular(Builder $query, int $minViews = 1000): Builder
+    #[Scope]
+    protected function popular(Builder $query, int $minViews = 1000): void
     {
-        return $query->where('views', '>=', $minViews);
+        $query->where('views', '>=', $minViews);
     }
 }
 ```
