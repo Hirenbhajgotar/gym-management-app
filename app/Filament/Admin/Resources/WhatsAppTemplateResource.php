@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Actions\WhatsAppTemplate\SubmitTemplateAction;
 use App\Enums\DefaultRole;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages\CreateWhatsAppTemplate;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages\EditWhatsAppTemplate;
@@ -152,7 +154,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     $set('name', $template['name']);
                                     $set('display_name', $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name'])));
                                     $set('body', $template['body']);
-                                    $set('category', $template['category'] ?? 'utility');
+                                    $set('category', $template['category'] ?? TemplateCategoryEnum::UTILITY);
 
                                     // Set variable_placeholder from the default template
                                     if (filled($template['variable_placeholder'])) {
@@ -208,12 +210,9 @@ class WhatsAppTemplateResource extends BaseResource
                     ->description('Choose the right category for your template. This affects Meta approval speed and how you can use the template.')
                     ->schema([
                         Select::make('category')
-                            ->options([
-                                'utility' => '🔧 Utility — Transactional messages',
-                                'marketing' => '📢 Marketing — Promotional messages',
-                            ])
+                            ->options(TemplateCategoryEnum::toSelectArray())
                             ->required()
-                            ->default('utility')
+                            ->default(TemplateCategoryEnum::UTILITY)
                             ->live()
                             ->afterStateUpdated(fn (Set $set) => $set('_category_warning_shown', true))
                             ->helperText('Utility templates are for transactional messages (reminders, updates, confirmations). Marketing templates are for promotions and offers.'),
@@ -236,7 +235,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     </div>
                                 </div>
                             '))
-                            ->visible(fn (Get $get) => $get('category') === 'utility'),
+                            ->visible(fn (Get $get) => $get('category') === TemplateCategoryEnum::UTILITY),
 
                         // Marketing category warning
                         Placeholder::make('marketing_guide')
@@ -256,7 +255,27 @@ class WhatsAppTemplateResource extends BaseResource
                                     </div>
                                 </div>
                             '))
-                            ->visible(fn (Get $get) => $get('category') === 'marketing'),
+                            ->visible(fn (Get $get) => $get('category') === TemplateCategoryEnum::MARKETING),
+
+                        // Authentication category warning
+                        Placeholder::make('authentication_guide')
+                            ->label('')
+                            ->content(new HtmlString('
+                                    <div class="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50 p-4 text-sm space-y-3">
+                                        <div class="font-semibold text-amber-700 dark:text-amber-400">🔑 Authentication Template — Important Limitations</div>
+                                        <div class="text-amber-600 dark:text-amber-400 space-y-1">
+                                            <p>• <strong>Cannot be used for bulk broadcasts</strong> — Authentication templates have strict sending limits from Meta and are not suitable for mass messaging</p>
+                                            <p>• <strong>Slower delivery</strong> — Authentication messages may take longer to deliver compared to utility messages</p>
+                                            <p>• <strong>Higher cost per message</strong> — Meta charges more for authentication conversations</p>
+                                            <p>• <strong>User can opt-out</strong> — Recipients can block authentication messages, reducing your reach over time</p>
+                                            <p>• <strong>Quality rating impacts</strong> — Low engagement or blocks can lower your quality rating, further limiting sends</p>
+                                        </div>
+                                        <div class="text-red-600 dark:text-red-400 text-xs mt-2 border-t border-amber-200 dark:border-amber-700 pt-2">
+                                            🚫 <strong>Recommendation:</strong> Use authentication templates for OTP, verification codes, and security-related messages. Only use authentication for genuine authentication purposes.
+                                        </div>
+                                    </div>
+                                '))
+                            ->visible(fn (Get $get) => $get('category') === TemplateCategoryEnum::AUTHENTICATION),
                     ])
                     ->columns(1)
                     ->collapsible(),
@@ -365,8 +384,8 @@ class WhatsAppTemplateResource extends BaseResource
                                         ->schema([
                                             TextInput::make('variable_placeholder.' . $num . '.variable')
                                                 ->label('{{' . $num . '}}')
-                                                ->readonly()
                                                 ->default('{{' . $num . '}}')
+                                                ->readOnly()
                                                 ->columnSpan(1),
                                             Select::make('variable_placeholder.' . $num . '.source')
                                                 ->label('Data Source')
@@ -532,18 +551,7 @@ class WhatsAppTemplateResource extends BaseResource
                     ->weight('bold'),
 
                 TextColumn::make('category')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state) => ucfirst($state))
-                    ->color(fn (string $state) => match ($state) {
-                        'utility' => 'success',
-                        'marketing' => 'warning',
-                        default => 'gray',
-                    })
-                    ->icon(fn (string $state) => match ($state) {
-                        'utility' => 'heroicon-o-wrench-screwdriver',
-                        'marketing' => 'heroicon-o-megaphone',
-                        default => 'heroicon-o-chat-bubble-left',
-                    }),
+                    ->badge(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -586,10 +594,7 @@ class WhatsAppTemplateResource extends BaseResource
                 SelectFilter::make('status')
                     ->options(WhatsAppTemplateStatusEnum::class),
                 SelectFilter::make('category')
-                    ->options([
-                        'utility' => 'Utility',
-                        'marketing' => 'Marketing',
-                    ]),
+                    ->options(TemplateCategoryEnum::class),
                 TernaryFilter::make('is_default')
                     ->label('Default Templates'),
                 TernaryFilter::make('is_active')
@@ -631,7 +636,7 @@ class WhatsAppTemplateResource extends BaseResource
                                             . $record->status->getLabel() .
                                         '</span>
                                         <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">'
-                                            . ucfirst($record->category) .
+                                            . ($record->category?->getLabel() ?? TemplateCategoryEnum::UTILITY->getLabel()) .
                                         '</span>
                                     </div>
     
@@ -671,30 +676,20 @@ class WhatsAppTemplateResource extends BaseResource
                         ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
                         ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT && $record->gym_id === Filament::getTenant()?->id)
                         ->action(function (WhatsAppTemplate $record) {
-                            try {
-                                $provider = self::getTemplateProvider($record->gym_id);
-                                $result = $provider->submitTemplate($record->fresh());
+                            $result = resolve(SubmitTemplateAction::class)($record);
 
-                                if ($result->success) {
-                                    Notification::make()
-                                        ->success()
-                                        ->title('Template Submitted!')
-                                        ->body('Your template has been submitted for approval. You\'ll be notified of the result.')
-                                        ->send();
-                                } else {
-                                    Log::info('Template submission failed', ['template_id' => $record->id, 'error' => $result->error]);
-                                    Notification::make()
-                                        ->danger()
-                                        ->title('Submission Failed')
-                                        ->body('Your template has not been submitted for approval.')
-                                        ->send();
-                                }
-                            } catch (InvalidArgumentException|RuntimeException $e) {
-                                Log::error('Template submission failed with exception', ['template_id' => $record->id, 'error' => $e->getMessage()]);
+                            if ($result->success) {
+                                Notification::make()
+                                    ->success()
+                                    ->title('Template Submitted!')
+                                    ->body('Your template has been submitted for approval. You\'ll be notified of the result.')
+                                    ->send();
+                            } else {
+                                Log::info('Template submission failed', ['template_id' => $record->id, 'error' => $result->error]);
                                 Notification::make()
                                     ->danger()
                                     ->title('Submission Failed')
-                                    ->body('Template submission failed. Please try again later.')
+                                    ->body('Your template has not been submitted for approval.')
                                     ->send();
                             }
                         }),

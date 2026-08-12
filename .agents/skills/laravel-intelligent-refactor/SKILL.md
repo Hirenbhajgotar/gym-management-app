@@ -20,14 +20,37 @@ metadata:
 ## Philosophy
 
 > **Refactoring without tests is reckless. Refactoring without understanding is destructive.**
+> **Zero false positives. Every issue must be reproducible, actionable, and verifiable.**
 
-This skill enforces a 6-phase deterministic refactoring protocol. Every refactor must:
+This skill enforces a 6-phase deterministic refactoring protocol with 8-dimension validation. Every refactor must:
 1. **Understand** the intent before touching code
-2. **Map** the entire codebase impact zone
-3. **Assess** test coverage and risk
-4. **Plan** meticulously with atomic steps
+2. **Map** the entire codebase impact zone (via @code-explorer)
+3. **Assess** test coverage and 8-dimension risk
+4. **Plan** meticulously with atomic steps addressing all dimensions
 5. **Execute** with LSP precision and AST-grep safety
-6. **Verify** after every single change
+6. **Verify** after every single change across all 8 dimensions
+
+## The 9 Refactor Dimensions
+
+Every refactor MUST validate these categories. Load `laravel-code-review` skill for detailed review framework and `laravel-code-extraction` skill for extraction patterns.
+
+| # | Dimension | Key Checks |
+|---|-----------|------------|
+| 1 | **BUSINESS LOGIC** | Domain rules, invariants, state transitions, auth alignment |
+| 2 | **USER EXPERIENCE** | Error messages, validation clarity, API consistency, async feedback |
+| 3 | **RACE CONDITIONS** | DB locking, atomic ops, queue uniqueness (`withoutOverlapping`), cache locks |
+| 4 | **IDEMPOTENCY** | Duplicate handling, `updateOrCreate`, unique constraints, retry safety |
+| 5 | **RUNTIME ERRORS** | Null safety (`??`, `optional()`), type safety, API error handling, timeouts |
+| 6 | **BUGS & ANTI-PATTERNS** | God classes, N+1 queries, dead code, DRY violations, tight coupling |
+| 7 | **SECURITY** | SQL injection (parameter binding), auth (Policies/Gates), mass assignment (`$fillable`), secrets |
+| 8 | **CODE QUALITY** | Type declarations, PSR compliance, method length, complexity, naming |
+
+### Dimension Integration in 6-Phase Protocol
+
+- **Phase 1 (Analysis)**: @code-explorer gathers context + runs 9-dimension pre-audit + identifies extraction opportunities
+- **Phase 4 (Plan)**: Each atomic step addresses specific dimension issues + extraction plan
+- **Phase 5 (Execute)**: After each step, verify relevant dimensions + extraction quality
+- **Phase 6 (Final)**: Full 9-dimension re-review on ALL modified files + verify Laravel best practices
 
 ## When to Activate
 
@@ -98,30 +121,58 @@ TodoWrite([
 
 **Mark `phase-1` as `in_progress`.**
 
-### 1.1: Launch Parallel Subagents
+### 1.1: Launch @code-explorer (BACKGROUND)
 
-Fire ALL of these simultaneously using `call_omo_agent` with subagent_type='code-explorer':
+The orchestrator (or this agent if running standalone) calls `@code-explorer` subagents in background to gather full context BEFORE any refactoring.
+
+Invoke ALL of these by sending `@code-explorer` messages (NOT `call_omo_agent` which may resolve to built-in `@explore`):
 
 ```
-// Agent 1: Target Discovery (via @code-explorer)
-@code-explorer Find all occurrences, definitions, and usages of [TARGET].
+// Agent 1: Target Discovery
+Send: @code-explorer Find all occurrences, definitions, and usages of [TARGET].
 Report: file paths, line numbers, class hierarchy, method signatures.
 
 // Agent 2: Dependency Graph
-@code-explorer Find all code that imports, uses, or depends on [TARGET].
+Send: @code-explorer Find all code that imports, uses, or depends on [TARGET].
 Report: dependency chains, import graphs, DI container bindings.
 
 // Agent 3: Pattern Discovery
-@code-explorer Find similar code patterns to [TARGET] in the codebase.
+Send: @code-explorer Find similar code patterns to [TARGET] in the codebase.
 Report: analogous implementations, established Laravel conventions, existing Services/Actions/DTOs.
 
 // Agent 4: Test Discovery
-@code-explorer Find all test files related to [TARGET].
+Send: @code-explorer Find all test files related to [TARGET].
 Report: test file paths, test case names, feature/unit test distinction, coverage indicators.
 
 // Agent 5: Architecture Context
-@code-explorer Find architectural patterns and module organization around [TARGET].
+Send: @code-explorer Find architectural patterns and module organization around [TARGET].
 Report: module boundaries, layer structure (Controller/Service/Repository/Model), design patterns.
+
+// Agent 6: 9-Dimension Pre-Audit + Extraction (CRITICAL)
+Send: @code-explorer Review [TARGET] across 9 dimensions:
+1. BUSINESS_LOGIC - Domain rules, state transitions, calculations
+2. UX - Error messages, validation, API consistency
+3. RACE_CONDITIONS - Locking, atomic ops, concurrent access
+4. IDEMPOTENCY - Duplicate handling, retry safety
+5. RUNTIME_ERRORS - Null safety, type safety, API errors
+6. BUGS_ANTI_PATTERNS - God classes, N+1, dead code
+7. SECURITY - SQL injection, auth, mass assignment
+8. CODE_QUALITY - Types, PSR, complexity, naming
+9. CODE_EXTRACTION - What to extract: Services, Actions, DTOs, Traits, Enums, Value Objects, Repositories, Form Requests, Policies, Events, Listeners, Notifications
+
+Also check LARAVEL BEST PRACTICES:
+- DB transactions for multi-step ops
+- Cache::lock() for race conditions
+- Eager loading for relationships
+- Chunked/cursor for large datasets
+- Form Requests for validation
+- Policies for authorization
+- env() only in config files
+- Type declarations on all methods
+- Structured logging with context
+
+Report: Specific issues with file paths, line numbers, severity (CRITICAL/HIGH/MEDIUM/LOW).
+Report: Extraction opportunities with recommended locations.
 ```
 
 ### 1.2: Direct Tool Exploration (While Agents Run)
@@ -257,7 +308,7 @@ php artisan test --filter=[TARGET] 2>/dev/null || true
 ### 3.2: Analyze Test Coverage
 
 ```
-@code-explorer Analyze test coverage for [TARGET]:
+Send: @code-explorer Analyze test coverage for [TARGET]:
 1. Which test files cover this code?
 2. What test cases exist (happy path, edge cases, exceptions)?
 3. Are there integration/feature tests?
@@ -352,7 +403,84 @@ Use `@plan` agent or create plan manually:
 - Before/after snapshots for each step
 ```
 
-### 4.2: Apply Laravel Architecture Patterns
+### 4.2: Address 9-Dimension Issues + Extraction Plan
+
+From the @code-explorer pre-audit (Phase 1, Agent 6), create specific refactoring steps for each dimension AND extraction opportunities:
+
+```markdown
+## Dimension Issue Resolution Plan
+
+### BUSINESS_LOGIC
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### RACE_CONDITIONS
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### IDEMPOTENCY
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### RUNTIME_ERRORS
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### BUGS_ANTI_PATTERNS
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### SECURITY
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+
+### CODE_QUALITY
+- [ ] Fix: [specific issue] -> [file:line]
+- [ ] Verify: [how to verify]
+```
+
+### 4.3: Extraction Plan
+
+Using `laravel-code-extraction` skill, plan extractions:
+
+```markdown
+## Extraction Plan
+
+### Services to Extract
+- [ ] `App\Services\[Name]Service` from [file:lines] - [reason]
+
+### Actions to Extract
+- [ ] `App\Actions\[Name]Action` from [file:lines] - [reason]
+
+### DTOs to Extract
+- [ ] `App\DTOs\[Name]DTO` from [file:lines] - [reason]
+
+### Value Objects to Extract
+- [ ] `App\ValueObjects\[Name]` from [file:lines] - [reason]
+
+### Traits to Extract
+- [ ] `App\Traits\Has[Name]` from [file:lines] - [reason]
+
+### Enums to Extract
+- [ ] `App\Enums\[Name]Enum` from [file:lines] - [reason]
+
+### Form Requests to Extract
+- [ ] `App\Http\Requests\[Name]Request` from [file:lines] - [reason]
+
+### Policies to Extract
+- [ ] `App\Policies\[Name]Policy` from [file:lines] - [reason]
+
+### Laravel Best Practices to Apply
+- [ ] Add DB transactions to [method] in [file]
+- [ ] Add Cache::lock() to [method] in [file]
+- [ ] Add eager loading to [query] in [file]
+- [ ] Extract validation to Form Request [name]
+- [ ] Extract auth to Policy [name]
+- [ ] Add type declarations to [methods]
+- [ ] Add structured logging to [operations]
+```
+
+### 4.4: Apply Laravel Architecture Patterns
 
 When planning, ALWAYS consider these Laravel/PHP patterns:
 
@@ -536,31 +664,89 @@ for (file of changedFiles) {
 }
 ```
 
-### 6.6: Generate Summary
+### 6.6: 9-Dimension Final Review + Extraction Validation
+
+Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audit:
+
+```markdown
+## 8-Dimension Review: Before vs After
+
+| Dimension | Issues Before | Issues After | Status |
+|-----------|---------------|--------------|--------|
+| Business Logic | [count] | [count] | PASS / NEEDS_FIX |
+| UX | [count] | [count] | PASS / NEEDS_FIX |
+| Race Conditions | [count] | [count] | PASS / NEEDS_FIX |
+| Idempotency | [count] | [count] | PASS / NEEDS_FIX |
+| Runtime Errors | [count] | [count] | PASS / NEEDS_FIX |
+| Bugs & Anti-Patterns | [count] | [count] | PASS / NEEDS_FIX |
+| Security | [count] | [count] | PASS / NEEDS_FIX |
+| Code Quality | [count] | [count] | PASS / NEEDS_FIX |
+| Code Extraction | [count] | [count] | PASS / NEEDS_FIX |
+```
+
+**If ANY dimension shows "NEEDS_FIX", STOP and fix before completing.**
+
+### 6.7: Generate Summary
 
 ```markdown
 ## Refactoring Complete
 
 ### What Changed
 - [List of architectural improvements]
+- [List of extractions performed]
 
 ### Files Modified
 - `path/to/file.php` - [what changed]
+- `app/Services/NewService.php` - [new service]
+- `app/Actions/NewAction.php` - [new action]
+- `app/DTOs/NewDTO.php` - [new DTO]
 
 ### Patterns Applied
 - Service Extraction: [details]
 - Action Classes: [details]
 - DTOs: [details]
+- Value Objects: [details]
+- Trait Extraction: [details]
+- Repository Extraction: [details]
+- Enum Extraction: [details]
+- Form Request Extraction: [details]
+- Policy Extraction: [details]
 - DRY Compliance: [details]
+
+### 9-Dimension Results
+| Dimension | Status |
+|-----------|--------|
+| Business Logic | PASS |
+| UX | PASS |
+| Race Conditions | PASS |
+| Idempotency | PASS |
+| Runtime Errors | PASS |
+| Bugs & Anti-Patterns | PASS |
+| Security | PASS |
+| Code Quality | PASS |
+| Code Extraction | PASS |
+
+### Laravel Best Practices Applied
+| Practice | Status |
+|----------|--------|
+| DB Transactions | PASS |
+| Cache::lock() | PASS |
+| Eager Loading | PASS |
+| Form Requests | PASS |
+| Policies | PASS |
+| Type Declarations | PASS |
+| Structured Logging | PASS |
 
 ### Verification Results
 - Tests: PASSED (X/Y passing)
 - PHPStan: CLEAN
 - Pint: CLEAN
 - Architecture: VALIDATED
+- 9-Dimension Review: ALL PASS
+- Laravel Best Practices: ALL PASS
 
 ### No Regressions Detected
-All existing tests pass. No new errors introduced.
+All existing tests pass. No new errors introduced. No new issues in any dimension.
 ```
 
 **Mark `phase-6` as `completed`.**
@@ -579,6 +765,11 @@ All existing tests pass. No new errors introduced.
 - Refactor without understanding existing patterns
 - Create new classes when existing ones can be reused
 - Ignore Laravel conventions (PSR-4 autoloading, namespace standards)
+- Skip 9-dimension review at any phase
+- Skip extraction analysis for monolithic files
+- Report issues without verification (zero false positives)
+- Ignore race conditions or idempotency issues
+- Ignore Laravel best practices (transactions, locks, eager loading)
 
 ### ALWAYS DO
 - Understand before changing
@@ -591,6 +782,11 @@ All existing tests pass. No new errors introduced.
 - Reuse existing Services, Actions, DTOs when possible
 - Apply SOLID: Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion
 - Apply DRY: Extract shared logic to traits, base classes, or services
+- Validate ALL 9 dimensions after each significant change
+- Use @code-explorer for background analysis before refactoring
+- Load laravel-code-review skill for 9-dimension framework
+- Load laravel-code-extraction skill for extraction patterns
+- Apply Laravel best practices: transactions, locks, eager loading, Form Requests, Policies
 
 ### ABORT CONDITIONS
 If any occur, **STOP and consult user**:

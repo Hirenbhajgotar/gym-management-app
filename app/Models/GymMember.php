@@ -10,6 +10,7 @@ use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,6 +86,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember notFrozen()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember membershipEndingOn(\Illuminate\Support\Carbon $date)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereAge($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereCreatedAt($value)
@@ -180,7 +182,13 @@ class GymMember extends Model
                 $plan = $member->membershipPlan;
 
                 if ($plan && $plan->duration) {
-                    $member->membership_end = Date::parse($member->membership_start)->addMonths($plan->duration);
+                    $membershipEndDate = Date::parse($member->membership_start)
+                        ->addMonths($plan->duration)
+                        ->toDateString();
+
+                    if (! $member->isDirty('membership_end')) {
+                        $member->membership_end = $membershipEndDate;
+                    }
                 }
             }
         });
@@ -381,33 +389,44 @@ class GymMember extends Model
     // Scope
     // =========================
 
+    /**
+     * @param  Builder<static>  $query
+     */
     #[Scope]
-    protected function membershipActive($query)
+    protected function membershipActive(Builder $query): void
     {
-        return $query->where('membership_end', '>=', today());
+        $query->where('membership_end', '>=', today());
     }
 
+    /**
+     * @param  Builder<static>  $query
+     */
     #[Scope]
-    protected function membershipExpired($query)
+    protected function membershipExpired(Builder $query): void
     {
-        return $query->where('membership_end', '<', today());
+        $query->where('membership_end', '<', today());
     }
 
+    /**
+     * @param  Builder<static>  $query
+     */
     #[Scope]
-    protected function hasTrainer($query)
+    protected function hasTrainer(Builder $query): void
     {
-        return $query->whereNotNull('trainer_id');
+        $query->whereNotNull('trainer_id');
     }
 
     /**
      * Scope to get non-frozen members
+     *
+     * @param  Builder<static>  $query
      */
     #[Scope]
-    protected function notFrozen($query)
+    protected function notFrozen(Builder $query): void
     {
-        return $query->where(function ($q) {
+        $query->where(function (\Illuminate\Contracts\Database\Query\Builder $q) {
             $q->where('is_frozen', false)
-                ->orWhere(function ($q2) {
+                ->orWhere(function (\Illuminate\Contracts\Database\Query\Builder $q2) {
                     $q2->where('is_frozen', true)
                         ->whereNotNull('frozen_until')
                         ->where('frozen_until', '<', now());
@@ -417,15 +436,40 @@ class GymMember extends Model
 
     /**
      * Scope to get frozen members
+     *
+     * @param  Builder<static>  $query
      */
     #[Scope]
-    protected function frozen($query)
+    protected function frozen(Builder $query): void
     {
-        return $query->where('is_frozen', true)
-            ->where(function ($q) {
+        $query->where('is_frozen', true)
+            ->where(function (\Illuminate\Contracts\Database\Query\Builder $q) {
                 $q->whereNull('frozen_until')
                     ->orWhere('frozen_until', '>=', now());
             });
+    }
+
+    /**
+     * Scope to get members whose membership ends on a specific date.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function membershipEndingOn(Builder $query, Carbon $date): void
+    {
+        $query->whereDate('membership_end', $date);
+    }
+
+    /**
+     * Scope to get members whose birthday is today.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function birthdayToday(Builder $query): void
+    {
+        $query->whereMonth('dob', now()->month)
+            ->whereDay('dob', now()->day);
     }
 
     // =========================
@@ -496,8 +540,6 @@ class GymMember extends Model
         $frozenUntil = $this->frozen_until;
         /** @var Carbon|null $frozenUntil */
         if ($frozenUntil !== null && $frozenUntil->isPast()) {
-            $this->unfreeze();
-
             return false;
         }
 

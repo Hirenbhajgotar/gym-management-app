@@ -15,6 +15,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\Meta\MetaApiClient;
 use App\Services\Meta\MetaContext;
 use App\Services\Meta\MetaWabaService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -27,6 +28,7 @@ use Tests\TestCase;
 class MetaWabaServiceTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
+    use RefreshDatabase;
 
     #[Test]
     public function it_connects_manual_waba_successfully_and_saves_phone_number_without_phone_number_sid(): void
@@ -629,6 +631,212 @@ class MetaWabaServiceTest extends TestCase
         $this->assertDatabaseMissing('whatsapp_phone_numbers', [
             'whatsapp_account_id' => $account->id,
         ]);
+    }
+
+    // =====================================================
+    // verifyWabaConnection Tests
+    // =====================================================
+
+    #[Test]
+    public function it_verifies_waba_connection_successfully(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+        $accessToken = 'EAABTESTTOKEN';
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$phoneNumberId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $phoneNumberId,
+                    'display_phone_number' => '+91 84692 90865',
+                    'verified_name' => 'FitZone Gym',
+                    'quality_score' => 'GREEN',
+                    'status' => 'ACTIVE',
+                ],
+            ]);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$wabaId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $wabaId,
+                    'name' => 'FitZone Gym WABA',
+                    'account_review_status' => 'APPROVED',
+                    'business_verification_status' => 'VERIFIED',
+                    'currency' => 'INR',
+                    'timezone' => 'Asia/Kolkata',
+                ],
+            ]);
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->verifyWabaConnection($wabaId, $phoneNumberId, $accessToken);
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue($result['verified']);
+        $this->assertEquals($phoneNumberId, $result['phone_number_id'] ?? null);
+        $this->assertEquals($wabaId, $result['waba_id'] ?? null);
+        $this->assertEquals('+91 84692 90865', $result['display_phone_number'] ?? null);
+        $this->assertEquals('FitZone Gym', $result['verified_name'] ?? null);
+        $this->assertEquals(WhatsAppAccountVerificationStatusEnum::VERIFIED->value, $result['business_verification_status'] ?? null);
+        $this->assertEquals(WhatsAppPhoneNumberStatusEnum::ACTIVE->value, $result['phone_number_status'] ?? null);
+        $this->assertEquals('GREEN', $result['quality_score'] ?? null);
+        $this->assertEquals('FitZone Gym WABA', $result['business_name'] ?? null);
+        $this->assertEquals(WhatsAppAccountStatusEnum::ACTIVE->value, $result['status'] ?? null);
+        $this->assertEquals('INR', $result['currency'] ?? null);
+        $this->assertEquals('Asia/Kolkata', $result['timezone'] ?? null);
+    }
+
+    #[Test]
+    public function it_returns_error_when_phone_api_fails_during_verification(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+        $accessToken = 'EAABTESTTOKEN';
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$phoneNumberId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'error' => 'Invalid OAuth access token',
+            ]);
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->verifyWabaConnection($wabaId, $phoneNumberId, $accessToken);
+
+        $this->assertFalse($result['success']);
+        $this->assertFalse($result['verified']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('Invalid OAuth access token', $result['error'] ?? '');
+    }
+
+    #[Test]
+    public function it_handles_waba_api_failure_gracefully(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+        $accessToken = 'EAABTESTTOKEN';
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$phoneNumberId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $phoneNumberId,
+                    'display_phone_number' => '+91 84692 90865',
+                    'verified_name' => 'FitZone Gym',
+                ],
+            ]);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$wabaId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'error' => 'WABA not found',
+            ]);
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->verifyWabaConnection($wabaId, $phoneNumberId, $accessToken);
+
+        $this->assertFalse($result['success']);
+        $this->assertFalse($result['verified']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('WABA not found', $result['error'] ?? '');
+    }
+
+    #[Test]
+    public function it_returns_error_when_access_token_is_missing(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->verifyWabaConnection($wabaId, $phoneNumberId);
+
+        $this->assertFalse($result['success']);
+        $this->assertFalse($result['verified']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('access token', $result['error'] ?? '');
+    }
+
+    #[Test]
+    public function it_returns_error_when_verification_throws_exception(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+        $accessToken = 'EAABTESTTOKEN';
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$phoneNumberId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andThrow(new RuntimeException('Connection timed out'));
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->verifyWabaConnection($wabaId, $phoneNumberId, $accessToken);
+
+        $this->assertFalse($result['success']);
+        $this->assertFalse($result['verified']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('Connection timed out', $result['error'] ?? '');
     }
 
     #[Test]

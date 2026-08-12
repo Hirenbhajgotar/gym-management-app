@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\SuperAdmin\Resources;
 
 use App\Enums\DefaultRole;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\WhatsAppTemplateResource\Pages\CreateWhatsAppTemplate;
@@ -100,12 +101,9 @@ class WhatsAppTemplateResource extends BaseResource
                             ->helperText('A friendly name for easy identification.'),
 
                         Select::make('category')
-                            ->options([
-                                'utility' => '🔧 Utility — Transactional messages',
-                                'marketing' => '📢 Marketing — Promotional messages',
-                            ])
+                            ->options(TemplateCategoryEnum::toSelectArray())
                             ->required()
-                            ->default('utility')
+                            ->default(TemplateCategoryEnum::UTILITY)
                             ->helperText('Utility for transactional, Marketing for promotional content.'),
                     ])
                     ->columns(2),
@@ -179,8 +177,8 @@ class WhatsAppTemplateResource extends BaseResource
                                         ->schema([
                                             TextInput::make('variable_placeholder.' . $num . '.variable')
                                                 ->label('{{' . $num . '}}')
-                                                ->readonly()
                                                 ->default('{{' . $num . '}}')
+                                                ->readOnly()
                                                 ->columnSpan(1),
                                             TextInput::make('variable_placeholder.' . $num . '.placeholder')
                                                 ->label('Placeholder')
@@ -297,13 +295,7 @@ class WhatsAppTemplateResource extends BaseResource
                     ->weight('bold'),
 
                 TextColumn::make('category')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state) => ucfirst($state))
-                    ->color(fn (string $state) => match ($state) {
-                        'utility' => 'success',
-                        'marketing' => 'warning',
-                        default => 'gray',
-                    }),
+                    ->badge(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -328,10 +320,7 @@ class WhatsAppTemplateResource extends BaseResource
                 SelectFilter::make('status')
                     ->options(WhatsAppTemplateStatusEnum::class),
                 SelectFilter::make('category')
-                    ->options([
-                        'utility' => 'Utility',
-                        'marketing' => 'Marketing',
-                    ]),
+                    ->options(TemplateCategoryEnum::class),
             ])
             ->actions([
                 ActionGroup::make([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
 use Filament\Facades\Filament;
@@ -30,7 +31,7 @@ class CreateWhatsAppTemplate extends CreateRecord
                 $data['name'] = $template['name'];
                 $data['display_name'] = $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name']));
                 $data['body'] = $template['body'];
-                $data['category'] = $template['category'] ?? 'utility';
+                $data['category'] = $template['category'] ?? TemplateCategoryEnum::UTILITY->value;
 
                 // Merge default template's variable_placeholder as a base,
                 // then let the form's values override where present

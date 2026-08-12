@@ -13,6 +13,7 @@ use App\Services\WhatsAppVariableResolver;
 use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -67,7 +68,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if (in_array($broadcast->status, [WhatsAppBroadcastStatusEnum::COMPLETED, WhatsAppBroadcastStatusEnum::CANCELLED])) {
+        if (in_array($broadcast->status, [WhatsAppBroadcastStatusEnum::COMPLETED, WhatsAppBroadcastStatusEnum::CANCELLED], true)) {
             Log::info('Broadcast already processed, skipping batch dispatch', [
                 'broadcast_id' => $this->broadcastId,
                 'status' => $broadcast->status,
@@ -78,9 +79,20 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 
         $broadcast->markAsSending();
 
+        $template = $broadcast->template;
+
+        if (blank($template)) {
+            Log::warning('Broadcast template not found for batch orchestration', [
+                'broadcast_id' => $this->broadcastId,
+            ]);
+
+            $broadcast->markAsFailed();
+
+            return;
+        }
+
         $resolver = resolve(WhatsAppVariableResolver::class);
         $customVariables = $broadcast->message_variables ?? [];
-        $template = $broadcast->template;
         $templateData = [
             'provider_template_id' => $template->name,
             'language' => 'en',
@@ -98,7 +110,22 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                 'member.gym:id,name',
                 'member.membershipPlan:id,name,price,duration',
                 'member.trainer:id,name,phone,specialization',
-                'member.latestPayment:id,member_id,amount,formatted_amount,payment_date,payment_method,invoice_number',
+                'member.latestPayment' => function (Relation $query): void {
+                    // Qualify columns explicitly: the latestOfMany derived-table
+                    // join exposes a "member_id" column, so an unqualified select
+                    // would raise SQLSTATE 23000/1052 (ambiguous column).
+                    // "formatted_amount" is a computed accessor, not a column,
+                    // so it is omitted in favour of the raw "currency" column.
+                    $query->select($query->qualifyColumns([
+                        'id',
+                        'member_id',
+                        'amount',
+                        'currency',
+                        'payment_date',
+                        'payment_method',
+                        'invoice_number',
+                    ]));
+                },
             ])
             ->chunkById(self::LOAD_CHUNK_SIZE, function ($recipients) use (
                 $broadcast,
@@ -153,7 +180,6 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 
         $broadcastId = $this->broadcastId;
         $gymId = $this->gymId;
-        $skipDeduction = $this->skipCreditDeduction;
 
         $batch = Bus::batch($allJobs)
             ->then(function (Batch $batch) use ($broadcastId): void {
@@ -186,47 +212,14 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                     'failed_jobs' => $batch->failedJobs,
                 ]);
             })
-            ->finally(function (Batch $batch) use ($gymId, $broadcastId, $skipDeduction): void {
+            ->finally(function (Batch $batch) use ($gymId, $broadcastId): void {
                 // Release the per-gym rate limiter lock
                 Cache::lock("broadcast-rate-{$gymId}", 10)->forceRelease();
 
                 // If credits were deducted upfront, refund any that failed
-                if ($skipDeduction) {
-                    $broadcastRecord = DB::table('whatsapp_broadcasts')
-                        ->where('id', $broadcastId)
-                        ->first(['sent_count', 'failed_count', 'target_count', 'status']);
-
-                    if (! $broadcastRecord || $broadcastRecord->status !== WhatsAppBroadcastStatusEnum::FAILED->value) {
-                        return;
-                    }
-
-                    if (($broadcastRecord->failed_count > 0)) {
-                        $refundCount = (int) $broadcastRecord->failed_count;
-
-                        // Atomically refund credits: increment remaining, decrement used
-                        WhatsAppMessageCredit::query()->where('gym_id', $gymId)
-                            ->update([
-                                'remaining_credits' => DB::raw('remaining_credits + ' . $refundCount),
-                                'used_credits' => DB::raw('GREATEST(used_credits - ' . $refundCount . ', 0)'),
-                                'last_used_at' => now(),
-                            ]);
-
-                        // Also update the broadcast's credits_used to reflect actual sends
-                        DB::table('whatsapp_broadcasts')
-                            ->where('id', $broadcastId)
-                            ->update([
-                                'credits_used' => DB::raw('GREATEST(credits_used - ' . $refundCount . ', 0)'),
-                            ]);
-
-                        Log::info('Broadcast failed credits refunded', [
-                            'broadcast_id' => $broadcastId,
-                            'gym_id' => $gymId,
-                            'refunded_count' => $refundCount,
-                        ]);
-                    }
-                }
+                $this->refundFailedUpfrontCredits($gymId, $broadcastId);
             })
-            ->onQueue(config('queue.broadcast_queue', 'broadcast'))
+            ->onQueue(config()->string('queue.broadcast_queue', 'broadcast'))
             ->dispatch();
 
         $broadcast->update(['batch_id' => $batch->id]);
@@ -247,7 +240,111 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        WhatsAppBroadcast::query()->where('id', $this->broadcastId)
-            ->update(['status' => WhatsAppBroadcastStatusEnum::FAILED]);
+        /** @var WhatsAppBroadcast|null $broadcast */
+        $broadcast = WhatsAppBroadcast::query()->where('id', $this->broadcastId)->first();
+
+        if (! $broadcast) {
+            return;
+        }
+
+        $broadcast->update(['status' => WhatsAppBroadcastStatusEnum::FAILED]);
+
+        // If credits were deducted upfront but the batch was never dispatched
+        // (e.g. queue dispatch failure), the batch's finally closure will never
+        // run, so refund the full upfront deduction here.
+        if ($this->skipCreditDeduction && $broadcast->batch_id === null) {
+            $this->refundUpfrontCredits($this->gymId, $this->broadcastId, $broadcast->target_count);
+        }
+    }
+
+    /**
+     * Refund upfront credits for a broadcast whose batch finished in a failed state.
+     *
+     * Called from the batch's finally closure when credits were deducted upfront.
+     * Only refunds when credits were deducted upfront, the batch-level catch
+     * handler marked the broadcast FAILED, and at least one chunk failed.
+     */
+    public function refundFailedUpfrontCredits(int $gymId, int $broadcastId): void
+    {
+        if (! $this->skipCreditDeduction) {
+            return;
+        }
+
+        $broadcastRecord = DB::table('whatsapp_broadcasts')
+            ->where('id', $broadcastId)
+            ->first(['status', 'failed_count', 'credits_used']);
+
+        if (! $broadcastRecord || $broadcastRecord->status !== WhatsAppBroadcastStatusEnum::FAILED->value) {
+            return;
+        }
+
+        $failedCount = $broadcastRecord->failed_count;
+
+        if (is_numeric($failedCount) && $failedCount > 0) {
+            $this->refundUpfrontCredits($gymId, $broadcastId, (int) $failedCount);
+        }
+    }
+
+    /**
+     * Refund credits that were deducted upfront for a failed broadcast.
+     *
+     * Restores the paid balance (remaining/used credits) and, when the failed
+     * deduction consumed welcome credits, also restores the welcome portion so
+     * the welcome credit ledger stays consistent with the refunded balance.
+     */
+    private function refundUpfrontCredits(int $gymId, int $broadcastId, int $refundCount): void
+    {
+        if ($refundCount <= 0) {
+            return;
+        }
+
+        $broadcastRecord = DB::table('whatsapp_broadcasts')
+            ->where('id', $broadcastId)
+            ->first(['credits_used']);
+
+        if (! $broadcastRecord) {
+            return;
+        }
+
+        // Never refund more than the broadcast still has deducted, which also
+        // keeps the refund idempotent if both the finally closure and failed()
+        // ever run for the same broadcast.
+        $creditsUsed = $broadcastRecord->credits_used;
+        $refundCount = min($refundCount, is_numeric($creditsUsed) ? (int) $creditsUsed : 0);
+
+        if ($refundCount <= 0) {
+            return;
+        }
+
+        // Atomically refund paid credits: increment remaining, decrement used
+        WhatsAppMessageCredit::query()->where('gym_id', $gymId)
+            ->update([
+                'remaining_credits' => DB::raw('remaining_credits + ' . $refundCount),
+                'used_credits' => DB::raw('GREATEST(used_credits - ' . $refundCount . ', 0)'),
+                'last_used_at' => now(),
+            ]);
+
+        // Restore the welcome-credit portion of the refund so the welcome
+        // credit ledger mirrors the refunded paid balance.
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
+
+        if ($credit && $credit->welcome_credits_used > 0) {
+            $welcomeToRestore = min($refundCount, $credit->welcome_credits_used);
+
+            $credit->decrement('welcome_credits_used', $welcomeToRestore);
+        }
+
+        // Also update the broadcast's credits_used to reflect the refund
+        DB::table('whatsapp_broadcasts')
+            ->where('id', $broadcastId)
+            ->update([
+                'credits_used' => DB::raw('GREATEST(credits_used - ' . $refundCount . ', 0)'),
+            ]);
+
+        Log::info('Broadcast failed credits refunded', [
+            'broadcast_id' => $broadcastId,
+            'gym_id' => $gymId,
+            'refunded_count' => $refundCount,
+        ]);
     }
 }

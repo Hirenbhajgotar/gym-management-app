@@ -8,6 +8,7 @@ use App\Enums\DefaultRole;
 use App\Filament\BasePages\BasePage;
 use App\Models\Gym;
 use App\Models\Payment;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use App\Models\WhatsAppPhoneNumber;
@@ -22,8 +23,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 
+/**
+ * @property-read ?WhatsAppAccount $whatsappAccount
+ */
 class PurchaseCredits extends BasePage implements HasActions
 {
     use InteractsWithActions;
@@ -46,7 +51,7 @@ class PurchaseCredits extends BasePage implements HasActions
     // Only access for super_admin, admin and gym_owner
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()?->hasAnyRole([
+        return Auth::user()?->hasAnyRole([
             DefaultRole::SUPER_ADMIN->value,
             DefaultRole::ADMIN->value,
             DefaultRole::GYM_OWNER->value,
@@ -54,8 +59,6 @@ class PurchaseCredits extends BasePage implements HasActions
     }
 
     public ?WhatsAppMessageCredit $creditBalance = null;
-
-    public array $packages = [];
 
     public array $razorpayOrder = [];
 
@@ -82,12 +85,33 @@ class PurchaseCredits extends BasePage implements HasActions
 
         $this->creditBalance = WhatsAppMessageCredit::query()->where('gym_id', $gymId)->first();
 
-        $this->packages = WhatsAppPackage::query()->active()
-            ->ordered()
-            ->get()
-            ->toArray();
-
         $this->loadSurchargeData();
+    }
+
+    /**
+     * Get active whatsapp packages
+     *
+     * @return array<int, array<mixed>>
+     */
+    #[Computed(persist: true, cache: true)]
+    public function whatsAppPackages(): array
+    {
+        return WhatsAppPackage::query()->active()->ordered()->get()
+            ->map(fn (WhatsAppPackage $package): array => $package->toArray())
+            ->all();
+    }
+
+    #[Computed(persist: true, cache: true)]
+    public function whatsappAccount(): ?WhatsAppAccount
+    {
+        $gymId = $this->getGymId();
+
+        return WhatsAppAccount::query()->where('gym_id', $gymId)->first();
+    }
+
+    public function isSelfManaged(): bool
+    {
+        return $this->whatsappAccount?->isSelfManaged() ?? false;
     }
 
     private function loadSurchargeData(): void

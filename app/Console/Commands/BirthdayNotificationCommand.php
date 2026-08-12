@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\DefaultRole;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class BirthdayNotificationCommand extends Command
 {
@@ -31,24 +32,28 @@ class BirthdayNotificationCommand extends Command
      */
     public function handle(): int
     {
-        GymMember::query()->whereMonth('dob', now()->month)
-            ->whereDay('dob', now()->day)
-            ->with(['gym', 'gym.users' => function ($query) {
-                $query->wherePivot('role', DefaultRole::GYM_OWNER->value);
-            }])
+        GymMember::query()->birthdayToday()
+            ->with(['gym'])
             ->chunkById(200, function ($members) {
                 foreach ($members as $member) {
-                    $cacheKey = "birthday_sent_{$member->id}_" . now()->year;
+                    $cacheKey = BirthdayNotification::birthdayCacheKey($member->id);
 
                     if (Cache::has($cacheKey)) {
                         continue;
                     }
 
-                    $member->notify(
-                        new BirthdayNotification($member),
-                    );
+                    try {
+                        $member->notify(
+                            new BirthdayNotification($member),
+                        );
 
-                    Cache::put($cacheKey, true, now()->endOfDay());
+                        Cache::put($cacheKey, true, now()->endOfDay());
+                    } catch (Exception $e) {
+                        Log::error('Failed to send birthday notification', [
+                            'member_id' => $member->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             });
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 
+use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use Illuminate\Support\Facades\Auth;
 
@@ -41,6 +42,7 @@ trait HasFormInitialization
             'own_phone_number' => '',
             'otp_code' => '',
             'provider_type' => $this->selectedProvider,
+            'billing_mode' => $this->whatsappAccount?->billing_mode?->value ?? WhatsAppBillingModeEnum::PAY_VIA_APP->value,
             'has_existing_number' => false,
         ];
 

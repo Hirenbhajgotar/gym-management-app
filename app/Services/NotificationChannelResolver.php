@@ -70,8 +70,7 @@ class NotificationChannelResolver
         }
 
         return $whatsAppAccount->isActive()
-            && $whatsAppAccount->isVerified()
-            && $whatsAppAccount->hasPhoneNumber();
+            && $whatsAppAccount->hasActivePhoneNumber();
     }
 
     /**

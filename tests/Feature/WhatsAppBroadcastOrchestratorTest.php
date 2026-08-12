@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\DefaultRole;
+use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\BroadcastOrchestrator;
 use Exception;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -51,9 +54,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'is_active' => true,
         ]);
 
-        GymMember::factory()->count(5)->create([
+        GymMember::factory()->count(5)->sequence(
+            ['phone' => '+1111111111'],
+            ['phone' => '+1222222222'],
+            ['phone' => '+1333333333'],
+            ['phone' => '+1444444444'],
+            ['phone' => '+1555555555'],
+        )->create([
             'gym_id' => $this->gym->id,
-            'phone' => '+1234567890',
         ]);
 
         WhatsAppMessageCredit::query()->create([
@@ -140,6 +148,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
     {
         Queue::fake();
 
+        /** @var list<int> $members */
         $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $data = [
@@ -199,14 +208,63 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         // Read credit record
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
 
         $this->assertSame(95, $creditRecord->remaining_credits);
         $this->assertSame(5, $creditRecord->used_credits);
     }
 
+    public function test_upfront_deduction_uses_welcome_credits_before_paid_credits(): void
+    {
+        Queue::fake();
+
+        $welcomeCredits = config()->integer('services.whatsapp.welcome_credits', 50);
+
+        // Claim the one-time welcome credits for this gym (100 paid + 50 welcome = 150 total budget).
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
+        $creditRecord->update([
+            'welcome_credits_claimed' => true,
+            'welcome_credits_used' => 0,
+        ]);
+
+        // 5 members already exist in setUp(); add 95 more so the broadcast targets 100.
+        // Phones are deterministic to honour the unique (gym_id, phone) index.
+        GymMember::factory()->count(95)->sequence(
+            fn (Sequence $sequence): array => [
+                'phone' => '+2' . str_pad((string) $sequence->index, 10, '0', STR_PAD_LEFT),
+            ],
+        )->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+
+        $this->assertSame(100, $broadcast->target_count);
+
+        // Welcome credits cover the first $welcomeCredits messages for free; only the
+        // remainder is charged against the paid ledger.
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($credit instanceof WhatsAppMessageCredit);
+
+        $this->assertSame($welcomeCredits, $credit->welcome_credits_used);
+        $this->assertSame(100 - $welcomeCredits, $credit->used_credits);
+        $this->assertSame(0, $credit->remaining_credits);
+    }
+
     public function test_insufficient_credits_throws_exception(): void
     {
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
         $creditRecord->update(['remaining_credits' => 2, 'used_credits' => 98]);
 
         $data = [
@@ -259,14 +317,123 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'filters' => [],
         ];
 
+        /** @var list<int> $members */
         $members = GymMember::query()->where('gym_id', $this->gym->id)->take(3)->pluck('id')->toArray();
 
         $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, $members);
 
         // Verify credits are deducted exactly for the target count
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
         $this->assertSame(3, $broadcast->target_count);
         $this->assertSame(97, $creditRecord->remaining_credits);
         $this->assertSame(3, $creditRecord->used_credits);
+    }
+
+    public function test_self_managed_account_skips_upfront_credit_deduction(): void
+    {
+        Queue::fake();
+
+        WhatsAppAccount::query()->create([
+            'gym_id' => $this->gym->id,
+            'billing_mode' => WhatsAppBillingModeEnum::SELF_MANAGED,
+        ]);
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+
+        $this->assertSame(5, $broadcast->target_count);
+
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
+        $this->assertSame(100, $creditRecord->remaining_credits);
+        $this->assertSame(0, $creditRecord->used_credits);
+    }
+
+    public function test_self_managed_account_without_credit_record_does_not_throw(): void
+    {
+        Queue::fake();
+
+        WhatsAppAccount::query()->create([
+            'gym_id' => $this->gym->id,
+            'billing_mode' => WhatsAppBillingModeEnum::SELF_MANAGED,
+        ]);
+
+        WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->delete();
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+
+        $this->assertSame(5, $broadcast->target_count);
+        $this->assertDatabaseCount('whatsapp_message_credits', 0);
+    }
+
+    public function test_self_managed_account_with_insufficient_credits_does_not_throw(): void
+    {
+        Queue::fake();
+
+        WhatsAppAccount::query()->create([
+            'gym_id' => $this->gym->id,
+            'billing_mode' => WhatsAppBillingModeEnum::SELF_MANAGED,
+        ]);
+
+        $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        assert($creditRecord instanceof WhatsAppMessageCredit);
+        $creditRecord->update(['remaining_credits' => 2, 'used_credits' => 98]);
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+
+        $this->assertSame(5, $broadcast->target_count);
+        $this->assertSame(2, $creditRecord->refresh()->remaining_credits);
+    }
+
+    public function test_self_managed_account_dispatches_job_without_skip_credit_deduction_flag(): void
+    {
+        Queue::fake();
+
+        WhatsAppAccount::query()->create([
+            'gym_id' => $this->gym->id,
+            'billing_mode' => WhatsAppBillingModeEnum::SELF_MANAGED,
+        ]);
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+
+        Queue::assertPushed(function (SendBroadcastJob $job): bool {
+            return $job->skipCreditDeduction === false;
+        });
     }
 }

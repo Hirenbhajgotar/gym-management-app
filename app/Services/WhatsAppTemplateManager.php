@@ -10,6 +10,7 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use Exception;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
@@ -208,9 +209,23 @@ class WhatsAppTemplateManager
 
         return WhatsAppTemplate::query()->where('gym_id', $this->tenantId)
             ->where('name', $templateName)
-            ->where('status', 'approved')
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
             ->where('is_active', true)
             ->first();
+    }
+
+    public function hasActiveTemplate(string $tenamtIdOrName): bool
+    {
+        return WhatsAppTemplate::query()
+            ->where('gym_id', $this->tenantId)
+            ->where(function (Builder $query) use ($tenamtIdOrName) {
+                $query->where('meta_template_id', $tenamtIdOrName)
+                    ->orWhere('twilio_template_sid', $tenamtIdOrName)
+                    ->orWhere('name', $tenamtIdOrName);
+            })
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
+            ->where('is_active', true)
+            ->exists();
     }
 
     public function clearCache(?string $templateName = null): void

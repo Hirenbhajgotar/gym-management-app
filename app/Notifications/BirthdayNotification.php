@@ -6,18 +6,36 @@ namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class BirthdayNotification extends BaseTenantNotification
 {
+    /**
+     * Get the cache key for tracking sent birthday notifications.
+     */
+    public static function birthdayCacheKey(int $memberId): string
+    {
+        return "birthday_sent_{$memberId}_" . now()->year;
+    }
+
     public function __construct(
         public GymMember $member,
     ) {
-        $this->gym = $member->gym;
+        $gym = $member->gym;
+
+        if (! $gym instanceof Gym) {
+            throw new InvalidArgumentException(
+                "Cannot send birthday notification: member {$member->id} has no associated gym."
+            );
+        }
+
+        $this->gym = $gym;
     }
 
     protected function getNotificationType(): string
@@ -82,6 +100,7 @@ class BirthdayNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
+                'meta_template_id' => $template->meta_template_id,
                 'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, ['member' => $this->member]),
             ];
         } catch (Exception $e) {
@@ -94,6 +113,11 @@ class BirthdayNotification extends BaseTenantNotification
         }
     }
 
+    /**
+     * Get the WhatsApp payload for sandbox/testing mode.
+     *
+     * @return array<string, mixed>
+     */
     private function getSandboxWhatsAppPayload(): array
     {
         // Sandbox mode uses a fixed test number
@@ -106,6 +130,9 @@ class BirthdayNotification extends BaseTenantNotification
         ];
     }
 
+    /**
+     * Get the recipient's phone number with country code.
+     */
     private function getRecipientPhoneNumber(): ?string
     {
         $phoneNumber = $this->member->phone ?? null;
@@ -130,9 +157,9 @@ class BirthdayNotification extends BaseTenantNotification
     {
         return [
             'message' => 'Happy Birthday, ' .
-                $this->member?->name .
+                $this->member->name .
                 '! From ' .
-                $this->gym?->name,
+                $this->gym->name,
         ];
     }
 

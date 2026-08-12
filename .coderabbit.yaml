@@ -4,65 +4,99 @@ reviews:
   path_instructions:
     - path: "app/Http/Controllers/**"
       instructions: |
-        - Ensure controllers are thin and delegate to services/actions
-        - Check for missing authorization (policies/gates)
-        - Verify all user input is validated via Form Requests
-        - Look for database queries in loops (N+1)
-        - Flag any business logic embedded in controllers
+        ## Controller Review Rules
+        - Controllers MUST be thin. Business logic MUST be in Services/Actions.
+        - Every state-changing action MUST have authorization check (authorize(), can(), or policy).
+        - Input validation MUST use Form Request classes (type-hinted), not inline $request->validate().
+        - No database queries directly in controllers. Use injected repositories/services.
+        - Return proper HTTP status codes (201 for create, 204 for delete, 422 for validation).
+        - API controllers MUST use API Resources (OrderResource::make($order)).
+        - No dd(), dump(), or var_dump() left in code.
 
     - path: "app/Models/**"
       instructions: |
-        - Verify $fillable or $guarded is defined
-        - Check relationships for correct types and foreign keys
-        - Look for missing query scopes on complex queries
-        - Ensure soft deletes are handled correctly
-        - Check for missing casts or incorrect type definitions
+        ## Model Review Rules
+        - $fillable OR $guarded MUST be explicitly defined. Never both empty.
+        - $casts MUST include all non-string attributes (dates, enums, json, arrays, booleans).
+        - Relationships MUST have return type hints (BelongsTo, HasMany, etc.).
+        - Check for N+1 risks — relationships should be eager-loaded by default if used in lists.
+        - Observers MUST be registered in AppServiceProvider if model has side effects.
+        - Soft deletes MUST be handled explicitly in relationships (withTrashed() where needed).
+        - Check that database constraints (unique, foreign key) match business rules.
+        - No business logic in accessors/mutators beyond simple formatting.
 
     - path: "app/Services/**"
       instructions: |
-        - CRITICAL: Check for race conditions in read-modify-write patterns
-        - Verify database transactions wrap multi-step operations
-        - Ensure idempotency for critical operations (payments, inventory)
-        - Check for proper exception handling and custom exceptions
-        - Validate business logic completeness (edge cases, state transitions)
+        ## Service Review Rules
+        - CRITICAL: Check for race conditions in ALL read-modify-write patterns.
+        - CRITICAL: Verify database transactions wrap multi-step DB operations.
+        - NEVER allow external API calls inside DB::transaction(). Use two-phase commit.
+        - Check idempotency for retryable operations (firstOrCreate, unique constraints).
+        - All dependencies MUST be constructor-injected (no facades except Cache for locks).
+        - Methods MUST have return type hints.
+        - Complex calculations (tax, discount) MUST use Money value objects, not float.
+        - Side effects (emails, notifications) MUST use afterCommit() or be outside transactions.
 
     - path: "app/Jobs/**"
       instructions: |
-        - Ensure jobs are idempotent (safe to retry)
-        - Check for unique job constraints where needed
-        - Verify failed job handling
-        - Look for database transactions held during external API calls
-        - Check for memory leaks on large datasets
+        ## Job Review Rules
+        - MUST be idempotent — safe to run multiple times. Check state before processing.
+        - MUST implement failed() method for error alerting.
+        - MUST set $tries and $timeout explicitly.
+        - MUST use WithoutOverlapping middleware if concurrent execution is dangerous.
+        - MUST dispatch with afterCommit() if job is enqueued inside a transaction.
+        - MUST use chunking/cursors for large dataset processing.
+        - No memory leaks — avoid loading entire tables into memory.
 
     - path: "app/Actions/**"
       instructions: |
-        - Verify single responsibility principle
-        - Check for race condition prevention
-        - Ensure database transactions for multi-step writes
-        - Validate business logic correctness and completeness
+        ## Action Review Rules
+        - Single public method (usually __invoke) with single responsibility.
+        - All dependencies constructor-injected.
+        - Authorization check MUST be present if action modifies state.
+        - Transaction boundaries MUST be explicit for multi-step operations.
+        - Return type MUST be explicit (DTO or Result object, not mixed).
+        - Check for idempotency — Actions are often retried.
+
+    - path: "app/Http/Requests/**"
+      instructions: |
+        ## Form Request Review Rules
+        - authorize() MUST be implemented (return true is acceptable for public endpoints).
+        - rules() MUST validate ALL input fields with specific types.
+        - Use prepareForValidation() for input normalization.
+        - Complex validation rules (unique with conditions) MUST be tested.
+        - Custom validation messages should be provided for user-facing fields.
 
     - path: "routes/**"
       instructions: |
-        - Check for route model binding correctness
-        - Verify middleware application (auth, throttle, etc.)
-        - Look for state-changing GET routes (should be POST/PUT/DELETE)
-        - Ensure API routes have proper versioning
+        ## Route Review Rules
+        - Rate limiting MUST be applied to auth endpoints (login, register, password reset).
+        - No state-changing GET routes (POST/PUT/PATCH/DELETE for mutations).
+        - Middleware stack MUST be appropriate (auth, verified, etc.).
+        - Route model binding SHOULD be used where applicable.
+        - API routes SHOULD be versioned (v1, v2).
 
     - path: "database/migrations/**"
       instructions: |
-        - Verify foreign keys with proper onDelete/onUpdate
-        - Check indexing strategy for performance
-        - Ensure down() migrations are reversible
-        - Look for potential data loss in alter operations
-        - Check for missing unique constraints on business-critical fields
+        ## Migration Review Rules
+        - Foreign keys MUST specify onDelete behavior (cascade, restrict, set null).
+        - Indexes MUST be added on frequently queried columns and foreign keys.
+        - Unique constraints MUST match business uniqueness rules.
+        - Check constraints SHOULD be used for data validity where supported.
+        - down() MUST properly reverse up() — no data loss in alter operations.
+        - Large tables MUST use schema changes that don't lock tables for long periods.
+        - Enum columns SHOULD use native enum or string with check constraint, not integer codes.
 
     - path: "tests/**"
       instructions: |
-        - Verify feature tests cover business logic, not just HTTP 200
-        - Check for race condition tests on critical paths
-        - Ensure idempotency tests for retry scenarios
-        - Look for edge cases and failure path coverage
-        - Verify test data setup doesn't leak between tests
+        ## Test Review Rules
+        - Business logic MUST have unit tests (state transitions, calculations).
+        - Race conditions SHOULD have concurrent execution tests where critical.
+        - Idempotency MUST be tested for jobs and API endpoints.
+        - Database transactions MUST be tested for rollback behavior.
+        - Edge cases MUST be covered (empty input, max values, invalid states).
+        - Mock external APIs — never hit real services in tests.
+        - Use factories with states for complex test data setup.
 
   path_filters:
     - "!vendor/**"
@@ -85,3 +119,21 @@ reviews:
       - "WIP"
       - "Draft"
       - "DO NOT MERGE"
+
+  review:
+    business_logic_priority: critical
+
+    required_categories:
+      - business_logic
+      - race_conditions
+      - database_transactions
+      - idempotency
+      - runtime_errors
+      - bugs_anti_patterns
+
+    min_confidence: high
+
+    auto_exclude:
+      - "*_generated*"
+      - "*.gen.php"
+      - "*/generated/*"

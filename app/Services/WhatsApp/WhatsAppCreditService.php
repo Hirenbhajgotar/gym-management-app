@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services\WhatsApp;
 
 use App\Interfaces\CreditManagementInterface;
+use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Shared WhatsApp Credit Service.
@@ -23,6 +25,8 @@ class WhatsAppCreditService implements CreditManagementInterface
      * where credits are deducted upfront at the orchestration layer.
      */
     private bool $skipDeduction = false;
+
+    private ?bool $isSelfManaged = null;
 
     public function __construct(
         protected int $gymId
@@ -78,8 +82,27 @@ class WhatsAppCreditService implements CreditManagementInterface
     }
 
     /**
+     * Determine whether the gym's WhatsApp account is self-managed.
+     * Self-managed accounts bypass credit checks, deductions, and usage logging.
+     */
+    private function isSelfManagedAccount(): bool
+    {
+        if ($this->isSelfManaged !== null) {
+            return $this->isSelfManaged;
+        }
+
+        $this->isSelfManaged = WhatsAppAccount::query()
+            ->where('gym_id', $this->gymId)
+            ->selfManageBillingMode()
+            ->exists();
+
+        return $this->isSelfManaged;
+    }
+
+    /**
      * Check and deduct credits. Throws exception if insufficient.
      * No-op when skipDeduction is true (broadcast flow with upfront deduction).
+     * No-op when account is self-managed (user pays Meta directly).
      */
     public function checkAndDeduct(int $count = 1): void
     {
@@ -87,22 +110,76 @@ class WhatsAppCreditService implements CreditManagementInterface
             return;
         }
 
-        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gymId)->first();
-
-        throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
-
-        if ($credit->hasWelcomeCredits() && $credit->getWelcomeCreditsRemaining() >= $count) {
-            $credit->useWelcomeCredit();
-        } else {
-            $credit->deductCredits($count);
+        if ($this->isSelfManagedAccount()) {
+            return;
         }
+
+        DB::transaction(function () use ($count) {
+            $credit = WhatsAppMessageCredit::query()
+                ->where('gym_id', $this->gymId)
+                ->lockForUpdate()
+                ->first();
+
+            throw_if(! $credit || ! $credit->canSendMessage($count), Exception::class, 'Insufficient message credits. Please purchase more credits.');
+
+            if ($credit->hasWelcomeCredits()) {
+                $welcomeUsed = min($credit->getWelcomeCreditsRemaining(), $count);
+                if ($welcomeUsed > 0) {
+                    $credit->useWelcomeCredit($welcomeUsed);
+                    $count -= $welcomeUsed;
+                }
+            }
+
+            if ($count > 0) {
+                $credit->deductCredits($count);
+            }
+        }, 5);
+    }
+
+    public function refund(int $count = 1): void
+    {
+        if ($this->skipDeduction || $this->isSelfManagedAccount()) {
+            return;
+        }
+
+        DB::transaction(function () use ($count) {
+            $credit = WhatsAppMessageCredit::query()
+                ->where('gym_id', $this->gymId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $credit) {
+                return;
+            }
+
+            // Restore welcome credits first (they were consumed first in checkAndDeduct)
+            $welcomeRefund = 0;
+            if ($credit->welcome_credits_used > 0) {
+                $welcomeRefund = min($credit->welcome_credits_used, $count);
+                $credit->decrement('welcome_credits_used', $welcomeRefund);
+            }
+
+            // Remaining count is paid credits
+            $paidRefund = $count - $welcomeRefund;
+
+            $credit->increment('remaining_credits', $count);
+
+            if ($paidRefund > 0) {
+                $credit->decrement('used_credits', $paidRefund);
+            }
+        }, 5);
     }
 
     /**
      * Log message usage to database.
+     * No-op when account is self-managed (user pays Meta directly).
      */
     public function logUsage(string $recipient, ?WhatsAppTemplate $template, ?string $messageId, float $cost = 0): void
     {
+        if ($this->isSelfManagedAccount()) {
+            return;
+        }
+
         WhatsAppUsageLog::query()->create([
             'gym_id' => $this->gymId,
             'whatsapp_template_id' => $template?->id,

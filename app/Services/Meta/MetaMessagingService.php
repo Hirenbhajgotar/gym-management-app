@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Meta;
 
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\MessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
+use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * Meta Messaging Service.
@@ -112,7 +114,7 @@ class MetaMessagingService implements MessagingInterface
     /**
      * Send a template message.
      */
-    public function sendTemplateMessage(string $to, string $templateName, array $variables = []): array
+    public function sendTemplateMessage(string $to, string $templateIdOrName, array $variables = []): array
     {
         $phoneNumberId = $this->context->getPhoneNumberId();
 
@@ -123,21 +125,6 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
-        // Find the template
-        $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
-            ->where('name', $templateName)
-            ->where('status', 'approved')
-            ->first();
-
-        if (! $template) {
-            return [
-                'success' => false,
-                'error' => "Template '{$templateName}' not found or not approved",
-            ];
-        }
-
-        $this->credits->checkAndDeduct(1);
-
         $wabaId = $this->context->getWabaId();
 
         if (! $wabaId) {
@@ -147,9 +134,28 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
+        // Find the template
+        $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
+            ->where(function (Builder $query) use ($templateIdOrName) {
+                $query->where('meta_template_id', $templateIdOrName)
+                    ->orWhere('twilio_template_sid', $templateIdOrName)
+                    ->orWhere('name', $templateIdOrName);
+            })
+            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
+            ->first();
+
+        if (! $template) {
+            return [
+                'success' => false,
+                'error' => "Template '{$templateIdOrName}' not found or not approved",
+            ];
+        }
+
+        $this->credits->checkAndDeduct(1);
+
         // Build template payload
         $templatePayload = [
-            'name' => $templateName,
+            'name' => $template->name,
         ];
 
         if (filled($variables)) {
@@ -159,7 +165,7 @@ class MetaMessagingService implements MessagingInterface
                     'parameters' => array_map(
                         fn ($value, $key) => [
                             'type' => 'text',
-                            'parameter' => $value,
+                            'text' => $value,
                         ],
                         $variables,
                         array_keys($variables)
@@ -167,6 +173,7 @@ class MetaMessagingService implements MessagingInterface
                 ],
             ];
         }
+        $templatePayload['language'] = ['code' => 'en'];
 
         $response = $this->api->post("/{$wabaId}/messages", [
             'messaging_product' => 'whatsapp',
@@ -178,7 +185,7 @@ class MetaMessagingService implements MessagingInterface
         if ($response['success']) {
             $messageId = $response['data']['messages'][0]['id'] ?? null;
 
-            $this->credits->logUsage($to, $template->id, $messageId);
+            $this->credits->logUsage($to, $template, $messageId);
             $template->incrementUsage();
 
             return [

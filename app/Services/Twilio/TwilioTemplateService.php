@@ -8,6 +8,7 @@ use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateMasterSyncResult;
 use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppAccount;
@@ -315,7 +316,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post("{$this->context->getApiBaseUrlv1()}/Content/{$contentSid}/ApprovalRequests/whatsapp", [
                 'name' => $template->name,
-                'category' => strtoupper($template->category ?? 'UTILITY'),
+                'category' => strtoupper($template->category->value ?? TemplateCategoryEnum::UTILITY->value),
             ]);
 
         if ($approvalResponse->failed()) {
@@ -376,7 +377,7 @@ class TwilioTemplateService implements TemplateManagementInterface
                             'name' => $record->friendlyName,
                             'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
                             'body' => $body,
-                            'category' => strtolower($whatsapp['category'] ?? 'utility'),
+                            'category' => strtolower($whatsapp['category'] ?? TemplateCategoryEnum::UTILITY->value),
                             'variables' => $variables,
                             'variable_count' => count($variables),
                             'variable_placeholder' => $placeholders,

@@ -14,6 +14,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
+use Illuminate\Support\Facades\Log;
 
 class TwilioAccountStep
 {
@@ -58,7 +59,15 @@ class TwilioAccountStep
                 try {
                     (new ProcessTwilioAccountAction($page))();
                 } catch (Exception $e) {
-                    Notification::make()->title('Setup Failed')->body($e->getMessage())->danger()->send();
+                    Log::error('Twilio Account Setup Failed: ' . $e->getMessage(), [
+                        'error' => $e,
+                    ]);
+                    Notification::make()
+                        ->title('WhatsApp Account Setup Failed')
+                        ->body('Failed to create Twilio WhatsApp Account. Please try again.')
+                        ->danger()
+                        ->send();
+
                     throw new Halt();
                 }
             });

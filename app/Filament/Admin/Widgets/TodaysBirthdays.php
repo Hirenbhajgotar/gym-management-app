@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Enums\DefaultRole;
 use App\Filament\BaseWidgets\BaseTableWidget;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
 use Carbon\Carbon;
+use Exception;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Checkbox;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class TodaysBirthdays extends BaseTableWidget
 {
@@ -42,7 +47,14 @@ class TodaysBirthdays extends BaseTableWidget
 
     public static function canView(): bool
     {
-        return auth()->user()->hasRole('gym_owner');
+        $user = Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->hasRole(DefaultRole::GYM_OWNER->value)
+            || parent::canAccess();
     }
 
     public function table(Table $table): Table
@@ -50,9 +62,9 @@ class TodaysBirthdays extends BaseTableWidget
         return $table
             ->query(
                 GymMember::query()
+                    ->with('gym')
                     ->whereHas('gym')
-                    ->whereMonth('dob', now()->month)
-                    ->whereDay('dob', now()->day)
+                    ->birthdayToday()
                     ->orderBy('name', 'asc')
             )
             ->columns([
@@ -78,17 +90,56 @@ class TodaysBirthdays extends BaseTableWidget
                     ->label('Wish Happy Birthday')
                     ->icon('phosphor-gift')
                     ->color('success')
-                    ->disabled(fn (GymMember $record) => Cache::has("birthday_sent_{$record->id}_" . now()->year))
-                    ->action(function (GymMember $record) {
-                        $record->notify(new BirthdayNotification($record));
+                    ->requiresConfirmation()
+                    ->modalIcon('phosphor-gift')
+                    ->modalDescription(function (GymMember $record): string {
+                        $cacheKey = BirthdayNotification::birthdayCacheKey($record->id);
+                        $message = "Send Birthday Wish to {$record->name}";
 
-                        Cache::put("birthday_sent_{$record->id}_" . now()->year, true, now()->endOfDay());
+                        return Cache::has($cacheKey) ? 'Birthday wish already sent' : $message;
+                    })
+                    ->action(function (array $data, GymMember $record) {
+                        $cacheKey = BirthdayNotification::birthdayCacheKey($record->id);
+                        $forceSend = (bool) ($data['force_send'] ?? false);
+
+                        if (Cache::has($cacheKey) && ! $forceSend) {
+                            Notification::make()
+                                ->title('Birthday wish already sent')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        try {
+                            $record->notify(new BirthdayNotification($record));
+
+                            Cache::put($cacheKey, true, now()->endOfDay());
+                        } catch (Exception $e) {
+                            Log::error('Failed to send birthday notification', [
+                                'member_id' => $record->id,
+                                'error' => $e->getMessage(),
+                            ]);
+
+                            Notification::make()
+                                ->title('Failed to send birthday wish')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Birthday wish sent successfully')
                             ->success()
                             ->send();
-                    }),
+                    })
+                    ->form([
+                        Checkbox::make('force_send')
+                            ->label('Force send')
+                            ->default(false)
+                            ->visible(fn (GymMember $record): bool => Cache::has(BirthdayNotification::birthdayCacheKey($record->id))),
+                    ]),
             ])
             ->emptyStateHeading('No birthdays today.');
     }

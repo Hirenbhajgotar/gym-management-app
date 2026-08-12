@@ -93,7 +93,7 @@ class WhatsAppProviderFactory
     {
         $cacheKey = self::CACHE_PREFIX . $gymId;
 
-        return Cache::flexible(
+        return Cache::tags(['whatsapp_providers'])->flexible(
             $cacheKey,
             [self::CACHE_MIN_TTL, self::CACHE_MAX_TTL],
             function () use ($gymId) {
@@ -122,7 +122,7 @@ class WhatsAppProviderFactory
      */
     public static function invalidateProviderCache(int $gymId): void
     {
-        Cache::forget(self::CACHE_PREFIX . $gymId);
+        Cache::tags(['whatsapp_providers'])->forget(self::CACHE_PREFIX . $gymId);
     }
 
     /**
@@ -131,7 +131,7 @@ class WhatsAppProviderFactory
      */
     public static function invalidateAllProviderCache(): void
     {
-        Cache::flush();
+        Cache::tags(['whatsapp_providers'])->flush();
     }
 
     /**

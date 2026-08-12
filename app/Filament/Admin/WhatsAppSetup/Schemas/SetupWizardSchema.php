@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\WhatsAppSetup\Schemas;
 
 use App\Filament\Admin\Pages\WhatsAppSetup;
+use App\Filament\Admin\WhatsAppSetup\Steps\BillingModeStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\ProviderSelectionStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\TemplatesStep;
 use App\Filament\Admin\WhatsAppSetup\Steps\TwilioAccountStep;
@@ -26,9 +27,15 @@ class SetupWizardSchema
     public const TWILIO_ACCOUNT_STEP = 2;
 
     /**
+     * Billing Mode (WABA only)
+     */
+    // public const WABA_BILLING_MODE_STEP = 3;
+    public const WABA_BILLING_MODE_STEP = 2;
+
+    /**
      * WhatsApp Business
      */
-    public const WABA_ACCOUNT_STEP = 2;
+    public const WABA_ACCOUNT_STEP = 3;
 
     /**
      * Phone Number
@@ -43,7 +50,7 @@ class SetupWizardSchema
     /**
      * Templates
      */
-    public const WABA_TEMPLATES_STEP = 3;
+    public const WABA_TEMPLATES_STEP = 4;
 
     /**
      * Welcome Credits
@@ -53,7 +60,7 @@ class SetupWizardSchema
     /**
      * Welcome Credits
      */
-    public const WABA_WELCOME_CREDITS_STEP = 4;
+    public const WABA_WELCOME_CREDITS_STEP = 5;
 
     public static function make(WhatsAppSetup $page): array
     {
@@ -61,6 +68,7 @@ class SetupWizardSchema
             Wizard::make([
                 ProviderSelectionStep::make($page),
                 TwilioAccountStep::make($page), // Contains logic to swap to WABA internally
+                BillingModeStep::make($page),
                 WabaAccountStep::make($page),   // Contains logic to swap to Twilio internally
                 TwilioPhoneNumberStep::make($page),
                 TemplatesStep::make($page),

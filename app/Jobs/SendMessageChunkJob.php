@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Providers\WhatsAppProviderFactory;
@@ -67,6 +68,20 @@ class SendMessageChunkJob implements ShouldQueue
      */
     public function handle(): void
     {
+        if ($this->attempts() > 1) {
+            $sentIds = DB::table('whatsapp_broadcast_recipients')
+                ->where('whatsapp_broadcast_id', $this->broadcastId)
+                ->whereIn('id', array_column($this->recipientChunk, 'id'))
+                ->whereIn('status', [WhatsAppBroadcastRecipientStatusEnum::SENT, WhatsAppBroadcastRecipientStatusEnum::FAILED])
+                ->pluck('id')
+                ->flip();
+
+            $this->recipientChunk = array_values(array_filter(
+                $this->recipientChunk,
+                fn (array $r): bool => ! isset($sentIds[$r['id']])
+            ));
+        }
+
         $provider = $this->resolveProvider();
 
         if ($this->skipCreditDeduction) {
@@ -85,14 +100,15 @@ class SendMessageChunkJob implements ShouldQueue
 
             if ($response !== null && ($response['success'] ?? false)) {
                 $successIds[] = $recipient['id'];
-                $messageSids[$recipient['id']] = $response['message_id'] ?? null;
+                $messageId = $response['message_id'] ?? null;
+                $messageSids[$recipient['id']] = is_string($messageId) ? $messageId : null;
             } else {
-                $error = is_array($response) ? ($response['error'] ?? 'Unknown error') : 'Request failed';
+                $error = is_array($response) ? (is_scalar($response['error'] ?? null) ? (string) $response['error'] : 'Unknown error') : 'Request failed';
                 if ($this->isRateLimited($error)) {
-                    throw new RateLimitExceededException(
-                        "Rate limited: {$error}",
-                        $this->getRetryAfter($error)
-                    );
+                    $this->bulkUpdateRecipientStatuses($successIds, $failedIds, $failureReasons, $messageSids);
+                    $this->updateBroadcastCounts(count($successIds), count($failedIds));
+
+                    throw new RateLimitExceededException("Rate limited: {$error}", $this->getRetryAfter($error));
                 }
                 $failedIds[] = $recipient['id'];
                 $failureReasons[$recipient['id']] = $error;
