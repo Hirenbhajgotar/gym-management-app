@@ -13,9 +13,11 @@ use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\SubscriptionProvisioner;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
+use App\Models\User;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
 use App\Permissions\TeamPermissionRegistrar;
+use App\Services\GymContextResolver;
 use Filament\Events\TenantSet;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
@@ -24,12 +26,15 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Opcodes\LogViewer\Facades\LogViewer;
+use Opcodes\LogViewer\LogFile;
 use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
@@ -152,7 +157,10 @@ class AppServiceProvider extends ServiceProvider
     private function registerNotificationChannels(): void
     {
         Notification::extend('whatsapp', function ($app) {
-            return new WhatsAppChannel();
+            /** @var GymContextResolver $resolver */
+            $resolver = resolve(GymContextResolver::class);
+
+            return new WhatsAppChannel($resolver);
         });
 
         Notification::extend('filament', function ($app) {
@@ -172,7 +180,48 @@ class AppServiceProvider extends ServiceProvider
     private function defineGates(): void
     {
         // Gate for queue job
-        Gate::define('viewVantage', function ($user = null) {
+        Gate::define('viewVantage', function (?User $user = null) {
+            // Only allow super-admins
+            if (! $user) {
+                return false;
+            }
+            if (! $user->hasRole([DefaultRole::SUPER_ADMIN->value])) {
+                return false;
+            }
+
+            return true;
+        });
+
+        // Gate for Log Viewer
+        LogViewer::auth(function (Request $request) {
+            /** @var User|null $user */
+            $user = $request->user();
+            // Only allow super-admins
+            if (! $user) {
+                return false;
+            }
+            if (! $user->hasRole([DefaultRole::SUPER_ADMIN->value])) {
+                return false;
+            }
+
+            return true;
+        });
+
+        Gate::define('downloadLogFile', function (?User $user, LogFile $file) {
+            // return true if the user is allowed to download the specific log file.
+            // Only allow super-admins
+            if (! $user) {
+                return false;
+            }
+            if (! $user->hasRole([DefaultRole::SUPER_ADMIN->value])) {
+                return false;
+            }
+
+            return true;
+        });
+
+        Gate::define('deleteLogFile', function (?User $user, LogFile $file) {
+            // return true if the user is allowed to delete the specific log file.
             // Only allow super-admins
             if (! $user) {
                 return false;
