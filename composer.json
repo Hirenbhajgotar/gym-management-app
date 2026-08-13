@@ -34,6 +34,7 @@
         "marcelweidum/filament-expiration-notice": "^1.0",
         "mokhosh/filament-kanban": "^2.11",
         "mokhosh/filament-rating": "^1.4",
+        "opcodesio/log-viewer": "^3.24",
         "predis/predis": "^3.2",
         "propaganistas/laravel-phone": "^6.0",
         "razorpay/razorpay": "2.*",
