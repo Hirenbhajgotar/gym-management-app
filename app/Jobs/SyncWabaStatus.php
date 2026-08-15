@@ -47,13 +47,13 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
 
         // Use provider factory to get the MetaWhatsAppProvider
         $provider = WhatsAppProviderFactory::create(
-            gymId: (int) $account->gym_id,
+            gymId: $account->gym_id,
             providerType: $account->provider_type?->value
         );
 
         $wabaDetails = $provider->getWabaDetails(
             $account->waba_id,
-            $account->metaAccessToken
+            $account->meta_access_token
         );
 
         if (! $wabaDetails['success']) {
@@ -89,6 +89,10 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
             'verification_status' => WhatsAppAccountVerificationStatusEnum::fromMetaVerificationStatus($verificationStatus),
             'waba_status_synced_at' => now(),
         ]);
+
+        if (method_exists($provider, 'syncWabaPhoneNumbers')) {
+            $provider->syncWabaPhoneNumbers($account->gym_id, $account->waba_id, $account->meta_access_token);
+        }
 
         Log::info('WABA status synced successfully', [
             'account_id' => $this->whatsAppAccountId,

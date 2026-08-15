@@ -79,6 +79,13 @@ return [
         'welcome_credits' => (int) env('WHATSAPP_WELCOME_CREDITS', 50),
         'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
         'template_language' => (string) env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
+
+        // Default 6-digit 2-step verification PIN used when registering/verifying
+        // WhatsApp phone numbers with the Meta Cloud API. Override per-environment
+        // via WHATSAPP_DEFAULT_REGISTRATION_PIN. IMPORTANT: this MUST match the PIN
+        // configured in Meta Business Manager for the phone number, otherwise the
+        // registration call will fail with a PIN mismatch error.
+        'default_registration_pin' => env('WHATSAPP_DEFAULT_REGISTRATION_PIN', '123456'),
     ],
 
     'meta' => [

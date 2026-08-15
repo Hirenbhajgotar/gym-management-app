@@ -36,6 +36,8 @@ class MetaMessagingService implements MessagingInterface
 
     /**
      * Send a WhatsApp message.
+     *
+     * @return array{success: bool, message_id?: ?string, status?: ?string, error?: ?string, data?: mixed}
      */
     public function sendMessage(string $to, string $message): array
     {
@@ -81,7 +83,7 @@ class MetaMessagingService implements MessagingInterface
 
         $this->credits->checkAndDeduct(1);
 
-        $response = $this->api->post("/{$wabaId}/messages", [
+        $response = $this->api->post("/{$phoneNumberId}/messages", [
             'messaging_product' => 'whatsapp',
             'to' => $to,
             'type' => 'text',
@@ -91,7 +93,8 @@ class MetaMessagingService implements MessagingInterface
         ]);
 
         if ($response['success']) {
-            $messageId = $response['data']['messages'][0]['id'] ?? null;
+            $rawMessageId = isset($response['data']['messages'][0]['id']) ? $response['data']['messages'][0]['id'] : null;
+            $messageId = is_string($rawMessageId) ? $rawMessageId : null;
 
             $this->credits->logUsage($to, null, $messageId);
 
@@ -175,7 +178,7 @@ class MetaMessagingService implements MessagingInterface
         }
         $templatePayload['language'] = ['code' => 'en'];
 
-        $response = $this->api->post("/{$wabaId}/messages", [
+        $response = $this->api->post("/{$phoneNumberId}/messages", [
             'messaging_product' => 'whatsapp',
             'to' => $to,
             'type' => 'template',
@@ -183,7 +186,8 @@ class MetaMessagingService implements MessagingInterface
         ]);
 
         if ($response['success']) {
-            $messageId = $response['data']['messages'][0]['id'] ?? null;
+            $rawMessageId = isset($response['data']['messages'][0]['id']) ? $response['data']['messages'][0]['id'] : null;
+            $messageId = is_string($rawMessageId) ? $rawMessageId : null;
 
             $this->credits->logUsage($to, $template, $messageId);
             $template->incrementUsage();
@@ -246,6 +250,9 @@ class MetaMessagingService implements MessagingInterface
 
     /**
      * Get message status.
+     *
+     * @param  string  $messageId  Message SID or ID
+     * @return array{success: bool, status?: string, delivered_at?: ?string, read_at?: ?string, error?: string, data?: array<array-key, mixed>}
      */
     public function getMessageStatus(string $messageId): array
     {

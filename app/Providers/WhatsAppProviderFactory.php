@@ -45,6 +45,29 @@ class WhatsAppProviderFactory
     public const DEFAULT_PROVIDER = self::PROVIDER_META;
 
     /**
+     * Test provider instances for unit testing.
+     *
+     * @var array<int, MetaWhatsAppProvider|TwilioWhatsAppProvider>
+     */
+    protected static array $testProviders = [];
+
+    /**
+     * Set a test provider instance for a specific gym.
+     */
+    public static function setTestProvider(int $gymId, MetaWhatsAppProvider|TwilioWhatsAppProvider $provider): void
+    {
+        self::$testProviders[$gymId] = $provider;
+    }
+
+    /**
+     * Clear all test provider instances.
+     */
+    public static function clearTestProviders(): void
+    {
+        self::$testProviders = [];
+    }
+
+    /**
      * Create a WhatsApp provider instance for the given gym.
      *
      * @param  int  $gymId  The gym ID
@@ -54,6 +77,10 @@ class WhatsAppProviderFactory
      */
     public static function create(int $gymId, bool $isSystemMessage = false, ?string $providerType = null): MetaWhatsAppProvider|TwilioWhatsAppProvider
     {
+        if (isset(self::$testProviders[$gymId])) {
+            return self::$testProviders[$gymId];
+        }
+
         // System messages always use Twilio
         if ($isSystemMessage) {
             Log::debug('Creating WhatsApp provider for system message', [

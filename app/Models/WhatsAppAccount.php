@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\Crypt;
  * @property string|null $embedded_signup_session_id
  * @property WhatsAppAccountStatusEnum|null $status
  * @property WhatsAppAccountVerificationStatusEnum|null $verification_status
+ * @property Carbon|null $waba_status_synced_at
  * @property string|null $business_name
  * @property string|null $business_email
  * @property string|null $business_description
@@ -111,6 +112,7 @@ class WhatsAppAccount extends Model
         'embedded_signup_session_id',
         'status',
         'verification_status',
+        'waba_status_synced_at',
         'business_name',
         'business_email',
         'business_description',

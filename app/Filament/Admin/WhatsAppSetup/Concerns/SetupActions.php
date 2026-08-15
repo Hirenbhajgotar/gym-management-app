@@ -7,6 +7,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Concerns;
 use App\Filament\Admin\WhatsAppSetup\Actions\ClaimWelcomeCreditsAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\PurchaseNumberAction;
+use App\Filament\Admin\WhatsAppSetup\Actions\RegisterWabaPhoneAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\SearchNumbersAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartSetupAction;
@@ -52,5 +53,10 @@ trait SetupActions
     public function connectExistingWabaAction(): void
     {
         (new ConnectExistingWabaAction($this))();
+    }
+
+    public function registerWabaPhoneAction(): void
+    {
+        (new RegisterWabaPhoneAction($this))();
     }
 }
