@@ -7,6 +7,7 @@ namespace App\Filament\Admin\WhatsAppSetup\Steps;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Filament\Admin\WhatsAppSetup\Actions\ConnectExistingWabaAction;
+use App\Filament\Admin\WhatsAppSetup\Actions\RegisterWabaPhoneAction;
 use App\Filament\Admin\WhatsAppSetup\Actions\StartEmbeddedSignupAction;
 use Exception;
 use Filament\Forms\Components\Actions;
@@ -106,6 +107,28 @@ class WabaAccountStep
                 Placeholder::make('waba_connected')->hiddenLabel()->content(fn () => new HtmlString(
                     view('filament.admin.whatsapp-setup.waba-connected', ['verificationStatus' => $page->verificationStatus])->render()
                 ))->visible(fn () => $page->isWabaConnected()),
+
+                Actions::make([
+                    Action::make('registerWabaPhone')
+                        ->label('Sync & Register Phone Number')
+                        ->color('primary')
+                        ->icon('heroicon-o-phone-arrow-up-right')
+                        ->modalHeading('Register & Activate WhatsApp Phone Number')
+                        ->modalDescription('Enter your 6-digit Meta 2-Step Verification PIN if enabled in Meta Business Manager. Default is 123456.')
+                        ->form([
+                            TextInput::make('pin')
+                                ->label('6-Digit Verification PIN')
+                                ->placeholder('123456')
+                                ->default('123456')
+                                ->required()
+                                ->minLength(6)
+                                ->maxLength(6),
+                        ])
+                        ->action(function (array $data) use ($page) {
+                            $pin = is_string($data['pin']) ? $data['pin'] : '123456';
+                            (new RegisterWabaPhoneAction($page))($pin);
+                        }),
+                ])->visible(fn () => $page->isWabaConnected()),
             ])
             ->afterValidation(function () use ($page) {
                 // Skip if account is already verified, in review, or disabled

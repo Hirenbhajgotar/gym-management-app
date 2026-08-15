@@ -75,6 +75,7 @@ class PaymentReminderNotification extends BaseTenantNotification
                 'to' => $phoneNumber,
                 'from' => $config['from_number'],
                 'template_sid' => $template->twilio_template_sid,
+                'meta_template_id' => $template->meta_template_id,
                 'template_variables' => resolve(WhatsAppVariableResolver::class)->resolve($template, [
                     'member' => $this->member,
                 ]),

@@ -20,10 +20,10 @@ interface MessagingInterface
      * @param  string  $message  Message body
      * @return array{
      *     success: bool,
-     *     message_id?: string,
-     *     status?: string,
-     *     error?: string,
-     *     data?: array
+     *     message_id?: ?string,
+     *     status?: ?string,
+     *     error?: ?string,
+     *     data?: mixed
      * }
      */
     public function sendMessage(string $to, string $message): array;
@@ -33,12 +33,12 @@ interface MessagingInterface
      *
      * @param  string  $to  Recipient phone number
      * @param  string  $templateName  Template name or SID
-     * @param  array<string, string>  $variables  Template variables
+     * @param  array<array-key, string>  $variables  Template variables
      * @return array{
      *     success: bool,
-     *     message_id?: string,
-     *     status?: string,
-     *     error?: string
+     *     message_id?: ?string,
+     *     status?: ?string,
+     *     error?: ?string
      * }
      */
     public function sendTemplateMessage(string $to, string $templateName, array $variables = []): array;
@@ -50,9 +50,9 @@ interface MessagingInterface
      * @param  string  $message  Test message content
      * @return array{
      *     success: bool,
-     *     message_id?: string,
-     *     status?: string,
-     *     error?: string
+     *     message_id?: ?string,
+     *     status?: ?string,
+     *     error?: ?string
      * }
      */
     public function sendTestMessage(string $to, string $message): array;
@@ -77,7 +77,8 @@ interface MessagingInterface
      *     status?: string,
      *     delivered_at?: ?string,
      *     read_at?: ?string,
-     *     error?: string
+     *     error?: string,
+     *     data?: array<array-key, mixed>
      * }
      */
     public function getMessageStatus(string $messageId): array;

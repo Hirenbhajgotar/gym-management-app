@@ -7,6 +7,8 @@ namespace Tests\Feature\SuperAdmin;
 use App\Enums\DefaultRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\PendingCommand;
+use Laravel\Sanctum\PersonalAccessToken;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -39,7 +41,7 @@ class GenerateSuperAdminTokenCommandTest extends TestCase
         ]);
         $superAdmin->assignRole(DefaultRole::SUPER_ADMIN->value);
 
-        /** @var \Illuminate\Testing\PendingCommand $command */
+        /** @var PendingCommand $command */
         $command = $this->artisan('superadmin:generate-token', [
             'email' => 'superadmin@example.com',
             '--token-name' => 'test-log-viewer',
@@ -51,7 +53,7 @@ class GenerateSuperAdminTokenCommandTest extends TestCase
 
         $this->assertCount(1, $superAdmin->tokens);
 
-        /** @var \Laravel\Sanctum\PersonalAccessToken $token */
+        /** @var PersonalAccessToken $token */
         $token = $superAdmin->tokens->first();
         $this->assertEquals('test-log-viewer', $token->name);
     }
@@ -59,7 +61,7 @@ class GenerateSuperAdminTokenCommandTest extends TestCase
     #[Test]
     public function it_fails_if_user_email_does_not_exist(): void
     {
-        /** @var \Illuminate\Testing\PendingCommand $command */
+        /** @var PendingCommand $command */
         $command = $this->artisan('superadmin:generate-token', [
             'email' => 'nonexistent@example.com',
         ]);
@@ -77,7 +79,7 @@ class GenerateSuperAdminTokenCommandTest extends TestCase
         ]);
         $regularUser->assignRole(DefaultRole::GYM_OWNER->value);
 
-        /** @var \Illuminate\Testing\PendingCommand $command */
+        /** @var PendingCommand $command */
         $command = $this->artisan('superadmin:generate-token', [
             'email' => 'regular@example.com',
         ]);
@@ -95,7 +97,7 @@ class GenerateSuperAdminTokenCommandTest extends TestCase
         ]);
         $superAdmin->assignRole(DefaultRole::SUPER_ADMIN->value);
 
-        /** @var \Illuminate\Testing\PendingCommand $command */
+        /** @var PendingCommand $command */
         $command = $this->artisan('superadmin:generate-token');
         $command->expectsOutputToContain('Personal access token generated successfully!')
             ->assertExitCode(0)
