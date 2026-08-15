@@ -112,6 +112,12 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
         $this->messaging()->sendBroadcast($broadcastId);
     }
 
+    /**
+     * Get the status of a sent message.
+     *
+     * @param  string  $messageId  Message SID or ID
+     * @return array{success: bool, status?: string, delivered_at?: ?string, read_at?: ?string, error?: string, data?: array<array-key, mixed>}
+     */
     public function getMessageStatus(string $messageId): array
     {
         return $this->messaging()->getMessageStatus($messageId);
@@ -248,6 +254,49 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
     public function getWabaDetails(string $wabaId, string $accessToken): array
     {
         return $this->wabaSetup()->getWabaDetails($wabaId, $accessToken);
+    }
+
+    /**
+     * Fetch all phone numbers registered under a WABA from Meta API.
+     *
+     * @param  string  $wabaId  The WhatsApp Business Account ID
+     * @param  string|null  $accessToken  The Meta access token
+     * @return array{success: bool, data?: array<int, array{id: string, display_phone_number: string, verified_name?: string, status?: string, quality_score?: string}>, error?: string}
+     */
+    public function getWabaPhoneNumbers(string $wabaId, ?string $accessToken = null): array
+    {
+        return $this->wabaSetup()->getWabaPhoneNumbers($wabaId, $accessToken);
+    }
+
+    /**
+     * Register/activate a phone number with Meta Cloud API.
+     *
+     * @param  string  $phoneNumberId  The Meta phone number ID
+     * @param  string|null  $pin  The 6-digit PIN for registration
+     * @param  string|null  $accessToken  The Meta access token
+     * @return array{success: bool, message?: string, error?: string}
+     */
+    public function registerPhoneNumber(string $phoneNumberId, ?string $pin = null, ?string $accessToken = null): array
+    {
+        $pin ??= config()->string('services.whatsapp.default_registration_pin', '123456');
+
+        return $this->wabaSetup()->registerPhoneNumber($phoneNumberId, $pin, $accessToken);
+    }
+
+    /**
+     * Sync and register WABA phone numbers for a gym.
+     *
+     * @param  int  $gymId  The gym ID
+     * @param  string|null  $wabaId  The WABA ID
+     * @param  string|null  $accessToken  The Meta access token
+     * @param  string|null  $pin  The 6-digit PIN for registration
+     * @return array{success: bool, synced_count?: int, synced?: array<int, array{phone_number_id: string, phone_number: string, status: string|null}>, error?: string}
+     */
+    public function syncWabaPhoneNumbers(int $gymId, ?string $wabaId = null, ?string $accessToken = null, ?string $pin = null): array
+    {
+        $pin ??= config()->string('services.whatsapp.default_registration_pin', '123456');
+
+        return $this->wabaSetup()->syncWabaPhoneNumbers($gymId, $wabaId, $accessToken, $pin);
     }
 
     /**

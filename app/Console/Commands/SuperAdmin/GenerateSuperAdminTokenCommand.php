@@ -37,7 +37,7 @@ class GenerateSuperAdminTokenCommand extends Command
         $tokenName = (string) $this->option('token-name');
 
         if (! $email) {
-            $superAdminUsers = User::role(DefaultRole::SUPER_ADMIN->value)->get();
+            $superAdminUsers = User::query()->role(DefaultRole::SUPER_ADMIN->value)->get();
 
             if ($superAdminUsers->isEmpty()) {
                 $this->error('No users found with the Super Admin role.');
@@ -65,7 +65,7 @@ class GenerateSuperAdminTokenCommand extends Command
             }
         } else {
             /** @var User|null $user */
-            $user = User::where('email', $email)->first();
+            $user = User::query()->where('email', $email)->first();
         }
 
         if (! $user) {
