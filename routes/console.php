@@ -111,3 +111,6 @@ Schedule::command('notification:send-membership-expiry-alerts')
     ->dailyAt('08:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('app:archive-inactive-gym-members')
+    ->dailyAt('23:00');

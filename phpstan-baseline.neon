@@ -8827,12 +8827,6 @@ parameters:
 			path: app/Filament/Admin/Resources/GymMemberResource.php
 
 		-
-			message: '#^Parameter \#1 \$components of method Filament\\Forms\\Components\\Component\:\:schema\(\) expects array\<Filament\\Forms\\Components\\Component\>\|Closure, array given\.$#'
-			identifier: argument.type
-			count: 4
-			path: app/Filament/Admin/Resources/GymMemberResource.php
-
-		-
 			message: '#^Parameter \#1 \$date of method Carbon\\Carbon\:\:diffInDays\(\) expects DateTimeInterface\|string\|null, mixed given\.$#'
 			identifier: argument.type
 			count: 1

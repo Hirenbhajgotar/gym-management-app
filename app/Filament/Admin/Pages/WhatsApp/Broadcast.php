@@ -148,7 +148,10 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     private function getFilteredMembers(): Builder
     {
-        $query = GymMember::query()->whereNotNull('phone')->where('phone', '!=', '');
+        $query = GymMember::query()
+            ->whatsappMarketingAllowed()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '');
 
         $data = $this->data;
 
@@ -184,7 +187,10 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     private function getAllMemberCount(): int
     {
-        return GymMember::query()->where('gym_id', $this->getGymId())->count();
+        return GymMember::query()
+            ->whatsappMarketingAllowed()
+            ->where('gym_id', $this->getGymId())
+            ->count();
     }
 
     private function getFilteredMemberCount(): int

@@ -19,6 +19,7 @@ use Filament\Actions\ImportAction as ActionsImportAction;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ListGymMembers extends ListRecords
 {
@@ -71,7 +72,7 @@ class ListGymMembers extends ListRecords
     public function getUser(): User
     {
         /** @var User $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         return $user;
     }
@@ -82,10 +83,16 @@ class ListGymMembers extends ListRecords
             'active' => Tab::make('Active')
                 ->modifyQueryUsing(function (Builder $query) {
                     $query->membershipActive();
+                    $query->notArchived();
                 }),
             'expired' => Tab::make('Expired')
                 ->modifyQueryUsing(function (Builder $query) {
                     $query->membershipExpired();
+                    $query->notArchived();
+                }),
+            'archived' => Tab::make('Archived')
+                ->modifyQueryUsing(function (Builder $query) {
+                    $query->archived();
                 }),
         ];
     }
