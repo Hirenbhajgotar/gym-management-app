@@ -479,3 +479,23 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+<!-- OCR:START -->
+## Open Code Review Instructions
+
+These instructions are for AI assistants handling code review in this project.
+
+Always open `.ocr/skills/SKILL.md` when the request:
+- Asks for code review, PR review, or feedback on changes
+- Mentions "review my code" or similar phrases
+- Wants multi-perspective analysis of code quality
+- Asks to map, organize, or navigate a large changeset
+
+Use `.ocr/skills/SKILL.md` to learn:
+- How to run the 8-phase review workflow
+- How to generate a Code Review Map for large changesets
+- Available reviewer personas and their focus areas
+- Session management and output format
+
+Keep this managed block so `ocr init` can refresh the instructions.
+<!-- OCR:END -->
