@@ -1,0 +1,10 @@
+{
+  "configuredTools": [
+    "cursor",
+    "gemini",
+    "github-copilot",
+    "opencode"
+  ],
+  "lastUpdated": "2026-08-18T09:01:37.035Z",
+  "cliVersion": "2.5.0"
+}

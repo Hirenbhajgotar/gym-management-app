@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
 use App\Helpers\BmiHelper;
 use App\Models\MemberMeasurement;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -33,6 +34,9 @@ class MeasurementsRelationManager extends RelationManager
             ->schema(self::getMeasurementsFormSchema());
     }
 
+    /**
+     * @return array<int, Component>
+     */
     public static function getMeasurementsFormSchema(): array
     {
         return [

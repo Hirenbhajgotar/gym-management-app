@@ -70,7 +70,9 @@ class GymMemberImporter extends Importer
 
                     throw_unless($plan, RowImportFailedException::class, "Membership plan [{$state}] not found.");
 
-                    $record->gym_membership_plan_id = $plan->id;
+                    /** @var int<0, max> $planId */
+                    $planId = $plan->id;
+                    $record->gym_membership_plan_id = $planId;
                 }),
 
             ImportColumn::make('membership_end')
@@ -113,8 +115,22 @@ class GymMemberImporter extends Importer
                         ->where('email', $state)
                         ->first();
 
-                    $record->trainer_id = $trainer?->id;
+                    /** @var int<0, max>|null $trainerId */
+                    $trainerId = $trainer?->id;
+                    $record->trainer_id = $trainerId;
                 }),
+
+            ImportColumn::make('allow_whatsapp_marketing')
+                ->label('Allow WhatsApp Marketing')
+                ->boolean()
+                ->rules(['nullable', 'boolean'])
+                ->guess(['whatsapp_marketing', 'allow_whatsapp_marketing', 'whatsapp marketing']),
+
+            ImportColumn::make('is_archived')
+                ->label('Is Archived')
+                ->boolean()
+                ->rules(['nullable', 'boolean'])
+                ->guess(['archived', 'is_archived']),
         ];
     }
 
@@ -128,11 +144,15 @@ class GymMemberImporter extends Importer
      */
     public function resolveRecord(): GymMember
     {
-        $tenantId = $this->options['tenantId'] ?? null;
+        $rawTenantId = $this->options['tenantId'] ?? null;
 
-        throw_unless($tenantId, RowImportFailedException::class, 'No tenant/gym was provided to the importer.');
+        throw_unless($rawTenantId, RowImportFailedException::class, 'No tenant/gym was provided to the importer.');
 
-        $phone = ParserHelper::formatPhoneNumberWithCountryCode((string) ($this->data['phone'] ?? ''));
+        /** @var int<0, max> $tenantId */
+        $tenantId = is_numeric($rawTenantId) ? (int) $rawTenantId : 0;
+
+        $rawPhone = $this->data['phone'] ?? '';
+        $phone = ParserHelper::formatPhoneNumberWithCountryCode(is_string($rawPhone) || is_numeric($rawPhone) ? (string) $rawPhone : '');
 
         $lock = Cache::lock("gym_member_import:{$tenantId}:{$phone}", 30);
 
@@ -165,35 +185,85 @@ class GymMemberImporter extends Importer
 
     protected function beforeSave(): void
     {
+        /** @var GymMember $record */
         $record = $this->record;
-        $tenantId = $this->options['tenantId'];
+        $rawTenantId = $this->options['tenantId'] ?? null;
+        $tenantId = is_numeric($rawTenantId) ? (int) $rawTenantId : 0;
 
-        if (isset($this->data['name'])) {
-            $record->profile_photo = resolve(AvatarService::class)->generate($this->data['name']);
+        $nameVal = $this->data['name'] ?? null;
+        if (is_string($nameVal) && filled($nameVal)) {
+            $avatar = resolve(AvatarService::class)->generate($nameVal);
+            $record->profile_photo = is_string($avatar) ? $avatar : null;
         }
 
-        $record->user_id = Gym::query()->find($tenantId)?->owner()?->id ?? $record->user_id;
+        $gym = Gym::query()->where('id', $tenantId)->first();
+        if ($gym) {
+            $owner = $gym->owner();
+            if ($owner) {
+                /** @var int<0, max> $ownerId */
+                $ownerId = $owner->id;
+                $record->user_id = $ownerId;
+            }
+        }
 
         // The fillRecordUsing closures cannot use $this because getColumns() is
         // static, so we reconstruct stashed values here from data already on the
         // record and in $this->data (which was populated by castData()).
-        $this->membershipEndInput = $this->data['membership_end'] ?? null;
+        $endInput = $this->data['membership_end'] ?? null;
+        $this->membershipEndInput = $endInput instanceof Carbon ? $endInput : (is_string($endInput) && filled($endInput) ? Date::parse($endInput) : null);
 
         if ($record->gym_membership_plan_id) {
             $this->membershipPlan = MembershipPlan::query()
                 ->where('gym_id', $tenantId)
-                ->find($record->gym_membership_plan_id);
+                ->where('id', $record->gym_membership_plan_id)
+                ->first();
         }
 
         if ($this->membershipPlan) {
             [$start, $end] = $this->calculateMembershipDates($this->membershipPlan);
-            $record->membership_start = $start;
-            $record->membership_end = $end;
+            $record->membership_start = $start->toDateString();
+            $record->membership_end = $end->toDateString();
+        }
+
+        // Auto-calculate archiving and WhatsApp marketing permissions based on membership_end
+        $rawEnd = $record->membership_end;
+        $membershipEnd = $rawEnd ? Date::parse($rawEnd) : null;
+
+        if ($membershipEnd) {
+            $twoYearsAgo = now()->subYears(2);
+            $oneYearAgo = now()->subYear();
+
+            if ($membershipEnd->lt($twoYearsAgo)) {
+                $record->is_archived = true;
+                $record->archived_at = now()->toDateTimeString();
+                $record->allow_whatsapp_marketing = false;
+            } elseif ($membershipEnd->lt($oneYearAgo)) {
+                $record->is_archived = false;
+                $record->archived_at = null;
+                if (! isset($this->data['allow_whatsapp_marketing'])) {
+                    $record->allow_whatsapp_marketing = false;
+                }
+            } else {
+                $record->is_archived = false;
+                $record->archived_at = null;
+                if (! isset($this->data['allow_whatsapp_marketing'])) {
+                    $record->allow_whatsapp_marketing = true;
+                }
+            }
+        } else {
+            $record->is_archived = false;
+            $record->archived_at = null;
+            if (! isset($this->data['allow_whatsapp_marketing'])) {
+                $record->allow_whatsapp_marketing = true;
+            }
         }
     }
 
     protected function afterSave(): void
     {
+        /** @var GymMember $gymMember */
+        $gymMember = $this->record;
+
         // membershipPlan was already reconstructed in beforeSave().
         if (! $this->membershipPlan) {
             return;
@@ -201,20 +271,25 @@ class GymMemberImporter extends Importer
 
         // Reconstruct payment data from $this->data. The closures cannot
         // use $this, so we process the cast raw values here instead.
-        $this->paymentStatusInput = isset($this->data['payment_status'])
-            ? PaymentStatus::from($this->data['payment_status'])
+        $rawStatus = $this->data['payment_status'] ?? null;
+        $this->paymentStatusInput = (is_string($rawStatus) || is_int($rawStatus))
+            ? PaymentStatus::tryFrom((string) $rawStatus)
             : null;
-        $this->pendingPaymentInput = $this->data['pending_payment'] ?? null;
+        $rawPending = $this->data['pending_payment'] ?? null;
+        $this->pendingPaymentInput = is_numeric($rawPending) ? (float) $rawPending : null;
 
         // Handle expired membership — skip payment creation when the CSV
         // explicitly marks the member as expired and the membership end
         // date is already in the past.
+        $rawEnd = $gymMember->membership_end;
+        $membershipEnd = $rawEnd ? Date::parse($rawEnd) : null;
+
         if (
             $this->paymentStatusInput === PaymentStatus::EXPIRED
-            && $this->record->membership_end
-            && $this->record->membership_end->isPast()
+            && $membershipEnd
+            && $membershipEnd->isPast()
         ) {
-            $this->record->update([
+            $gymMember->update([
                 'payment_status' => PaymentStatus::EXPIRED->value,
                 'latest_payment_at' => null,
             ]);
@@ -266,14 +341,19 @@ class GymMemberImporter extends Importer
 
     protected function handleMemberPayment(): void
     {
+        /** @var GymMember $gymMember */
         $gymMember = $this->record;
 
         $plan = $this->membershipPlan;
+        if (! $plan) {
+            return;
+        }
 
         $planPrice = (float) $plan->price;
 
         [$totalPaid, $paymentStatus] = $this->calculatePaymentAmounts($planPrice);
 
+        /** @var MemberPayment|null $existingPayment */
         $existingPayment = null;
 
         if (! $this->isNewRecord) {
@@ -358,17 +438,20 @@ class GymMemberImporter extends Importer
 
     protected function updateExistingPayment(MemberPayment $payment, PaymentStatus $paymentStatus): void
     {
+        /** @var GymMember $gymMember */
+        $gymMember = $this->record;
+
         $payment->update([
             'status' => $paymentStatus,
             'notes' => 'Updated via Filament import',
             'payment_date' => now(),
-            'membership_start' => $this->record->membership_start ?? $payment->membership_start,
-            'membership_end' => $this->record->membership_end ?? $payment->membership_end,
+            'membership_start' => $gymMember->membership_start ?? $payment->membership_start,
+            'membership_end' => $gymMember->membership_end ?? $payment->membership_end,
         ]);
 
         $payment->syncStatusFromTransactions();
 
-        $this->record->update([
+        $gymMember->update([
             'payment_status' => $payment->status?->value,
             'latest_payment_at' => $payment->payment_date,
         ]);

@@ -31,6 +31,7 @@ class BirthdayNotificationTest extends TestCase
             'gym_id' => $gym->id,
             'name' => 'John Doe',
             'phone' => '+14155551234',
+            'allow_whatsapp_marketing' => true,
         ]);
     }
 

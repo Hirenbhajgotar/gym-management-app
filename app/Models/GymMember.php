@@ -151,6 +151,10 @@ class GymMember extends Model
         'frozen_until',
         'frozen_reason',
         'frozen_by',
+        'is_archived',
+        'archived_at',
+        'allow_whatsapp_marketing',
+        'whatsapp_marketing_snapshot',
     ];
 
     /**
@@ -170,12 +174,20 @@ class GymMember extends Model
             'is_frozen' => 'boolean',
             'frozen_at' => 'datetime',
             'frozen_until' => 'datetime',
+            'is_archived' => 'boolean',
+            'archived_at' => 'datetime',
+            'allow_whatsapp_marketing' => 'boolean',
+            'whatsapp_marketing_snapshot' => 'boolean',
         ];
     }
 
     protected static function booted()
     {
         static::saving(function (self $member) {
+            if (! $member->isDirty('membership_start')) {
+                return;
+            }
+
             $member->loadMissing('membershipPlan');
 
             if ($member->membership_start && $member->gym_membership_plan_id) {
@@ -461,6 +473,40 @@ class GymMember extends Model
     }
 
     /**
+     * Scope to get non-archived members.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function notArchived(Builder $query): void
+    {
+        $query->where('is_archived', false);
+    }
+
+    /**
+     * Scope to get archived members.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function archived(Builder $query): void
+    {
+        $query->where('is_archived', true);
+    }
+
+    /**
+     * Scope to get members eligible for WhatsApp marketing broadcasts.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function whatsappMarketingAllowed(Builder $query): void
+    {
+        $query->where('is_archived', false)
+            ->where('allow_whatsapp_marketing', true);
+    }
+
+    /**
      * Scope to get members whose birthday is today.
      *
      * @param  Builder<static>  $query
@@ -674,5 +720,55 @@ class GymMember extends Model
         ));
 
         return true;
+    }
+
+    // =========================
+    // Archiving & Marketing
+    // =========================
+
+    /**
+     * Check if the member can receive WhatsApp notifications or marketing messages.
+     */
+    public function canReceiveWhatsappNotifications(): bool
+    {
+        return ! $this->is_archived && $this->allow_whatsapp_marketing;
+    }
+
+    /**
+     * Archive member record and disable WhatsApp marketing.
+     */
+    public function archive(): bool
+    {
+        return $this->update([
+            'whatsapp_marketing_snapshot' => $this->allow_whatsapp_marketing,
+            'is_archived' => true,
+            'archived_at' => now(),
+            'allow_whatsapp_marketing' => false,
+        ]);
+    }
+
+    /**
+     * Restore member record from archive.
+     */
+    public function unarchive(): bool
+    {
+        $snapshot = $this->whatsapp_marketing_snapshot;
+
+        return $this->update([
+            'is_archived' => false,
+            'archived_at' => null,
+            'allow_whatsapp_marketing' => $snapshot ?? $this->allow_whatsapp_marketing,
+            'whatsapp_marketing_snapshot' => null,
+        ]);
+    }
+
+    /**
+     * Toggle WhatsApp marketing preference.
+     */
+    public function toggleWhatsappMarketing(bool $allowed): bool
+    {
+        return $this->update([
+            'allow_whatsapp_marketing' => $allowed,
+        ]);
     }
 }

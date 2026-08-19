@@ -52,7 +52,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|MembershipPlan whereUpdatedAt($value)
  *
  * @mixin \Eloquent
- * @mixin IdeHelperMembershipPlan
  */
 #[ObservedBy([MembershipPlanObserver::class])]
 class MembershipPlan extends Model

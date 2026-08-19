@@ -36,10 +36,24 @@ abstract class BaseTenantNotification extends Notification implements HasGymCont
      */
     public function via(object $notifiable): array
     {
-        return NotificationChannelResolver::getChannelsForGym(
+        $channels = NotificationChannelResolver::getChannelsForGym(
             $this->gym,
-            $this->getNotificationType()
+            $this->getNotificationType(),
+            $notifiable
         );
+
+        if (in_array(WhatsAppChannel::class, $channels, true)) {
+            $member = NotificationChannelResolver::resolveTargetMember($notifiable, $this);
+
+            if ($member && ! $member->canReceiveWhatsappNotifications()) {
+                $channels = array_values(array_filter(
+                    $channels,
+                    fn ($channel) => $channel !== WhatsAppChannel::class
+                ));
+            }
+        }
+
+        return $channels;
     }
 
     /**

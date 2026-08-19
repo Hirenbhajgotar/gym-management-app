@@ -7,12 +7,13 @@ namespace App\Notifications;
 use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\GymMember;
+use App\Notifications\Contracts\HasMemberRecipient;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
 
-class PromotionalNotification extends BaseTenantNotification
+class PromotionalNotification extends BaseTenantNotification implements HasMemberRecipient
 {
     public function __construct(
         public GymMember $member,
@@ -20,6 +21,11 @@ class PromotionalNotification extends BaseTenantNotification
         public string $offerExpiry,
     ) {
         $this->gym = $member->gym;
+    }
+
+    public function getMember(): ?GymMember
+    {
+        return $this->member;
     }
 
     protected function getNotificationType(): string

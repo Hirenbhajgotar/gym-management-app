@@ -7,6 +7,7 @@ namespace App\Notifications;
 use App\Interfaces\MessagingInterface;
 use App\Providers\WhatsAppProviderFactory;
 use App\Services\GymContextResolver;
+use App\Services\NotificationChannelResolver;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
 use Illuminate\Notifications\Notification;
@@ -31,6 +32,19 @@ class WhatsAppChannel
      */
     public function send(mixed $notifiable, Notification $notification)
     {
+        $targetMember = NotificationChannelResolver::resolveTargetMember($notifiable, $notification);
+
+        if ($targetMember && ! $targetMember->canReceiveWhatsappNotifications()) {
+            Log::info('WhatsApp notification skipped: member is archived or marketing is disabled', [
+                'member_id' => $targetMember->id,
+                'is_archived' => $targetMember->is_archived,
+                'allow_whatsapp_marketing' => $targetMember->allow_whatsapp_marketing,
+                'notification_type' => get_class($notification),
+            ]);
+
+            return null;
+        }
+
         if (! method_exists($notification, 'toWhatsApp')) {
             return null;
         }
