@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Enums\WhatsAppBroadcastRecipientStatusEnum;
+use App\Models\WhatsAppBroadcastRecipient;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Providers\WhatsAppProviderFactory;
@@ -79,6 +80,38 @@ class SendMessageChunkJob implements ShouldQueue
             $this->recipientChunk = array_values(array_filter(
                 $this->recipientChunk,
                 fn (array $r): bool => ! isset($sentIds[$r['id']])
+            ));
+        }
+
+        // TOCTOU guard: re-verify opt-in at send time. A member may have
+        // opted out or been archived after the broadcast was enqueued, so
+        // re-check their current consent before dispatching any message.
+        $chunkIds = array_column($this->recipientChunk, 'id');
+        $recipientMembers = WhatsAppBroadcastRecipient::query()
+            ->with('member:id,is_archived,allow_whatsapp_marketing')
+            ->whereIn('id', $chunkIds)
+            ->get(['id', 'member_id']);
+
+        $optedOutIds = [];
+        foreach ($recipientMembers as $recipientRow) {
+            $member = $recipientRow->member;
+
+            if (! $member->canReceiveWhatsappNotifications()) {
+                $optedOutIds[] = $recipientRow->id;
+            }
+        }
+
+        if ($optedOutIds !== []) {
+            $reasons = [];
+            foreach ($optedOutIds as $id) {
+                $reasons[$id] = 'Member opted out or was archived before send';
+            }
+
+            $this->bulkUpdateRecipientStatuses([], $optedOutIds, $reasons, []);
+
+            $this->recipientChunk = array_values(array_filter(
+                $this->recipientChunk,
+                fn (array $r): bool => ! in_array($r['id'], $optedOutIds, true)
             ));
         }
 

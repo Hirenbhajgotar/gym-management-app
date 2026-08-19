@@ -154,6 +154,7 @@ class GymMember extends Model
         'is_archived',
         'archived_at',
         'allow_whatsapp_marketing',
+        'whatsapp_marketing_snapshot',
     ];
 
     /**
@@ -176,6 +177,7 @@ class GymMember extends Model
             'is_archived' => 'boolean',
             'archived_at' => 'datetime',
             'allow_whatsapp_marketing' => 'boolean',
+            'whatsapp_marketing_snapshot' => 'boolean',
         ];
     }
 
@@ -725,11 +727,20 @@ class GymMember extends Model
     // =========================
 
     /**
+     * Check if the member can receive WhatsApp notifications or marketing messages.
+     */
+    public function canReceiveWhatsappNotifications(): bool
+    {
+        return ! $this->is_archived && $this->allow_whatsapp_marketing;
+    }
+
+    /**
      * Archive member record and disable WhatsApp marketing.
      */
     public function archive(): bool
     {
         return $this->update([
+            'whatsapp_marketing_snapshot' => $this->allow_whatsapp_marketing,
             'is_archived' => true,
             'archived_at' => now(),
             'allow_whatsapp_marketing' => false,
@@ -741,9 +752,13 @@ class GymMember extends Model
      */
     public function unarchive(): bool
     {
+        $snapshot = $this->whatsapp_marketing_snapshot;
+
         return $this->update([
             'is_archived' => false,
             'archived_at' => null,
+            'allow_whatsapp_marketing' => $snapshot ?? $this->allow_whatsapp_marketing,
+            'whatsapp_marketing_snapshot' => null,
         ]);
     }
 

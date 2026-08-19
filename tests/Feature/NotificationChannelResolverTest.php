@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Enums\WhatsAppAccountStatusEnum;
 use App\Enums\WhatsAppAccountVerificationStatusEnum;
+use App\Enums\WhatsAppPhoneNumberStatusEnum;
 use App\Models\Gym;
 use App\Models\GymSetting;
 use App\Models\WhatsAppAccount;
@@ -43,6 +44,7 @@ class NotificationChannelResolverTest extends TestCase
             'twilio_phone_number_sid' => 'PNtest123',
             'verification_status' => 'verified',
             'country_code' => 'US',
+            'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
         ]);
 
         return $account;

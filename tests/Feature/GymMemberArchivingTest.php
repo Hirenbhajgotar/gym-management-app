@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Console\Commands\ArchiveInactiveGymMembersCommand;
+use App\Enums\DefaultRole;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\ListGymMembers;
 use App\Filament\Imports\GymMemberImporter;
 use App\Imports\GymMemberImport;
@@ -40,7 +41,7 @@ class GymMemberArchivingTest extends TestCase
         $role = Role::findOrCreate('gym_owner', 'web');
 
         $this->gymOwner = User::factory()->gymOwner()->create();
-        $this->gymOwner->gyms()->attach($this->gym->id);
+        $this->gymOwner->gyms()->attach($this->gym->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
         foreach (['view_any_gym_member', 'view_gym_member', 'create_gym_member', 'update_gym_member', 'delete_gym_member', 'delete_any_gym_member'] as $name) {
             $permission = Permission::query()->firstOrCreate([

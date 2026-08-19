@@ -13,7 +13,6 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
-use App\Models\User;
 use App\Services\AvatarService;
 use Date;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
@@ -199,12 +198,12 @@ class GymMemberImporter extends Importer
 
         $gym = Gym::query()->where('id', $tenantId)->first();
         if ($gym) {
-            /** @var User $owner */
             $owner = $gym->owner();
-
-            /** @var int<0, max> $ownerId */
-            $ownerId = $owner->id;
-            $record->user_id = $ownerId;
+            if ($owner) {
+                /** @var int<0, max> $ownerId */
+                $ownerId = $owner->id;
+                $record->user_id = $ownerId;
+            }
         }
 
         // The fillRecordUsing closures cannot use $this because getColumns() is
