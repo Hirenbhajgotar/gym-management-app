@@ -6,18 +6,25 @@ namespace App\Services;
 
 use App\Enums\NotificationType;
 use App\Models\Gym;
+use App\Models\GymMember;
 use App\Models\GymSetting;
+use App\Notifications\Contracts\HasMemberRecipient;
 use App\Notifications\WhatsAppChannel;
+use Illuminate\Notifications\Notification;
 
 class NotificationChannelResolver
 {
     /**
-     * Determine which notification channels to use for a gym
+     * Determine which notification channels to use for a gym.
+     *
+     * Gate layering: this resolver applies the opt-in gate early (so a
+     * member who cannot receive WhatsApp is excluded from the channel
+     * list), and WhatsAppChannel::send() re-applies the same gate
+     * authoritatively. The rule of record lives on
+     * GymMember::canReceiveWhatsappNotifications().
      */
-    public static function getChannelsForGym(
-        Gym $gym,
-        NotificationType|string $notificationType = 'general',
-    ): array {
+    public static function getChannelsForGym(Gym $gym, NotificationType|string $notificationType = 'general', mixed $notifiable = null): array
+    {
         $settings = self::getSetting($gym->id);
         $notificationTypeString = $notificationType instanceof NotificationType
             ? $notificationType->value
@@ -42,7 +49,14 @@ class NotificationChannelResolver
 
         // Add channels based on settings
         if ($whatsappEnabled && self::isWhatsAppConfigured($gym)) {
-            $channels[] = WhatsAppChannel::class;
+            $canReceive = true;
+            if ($notifiable instanceof GymMember) {
+                $canReceive = $notifiable->canReceiveWhatsappNotifications();
+            }
+
+            if ($canReceive) {
+                $channels[] = WhatsAppChannel::class;
+            }
         }
 
         if ($smsEnabled) {
@@ -55,6 +69,25 @@ class NotificationChannelResolver
         }
 
         return $channels;
+    }
+
+    /**
+     * Resolve the GymMember that a notification is targeting.
+     *
+     * Single source of truth for "which member", so the opt-in gate cannot
+     * drift across the resolver, via(), and channel send() layers.
+     */
+    public static function resolveTargetMember(mixed $notifiable, Notification $notification): ?GymMember
+    {
+        if ($notifiable instanceof GymMember) {
+            return $notifiable;
+        }
+
+        if ($notification instanceof HasMemberRecipient) {
+            return $notification->getMember();
+        }
+
+        return null;
     }
 
     /**

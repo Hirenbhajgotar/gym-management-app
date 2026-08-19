@@ -8,13 +8,14 @@ use App\Enums\NotificationType;
 use App\Helpers\ParserHelper;
 use App\Models\Gym;
 use App\Models\GymMember;
+use App\Notifications\Contracts\HasMemberRecipient;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
-class BirthdayNotification extends BaseTenantNotification
+class BirthdayNotification extends BaseTenantNotification implements HasMemberRecipient
 {
     /**
      * Get the cache key for tracking sent birthday notifications.
@@ -36,6 +37,11 @@ class BirthdayNotification extends BaseTenantNotification
         }
 
         $this->gym = $gym;
+    }
+
+    public function getMember(): ?GymMember
+    {
+        return $this->member;
     }
 
     protected function getNotificationType(): string
@@ -74,6 +80,10 @@ class BirthdayNotification extends BaseTenantNotification
      */
     public function toWhatsApp(object $notifiable): ?array
     {
+        if (! $this->member->canReceiveWhatsappNotifications()) {
+            return null;
+        }
+
         if (config('services.twilio.use_sandbox')) {
             return $this->getSandboxWhatsAppPayload();
         }

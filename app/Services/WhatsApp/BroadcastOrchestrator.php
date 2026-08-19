@@ -54,7 +54,7 @@ class BroadcastOrchestrator
             throw_unless($template, Exception::class, 'Please select a template');
 
             $targetCount = $recipientType === 'all'
-                ? GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '')->count()
+                ? GymMember::query()->where('gym_id', $gymId)->whatsappMarketingAllowed()->whereNotNull('phone')->where('phone', '!=', '')->count()
                 : count($selectedMemberIds);
 
             throw_if($targetCount === 0, Exception::class, 'No recipients found. Please select members or change recipient type.');
@@ -140,7 +140,7 @@ class BroadcastOrchestrator
                     'message_variables' => $variables,
                 ]);
 
-                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whereNotNull('phone')->where('phone', '!=', '');
+                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whatsappMarketingAllowed()->whereNotNull('phone')->where('phone', '!=', '');
 
                 if ($recipientType !== 'all') {
                     $memberQuery->whereIn('id', $selectedMemberIds);

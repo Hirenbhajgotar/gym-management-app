@@ -106,7 +106,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcastId)
             ->where('status', WhatsAppBroadcastRecipientStatusEnum::PENDING->value)
             ->with([
-                'member:id,gym_id,trainer_id,gym_membership_plan_id,name,phone,email,dob,membership_start,membership_end',
+                'member:id,gym_id,trainer_id,gym_membership_plan_id,name,phone,email,dob,membership_start,membership_end,is_archived,allow_whatsapp_marketing',
                 'member.gym:id,name',
                 'member.membershipPlan:id,name,price,duration',
                 'member.trainer:id,name,phone,specialization',
@@ -138,11 +138,17 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                 $chunkJobs = [];
 
                 foreach ($recipients as $recipient) {
-                    if ($recipient->member === null) {
+                    $member = $recipient->member;
+
+                    if ($member === null) {
                         continue;
                     }
 
-                    $context = ['member' => $recipient->member, 'custom' => $customVariables];
+                    if (! $member->canReceiveWhatsappNotifications()) {
+                        continue;
+                    }
+
+                    $context = ['member' => $member, 'custom' => $customVariables];
                     $variables = $resolver->resolve($broadcast->template, $context);
 
                     $chunkJobs[] = [

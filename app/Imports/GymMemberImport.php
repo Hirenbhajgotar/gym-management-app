@@ -16,6 +16,7 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Services\AvatarService;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -73,6 +74,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
         try {
             DB::transaction(function () use ($row) {
+                /** @var array<string, mixed> $row */
                 $this->processRowInTransaction($row);
             }, 3);
         } finally {
@@ -80,6 +82,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     protected function processRowInTransaction(array $row): void
     {
         $membershipPlan = $this->resolveMembershipPlan($row);
@@ -103,6 +108,40 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             $membershipEnd = $dates['end'];
         }
 
+        $calculatedEnd = $membershipEnd ?? $row['membership_end'] ?? null;
+        $isArchived = false;
+        $archivedAt = null;
+        $allowMarketing = true;
+
+        if (isset($row['allow_whatsapp_marketing'])) {
+            // $allowMarketing = (bool) $row['allow_whatsapp_marketing'];
+            $parsed = filter_var(
+                $row['allow_whatsapp_marketing'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+            // Privacy-safe default: unparseable consent values are treated as opt-OUT.
+            $allowMarketing = $parsed === null ? false : $parsed;
+        }
+
+        if ($calculatedEnd instanceof DateTimeInterface) {
+            $endDate = Date::parse($calculatedEnd);
+        } elseif (is_string($calculatedEnd) || is_numeric($calculatedEnd)) {
+            $endDate = Date::parse((string) $calculatedEnd);
+        } else {
+            $endDate = null;
+        }
+
+        if ($endDate) {
+            if ($endDate->lt(now()->subYears(2))) {
+                $isArchived = true;
+                $archivedAt = now();
+                $allowMarketing = false;
+            } elseif ($endDate->lt(now()->subYear()) && ! isset($row['allow_whatsapp_marketing'])) {
+                $allowMarketing = false;
+            }
+        }
+
         $memberData = [
             'gym_id' => $this->tenantId,
             'name' => $row['name'],
@@ -117,6 +156,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
             'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
+            'is_archived' => $isArchived,
+            'archived_at' => $archivedAt,
+            'allow_whatsapp_marketing' => $allowMarketing,
         ];
 
         $existingMember = GymMember::query()
@@ -144,6 +186,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     protected function resolveMembershipPlan(array $row): ?MembershipPlan
     {
         if (! isset($row['membership_plan'])) {
@@ -159,6 +204,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         return $membershipPlan;
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     protected function resolveTrainer(array $row): ?Trainer
     {
         if (! isset($row['trainer_email'])) {
@@ -169,6 +217,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     }
 
     /**
+     * @param  array<string, mixed>  $row
      * @return array{start: Carbon, end: Carbon}
      */
     protected function calculateMembershipDates(array $row, MembershipPlan $plan): array
@@ -215,6 +264,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     }
 
     /**
+     * @param  array<string, mixed>  $row
      * @return array{0: float, 1: float, 2: PaymentStatus}
      */
     protected function calculatePaymentAmounts(array $row, float $planPrice): array
@@ -249,6 +299,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         return [$totalPaid, $currentPayment, $paymentStatus];
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     protected function handleMemberPayment(
         GymMember $gymMember,
         MembershipPlan $membershipPlan,
@@ -427,6 +480,9 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $row
+     */
     protected function handleAddress(GymMember $gymMember, array $row): void
     {
         $city = null;

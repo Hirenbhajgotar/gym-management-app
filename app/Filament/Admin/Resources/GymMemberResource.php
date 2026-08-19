@@ -22,6 +22,7 @@ use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
 use Closure;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Component as ComponentsComponent;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Group;
@@ -33,16 +34,21 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
@@ -105,6 +111,9 @@ class GymMemberResource extends BaseResource
             ->columns(1);
     }
 
+    /**
+     * @return array<int, ComponentsComponent>
+     */
     public static function getFormSchema(): array
     {
         return [
@@ -271,25 +280,39 @@ class GymMemberResource extends BaseResource
                     ->placeholder('-')
                     ->visible(fn ($record) => $record?->is_frozen ?? true)
                     ->toggleable(isToggledHiddenByDefault: true),
-                // Tables\Columns\TextColumn::make('payments_sum_amount')
-                //     ->label('Total Paid')
-                //     ->money('INR')
-                //     ->summarize(Tables\Columns\Summarizers\Sum::make())
-                //     ->badge()
-                //     ->color('success'),
+
+                IconColumn::make('allow_whatsapp_marketing')
+                    ->label('WhatsApp Mktg')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('is_archived')
+                    ->label('Archived')
+                    ->getStateUsing(fn (GymMember $record) => $record->is_archived === true ? 'Archived' : 'Active')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'Archived' => 'warning',
+                        'Active' => 'success',
+                        default => 'gray',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('gym_membership_plan_id')
                     ->relationship('membershipPlan', 'name', function (EloquentBuilder $query) {
                         if (filament()->getId() === 'admin') {
-                            if (auth()->user()->hasRole('gym_owner')) {
-                                return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
+                            if (Auth::user()->hasRole('gym_owner')) {
+                                return $query->whereIn('gym_id', Auth::user()?->gyms()->get()->pluck('id'));
                             }
-                            if (auth()->user()->hasRole('super_admin')) {
+                            if (Auth::user()->hasRole('super_admin')) {
                                 return $query;
                             }
                         } elseif (filament()->getId() === 'staff') {
-                            return $query->whereIn('gym_id', auth()->user()?->gyms()->get()->pluck('id'));
+                            return $query->whereIn('gym_id', Auth::user()?->gyms()->get()->pluck('id'));
                         }
                     })
                     ->label('Plan'),
@@ -355,6 +378,12 @@ class GymMemberResource extends BaseResource
                             });
                         }
                     }),
+
+                TernaryFilter::make('allow_whatsapp_marketing')
+                    ->label('WhatsApp Marketing'),
+
+                TernaryFilter::make('is_archived')
+                    ->label('Archived Status'),
             ])
             ->actions([
                 EditAction::make()
@@ -377,7 +406,7 @@ class GymMemberResource extends BaseResource
                             ->rules([
                                 'required',
                                 fn (callable $get) => function ($attribute, $value, Closure $fail) {
-                                    if (! Hash::check($value, auth()->user()->password)) {
+                                    if (! Hash::check($value, Auth::user()->password)) {
                                         $fail('The password is incorrect.');
                                     }
                                 },
@@ -533,28 +562,52 @@ class GymMemberResource extends BaseResource
                 ]),
             ])
             ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make()
-                //         ->requiresConfirmation()
-                //         ->modalHeading('Delete Selected Members')
-                //         ->modalDescription('Are you sure you want to delete these members? This action requires password confirmation.')
-                //         ->modalSubmitActionLabel('Confirm Delete')
-                //         ->form([
-                //             Forms\Components\TextInput::make('password')
-                //                 ->label('Your Password')
-                //                 ->revealable()
-                //                 ->password()
-                //                 ->required()
-                //                 ->rules([
-                //                     'required',
-                //                     fn($get) => function ($attribute, $value, $fail) {
-                //                         if (! Hash::check($value, auth()->user()->password)) {
-                //                             $fail('The password is incorrect.');
-                //                         }
-                //                     },
-                //                 ]),
-                //         ]),
-                // ]),
+                BulkActionGroup::make([
+                    BulkAction::make('enableWhatsappMarketing')
+                        ->label('Enable WhatsApp Marketing')
+                        ->tooltip('Enable WhatsApp Marketing for selected members')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(function (EloquentCollection $records): void {
+                            /** @var EloquentCollection<int, GymMember> $records */
+                            $records->each(fn (GymMember $member) => $member->toggleWhatsappMarketing(true));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('disableWhatsappMarketing')
+                        ->label('Disable WhatsApp Marketing')
+                        ->tooltip('Disable WhatsApp Marketing for selected members')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->action(function (EloquentCollection $records): void {
+                            /** @var EloquentCollection<int, GymMember> $records */
+                            $records->each(fn (GymMember $member) => $member->toggleWhatsappMarketing(false));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('archiveMembers')
+                        ->label('Archive Members')
+                        ->tooltip('Archive selected members')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->action(function (EloquentCollection $records): void {
+                            /** @var EloquentCollection<int, GymMember> $records */
+                            $records->each(fn (GymMember $member) => $member->archive());
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unarchiveMembers')
+                        ->label('Restore Archived Members')
+                        ->tooltip('Restore selected archived members')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->action(function (EloquentCollection $records): void {
+                            /** @var EloquentCollection<int, GymMember> $records */
+                            $records->each(fn (GymMember $member) => $member->unarchive());
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
             ])
             ->defaultSort('id', 'desc')
             ->striped();
@@ -578,11 +631,15 @@ class GymMemberResource extends BaseResource
         ];
     }
 
+    /**
+     * @return array<int, ComponentsComponent>
+     */
     public static function getDetailsFormSchema(): array
     {
         $tenant = Filament::getTenant();
 
-        return [
+        /** @var array<int, ComponentsComponent> $schema */
+        $schema = [
             FileUpload::make('profile_photo')
                 ->image()
                 ->avatar()
@@ -695,5 +752,7 @@ class GymMemberResource extends BaseResource
                 ->helperText('Leave as "None" if the member does not want a personal trainer.')
                 ->hidden(fn (string $operation): bool => $operation === 'create'),
         ];
+
+        return $schema;
     }
 }
