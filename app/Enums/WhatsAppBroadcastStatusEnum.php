@@ -39,4 +39,31 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
             self::FAILED => 'danger',
         };
     }
+
+    /**
+     * A broadcast is "non-counting" when it has not consumed a send slot yet
+     * (never sent / failed / cancelled). These statuses are excluded from the
+     * daily-quota count and cooldown calculation.
+     */
+    public function isNonCounting(): bool
+    {
+        return in_array($this, [self::DRAFT, self::CANCELLED, self::FAILED], true);
+    }
+
+    /**
+     * A broadcast is "finished" once it has reached a terminal completed/cancelled
+     * state and should not be dispatched again.
+     */
+    public function isFinished(): bool
+    {
+        return in_array($this, [self::COMPLETED, self::CANCELLED], true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function nonCountingValues(): array
+    {
+        return [self::DRAFT->value, self::CANCELLED->value, self::FAILED->value];
+    }
 }

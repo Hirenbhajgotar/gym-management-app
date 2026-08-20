@@ -7,6 +7,8 @@ namespace App\Filament\Admin\WhatsAppSetup\Actions;
 use App\Filament\Admin\Pages\WhatsAppSetup;
 use App\Interfaces\WabaSetupInterface;
 use App\Jobs\ImportWhatsAppTemplatesJob;
+use App\Services\Meta\MetaContext;
+use App\Services\Meta\MetaTemplateService;
 use Exception;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
@@ -62,10 +64,13 @@ class ConnectExistingWabaAction
             ];
             $result = $provider->connectManualWaba((int) $gymId, $data['waba_id'] ?? '', $data['manual_phone_number'] ?? '', $data['meta_access_token'] ?? '', $data['waba_phone_number_id'] ?? '', $businessData);
             if ($result['success']) {
+                $wabaId = (new MetaContext((int) $gymId))->getWabaId();
+                MetaTemplateService::invalidateCache((int) $gymId, $wabaId);
+
                 // Import existing Meta templates as DRAFT records
                 Log::info('ConnectExistingWabaAction: dispatching template import', [
                     'gym_id' => $gymId,
-                    'waba_id' => $data['waba_id'] ?? null,
+                    'waba_id' => $wabaId,
                 ]);
                 dispatch(new ImportWhatsAppTemplatesJob((int) $gymId));
 

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "phpstan-fixer": {
+      "source": "smithery.ai",
+      "sourceType": "well-known",
+      "computedHash": "4808f0dd4d89f1b8a220366d34c20347470350cdea533133fe64311a0932737f"
+    }
+  }
+}

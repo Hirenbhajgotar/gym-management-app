@@ -137,7 +137,7 @@ class TemplateFieldMapper
 
         return match ($providerType) {
             WhatsAppProviderTypeEnum::TWILIO => TemplateCategoryEnum::UTILITY->value,
-            WhatsAppProviderTypeEnum::WABA => strtolower(is_string($category) ? $category : TemplateCategoryEnum::UTILITY->value),
+            WhatsAppProviderTypeEnum::WABA => TemplateCategoryEnum::tryFromOrDefault(is_string($category) ? $category : null)->value,
             default => TemplateCategoryEnum::UTILITY->value,
         };
     }
@@ -152,10 +152,10 @@ class TemplateFieldMapper
 
             if (is_string($rawStatus) && $rawStatus !== '') {
                 return match (strtoupper($rawStatus)) {
-                    'PENDING' => WhatsAppTemplateStatusEnum::PENDING,
+                    'PENDING', 'IN_REVIEW' => WhatsAppTemplateStatusEnum::PENDING,
                     'APPROVED' => WhatsAppTemplateStatusEnum::APPROVED,
                     'REJECTED' => WhatsAppTemplateStatusEnum::REJECTED,
-                    'DISABLED' => WhatsAppTemplateStatusEnum::DISABLED,
+                    'DISABLED', 'PAUSED', 'LIMIT_EXCEEDED', 'PENDING_DELETION' => WhatsAppTemplateStatusEnum::DISABLED,
                     default => WhatsAppTemplateStatusEnum::DRAFT,
                 };
             }

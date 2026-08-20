@@ -243,8 +243,9 @@ class MetaWhatsAppProvider implements CreditManagementInterface, EmbeddedSignupI
      *     data?: array{
      *         id: string,
      *         name: string,
-     *         account_review_status: string,
-     *         business_verification_status: string,
+     *         status?: string,
+     *         account_review_status?: string,
+     *         business_verification_status?: string,
      *         currency?: string,
      *         timezone?: string
      *     },

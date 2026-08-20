@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\GymMember;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -80,6 +81,7 @@ class WhatsAppVariableResolver
     /**
      * Resolve all template variables using actual data from the provided context.
      *
+     * @param  array<string, mixed>  $context
      * @return array<string, string> Variables keyed by 1-indexed string (e.g., {"1": "John", "2": "FitZone"})
      */
     public function resolve(WhatsAppTemplate $template, array $context = []): array
@@ -88,8 +90,10 @@ class WhatsAppVariableResolver
         $variables = [];
 
         foreach ($placeholders as $key => $placeholder) {
-            $source = $placeholder['source'] ?? 'custom';
-            $variables[(string) $key] = $this->resolveSource($source, $key, $placeholder, $context);
+            /** @var array<string, mixed> $placeholderArr */
+            $placeholderArr = is_array($placeholder) ? $placeholder : [];
+            $source = is_string($placeholderArr['source'] ?? null) ? $placeholderArr['source'] : 'custom';
+            $variables[(string) $key] = $this->resolveSource($source, (string) $key, $placeholderArr, $context);
         }
 
         return $variables;
@@ -97,14 +101,25 @@ class WhatsAppVariableResolver
 
     /**
      * Resolve a single data source to its actual value.
+     *
+     * @param  array<string, mixed>  $placeholder
+     * @param  array<string, mixed>  $context
      */
     private function resolveSource(string $source, string $key, array $placeholder, array $context): string
     {
         if ($source === 'custom') {
-            return $context['custom'][$key] ?? $placeholder['example'] ?? '';
+            $customData = is_array($context['custom'] ?? null) ? $context['custom'] : [];
+            $customVal = $customData[$key] ?? $customData[(int) $key] ?? null;
+
+            return $this->valueOrExample($customVal, $placeholder['example'] ?? '');
         }
 
-        $member = $context['member'] ?? null;
+        /** @var GymMember|null $member */
+        $member = ($context['member'] ?? null) instanceof GymMember ? $context['member'] : null;
+
+        $plan = $member?->membershipPlan;
+        $trainer = $member?->trainer;
+        $payment = $member?->latestPayment;
 
         $value = match ($source) {
             // Member fields
@@ -119,27 +134,53 @@ class WhatsAppVariableResolver
             'gym.name' => $member?->gym?->name,
 
             // Plan fields
-            'plan.name' => $member?->membershipPlan?->name,
-            'plan.price' => $member?->membershipPlan?->price ? number_format((float) $member->membershipPlan->price) : null,
-            'plan.duration' => $member?->membershipPlan?->duration ? (string) $member->membershipPlan->duration : null,
+            'plan.name' => $plan?->name,
+            'plan.price' => $plan?->price !== null
+                ? number_format((float) $plan->price)
+                : null,
+            'plan.duration' => $plan?->duration !== null
+                ? (string) $plan->duration
+                : null,
 
             // Trainer fields
-            'trainer.name' => $member?->trainer?->name,
-            'trainer.phone' => $member?->trainer?->phone,
-            'trainer.specialization' => $member?->trainer?->specialization,
+            'trainer.name' => $trainer?->name,
+            'trainer.phone' => $trainer?->phone,
+            'trainer.specialization' => $trainer?->specialization,
 
             // Payment fields (latest payment)
-            'payment.formatted_amount' => $member?->latestPayment?->formatted_amount,
-            'payment.amount' => $member?->latestPayment?->amount ? (string) $member->latestPayment->amount : null,
-            'payment.payment_date' => $this->formatDate($member?->latestPayment?->payment_date),
-            'payment.payment_method' => $member?->latestPayment?->payment_method ? ucfirst($member->latestPayment->payment_method) : null,
-            'payment.invoice_number' => $member?->latestPayment?->invoice_number,
+            'payment.formatted_amount' => is_string($payment?->formatted_amount) || is_numeric($payment?->formatted_amount)
+                ? (string) $payment->formatted_amount
+                : null,
+            'payment.amount' => $payment?->amount !== null
+                ? (string) $payment->amount
+                : null,
+            'payment.payment_date' => $this->formatDate($payment?->payment_date),
+            'payment.payment_method' => is_string($payment?->payment_method)
+                ? ucfirst($payment->payment_method)
+                : null,
+            'payment.invoice_number' => $payment?->invoice_number,
 
             default => null,
         };
 
-        // Fall back to example value if source data is unavailable
-        return $value ?? $placeholder['example'] ?? '';
+        return $this->valueOrExample($value, $placeholder['example'] ?? '');
+    }
+
+    /**
+     * Return the provided value when it is a non-empty string or numeric; otherwise
+     * fall back to the placeholder example. Preserves falsy-but-valid values such as
+     * the string "0" or the integer 0 (so they render as "0", not the example).
+     */
+    private function valueOrExample(mixed $value, mixed $example): string
+    {
+        if ($value !== null && (is_string($value) || is_numeric($value))) {
+            $strValue = (string) $value;
+            if ($strValue !== '') {
+                return $strValue;
+            }
+        }
+
+        return is_string($example) || is_numeric($example) ? (string) $example : '';
     }
 
     /**
@@ -183,7 +224,8 @@ class WhatsAppVariableResolver
         $placeholders = $template->getVariablePlaceholders();
 
         foreach ($placeholders as $placeholder) {
-            if (($placeholder['source'] ?? 'custom') === 'custom') {
+            $source = is_array($placeholder) ? ($placeholder['source'] ?? 'custom') : 'custom';
+            if ($source === 'custom') {
                 return true;
             }
         }
@@ -194,18 +236,30 @@ class WhatsAppVariableResolver
     /**
      * Get only the custom variable keys from a template (ones that need manual input).
      *
-     * @return array<string, array{placeholder: string, example: string}>
+     * @return array<int|string, array{placeholder: string, example: string}>
      */
     public static function getCustomVariables(WhatsAppTemplate $template): array
     {
         $placeholders = $template->getVariablePlaceholders();
+        /** @var array<int|string, array{placeholder: string, example: string}> $custom */
         $custom = [];
 
         foreach ($placeholders as $key => $placeholder) {
-            if (($placeholder['source'] ?? 'custom') === 'custom') {
-                $custom[$key] = [
-                    'placeholder' => $placeholder['placeholder'] ?? 'Variable ' . $key,
-                    'example' => $placeholder['example'] ?? '',
+            $placeholderArr = is_array($placeholder) ? $placeholder : [];
+            $source = is_string($placeholderArr['source'] ?? null) ? $placeholderArr['source'] : 'custom';
+
+            if ($source === 'custom') {
+                $placeholderText = isset($placeholderArr['placeholder']) && (is_string($placeholderArr['placeholder']) || is_numeric($placeholderArr['placeholder']))
+                    ? (string) $placeholderArr['placeholder']
+                    : 'Variable ' . $key;
+
+                $exampleText = isset($placeholderArr['example']) && (is_string($placeholderArr['example']) || is_numeric($placeholderArr['example']))
+                    ? (string) $placeholderArr['example']
+                    : '';
+
+                $custom[(string) $key] = [
+                    'placeholder' => $placeholderText,
+                    'example' => $exampleText,
                 ];
             }
         }

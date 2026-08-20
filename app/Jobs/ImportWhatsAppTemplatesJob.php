@@ -134,6 +134,12 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
     private function importFromMeta(): TemplateCollectionResult
     {
         $context = new MetaContext($this->gymId);
+        $wabaId = $context->getWabaId();
+
+        if (filled($wabaId)) {
+            MetaTemplateService::invalidateCache($this->gymId, $wabaId);
+        }
+
         $api = new MetaApiClient($context);
         $templateService = new MetaTemplateService($context, $api);
 

@@ -91,9 +91,13 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     protected BroadcastOrchestrator $broadcastOrchestrator;
 
+    public function boot(BroadcastOrchestrator $broadcastOrchestrator): void
+    {
+        $this->broadcastOrchestrator = $broadcastOrchestrator;
+    }
+
     public function mount(): void
     {
-        $this->broadcastOrchestrator = resolve(BroadcastOrchestrator::class);
         $this->loadTemplates();
         $this->initializeForm();
     }
@@ -479,6 +483,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                         $remaining = $quota['remaining'];
 
                                         $lastBroadcast = WhatsAppBroadcast::query()->where('gym_id', $gymId)
+                                            ->excludingTerminalStatuses()
                                             ->latest()
                                             ->first();
 

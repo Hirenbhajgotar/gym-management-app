@@ -9,6 +9,7 @@ use App\Enums\WhatsAppBroadcastStatusEnum;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
+use App\Services\Meta\MetaTemplateService;
 use App\Services\WhatsAppVariableResolver;
 use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -68,7 +69,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if (in_array($broadcast->status, [WhatsAppBroadcastStatusEnum::COMPLETED, WhatsAppBroadcastStatusEnum::CANCELLED], true)) {
+        if ($broadcast->status?->isFinished()) {
             Log::info('Broadcast already processed, skipping batch dispatch', [
                 'broadcast_id' => $this->broadcastId,
                 'status' => $broadcast->status,
@@ -95,7 +96,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         $customVariables = $broadcast->message_variables ?? [];
         $templateData = [
             'provider_template_id' => $template->name,
-            'language' => 'en',
+            'language' => MetaTemplateService::defaultTemplateLanguage(),
             'components' => [],
             'media_urls' => [],
         ];
@@ -186,6 +187,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
 
         $broadcastId = $this->broadcastId;
         $gymId = $this->gymId;
+        $skipCreditDeduction = $this->skipCreditDeduction;
 
         $batch = Bus::batch($allJobs)
             ->then(function (Batch $batch) use ($broadcastId): void {
@@ -218,12 +220,12 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
                     'failed_jobs' => $batch->failedJobs,
                 ]);
             })
-            ->finally(function (Batch $batch) use ($gymId, $broadcastId): void {
+            ->finally(function (Batch $batch) use ($gymId, $broadcastId, $skipCreditDeduction): void {
                 // Release the per-gym rate limiter lock
                 Cache::lock("broadcast-rate-{$gymId}", 10)->forceRelease();
 
                 // If credits were deducted upfront, refund any that failed
-                $this->refundFailedUpfrontCredits($gymId, $broadcastId);
+                self::refundFailedUpfrontCredits($gymId, $broadcastId, $skipCreditDeduction);
             })
             ->onQueue(config()->string('queue.broadcast_queue', 'broadcast'))
             ->dispatch();
@@ -259,7 +261,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         // (e.g. queue dispatch failure), the batch's finally closure will never
         // run, so refund the full upfront deduction here.
         if ($this->skipCreditDeduction && $broadcast->batch_id === null) {
-            $this->refundUpfrontCredits($this->gymId, $this->broadcastId, $broadcast->target_count);
+            self::refundUpfrontCredits($this->gymId, $this->broadcastId, $broadcast->target_count);
         }
     }
 
@@ -270,9 +272,9 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
      * Only refunds when credits were deducted upfront, the batch-level catch
      * handler marked the broadcast FAILED, and at least one chunk failed.
      */
-    public function refundFailedUpfrontCredits(int $gymId, int $broadcastId): void
+    public static function refundFailedUpfrontCredits(int $gymId, int $broadcastId, bool $skipCreditDeduction = false): void
     {
-        if (! $this->skipCreditDeduction) {
+        if (! $skipCreditDeduction) {
             return;
         }
 
@@ -287,7 +289,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         $failedCount = $broadcastRecord->failed_count;
 
         if (is_numeric($failedCount) && $failedCount > 0) {
-            $this->refundUpfrontCredits($gymId, $broadcastId, (int) $failedCount);
+            self::refundUpfrontCredits($gymId, $broadcastId, (int) $failedCount);
         }
     }
 
@@ -298,7 +300,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
      * deduction consumed welcome credits, also restores the welcome portion so
      * the welcome credit ledger stays consistent with the refunded balance.
      */
-    private function refundUpfrontCredits(int $gymId, int $broadcastId, int $refundCount): void
+    private static function refundUpfrontCredits(int $gymId, int $broadcastId, int $refundCount): void
     {
         if ($refundCount <= 0) {
             return;
