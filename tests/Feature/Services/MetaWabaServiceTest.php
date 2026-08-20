@@ -543,6 +543,21 @@ class MetaWabaServiceTest extends TestCase
                 ],
             ]);
 
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$wabaId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $wabaId,
+                    'name' => 'FitZone Gym WABA',
+                    'account_review_status' => 'APPROVED',
+                    'business_verification_status' => 'NOT_VERIFIED',
+                ],
+            ]);
+
         $service = new MetaWabaService($context, $apiMock);
 
         $result = $service->completeEmbeddedSignup($gymId, $wabaId, $accessToken, $phoneNumberId);
@@ -555,7 +570,8 @@ class MetaWabaServiceTest extends TestCase
             'gym_id' => $gymId,
             'waba_id' => $wabaId,
             'embedded_signup_completed' => true,
-            'status' => WhatsAppAccountStatusEnum::PENDING->value,
+            'status' => WhatsAppAccountStatusEnum::ACTIVE->value,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::NOT_VERIFIED->value,
             'provider_type' => WhatsAppProviderTypeEnum::WABA->value,
         ]);
 
@@ -568,6 +584,66 @@ class MetaWabaServiceTest extends TestCase
             'phone_number' => '+918469290865',
             'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE->value,
             'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS->value,
+        ]);
+    }
+
+    #[Test]
+    public function it_completes_embedded_signup_prefers_status_field_over_account_review_status(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        $wabaId = '1057724660050086';
+        $phoneNumberId = '1163624323508414';
+        $accessToken = 'EAABTESTTOKEN';
+
+        /** @var Expectation $getPhoneExpectation */
+        $getPhoneExpectation = $apiMock->shouldReceive('get');
+        $getPhoneExpectation
+            ->with("/{$phoneNumberId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $phoneNumberId,
+                    'display_phone_number' => '+91 84692 90865',
+                ],
+            ]);
+
+        /** @var Expectation $getWabaExpectation */
+        $getWabaExpectation = $apiMock->shouldReceive('get');
+        $getWabaExpectation
+            ->with("/{$wabaId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $wabaId,
+                    'name' => 'FitZone Gym WABA',
+                    'status' => 'ACTIVE',
+                    'account_review_status' => 'PENDING',
+                    'business_verification_status' => 'VERIFIED',
+                ],
+            ]);
+
+        $service = new MetaWabaService($context, $apiMock);
+
+        $result = $service->completeEmbeddedSignup($gymId, $wabaId, $accessToken, $phoneNumberId);
+
+        $this->assertTrue($result['success']);
+
+        // When both `status` and `account_review_status` are present, the
+        // `status` field must win (ACTIVE), not the PENDING that
+        // account_review_status alone would map to.
+        $this->assertDatabaseHas('whatsapp_accounts', [
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'status' => WhatsAppAccountStatusEnum::ACTIVE->value,
+            'verification_status' => WhatsAppAccountVerificationStatusEnum::VERIFIED->value,
         ]);
     }
 
@@ -612,6 +688,33 @@ class MetaWabaServiceTest extends TestCase
         $context = new MetaContext($gymId);
         /** @var MetaApiClient&Mockery\MockInterface $apiMock */
         $apiMock = Mockery::mock(MetaApiClient::class);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$wabaId}", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'id' => $wabaId,
+                    'name' => 'FitZone Gym WABA',
+                    'account_review_status' => 'APPROVED',
+                    'business_verification_status' => 'NOT_VERIFIED',
+                ],
+            ]);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('get');
+        $expectation
+            ->with("/{$wabaId}/phone_numbers", Mockery::type('array'), $accessToken)
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                ],
+            ]);
 
         $service = new MetaWabaService($context, $apiMock);
 
@@ -840,7 +943,7 @@ class MetaWabaServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_does_not_overwrite_existing_phone_number_record(): void
+    public function it_updates_existing_phone_number_record_for_account(): void
     {
         $gym = Gym::factory()->create();
         $gymId = $gym->id;
@@ -892,20 +995,19 @@ class MetaWabaServiceTest extends TestCase
 
         $this->assertDatabaseHas('whatsapp_phone_numbers', [
             'whatsapp_account_id' => $account->id,
-            'waba_phone_number_id' => $oldPhoneNumberId,
-            'phone_number' => '+919999999999',
-        ]);
-
-        $this->assertDatabaseHas('whatsapp_phone_numbers', [
-            'whatsapp_account_id' => $account->id,
             'waba_phone_number_id' => $newPhoneNumberId,
             'phone_number' => '+15551234567',
+        ]);
+
+        $this->assertDatabaseMissing('whatsapp_phone_numbers', [
+            'whatsapp_account_id' => $account->id,
+            'waba_phone_number_id' => $oldPhoneNumberId,
         ]);
 
         $phoneCount = WhatsAppPhoneNumber::query()
             ->where('whatsapp_account_id', $account->id)
             ->count();
-        $this->assertEquals(2, $phoneCount);
+        $this->assertEquals(1, $phoneCount);
     }
 
     // =====================================================
@@ -1279,8 +1381,17 @@ class MetaWabaServiceTest extends TestCase
 
         $service = new MetaWabaService($context, $apiMock);
         $result = $service->syncWabaPhoneNumbers($gymId, $wabaId, $accessToken);
-
         $this->assertFalse($result['success']);
         $this->assertStringContainsString('No phone numbers found', $result['error'] ?? '');
+    }
+
+    #[Test]
+    public function extract_account_review_status_prefers_status_over_account_review_status(): void
+    {
+        $this->assertSame('ACTIVE', MetaWabaService::extractAccountReviewStatus(['status' => 'ACTIVE', 'account_review_status' => 'IN_REVIEW']));
+        $this->assertSame('IN_REVIEW', MetaWabaService::extractAccountReviewStatus(['account_review_status' => 'IN_REVIEW']));
+        $this->assertNull(MetaWabaService::extractAccountReviewStatus([]));
+        $this->assertNull(MetaWabaService::extractAccountReviewStatus(['business_verification_status' => 'VERIFIED']));
+        $this->assertNull(MetaWabaService::extractAccountReviewStatus(['status' => 123]));
     }
 }

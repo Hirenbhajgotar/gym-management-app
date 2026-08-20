@@ -228,7 +228,7 @@ class EmbeddedSignupService
     {
         $response = Http::withToken($accessToken)
             ->get("https://graph.facebook.com/{$this->metaApiVersion}/{$wabaId}", [
-                'fields' => 'id,name,account_review_status,business_verification_status,ownership_tier,currency,timezone_id',
+                'fields' => 'id,name,status,account_review_status,business_verification_status,ownership_tier,currency,timezone_id',
             ]);
 
         if ($response->failed()) {

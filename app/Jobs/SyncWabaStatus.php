@@ -9,6 +9,7 @@ use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\WhatsAppAccount;
 use App\Providers\WhatsAppProviderFactory;
+use App\Services\Meta\MetaWabaService;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -67,8 +68,8 @@ class SyncWabaStatus implements ShouldBeUnique, ShouldQueue
             throw new Exception($wabaDetails['error'] ?? 'Meta API fetch failed');
         }
 
-        $data = $wabaDetails['data'];
-        $reviewStatus = $data['account_review_status'] ?? null;
+        $data = $wabaDetails['data'] ?? [];
+        $reviewStatus = MetaWabaService::extractAccountReviewStatus($data);
         $verificationStatus = $data['business_verification_status'] ?? null;
 
         if ($reviewStatus === null && $verificationStatus === null) {

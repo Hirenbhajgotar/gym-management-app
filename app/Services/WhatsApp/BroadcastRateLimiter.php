@@ -16,6 +16,7 @@ class BroadcastRateLimiter
         $dailyLimit = (int) config('app.whatsapp_broadcast_limit_per_day', 2);
         $used = WhatsAppBroadcast::query()->where('gym_id', $gymId)
             ->whereDate('created_at', today())
+            ->excludingTerminalStatuses()
             ->count();
 
         return [
@@ -43,6 +44,7 @@ class BroadcastRateLimiter
     public function getCooldown(int $gymId): ?int
     {
         $lastBroadcast = WhatsAppBroadcast::query()->where('gym_id', $gymId)
+            ->excludingTerminalStatuses()
             ->latest()
             ->first();
 

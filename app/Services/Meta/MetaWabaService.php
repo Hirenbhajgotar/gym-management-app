@@ -431,6 +431,22 @@ class MetaWabaService implements WabaSetupInterface
     }
 
     /**
+     * Extract the effective account review status from a Meta WABA details payload.
+     *
+     * Precedence (per Meta Graph API): the operational `status` field wins over
+     * `account_review_status` (business review). Both may be absent, in which case
+     * null is returned and callers fall back to a fail-safe default.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function extractAccountReviewStatus(array $data): ?string
+    {
+        $status = $data['status'] ?? $data['account_review_status'] ?? null;
+
+        return is_string($status) ? $status : null;
+    }
+
+    /**
      * Complete embedded signup - save newly created WABA to database.
      *
      * This method is called after MetaEmbeddedSignupService::handleEmbeddedSignupCallback()
@@ -462,7 +478,18 @@ class MetaWabaService implements WabaSetupInterface
                     $phoneDetails = $this->fetchPhoneDetails($phoneNumberId, $accessToken);
                 }
 
-                return DB::transaction(function () use ($gymId, $wabaId, $accessToken, $phoneNumberId, $phoneDetails) {
+                // Fetch WABA details from Meta API to map real account status.
+                // Precedence is `status` (operational) over `account_review_status`
+                // (business review), then `business_verification_status`.
+                $wabaDetails = $this->getWabaDetails($wabaId, $accessToken);
+                $reviewStatus = $wabaDetails['success'] ? self::extractAccountReviewStatus($wabaDetails['data'] ?? []) : null;
+                $verificationStatus = $wabaDetails['success'] ? ($wabaDetails['data']['business_verification_status'] ?? null) : null;
+                $wabaName = $wabaDetails['success'] ? ($wabaDetails['data']['name'] ?? null) : null;
+
+                $accountStatus = $this->mapWabaStatus($reviewStatus);
+                $accountVerificationStatus = $this->mapBusinessVerificationStatus($verificationStatus);
+
+                return DB::transaction(function () use ($gymId, $wabaId, $accessToken, $phoneNumberId, $phoneDetails, $accountStatus, $accountVerificationStatus, $wabaName) {
                     // Double-check if already processed (Meta callback deduplication)
                     $existingAccount = WhatsAppAccount::query()->where('gym_id', $gymId)
                         ->where('waba_id', $wabaId)
@@ -478,19 +505,28 @@ class MetaWabaService implements WabaSetupInterface
                     }
 
                     // Get or create the WhatsAppAccount for the gym and persist WABA details
-                    // atomically. provider_type = WABA because the user created it via embedded
-                    // signup (owns it); status = PENDING because it still needs verification
-                    // with Meta. updateOrCreate avoids the brief window where firstOrCreate()
-                    // leaves a row without waba_id before the subsequent update() runs.
+                    // atomically using mapped status values from Meta Graph API.
+                    // The unique lock above provides a dedup window so a concurrent
+                    // callback cannot double-apply; updateOrCreate remains idempotent
+                    // on gym_id, avoiding a firstOrCreate + update race.
+                    $accountData = [
+                        'provider_type' => WhatsAppProviderTypeEnum::WABA,
+                        'waba_id' => $wabaId,
+                        'meta_access_token' => $accessToken,
+                        'embedded_signup_completed' => true,
+                        'status' => $accountStatus,
+                        'verification_status' => $accountVerificationStatus,
+                        'waba_status_synced_at' => now(),
+                    ];
+
+                    if (filled($wabaName)) {
+                        $accountData['waba_name'] = $wabaName;
+                        $accountData['business_name'] = $wabaName;
+                    }
+
                     $account = WhatsAppAccount::query()->updateOrCreate(
                         ['gym_id' => $gymId],
-                        [
-                            'provider_type' => WhatsAppProviderTypeEnum::WABA,
-                            'waba_id' => $wabaId,
-                            'meta_access_token' => $accessToken,
-                            'embedded_signup_completed' => true,
-                            'status' => WhatsAppAccountStatusEnum::PENDING,
-                        ]
+                        $accountData
                     );
 
                     // Note: phone_number_id is often null in embedded signup
@@ -600,8 +636,9 @@ class MetaWabaService implements WabaSetupInterface
      *     data?: array{
      *         id: string,
      *         name: string,
-     *         account_review_status: string,
-     *         business_verification_status: string,
+     *         status?: string,
+     *         account_review_status?: string,
+     *         business_verification_status?: string,
      *         currency?: string,
      *         timezone?: string
      *     },
@@ -612,7 +649,7 @@ class MetaWabaService implements WabaSetupInterface
     {
         try {
             $response = $this->api->get("/{$wabaId}", [
-                'fields' => 'id,name,account_review_status,business_verification_status',
+                'fields' => 'id,name,status,account_review_status,business_verification_status',
             ], $accessToken);
 
             if (! $response['success']) {
@@ -637,7 +674,7 @@ class MetaWabaService implements WabaSetupInterface
                 ];
             }
 
-            /** @var array{id: string, name: string, account_review_status: string, business_verification_status: string, currency?: string, timezone?: string} $responseData */
+            /** @var array{id: string, name: string, status?: string, account_review_status?: string, business_verification_status?: string, currency?: string, timezone?: string} $responseData */
             $responseData = $rawResponseData;
 
             return [

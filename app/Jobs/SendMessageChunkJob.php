@@ -9,6 +9,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Providers\WhatsAppProviderFactory;
+use App\Services\Meta\MetaTemplateService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -182,15 +183,15 @@ class SendMessageChunkJob implements ShouldQueue
     private function sendViaHttpPool(MetaWhatsAppProvider $provider): array
     {
         $context = $provider->getContext();
-        $wabaId = $context->getWabaId();
+        $phoneNumberId = $context->getPhoneNumberId();
         $accessToken = $context->getAccessToken();
         $baseUrl = $context->getApiBaseUrl();
 
-        if (! $wabaId || ! $accessToken) {
+        if (! $phoneNumberId || ! $accessToken) {
             return $this->sendSequential($provider);
         }
 
-        $responses = Http::pool(function (Pool $pool) use ($baseUrl, $wabaId, $accessToken): array {
+        $responses = Http::pool(function (Pool $pool) use ($baseUrl, $phoneNumberId, $accessToken): array {
             $calls = [];
 
             foreach ($this->recipientChunk as $recipient) {
@@ -201,7 +202,7 @@ class SendMessageChunkJob implements ShouldQueue
                     'template' => [
                         'name' => $this->templateData['provider_template_id'],
                         'language' => [
-                            'code' => $this->templateData['language'] ?? 'en',
+                            'code' => $this->templateData['language'] ?? MetaTemplateService::defaultTemplateLanguage(),
                         ],
                     ],
                 ];
@@ -223,7 +224,7 @@ class SendMessageChunkJob implements ShouldQueue
                     ->baseUrl($baseUrl)
                     ->acceptJson()
                     ->asJson()
-                    ->post("/{$wabaId}/messages", $payload);
+                    ->post("/{$phoneNumberId}/messages", $payload);
             }
 
             return $calls;
