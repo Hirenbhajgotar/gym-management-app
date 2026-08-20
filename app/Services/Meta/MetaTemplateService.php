@@ -429,11 +429,35 @@ class MetaTemplateService implements TemplateManagementInterface
      */
     private function resolveLanguage(): string
     {
+        return self::defaultTemplateLanguage();
+    }
+
+    public static function defaultTemplateLanguage(): string
+    {
         return config()->string('services.whatsapp.template_language', 'en_US');
+    }
+
+    public static function cacheKey(int $gymId, ?string $wabaId): string
+    {
+        return 'meta_templates:gym:' . $gymId . ':waba:' . $wabaId;
+    }
+
+    /**
+     * Invalidate the cached template list for a gym/waba pair.
+     *
+     * Centralizes the `filled()` + `Cache::forget(self::cacheKey(...))` idiom so the
+     * read path and both invalidation sites (WABA reconnect + template import) stay
+     * consistent.
+     */
+    public static function invalidateCache(int $gymId, ?string $wabaId): void
+    {
+        if (filled($wabaId)) {
+            Cache::forget(self::cacheKey($gymId, $wabaId));
+        }
     }
 
     private function templatesCacheKey(): string
     {
-        return 'meta_templates:gym:' . $this->context->gymId . ':waba:' . $this->context->getWabaId();
+        return self::cacheKey($this->context->gymId, $this->context->getWabaId());
     }
 }

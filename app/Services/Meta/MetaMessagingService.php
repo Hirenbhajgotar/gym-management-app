@@ -176,7 +176,7 @@ class MetaMessagingService implements MessagingInterface
                 ],
             ];
         }
-        $templatePayload['language'] = ['code' => 'en'];
+        $templatePayload['language'] = ['code' => MetaTemplateService::defaultTemplateLanguage()];
 
         $response = $this->api->post("/{$phoneNumberId}/messages", [
             'messaging_product' => 'whatsapp',

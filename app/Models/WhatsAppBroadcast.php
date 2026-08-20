@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use Illuminate\Bus\Batch;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -130,6 +131,22 @@ class WhatsAppBroadcast extends Model
         return $this->hasMany(WhatsAppBroadcastRecipient::class, 'whatsapp_broadcast_id');
     }
 
+    /**
+     * Scope broadcasts that should count toward daily quota / cooldown.
+     *
+     * Excludes "non-counting" statuses — i.e. broadcasts that have not yet
+     * consumed a send slot (DRAFT) or did not complete (FAILED/CANCELLED).
+     * Callers MUST also scope by `gym_id`; this scope does not add a tenant
+     * guard on its own.
+     *
+     * @param  Builder<WhatsAppBroadcast>  $query
+     */
+    #[Scope]
+    protected function excludingTerminalStatuses(Builder $query): void
+    {
+        $query->whereNotIn('status', WhatsAppBroadcastStatusEnum::nonCountingValues());
+    }
+
     // =========================
     // Helper Methods
     // =========================
@@ -181,6 +198,18 @@ class WhatsAppBroadcast extends Model
             'status' => WhatsAppBroadcastStatusEnum::FAILED,
             'completed_at' => now(),
         ]);
+    }
+
+    /**
+     * Statuses that are terminal / non-counting for daily quota & cooldown.
+     *
+     * @return array<int, string>
+     *
+     * @deprecated use WhatsAppBroadcastStatusEnum::nonCountingValues() instead
+     */
+    public static function terminalStatusValues(): array
+    {
+        return WhatsAppBroadcastStatusEnum::nonCountingValues();
     }
 
     public function incrementSentCount(): void
