@@ -227,12 +227,9 @@ class Post extends Model
         'published_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'published_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'published_at' => 'datetime',
+    ];
 
     // Relationships
     public function author(): BelongsTo
@@ -251,17 +248,15 @@ class Post extends Model
     }
 
     // Scopes
-    #[Scope]
-    protected function published(Builder $query): void
+    public function scopePublished(Builder $query): Builder
     {
-        $query->whereNotNull('published_at')
+        return $query->whereNotNull('published_at')
             ->where('published_at', '<=', now());
     }
 
-    #[Scope]
-    protected function byCategory(Builder $query, int $categoryId): void
+    public function scopeByCategory(Builder $query, int $categoryId): Builder
     {
-        $query->where('category_id', $categoryId);
+        return $query->where('category_id', $categoryId);
     }
 
     // Accessors & Mutators

@@ -95,7 +95,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.2.30
+- php - 8.2.12
 - filament/filament (FILAMENT) - v3
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
@@ -123,6 +123,18 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 - `frontend-design` — Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
 - `laravel-best-practices` — Laravel 13 conventions and best practices. Use when creating controllers, models, migrations, validation, services, or structuring Laravel applications. Triggers on tasks involving Laravel architecture, Eloquent, database, API development, or PHP patterns.
+- `laravel-code-extraction` — Code extraction and Laravel best practices skill. Identifies what should be extracted from monolithic files into Services, Actions, DTOs, Traits, Enums, Value Objects, Repositories. Enforces Laravel best practices: DB transactions, Cache::lock, Form Requests, Policies, Eloquent patterns, Queue patterns.
+
+- `laravel-code-review` — Deep Laravel code review skill focusing on business logic, race conditions, transactions, idempotency, runtime errors, and bugs. Every pattern includes BAD vs GOOD examples.
+- `laravel-filament` — Build Filament admin panels on the v5 API surface THIS project targets, not deprecated v3
+patterns — a reference carrying the current namespaces and conventions for Resources, forms,
+tables, actions, filters, relation managers, widgets, infolists, panels, and testing, with
+business logic kept in application Actions, so a change lands idiomatic and review-ready
+instead of tripping over renamed APIs. Use when a task touches this project&#039;s Filament admin
+panels and should target the v5 surface rather than deprecated patterns.
+
+- `laravel-intelligent-refactor` — Intelligent refactoring skill for Laravel/PHP codebases using DDD, SOLID, DRY principles. Use when: user asks to refactor code, improve architecture, extract services/actions/DTOs, reduce duplication, or modernize legacy Laravel code. ALWAYS ask clarifying questions before making changes. NEVER guess intent.
+
 - `laravel-security` — Laravel security best practices for authn/authz, validation, CSRF, mass assignment, file uploads, secrets, rate limiting, and secure deployment.
 - `laravel-specialist` — Build and configure Laravel 10+ applications, including creating Eloquent models and relationships, implementing Sanctum authentication, configuring Horizon queues, designing RESTful APIs with API resources, and building reactive interfaces with Livewire. Use when creating Laravel models, setting up queue workers, implementing Sanctum auth flows, building Livewire components, optimising Eloquent queries, or writing Pest/PHPUnit tests for Laravel features.
 - `phpunit-best-practices` — PHPUnit testing best practices and conventions guide. This skill should be used when writing, reviewing, or refactoring PHPUnit tests to ensure consistent, maintainable, and effective test suites. Triggers on tasks involving test creation, test refactoring, test configuration, code coverage, data providers, mocking, or PHPUnit XML configuration.

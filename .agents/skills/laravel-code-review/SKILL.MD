@@ -106,86 +106,97 @@ class OrderService
 ### 1.2 State Machine Validity
 Every entity with states must have valid transitions. Invalid transitions must be blocked.
 
-**Anti-Pattern: Unrestricted state transitions**
 ```php
 // ❌ BAD: Any state can transition to any state
-public function updateStatus(string $newStatus): void
-{
-    $this->status = $newStatus;
-    $this->save();
-}
-// BUG: Shipped order can be set back to Pending
-```
-
-**Pattern: Validated state transitions**
-```php
-// ✅ GOOD: Explicit allowed transitions
-enum OrderStatus: string
-{
-    case PENDING = 'pending';
-    case PROCESSING = 'processing';
-    case SHIPPED = 'shipped';
-    case DELIVERED = 'delivered';
-    case CANCELLED = 'cancelled';
-}
-
 class Order extends Model
 {
-    private const ALLOWED_TRANSITIONS = [
-        'pending' => ['processing', 'cancelled'],
-        'processing' => ['shipped', 'cancelled'],
-        'shipped' => ['delivered'],
-        'delivered' => [],
-        'cancelled' => [],
+    public function updateStatus(string $status)
+    {
+        $this->update(['status' => $status]);
+    }
+}
+
+// ✅ GOOD: Validated state transitions
+class Order extends Model
+{
+    const STATUS_PENDING = 'pending';
+    const STATUS_PAID = 'paid';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_SHIPPED = 'shipped';
+    const STATUS_DELIVERED = 'delivered';
+    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_REFUNDED = 'refunded';
+
+    private const VALID_TRANSITIONS = [
+        self::STATUS_PENDING => [self::STATUS_PAID, self::STATUS_CANCELLED],
+        self::STATUS_PAID => [self::STATUS_PROCESSING, self::STATUS_REFUNDED],
+        self::STATUS_PROCESSING => [self::STATUS_SHIPPED, self::STATUS_CANCELLED],
+        self::STATUS_SHIPPED => [self::STATUS_DELIVERED, self::STATUS_REFUNDED],
+        self::STATUS_DELIVERED => [self::STATUS_REFUNDED],
+        self::STATUS_CANCELLED => [],
+        self::STATUS_REFUNDED => [],
     ];
 
-    public function transitionTo(OrderStatus $newStatus): void
+    public function transitionTo(string $newStatus): void
     {
-        $current = $this->status->value;
-        $next = $newStatus->value;
+        $currentStatus = $this->status;
 
-        if (!in_array($next, self::ALLOWED_TRANSITIONS[$current] ?? [], true)) {
+        if (!isset(self::VALID_TRANSITIONS[$currentStatus])) {
+            throw new InvalidStateException("Unknown current status: {$currentStatus}");
+        }
+
+        if (!in_array($newStatus, self::VALID_TRANSITIONS[$currentStatus], true)) {
             throw new InvalidStateTransitionException(
-                "Cannot transition from {$current} to {$next}"
+                "Cannot transition from '{$currentStatus}' to '{$newStatus}'"
             );
         }
 
-        $this->status = $newStatus;
-        $this->save();
+        $this->update(['status' => $newStatus]);
+        OrderStatusChanged::dispatch($this, $currentStatus, $newStatus);
     }
+
+    public function pay(): void { $this->transitionTo(self::STATUS_PAID); }
+    public function ship(): void { $this->transitionTo(self::STATUS_SHIPPED); }
+    public function cancel(): void { $this->transitionTo(self::STATUS_CANCELLED); }
 }
 ```
 
-### 1.3 Money Calculations
+### 1.3 Calculation Accuracy
 Monetary calculations must use integer cents or Decimal, NEVER float.
 
-**Anti-Pattern: Float for money**
 ```php
-// ❌ BAD: Float precision errors
-$discount = $order->total * 0.1;
-$final = $order->total - $discount;
-```
+// ❌ BAD: Float arithmetic causes precision errors
+$total = $price * $quantity;
+$tax = $total * 0.18;
 
-**Pattern: Integer cents or Money value object**
-```php
-// ✅ GOOD: Integer cents
+// ✅ GOOD: Use integer cents
 class Money
 {
-    public function __construct(private int $cents) {}
+    public function __construct(private int $amountInCents) {}
 
-    public static function fromDollars(float $dollars): self
+    public static function fromDecimal(float $amount): self
     {
-        return new self((int) round($dollars * 100));
+        return new self((int) round($amount * 100));
     }
 
-    public function discount(float $percent): self
+    public function add(Money $other): self
     {
-        return new self((int) round($this->cents * (1 - $percent)));
+        return new self($this->amountInCents + $other->amountInCents);
     }
 
-    public function toDollars(): float
+    public function multiply(float $factor): self
     {
-        return $this->cents / 100;
+        return new self((int) round($this->amountInCents * $factor));
+    }
+
+    public function toDecimal(): float
+    {
+        return $this->amountInCents / 100;
+    }
+
+    public function format(): string
+    {
+        return number_format($this->amountInCents / 100, 2);
     }
 }
 ```
@@ -427,49 +438,51 @@ public function decrementStock(int $productId, int $quantity): bool
 
 ### 2.2 Duplicate Creation Prevention
 
-**Anti-Pattern: Check then create**
 ```php
-// ❌ BAD: Race window between check and create
-public function createUser(string $email): User
+// ❌ BAD: Can create duplicates
+public function createSubscription(Request $request)
 {
-    if (!User::where('email', $email)->exists()) {
-        return User::create(['email' => $email]);
+    $user = auth()->user();
+    if ($user->subscriptions()->where('status', 'active')->exists()) {
+        throw new Exception('Already has active subscription');
+    }
+    Subscription::create([
+        'user_id' => $user->id,
+        'plan_id' => $request->plan_id,
+        'status' => 'active',
+    ]);
+}
+
+// ✅ GOOD: Unique constraint at database level
+Schema::create('subscriptions', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained();
+    $table->foreignId('plan_id')->constrained();
+    $table->string('status');
+    $table->timestamps();
+    $table->unique(['user_id', 'status'])->where('status', 'active');
+});
+
+public function createSubscription(Request $request)
+{
+    try {
+        return DB::transaction(function () {
+            return Subscription::create([
+                'user_id' => auth()->id(),
+                'plan_id' => $request->plan_id,
+                'status' => 'active',
+            ]);
+        });
+    } catch (QueryException $e) {
+        if (str_contains($e->getMessage(), 'Duplicate entry')) {
+            throw new DuplicateSubscriptionException('Active subscription already exists');
+        }
+        throw $e;
     }
 }
 ```
 
-**Pattern: Unique constraint + firstOrCreate**
-```php
-// ✅ GOOD: Database-enforced uniqueness
-// Migration: $table->unique('email');
-
-public function createUser(string $email): User
-{
-    return User::firstOrCreate(['email' => $email]);
-}
-```
-
-### 2.3 Cache Stampede Prevention
-
-**Anti-Pattern: Multiple processes rebuilding cache**
-```php
-// ❌ BAD: Thundering herd
-$value = Cache::remember('expensive_key', 3600, function () {
-    return ExpensiveQuery::run();
-});
-```
-
-**Pattern: Cache lock during rebuild**
-```php
-// ✅ GOOD: Single process rebuilds
-$value = Cache::remember('expensive_key', 3600, function () {
-    return Cache::lock('rebuild:expensive_key', 10)->get(function () {
-        return ExpensiveQuery::run();
-    });
-});
-```
-
-### 2.4 Job Processing Duplicates
+### 2.3 Job Processing Duplicates
 
 ```php
 // ❌ BAD: Job can be processed multiple times
@@ -522,7 +535,7 @@ class ProcessPaymentJob implements ShouldQueue
 }
 ```
 
-### 2.5 Cache Stampede Prevention
+### 2.4 Cache Stampede Prevention
 
 ```php
 // ❌ BAD: Cache stampede
@@ -559,7 +572,7 @@ public function getPopularProducts()
 }
 ```
 
-### 2.6 File Upload Collisions
+### 2.5 File Upload Collisions
 
 ```php
 // ❌ BAD: Filename collision
@@ -2546,7 +2559,7 @@ is an anti-pattern. The current implementation is correct."
 When reviewing code:
 1. **ALWAYS** load `.coderabbit.yaml` and apply path-specific rules
 2. **ALWAYS** load this SKILL.md for Laravel patterns
-3. **ALWAYS** use code-explorer subagent for complex files before suggesting
+3. **ALWAYS** use code-explore subagent for complex files before suggesting
 4. **ALWAYS** check "When NOT to report" rules before flagging an issue
 5. **ONLY** report 🔴 CERTAIN and 🟠 HIGH confidence issues
 6. **NEVER** suggest wrapping external API calls in DB::transaction()

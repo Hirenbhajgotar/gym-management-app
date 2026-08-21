@@ -15,9 +15,13 @@ metadata:
   patterns: [ddd, solid, dry, action-classes, services, dtos]
 ---
 
+
 # Laravel Intelligent Refactor Skill
 
+
+
 ## Philosophy
+
 
 > **Refactoring without tests is reckless. Refactoring without understanding is destructive.**
 > **Zero false positives. Every issue must be reproducible, actionable, and verifiable.**
@@ -30,11 +34,14 @@ This skill enforces a 6-phase deterministic refactoring protocol with 8-dimensio
 5. **Execute** with LSP precision and AST-grep safety
 6. **Verify** after every single change across all 8 dimensions
 
+
 ## The 9 Refactor Dimensions
+
 
 Every refactor MUST validate these categories. Load `laravel-code-review` skill for detailed review framework and `laravel-code-extraction` skill for extraction patterns.
 
 | # | Dimension | Key Checks |
+
 |---|-----------|------------|
 | 1 | **BUSINESS LOGIC** | Domain rules, invariants, state transitions, auth alignment |
 | 2 | **USER EXPERIENCE** | Error messages, validation clarity, API consistency, async feedback |
@@ -45,14 +52,18 @@ Every refactor MUST validate these categories. Load `laravel-code-review` skill 
 | 7 | **SECURITY** | SQL injection (parameter binding), auth (Policies/Gates), mass assignment (`$fillable`), secrets |
 | 8 | **CODE QUALITY** | Type declarations, PSR compliance, method length, complexity, naming |
 
+
 ### Dimension Integration in 6-Phase Protocol
+
 
 - **Phase 1 (Analysis)**: @code-explorer gathers context + runs 9-dimension pre-audit + identifies extraction opportunities
 - **Phase 4 (Plan)**: Each atomic step addresses specific dimension issues + extraction plan
 - **Phase 5 (Execute)**: After each step, verify relevant dimensions + extraction quality
 - **Phase 6 (Final)**: Full 9-dimension re-review on ALL modified files + verify Laravel best practices
 
+
 ## When to Activate
+
 
 Activate this skill when the user mentions:
 - "refactor", "clean up", "improve", "restructure", "modernize"
@@ -62,9 +73,13 @@ Activate this skill when the user mentions:
 - Laravel architecture improvements
 - Code smell fixes (fat controllers, god classes, etc.)
 
+
 ## Before Any Action: Intent Gate (MANDATORY)
 
+
+
 ### Step 0.1: Parse Request Type
+
 
 | Signal | Classification | Action |
 |--------|----------------|--------|
@@ -74,7 +89,9 @@ Activate this skill when the user mentions:
 | Ambiguous scope | Uncertain | **MUST ask**: "Which modules/files?" |
 | Missing context | Incomplete | **MUST ask**: "What's the desired outcome?" |
 
+
 ### Step 0.2: Validate Understanding (ASK USER)
+
 
 Before proceeding, confirm ALL of these are clear:
 - [ ] Target file(s)/module clearly identified
@@ -99,7 +116,9 @@ Options I see:
 Should I proceed with [recommendation], or would you prefer differently?
 ```
 
+
 ### Step 0.3: Create Initial Todos
+
 
 **IMMEDIATELY** after understanding the request, create todos:
 
@@ -117,11 +136,15 @@ TodoWrite([
 
 ---
 
+
 ## PHASE 1: Codebase Analysis (PARALLEL EXPLORATION)
+
 
 **Mark `phase-1` as `in_progress`.**
 
+
 ### 1.1: Launch @code-explorer (BACKGROUND)
+
 
 The orchestrator (or this agent if running standalone) calls `@code-explorer` subagents in background to gather full context BEFORE any refactoring.
 
@@ -175,7 +198,9 @@ Report: Specific issues with file paths, line numbers, severity (CRITICAL/HIGH/M
 Report: Extraction opportunities with recommended locations.
 ```
 
+
 ### 1.2: Direct Tool Exploration (While Agents Run)
+
 
 Use these tools directly:
 
@@ -197,16 +222,24 @@ lsp_diagnostics(filePath)
 
 **AST-Grep for PHP:**
 ```bash
+
 # Find class structures
+
 ast-grep --lang php --pattern 'class $NAME { $$$ }' --json
 
+
 # Find method patterns
+
 ast-grep --lang php --pattern 'function $NAME($$$) { $$$ }' --json
 
+
 # Find dependency injections
+
 ast-grep --lang php --pattern '__construct($$$)' --json
 
+
 # DRY RUN preview (ALWAYS)
+
 ast-grep --lang php --pattern '[old]' --rewrite '[new]' --dry-run
 ```
 
@@ -219,15 +252,24 @@ grep -rn "use App\\Services" app/Jobs/
 
 **Laravel-Boost MCP Tools:**
 ```bash
+
 # Use laravel-boost tools if available
+
 # - analyze:architecture
+
 # - analyze:dependencies
+
 # - generate:service
+
 # - generate:action
+
 # - generate:dto
+
 ```
 
+
 ### 1.3: Collect Results
+
 
 Gather all subagent outputs and tool results.
 
@@ -235,22 +277,32 @@ Gather all subagent outputs and tool results.
 
 ---
 
+
 ## PHASE 2: Build Codemap (DEPENDENCY MAPPING)
+
 
 **Mark `phase-2` as `in_progress`.**
 
+
 ### 2.1: Construct Definitive Codemap
+
 
 Build this exact structure:
 
 ```markdown
+
 ## CODEMAP: [TARGET]
 
+
+
 ### Core Files (Direct Impact)
+
 - `path/to/file.php:L10-L50` - Primary definition
 - `path/to/file2.php:L25` - Key usage
 
+
 ### Dependency Graph
+
 ```
 [TARGET]
 ├── imports from:
@@ -264,19 +316,25 @@ Build this exact structure:
     └── config/services.php (config reference)
 ```
 
+
 ### Impact Zones
+
 | Zone | Risk Level | Files Affected | Test Coverage |
 |------|------------|----------------|---------------|
 | Core | HIGH | 3 files | 85% covered |
 | Consumers | MEDIUM | 8 files | 70% covered |
 | Edge | LOW | 2 files | 50% covered |
 
+
 ### Established Patterns
+
 - Pattern A: [description] - used in N places
 - Pattern B: [description] - established convention
 ```
 
+
 ### 2.2: Identify Refactoring Constraints
+
 
 Based on codemap, document:
 - **MUST follow**: [existing patterns identified]
@@ -288,24 +346,34 @@ Based on codemap, document:
 
 ---
 
+
 ## PHASE 3: Test Assessment (VERIFICATION STRATEGY)
+
 
 **Mark `phase-3` as `in_progress`.**
 
+
 ### 3.1: Detect Test Infrastructure
 
+
 ```bash
+
 # Laravel test detection
+
 ls -la phpunit.xml phpunit.xml.dist
 ls -la tests/Feature tests/Unit
 ls -la .env.testing
 
+
 # Check test commands
+
 php artisan test --list-tests 2>/dev/null || true
 php artisan test --filter=[TARGET] 2>/dev/null || true
 ```
 
+
 ### 3.2: Analyze Test Coverage
+
 
 ```
 Send: @code-explorer Analyze test coverage for [TARGET]:
@@ -316,7 +384,9 @@ Send: @code-explorer Analyze test coverage for [TARGET]:
 5. Estimated coverage percentage?
 ```
 
+
 ### 3.3: Determine Verification Strategy
+
 
 | Coverage Level | Strategy |
 |----------------|----------|
@@ -340,25 +410,35 @@ Options:
 Which approach do you prefer?
 ```
 
+
 ### 3.4: Document Verification Plan
 
+
 ```markdown
+
 ## VERIFICATION PLAN
 
+
+
 ### Test Commands
+
 - Unit: `php artisan test --filter=[TARGET]`
 - Feature: `php artisan test tests/Feature/`
 - Static Analysis: `phpstan analyse` / `psalm`
 - Lint: `pint --test`
 
+
 ### Verification Checkpoints
+
 After each refactoring step:
 1. lsp_diagnostics -> zero new errors
 2. Run test command -> all pass
 3. Static analysis -> clean
 4. Type check (if using PHPStan/Psalm) -> clean
 
+
 ### Regression Indicators
+
 - [Specific test that must pass]
 - [Behavior that must be preserved]
 - [API contract that must not change]
@@ -368,109 +448,167 @@ After each refactoring step:
 
 ---
 
+
 ## PHASE 4: Plan Generation
+
 
 **Mark `phase-4` as `in_progress`.**
 
+
 ### 4.1: Create Detailed Refactoring Plan
+
 
 Use `@plan` agent or create plan manually:
 
 ```markdown
+
 ## Refactoring Plan: [TARGET]
 
+
+
 ### Goal
+
 [User's original request]
 
+
 ### Codemap Summary
+
 [Insert from Phase 2]
 
+
 ### Test Coverage
+
 [Insert from Phase 3]
 
+
 ### Constraints
+
 - MUST follow existing patterns: [list]
 - MUST NOT break: [critical paths]
 - MUST run tests after each step
 
+
 ### Atomic Steps
+
 1. **[Step 1]**: [description] -> [files affected]
 2. **[Step 2]**: [description] -> [files affected]
 3. ...
 
+
 ### Rollback Strategy
+
 - Each step is independently reversible via git
 - Before/after snapshots for each step
 ```
 
+
 ### 4.2: Address 9-Dimension Issues + Extraction Plan
+
 
 From the @code-explorer pre-audit (Phase 1, Agent 6), create specific refactoring steps for each dimension AND extraction opportunities:
 
 ```markdown
+
 ## Dimension Issue Resolution Plan
 
+
+
 ### BUSINESS_LOGIC
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
+
 
 ### RACE_CONDITIONS
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
+
 
 ### IDEMPOTENCY
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
+
 
 ### RUNTIME_ERRORS
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
+
 
 ### BUGS_ANTI_PATTERNS
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
+
 
 ### SECURITY
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
 
+
 ### CODE_QUALITY
+
 - [ ] Fix: [specific issue] -> [file:line]
 - [ ] Verify: [how to verify]
 ```
 
+
 ### 4.3: Extraction Plan
+
 
 Using `laravel-code-extraction` skill, plan extractions:
 
 ```markdown
+
 ## Extraction Plan
 
+
+
 ### Services to Extract
+
 - [ ] `App\Services\[Name]Service` from [file:lines] - [reason]
 
+
 ### Actions to Extract
+
 - [ ] `App\Actions\[Name]Action` from [file:lines] - [reason]
 
+
 ### DTOs to Extract
+
 - [ ] `App\DTOs\[Name]DTO` from [file:lines] - [reason]
 
+
 ### Value Objects to Extract
+
 - [ ] `App\ValueObjects\[Name]` from [file:lines] - [reason]
 
+
 ### Traits to Extract
+
 - [ ] `App\Traits\Has[Name]` from [file:lines] - [reason]
 
+
 ### Enums to Extract
+
 - [ ] `App\Enums\[Name]Enum` from [file:lines] - [reason]
 
+
 ### Form Requests to Extract
+
 - [ ] `App\Http\Requests\[Name]Request` from [file:lines] - [reason]
 
+
 ### Policies to Extract
+
 - [ ] `App\Policies\[Name]Policy` from [file:lines] - [reason]
 
+
 ### Laravel Best Practices to Apply
+
 - [ ] Add DB transactions to [method] in [file]
 - [ ] Add Cache::lock() to [method] in [file]
 - [ ] Add eager loading to [query] in [file]
@@ -480,36 +618,50 @@ Using `laravel-code-extraction` skill, plan extractions:
 - [ ] Add structured logging to [operations]
 ```
 
+
 ### 4.4: Apply Laravel Architecture Patterns
+
 
 When planning, ALWAYS consider these Laravel/PHP patterns:
 
+
 #### A. Service Extraction
+
 - If business logic exists in Controller/Job/Command -> extract to `App\Services\`
 - Use constructor injection, never `new Service()` in controllers
 - Single Responsibility: one service per domain concept
 
+
 #### B. Action Classes
+
 - For single-purpose operations -> `App\Actions\`
 - Implement `__invoke()` for callable actions
 - Keep stateless, inject dependencies via constructor
 
+
 #### C. DTOs (Data Transfer Objects)
+
 - For complex data passing -> `App\DTOs\`
 - Use readonly properties (PHP 8.1+)
 - Add static `fromArray()` / `fromRequest()` factories
 
+
 #### D. Value Objects
+
 - For domain concepts with validation -> `App\ValueObjects\`
 - Immutable, self-validating
 - Example: `PhoneNumber`, `Money`, `EmailAddress`
 
+
 #### E. Repository Pattern (when needed)
+
 - For complex query logic -> `App\Repositories\`
 - Interface + Eloquent implementation
 - Only when query complexity justifies abstraction
 
+
 #### F. Reuse Existing Classes
+
 - BEFORE creating new classes, check:
   - `App\Services\*` -- does a similar service exist?
   - `App\Actions\*` -- does a similar action exist?
@@ -518,7 +670,9 @@ When planning, ALWAYS consider these Laravel/PHP patterns:
   - Base classes and abstract classes
 - **DRY Principle**: If logic exists elsewhere, refactor to reuse, don't duplicate
 
+
 ### 4.3: Register Granular Todos
+
 
 ```
 TodoWrite([
@@ -533,21 +687,29 @@ TodoWrite([
 
 ---
 
+
 ## PHASE 5: Execute Refactoring (DETERMINISTIC EXECUTION)
+
 
 **Mark `phase-5` as `in_progress`.**
 
+
 ### 5.1: Execution Protocol
+
 
 For EACH step:
 
+
 #### Pre-Step
+
 1. Mark step todo as `in_progress`
 2. Read current file state
 3. Verify `lsp_diagnostics` baseline is clean
 4. **Git checkpoint**: `git add -A && git commit -m "checkpoint: before [step description]"`
 
+
 #### Execute Step
+
 Use appropriate tool:
 
 **For Symbol Renames:**
@@ -558,28 +720,42 @@ lsp_rename(filePath, line, character, newName)
 
 **For Structural Transformations:**
 ```bash
+
 # AST-grep DRY RUN first
+
 ast-grep --lang php --pattern '[old]' --rewrite '[new]' --dry-run
 
+
 # If preview good, execute
+
 ast-grep --lang php --pattern '[old]' --rewrite '[new]'
 ```
 
 **For Laravel Class Generation:**
 ```bash
+
 # Prefer artisan generators
+
 php artisan make:service [Name]        # if laravel-boost provides
+
 php artisan make:action [Name]         # if laravel-boost provides
+
 php artisan make:dto [Name]            # if laravel-boost provides
 
+
+
 # Or use laravel-boost MCP tools
+
 # generate:service, generate:action, generate:dto
+
 ```
 
 **For Manual Edits:**
 Use `edit()` tool with precise oldString/newString.
 
+
 #### Post-Step Verification (MANDATORY)
+
 
 ```php
 // 1. Check diagnostics
@@ -595,11 +771,15 @@ bash("phpstan analyse [files] --level=8")
 bash("pint --test [files]")
 ```
 
+
 #### Step Completion
+
 - If ALL pass -> Mark step todo as `completed`
 - If ANY fails -> **STOP AND FIX** (see Failure Recovery)
 
+
 ### 5.2: Failure Recovery Protocol
+
 
 If verification fails:
 
@@ -614,7 +794,9 @@ If verification fails:
 
 **NEVER proceed to next step with broken tests.**
 
+
 ### 5.3: Commit Checkpoints
+
 
 After each logical group:
 ```bash
@@ -630,46 +812,68 @@ git commit -m "refactor(scope): description
 
 ---
 
+
 ## PHASE 6: Final Verification (REGRESSION CHECK)
+
 
 **Mark `phase-6` as `in_progress`.**
 
+
 ### 6.1: Full Test Suite
+
 ```bash
 php artisan test
 ```
 
+
 ### 6.2: Static Analysis
+
 ```bash
 phpstan analyse app/ --level=max
+
 # or psalm
+
 ```
 
+
 ### 6.3: Lint Check
+
 ```bash
 pint --test
 ```
 
+
 ### 6.4: Architecture Validation (Laravel-Boost)
+
 ```bash
+
 # If laravel-boost tools available:
+
 # analyze:architecture --check-cycles
+
 # analyze:dependencies --verify-layers
+
 ```
 
+
 ### 6.5: Final Diagnostics
+
 ```php
 for (file of changedFiles) {
   lsp_diagnostics(file)  // Must all be clean
 }
 ```
 
+
 ### 6.6: 9-Dimension Final Review + Extraction Validation
+
 
 Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audit:
 
 ```markdown
+
 ## 8-Dimension Review: Before vs After
+
 
 | Dimension | Issues Before | Issues After | Status |
 |-----------|---------------|--------------|--------|
@@ -686,22 +890,32 @@ Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audi
 
 **If ANY dimension shows "NEEDS_FIX", STOP and fix before completing.**
 
+
 ### 6.7: Generate Summary
 
+
 ```markdown
+
 ## Refactoring Complete
 
+
+
 ### What Changed
+
 - [List of architectural improvements]
 - [List of extractions performed]
 
+
 ### Files Modified
+
 - `path/to/file.php` - [what changed]
 - `app/Services/NewService.php` - [new service]
 - `app/Actions/NewAction.php` - [new action]
 - `app/DTOs/NewDTO.php` - [new DTO]
 
+
 ### Patterns Applied
+
 - Service Extraction: [details]
 - Action Classes: [details]
 - DTOs: [details]
@@ -713,7 +927,9 @@ Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audi
 - Policy Extraction: [details]
 - DRY Compliance: [details]
 
+
 ### 9-Dimension Results
+
 | Dimension | Status |
 |-----------|--------|
 | Business Logic | PASS |
@@ -726,7 +942,9 @@ Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audi
 | Code Quality | PASS |
 | Code Extraction | PASS |
 
+
 ### Laravel Best Practices Applied
+
 | Practice | Status |
 |----------|--------|
 | DB Transactions | PASS |
@@ -737,7 +955,9 @@ Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audi
 | Type Declarations | PASS |
 | Structured Logging | PASS |
 
+
 ### Verification Results
+
 - Tests: PASSED (X/Y passing)
 - PHPStan: CLEAN
 - Pint: CLEAN
@@ -745,7 +965,9 @@ Run full 9-dimension review on ALL modified files. Compare with Phase 1 pre-audi
 - 9-Dimension Review: ALL PASS
 - Laravel Best Practices: ALL PASS
 
+
 ### No Regressions Detected
+
 All existing tests pass. No new errors introduced. No new issues in any dimension.
 ```
 
@@ -753,9 +975,13 @@ All existing tests pass. No new errors introduced. No new issues in any dimensio
 
 ---
 
+
 ## CRITICAL RULES
 
+
+
 ### NEVER DO
+
 - Skip lsp_diagnostics check after changes
 - Proceed with failing tests
 - Make changes without understanding impact
@@ -771,7 +997,9 @@ All existing tests pass. No new errors introduced. No new issues in any dimensio
 - Ignore race conditions or idempotency issues
 - Ignore Laravel best practices (transactions, locks, eager loading)
 
+
 ### ALWAYS DO
+
 - Understand before changing
 - Preview before applying (ast-grep dry-run)
 - Verify after every change
@@ -788,7 +1016,9 @@ All existing tests pass. No new errors introduced. No new issues in any dimensio
 - Load laravel-code-extraction skill for extraction patterns
 - Apply Laravel best practices: transactions, locks, eager loading, Form Requests, Policies
 
+
 ### ABORT CONDITIONS
+
 If any occur, **STOP and consult user**:
 - Test coverage is zero for target code
 - Changes would break public API (routes, published events, external consumers)
@@ -799,9 +1029,13 @@ If any occur, **STOP and consult user**:
 
 ---
 
+
 ## Laravel-Specific Patterns Reference
 
+
+
 ### Service Class Template
+
 ```php
 <?php
 
@@ -821,7 +1055,9 @@ class WhatsAppTemplateService
 }
 ```
 
+
 ### Action Class Template
+
 ```php
 <?php
 
@@ -840,7 +1076,9 @@ class ImportWhatsAppTemplatesAction
 }
 ```
 
+
 ### DTO Template
+
 ```php
 <?php
 
@@ -865,7 +1103,9 @@ readonly class WhatsAppTemplateDTO
 }
 ```
 
+
 ### Value Object Template
+
 ```php
 <?php
 
@@ -895,32 +1135,44 @@ final class TemplateLanguage
 
 ---
 
+
 ## Tool Integration Guide
 
+
+
 ### LSP Tools (Priority: HIGH)
+
 - `LspGotoDefinition` -- Understand before changing
 - `LspFindReferences` -- Map all usages before modification
 - `lsp_prepare_rename` -> `lsp_rename` -- Safe symbol renames
 - `lsp_diagnostics` -- Continuous verification
 
+
 ### AST-Grep (Priority: HIGH)
+
 - `ast-grep --lang php --pattern '...' --dry-run` -- Preview first
 - `ast-grep --lang php --pattern '...' --rewrite '...'` -- Execute
 - Use for structural transformations across multiple files
 
+
 ### Laravel-Boost MCP (Priority: HIGH)
+
 - `analyze:architecture` -- Verify layer compliance
 - `analyze:dependencies` -- Check coupling
 - `generate:service` -- Create service scaffolding
 - `generate:action` -- Create action scaffolding
 - `generate:dto` -- Create DTO scaffolding
 
+
 ### Static Analysis (Priority: MEDIUM)
+
 - `phpstan analyse` -- Type safety
 - `psalm` -- Advanced type analysis
 - `pint` -- Code style
 
+
 ### Testing (Priority: HIGH)
+
 - `php artisan test` -- Full suite
 - `php artisan test --filter=` -- Targeted
 - `php artisan test --coverage` -- Coverage report
