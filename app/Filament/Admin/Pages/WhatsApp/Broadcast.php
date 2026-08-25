@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages\WhatsApp;
 
-use App\Enums\WhatsAppTemplateStatusEnum;
+use App\Enums\TemplateCategoryEnum;
+use App\Filament\Admin\Resources\WhatsAppTemplateResource;
 use App\Filament\BasePages\BasePage;
+use App\Forms\Components\SummaryStatCard;
+use App\Forms\Components\TemplatePicker;
+use App\Forms\Components\TemplatePreview;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppTemplate;
-use App\Providers\WhatsAppProviderFactory;
+use App\Services\WhatsApp\BroadcastMemberQuery;
 use App\Services\WhatsApp\BroadcastOrchestrator;
 use App\Services\WhatsApp\BroadcastRateLimiter;
+use App\Services\WhatsAppBillingService;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -31,19 +36,26 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Split;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
-use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 
+/**
+ * @property Form $form
+ * @property-read Collection<int, WhatsAppTemplate> $templates
+ */
 class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 {
     use InteractsWithActions, InteractsWithForms, InteractsWithTable;
@@ -62,20 +74,23 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     public bool $filtersApplied = false;
 
+    /** @var array<string, mixed> */
     public array $data = [];
 
-    public array $templates = [];
-
+    /** @var array<string, mixed> */
     public array $selectedTemplate = [];
 
+    /** @var array<int, mixed> */
     public array $targetMembers = [];
 
     public int $targetCount = 0;
 
+    /** @var array<string, mixed> */
     public array $messagePreview = [];
 
     public ?int $scheduledHour = null;
 
+    /** @var array<string, mixed> */
     public array $filters = [
         'plans' => [],
         'trainers' => [],
@@ -83,11 +98,8 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         'payment_status' => [],
     ];
 
+    /** @var array<int, int> */
     public array $selectedMemberIds = [];
-
-    public array $availablePlans = [];
-
-    public array $availableTrainers = [];
 
     protected BroadcastOrchestrator $broadcastOrchestrator;
 
@@ -98,7 +110,6 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     public function mount(): void
     {
-        $this->loadTemplates();
         $this->initializeForm();
     }
 
@@ -107,106 +118,97 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         return [];
     }
 
-    private function loadTemplates(): void
+    /**
+     * @return Collection<int, WhatsAppTemplate>
+     */
+    #[Computed]
+    public function templates(): Collection
     {
-        $query = WhatsAppTemplate::query()
-            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
-            ->isActive()
+        return WhatsAppTemplate::query()
             ->where(function ($query) {
                 $query->where('gym_id', $this->getGymId());
 
                 if (config('services.twilio.use_sandbox')) {
                     $query->orWhereNull('gym_id');
                 }
-            });
-
-        $this->templates = $query->get()->toArray();
+            })
+            ->approved()
+            ->isActive()
+            ->get();
     }
 
     private function initializeForm(): void
     {
-        $this->loadFilters();
-
         $this->data = [
             'template_id' => '',
             'variables' => [],
-            'recipient_type' => 'all',
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [
+                'plans' => null,
+                'trainers' => null,
+                'membership_type' => null,
+                'payment_status' => null,
+            ],
         ];
 
-        $this->targetCount = $this->getAllMemberCount();
+        $this->selectedTemplate = [];
+        $this->selectedMemberIds = [];
+        $this->targetCount = 0;
+        $this->filtersApplied = false;
+
+        /** @var Form $form */
+        $form = $this->form;
+        $form->fill($this->data);
+        $this->resetValidation();
     }
 
-    private function loadFilters(): void
-    {
-        $gymId = $this->getGymId();
-
-        $this->availablePlans = MembershipPlan::query()->where('gym_id', $gymId)
-            ->isActive()
-            ->get()
-            ->toArray();
-
-        $this->availableTrainers = Trainer::query()->where('gym_id', $gymId)
-            ->get()
-            ->toArray();
-    }
-
+    /**
+     * @return Builder<GymMember>
+     */
     private function getFilteredMembers(): Builder
     {
-        $query = GymMember::query()
-            ->whatsappMarketingAllowed()
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '');
+        /** @var array<string, mixed> $filters */
+        $filters = (array) ($this->data['filters'] ?? []);
 
-        $data = $this->data;
-
-        if (! isset($data['filters']) || blank($data['filters'])) {
-            return $query;
-        }
-
-        $filters = $data['filters'];
-
-        if (isset($filters['membership_type']) && $filters['membership_type']) {
-            if ($filters['membership_type'] === 'active') {
-                $query->membershipActive();
-            }
-            if ($filters['membership_type'] === 'inactive') {
-                $query->membershipExpired();
-            }
-        }
-
-        if (isset($filters['plans']) && $filters['plans']) {
-            $query->where('gym_membership_plan_id', $filters['plans']);
-        }
-
-        if (isset($filters['payment_status']) && $filters['payment_status']) {
-            $query->where('payment_status', $filters['payment_status']);
-        }
-
-        if (isset($filters['trainers']) && $filters['trainers']) {
-            $query->where('trainer_id', $filters['trainers']);
-        }
-
-        return $query;
+        return BroadcastMemberQuery::build($this->getGymId(), $filters);
     }
 
-    private function getAllMemberCount(): int
-    {
-        return GymMember::query()
-            ->whatsappMarketingAllowed()
-            ->where('gym_id', $this->getGymId())
-            ->count();
-    }
-
-    private function getFilteredMemberCount(): int
+    public function getFilteredMemberCount(): int
     {
         return $this->getFilteredMembers()->count();
     }
 
+    public function applyFilters(): void
+    {
+        $this->resetValidation();
+
+        $filters = $this->data['filters'] ?? [];
+        $activeFilters = array_filter((array) $filters, fn ($value) => filled($value));
+
+        if (blank($activeFilters)) {
+            throw ValidationException::withMessages([
+                'data.filters.plans' => 'Audience Filtering required: Please select at least one filter before applying.',
+            ]);
+        }
+
+        /** @var array<int, int> $ids */
+        $ids = array_map(fn ($id) => $id, $this->getFilteredMembers()->pluck('id')->toArray());
+        $this->selectedMemberIds = $ids;
+        $this->targetCount = count($this->selectedMemberIds);
+
+        if ($this->targetCount === 0) {
+            throw ValidationException::withMessages([
+                'data.filters.plans' => '0 members match the selected criteria. Please adjust your filters.',
+            ]);
+        }
+
+        $this->filtersApplied = true;
+    }
+
     public function updatedFilters(): void
     {
-        $this->filtersApplied = true;
-        $this->targetCount = $this->getFilteredMemberCount();
-        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+        $this->applyFilters();
     }
 
     public function clearFilters(): void
@@ -219,30 +221,15 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         ];
 
         $this->filtersApplied = false;
-        $this->form->fill($this->data);
-        $this->resetTableSearch();
-        $this->resetTable();
-        $this->targetCount = $this->getAllMemberCount();
-        // $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
+        /** @var Form $form */
+        $form = $this->form;
+        $form->fill($this->data);
+        // $this->resetTableSearch();
+        // $this->resetTable();
+        // $this->targetCount = $this->getAllMemberCount();
+        $this->targetCount = 0;
         $this->selectedMemberIds = [];
-    }
-
-    public function updatedRecipientType(): void
-    {
-        $recipientType = $this->data['recipient_type'] ?? 'all';
-
-        $this->selectedMemberIds = $this->getFilteredMembers()->pluck('id')->toArray();
-        if ($recipientType === 'all') {
-            $this->clearFilters();
-            $this->targetCount = $this->getAllMemberCount();
-        } else {
-            $this->targetCount = $this->getFilteredMemberCount();
-        }
-    }
-
-    public function updatedSelectedMemberIds(): void
-    {
-        $this->targetCount = count($this->selectedMemberIds);
+        $this->resetValidation();
     }
 
     public function form(Form $form): Form
@@ -251,122 +238,20 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
             ->schema([
                 Split::make([
                     Section::make([
-                        Select::make('template_id')
-                            ->label('Choose Template')
-                            ->options(fn () => collect($this->templates)->pluck('display_name', 'id'))
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
-
-                        // Variable Inputs (only for custom source variables)
-                        Section::make('Message Variables')
-                            ->description('Some variables are auto-filled from member data. Only custom variables need your input.')
-                            ->schema(function () {
-                                $templateId = $this->data['template_id'] ?? null;
-
-                                if (! $templateId) {
-                                    return [];
-                                }
-
-                                $template = WhatsAppTemplate::query()->find($templateId);
-
-                                if (! $template) {
-                                    return [];
-                                }
-
-                                $placeholders = $template->getVariablePlaceholders();
-
-                                if (blank($placeholders)) {
-                                    return [];
-                                }
-
-                                $fields = [];
-                                $hasAutoResolved = false;
-                                $autoResolvedLabels = [];
-
-                                foreach ($placeholders as $key => $placeholder) {
-                                    $source = $placeholder['source'] ?? 'custom';
-                                    $label = $placeholder['placeholder'] ?? 'Variable ' . $key;
-
-                                    if ($source !== 'custom') {
-                                        $hasAutoResolved = true;
-                                        $sources = WhatsAppVariableResolver::getAvailableDataSources();
-                                        $sourceLabel = $sources[$source]['label'] ?? $source;
-                                        $autoResolvedLabels[] = '{{' . $key . '}} ' . $label . ' — ' . $sourceLabel;
-
-                                        continue;
-                                    }
-
-                                    $fields[] = TextInput::make('variables.' . $key)
-                                        ->label('{{' . $key . '}} — ' . $label)
-                                        ->placeholder($placeholder['example'] ?? '')
-                                        ->required()
-                                        ->helperText('This value will be the same for all recipients.');
-                                }
-
-                                if ($hasAutoResolved) {
-                                    $autoList = collect($autoResolvedLabels)
-                                        ->map(fn ($item) => '<li>' . e($item) . '</li>')
-                                        ->implode('');
-
-                                    array_unshift($fields, Placeholder::make('auto_resolved_info')
-                                        ->label('')
-                                        ->content(new HtmlString('
-                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-xs space-y-1">
-                                            <div class="font-semibold text-emerald-700 dark:text-emerald-400">Auto-filled variables (from member data):</div>
-                                            <ul class="text-emerald-600 dark:text-emerald-400 space-y-0.5 list-disc list-inside">' . $autoList . '</ul>
-                                        </div>
-                                    ')));
-                                }
-
-                                if (blank($fields)) {
-                                    $fields[] = Placeholder::make('all_auto_resolved')
-                                        ->label('')
-                                        ->content(new HtmlString('
-                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 p-3 text-sm text-emerald-700 dark:text-emerald-400">
-                                            All variables in this template are auto-filled from member data. No manual input needed.
-                                        </div>
-                                    '));
-                                }
-
-                                return $fields;
-                            })
-                            ->visible(fn () => filled($this->data['template_id']) && filled($this->selectedTemplate)),
-
-                        Section::make('Recipients')
+                        Section::make('Audience Filtering')
+                            ->icon('heroicon-o-funnel')
                             ->schema([
-                                ToggleButtons::make('recipient_type')
-                                    ->label('Send to')
-                                    ->options([
-                                        'all' => 'All Members (' . $this->targetCount . ')',
-                                        'filtered' => 'Filter & Select Members',
-                                    ])
-                                    ->colors([
-                                        'all' => 'info',
-                                        'filtered' => 'info',
-                                    ])
-                                    // ->default('all')
-                                    ->inline()
-                                    ->inlineLabel(false)
-                                    ->live()
-                                    ->afterStateUpdated(fn () => $this->updatedRecipientType()),
-
                                 Group::make()
-                                    ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'filtered')
                                     ->schema([
                                         Grid::make(2)
                                             ->schema([
                                                 Select::make('filters.plans')
                                                     ->label('Membership Plan')
-                                                    ->options(fn () => collect($this->availablePlans)->pluck('name', 'id'))
-                                                    ->placeholder('All Plans')
-                                                    ->live(),
+                                                    ->options(fn () => MembershipPlan::query()->where('gym_id', $this->getGymId())->isActive()->pluck('name', 'id')),
 
                                                 Select::make('filters.trainers')
                                                     ->label('Trainer')
-                                                    ->options(fn () => collect($this->availableTrainers)->pluck('name', 'id'))
-                                                    ->placeholder('All Trainers')
-                                                    ->live(),
+                                                    ->options(fn () => Trainer::query()->where('gym_id', $this->getGymId())->pluck('name', 'id')),
                                             ]),
 
                                         Grid::make(2)
@@ -376,9 +261,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                                     ->options([
                                                         'active' => 'Active (Membership Valid)',
                                                         'inactive' => 'Inactive (Membership Expired)',
-                                                    ])
-                                                    ->placeholder('All Members')
-                                                    ->live(),
+                                                    ]),
 
                                                 Select::make('filters.payment_status')
                                                     ->label('Payment Status')
@@ -387,9 +270,7 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                                         'completed' => 'Completed',
                                                         'failed' => 'Failed',
                                                         'expired' => 'Expired',
-                                                    ])
-                                                    ->placeholder('All Payment Statuses')
-                                                    ->live(),
+                                                    ]),
                                             ]),
 
                                         Grid::make(2)
@@ -407,65 +288,107 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                                                         ->action(fn () => $this->updatedFilters()),
                                                 ]),
                                             ]),
-
-                                        ViewField::make('results_table')
-                                            ->view('filament.tenant.pages.components.member-checklist')
-                                            ->visible(fn () => $this->filtersApplied),
                                     ]),
-
-                                Placeholder::make('target_count')
-                                    ->label('Estimated Recipients')
-                                    ->visible(fn () => ($this->data['recipient_type'] ?? 'all') === 'all')
-                                    ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> members')),
                             ]),
 
-                        Section::make('Schedule')
-                            ->schema([
-                                Radio::make('schedule_type')
-                                    ->label('When to send')
-                                    ->options([
-                                        'now' => 'Send Now',
-                                        'later' => 'Schedule for Later',
-                                    ])
-                                    ->default('now')
-                                    ->inline()
-                                    ->inlineLabel(false)
-                                    ->live(),
+                        SummaryStatCard::make('')
+                            ->icon('heroicon-o-user-group')
+                            ->color('success')
+                            ->stats(function (Get $get): string {
+                                $count = count($this->selectedMemberIds);
+                                $isSelfManaged = WhatsAppAccount::query()
+                                    ->where('gym_id', $this->getGymId())
+                                    ->selfManageBillingMode()
+                                    ->exists();
 
-                                DateTimePicker::make('scheduled_at')
-                                    ->label('Schedule Date & Time')
-                                    ->visible(fn (callable $get) => $get('schedule_type') === 'later')
-                                    ->minDate(now())
-                                    ->required(fn (callable $get) => $get('schedule_type') === 'later'),
-                            ]),
-                        Section::make('Confirm')
-                            ->schema([
-                                Placeholder::make('credits_info')
-                                    ->label('Credits Required')
-                                    ->visible(fn () => ! WhatsAppAccount::query()
-                                        ->where('gym_id', $this->getGymId())
-                                        ->selfManageBillingMode()
-                                        ->exists())
-                                    ->content(fn () => new HtmlString('<strong>' . number_format($this->targetCount) . '</strong> credits will be deducted from your balance.')),
+                                if ($isSelfManaged) {
+                                    $templateId = $get('template_id') ?? $this->data['template_id'] ?? null;
+                                    $category = null;
 
-                                Actions::make([
-                                    Action::make('sendTestMessage')
-                                        ->label('Send Message')
-                                        ->color('info')
-                                        ->icon('heroicon-o-phone')
-                                        ->visible(fn () => config('services.twilio.use_sandbox'))
-                                        ->action(function () {
-                                            $this->sendTestMessage();
-                                        }),
-                                    Action::make('sendBroadcast')
-                                        ->label('Send Broadcast')
-                                        ->visible(fn () => ! config('services.twilio.use_sandbox'))
-                                        ->action(function () {
-                                            $this->form->validate();
-                                            $this->sendBroadcast();
-                                        }),
-                                ]),
-                            ]),
+                                    if (filled($templateId)) {
+                                        /** @var TemplateCategoryEnum|null $category */
+                                        $category = WhatsAppTemplate::query()->where('id', $templateId)->value('category');
+                                    }
+
+                                    $perMessageCost = WhatsAppBillingService::getCategoryPerMessageCost($category);
+                                    $expectedCost = $count * $perMessageCost;
+
+                                    $costFormatted = $expectedCost > 0 && $expectedCost < 0.01
+                                        ? number_format($expectedCost, 3)
+                                        : number_format($expectedCost, 2);
+
+                                    return 'Total Filtered Members: ' . number_format($count) . ' | Expected Cost: $' . $costFormatted;
+                                }
+
+                                return 'Total Filtered Members: ' . number_format($count) . ' | Required Credits: ' . number_format($count);
+                            }),
+
+                        Section::make('Template Selection')
+                            ->icon('heroicon-o-squares-2x2')
+                            ->headerActions([
+                                Action::make('manageTemplates')
+                                    ->label('Manage Templates')
+                                    ->icon('heroicon-o-arrow-top-right-on-square')
+                                    ->iconPosition(IconPosition::Before)
+                                    ->color('success')
+                                    ->link()
+                                    ->url(WhatsAppTemplateResource::getUrl())
+                                    ->openUrlInNewTab()
+                                    ->extraAttributes([
+                                        'onclick' => 'window.open(this.href, \'_blank\'); return false;',
+                                    ]),
+                            ])
+                            ->schema(function () {
+                                if (blank($this->templates)) {
+                                    return [
+                                        Placeholder::make('no_templates')
+                                            ->hiddenLabel()
+                                            ->content('No approved WhatsApp templates found.'),
+                                    ];
+                                }
+
+                                return [
+                                    TemplatePicker::make('template_id')
+                                        ->options($this->templates)
+                                        ->itemsPerPage(2)
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(fn () => $this->updateTemplatePreview()),
+                                ];
+                            }),
+
+                        Radio::make('schedule_type')
+                            ->label('')
+                            ->required()
+                            ->options([
+                                'now' => 'Send Now',
+                                'later' => 'Schedule for Later',
+                            ])
+                            ->default('now')
+                            ->inline()
+                            ->inlineLabel(false)
+                            ->live(),
+
+                        DateTimePicker::make('scheduled_at')
+                            ->label('Schedule Date & Time')
+                            ->visible(fn (callable $get) => $get('schedule_type') === 'later')
+                            ->minDate(now())
+                            ->required(fn (callable $get) => $get('schedule_type') === 'later'),
+
+                        Actions::make([
+                            Action::make('sendBroadcastAction')
+                                ->label('Send Broadcast')
+                                ->icon('heroicon-o-paper-airplane')
+                                ->color('primary')
+                                ->requiresConfirmation()
+                                ->modalHeading('Confirm Broadcast Dispatch')
+                                ->modalDescription(fn (): string => 'Are you sure you want to send this WhatsApp broadcast to ' . number_format($this->targetCount) . ' member(s)? Message credits will be deducted.')
+                                ->modalSubmitActionLabel('Yes, Send Broadcast')
+                                ->visible(fn () => ! config('services.twilio.use_sandbox'))
+                                ->action(function () {
+                                    $this->sendBroadcast();
+                                }),
+                        ]),
                     ]),
                     Section::make([
                         // Rate Limit Quota Display
@@ -482,31 +405,77 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
                                         $remaining = $quota['remaining'];
 
+                                        /** @var WhatsAppBroadcast|null $lastBroadcast */
                                         $lastBroadcast = WhatsAppBroadcast::query()->where('gym_id', $gymId)
                                             ->excludingTerminalStatuses()
                                             ->latest()
                                             ->first();
 
                                         $cooldownText = '';
-                                        if ($lastBroadcast && $lastBroadcast->created_at->gt(now()->subHour())) {
-                                            $nextAllowed = $lastBroadcast->created_at->addHour();
+                                        if ($lastBroadcast && $lastBroadcast->created_at?->gt(now()->subHour())) {
+                                            $nextAllowed = $lastBroadcast->created_at->copy()->addHour();
                                             $minutesLeft = (int) now()->diffInMinutes($nextAllowed, false);
                                             $cooldownText = "<div class='text-amber-600 dark:text-amber-400 text-xs mt-1'>⏱ Next broadcast available in {$minutesLeft} minute(s)</div>";
                                         }
 
-                                        $statusColor = $remaining > 0 ? 'emerald' : 'red';
+                                        $statusColor = (is_int($remaining) ? $remaining : 0) > 0 ? 'emerald' : 'red';
+                                        $remainingText = is_int($remaining) ? $remaining : 0;
 
                                         return new HtmlString("
                                             <div class='flex items-center gap-4'>
                                                 <div class='flex items-center gap-2'>
                                                     <span class='text-sm text-gray-600 dark:text-gray-400'>Today's Quota:</span>
-                                                    <span class='font-bold text-{$statusColor}-600 dark:text-{$statusColor}-400'>{$remaining}/2 remaining</span>
+                                                    <span class='font-bold text-{$statusColor}-600 dark:text-{$statusColor}-400'>{$remainingText}/2 remaining</span>
                                                 </div>
                                             </div>
                                             {$cooldownText}
                                         ");
                                     }),
                             ])
+                            ->compact(),
+
+                        Section::make('Template Preview')
+                            ->schema([
+                                TemplatePreview::make('template_preview')
+                                    ->template(fn () => $this->data['template_id'] ?? $this->selectedTemplate['id'] ?? null)
+                                    ->live(),
+                            ])
+                            ->compact(),
+
+                        Section::make('Template Variables')
+                            ->visible(function (Get $get): bool {
+                                $templateId = $get('template_id');
+                                if (blank($templateId)) {
+                                    return false;
+                                }
+                                /** @var WhatsAppTemplate|null $tpl */
+                                $tpl = WhatsAppTemplate::query()->find($templateId);
+
+                                return $tpl !== null && WhatsAppVariableResolver::hasCustomVariables($tpl);
+                            })
+                            ->schema(function (Get $get): array {
+                                $templateId = $get('template_id');
+                                if (blank($templateId)) {
+                                    return [];
+                                }
+                                /** @var WhatsAppTemplate|null $template */
+                                $template = WhatsAppTemplate::query()->find($templateId);
+                                if (! $template) {
+                                    return [];
+                                }
+                                $customVars = WhatsAppVariableResolver::getCustomVariables($template);
+                                $fields = [];
+                                foreach ($customVars as $varKey => $info) {
+                                    $label = $info['placeholder'];
+                                    $placeholder = $info['example'];
+                                    $fields[] = TextInput::make("variables.{$varKey}")
+                                        ->label($label)
+                                        ->placeholder($placeholder)
+                                        ->required();
+                                }
+
+                                return $fields;
+                            })
                             ->compact(),
                     ])->grow(false),
                 ]),
@@ -556,7 +525,8 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
         if ($templateId) {
             $template = WhatsAppTemplate::query()->find($templateId);
-            $templateArray = $template?->toArray() ?? [];
+            /** @var array<string, mixed> $templateArray */
+            $templateArray = is_array($arr = $template?->toArray()) ? $arr : [];
 
             $templateArray['formatted_body'] = $template?->formatted_body ?? $template?->body;
 
@@ -567,15 +537,40 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         }
     }
 
-    private function sendBroadcast(): void
+    public function sendBroadcast(): void
     {
-        try {
-            $this->form->validate();
+        if ($this->targetCount === 0) {
+            Notification::make()
+                ->title('No Recipients Selected')
+                ->body('Please apply filters to select at least one member before sending a broadcast.')
+                ->danger()
+                ->send();
 
+            $this->addError('data.filters.plans', 'Please select at least one member before sending a broadcast.');
+
+            return;
+        }
+
+        try {
+            /** @var Form $form */
+            $form = $this->form;
+            $form->validate();
+        } catch (ValidationException $e) {
+            Notification::make()
+                ->title('Validation Error')
+                ->body('Please select a WhatsApp template and fill in all required fields.')
+                ->danger()
+                ->send();
+
+            $this->setErrorBag($e->validator->getMessageBag());
+
+            return;
+        }
+
+        try {
             $data = [
                 'template_id' => $this->data['template_id'],
                 'variables' => $this->data['variables'] ?? [],
-                'recipient_type' => $this->data['recipient_type'] ?? 'all',
                 'schedule_type' => $this->data['schedule_type'] ?? 'now',
                 'scheduled_at' => $this->data['scheduled_at'] ?? null,
                 'filters' => $this->data['filters'] ?? [],
@@ -598,7 +593,6 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
                 ->send();
 
             $this->initializeForm();
-            $this->loadTemplates();
 
         } catch (Exception $e) {
             Notification::make()
@@ -609,52 +603,20 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
         }
     }
 
-    private function sendTestMessage(): void
-    {
-        try {
-            throw_unless(config('services.twilio.use_sandbox', false), Exception::class, 'Sandbox mode is not enabled. Please enable it in services.php configuration.');
-
-            $testPhoneNumber = config('services.twilio.sandbox_recipient_number');
-
-            throw_unless($testPhoneNumber, Exception::class, 'No test phone number configured for this gym');
-
-            $provider = WhatsAppProviderFactory::create($this->getGymId());
-
-            $result = $provider->sendTestWhatsAppMessage(
-                $this->getGymId(),
-                $testPhoneNumber,
-            );
-
-            if ($result['success']) {
-                Notification::make()
-                    ->title('Test Message Sent!')
-                    ->body('Test message sent successfully to ' . $testPhoneNumber)
-                    ->success()
-                    ->send();
-            } else {
-                throw new Exception($result['error'] ?? 'Failed to send test message');
-            }
-        } catch (Exception $e) {
-            Notification::make()
-                ->title('Test Message Failed')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
     public function refresh(): void
     {
-        $this->loadTemplates();
         $this->updateTemplatePreview();
     }
 
     protected function getGymId(): int
     {
-        return Filament::getTenant()->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+
+        return $tenant ? $tenant->id : 0;
     }
 
-    protected function getGym()
+    protected function getGym(): ?\Illuminate\Database\Eloquent\Model
     {
         return Filament::getTenant();
     }

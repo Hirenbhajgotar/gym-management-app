@@ -39,7 +39,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- * @property-read mixed $formatted_body
+ * @property-read string|null $formatted_body
  * @property-read Gym|null $gym
  *
  * @method static Builder<static>|WhatsAppTemplate isActive()
@@ -76,7 +76,9 @@ use Illuminate\Support\Carbon;
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
+    /** @use HasFactory<\Database\Factories\WhatsAppTemplateFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'whatsapp_template_navigation_badge_';
@@ -135,10 +137,13 @@ class WhatsAppTemplate extends Model
     // Accessors
     // =========================
 
+    /**
+     * @return Attribute<string|null, void>
+     */
     protected function formattedBody(): Attribute
     {
         return Attribute::make(
-            get: function () {
+            get: function (): ?string {
                 $body = $this->body;
                 $placeholders = $this->variable_placeholder;
 
@@ -149,18 +154,20 @@ class WhatsAppTemplate extends Model
                 $search = [];
                 $replace = [];
 
+                /** @var array<string, mixed> $placeholders */
                 foreach ($placeholders as $key => $value) {
                     $search[] = "{{{$key}}}";
 
                     if (is_array($value)) {
-                        $replace[] = $value['example']
-                            ?? (isset($value['placeholder']) ? "{{{$value['placeholder']}}}" : "{{{$key}}}");
+                        $example = isset($value['example']) && is_string($value['example']) ? $value['example'] : null;
+                        $placeholder = isset($value['placeholder']) && is_string($value['placeholder']) ? "{{{$value['placeholder']}}}" : "{{{$key}}}";
+                        $replace[] = $example ?? $placeholder;
                     } else {
-                        $replace[] = $value;
+                        $replace[] = is_scalar($value) ? (string) $value : '';
                     }
                 }
 
-                return str_replace($search, $replace, $body);
+                return str_replace($search, $replace, (string) $body);
             },
         );
     }
@@ -169,16 +176,33 @@ class WhatsAppTemplate extends Model
     // Scopes
     // =========================
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
     #[Scope]
-    protected function isDefault($query)
+    protected function isDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
     #[Scope]
-    protected function isActive($query)
+    protected function isActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function approved(Builder $query): void
+    {
+        $query->where('status', WhatsAppTemplateStatusEnum::APPROVED);
     }
 
     // =========================
@@ -207,7 +231,7 @@ class WhatsAppTemplate extends Model
 
     public function canBeUsed(): bool
     {
-        return $this->isApproved() && $this->is_active;
+        return $this->isApproved() && (bool) $this->is_active;
     }
 
     public function markAsApproved(string $twilioSid, string $metaId): void
@@ -230,13 +254,17 @@ class WhatsAppTemplate extends Model
         $this->increment('usage_count', 1, ['last_used_at' => now()]);
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getVariableNames(): array
     {
         if (! $this->variables) {
             return [];
         }
 
-        return collect($this->variables)->pluck('name')->toArray();
+        /** @var array<int, string> */
+        return collect($this->variables)->pluck('name')->map(fn ($val) => is_scalar($val) ? (string) $val : '')->toArray();
     }
 
     public function getVariablePlaceholder(?string $index): ?string
@@ -245,12 +273,18 @@ class WhatsAppTemplate extends Model
             return null;
         }
 
-        return $this->variable_placeholder[$index] ?? null;
+        $val = $this->variable_placeholder[$index] ?? null;
+
+        return is_string($val) ? $val : null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getVariablePlaceholders(): array
     {
-        return $this->variable_placeholder ?? [];
+        /** @var array<string, mixed> */
+        return is_array($this->variable_placeholder) ? $this->variable_placeholder : [];
     }
 
     /**
@@ -264,12 +298,16 @@ class WhatsAppTemplate extends Model
             return true;
         }
 
-        return count($variables) >= $this->variable_count;
+        return count($variables) >= (int) $this->variable_count;
     }
 
+    /**
+     * @return Collection<int, static>
+     */
     public static function getDefaults(): Collection
     {
         // Added withoutGlobalScopes() to get templates where tenant id is null.
+        /** @var Collection<int, static> */
         return self::query()->withoutGlobalScopes()->whereNull('gym_id')->isDefault()->get();
     }
 

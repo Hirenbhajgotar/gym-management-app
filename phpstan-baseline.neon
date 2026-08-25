@@ -7459,21 +7459,9 @@ parameters:
 			path: app/Filament/Admin/Pages/WhatsApp/Broadcast.php
 
 		-
-			message: '#^Cannot call method fill\(\) on mixed\.$#'
+			message: '#^Cannot call method gt\(\) on Illuminate\Support\Carbon\|null\.$#'
 			identifier: method.nonObject
 			count: 1
-			path: app/Filament/Admin/Pages/WhatsApp/Broadcast.php
-
-		-
-			message: '#^Cannot call method gt\(\) on Illuminate\\Support\\Carbon\|null\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Filament/Admin/Pages/WhatsApp/Broadcast.php
-
-		-
-			message: '#^Cannot call method validate\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 2
 			path: app/Filament/Admin/Pages/WhatsApp/Broadcast.php
 
 		-
@@ -10413,31 +10401,31 @@ parameters:
 		-
 			message: '#^Cannot access offset ''example'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
 			message: '#^Cannot access offset ''name'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 6
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
 			message: '#^Cannot access offset ''placeholder'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
 			message: '#^Cannot access offset ''source'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
 			message: '#^Cannot access offset ''type'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
@@ -10449,7 +10437,7 @@ parameters:
 		-
 			message: '#^Cannot access offset 1\|2\|3\|4\|5\|6\|7\|8\|9\|10\|11\|12\|13\|14\|15\|16\|17\|18\|19\|20 on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-
@@ -10599,7 +10587,7 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 11
+			count: 10
 			path: app/Filament/Admin/Resources/WhatsAppTemplateResource.php
 
 		-

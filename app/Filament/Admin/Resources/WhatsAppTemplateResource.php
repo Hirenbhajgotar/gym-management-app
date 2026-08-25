@@ -13,6 +13,7 @@ use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages\EditWhatsAppTemp
 use App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages\ListWhatsAppTemplates;
 use App\Filament\BaseResources\BaseResource;
 use App\Interfaces\TemplateManagementInterface;
+use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
 use App\Providers\WhatsAppProviderFactory;
 use App\Services\Support\TemplateVariableHelper;
@@ -49,6 +50,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rules\Unique;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -80,16 +82,19 @@ class WhatsAppTemplateResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
-        $tenant = Filament::getTenant();
+        $tenantId = static::getTenantKey();
 
-        if (! $tenant) {
+        if (! $tenantId) {
             return null;
         }
 
-        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenant->id, [1800, 3600], function () use ($tenant) {
-            return (string) static::getModel()::query()
-                ->where(function ($query) use ($tenant) {
-                    $query->where('gym_id', $tenant->id);
+        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . (string) $tenantId, [1800, 3600], function () use ($tenantId) {
+            /** @var class-string<WhatsAppTemplate> $whatsappTemplateModel */
+            $whatsappTemplateModel = static::getModel();
+
+            return (string) $whatsappTemplateModel::query()
+                ->where(function (Builder $query) use ($tenantId) {
+                    $query->where('gym_id', $tenantId);
                     if (config('services.twilio.use_sandbox')) {
                         $query->orWhereNull('gym_id');
                     }
@@ -112,14 +117,14 @@ class WhatsAppTemplateResource extends BaseResource
      */
     public static function getEloquentQuery(): Builder
     {
-        $tenant = Filament::getTenant();
+        $tenantId = static::getTenantKey();
 
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->where(function (Builder $query) use ($tenant) {
-                $query->where('gym_id', $tenant?->id);
+            ->where(function (Builder $query) use ($tenantId) {
+                $query->where('gym_id', $tenantId);
 
                 if (config('services.twilio.use_sandbox')) {
                     $query->orWhereNull('gym_id');
@@ -151,8 +156,10 @@ class WhatsAppTemplateResource extends BaseResource
                                 $templates = static::getDefaultTemplatesForForm();
                                 if (isset($templates[$state])) {
                                     $template = $templates[$state];
-                                    $set('name', $template['name']);
-                                    $set('display_name', $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name'])));
+                                    $templateName = is_string($template['name']) ? $template['name'] : '';
+
+                                    $set('name', $templateName);
+                                    $set('display_name', $template['display_name'] ?? ucwords(str_replace('_', ' ', $templateName)));
                                     $set('body', $template['body']);
                                     $set('category', $template['category'] ?? TemplateCategoryEnum::UTILITY);
 
@@ -178,6 +185,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     return '';
                                 }
 
+                                $body = is_string($template['body']) ? $template['body'] : '';
                                 $sampleValues = [
                                     '{{1}}' => 'John Doe',
                                     '{{2}}' => 'FitZone Gym',
@@ -186,7 +194,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     '{{5}}' => '30 days',
                                     '{{6}}' => 'Premium Plan',
                                 ];
-                                $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($template['body']));
+                                $preview = str_replace(array_keys($sampleValues), array_values($sampleValues), e($body));
                                 $preview = nl2br($preview);
 
                                 return new HtmlString('
@@ -288,7 +296,7 @@ class WhatsAppTemplateResource extends BaseResource
                         TextInput::make('name')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->where('gym_id', Filament::getTenant()?->id))
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule) => $rule->where('gym_id', static::getTenantKey()))
                             ->regex('/^[a-z][a-z0-9_]*$/')
                             ->placeholder('e.g., payment_reminder')
                             ->disabled(fn (Get $get) => filled($get('_default_template')))
@@ -316,7 +324,8 @@ class WhatsAppTemplateResource extends BaseResource
                             ->live(debounce: 500)
                             ->rules([
                                 fn (): Closure => function (string $attribute, $value, Closure $fail) {
-                                    $trimmed = trim((string) $value);
+                                    $valStr = is_scalar($value) ? (string) $value : '';
+                                    $trimmed = trim($valStr);
                                     if (preg_match('/^\{\{\d+\}\}/', $trimmed)) {
                                         $fail('The template body cannot start with a variable.');
                                     }
@@ -326,12 +335,18 @@ class WhatsAppTemplateResource extends BaseResource
                                 },
                             ])
                             ->placeholder('Hi {{1}}, your membership at {{2}} is due for renewal on {{3}}. Please renew to continue enjoying our services.')
-                            ->helperText(fn (Get $get) => new HtmlString(
-                                '<span class="text-xs">'
-                                . 'Characters: <strong>' . strlen($get('body') ?? '') . '/1024</strong>'
-                                . ' | Variables detected: <strong>' . preg_match_all('/\{\{\d+\}\}/', $get('body') ?? '') . '</strong>'
-                                . '</span>'
-                            )),
+                            ->helperText(function (Get $get) {
+                                $body = is_string($get('body')) ? $get('body') : '';
+                                $charCount = mb_strlen($body, 'UTF-8');
+                                $variableCount = preg_match_all('/\{\{\d+\}\}/', $body);
+
+                                return new HtmlString(
+                                    '<span class="text-xs">'
+                                        . 'Characters: <strong>' . $charCount . '/1024</strong>'
+                                        . ' | Variables detected: <strong>' . $variableCount . '</strong>'
+                                        . '</span>'
+                                );
+                            }),
 
                         Placeholder::make('variable_helper')
                             ->label('')
@@ -359,7 +374,7 @@ class WhatsAppTemplateResource extends BaseResource
                                     ')),
                             ])
                             ->schema(function (Get $get) {
-                                $body = $get('body') ?? '';
+                                $body = is_string($get('body')) ? $get('body') : '';
                                 preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
                                 $variableNumbers = array_unique($matches[1] ?? []);
 
@@ -434,13 +449,18 @@ class WhatsAppTemplateResource extends BaseResource
 
                                 return $fields;
                             })
-                            ->visible(fn (Get $get) => filled($get('body')) && preg_match_all('/\{\{(\d+)\}\}/', $get('body') ?? '', $matches) > 0),
+                            ->visible(function (Get $get) {
+                                $body = is_string($get('body')) ? $get('body') : '';
+
+                                return filled($body) && preg_match_all('/\{\{(\d+)\}\}/', $body, $matches) > 0;
+                            }),
 
                         // Live message preview
                         Placeholder::make('message_preview')
                             ->label('📱 Message Preview')
                             ->content(function (Get $get) {
-                                $body = $get('body') ?? '';
+                                $body = is_string($get('body')) ? $get('body') : '';
+
                                 if (blank($body)) {
                                     return new HtmlString('<div class="text-gray-400 italic text-sm">Start typing your message to see a preview...</div>');
                                 }
@@ -460,10 +480,15 @@ class WhatsAppTemplateResource extends BaseResource
                                 foreach (range(1, 20) as $num) {
                                     $key = '{{' . $num . '}}';
                                     if (str_contains($body, $key)) {
-                                        if (isset($variablePlaceholder[$num]['example']) && filled($variablePlaceholder[$num]['example'])) {
-                                            $sampleValues[$key] = $variablePlaceholder[$num]['example'];
-                                        } elseif (isset($variablePlaceholder[$num]['placeholder']) && filled($variablePlaceholder[$num]['placeholder'])) {
-                                            $sampleValues[$key] = $variablePlaceholder[$num]['placeholder'];
+                                        $item = $variablePlaceholder[$num] ?? [];
+                                        if (is_array($item) && isset($item[0]) && is_array($item[0])) {
+                                            $item = $item[0];
+                                        }
+
+                                        if (is_array($item) && isset($item['example']) && filled($item['example'])) {
+                                            $sampleValues[$key] = $item['example'];
+                                        } elseif (is_array($item) && isset($item['placeholder']) && filled($item['placeholder'])) {
+                                            $sampleValues[$key] = $item['placeholder'];
                                         } else {
                                             $sampleValues[$key] = $defaultSampleValues[$key] ?? 'Variable ' . $num;
                                         }
@@ -499,8 +524,8 @@ class WhatsAppTemplateResource extends BaseResource
                     ->schema([
                         Placeholder::make('rejection_banner')
                             ->label('')
-                            ->content(function ($record) {
-                                if (! $record || ! $record->rejection_reason) {
+                            ->content(function (?WhatsAppTemplate $record) {
+                                if (! $record?->rejection_reason) {
                                     return '';
                                 }
 
@@ -674,7 +699,7 @@ class WhatsAppTemplateResource extends BaseResource
                         ->requiresConfirmation()
                         ->modalHeading('Submit Template for Meta Approval')
                         ->modalDescription('Your template will be submitted to Meta (WhatsApp) for review. This typically takes a few minutes to a few hours. You\'ll be notified when it\'s approved or rejected.')
-                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT && $record->gym_id === Filament::getTenant()?->id)
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::DRAFT && $record->gym_id === static::getTenantKey())
                         ->action(function (WhatsAppTemplate $record) {
                             $result = resolve(SubmitTemplateAction::class)($record);
 
@@ -702,7 +727,7 @@ class WhatsAppTemplateResource extends BaseResource
                         ->requiresConfirmation()
                         ->modalHeading('Resubmit Template for Approval')
                         ->modalDescription(fn (WhatsAppTemplate $record) => 'Previous rejection reason: "' . ($record->rejection_reason ?? 'Unknown') . '". Please ensure you\'ve fixed the issue before resubmitting.')
-                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED && $record->gym_id === Filament::getTenant()?->id)
+                        ->visible(fn (WhatsAppTemplate $record) => $record->status === WhatsAppTemplateStatusEnum::REJECTED && $record->gym_id === static::getTenantKey())
                         ->action(function (WhatsAppTemplate $record) {
                             // Reset status to draft, clear rejection, then resubmit
                             $record->update([
@@ -743,7 +768,7 @@ class WhatsAppTemplateResource extends BaseResource
                         ->label('Sync Status')
                         ->icon('heroicon-o-arrow-path')
                         ->color('gray')
-                        ->visible(fn (WhatsAppTemplate $record) => filled($record->twilio_template_sid) && $record->gym_id === Filament::getTenant()?->id)
+                        ->visible(fn (WhatsAppTemplate $record) => filled($record->twilio_template_sid) && $record->gym_id === static::getTenantKey())
                         ->requiresConfirmation()
                         ->modalHeading('Sync Template Status')
                         ->modalDescription('This will fetch the latest status from Meta/WhatsApp. Use this if your template is stuck in "pending" status.')
@@ -769,13 +794,13 @@ class WhatsAppTemplateResource extends BaseResource
                         }),
 
                     EditAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === Filament::getTenant()?->id),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === static::getTenantKey()),
 
                     DeleteAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === Filament::getTenant()?->id),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->gym_id === static::getTenantKey()),
 
                     RestoreAction::make()
-                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->trashed() && $record->gym_id === Filament::getTenant()?->id),
+                        ->visible(fn (WhatsAppTemplate $record) => ! $record->is_default && $record->trashed() && $record->gym_id === static::getTenantKey()),
                 ]),
             ])
             ->bulkActions([
@@ -804,13 +829,20 @@ class WhatsAppTemplateResource extends BaseResource
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected static function getDefaultTemplateOptions(): array
     {
         $templates = static::getDefaultTemplatesForForm();
         $options = [];
 
         foreach ($templates as $template) {
-            $options[$template['name']] = $template['display_name'] ?? ucwords(str_replace('_', ' ', $template['name']));
+            $rawName = $template['name'] ?? '';
+            $rawDisplay = $template['display_name'] ?? null;
+            $name = is_scalar($rawName) ? (string) $rawName : '';
+            $displayName = is_scalar($rawDisplay) ? (string) $rawDisplay : ucwords(str_replace('_', ' ', $name));
+            $options[$name] = $displayName;
         }
 
         return $options;
@@ -818,9 +850,11 @@ class WhatsAppTemplateResource extends BaseResource
 
     public static function getTemplateProvider(?int $gymId = null): TemplateManagementInterface
     {
-        $gymId ??= Filament::getTenant()?->id;
+        /** @var \App\Models\Gym|null $tenant */
+        $tenant = Filament::getTenant();
+        $gymId ??= $tenant?->id;
 
-        throw_unless($gymId, RuntimeException::class, 'No tenant context available for provider resolution');
+        throw_unless($gymId > 0, RuntimeException::class, 'No tenant context available for provider resolution');
 
         return WhatsAppProviderFactory::create($gymId);
     }
@@ -834,7 +868,7 @@ class WhatsAppTemplateResource extends BaseResource
      */
     public static function normalizeTemplateData(array $data): array
     {
-        $body = $data['body'] ?? '';
+        $body = is_string($data['body'] ?? null) ? $data['body'] : '';
         preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
         $uniqueNumbers = array_unique($matches[1] ?? []);
         sort($uniqueNumbers);
@@ -844,12 +878,23 @@ class WhatsAppTemplateResource extends BaseResource
         $defaultData = TemplateVariableHelper::getDefaultVariableData();
 
         $sources = WhatsAppVariableResolver::getAvailableDataSources();
-        $variablePlaceholder = $data['variable_placeholder'] ?? [];
+        /** @var array<string, mixed> $variablePlaceholder */
+        $variablePlaceholder = is_array($data['variable_placeholder'] ?? null) ? $data['variable_placeholder'] : [];
         $normalizedPlaceholder = [];
         $variables = [];
 
         foreach ($uniqueNumbers as $num) {
             $existing = $variablePlaceholder[$num] ?? [];
+
+            // If Livewire synthesized array metadata structure like [[...], ['s' => 'arr']], unwrap inner array
+            if (is_array($existing) && isset($existing[0]) && is_array($existing[0])) {
+                $existing = $existing[0];
+            }
+
+            if (! is_array($existing)) {
+                $existing = [];
+            }
+
             $defaults = $defaultData[$num] ?? [
                 'placeholder' => 'Variable ' . $num,
                 'name' => 'variable_' . $num,
@@ -858,16 +903,28 @@ class WhatsAppTemplateResource extends BaseResource
                 'source' => 'custom',
             ];
 
+            $existingSource = $existing['source'] ?? null;
+            $existingPlaceholder = $existing['placeholder'] ?? null;
+            $existingExample = $existing['example'] ?? null;
+            $existingType = $existing['type'] ?? null;
+            $existingName = $existing['name'] ?? null;
+
+            $defaultSource = $defaults['source'] ?? null;
+            $defaultPlaceholder = $defaults['placeholder'] ?? null;
+            $defaultExample = $defaults['example'] ?? null;
+            $defaultType = $defaults['type'] ?? null;
+            $defaultName = $defaults['name'] ?? null;
+
             // Resolve source label for placeholder fallback
-            $source = $existing['source'] ?? $defaults['source'];
+            $source = is_scalar($existingSource) && filled($existingSource) ? (string) $existingSource : $defaultSource;
             $sourceLabel = isset($sources[$source]) ? $sources[$source]['label'] : null;
             $sourceExample = isset($sources[$source]) ? $sources[$source]['example'] : null;
 
             // Fill in every field — never store null
-            $placeholder = filled($existing['placeholder']) ? $existing['placeholder'] : ($sourceLabel ?? $defaults['placeholder']);
-            $example = filled($existing['example']) ? $existing['example'] : ($sourceExample ?? $defaults['example']);
-            $type = $existing['type'] ?? $defaults['type'];
-            $name = filled($existing['name']) ? $existing['name'] : $defaults['name'];
+            $placeholder = is_scalar($existingPlaceholder) && filled($existingPlaceholder) ? (string) $existingPlaceholder : ($sourceLabel ?? $defaultPlaceholder);
+            $example = is_scalar($existingExample) && filled($existingExample) ? (string) $existingExample : ($sourceExample ?? $defaultExample);
+            $type = is_scalar($existingType) && filled($existingType) ? (string) $existingType : $defaultType;
+            $name = is_scalar($existingName) && filled($existingName) ? (string) $existingName : $defaultName;
 
             $normalizedPlaceholder[$num] = [
                 'variable' => '{{' . $num . '}}',
@@ -891,10 +948,14 @@ class WhatsAppTemplateResource extends BaseResource
         return $data;
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     public static function getDefaultTemplatesForForm(): array
     {
+        /** @var array<string, array<string, mixed>> */
         return WhatsAppTemplate::getDefaults()
-            ->mapWithKeys(fn ($template) => [
+            ->mapWithKeys(fn (WhatsAppTemplate $template): array => [
                 $template->name => [
                     'name' => $template->name,
                     'display_name' => $template->display_name,
@@ -906,5 +967,20 @@ class WhatsAppTemplateResource extends BaseResource
                 ],
             ])
             ->all();
+    }
+
+    public static function getTenant(): ?Gym
+    {
+        /** @var Gym|null $tenant */
+        $tenant = Filament::getTenant();
+
+        return $tenant;
+    }
+
+    public static function getTenantKey(): ?int
+    {
+        $tenant = static::getTenant();
+
+        return $tenant?->id;
     }
 }
