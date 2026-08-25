@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\TemplateCategoryEnum;
+use App\Enums\WhatsAppCreditTransactionEnum;
 use App\Models\Gym;
+use App\Models\User;
 use App\Models\WhatsAppCreditTransaction;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use App\Services\WhatsAppBillingService;
-use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class WhatsAppBillingServiceTest extends TestCase
+final class WhatsAppBillingServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected Gym $gym;
 
@@ -30,6 +32,21 @@ class WhatsAppBillingServiceTest extends TestCase
         $this->billingService = resolve(WhatsAppBillingService::class);
     }
 
+    // ========== CATEGORY COST ==========
+
+    #[Test]
+    public function it_returns_category_per_message_cost(): void
+    {
+        $costUtility = WhatsAppBillingService::getCategoryPerMessageCost(TemplateCategoryEnum::UTILITY);
+        $costMarketing = WhatsAppBillingService::getCategoryPerMessageCost(TemplateCategoryEnum::MARKETING);
+        $costDefault = WhatsAppBillingService::getCategoryPerMessageCost(null);
+
+        $this->assertIsFloat($costUtility);
+        $this->assertIsFloat($costMarketing);
+        $this->assertIsFloat($costDefault);
+        $this->assertSame($costUtility, $costDefault);
+    }
+
     // ========== WELCOME CREDITS ==========
 
     #[Test]
@@ -40,8 +57,8 @@ class WhatsAppBillingServiceTest extends TestCase
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
 
         $this->assertNotNull($credit);
-        $this->assertEquals(50, $credit->remaining_credits);
-        $this->assertEquals(50, $credit->total_credits);
+        $this->assertSame(50, $credit->remaining_credits);
+        $this->assertSame(50, $credit->total_credits);
         $this->assertTrue($credit->welcome_credits_claimed);
     }
 
@@ -49,9 +66,13 @@ class WhatsAppBillingServiceTest extends TestCase
     public function it_does_not_add_welcome_credits_twice(): void
     {
         $this->billingService->addWelcomeCredits($this->gym->id);
-
-        $this->expectException(Exception::class);
         $this->billingService->addWelcomeCredits($this->gym->id);
+
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+
+        $this->assertNotNull($credit);
+        $this->assertSame(50, $credit->remaining_credits);
+        $this->assertSame(50, $credit->total_credits);
     }
 
     #[Test]
@@ -71,7 +92,10 @@ class WhatsAppBillingServiceTest extends TestCase
     {
         $balance = $this->billingService->getCreditBalance($this->gym->id);
 
-        $this->assertEquals(0, $balance);
+        $this->assertIsArray($balance);
+        $this->assertSame(0, $balance['total_credits']);
+        $this->assertSame(0, $balance['used_credits']);
+        $this->assertSame(0, $balance['remaining_credits']);
     }
 
     #[Test]
@@ -86,7 +110,10 @@ class WhatsAppBillingServiceTest extends TestCase
 
         $balance = $this->billingService->getCreditBalance($this->gym->id);
 
-        $this->assertEquals(70, $balance);
+        $this->assertIsArray($balance);
+        $this->assertSame(100, $balance['total_credits']);
+        $this->assertSame(30, $balance['used_credits']);
+        $this->assertSame(70, $balance['remaining_credits']);
     }
 
     // ========== CREDIT USAGE ==========
@@ -101,15 +128,18 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 100,
         ]);
 
-        $this->billingService->useCredits($this->gym->id, 5, 'Sent 5 messages');
+        $result = $this->billingService->useCredits($this->gym->id, 5, 'Sent 5 messages');
+
+        $this->assertTrue($result);
 
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
-        $this->assertEquals(95, $credit->remaining_credits);
-        $this->assertEquals(5, $credit->used_credits);
+        $this->assertNotNull($credit);
+        $this->assertSame(95, $credit->remaining_credits);
+        $this->assertSame(5, $credit->used_credits);
     }
 
     #[Test]
-    public function it_throws_when_insufficient_credits(): void
+    public function it_returns_false_when_insufficient_credits(): void
     {
         WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
@@ -118,8 +148,13 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 2,
         ]);
 
-        $this->expectException(Exception::class);
-        $this->billingService->useCredits($this->gym->id, 5, 'Trying to send 5 messages');
+        $result = $this->billingService->useCredits($this->gym->id, 5, 'Trying to send 5 messages');
+
+        $this->assertFalse($result);
+
+        $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
+        $this->assertNotNull($credit);
+        $this->assertSame(2, $credit->remaining_credits);
     }
 
     // ========== CREDIT ADJUSTMENT ==========
@@ -127,6 +162,8 @@ class WhatsAppBillingServiceTest extends TestCase
     #[Test]
     public function it_adjusts_credits_positively(): void
     {
+        $admin = User::factory()->create();
+
         WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 100,
@@ -134,10 +171,11 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 100,
         ]);
 
-        $this->billingService->adjustCredits($this->gym->id, 25, 'Bonus credits', 1);
+        $this->billingService->adjustCredits($this->gym->id, 25, 'Bonus credits', $admin->id);
 
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
-        $this->assertEquals(125, $credit->remaining_credits);
+        $this->assertNotNull($credit);
+        $this->assertSame(125, $credit->remaining_credits);
     }
 
     // ========== PACKAGE PURCHASE ==========
@@ -145,6 +183,7 @@ class WhatsAppBillingServiceTest extends TestCase
     #[Test]
     public function it_purchases_package_and_adds_credits(): void
     {
+        $admin = User::factory()->create();
         $package = WhatsAppPackage::query()->create([
             'name' => 'Starter Pack',
             'description' => '100 message credits',
@@ -163,16 +202,20 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 50,
         ]);
 
-        $this->billingService->purchasePackage(
+        $result = $this->billingService->purchasePackage(
             $this->gym->id,
             $package->id,
             'pay_test_123',
-            1
+            $admin->id
         );
 
+        $this->assertTrue($result['success']);
+        $this->assertSame(150, $result['remaining_credits']);
+
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
-        $this->assertEquals(150, $credit->remaining_credits);
-        $this->assertEquals(150, $credit->total_credits);
+        $this->assertNotNull($credit);
+        $this->assertSame(150, $credit->remaining_credits);
+        $this->assertSame(150, $credit->total_credits);
     }
 
     // ========== REFUND CREDITS ==========
@@ -180,6 +223,8 @@ class WhatsAppBillingServiceTest extends TestCase
     #[Test]
     public function it_refunds_credits(): void
     {
+        $admin = User::factory()->create();
+
         WhatsAppMessageCredit::query()->create([
             'gym_id' => $this->gym->id,
             'total_credits' => 100,
@@ -187,10 +232,11 @@ class WhatsAppBillingServiceTest extends TestCase
             'remaining_credits' => 70,
         ]);
 
-        $this->billingService->refundCredits($this->gym->id, 10, 'Failed messages refund', 1);
+        $this->billingService->refundCredits($this->gym->id, 10, 'Failed messages refund', $admin->id);
 
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
-        $this->assertEquals(80, $credit->remaining_credits);
+        $this->assertNotNull($credit);
+        $this->assertSame(80, $credit->remaining_credits);
     }
 
     // ========== TRANSACTION HISTORY ==========
@@ -208,7 +254,7 @@ class WhatsAppBillingServiceTest extends TestCase
         WhatsAppCreditTransaction::query()->create([
             'gym_id' => $this->gym->id,
             'whatsapp_message_credit_id' => $credit->id,
-            'type' => 'purchase',
+            'type' => WhatsAppCreditTransactionEnum::PURCHASE,
             'credits' => 100,
             'balance_before' => 0,
             'balance_after' => 100,
@@ -219,7 +265,7 @@ class WhatsAppBillingServiceTest extends TestCase
         $history = $this->billingService->getTransactionHistory($this->gym->id, 10);
 
         $this->assertNotEmpty($history);
-        $this->assertEquals('purchase', $history->first()->type);
+        $this->assertSame(WhatsAppCreditTransactionEnum::PURCHASE, $history->first()->type);
     }
 
     // ========== USAGE REPORT ==========
@@ -241,5 +287,9 @@ class WhatsAppBillingServiceTest extends TestCase
         );
 
         $this->assertIsArray($report);
+        $this->assertArrayHasKey('total_purchased', $report);
+        $this->assertArrayHasKey('total_used', $report);
+        $this->assertArrayHasKey('total_refunded', $report);
+        $this->assertArrayHasKey('net_usage', $report);
     }
 }

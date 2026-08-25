@@ -14,11 +14,21 @@ return new class() extends Migration
     public function up(): void
     {
         Schema::table('error_reports', function (Blueprint $table) {
-            $table->longText('markdown_report')->nullable()->after('stack_trace');
-            $table->text('origin_url')->nullable()->after('context');
-            $table->string('livewire_component')->nullable()->after('origin_url');
-            $table->string('php_version', 20)->nullable()->after('livewire_component');
-            $table->string('laravel_version', 20)->nullable()->after('php_version');
+            if (! Schema::hasColumn('error_reports', 'markdown_report')) {
+                $table->longText('markdown_report')->nullable()->after('stack_trace');
+            }
+            if (! Schema::hasColumn('error_reports', 'origin_url')) {
+                $table->text('origin_url')->nullable()->after('context');
+            }
+            if (! Schema::hasColumn('error_reports', 'livewire_component')) {
+                $table->string('livewire_component')->nullable()->after('origin_url');
+            }
+            if (! Schema::hasColumn('error_reports', 'php_version')) {
+                $table->string('php_version', 20)->nullable()->after('livewire_component');
+            }
+            if (! Schema::hasColumn('error_reports', 'laravel_version')) {
+                $table->string('laravel_version', 20)->nullable()->after('php_version');
+            }
         });
     }
 
