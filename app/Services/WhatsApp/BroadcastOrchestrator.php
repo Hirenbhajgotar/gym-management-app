@@ -13,6 +13,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -79,9 +80,7 @@ class BroadcastOrchestrator
                 $quotaLimit = isset($quota['limit']) && is_scalar($quota['limit']) ? (string) $quota['limit'] : '0';
 
                 $remQuota = $quota['remaining'] ?? 0;
-                if ((is_numeric($remQuota) ? (int) $remQuota : 0) <= 0) {
-                    throw new Exception('Daily broadcast limit reached. You can send a maximum of ' . $quotaLimit . ' broadcasts per day. Try again tomorrow.');
-                }
+                throw_if((is_numeric($remQuota) ? (int) $remQuota : 0) <= 0, Exception::class, 'Daily broadcast limit reached. You can send a maximum of ' . $quotaLimit . ' broadcasts per day. Try again tomorrow.');
 
                 throw_if($cooldown !== null, Exception::class, "Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
 
@@ -156,7 +155,7 @@ class BroadcastOrchestrator
 
                 $now = now();
 
-                $memberQuery->chunk(500, function (\Illuminate\Database\Eloquent\Collection $members) use ($broadcast, $now): void {
+                $memberQuery->chunk(500, function (Collection $members) use ($broadcast, $now): void {
                     $recipients = [];
 
                     /** @var GymMember $member */

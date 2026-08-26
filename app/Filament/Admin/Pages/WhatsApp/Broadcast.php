@@ -10,6 +10,7 @@ use App\Filament\BasePages\BasePage;
 use App\Forms\Components\SummaryStatCard;
 use App\Forms\Components\TemplatePicker;
 use App\Forms\Components\TemplatePreview;
+use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
@@ -48,6 +49,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -610,13 +612,13 @@ class Broadcast extends BasePage implements HasActions, HasForms, HasTable
 
     protected function getGymId(): int
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
 
         return $tenant ? $tenant->id : 0;
     }
 
-    protected function getGym(): ?\Illuminate\Database\Eloquent\Model
+    protected function getGym(): ?Model
     {
         return Filament::getTenant();
     }

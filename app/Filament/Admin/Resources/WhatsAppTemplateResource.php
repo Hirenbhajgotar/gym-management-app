@@ -88,7 +88,7 @@ class WhatsAppTemplateResource extends BaseResource
             return null;
         }
 
-        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . (string) $tenantId, [1800, 3600], function () use ($tenantId) {
+        return Cache::flexible(WhatsAppTemplate::NAVIGATION_BADGE_CACHE_KEY . $tenantId, [1800, 3600], function () use ($tenantId) {
             /** @var class-string<WhatsAppTemplate> $whatsappTemplateModel */
             $whatsappTemplateModel = static::getModel();
 
@@ -850,7 +850,7 @@ class WhatsAppTemplateResource extends BaseResource
 
     public static function getTemplateProvider(?int $gymId = null): TemplateManagementInterface
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
         $gymId ??= $tenant?->id;
 

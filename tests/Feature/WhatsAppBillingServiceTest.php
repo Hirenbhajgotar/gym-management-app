@@ -39,11 +39,11 @@ final class WhatsAppBillingServiceTest extends TestCase
     {
         $costUtility = WhatsAppBillingService::getCategoryPerMessageCost(TemplateCategoryEnum::UTILITY);
         $costMarketing = WhatsAppBillingService::getCategoryPerMessageCost(TemplateCategoryEnum::MARKETING);
-        $costDefault = WhatsAppBillingService::getCategoryPerMessageCost(null);
+        $costDefault = WhatsAppBillingService::getCategoryPerMessageCost();
 
-        $this->assertIsFloat($costUtility);
-        $this->assertIsFloat($costMarketing);
-        $this->assertIsFloat($costDefault);
+        $this->assertEquals(0.002, $costUtility);
+        $this->assertEquals(0.01, $costMarketing);
+        $this->assertEquals(0.002, $costDefault);
         $this->assertSame($costUtility, $costDefault);
     }
 
@@ -92,7 +92,6 @@ final class WhatsAppBillingServiceTest extends TestCase
     {
         $balance = $this->billingService->getCreditBalance($this->gym->id);
 
-        $this->assertIsArray($balance);
         $this->assertSame(0, $balance['total_credits']);
         $this->assertSame(0, $balance['used_credits']);
         $this->assertSame(0, $balance['remaining_credits']);
@@ -110,7 +109,6 @@ final class WhatsAppBillingServiceTest extends TestCase
 
         $balance = $this->billingService->getCreditBalance($this->gym->id);
 
-        $this->assertIsArray($balance);
         $this->assertSame(100, $balance['total_credits']);
         $this->assertSame(30, $balance['used_credits']);
         $this->assertSame(70, $balance['remaining_credits']);
@@ -265,7 +263,9 @@ final class WhatsAppBillingServiceTest extends TestCase
         $history = $this->billingService->getTransactionHistory($this->gym->id, 10);
 
         $this->assertNotEmpty($history);
-        $this->assertSame(WhatsAppCreditTransactionEnum::PURCHASE, $history->first()->type);
+        $firstTransaction = $history->first();
+        $this->assertInstanceOf(WhatsAppCreditTransaction::class, $firstTransaction);
+        $this->assertSame(WhatsAppCreditTransactionEnum::PURCHASE, $firstTransaction->type);
     }
 
     // ========== USAGE REPORT ==========
@@ -286,7 +286,6 @@ final class WhatsAppBillingServiceTest extends TestCase
             now()->endOfMonth()
         );
 
-        $this->assertIsArray($report);
         $this->assertArrayHasKey('total_purchased', $report);
         $this->assertArrayHasKey('total_used', $report);
         $this->assertArrayHasKey('total_refunded', $report);

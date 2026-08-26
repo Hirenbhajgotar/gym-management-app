@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Observers\WhatsAppTemplateObserver;
+use Database\Factories\WhatsAppTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property TemplateCategoryEnum|null $category
  * @property array<array-key, mixed>|null $variables
  * @property int|null $variable_count
- * @property array<array-key, mixed>|null $variable_placeholder
+ * @property array<string, mixed>|null $variable_placeholder
  * @property string|null $twilio_template_sid
  * @property string|null $meta_template_id
  * @property WhatsAppTemplateStatusEnum|null $status
@@ -76,7 +77,7 @@ use Illuminate\Support\Carbon;
 #[ObservedBy([WhatsAppTemplateObserver::class])]
 class WhatsAppTemplate extends Model
 {
-    /** @use HasFactory<\Database\Factories\WhatsAppTemplateFactory> */
+    /** @use HasFactory<WhatsAppTemplateFactory> */
     use HasFactory;
 
     use SoftDeletes;
@@ -264,7 +265,7 @@ class WhatsAppTemplate extends Model
         }
 
         /** @var array<int, string> */
-        return collect($this->variables)->pluck('name')->map(fn ($val) => is_scalar($val) ? (string) $val : '')->toArray();
+        return collect($this->variables)->pluck('name')->map(fn ($val) => is_scalar($val) ? (string) $val : '')->all();
     }
 
     public function getVariablePlaceholder(?string $index): ?string
@@ -283,8 +284,10 @@ class WhatsAppTemplate extends Model
      */
     public function getVariablePlaceholders(): array
     {
-        /** @var array<string, mixed> */
-        return is_array($this->variable_placeholder) ? $this->variable_placeholder : [];
+        /** @var array<string, mixed> $placeholders */
+        $placeholders = is_array($this->variable_placeholder) ? $this->variable_placeholder : [];
+
+        return $placeholders;
     }
 
     /**

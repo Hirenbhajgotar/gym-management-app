@@ -19,9 +19,17 @@ class QRAttendanceService
      */
     public function checkIn(array $data): array
     {
-        $gymId = $data['gym_id'];
-        $memberId = $data['member_id'];
-        $identifier = $data['identifier'] ?? 'member_id'; // 'member_id' or 'phone'
+        $gymId = $data['gym_id'] ?? null;
+        if (! is_int($gymId) && ! is_string($gymId)) {
+            $gymId = 0;
+        }
+        $gymId = (int) $gymId;
+
+        $memberId = $data['member_id'] ?? null;
+        if (! is_string($memberId) && ! is_int($memberId)) {
+            $memberId = '';
+        }
+        $identifier = is_string($data['identifier'] ?? null) ? $data['identifier'] : 'member_id';
 
         // Find the member
         $member = $this->findMember($gymId, $memberId, $identifier);
@@ -74,8 +82,9 @@ class QRAttendanceService
     /**
      * Find member by member ID or phone number.
      */
-    public function findMember(int $gymId, string $searchValue, string $identifier): ?GymMember
+    public function findMember(int $gymId, string|int $searchValue, string $identifier): ?GymMember
     {
+        $searchValue = (string) $searchValue;
         $query = GymMember::query()->where('gym_id', $gymId);
 
         if ($identifier === 'phone') {
@@ -138,9 +147,17 @@ class QRAttendanceService
      */
     public function checkOut(array $data): array
     {
-        $gymId = $data['gym_id'];
-        $memberId = $data['member_id'];
-        $identifier = $data['identifier'] ?? 'member_id';
+        $gymId = $data['gym_id'] ?? null;
+        if (! is_int($gymId) && ! is_string($gymId)) {
+            $gymId = 0;
+        }
+        $gymId = (int) $gymId;
+
+        $memberId = $data['member_id'] ?? null;
+        if (! is_string($memberId) && ! is_int($memberId)) {
+            $memberId = '';
+        }
+        $identifier = is_string($data['identifier'] ?? null) ? $data['identifier'] : 'member_id';
 
         // Find the member
         $member = $this->findMember($gymId, $memberId, $identifier);

@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources\WhatsAppTemplateResource\Pages;
 use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Filament\Admin\Resources\WhatsAppTemplateResource;
+use App\Models\Gym;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -17,7 +18,7 @@ class CreateWhatsAppTemplate extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        /** @var \App\Models\Gym|null $tenant */
+        /** @var Gym|null $tenant */
         $tenant = Filament::getTenant();
 
         $data['gym_id'] = $tenant?->id;
