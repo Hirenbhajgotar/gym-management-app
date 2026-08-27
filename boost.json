@@ -18,6 +18,10 @@
         "tailwindcss-development",
         "frontend-design",
         "laravel-best-practices",
+        "laravel-code-extraction",
+        "laravel-code-review",
+        "laravel-filament",
+        "laravel-intelligent-refactor",
         "laravel-security",
         "laravel-specialist",
         "phpunit-best-practices"

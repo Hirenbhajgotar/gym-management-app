@@ -9,16 +9,16 @@ use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Providers\MetaWhatsAppProvider;
 use App\Services\Meta\MetaContext;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class WhatsAppBroadcastChunkJobTest extends TestCase
+final class WhatsAppBroadcastChunkJobTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private WhatsAppBroadcast $broadcast;
 
@@ -77,12 +77,15 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         $e2 = $contextMock->shouldReceive('getAccessToken');
         $e2->andReturn(null);
         /** @var Mockery\Expectation $e3 */
-        $e3 = $contextMock->shouldReceive('getApiBaseUrl');
-        $e3->andReturn('https://graph.facebook.com/v22.0');
-
+        $e3 = $contextMock->shouldReceive('getPhoneNumberId');
+        $e3->andReturn(null);
         /** @var Mockery\Expectation $e4 */
-        $e4 = $mockProvider->shouldReceive('getContext');
-        $e4->andReturn($contextMock);
+        $e4 = $contextMock->shouldReceive('getApiBaseUrl');
+        $e4->andReturn('https://graph.facebook.com/v22.0');
+
+        /** @var Mockery\Expectation $e5 */
+        $e5 = $mockProvider->shouldReceive('getContext');
+        $e5->andReturn($contextMock);
 
         /** @var SendMessageChunkJob&MockInterface $job */
         $job = Mockery::mock(
@@ -98,7 +101,8 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         return $job;
     }
 
-    public function test_job_processes_fifty_recipients_and_updates_status_bulk(): void
+    #[Test]
+    public function it_processes_fifty_recipients_and_updates_status_bulk(): void
     {
         $recipients = [];
         for ($i = 0; $i < 5; $i++) {
@@ -131,14 +135,15 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $updatedRecipients = WhatsAppBroadcastRecipient::query()->where('whatsapp_broadcast_id', $this->broadcast->id)->get();
         foreach ($updatedRecipients as $recipient) {
-            $this->assertEquals('sent', $recipient->status?->value);
+            $this->assertSame('sent', $recipient->status?->value);
         }
 
         $this->broadcast->refresh();
-        $this->assertEquals(5, $this->broadcast->sent_count);
+        $this->assertSame(5, $this->broadcast->sent_count);
     }
 
-    public function test_job_uses_single_update_query_for_statuses(): void
+    #[Test]
+    public function it_uses_single_update_query_for_statuses(): void
     {
         $recipients = [];
         for ($i = 0; $i < 3; $i++) {
@@ -159,13 +164,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         $exp = $mockProvider->shouldReceive('sendTemplateMessage');
         $exp->andReturn(['success' => true, 'message_id' => 'SM123']);
 
-        $queries = [];
-        DB::listen(function (QueryExecuted $query) use (&$queries): void {
-            $sql = $query->sql;
-            if (str_contains($sql, 'update `whatsapp_broadcast_recipients`') || str_contains($sql, 'UPDATE whatsapp_broadcast_recipients')) {
-                $queries[] = $sql;
-            }
-        });
+        DB::enableQueryLog();
 
         $job = $this->createJobWithMockProvider(
             broadcastId: $this->broadcast->id,
@@ -177,10 +176,21 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
 
         $job->handle();
 
-        $this->assertCount(1, $queries, 'Expected exactly 1 UPDATE query on whatsapp_broadcast_recipients');
+        $queryLogs = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $updateQueries = array_filter($queryLogs, function (array $log): bool {
+            $sql = (string) $log['query'];
+
+            return str_contains($sql, 'update `whatsapp_broadcast_recipients`')
+                || str_contains($sql, 'UPDATE whatsapp_broadcast_recipients');
+        });
+
+        $this->assertCount(1, $updateQueries, 'Expected exactly 1 UPDATE query on whatsapp_broadcast_recipients');
     }
 
-    public function test_job_handles_partial_failures_gracefully(): void
+    #[Test]
+    public function it_handles_partial_failures_gracefully(): void
     {
         $recipients = [];
         for ($i = 0; $i < 3; $i++) {
@@ -231,16 +241,17 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         $this->assertNotNull($r1);
         $this->assertNotNull($r2);
 
-        $this->assertEquals('sent', $r0->status?->value);
-        $this->assertEquals('failed', $r1->status?->value);
-        $this->assertEquals('sent', $r2->status?->value);
+        $this->assertSame('sent', $r0->status?->value);
+        $this->assertSame('failed', $r1->status?->value);
+        $this->assertSame('sent', $r2->status?->value);
 
         $this->assertNotNull($r1->failure_reason);
         $this->assertNull($r0->failure_reason);
         $this->assertNull($r2->failure_reason);
     }
 
-    public function test_job_dispatches_on_broadcast_queue(): void
+    #[Test]
+    public function it_dispatches_on_broadcast_queue(): void
     {
         $job = new SendMessageChunkJob(
             broadcastId: 1,
@@ -249,10 +260,11 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
             gymId: 1,
         );
 
-        $this->assertEquals('broadcast', $job->queue);
+        $this->assertSame('broadcast', $job->queue);
     }
 
-    public function test_job_accepts_skip_credit_deduction_parameter(): void
+    #[Test]
+    public function it_accepts_skip_credit_deduction_parameter(): void
     {
         $job = new SendMessageChunkJob(
             broadcastId: 1,
@@ -274,7 +286,8 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         $this->assertFalse($jobDefault->skipCreditDeduction);
     }
 
-    public function test_job_performs_bounded_member_queries_for_consent_recheck(): void
+    #[Test]
+    public function it_performs_bounded_member_queries_for_consent_recheck(): void
     {
         $recipients = [];
         for ($i = 0; $i < 3; $i++) {
@@ -295,13 +308,7 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         $exp = $mockProvider->shouldReceive('sendTemplateMessage');
         $exp->andReturn(['success' => true, 'message_id' => 'SM123']);
 
-        $memberQueries = [];
-        DB::listen(function (QueryExecuted $query) use (&$memberQueries): void {
-            $sql = $query->sql;
-            if (str_contains($sql, 'gym_members') || str_contains($sql, '`gym_members`')) {
-                $memberQueries[] = $sql;
-            }
-        });
+        DB::enableQueryLog();
 
         $job = $this->createJobWithMockProvider(
             broadcastId: $this->broadcast->id,
@@ -312,6 +319,15 @@ class WhatsAppBroadcastChunkJobTest extends TestCase
         );
 
         $job->handle();
+
+        $queryLogs = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $memberQueries = array_filter($queryLogs, function (array $log): bool {
+            $sql = (string) $log['query'];
+
+            return str_contains($sql, 'gym_members');
+        });
 
         // The send path performs a single, bounded consent re-check (TOCTOU) against
         // gym_members for the whole chunk. It must NOT issue per-recipient (N+1) queries.

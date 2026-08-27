@@ -15,16 +15,17 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Database\Eloquent\Factories\Sequence;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Testing\Fakes\PendingBatchFake;
+use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\TestCase;
 
-class WhatsAppBroadcastIntegrationTest extends TestCase
+final class WhatsAppBroadcastIntegrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private WhatsAppBroadcast $broadcast;
 
@@ -54,7 +55,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         ]);
     }
 
-    public function test_dispatches_batch_with_correct_chunk_count(): void
+    #[Test]
+    public function it_dispatches_batch_with_correct_chunk_count(): void
     {
         $members = GymMember::factory()->count(150)
             ->sequence(fn (Sequence $sequence) => [
@@ -103,7 +105,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertNotNull($this->broadcast->started_at);
     }
 
-    public function test_chunk_jobs_contain_correct_data(): void
+    #[Test]
+    public function it_chunk_jobs_contain_correct_data(): void
     {
         $members = GymMember::factory()->count(3)
             ->sequence(fn (Sequence $sequence) => [
@@ -148,7 +151,7 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame($this->broadcast->id, $chunkJob->broadcastId);
         $this->assertSame($this->broadcast->gym_id, $chunkJob->gymId);
         $this->assertSame('test_template_name', $chunkJob->templateData['provider_template_id']);
-        $this->assertSame('en', $chunkJob->templateData['language']);
+        $this->assertSame('en_US', $chunkJob->templateData['language']);
         $this->assertCount(3, $chunkJob->recipientChunk);
 
         /** @var array<string, mixed> $recipient */
@@ -160,7 +163,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertIsArray($recipient['resolved_variables']);
     }
 
-    public function test_skips_batch_when_broadcast_already_completed(): void
+    #[Test]
+    public function it_skips_batch_when_broadcast_already_completed(): void
     {
         $this->broadcast->update(['status' => WhatsAppBroadcastStatusEnum::COMPLETED]);
 
@@ -172,7 +176,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         Bus::assertBatchCount(0);
     }
 
-    public function test_skips_batch_when_broadcast_already_cancelled(): void
+    #[Test]
+    public function it_skips_batch_when_broadcast_already_cancelled(): void
     {
         $this->broadcast->update(['status' => WhatsAppBroadcastStatusEnum::CANCELLED]);
 
@@ -184,7 +189,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         Bus::assertBatchCount(0);
     }
 
-    public function test_marks_broadcast_completed_when_no_pending_recipients(): void
+    #[Test]
+    public function it_marks_broadcast_completed_when_no_pending_recipients(): void
     {
         Bus::fake();
 
@@ -198,7 +204,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertNotNull($this->broadcast->completed_at);
     }
 
-    public function test_failed_method_sets_broadcast_status_to_failed(): void
+    #[Test]
+    public function it_failed_method_sets_broadcast_status_to_failed(): void
     {
         $exception = new RuntimeException('Test failure');
         $job = new SendBroadcastJob($this->broadcast->id, $this->broadcast->gym_id);
@@ -208,7 +215,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(WhatsAppBroadcastStatusEnum::FAILED, $this->broadcast->status);
     }
 
-    public function test_early_return_when_broadcast_not_found(): void
+    #[Test]
+    public function it_early_return_when_broadcast_not_found(): void
     {
         Bus::fake();
 
@@ -218,7 +226,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         Bus::assertBatchCount(0);
     }
 
-    public function test_batch_jobs_assigned_to_broadcast_queue(): void
+    #[Test]
+    public function it_assigns_batch_jobs_to_broadcast_queue(): void
     {
         $members = GymMember::factory()->count(3)
             ->sequence(fn (Sequence $sequence) => [
@@ -262,7 +271,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame('broadcast', $chunkJob->queue);
     }
 
-    public function test_handles_exactly_chunk_size_multiple(): void
+    #[Test]
+    public function it_handles_exactly_chunk_size_multiple(): void
     {
         $members = GymMember::factory()->count(50)
             ->sequence(fn (Sequence $sequence) => [
@@ -296,7 +306,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         });
     }
 
-    public function test_handles_remainder_chunk(): void
+    #[Test]
+    public function it_handles_remainder_chunk(): void
     {
         $members = GymMember::factory()->count(120)
             ->sequence(fn (Sequence $sequence) => [
@@ -347,7 +358,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertCount(20, $lastJob->recipientChunk);
     }
 
-    public function test_skip_credit_deduction_propagates_to_chunk_jobs(): void
+    #[Test]
+    public function it_propagates_skip_credit_deduction_to_chunk_jobs(): void
     {
         $members = GymMember::factory()->count(10)
             ->sequence(fn (Sequence $sequence) => [
@@ -395,7 +407,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertTrue($chunkJob->skipCreditDeduction);
     }
 
-    public function test_mark_as_sending_only_on_pending_broadcast(): void
+    #[Test]
+    public function it_marks_as_sending_only_on_pending_broadcast(): void
     {
         $members = GymMember::factory()->count(3)
             ->sequence(fn (Sequence $sequence) => [
@@ -428,7 +441,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(WhatsAppBroadcastStatusEnum::SENDING, $this->broadcast->status);
     }
 
-    public function test_failed_method_refunds_upfront_credits_and_restores_welcome_credits_when_batch_never_dispatched(): void
+    #[Test]
+    public function it_refunds_upfront_credits_and_restores_welcome_credits_when_batch_never_dispatched(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::SENDING,
@@ -463,7 +477,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(0, $credit->welcome_credits_used);
     }
 
-    public function test_failed_method_does_not_refund_when_batch_was_dispatched(): void
+    #[Test]
+    public function it_does_not_refund_when_batch_was_dispatched(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::SENDING,
@@ -498,7 +513,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(4, $credit->welcome_credits_used);
     }
 
-    public function test_failed_method_does_not_refund_when_credits_deducted_per_message(): void
+    #[Test]
+    public function it_does_not_refund_when_credits_deducted_per_message(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::SENDING,
@@ -528,7 +544,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(4, $credit->welcome_credits_used);
     }
 
-    public function test_refund_failed_upfront_credits_refunds_failed_count_and_restores_welcome_credits(): void
+    #[Test]
+    public function it_refunds_failed_count_and_restores_welcome_credits(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::FAILED,
@@ -551,7 +568,7 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
             gymId: $this->broadcast->gym_id,
             skipCreditDeduction: true,
         );
-        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id);
+        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id, skipCreditDeduction: true);
 
         $this->broadcast->refresh();
         $this->assertSame(7, $this->broadcast->credits_used);
@@ -563,7 +580,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(0, $credit->welcome_credits_used);
     }
 
-    public function test_refund_failed_upfront_credits_skips_when_broadcast_not_failed(): void
+    #[Test]
+    public function it_skips_upfront_refund_when_broadcast_not_failed(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::COMPLETED,
@@ -586,7 +604,7 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
             gymId: $this->broadcast->gym_id,
             skipCreditDeduction: true,
         );
-        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id);
+        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id, skipCreditDeduction: true);
 
         $this->broadcast->refresh();
         $this->assertSame(10, $this->broadcast->credits_used);
@@ -598,7 +616,8 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
         $this->assertSame(2, $credit->welcome_credits_used);
     }
 
-    public function test_refund_failed_upfront_credits_skips_when_no_failures(): void
+    #[Test]
+    public function it_skips_upfront_refund_when_no_failures(): void
     {
         $this->broadcast->update([
             'status' => WhatsAppBroadcastStatusEnum::FAILED,
@@ -621,7 +640,7 @@ class WhatsAppBroadcastIntegrationTest extends TestCase
             gymId: $this->broadcast->gym_id,
             skipCreditDeduction: true,
         );
-        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id);
+        $job->refundFailedUpfrontCredits($this->broadcast->gym_id, $this->broadcast->id, skipCreditDeduction: true);
 
         $this->broadcast->refresh();
         $this->assertSame(10, $this->broadcast->credits_used);
