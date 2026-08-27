@@ -16,9 +16,13 @@ metadata:
   categories: [extraction, services, actions, dtos, traits, best-practices]
 ---
 
+
 # Laravel Code Extraction & Best Practices Skill
 
+
+
 ## Philosophy
+
 
 > **A file doing everything is a file doing nothing well.**
 > **Extract early, extract often. Single Responsibility is not optional.**
@@ -27,9 +31,13 @@ This skill identifies extraction opportunities and enforces Laravel best practic
 
 ---
 
+
 ## 9th Dimension: CODE EXTRACTION
 
+
+
 ### When to Extract
+
 
 | Smell | Extract To | Example |
 |-------|-----------|---------|
@@ -46,7 +54,9 @@ This skill identifies extraction opportunities and enforces Laravel best practic
 | Event handling | `App\Listeners\*` | `SendOrderConfirmationEmail` |
 | Notification logic | `App\Notifications\*` | `OrderShippedNotification` |
 
+
 ### Extraction Decision Tree
+
 
 ```
 Is this logic used in multiple places?
@@ -60,9 +70,13 @@ Is this logic used in multiple places?
         NO -> Keep inline (but consider method extraction)
 ```
 
+
 ### Extraction Templates
 
+
+
 #### A. Service Extraction
+
 **When:** Business logic in Controller/Job/Command, or logic used in multiple places
 
 ```php
@@ -134,7 +148,9 @@ class WhatsAppTemplateService
 }
 ```
 
+
 #### B. Action Class Extraction
+
 **When:** Single-purpose, stateless operation
 
 ```php
@@ -166,7 +182,9 @@ class ImportWhatsAppTemplatesAction
 }
 ```
 
+
 #### C. DTO Extraction
+
 **When:** Complex data passing, API responses, form data
 
 ```php
@@ -213,7 +231,9 @@ readonly class WhatsAppTemplateDTO
 }
 ```
 
+
 #### D. Value Object Extraction
+
 **When:** Domain concept with built-in validation
 
 ```php
@@ -255,7 +275,9 @@ final class TemplateLanguage
 }
 ```
 
+
 #### E. Trait Extraction
+
 **When:** Shared logic across multiple classes
 
 ```php
@@ -279,7 +301,9 @@ trait HasTenantContext
 }
 ```
 
+
 #### F. Repository Extraction
+
 **When:** Complex query logic, query reuse
 
 ```php
@@ -309,7 +333,9 @@ class WhatsAppTemplateRepository
 }
 ```
 
+
 #### G. Enum Extraction
+
 **When:** Related constants, state definitions
 
 ```php
@@ -343,7 +369,9 @@ enum WhatsAppTemplateStatusEnum: string
 }
 ```
 
+
 #### H. Form Request Extraction
+
 **When:** Complex validation rules
 
 ```php
@@ -377,7 +405,9 @@ class ImportTemplatesRequest extends FormRequest
 }
 ```
 
+
 #### I. Policy Extraction
+
 **When:** Authorization logic
 
 ```php
@@ -405,9 +435,13 @@ class WhatsAppAccountPolicy
 
 ---
 
+
 ## Laravel Best Practices (Cross-Cutting)
 
+
+
 ### 1. Database Transactions
+
 
 **ALWAYS** wrap multi-step DB operations:
 
@@ -431,7 +465,9 @@ DB::transaction(function () {
 }, 5); // 5 retry attempts
 ```
 
+
 ### 2. Cache Locks for Race Conditions
+
 
 ```php
 // BAD: Check-then-update race condition
@@ -466,7 +502,9 @@ if ($lock->block(10)) { // Wait up to 10 seconds
 }
 ```
 
+
 ### 3. Queue Job Patterns
+
 
 ```php
 // Unique job - prevents duplicate processing
@@ -489,7 +527,9 @@ class ImportWhatsAppTemplatesJob implements ShouldQueue
 }
 ```
 
+
 ### 4. Eloquent Patterns
+
 
 ```php
 // BAD: N+1 query
@@ -525,7 +565,9 @@ foreach ($names as $name) {
 Template::whereIn('name', $names)->get()->keyBy('name');
 ```
 
+
 ### 5. API Error Handling
+
 
 ```php
 // BAD: Raw exception exposed
@@ -560,7 +602,9 @@ public function fetchTemplates(): array
 }
 ```
 
+
 ### 6. Form Request + Policy Pattern
+
 
 ```php
 // Controller
@@ -581,7 +625,9 @@ public function store(StoreOrderRequest $request)
 // Resource handles response formatting
 ```
 
+
 ### 7. Event-Driven Architecture
+
 
 ```php
 // Dispatch event instead of side effects
@@ -612,7 +658,9 @@ class SendOrderConfirmation
 }
 ```
 
+
 ### 8. Configuration & Environment
+
 
 ```php
 // BAD: env() outside config
@@ -632,7 +680,9 @@ $config = config('services.meta');
 $apiKey = $config['api_key'];
 ```
 
+
 ### 9. Logging & Monitoring
+
 
 ```php
 // BAD: No context
@@ -655,7 +705,9 @@ Log::withContext([
 ]);
 ```
 
+
 ### 10. Type Safety
+
 
 ```php
 // BAD: No types
@@ -688,20 +740,28 @@ readonly class ConfigDTO
 
 ---
 
+
 ## Extraction Checklist
+
 
 For each file under review:
 
 ```markdown
+
 ## Extraction Review: `path/to/file.php`
 
+
+
 ### Current Structure
+
 - Lines: [count]
 - Classes: [count]
 - Methods: [count]
 - Responsibilities: [list]
 
+
 ### Extraction Opportunities
+
 - [ ] **Service**: [logic description] -> `App\Services\[Name]Service`
 - [ ] **Action**: [operation description] -> `App\Actions\[Name]Action`
 - [ ] **DTO**: [data structure] -> `App\DTOs\[Name]DTO`
@@ -715,7 +775,9 @@ For each file under review:
 - [ ] **Listener**: [side effect] -> `App\Listeners\[Name]Listener`
 - [ ] **Notification**: [notification] -> `App\Notifications\[Name]Notification`
 
+
 ### Laravel Best Practices
+
 - [ ] DB transactions for multi-step operations
 - [ ] Cache::lock() for race condition prevention
 - [ ] Form Request for validation
@@ -727,7 +789,9 @@ For each file under review:
 - [ ] Type declarations on all methods
 - [ ] DocBlocks for complex methods
 
+
 ### Recommended Refactoring Plan
+
 1. Extract [X] to [location]
 2. Extract [Y] to [location]
 3. Apply [best practice]
@@ -736,7 +800,9 @@ For each file under review:
 
 ---
 
+
 ## Integration with Refactor Agent
+
 
 The refactor agent uses this skill to:
 
@@ -744,7 +810,9 @@ The refactor agent uses this skill to:
 2. **During refactor**: Apply extraction patterns as part of refactoring steps
 3. **Post-refactor validation**: Verify extracted classes follow Laravel best practices
 
+
 ### Example Integration
+
 
 ```
 Phase 4 (Plan Generation):

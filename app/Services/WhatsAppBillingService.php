@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppCreditTransactionEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppCreditTransaction;
@@ -30,6 +31,28 @@ class WhatsAppBillingService
     public function __construct(RazorpayService $razorpayService)
     {
         $this->razorpayService = $razorpayService;
+    }
+
+    /**
+     * Get the estimated per-message cost for a WhatsApp template category.
+     * Defaults to the 'utility' category cost if category is null or invalid.
+     */
+    public static function getCategoryPerMessageCost(TemplateCategoryEnum|string|null $category = null): float
+    {
+        $categoryKey = match (true) {
+            $category instanceof TemplateCategoryEnum => $category->value,
+            is_string($category) && filled($category) => strtolower($category),
+            default => TemplateCategoryEnum::UTILITY->value,
+        };
+
+        /** @var array<string, float|int> $categoryCosts */
+        $categoryCosts = config()->array('services.whatsapp.category_costs', [
+            'utility' => 0.002,
+            'marketing' => 0.01,
+            'authentication' => 0.002,
+        ]);
+
+        return (float) ($categoryCosts[$categoryKey] ?? $categoryCosts['utility'] ?? 0.002);
     }
 
     public function purchasePackage(int $gymId, int $packageId, string $paymentReference, ?int $userId = null, float $phoneNumberSurcharge = 0.0): array
@@ -132,14 +155,14 @@ class WhatsAppBillingService
                         return; // Exit transaction silently
                     }
 
-                    $welcomeCredits = config('services.whatsapp.welcome_credits', 50);
-                    $balanceBefore = $credit->remaining_credits;
+                    $welcomeCredits = config()->integer('services.whatsapp.welcome_credits', 50);
+                    $balanceBefore = (int) $credit->remaining_credits;
 
                     $credit->update([
                         'welcome_credits_claimed' => true,
                         'welcome_credits_used' => 0,
                         'remaining_credits' => $balanceBefore + $welcomeCredits,
-                        'total_credits' => $credit->total_credits + $welcomeCredits,
+                        'total_credits' => (int) $credit->total_credits + $welcomeCredits,
                         'is_low_credit_notified' => false,
                     ]);
 

@@ -13,6 +13,7 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -40,34 +41,46 @@ class BroadcastOrchestrator
         throw_unless($lock->get(), Exception::class, 'Unable to send broadcast at this time. Please try again.');
 
         try {
+            throw_if(config('services.twilio.use_sandbox', false), Exception::class, 'Broadcasts are disabled in sandbox mode. Please disable sandbox mode to send broadcasts.');
+
             $templateId = $data['template_id'] ?? null;
             $variables = $data['variables'] ?? [];
-            $recipientType = $data['recipient_type'] ?? 'all';
             $scheduleType = $data['schedule_type'] ?? 'now';
             $scheduledAt = $data['scheduled_at'] ?? null;
             $filters = $data['filters'] ?? [];
             $creditsDeducted = false;
 
             /** @var WhatsAppTemplate|null $template */
-            $template = WhatsAppTemplate::query()->find($templateId);
+            $template = WhatsAppTemplate::query()->where('gym_id', $gymId)->isActive()->approved()->find($templateId);
 
             throw_unless($template, Exception::class, 'Please select a template');
 
-            $targetCount = $recipientType === 'all'
-                ? GymMember::query()->where('gym_id', $gymId)->whatsappMarketingAllowed()->whereNotNull('phone')->where('phone', '!=', '')->count()
-                : count($selectedMemberIds);
+            // Re-derive the eligible audience from the filter criteria on the
+            // server side, then constrain the client-supplied selection to that
+            // set. This prevents a crafted request from targeting members that
+            // fall outside the applied audience filters.
+            /** @var array<string, mixed> $filtersArray */
+            $filtersArray = is_array($filters) ? $filters : [];
+            $allowedMemberIds = BroadcastMemberQuery::build($gymId, $filtersArray)->pluck('id')->toArray();
 
-            throw_if($targetCount === 0, Exception::class, 'No recipients found. Please select members or change recipient type.');
+            if (filled($selectedMemberIds)) {
+                $selectedMemberIds = array_values(array_intersect($selectedMemberIds, $allowedMemberIds));
+            } else {
+                $selectedMemberIds = $allowedMemberIds;
+            }
 
-            throw_if($recipientType !== 'all' && blank($selectedMemberIds), Exception::class, 'Please select at least one member from the filtered results.');
+            $targetCount = count($selectedMemberIds);
+
+            throw_if($targetCount === 0, Exception::class, 'Please select at least one member from the filtered results.');
 
             if (! $this->rateLimiter->canSend($gymId)) {
                 $quota = $this->rateLimiter->getQuota($gymId);
                 $cooldown = $this->rateLimiter->getCooldown($gymId);
 
-                if ($quota['remaining'] <= 0) {
-                    throw new Exception('Daily broadcast limit reached. You can send a maximum of ' . $quota['limit'] . ' broadcasts per day. Try again tomorrow.');
-                }
+                $quotaLimit = isset($quota['limit']) && is_scalar($quota['limit']) ? (string) $quota['limit'] : '0';
+
+                $remQuota = $quota['remaining'] ?? 0;
+                throw_if((is_numeric($remQuota) ? (int) $remQuota : 0) <= 0, Exception::class, 'Daily broadcast limit reached. You can send a maximum of ' . $quotaLimit . ' broadcasts per day. Try again tomorrow.');
 
                 throw_if($cooldown !== null, Exception::class, "Please wait {$cooldown} more minute(s) before sending another broadcast. Minimum gap is 1 hour between broadcasts.");
 
@@ -87,7 +100,6 @@ class BroadcastOrchestrator
                 $templateId,
                 $template,
                 $variables,
-                $recipientType,
                 $filters,
                 $scheduleType,
                 $scheduledAt,
@@ -126,13 +138,12 @@ class BroadcastOrchestrator
                     $creditsDeducted = true;
                 }
 
+                /** @var WhatsAppBroadcast $broadcast */
                 $broadcast = WhatsAppBroadcast::query()->create([
                     'gym_id' => $gymId,
                     'whatsapp_template_id' => $templateId,
                     'title' => 'Broadcast: ' . $template->display_name,
-                    'target_filters' => $recipientType === 'filtered'
-                        ? $filters
-                        : ['type' => 'all'],
+                    'target_filters' => $filters,
                     'target_count' => $targetCount,
                     'credits_used' => $targetCount,
                     'status' => $scheduleType === 'now' ? 'sending' : 'scheduled',
@@ -140,17 +151,14 @@ class BroadcastOrchestrator
                     'message_variables' => $variables,
                 ]);
 
-                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whatsappMarketingAllowed()->whereNotNull('phone')->where('phone', '!=', '');
-
-                if ($recipientType !== 'all') {
-                    $memberQuery->whereIn('id', $selectedMemberIds);
-                }
+                $memberQuery = GymMember::query()->where('gym_id', $gymId)->whatsappMarketingAllowed()->whereNotNull('phone')->where('phone', '!=', '')->whereIn('id', $selectedMemberIds);
 
                 $now = now();
 
-                $memberQuery->chunk(500, function ($members) use ($broadcast, $now): void {
+                $memberQuery->chunk(500, function (Collection $members) use ($broadcast, $now): void {
                     $recipients = [];
 
+                    /** @var GymMember $member */
                     foreach ($members as $member) {
                         if (blank($member->phone)) {
                             continue;

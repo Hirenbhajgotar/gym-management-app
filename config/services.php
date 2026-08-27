@@ -77,6 +77,12 @@ return [
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
         'api_version' => env('META_API_VERSION', 'v25.0'),
         'welcome_credits' => (int) env('WHATSAPP_WELCOME_CREDITS', 50),
+        'estimated_per_message_cost' => (float) env('WHATSAPP_ESTIMATED_PER_MESSAGE_COST', 0.01),
+        'category_costs' => [
+            'utility' => (float) env('WHATSAPP_UTILITY_COST', 0.002),
+            'marketing' => (float) env('WHATSAPP_MARKETING_COST', 0.01),
+            'authentication' => (float) env('WHATSAPP_AUTHENTICATION_COST', 0.002),
+        ],
         'webhook_verify_token' => env('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
         'template_language' => (string) env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
 

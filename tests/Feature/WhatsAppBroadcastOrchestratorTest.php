@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Enums\DefaultRole;
 use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppBroadcastStatusEnum;
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Jobs\SendBroadcastJob;
 use App\Models\Gym;
 use App\Models\GymMember;
@@ -21,9 +22,12 @@ use Exception;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class WhatsAppBroadcastOrchestratorTest extends TestCase
+#[CoversClass(BroadcastOrchestrator::class)]
+final class WhatsAppBroadcastOrchestratorTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -52,6 +56,7 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->template = WhatsAppTemplate::factory()->create([
             'gym_id' => $this->gym->id,
             'is_active' => true,
+            'status' => WhatsAppTemplateStatusEnum::APPROVED,
         ]);
 
         GymMember::factory()->count(5)->sequence(
@@ -74,14 +79,33 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->orchestrator = resolve(BroadcastOrchestrator::class);
     }
 
-    public function test_creates_broadcast_record(): void
+    #[Test]
+    public function it_throws_exception_when_twilio_sandbox_mode_is_enabled(): void
+    {
+        config(['services.twilio.use_sandbox' => true]);
+
+        $data = [
+            'template_id' => $this->template->id,
+            'variables' => [],
+            'schedule_type' => 'now',
+            'scheduled_at' => null,
+            'filters' => [],
+        ];
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Broadcasts are disabled in sandbox mode. Please disable sandbox mode to send broadcasts.');
+
+        $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
+    }
+
+    #[Test]
+    public function it_creates_broadcast_record(): void
     {
         Queue::fake();
 
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -99,14 +123,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(WhatsAppBroadcastStatusEnum::SENDING, $broadcast->status);
     }
 
-    public function test_dispatches_send_broadcast_job(): void
+    #[Test]
+    public function it_dispatches_send_broadcast_job(): void
     {
         Queue::fake();
 
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -117,7 +141,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         Queue::assertPushed(SendBroadcastJob::class);
     }
 
-    public function test_schedules_broadcast_for_later(): void
+    #[Test]
+    public function it_schedules_broadcast_for_later(): void
     {
         Queue::fake();
 
@@ -126,7 +151,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'later',
             'scheduled_at' => $scheduledAt->toDateTimeString(),
             'filters' => [],
@@ -144,7 +168,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         Queue::assertNotPushed(SendBroadcastJob::class);
     }
 
-    public function test_creates_broadcast_with_selected_members(): void
+    #[Test]
+    public function it_creates_broadcast_with_selected_members(): void
     {
         Queue::fake();
 
@@ -154,7 +179,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'selected',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -170,14 +194,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertCount(3, $broadcast->recipients);
     }
 
-    public function test_creates_broadcast_with_variables(): void
+    #[Test]
+    public function it_creates_broadcast_with_variables(): void
     {
         Queue::fake();
 
         $data = [
             'template_id' => $this->template->id,
             'variables' => ['name' => '[member_name]'],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -188,14 +212,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertEquals(['name' => '[member_name]'], $broadcast->message_variables);
     }
 
-    public function test_upfront_credit_deduction_records_credits_used(): void
+    #[Test]
+    public function it_records_credits_used_on_upfront_credit_deduction(): void
     {
         Queue::fake();
 
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -206,7 +230,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(5, $broadcast->target_count);
         $this->assertSame(5, $broadcast->credits_used);
 
-        // Read credit record
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         assert($creditRecord instanceof WhatsAppMessageCredit);
 
@@ -214,13 +237,13 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(5, $creditRecord->used_credits);
     }
 
-    public function test_upfront_deduction_uses_welcome_credits_before_paid_credits(): void
+    #[Test]
+    public function it_uses_welcome_credits_before_paid_credits_on_upfront_deduction(): void
     {
         Queue::fake();
 
         $welcomeCredits = config()->integer('services.whatsapp.welcome_credits', 50);
 
-        // Claim the one-time welcome credits for this gym (100 paid + 50 welcome = 150 total budget).
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         assert($creditRecord instanceof WhatsAppMessageCredit);
         $creditRecord->update([
@@ -228,8 +251,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
             'welcome_credits_used' => 0,
         ]);
 
-        // 5 members already exist in setUp(); add 95 more so the broadcast targets 100.
-        // Phones are deterministic to honour the unique (gym_id, phone) index.
         GymMember::factory()->count(95)->sequence(
             fn (Sequence $sequence): array => [
                 'phone' => '+2' . str_pad((string) $sequence->index, 10, '0', STR_PAD_LEFT),
@@ -241,7 +262,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -251,8 +271,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $this->assertSame(100, $broadcast->target_count);
 
-        // Welcome credits cover the first $welcomeCredits messages for free; only the
-        // remainder is charged against the paid ledger.
         $credit = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         assert($credit instanceof WhatsAppMessageCredit);
 
@@ -261,7 +279,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(0, $credit->remaining_credits);
     }
 
-    public function test_insufficient_credits_throws_exception(): void
+    #[Test]
+    public function it_throws_exception_when_credits_are_insufficient(): void
     {
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         assert($creditRecord instanceof WhatsAppMessageCredit);
@@ -270,7 +289,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -282,14 +300,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->orchestrator->createAndDispatch($data, $this->gym->id, []);
     }
 
-    public function test_dispatches_job_with_skip_credit_deduction_flag(): void
+    #[Test]
+    public function it_dispatches_job_with_skip_credit_deduction_flag(): void
     {
         Queue::fake();
 
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -302,16 +320,14 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         });
     }
 
-    public function test_credit_deduction_is_atomic_with_lock_for_update(): void
+    #[Test]
+    public function it_deducts_credits_atomically(): void
     {
         Queue::fake();
 
-        // Simulate concurrent broadcasts by checking the deduction happens
-        // within a single transaction (rollback scenario)
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'selected',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -322,7 +338,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
 
         $broadcast = $this->orchestrator->createAndDispatch($data, $this->gym->id, $members);
 
-        // Verify credits are deducted exactly for the target count
         $creditRecord = WhatsAppMessageCredit::query()->where('gym_id', $this->gym->id)->first();
         assert($creditRecord instanceof WhatsAppMessageCredit);
         $this->assertSame(3, $broadcast->target_count);
@@ -330,7 +345,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(3, $creditRecord->used_credits);
     }
 
-    public function test_self_managed_account_skips_upfront_credit_deduction(): void
+    #[Test]
+    public function it_skips_upfront_credit_deduction_for_self_managed_account(): void
     {
         Queue::fake();
 
@@ -342,7 +358,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -358,7 +373,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(0, $creditRecord->used_credits);
     }
 
-    public function test_self_managed_account_without_credit_record_does_not_throw(): void
+    #[Test]
+    public function it_does_not_throw_for_self_managed_account_without_credit_record(): void
     {
         Queue::fake();
 
@@ -372,7 +388,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -384,7 +399,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertDatabaseCount('whatsapp_message_credits', 0);
     }
 
-    public function test_self_managed_account_with_insufficient_credits_does_not_throw(): void
+    #[Test]
+    public function it_does_not_throw_for_self_managed_account_with_insufficient_credits(): void
     {
         Queue::fake();
 
@@ -400,7 +416,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],
@@ -412,7 +427,8 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $this->assertSame(2, $creditRecord->refresh()->remaining_credits);
     }
 
-    public function test_self_managed_account_dispatches_job_without_skip_credit_deduction_flag(): void
+    #[Test]
+    public function it_dispatches_job_without_skip_credit_deduction_flag_for_self_managed_account(): void
     {
         Queue::fake();
 
@@ -424,7 +440,6 @@ class WhatsAppBroadcastOrchestratorTest extends TestCase
         $data = [
             'template_id' => $this->template->id,
             'variables' => [],
-            'recipient_type' => 'all',
             'schedule_type' => 'now',
             'scheduled_at' => null,
             'filters' => [],

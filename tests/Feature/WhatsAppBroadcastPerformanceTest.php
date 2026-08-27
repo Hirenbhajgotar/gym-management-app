@@ -13,13 +13,16 @@ use App\Models\GymMember;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppTemplate;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\Eloquent\Factories\Sequence;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Bus;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class WhatsAppBroadcastPerformanceTest extends TestCase
+final class WhatsAppBroadcastPerformanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private const CHUNK_SIZE = 50;
 
@@ -40,7 +43,9 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         ]);
     }
 
-    public function test_orchestration_time_scales_acceptably(int $recipientCount, int $expectedChunks): void
+    #[Test]
+    #[DataProvider('recipientSizeProvider')]
+    public function it_orchestrates_time_scaling_acceptably(int $recipientCount, int $expectedChunks): void
     {
         $this->createBroadcastWithRecipients($recipientCount);
 
@@ -55,6 +60,17 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         $job->handle();
 
         $elapsed = (microtime(true) - $start) * 1000;
+
+        if ($expectedChunks === 0) {
+            Bus::assertBatchCount(0);
+            $this->assertLessThan(
+                5000,
+                $elapsed,
+                "Orchestration for {$recipientCount} recipients took {$elapsed}ms, expected < 5000ms",
+            );
+
+            return;
+        }
 
         $capturedBatch = null;
         Bus::assertBatched(function ($batch) use (&$capturedBatch, $expectedChunks): bool {
@@ -96,7 +112,8 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         ];
     }
 
-    public function test_already_processed_returns_instantly(): void
+    #[Test]
+    public function it_returns_instantly_when_already_processed(): void
     {
         $this->createBroadcastWithRecipients(100);
         Bus::fake();
@@ -113,7 +130,8 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
         $this->assertLessThan(1000, $elapsed, 'Already-processed early return took too long');
     }
 
-    public function test_variable_resolution_overhead(): void
+    #[Test]
+    public function it_measures_variable_resolution_overhead(): void
     {
         /** @var WhatsAppBroadcast $broadcast */
         $broadcast = WhatsAppBroadcast::factory()->create([
@@ -124,11 +142,14 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
             'failed_count' => 0,
         ]);
 
-        $members = GymMember::factory()->count(100)->create([
-            'gym_id' => $this->gym->id,
-            'phone' => '+1234567890',
-            'name' => 'Benchmark Member',
-        ]);
+        $members = GymMember::factory()->count(100)
+            ->sequence(fn (Sequence $sequence) => [
+                'phone' => '+1' . str_pad((string) $sequence->index, 10, '0', STR_PAD_LEFT),
+            ])
+            ->create([
+                'gym_id' => $this->gym->id,
+                'name' => 'Benchmark Member',
+            ]);
 
         $members->each(function (GymMember $member) use ($broadcast): void {
             WhatsAppBroadcastRecipient::factory()->create([
@@ -167,10 +188,13 @@ class WhatsAppBroadcastPerformanceTest extends TestCase
             return;
         }
 
-        $members = GymMember::factory()->count($count)->create([
-            'gym_id' => $this->gym->id,
-            'phone' => '+1234567890',
-        ]);
+        $members = GymMember::factory()->count($count)
+            ->sequence(fn (Sequence $sequence) => [
+                'phone' => '+1' . str_pad((string) $sequence->index, 10, '0', STR_PAD_LEFT),
+            ])
+            ->create([
+                'gym_id' => $this->gym->id,
+            ]);
 
         $members->each(function (GymMember $member) use ($broadcast): void {
             WhatsAppBroadcastRecipient::factory()->create([
