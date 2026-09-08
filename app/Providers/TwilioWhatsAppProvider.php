@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
+use App\Helpers\WhatsAppSanitizer;
 use App\Interfaces\AccountManagementInterface;
 use App\Interfaces\CreditManagementInterface;
 use App\Interfaces\MessagingInterface;
@@ -22,8 +23,8 @@ use App\Services\Twilio\TwilioPhoneService;
 use App\Services\Twilio\TwilioTemplateService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use App\Services\WhatsAppTemplateService;
-use Exception;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Twilio WhatsApp Provider - Orchestrator.
@@ -131,6 +132,16 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
         return $this->credits()->getMonthlyUsage($year, $month);
     }
 
+    public function checkAndDeduct(int $count = 1): void
+    {
+        $this->credits()->checkAndDeduct($count);
+    }
+
+    public function refund(int $count = 1): void
+    {
+        $this->credits()->refund($count);
+    }
+
     // =========================
     // AccountManagementInterface - Delegation
     // =========================
@@ -234,10 +245,11 @@ class TwilioWhatsAppProvider implements AccountManagementInterface, CreditManage
                 : $this->sendProductionTestMessage($recipientNumber, $gymName);
 
             return array_merge($result, ['to' => $recipientNumber, 'mode' => $this->context->useSandbox ? 'sandbox' : 'production']);
-        } catch (Exception $e) {
-            Log::error('Failed to send test WhatsApp message', ['gym_id' => $gymId, 'error' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            $sanitizedMessage = WhatsAppSanitizer::sanitizeError($e->getMessage());
+            Log::error('Failed to send test WhatsApp message', ['gym_id' => $gymId, 'error' => $sanitizedMessage]);
 
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => $sanitizedMessage];
         }
     }
 

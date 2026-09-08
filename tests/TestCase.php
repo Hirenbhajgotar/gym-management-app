@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -23,7 +24,9 @@ abstract class TestCase extends BaseTestCase
 
         parent::setUp();
 
-        $database = $this->app->make('config')->get('database.connections.mysql.database');
+        $this->app->make('config')->set('database.connections.mysql.database', 'gym_app_test');
+
+        $database = DB::connection()->getDatabaseName();
 
         if ($database === 'gym_app') {
             $this->fail('SAFETY: Tests are targeting the production database "gym_app". Aborting to prevent data loss.');

@@ -293,7 +293,7 @@ class WhatsAppTemplate extends Model
     /**
      * Validate that the provided variables satisfy the template's requirements.
      *
-     * @param  array<string, string>  $variables  Variables keyed by 1-indexed string keys
+     * @param  array<array-key, mixed>  $variables  Variables keyed by string or int keys
      */
     public function validateVariables(array $variables): bool
     {
