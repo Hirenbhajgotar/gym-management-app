@@ -23,6 +23,7 @@ interface MessagingInterface
      *     message_id?: ?string,
      *     status?: ?string,
      *     error?: ?string,
+     *     status_code?: ?int,
      *     data?: mixed
      * }
      */
@@ -38,7 +39,8 @@ interface MessagingInterface
      *     success: bool,
      *     message_id?: ?string,
      *     status?: ?string,
-     *     error?: ?string
+     *     error?: ?string,
+     *     status_code?: ?int
      * }
      */
     public function sendTemplateMessage(string $to, string $templateName, array $variables = []): array;

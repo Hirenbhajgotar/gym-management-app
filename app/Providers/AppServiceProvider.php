@@ -150,7 +150,11 @@ class AppServiceProvider extends ServiceProvider
     private function registerRateLimiter(): void
     {
         RateLimiter::for('whatsapp-outbound-limit', function (object $job) {
-            return Limit::perSecond(30)->by('whatsapp-gateway');
+            $gymId = property_exists($job, 'gymId') && is_scalar($job->gymId)
+                ? (string) $job->gymId
+                : 'global';
+
+            return Limit::perSecond(30)->by($gymId);
         });
     }
 

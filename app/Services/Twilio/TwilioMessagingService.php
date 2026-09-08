@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Twilio;
 
+use App\Exceptions\BroadcastConnectionException;
+use App\Helpers\WhatsAppFailureClassifier;
+use App\Helpers\WhatsAppSanitizer;
 use App\Interfaces\MessagingInterface;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 use Twilio\Exceptions\RestException;
 
 /**
@@ -39,6 +42,8 @@ class TwilioMessagingService implements MessagingInterface
 
     /**
      * Send a WhatsApp message.
+     *
+     * @return array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null, data?: mixed}
      */
     public function sendMessage(string $to, string $message): array
     {
@@ -51,22 +56,26 @@ class TwilioMessagingService implements MessagingInterface
 
     /**
      * Send a text message.
+     *
+     * @return array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null, data?: mixed}
      */
     private function sendTextMessage(string $to, string $message): array
     {
+        $phoneNumber = $this->context->getSenderPhoneNumber();
+
+        if (! $phoneNumber) {
+            return [
+                'success' => false,
+                'error' => 'No phone number configured for this gym',
+                'message_id' => null,
+                'data' => null,
+            ];
+        }
+
+        $deducted = false;
         try {
             $this->credits->checkAndDeduct(1);
-
-            $phoneNumber = $this->context->getSenderPhoneNumber();
-
-            if (! $phoneNumber) {
-                return [
-                    'success' => false,
-                    'error' => 'No phone number configured for this gym',
-                    'message_id' => null,
-                    'data' => null,
-                ];
-            }
+            $deducted = true;
 
             $twilioMessage = $this->context->getClient()
                 ->messages
@@ -84,15 +93,19 @@ class TwilioMessagingService implements MessagingInterface
                     'status' => $twilioMessage->status,
                 ],
             ];
-        } catch (RestException $e) {
-            return $this->handleTwilioError('Template message', $e);
-        } catch (Exception $e) {
-            return $this->handleError('Template message', $e);
+        } catch (Throwable $e) {
+            if ($deducted) {
+                $this->credits->refund(1);
+            }
+
+            return $this->handleSendThrowable($e, 'Text message');
         }
     }
 
     /**
      * Send message with template syntax.
+     *
+     * @return array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null, data?: mixed}
      */
     private function sendMessageAsTemplate(string $to, string $message): array
     {
@@ -106,43 +119,50 @@ class TwilioMessagingService implements MessagingInterface
         }
 
         $result = $this->sendTemplateMessage($to, $templateName, $variables);
-        $result['data'] = $result['success'] ? ['sid' => $result['message_id'], 'status' => $result['status']] : null;
+        $messageId = $result['message_id'] ?? null;
+        $status = $result['status'] ?? null;
+
+        $result['data'] = $result['success'] ? ['sid' => $messageId, 'status' => $status] : null;
 
         return $result;
     }
 
     /**
      * Send a template message.
+     *
+     * @return array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null}
      */
     public function sendTemplateMessage(string $to, string $templateName, array $variables = []): array
     {
+        $template = $this->findTemplate($templateName);
+
+        if (! $template) {
+            return [
+                'success' => false,
+                'error' => "Template '{$templateName}' not found or not approved. Only approved templates can be used.",
+            ];
+        }
+
+        if (! $template->validateVariables($variables)) {
+            return [
+                'success' => false,
+                'error' => 'Invalid variables provided for template',
+            ];
+        }
+
+        $phoneNumber = $this->context->getSenderPhoneNumber();
+
+        if (! $phoneNumber) {
+            return [
+                'success' => false,
+                'error' => 'No phone number configured for this gym',
+            ];
+        }
+
+        $deducted = false;
         try {
-            $template = $this->findTemplate($templateName);
-
-            if (! $template) {
-                return [
-                    'success' => false,
-                    'error' => "Template '{$templateName}' not found or not approved. Only approved templates can be used.",
-                ];
-            }
-
-            if (! $template->validateVariables($variables)) {
-                return [
-                    'success' => false,
-                    'error' => 'Invalid variables provided for template',
-                ];
-            }
-
             $this->credits->checkAndDeduct(1);
-
-            $phoneNumber = $this->context->getSenderPhoneNumber();
-
-            if (! $phoneNumber) {
-                return [
-                    'success' => false,
-                    'error' => 'No phone number configured for this gym',
-                ];
-            }
+            $deducted = true;
 
             $twilioMessage = $this->context->getClient()
                 ->messages
@@ -160,15 +180,19 @@ class TwilioMessagingService implements MessagingInterface
                 'message_id' => $twilioMessage->sid,
                 'status' => $twilioMessage->status,
             ];
-        } catch (RestException $e) {
-            return $this->handleTwilioError('Template message', $e);
-        } catch (Exception $e) {
-            return $this->handleError('Template message', $e);
+        } catch (Throwable $e) {
+            if ($deducted) {
+                $this->credits->refund(1);
+            }
+
+            return $this->handleSendThrowable($e, 'Template message');
         }
     }
 
     /**
      * Send a test message.
+     *
+     * @return array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, data?: mixed}
      */
     public function sendTestMessage(string $to, string $message): array
     {
@@ -199,8 +223,8 @@ class TwilioMessagingService implements MessagingInterface
                 'status' => $twilioMessage->status,
                 'data' => ['sid' => $twilioMessage->sid, 'status' => $twilioMessage->status],
             ];
-        } catch (RestException $e) {
-            return $this->handleTwilioError('Test message', $e);
+        } catch (Throwable $e) {
+            return $this->handleSendThrowable($e, 'Test message');
         }
     }
 
@@ -255,24 +279,61 @@ class TwilioMessagingService implements MessagingInterface
             ->first();
     }
 
+    /**
+     * @return array{success: false, error: string, status_code?: int|null, message_id: null, data: null}
+     */
+    private function handleSendThrowable(Throwable $e, string $context): array
+    {
+        if (WhatsAppFailureClassifier::isConnectionException($e)) {
+            $sanitizedMessage = WhatsAppSanitizer::sanitizeError($e->getMessage());
+            throw new BroadcastConnectionException($sanitizedMessage, $e->getCode(), $e);
+        }
+
+        if ($e instanceof RestException) {
+            return $this->handleTwilioError($context, $e);
+        }
+
+        return $this->handleError($context, $e);
+    }
+
+    /**
+     * @return array{success: false, error: string, status_code?: int|null, message_id: null, data: null}
+     */
     private function handleTwilioError(string $context, RestException $e): array
     {
+        $sanitizedMessage = WhatsAppSanitizer::sanitizeError($e->getMessage());
         Log::error("Twilio {$context} error", [
             'gym_id' => $this->context->gymId,
-            'error' => $e->getMessage(),
+            'error' => $sanitizedMessage,
             'code' => $e->getCode(),
         ]);
 
-        return ['success' => false, 'error' => $e->getMessage(), 'message_id' => null, 'data' => null];
+        return [
+            'success' => false,
+            'error' => $sanitizedMessage,
+            'status_code' => $e->getStatusCode(),
+            'message_id' => null,
+            'data' => null,
+        ];
     }
 
-    private function handleError(string $context, Exception $e): array
+    /**
+     * @return array{success: false, error: string, status_code?: int|null, message_id: null, data: null}
+     */
+    private function handleError(string $context, Throwable $e): array
     {
+        $sanitizedMessage = WhatsAppSanitizer::sanitizeError($e->getMessage());
         Log::error("WhatsApp {$context} error", [
             'gym_id' => $this->context->gymId,
-            'error' => $e->getMessage(),
+            'error' => $sanitizedMessage,
         ]);
 
-        return ['success' => false, 'error' => $e->getMessage(), 'message_id' => null, 'data' => null];
+        return [
+            'success' => false,
+            'error' => $sanitizedMessage,
+            'status_code' => $e->getCode(),
+            'message_id' => null,
+            'data' => null,
+        ];
     }
 }

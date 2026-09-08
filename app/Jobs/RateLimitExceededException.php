@@ -4,22 +4,13 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use Exception;
-use Throwable;
+use App\Exceptions\RateLimitExceededException as BaseException;
 
-class RateLimitExceededException extends Exception
-{
-    public function __construct(
-        string $message = 'Rate limit exceeded',
-        protected int $retryAfter = 5,
-        int $code = 429,
-        ?Throwable $previous = null,
-    ) {
-        parent::__construct($message, $code, $previous);
-    }
-
-    public function getRetryAfter(): int
-    {
-        return $this->retryAfter;
-    }
-}
+/**
+ * Backward compatibility shim for RateLimitExceededException.
+ *
+ * @deprecated Moved to App\Exceptions\RateLimitExceededException in feature/staff-panel.
+ *             Retained for backward compatibility with existing queued jobs and legacy callers.
+ *             Will be removed in a future release.
+ */
+class RateLimitExceededException extends BaseException {}

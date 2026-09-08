@@ -13,6 +13,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
     case SCHEDULED = 'scheduled';
     case SENDING = 'sending';
     case COMPLETED = 'completed';
+    case COMPLETED_WITH_ERRORS = 'completed_with_errors';
     case CANCELLED = 'cancelled';
     case FAILED = 'failed';
 
@@ -23,6 +24,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
             self::SCHEDULED => 'Scheduled',
             self::SENDING => 'Sending',
             self::COMPLETED => 'Completed',
+            self::COMPLETED_WITH_ERRORS => 'Completed with Errors',
             self::CANCELLED => 'Cancelled',
             self::FAILED => 'Failed',
         };
@@ -35,6 +37,7 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
             self::SCHEDULED => 'blue',
             self::SENDING => 'warning',
             self::COMPLETED => 'success',
+            self::COMPLETED_WITH_ERRORS => 'warning',
             self::CANCELLED => 'danger',
             self::FAILED => 'danger',
         };
@@ -56,7 +59,27 @@ enum WhatsAppBroadcastStatusEnum: string implements HasColor, HasLabel
      */
     public function isFinished(): bool
     {
-        return in_array($this, [self::COMPLETED, self::CANCELLED], true);
+        return in_array($this, [self::COMPLETED, self::COMPLETED_WITH_ERRORS, self::CANCELLED, self::FAILED], true);
+    }
+
+    /**
+     * Compute terminal status from sent, failed, and target counts.
+     */
+    public static function fromCounts(int $sent, int $failed, int $target): self
+    {
+        if ($sent > 0 && $failed > 0) {
+            return self::COMPLETED_WITH_ERRORS;
+        }
+
+        if ($sent > 0) {
+            return self::COMPLETED;
+        }
+
+        if ($failed > 0 || $target > 0) {
+            return self::FAILED;
+        }
+
+        return self::COMPLETED;
     }
 
     /**
