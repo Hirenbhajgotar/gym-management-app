@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
+use App\Jobs\SendBroadcastJob;
 use Illuminate\Bus\Batch;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -85,6 +86,9 @@ class WhatsAppBroadcast extends Model
         'sent_count',
         'failed_count',
         'credits_used',
+        'credits_deducted_upfront',
+        'refunded_credits',
+        'refunded_at',
         'message_variables',
     ];
 
@@ -100,6 +104,9 @@ class WhatsAppBroadcast extends Model
             'sent_count' => 'integer',
             'failed_count' => 'integer',
             'credits_used' => 'integer',
+            'credits_deducted_upfront' => 'boolean',
+            'refunded_credits' => 'integer',
+            'refunded_at' => 'datetime',
             'message_variables' => 'array',
         ];
     }
@@ -187,16 +194,22 @@ class WhatsAppBroadcast extends Model
         ]);
     }
 
-    public function markAsCancelled(): void
+    public function markAsCancelled(?bool $creditsWereDeductedUpfront = null): void
     {
         $this->update(['status' => WhatsAppBroadcastStatusEnum::CANCELLED]);
+
+        $shouldRefund = $creditsWereDeductedUpfront ?? $this->credits_deducted_upfront;
+
+        if ($shouldRefund && $this->credits_used > 0) {
+            SendBroadcastJob::refundFailedUpfrontCredits($this->gym_id, $this->id, true);
+        }
     }
 
     public function markAsFailed(): void
     {
         $this->update([
             'status' => WhatsAppBroadcastStatusEnum::FAILED,
-            'completed_at' => now(),
+            'completed_at' => null,
         ]);
     }
 
@@ -215,7 +228,6 @@ class WhatsAppBroadcast extends Model
     public function incrementSentCount(): void
     {
         $this->increment('sent_count');
-        // $this->increment('credits_used');
     }
 
     public function incrementFailedCount(): void

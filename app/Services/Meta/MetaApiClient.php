@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Meta;
 
-use Exception;
+use App\Exceptions\BroadcastConnectionException;
+use App\Helpers\WhatsAppSanitizer;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * HTTP client for Meta Graph API.
@@ -88,9 +91,11 @@ class MetaApiClient
                     }
                 }
 
+                $sanitizedError = WhatsAppSanitizer::sanitizeError($error);
+
                 return [
                     'success' => false,
-                    'error' => $error,
+                    'error' => $sanitizedError,
                 ];
             }
 
@@ -98,16 +103,25 @@ class MetaApiClient
                 'success' => true,
                 'data' => $response->json(),
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            $sanitizedMessage = WhatsAppSanitizer::sanitizeError($e->getMessage());
             Log::error('Meta API request failed', [
                 'gym_id' => $this->context->gymId,
                 'endpoint' => $endpoint,
-                'error' => $e->getMessage(),
+                'error' => $sanitizedMessage,
             ]);
+
+            if ($e instanceof ConnectionException) {
+                throw new BroadcastConnectionException(
+                    $sanitizedMessage,
+                    $e->getCode(),
+                    $e
+                );
+            }
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => $sanitizedMessage,
             ];
         }
     }

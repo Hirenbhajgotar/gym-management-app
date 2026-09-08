@@ -146,6 +146,7 @@ class BroadcastOrchestrator
                     'target_filters' => $filters,
                     'target_count' => $targetCount,
                     'credits_used' => $targetCount,
+                    'credits_deducted_upfront' => $creditsDeducted,
                     'status' => $scheduleType === 'now' ? 'sending' : 'scheduled',
                     'scheduled_at' => $scheduleType === 'later' ? $scheduledAt : null,
                     'message_variables' => $variables,
