@@ -80,7 +80,30 @@ A major rebuild on 2026-02-12 created all core tables with proper enums and cons
 | `2026_05_28_165130` | 2026-05-28 | `whatsapp_broadcasts`: Added `batch_id` varchar(36) for Laravel Bus batch tracking |
 | `2026_05_29_000001` | 2026-05-29 | `whatsapp_broadcasts`: Added index on `status` for broadcast queue queries |
 
+### Phase 7: Marketing Snapshots & Broadcast Refunds (July–September 2026)
+
+| Migration | Date | Change |
+|---|---|---|
+| `2026_07_22_210000` | 2026-07-22 | `whatsapp_phone_numbers`: Made `phone_number_sid` nullable; added unique index on `[whatsapp_account_id, waba_phone_number_id]` |
+| `2026_07_30_152445` | 2026-07-30 | `whatsapp_accounts`: Added `billing_mode` varchar(20) with default `pay_via_app` and index |
+| `2026_08_15_193000` | 2026-08-15 | `gym_members`: Added `is_archived` and `allow_whatsapp_marketing` fields for marketing targeting |
+| `2026_08_18_000001` | 2026-08-18 | `gym_members`: Added `whatsapp_marketing_snapshot` boolean for historical compliance recording |
+| `2026_09_02_000001` | 2026-09-02 | `whatsapp_broadcasts`: Added `credits_deducted_upfront`, `refunded_credits`, and `refunded_at` columns |
+| `2026_09_08_000001` | 2026-09-08 | `whatsapp_templates`: Added `language` varchar(20) column with default `en_US` |
+
 ## Key Schema Decisions
+
+### Why `phone_number_sid` was made nullable
+Meta WABA accounts use `waba_phone_number_id` rather than Twilio SIDs. Making `phone_number_sid` nullable prevents dummy data insertion and enforces clean provider separation.
+
+### Why `billing_mode` was introduced
+Gyms can either purchase credits directly in the app (`pay_via_app`) or utilize their direct payment methods configured inside Meta Business Manager (`direct_meta`).
+
+### Why Broadcast Refund Columns were added
+Upfront credit reservation requires a reconciliation mechanism when recipient numbers fail or broadcasts are cancelled. Storing `refunded_credits` and `refunded_at` directly on `whatsapp_broadcasts` provides immediate visibility on financial reconciliation.
+
+### Why `language` was added to `whatsapp_templates`
+Meta WABA requires specific locale codes (e.g. `en_US`, `es_ES`, `pt_BR`) rather than general language codes, and gyms need to create or import templates in different languages. Storing `language` per template allows accurate submission to Meta/Twilio Content APIs and ensures outbound messages and broadcast jobs dynamically resolve the correct language payload.
 
 ### Why `twilio_auth_token` was changed to TEXT
 Encrypted tokens can exceed 255 characters. The migration on 2026-02-21 changed the column type to `text` to accommodate encryption.
@@ -100,4 +123,5 @@ Phone number costs (Twilio charges per number) are separate from message costs. 
 ## Related Decisions
 
 - [ADR-005](./ADR-005-whatsapp-provider-abstraction.md) — Provider abstraction drove the `provider_type` column addition
-- [ADR-006](./ADR-006-whatsapp-broadcast-architecture.md) — Broadcast architecture drove the `batch_id` column addition
+- [ADR-006](./ADR-006-whatsapp-broadcast-architecture.md) — Broadcast architecture drove the `batch_id` and refund columns additions
+

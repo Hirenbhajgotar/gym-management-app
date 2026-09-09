@@ -26,9 +26,10 @@ use Illuminate\Support\Carbon;
  * @property string $display_name
  * @property string|null $body
  * @property TemplateCategoryEnum|null $category
+ * @property string $language
  * @property array<array-key, mixed>|null $variables
  * @property int|null $variable_count
- * @property array<string, mixed>|null $variable_placeholder
+ * @property array<array-key, mixed>|null $variable_placeholder
  * @property string|null $twilio_template_sid
  * @property string|null $meta_template_id
  * @property WhatsAppTemplateStatusEnum|null $status
@@ -95,6 +96,7 @@ class WhatsAppTemplate extends Model
         'display_name',
         'body',
         'category',
+        'language',
         // Computed/derived fields (explicitly set by services, not from form input)
         'variables',
         'variable_count',

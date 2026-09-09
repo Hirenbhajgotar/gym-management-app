@@ -7,10 +7,14 @@ namespace App\Services;
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\UpdateTemplateData;
 use App\Enums\TemplateCategoryEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
+use App\Services\Meta\MetaTemplateService;
 use App\Services\Support\TemplateVariableHelper;
+use App\Services\Twilio\TwilioTemplateService;
+use App\Services\WhatsApp\TemplateFieldMapper;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -56,6 +60,7 @@ class WhatsAppTemplateService
             'display_name' => $data->display_name,
             'body' => $data->body,
             'category' => $data->category,
+            'language' => $data->language ?? MetaTemplateService::defaultTemplateLanguage(),
             'variables' => $variables,
             'variable_count' => count($variables),
             'variable_placeholder' => $data->variable_placeholder ?? TemplateVariableHelper::generateDefaultPlaceholders($variables),
@@ -104,6 +109,9 @@ class WhatsAppTemplateService
         return $template->restore();
     }
 
+    /**
+     * @return Collection<int, WhatsAppTemplate>
+     */
     public function getApprovedTemplates(int $gymId): Collection
     {
         return WhatsAppTemplate::query()->where('gym_id', $gymId)
@@ -167,7 +175,7 @@ class WhatsAppTemplateService
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post('https://content.twilio.com/v1/Content', [
                     'friendly_name' => $template->display_name,
-                    'language' => 'en',
+                    'language' => $template->language ?: TwilioTemplateService::TWILIO_DEFAULT_LANGUAGE,
                     'types' => [
                         'twilio/text' => [
                             'body' => $template->body,
@@ -468,6 +476,7 @@ class WhatsAppTemplateService
                         'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
                         'body' => $body,
                         'category' => $category,
+                        'language' => TemplateFieldMapper::sanitizeLanguage($record->language ?? null, WhatsAppProviderTypeEnum::TWILIO),
                         'variables' => $variables,
                         'variable_count' => $variableCount,
                         'variable_placeholder' => $placeholders,

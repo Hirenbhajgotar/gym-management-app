@@ -41,14 +41,15 @@ Two concrete providers implement these interfaces:
 | `MetaWhatsAppProvider` | Direct Meta WABA integration — embedded signup, manual WABA connection, template management via Meta API |
 | `TwilioWhatsAppProvider` | Twilio-based messaging — sub-account creation, number purchasing, BYOD (bring your own device) number verification |
 
-### Core Services
+### Core Services & Helpers
 
-| Service | Responsibility |
-|---------|---------------|
-| `WhatsAppCreditService` | Provider-agnostic credit operations — balance checks, deduction, usage logging. Implements `CreditManagementInterface`. Supports skip-deduction mode for broadcast flows. |
+| Service / Class | Responsibility |
+|---|---|
+| `WhatsAppCreditService` | Provider-agnostic credit operations — balance checks, upfront deductions, refunds, usage logging. Implements `CreditManagementInterface`. |
 | `WhatsAppBillingService` | Razorpay payment integration — package purchases, phone number surcharges, welcome credits |
-| `WhatsAppBroadcastService` | Broadcast dispatch via `SendBroadcastJob` |
-| `WhatsAppVariableResolver` | Resolves template variables (member name, gym name, dates, etc.) |
+| `WhatsAppBroadcastService` | Broadcast orchestration and dispatch via `SendBroadcastJob` & `SendMessageChunkJob` |
+| `WhatsAppVariableResolver` | Resolves template variables (member name, gym name, dates, custom parameters) |
+| `WhatsAppFailureClassifier` | Classifies delivery errors into transient vs. permanent failures for intelligent retries |
 | `TemplateVariableHelper` | Utility for template variable parsing |
 
 ### Data Flow
@@ -69,8 +70,11 @@ Gym Owner
     │       → WhatsAppTransaction log
     │
     └── Send Message/Broadcast
-            → CreditService.checkAndDeduct()
-            → Provider sends via API
+            → Upfront credit deduction (checked against WhatsAppMessageCredit)
+            → Chunked dispatch (SendMessageChunkJob)
+            → Provider sends via API (Meta or Twilio)
+            → If errors: WhatsAppFailureClassifier categorizes failures
+            → If failures / cancellation: Unspent credits refunded automatically
             → WhatsAppUsageLog recorded
 ```
 
@@ -83,7 +87,10 @@ The WhatsApp admin interface is a group of Filament pages and resources under th
 | `WhatsappDashboard` | 1 | Credit balance, monthly usage stats, recent messages |
 | `WhatsAppSetup` | 2 | Multi-step wizard to connect Meta WABA or Twilio account |
 | `PurchaseCredits` | 3 | Browse packages, purchase via Razorpay, claim welcome credits |
-| `WhatsAppTemplateResource` | 4 | CRUD for templates with default template selection, category guidance, preview |
+| `Broadcast` | 4 | Send batch marketing and informational broadcasts with recipient filters |
+| `WhatsAppTemplateResource` | 5 | CRUD for templates with default template selection, category guidance, preview |
+| `WhatsAppTransactionResource` | 6 | Audit log of credit purchases, deductions, and refunds |
+| `WhatsAppUsageLogResource` | 7 | Real-time logs of delivered and outbound WhatsApp messages |
 
 ### WhatsAppDashboard
 
@@ -103,7 +110,7 @@ A multi-step wizard page with traits delegated to:
 
 Supports two provider paths:
 - **Meta WABA**: Manual WABA connection (enter WABA ID, phone number, access token) or embedded signup (OAuth flow)
-- **Twilio**: Create sub-account → search/purchase numbers or BYOD number verification
+- **Twilio**: Create sub-account → search/purchase numbers or BYOD (bring your own device) number verification
 
 The `getProvider()` method lazily instantiates the correct provider based on `selectedProvider`, caching the instance.
 
@@ -117,6 +124,12 @@ The `getProvider()` method lazily instantiates the correct provider based on `se
 - Dispatches `open-razorpay` event for frontend payment modal
 - Handles payment verification via `handle-payment-verify` Livewire event
 
+### Broadcast
+
+- Allows selecting approved templates, setting audience filters (membership type, status, expiration window, marketing opt-ins).
+- Calculates upfront credit requirements.
+- Dispatches queued chunks via `SendBroadcastJob` and displays live progress via Bus batch tracking.
+
 ### WhatsAppTemplateResource
 
 - Full CRUD with Create, Edit, List pages
@@ -125,6 +138,7 @@ The `getProvider()` method lazily instantiates the correct provider based on `se
 - **Live Preview**: WhatsApp-style bubble preview with sample values
 - **Navigation Badge**: Cached count of templates for the current tenant
 - **Tenant Scoping**: In sandbox mode, shows templates with null gym_id; in production, scoped to tenant
+
 
 ## Credit System
 

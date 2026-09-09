@@ -190,6 +190,7 @@ class ImportWhatsAppTemplatesJob implements ShouldBeUnique, ShouldQueue
                 'display_name' => $fields['display_name'],
                 'body' => $fields['body'],
                 'category' => $fields['category'],
+                'language' => $fields['language'],
                 'status' => $fields['status'],
                 'is_active' => true,
             ]);

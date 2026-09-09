@@ -7,6 +7,7 @@ namespace App\DTOs\WhatsAppTemplates;
 readonly class UpdateTemplateData
 {
     /**
+     * @param  string|null  $language  Optional template language code. When null, excluded by toArray() so existing language remains unchanged.
      * @param  array<string, mixed>|null  $variable_placeholder
      * @param  array<int, array<string, mixed>>|null  $variables
      */
@@ -15,6 +16,7 @@ readonly class UpdateTemplateData
         public ?string $display_name = null,
         public ?string $body = null,
         public ?string $category = null,
+        public ?string $language = null,
         public ?array $variable_placeholder = null,
         public ?array $variables = null,
         public ?int $variable_count = null,
@@ -31,6 +33,7 @@ readonly class UpdateTemplateData
             'display_name' => $this->display_name,
             'body' => $this->body,
             'category' => $this->category,
+            'language' => $this->language,
             'variable_placeholder' => $this->variable_placeholder,
             'variables' => $this->variables,
             'variable_count' => $this->variable_count,
@@ -48,6 +51,7 @@ readonly class UpdateTemplateData
             display_name: $data['display_name'] ?? null,
             body: $data['body'] ?? null,
             category: $data['category'] ?? null,
+            language: is_string($data['language'] ?? null) ? $data['language'] : null,
             variable_placeholder: $data['variable_placeholder'] ?? null,
             variables: $data['variables'] ?? null,
             variable_count: $data['variable_count'] ?? null,

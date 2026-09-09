@@ -18,7 +18,7 @@ Stores phone numbers purchased or registered for WhatsApp messaging. One primary
 | `id` | bigint | no | auto | Primary key |
 | `whatsapp_account_id` | bigint | yes | null | FK to `whatsapp_accounts.id` |
 | `phone_number` | varchar | no | — | Phone number (digits only, without +) |
-| `phone_number_sid` | varchar | no | — | Twilio IncomingPhoneNumbers SID (starts with `PN`) |
+| `phone_number_sid` | varchar | yes | null | Twilio IncomingPhoneNumbers SID (starts with `PN`, nullable for Meta WABA) |
 | `channel_sender_sid` | varchar | yes | null | WhatsApp Channel Sender SID (starts with `CN`) |
 | `waba_phone_number_id` | varchar | yes | null | Meta WABA phone number ID (for WABA provider) |
 | `country_code` | varchar | no | — | Country code (e.g., `IN`, `US`) |
@@ -40,6 +40,8 @@ Stores phone numbers purchased or registered for WhatsApp messaging. One primary
 |-------|---------|------|-------------|
 | Primary | `id` | primary | Auto-increment |
 | Index | `whatsapp_account_id` | index | For account-scoped queries |
+| Unique | `phone_number_sid` | unique | Unique Twilio SID when present |
+| Unique | `[whatsapp_account_id, waba_phone_number_id]` | unique | Unique WABA phone number per account (`wa_acc_waba_phone_unique`) |
 
 ## Relationships
 
@@ -75,3 +77,5 @@ The model tracks three distinct SID concepts:
 - `2026_03_14_000000` — Added `channel_sender_sid`
 - `2026_04_17_202810` — Added `waba_phone_number_id`
 - `2026_05_22_220537` — Added `last_number_cost_charged_at`
+- `2026_07_22_210000` — Made `phone_number_sid` nullable and added unique index on `[whatsapp_account_id, waba_phone_number_id]`
+

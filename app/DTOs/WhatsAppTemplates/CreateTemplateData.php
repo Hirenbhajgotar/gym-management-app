@@ -8,7 +8,7 @@ use App\Enums\TemplateCategoryEnum;
 use InvalidArgumentException;
 
 /**
- * @phpstan-type CreateTemplateDataArray array{name: string, display_name: string, body: string, category: string, variable_placeholder?: array<string, mixed>|null, is_default?: bool|null}
+ * @phpstan-type CreateTemplateDataArray array{name: string, display_name: string, body: string, category: string, language?: string|null, variable_placeholder?: array<string, mixed>|null, is_default?: bool|null}
  */
 readonly class CreateTemplateData
 {
@@ -20,6 +20,7 @@ readonly class CreateTemplateData
         public string $display_name,
         public string $body,
         public string $category,
+        public ?string $language = null,
         public ?array $variable_placeholder = null,
         public ?bool $is_default = null,
     ) {}
@@ -34,6 +35,7 @@ readonly class CreateTemplateData
             'display_name' => $this->display_name,
             'body' => $this->body,
             'category' => $this->category,
+            'language' => $this->language,
             'variable_placeholder' => $this->variable_placeholder,
             'is_default' => $this->is_default,
         ], fn ($value) => $value !== null);
@@ -49,6 +51,7 @@ readonly class CreateTemplateData
             display_name: $data['display_name'] ?? throw new InvalidArgumentException('Missing required field: display_name'),
             body: $data['body'] ?? throw new InvalidArgumentException('Missing required field: body'),
             category: $data['category'] ?? TemplateCategoryEnum::UTILITY->value,
+            language: is_string($data['language'] ?? null) ? $data['language'] : null,
             variable_placeholder: $data['variable_placeholder'] ?? null,
             is_default: $data['is_default'] ?? null,
         );

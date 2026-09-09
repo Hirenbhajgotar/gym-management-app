@@ -9,12 +9,14 @@ use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateMasterSyncResult;
 use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Enums\TemplateCategoryEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
 use App\Services\Support\TemplateVariableHelper;
 use App\Services\Support\WhatsAppTemplateStatusMapper;
+use App\Services\WhatsApp\TemplateFieldMapper;
 use App\Services\WhatsAppTemplateService as BaseTemplateService;
 use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -36,6 +38,8 @@ use Twilio\Rest\Client;
  */
 class TwilioTemplateService implements TemplateManagementInterface
 {
+    public const TWILIO_DEFAULT_LANGUAGE = 'en';
+
     private const TEMPLATES_CACHE_TTL = 300;
 
     private const TEMPLATES_CACHE_STALE = 3600;
@@ -297,7 +301,7 @@ class TwilioTemplateService implements TemplateManagementInterface
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post("{$this->context->getApiBaseUrlv1()}/Content", [
                 'friendly_name' => $template->display_name,
-                'language' => 'en',
+                'language' => $template->language ?: self::TWILIO_DEFAULT_LANGUAGE,
                 'types' => [
                     'twilio/text' => ['body' => $template->body],
                 ],
@@ -378,6 +382,7 @@ class TwilioTemplateService implements TemplateManagementInterface
                             'display_name' => ucwords(str_replace(['_', '-'], ' ', $record->friendlyName)),
                             'body' => $body,
                             'category' => strtolower($whatsapp['category'] ?? TemplateCategoryEnum::UTILITY->value),
+                            'language' => TemplateFieldMapper::sanitizeLanguage($record->language ?? null, WhatsAppProviderTypeEnum::TWILIO),
                             'variables' => $variables,
                             'variable_count' => count($variables),
                             'variable_placeholder' => $placeholders,
@@ -424,7 +429,7 @@ class TwilioTemplateService implements TemplateManagementInterface
     private function upsertTemplate(array $attributes, array $values): void
     {
         $fillableValues = array_intersect_key($values, array_flip([
-            'name', 'display_name', 'body', 'category',
+            'name', 'display_name', 'body', 'category', 'language',
             'variables', 'variable_count', 'variable_placeholder',
             'status', 'is_active',
         ]));
