@@ -9,13 +9,15 @@ use App\DTOs\WhatsAppTemplates\TemplateVariable;
 use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
+use App\Services\Meta\MetaTemplateService;
 use App\Services\Support\TemplateVariableHelper;
+use App\Services\Twilio\TwilioTemplateService;
 
 class TemplateFieldMapper
 {
     /**
      * @param  array<string, mixed>  $rawData
-     * @return array{name: string|null, display_name: string|null, body: string|null, category: string, status: WhatsAppTemplateStatusEnum, provider_sid: string|null, variables: list<TemplateVariable>, variable_count: int, variable_placeholder: array<int, TemplatePlaceholder>}
+     * @return array{name: string|null, display_name: string|null, body: string|null, category: string, language: string, status: WhatsAppTemplateStatusEnum, provider_sid: string|null, variables: list<TemplateVariable>, variable_count: int, variable_placeholder: array<int, TemplatePlaceholder>}
      */
     public function mapToTemplateFields(array $rawData, ?WhatsAppProviderTypeEnum $providerType): array
     {
@@ -28,6 +30,7 @@ class TemplateFieldMapper
             'display_name' => $name,
             'body' => $body,
             'category' => $this->extractCategory($rawData, $providerType),
+            'language' => $this->extractLanguage($rawData, $providerType),
             'status' => $this->extractStatus($rawData, $providerType),
             'provider_sid' => $this->extractProviderSid($rawData, $providerType),
             'variables' => $variables,
@@ -140,6 +143,29 @@ class TemplateFieldMapper
             WhatsAppProviderTypeEnum::WABA => TemplateCategoryEnum::tryFromOrDefault(is_string($category) ? $category : null)->value,
             default => TemplateCategoryEnum::UTILITY->value,
         };
+    }
+
+    public static function sanitizeLanguage(?string $lang, ?WhatsAppProviderTypeEnum $providerType = null): string
+    {
+        if (is_string($lang) && $lang !== '') {
+            $trimmed = trim($lang);
+            if (preg_match('/^[a-zA-Z]{2,3}(?:[_-][a-zA-Z0-9]{2,8})?$/', $trimmed)) {
+                return $trimmed;
+            }
+        }
+
+        return match ($providerType) {
+            WhatsAppProviderTypeEnum::TWILIO => TwilioTemplateService::TWILIO_DEFAULT_LANGUAGE,
+            default => MetaTemplateService::defaultTemplateLanguage(),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $templateData
+     */
+    private function extractLanguage(array $templateData, ?WhatsAppProviderTypeEnum $providerType): string
+    {
+        return self::sanitizeLanguage(is_string($templateData['language'] ?? null) ? $templateData['language'] : null, $providerType);
     }
 
     /**

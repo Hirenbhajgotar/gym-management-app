@@ -6,7 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [v1.7.0] - Upcoming / Latest Release
+## [Unreleased]
+
+## [v1.7.1] - 2026-09-09 (Current GitHub Release)
+
+### Added
+- **Multi-Language WhatsApp Template Support**: Added `language` attribute support to `whatsapp_templates`, including `CreateTemplateData` and `UpdateTemplateData` DTOs, database migration, and provider synchronization.
+- **WhatsApp Template Locale Sanitization**: Introduced `TemplateFieldMapper::sanitizeLanguage()` with ISO/BCP47 regex validation and provider-aware fallbacks (`MetaTemplateService::defaultTemplateLanguage()` / `TwilioTemplateService::TWILIO_DEFAULT_LANGUAGE`).
+
+### Changed
+- Updated `MetaMessagingService`, `MetaTemplateService`, `TwilioTemplateService`, and `SendBroadcastJob` to dynamically resolve and dispatch template messages using each template's configured language.
+
+---
+
+## [v1.7.0] - 2026-09-08
 
 ### Added
 - **WhatsApp Broadcast Refunds**: Automated refunding of message credits for failed recipients or cancelled broadcast batches.
@@ -23,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [v1.6.0] - 2026-07-30 (Current GitHub Release)
+## [v1.6.0] - 2026-07-30
 
 ### Added
 - **Dynamic Plan Pricing & Multi-Currency**: Introduced `PlanPrices` with flexible billing interval support and localized pricing.

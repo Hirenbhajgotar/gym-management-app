@@ -8,9 +8,11 @@ use App\DTOs\WhatsAppTemplates\CreateTemplateData;
 use App\DTOs\WhatsAppTemplates\TemplateCollectionResult;
 use App\DTOs\WhatsAppTemplates\TemplateSubmissionResult;
 use App\Enums\TemplateCategoryEnum;
+use App\Enums\WhatsAppProviderTypeEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\TemplateManagementInterface;
 use App\Models\WhatsAppTemplate;
+use App\Services\WhatsApp\TemplateFieldMapper;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -127,7 +129,7 @@ class MetaTemplateService implements TemplateManagementInterface
                 'template_name' => $template->name,
                 'meta_template_id' => $template->meta_template_id,
                 'waba_id' => $wabaId,
-                'language' => $this->resolveLanguage(),
+                'language' => $this->resolveLanguage($template),
                 'category' => strtoupper($template->category->value ?? TemplateCategoryEnum::UTILITY->value),
                 'body' => $template->body,
                 'body_example' => $bodyExample,
@@ -144,7 +146,7 @@ class MetaTemplateService implements TemplateManagementInterface
 
             $response = $this->api->post("/{$wabaId}/message_templates", [
                 'name' => $template->name,
-                'language' => $this->resolveLanguage(),
+                'language' => $this->resolveLanguage($template),
                 'category' => strtoupper($template->category->value ?? TemplateCategoryEnum::UTILITY->value),
                 'components' => [
                     $bodyComponent,
@@ -233,6 +235,9 @@ class MetaTemplateService implements TemplateManagementInterface
             }
 
             $template->status = $newStatus;
+            if (isset($response['data']['language']) && is_string($response['data']['language']) && $response['data']['language'] !== '') {
+                $template->language = TemplateFieldMapper::sanitizeLanguage($response['data']['language'], WhatsAppProviderTypeEnum::WABA);
+            }
             if ($rawStatus === 'REJECTED') {
                 $template->rejection_reason = $response['data']['rejection_reason'] ?? null;
             }
@@ -427,8 +432,17 @@ class MetaTemplateService implements TemplateManagementInterface
      * Meta requires a supported language code (e.g. `en_US`, `en_GB`). A bare
      * `en` is not universally accepted, so we default to the full locale.
      */
-    private function resolveLanguage(): string
+    public static function resolveLanguage(?WhatsAppTemplate $template = null): string
     {
+        $lang = $template?->language;
+
+        if (is_string($lang) && $lang !== '') {
+            $trimmed = trim($lang);
+            if (preg_match('/^[a-zA-Z]{2,3}[_-][a-zA-Z0-9]{2,8}$/', $trimmed)) {
+                return $trimmed;
+            }
+        }
+
         return self::defaultTemplateLanguage();
     }
 

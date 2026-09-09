@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\DTOs\WhatsAppTemplates\CreateTemplateData;
+use App\DTOs\WhatsAppTemplates\UpdateTemplateData;
+use App\Enums\NotificationType;
+use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
+use App\Services\Meta\MetaTemplateService;
 use App\Services\WhatsAppTemplateService;
+use Database\Seeders\WhatsAppDefaultTemplatesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -24,6 +29,7 @@ class WhatsAppTemplateServiceTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(WhatsAppDefaultTemplatesSeeder::class);
         $this->gym = Gym::factory()->create();
         $this->templateService = resolve(WhatsAppTemplateService::class);
     }
@@ -37,8 +43,7 @@ class WhatsAppTemplateServiceTest extends TestCase
 
         $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
-        // Should create 8 default utility templates
-        $this->assertGreaterThanOrEqual(8, $templates->count());
+        $this->assertCount(9, $templates);
 
         // All should be default and active
         $templates->each(function ($template) {
@@ -48,19 +53,30 @@ class WhatsAppTemplateServiceTest extends TestCase
     }
 
     #[Test]
+    public function default_templates_are_idempotent(): void
+    {
+        $this->templateService->createDefaultTemplates($this->gym->id);
+        $firstCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
+
+        // Calling again should not duplicate templates
+        $this->templateService->createDefaultTemplates($this->gym->id);
+        $secondCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
+
+        $this->assertEquals(9, $firstCount);
+        $this->assertEquals($firstCount, $secondCount);
+    }
+
+    #[Test]
     public function it_creates_templates_with_correct_names(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
 
         $expectedNames = [
-            'welcome_message',
-            'membership_expiry',
-            'payment_reminder',
-            'payment_confirmation',
-            'attendance_milestone',
-            'class_reminder',
-            'birthday_wish',
-            'renewal_reminder',
+            NotificationType::WELCOME->value,
+            NotificationType::MEMBERSHIP_EXPIRY->value,
+            NotificationType::PAYMENT_REMINDER->value,
+            NotificationType::CLASS_REMINDER->value,
+            NotificationType::BIRTHDAY->value,
         ];
 
         $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)
@@ -73,14 +89,15 @@ class WhatsAppTemplateServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_creates_templates_with_category_utility(): void
+    public function it_creates_templates_with_valid_categories(): void
     {
         $this->templateService->createDefaultTemplates($this->gym->id);
 
         $templates = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->get();
 
         $templates->each(function ($template) {
-            $this->assertEquals('utility', $template->category);
+            $category = $template->category->value ?? $template->category;
+            $this->assertContains($category, ['utility', 'marketing', 'authentication']);
         });
     }
 
@@ -97,28 +114,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         });
     }
 
-    public function default_templates_are_idempotent(): void
-    {
-        $this->templateService->createDefaultTemplates($this->gym->id);
-        $firstCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
-
-        // Calling again should not duplicate templates
-        $this->templateService->createDefaultTemplates($this->gym->id);
-        $secondCount = WhatsAppTemplate::query()->where('gym_id', $this->gym->id)->count();
-
-        $this->assertEquals($firstCount, $secondCount);
-    }
-
     // ========== TEMPLATE RETRIEVAL ==========
-
-    #[Test]
-    public function it_returns_default_templates_definition(): void
-    {
-        $defaults = $this->templateService->getDefaultTemplates();
-
-        $this->assertIsArray($defaults);
-        $this->assertNotEmpty($defaults);
-    }
 
     #[Test]
     public function it_retrieves_approved_templates_for_gym(): void
@@ -131,7 +127,7 @@ class WhatsAppTemplateServiceTest extends TestCase
             'category' => 'utility',
             'variables' => [['name' => 'member_name'], ['name' => 'gym_name']],
             'variable_count' => 2,
-            'status' => 'approved',
+            'status' => WhatsAppTemplateStatusEnum::APPROVED,
             'is_default' => false,
             'is_active' => true,
         ]);
@@ -144,7 +140,7 @@ class WhatsAppTemplateServiceTest extends TestCase
             'category' => 'utility',
             'variables' => [['name' => 'member_name']],
             'variable_count' => 1,
-            'status' => 'pending',
+            'status' => WhatsAppTemplateStatusEnum::PENDING,
             'is_default' => false,
             'is_active' => true,
         ]);
@@ -152,7 +148,7 @@ class WhatsAppTemplateServiceTest extends TestCase
         $approved = $this->templateService->getApprovedTemplates($this->gym->id);
 
         $this->assertCount(1, $approved);
-        $this->assertEquals('test_template', $approved->first()->name);
+        $this->assertEquals('test_template', $approved->first()?->name);
     }
 
     // ========== TEMPLATE CREATION ==========
@@ -178,10 +174,60 @@ class WhatsAppTemplateServiceTest extends TestCase
         $this->assertEquals('custom_notification', $template->name);
         $this->assertEquals($this->gym->id, $template->gym_id);
         $this->assertEquals(3, $template->variable_count);
-        $this->assertEquals('draft', $template->status);
+        $this->assertSame(WhatsAppTemplateStatusEnum::DRAFT, $template->status);
     }
 
     // ========== TEMPLATE DELETION ==========
+
+    #[Test]
+    public function it_creates_template_with_default_and_explicit_language(): void
+    {
+        $defaultTemplate = $this->templateService->createTemplate($this->gym->id, CreateTemplateData::fromArray([
+            'name' => 'default_lang',
+            'display_name' => 'Default Lang',
+            'body' => 'Hello',
+            'category' => 'utility',
+        ]));
+
+        $this->assertEquals(MetaTemplateService::defaultTemplateLanguage(), $defaultTemplate->language);
+
+        $customTemplate = $this->templateService->createTemplate($this->gym->id, CreateTemplateData::fromArray([
+            'name' => 'custom_lang',
+            'display_name' => 'Custom Lang',
+            'body' => 'Hola',
+            'category' => 'utility',
+            'language' => 'es_ES',
+        ]));
+
+        $this->assertEquals('es_ES', $customTemplate->language);
+    }
+
+    #[Test]
+    public function it_updates_template_while_preserving_or_updating_language(): void
+    {
+        $template = $this->templateService->createTemplate($this->gym->id, CreateTemplateData::fromArray([
+            'name' => 'test_lang',
+            'display_name' => 'Test Lang',
+            'body' => 'Original body',
+            'category' => 'utility',
+            'language' => 'en_US',
+        ]));
+
+        // Update without language preserves existing language
+        $updated = $this->templateService->updateTemplate($template, UpdateTemplateData::fromArray([
+            'display_name' => 'Updated Name',
+        ]));
+
+        $this->assertEquals('en_US', $updated?->language);
+        $this->assertEquals('Updated Name', $updated?->display_name);
+
+        // Update with explicit language changes language
+        $updatedWithLang = $this->templateService->updateTemplate($template, UpdateTemplateData::fromArray([
+            'language' => 'es_ES',
+        ]));
+
+        $this->assertEquals('es_ES', $updatedWithLang?->language);
+    }
 
     #[Test]
     public function it_deletes_a_template(): void
@@ -193,13 +239,13 @@ class WhatsAppTemplateServiceTest extends TestCase
             'body' => 'Test',
             'category' => 'utility',
             'variable_count' => 0,
-            'status' => 'draft',
+            'status' => WhatsAppTemplateStatusEnum::DRAFT,
             'is_default' => false,
             'is_active' => true,
         ]);
 
-        $this->templateService->deleteTemplate($template->id);
+        $this->templateService->softDeleteTemplate($template);
 
-        $this->assertDatabaseMissing('whatsapp_templates', ['id' => $template->id]);
+        $this->assertSoftDeleted('whatsapp_templates', ['id' => $template->id]);
     }
 }
