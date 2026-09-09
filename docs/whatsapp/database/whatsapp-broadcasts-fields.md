@@ -30,6 +30,9 @@ Records WhatsApp broadcast campaigns. Each broadcast targets a filtered list of 
 | `sent_count` | int | no | 0 | Number of successfully sent messages |
 | `failed_count` | int | no | 0 | Number of failed messages |
 | `credits_used` | int | no | 0 | Total credits consumed |
+| `credits_deducted_upfront` | bool | no | false | Whether credits were deducted upfront before processing |
+| `refunded_credits` | int | no | 0 | Amount of credits refunded for failed/cancelled deliveries |
+| `refunded_at` | timestamp | yes | null | Timestamp when refund transaction occurred |
 | `message_variables` | json | yes | null | JSON template variables for the broadcast |
 | `created_at` | timestamp | yes | null | Creation timestamp |
 | `updated_at` | timestamp | yes | null | Last update timestamp |
@@ -58,6 +61,7 @@ Records WhatsApp broadcast campaigns. Each broadcast targets a filtered list of 
 | `isScheduled()` | bool | Status is `SCHEDULED` |
 | `isSending()` | bool | Status is `SENDING` |
 | `isCompleted()` | bool | Status is `COMPLETED` |
+| `isCancelled()` | bool | Status is `CANCELLED` |
 | `markAsSending()` | void | Sets status to SENDING, started_at |
 | `markAsCompleted()` | void | Sets status to COMPLETED, completed_at |
 | `markAsCancelled()` | void | Sets status to CANCELLED |
@@ -69,7 +73,7 @@ Records WhatsApp broadcast campaigns. Each broadcast targets a filtered list of 
 ```
 DRAFT → (dispatch) → SENDING → (all sent) → COMPLETED
                           ↓
-                      CANCELLED / FAILED
+                      CANCELLED / FAILED (Triggers automatic credit refund)
 ```
 
 ## Migration History
@@ -77,3 +81,5 @@ DRAFT → (dispatch) → SENDING → (all sent) → COMPLETED
 - `2026_02_12_133638` — Initial creation
 - `2026_05_28_165130` — Added `batch_id`
 - `2026_05_29_000001` — Added index on `status`
+- `2026_09_02_000001` — Added `credits_deducted_upfront`, `refunded_credits`, and `refunded_at`
+

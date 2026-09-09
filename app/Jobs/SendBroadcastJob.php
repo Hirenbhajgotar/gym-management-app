@@ -107,7 +107,7 @@ class SendBroadcastJob implements ShouldBeUnique, ShouldQueue
         $customVariables = $broadcast->message_variables ?? [];
         $templateData = [
             'provider_template_id' => $template->name,
-            'language' => MetaTemplateService::defaultTemplateLanguage(),
+            'language' => MetaTemplateService::resolveLanguage($template),
             'components' => [],
             'media_urls' => [],
         ];

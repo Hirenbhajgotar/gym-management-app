@@ -8,6 +8,7 @@ use App\Enums\TemplateCategoryEnum;
 use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Models\Gym;
 use App\Models\WhatsAppTemplate;
+use App\Services\Meta\MetaTemplateService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,6 +27,7 @@ class WhatsAppTemplateFactory extends Factory
             'display_name' => fake()->sentence(3),
             'body' => fake()->paragraph(),
             'category' => fake()->randomElement([TemplateCategoryEnum::MARKETING->value, TemplateCategoryEnum::UTILITY->value, TemplateCategoryEnum::AUTHENTICATION->value]),
+            'language' => MetaTemplateService::defaultTemplateLanguage(),
             'status' => WhatsAppTemplateStatusEnum::PENDING,
             'is_active' => true,
         ];

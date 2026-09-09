@@ -34,6 +34,7 @@ Stores the WhatsApp Business Account configuration for each gym tenant. One reco
 | `business_description` | varchar | yes | null | Business description |
 | `verified_at` | timestamp | yes | null | When the account was verified |
 | `provider_type` | varchar | yes | null | Provider type enum (`WhatsAppProviderTypeEnum`: `waba` or `twilio`) |
+| `billing_mode` | varchar(20) | yes | `pay_via_app` | Billing mode (`pay_via_app`, `direct_meta`) |
 | `created_at` | timestamp | yes | null | Creation timestamp |
 | `updated_at` | timestamp | yes | null | Last update timestamp |
 
@@ -44,6 +45,7 @@ Stores the WhatsApp Business Account configuration for each gym tenant. One reco
 | Primary | `id` | primary | Auto-increment |
 | Unique | `gym_id` | unique | One WhatsApp account per gym |
 | Index | `verification_status` | index | For filtering by verification status |
+| Index | `billing_mode` | index | For filtering by billing mode |
 
 ## Relationships
 
@@ -79,3 +81,5 @@ Stores the WhatsApp Business Account configuration for each gym tenant. One reco
 - `2026_05_07_000000` — Added index on `verification_status`
 - `2026_05_10_000000` — Added `waba_status_synced_at`
 - `2026_05_11_175525` — Dropped `waba_mode` column
+- `2026_07_30_152445` — Added `billing_mode` column with index
+

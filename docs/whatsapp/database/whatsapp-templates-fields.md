@@ -1,8 +1,8 @@
 ---
 table: whatsapp_templates
 feature: WhatsApp Integration
-status: draft
-last_updated: 2026-05-29
+status: active
+last_updated: 2026-09-09
 related_docs:
   - ../feature/whatsapp-overview.md
 ---
@@ -21,6 +21,7 @@ Stores WhatsApp message templates for each gym. Templates must be submitted to M
 | `display_name` | varchar | no | — | User-facing display name |
 | `body` | varchar | yes | null | Template body text with `{{1}}`, `{{2}}` variable placeholders |
 | `category` | varchar | yes | null | `utility` or `marketing` |
+| `language` | varchar(20) | no | `'en_US'` | Template language/locale code (e.g., `en_US`, `es_ES`, `en`) |
 | `variables` | json | yes | null | Array of variable definitions |
 | `variable_count` | int | yes | null | Number of `{{N}}` variables detected in body |
 | `variable_placeholder` | json | yes | null | JSON mapping variable numbers to types, labels, examples |
@@ -86,3 +87,4 @@ DRAFT → (submit) → PENDING → (Meta approval) → APPROVED
 - `2026_02_18_113630` — Added `variable_placeholder`
 - `2026_02_25_064553` — Added `deleted_at` (soft deletes)
 - `2026_03_31_175200` — Added unique constraint on `name` + `gym_id`
+- `2026_09_08_000001` — Added `language` column (default `en_US`)

@@ -73,12 +73,19 @@ PENDING → SENDING → SENT → DELIVERED
             FAILED (with failure_reason)
 ```
 
-### 6. Provider Resolution
+### 6. Failure Classification & Transient Retry
 
-Each chunk job resolves the provider for the gym via `WhatsAppProviderFactory::create()`. This means:
-- Different gyms in the same queue can use different providers
-- Provider changes take effect on the next broadcast
-- System messages (e.g., low credit notifications) always use Twilio
+Transient errors (e.g. rate limits, HTTP 429, timeouts, network disconnections) vs. permanent errors (e.g. invalid phone number, opt-out, unapproved template) are classified by `WhatsAppFailureClassifier`.
+- **Transient failures**: Caught and retried with backoff.
+- **Permanent failures**: Recorded immediately as `FAILED` on the recipient without blocking the remainder of the chunk.
+
+### 7. Automatic Credit Refund Pipeline
+
+If a broadcast encounters failed recipients or is cancelled mid-flight:
+1. `credits_deducted_upfront` tracks whether initial full quota was deducted.
+2. At completion or on cancellation, `WhatsAppBroadcastService` / `SendBroadcastJob` calculates total unspent or failed message credits.
+3. A refund transaction (`WhatsAppCreditTransaction`) is logged and credits are restored to `whatsapp_message_credits`.
+4. `refunded_credits` and `refunded_at` timestamps are persisted on the `whatsapp_broadcasts` record.
 
 ## Flow Diagram
 
@@ -92,23 +99,31 @@ WhatsAppBroadcastService::dispatchBroadcast()
 SendBroadcastJob (queued)
     │
     ├── Load broadcast, template, gym
-    ├── Deduct credits (upfront)
-    ├── Create Bus batch
+    ├── Deduct credits upfront (`credits_deducted_upfront = true`)
+    ├── Create Bus batch (`batch_id`)
     │
     └── For each chunk of recipients:
          │
-         ├── WhatsAppBroadcastChunkJob (queued)
+         ├── SendMessageChunkJob (queued)
          │    │
-         │    ├── Resolve provider (Twilio or Meta)
+         │    ├── Resolve messaging service provider (Twilio or Meta)
          │    ├── For each recipient:
-         │    │    ├── Resolve template variables
+         │    │    ├── Check marketing opt-in & snapshots
+         │    │    ├── Resolve template variables (WhatsAppVariableResolver)
          │    │    ├── Provider::sendTemplateMessage()
-         │    │    ├── Update recipient status
-         │    │    └── Update broadcast counters
+         │    │    ├── If failed: WhatsAppFailureClassifier classifies error
+         │    │    ├── Update recipient status & error details
+         │    │    └── Update broadcast counters (sent / failed)
          │    │
-         │    └── Mark broadcast as completed (if last chunk)
+         │    └── Batch completion hook
          │
-         └── (next chunk...)
+         └── Final Reconciliation & Refund:
+              ├── If failed_count > 0 or status == CANCELLED:
+              │    ├── Calculate refund amount (failed_count * cost_per_msg)
+              │    ├── Restore credits to WhatsAppMessageCredit
+              │    ├── Create WhatsAppCreditTransaction (REFUND)
+              │    └── Set refunded_credits and refunded_at
+              └── Mark status as COMPLETED
 ```
 
 ## Alternatives Considered
@@ -125,21 +140,21 @@ SendBroadcastJob (queued)
 
 ### Positive
 
-- Credit deduction upfront prevents overspending
-- Chunked processing handles large recipient lists without memory issues
+- Credit deduction upfront prevents overspending while automated refunding protects gym owners from losing credits on invalid recipients
+- Chunked processing (`SendMessageChunkJob`) handles large recipient lists without memory issues
 - Bus batches provide built-in progress tracking
+- Intelligent error classification via `WhatsAppFailureClassifier` prevents false alarm retries on permanent errors
 - Provider-agnostic — works with Twilio and Meta
-- Individual recipient status tracking for debugging
+- Individual recipient status tracking for auditing
 - Queue-based — non-blocking for the user
 
-### Negative / Trade-ups
+### Negative / Trade-offs
 
-- Credits are deducted before sending; if broadcast fails mid-way, partial refunds are needed
-- No real-time delivery webhooks — status is set at send time, not confirmed by provider
-- Chunk size tuning needed for optimal performance vs. memory trade-off
 - Bus batch overhead adds database writes
-- No retry mechanism for individual failed recipients within a broadcast
+- Chunk size tuning needed for optimal performance vs. memory trade-off
 
 ## Related Decisions
 
 - [ADR-005](./ADR-005-whatsapp-provider-abstraction.md) — Provider abstraction enables broadcast to work with both providers
+- [ADR-007](./ADR-007-database-migration-history.md) — Database migration history
+

@@ -296,4 +296,143 @@ class MetaMessagingServiceTest extends TestCase
         $responseData = is_array($result['data'] ?? null) ? $result['data'] : [];
         $this->assertEquals('delivered', $responseData['status'] ?? '');
     }
+
+    #[Test]
+    public function it_normalizes_bare_en_to_default_meta_locale_on_send_template_message(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+        $phoneNumberId = '1163624323508414';
+        $wabaId = '1057724660050086';
+
+        $account = WhatsAppAccount::query()->create([
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'meta_access_token' => 'EAABTESTTOKEN',
+            'provider_type' => WhatsAppProviderTypeEnum::WABA,
+            'status' => WhatsAppAccountStatusEnum::ACTIVE,
+        ]);
+
+        WhatsAppPhoneNumber::query()->create([
+            'whatsapp_account_id' => $account->id,
+            'waba_phone_number_id' => $phoneNumberId,
+            'phone_number' => '+918469290865',
+            'country_code' => 'IN',
+            'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+            'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
+        ]);
+
+        WhatsAppTemplate::query()->create([
+            'gym_id' => $gymId,
+            'name' => 'twilio_synced_template',
+            'display_name' => 'Twilio Synced Template',
+            'meta_template_id' => '1234567890',
+            'category' => TemplateCategoryEnum::UTILITY,
+            'body' => 'Hello member!',
+            'language' => 'en', // Bare Twilio language code
+            'status' => WhatsAppTemplateStatusEnum::APPROVED,
+        ]);
+
+        WhatsAppMessageCredit::query()->create([
+            'gym_id' => $gymId,
+            'total_credits' => 10,
+            'remaining_credits' => 10,
+            'used_credits' => 0,
+        ]);
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('post');
+        $expectation
+            ->with("/{$phoneNumberId}/messages", Mockery::on(function (array $payload) {
+                // Must normalize bare 'en' to 'en_US'
+                return data_get($payload, 'template.language.code') === 'en_US';
+            }))
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'messages' => [['id' => 'wamid.MSG_NORM_1']],
+                ],
+            ]);
+
+        $credits = new WhatsAppCreditService($gymId);
+        $service = new MetaMessagingService($context, $apiMock, $credits);
+
+        $result = $service->sendTemplateMessage('+919876543210', 'twilio_synced_template');
+
+        $this->assertTrue($result['success']);
+    }
+
+    #[Test]
+    public function it_preserves_explicit_meta_full_locale_on_send_template_message(): void
+    {
+        $gym = Gym::factory()->create();
+        $gymId = $gym->id;
+        $phoneNumberId = '1163624323508414';
+        $wabaId = '1057724660050086';
+
+        $account = WhatsAppAccount::query()->create([
+            'gym_id' => $gymId,
+            'waba_id' => $wabaId,
+            'meta_access_token' => 'EAABTESTTOKEN',
+            'provider_type' => WhatsAppProviderTypeEnum::WABA,
+            'status' => WhatsAppAccountStatusEnum::ACTIVE,
+        ]);
+
+        WhatsAppPhoneNumber::query()->create([
+            'whatsapp_account_id' => $account->id,
+            'waba_phone_number_id' => $phoneNumberId,
+            'phone_number' => '+918469290865',
+            'country_code' => 'IN',
+            'status' => WhatsAppPhoneNumberStatusEnum::ACTIVE,
+            'type' => WhatsAppPhoneNumberTypesEnum::BUSINESS,
+        ]);
+
+        WhatsAppTemplate::query()->create([
+            'gym_id' => $gymId,
+            'name' => 'spanish_template',
+            'display_name' => 'Spanish Template',
+            'meta_template_id' => '1234567890',
+            'category' => TemplateCategoryEnum::UTILITY,
+            'body' => 'Hola miembro!',
+            'language' => 'es_ES',
+            'status' => WhatsAppTemplateStatusEnum::APPROVED,
+        ]);
+
+        WhatsAppMessageCredit::query()->create([
+            'gym_id' => $gymId,
+            'total_credits' => 10,
+            'remaining_credits' => 10,
+            'used_credits' => 0,
+        ]);
+
+        $context = new MetaContext($gymId);
+        /** @var MetaApiClient&Mockery\MockInterface $apiMock */
+        $apiMock = Mockery::mock(MetaApiClient::class);
+
+        /** @var Expectation $expectation */
+        $expectation = $apiMock->shouldReceive('post');
+        $expectation
+            ->with("/{$phoneNumberId}/messages", Mockery::on(function (array $payload) {
+                return data_get($payload, 'template.language.code') === 'es_ES';
+            }))
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'messages' => [['id' => 'wamid.MSG_NORM_2']],
+                ],
+            ]);
+
+        $credits = new WhatsAppCreditService($gymId);
+        $service = new MetaMessagingService($context, $apiMock, $credits);
+
+        $result = $service->sendTemplateMessage('+919876543210', 'spanish_template');
+
+        $this->assertTrue($result['success']);
+    }
 }

@@ -1,7 +1,7 @@
 ---
 feature: WhatsApp Services, Controllers & Commands
 status: active
-last_updated: 2026-05-28
+last_updated: 2026-09-09
 related_docs:
   - whatsapp-overview.md
   - whatsapp-templates-fields.md
@@ -63,16 +63,26 @@ Resolves template variable placeholders to actual data from members, gyms, plans
 - Dates are formatted as `M j, Y`
 - Falls back to the placeholder's example value if source data is unavailable
 
+### TemplateFieldMapper
+
+**File:** `app/Services/WhatsApp/TemplateFieldMapper.php`
+
+Normalizes raw template payloads from different WhatsApp providers (Meta WABA and Twilio) into standardized template attributes for database storage and synchronization.
+
+**Key methods:**
+- `mapToTemplateFields(rawData, providerType)` — Normalizes provider-specific template structures into a unified dictionary containing `name`, `display_name`, `body`, `category`, `language`, `status`, `provider_sid`, `variables`, `variable_count`, and `variable_placeholder`.
+- `sanitizeLanguage(lang, providerType)` — Static helper validating locale/language strings against ISO/BCP47 formats (`^[a-zA-Z]{2,3}(?:[_-][a-zA-Z0-9]{2,8})?$`). Returns fallback default (`MetaTemplateService::defaultTemplateLanguage()` / `en_US` for Meta or `TwilioTemplateService::TWILIO_DEFAULT_LANGUAGE` / `en` for Twilio) when null or invalid.
+
 ### WhatsAppTemplateService
 
 **File:** `app/Services/WhatsAppTemplateService.php`
 
-Handles template CRUD, default template creation, and (deprecated) Twilio template operations.
+Handles template CRUD, default template creation, multi-language configuration, and (deprecated) Twilio template operations.
 
 **Active methods:**
 - `createDefaultTemplates(gymId)` — Creates default templates for a gym from `WhatsAppTemplate::getDefaults()`
-- `createTemplate(gymId, CreateTemplateData)` — Creates template with auto-extracted variables from body
-- `updateTemplate(template, UpdateTemplateData)` — Updates template, re-extracts variables if body changed
+- `createTemplate(gymId, CreateTemplateData)` — Creates template with configured or default language (`MetaTemplateService::defaultTemplateLanguage()`) and auto-extracted variables from body
+- `updateTemplate(template, UpdateTemplateData)` — Updates template display name, body, category, or language (preserves existing language if omitted)
 - `softDeleteTemplate(template)` — Soft deletes template
 - `restoreTemplate(template)` — Restores soft-deleted template
 - `getApprovedTemplates(gymId)` — Returns approved, active templates sorted by display name
@@ -168,7 +178,53 @@ Minimal controller that injects `WhatsAppLeadProcessor`. Inherits parent `Contro
 
 ---
 
+### WhatsAppFailureClassifier
+
+**File:** `app/Helpers/WhatsAppFailureClassifier.php`
+
+Classifies delivery failures encountered during API interactions into actionable error categories:
+
+**Capabilities:**
+- `isConnectionException(Throwable $e)` — Identifies network dropouts, SSL timeouts, and curl connectivity errors (e.g., CURLE 6, 7, 28, 35, 55, 56)
+- `isTransientServerError(int $statusCode)` — Checks for HTTP 408, 500, 502, 503, 504, 524
+- `isRateLimitException(Throwable $e)` & `isRateLimitStatusCode(int $statusCode)` — Detects HTTP 429 throttling
+- `isRateLimitMessage(string $message)` & `isConnectionMessage(string $message)` — Evaluates regex matches on error messages
+
+---
+
+## Jobs & Queues
+
+### SendBroadcastJob
+
+**File:** `app/Jobs/SendBroadcastJob.php`
+
+Orchestrates the entire lifecycle of a broadcast campaign:
+1. Deducts required credits upfront (`credits_deducted_upfront = true`).
+2. Creates a Laravel Bus batch for real-time progress tracking.
+3. Chunks the recipient audience into discrete `SendMessageChunkJob` instances.
+4. On batch completion/cancellation, reconciles failed message counts and restores unspent credits via `WhatsAppCreditTransaction`.
+
+### SendMessageChunkJob
+
+**File:** `app/Jobs/SendMessageChunkJob.php`
+
+Processes an isolated chunk of recipients:
+1. Verifies member marketing opt-ins and archival status.
+2. Resolves template variables per recipient using `WhatsAppVariableResolver`.
+3. Calls the underlying messaging provider (`TwilioMessagingService` or `MetaWhatsAppProvider`).
+4. Catches exceptions and uses `WhatsAppFailureClassifier` to tag recipient errors.
+5. Updates individual recipient statuses (`SENT`, `DELIVERED`, `FAILED`).
+
+---
+
 ## Artisan Commands
+
+### ProcessScheduledBroadcastsCommand
+
+**File:** `app/Console/Commands/ProcessScheduledBroadcastsCommand.php`
+**Signature:** `whatsapp:process-scheduled-broadcasts`
+
+Runs via the Laravel scheduler to pick up broadcasts whose `scheduled_at` timestamp has arrived and dispatches them to the queue.
 
 ### WhatsAppMigrateToIndividualWaba
 
@@ -216,15 +272,23 @@ WhatsAppLeadProcessor
     ├── Creates Lead record
     └── Sends acknowledgment via WhatsApp API
 
+WhatsAppBroadcastService / ProcessScheduledBroadcastsCommand
+    │
+    ▼
+SendBroadcastJob (Batched)
+    │
+    ├── Upfront credit reservation
+    ├── Dispatches SendMessageChunkJob instances
+    │       ├── Uses WhatsAppVariableResolver
+    │       ├── Invokes MessagingInterface (Twilio / Meta)
+    │       └── Evaluates errors with WhatsAppFailureClassifier
+    └── Reconciliation: Refunds failed credits automatically
+
 WhatsAppMigrateToIndividualWaba (CLI)
     │
     ▼
 WabaMigrationService
     │
     └── Creates/starts migration records
-
-WhatsAppVariableResolver
-    │
-    ├── Used by WhatsAppBroadcastService (per-recipient resolution)
-    └── Uses GymMember relationships for data
 ```
+
