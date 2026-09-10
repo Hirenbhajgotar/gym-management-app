@@ -76,4 +76,15 @@ abstract class WhatsAppSetupTestCase extends BaseTestCase
 
         return $user;
     }
+
+    /**
+     * Seed session state for embedded signup tests.
+     */
+    protected function seedEmbeddedSignupSession(Gym $gym): void
+    {
+        $this->session([
+            'embedded_signup_tenant_id' => $gym->id,
+            'embedded_signup_tenant_slug' => $gym->slug,
+        ]);
+    }
 }

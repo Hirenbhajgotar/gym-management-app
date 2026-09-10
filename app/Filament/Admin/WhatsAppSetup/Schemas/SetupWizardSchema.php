@@ -29,7 +29,6 @@ class SetupWizardSchema
     /**
      * Billing Mode (WABA only)
      */
-    // public const WABA_BILLING_MODE_STEP = 3;
     public const WABA_BILLING_MODE_STEP = 2;
 
     /**

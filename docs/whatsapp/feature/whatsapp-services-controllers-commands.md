@@ -1,7 +1,7 @@
 ---
 feature: WhatsApp Services, Controllers & Commands
 status: active
-last_updated: 2026-09-09
+last_updated: 2026-09-10
 related_docs:
   - whatsapp-overview.md
   - whatsapp-templates-fields.md
@@ -151,7 +151,45 @@ Extends `SocialMediaLeadProcessor` to process WhatsApp Business API lead webhook
 
 ---
 
-## API Controllers
+## Web & API Controllers
+
+### EmbeddedSignupController
+
+**File:** `app/Http/Controllers/WhatsApp/EmbeddedSignupController.php`
+**Routes:**
+- `GET /whatsapp/embedded-signup/redirect/{tenant}` (`whatsapp.embedded-signup.redirect`)
+- `GET /whatsapp/embedded-signup/callback` (`whatsapp.embedded-signup.callback`)
+- `POST /whatsapp/embedded-signup/manual-connect/{tenant}` (`whatsapp.embedded-signup.manual-connect`)
+
+Handles Meta WhatsApp Business Account (WABA) Embedded Signup onboarding and manual WABA credentials connection:
+
+**Endpoints & Flow:**
+1. **Redirect (`redirect`)**:
+   - Authorizes tenant gym and user gym association (`abort_unless($user->gyms->contains('id', $gym->id), 403)`).
+   - Verifies Embedded Signup feature enablement.
+   - Sets session keys `embedded_signup_tenant_id` and `embedded_signup_tenant_slug`.
+   - Creates a `WabaSetupSession` (UUID state, 1-hour expiry).
+   - Generates Meta OAuth URL and redirects the gym admin.
+   - On tenant/config errors, redirects back to the wizard using slug: `?setup_step=whats-app-business`.
+
+2. **OAuth Callback (`callback`)**:
+   - Validates `code` and `state` parameters against session tenant IDs and `WabaSetupSession` status (prevents CSRF and cross-tenant state replay).
+   - Exchanges code for access token via `MetaApiClient` and debugs token to obtain `waba_id`.
+   - Provisions or updates `WhatsAppAccount` with WABA credentials within `DB::transaction` / `Cache::lock`.
+   - Initiates phone number synchronization (`MetaWabaService::syncWabaPhoneNumbers`).
+   - Dispatches `ImportWhatsAppTemplatesJob` in the background for automatic template synchronization.
+   - Redirects to `?setup_step=whats-app-business` with success flash message.
+
+3. **Manual Connect (`manualConnect`)**:
+   - Validates manual input (`waba_id`, `manual_phone_number`, `access_token`) via `ManualConnectRequest`.
+   - Verifies and connects WABA credentials using `MetaWabaService::connectManualWaba()`.
+   - Dispatches background `ImportWhatsAppTemplatesJob` for template onboarding.
+   - Redirects to `route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 'whats-app-business'])` with `templates_import_pending` flash flag.
+
+**Navigation Pattern:**
+- Decoupled from numeric step indices: all redirects explicitly target the semantic step slug `setup_step=whats-app-business`.
+
+---
 
 ### WhatsAppTemplateWebhookController
 

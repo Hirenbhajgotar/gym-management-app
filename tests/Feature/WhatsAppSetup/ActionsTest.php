@@ -68,7 +68,7 @@ class ActionsTest extends WhatsAppSetupTestCase
         $setupPage->call('startSetupAction');
         $setupPage->assertRedirectToRoute('filament.admin.pages.whats-app-setup', [
             'tenant' => $this->gym->slug,
-            'setup_step' => 2,
+            'setup_step' => 3,
         ]);
     }
 
