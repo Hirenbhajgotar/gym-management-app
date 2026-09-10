@@ -10,6 +10,7 @@ use App\Models\WhatsAppAccount;
 use App\Services\Meta\MetaApiClient;
 use App\Services\Meta\MetaContext;
 use App\Services\Meta\MetaTemplateService;
+use App\Models\WhatsAppTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
@@ -87,5 +88,21 @@ class MetaTemplateServiceTest extends TestCase
         $second = $service->getTemplates($gymId);
         $this->assertTrue($second->success);
         $this->assertTrue(Cache::has($key));
+    }
+
+    #[Test]
+    public function resolve_language_preserves_two_letter_and_full_locale_codes(): void
+    {
+        $tplEn = new WhatsAppTemplate(['language' => 'en']);
+        $this->assertSame('en', MetaTemplateService::resolveLanguage($tplEn));
+
+        $tplEnUs = new WhatsAppTemplate(['language' => 'en_US']);
+        $this->assertSame('en_US', MetaTemplateService::resolveLanguage($tplEnUs));
+
+        $tplHi = new WhatsAppTemplate(['language' => 'hi']);
+        $this->assertSame('hi', MetaTemplateService::resolveLanguage($tplHi));
+
+        $tplNull = new WhatsAppTemplate(['language' => null]);
+        $this->assertSame('en_US', MetaTemplateService::resolveLanguage($tplNull));
     }
 }

@@ -429,21 +429,12 @@ class MetaTemplateService implements TemplateManagementInterface
     /**
      * Resolve the Meta template language code.
      *
-     * Meta requires a supported language code (e.g. `en_US`, `en_GB`). A bare
-     * `en` is not universally accepted, so we default to the full locale.
+     * Delegates to TemplateFieldMapper::sanitizeLanguage to preserve ISO language
+     * codes (e.g. `en`, `hi`, `en_US`, `en_GB`) while falling back to default locale if invalid.
      */
     public static function resolveLanguage(?WhatsAppTemplate $template = null): string
     {
-        $lang = $template?->language;
-
-        if (is_string($lang) && $lang !== '') {
-            $trimmed = trim($lang);
-            if (preg_match('/^[a-zA-Z]{2,3}[_-][a-zA-Z0-9]{2,8}$/', $trimmed)) {
-                return $trimmed;
-            }
-        }
-
-        return self::defaultTemplateLanguage();
+        return TemplateFieldMapper::sanitizeLanguage($template?->language, WhatsAppProviderTypeEnum::WABA);
     }
 
     public static function defaultTemplateLanguage(): string
