@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Member Membership Freeze & Plan Extension Engine**:
+  - Introduced `MemberFreezeService` providing atomic freeze/unfreeze operations with optional membership expiration extension (`extend_membership`).
+  - Added gym-level configurable threshold settings (`min_freeze_days` default 7, `max_freeze_days` default 60) in `GymSettings`.
+  - Added automatic expiration date reconciliation on early, exact, or late unfreezes, capped by individual membership plan durations.
+  - Implemented automatic synchronization of latest non-expired `MemberPayment` records using `updateQuietly()` to preserve report cache integrity.
+  - Added row locking (`lockForUpdate()`) for concurrency safety and full activity audit logging on both freeze and unfreeze events.
+  - Enhanced `CheckMembershipExpiry` command (`gym:check-membership-expiry`) with `--dry-run` preview capability and automated unfreezing for expired freeze periods.
+  - Enhanced `GymMemberResource` table action `toggle_freeze` with duration options, plan extension toggle, role-based authorization gates (`SUPER_ADMIN`, `ADMIN`, `GYM_OWNER`, `MANAGER`, `RECEPTIONIST`), and contextual notifications.
+  - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
+
 ### Changed
 - **Meta WABA Template Language Resolution**: Refactored `MetaTemplateService::resolveLanguage()` to delegate directly to `TemplateFieldMapper::sanitizeLanguage()`, preserving both 2-letter ISO language codes (e.g. `en`, `hi`, `es`) and full locale codes (`en_US`, `en_GB`) for WABA templates.
 - **WhatsApp Setup Wizard Step Alignment & Slug Redirection**: Updated `EmbeddedSignupController` redirects (for OAuth callbacks, manual connection, and error states) to use semantic step slugs (`?setup_step=whats-app-business`) instead of hardcoded numeric step indices, decoupling controller navigation from wizard step renumbering.

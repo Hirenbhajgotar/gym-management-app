@@ -96,9 +96,7 @@ class GymSettings extends BasePage implements HasActions, HasForms
             Tabs::make('Settings')
                 ->tabs([
                     $this->getNotificationTab(),
-                    // $this->getWhatsAppTab(),
-                    // $this->getMembershipTab(),
-                    // $this->getAttendanceTab(),
+                    $this->getMembershipTab(),
                 ])
                 ->columnSpanFull()
                 ->persistTab()
@@ -264,6 +262,30 @@ class GymSettings extends BasePage implements HasActions, HasForms
                         )
                             ->label('Require Active Membership for Attendance')
                             ->default(true),
+                    ])
+                    ->columns(2),
+
+                Section::make('Freeze Extension Settings')
+                    ->description('Configure minimum and maximum days for member freeze plan extensions.')
+                    ->schema([
+                        TextInput::make('min_freeze_days')
+                            ->label('Minimum Freeze Days for Extension')
+                            ->numeric()
+                            ->minValue(1)
+                            ->rules(['lte:max_freeze_days'])
+                            ->default(7)
+                            ->placeholder('7')
+                            ->helperText('Minimum days a member must freeze to qualify for membership plan extension.'),
+
+                        TextInput::make('max_freeze_days')
+                            ->label('Maximum Freeze Extension Days')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(365)
+                            ->rules(['gte:min_freeze_days'])
+                            ->default(60)
+                            ->placeholder('60')
+                            ->helperText('Maximum total days of plan extension allowed per freeze session.'),
                     ])
                     ->columns(2),
 

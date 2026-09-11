@@ -53,7 +53,10 @@ Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');
 Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
 // Check for expired memberships daily
-Schedule::command('gym:check-membership-expiry')->daily();
+Schedule::command('gym:check-membership-expiry')
+    ->daily()
+    ->withoutOverlapping(60)
+    ->onOneServer();
 
 // Reconcile completed subscription payments that were never provisioned
 // (e.g. webhook listener failed, queue down). Catches orphans quickly.
