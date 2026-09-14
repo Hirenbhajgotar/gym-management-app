@@ -34,9 +34,11 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $features_count
  *
  * @method static Builder<static>|Plan active()
+ * @method static Builder<static>|Plan enterprise()
  * @method static Builder<static>|Plan newModelQuery()
  * @method static Builder<static>|Plan newQuery()
  * @method static Builder<static>|Plan query()
+ * @method static Builder<static>|Plan standard()
  * @method static Builder<static>|Plan trial()
  * @method static Builder<static>|Plan whereBadge($value)
  * @method static Builder<static>|Plan whereBriefDescription($value)
@@ -63,6 +65,8 @@ class Plan extends Model
     public const NAVIGATION_BADGE_CACHE_KEY = 'plan_navigation_badge_count';
 
     public const ALL_PLANS_FOR_HOME_CACHE_KEY = 'all_plans_for_home';
+
+    public const ALL_ENTERPRISE_PLANS_FOR_HOME_CACHE_KEY = 'all_enterprise_plans_for_home';
 
     public const PROFILE_ALL_PLANS_CACHE_KEY = 'profile_all_plans';
 
@@ -101,17 +105,40 @@ class Plan extends Model
 
     /**
      * Scope for active plans
+     *
+     * @param  Builder<Plan>  $query
      */
     #[Scope]
-    protected function active(Builder $query): Builder
+    protected function active(Builder $query): void
     {
-        return $query->where('is_active', true);
+        $query->where('is_active', true);
     }
 
+    /**
+     * @param  Builder<Plan>  $query
+     */
     #[Scope]
-    protected function trial(Builder $query): Builder
+    protected function trial(Builder $query): void
     {
-        return $query->where('trial_days', '>', 0);
+        $query->where('trial_days', '>', 0);
+    }
+
+    /**
+     * @param  Builder<Plan>  $query
+     */
+    #[Scope]
+    protected function enterprise(Builder $query): void
+    {
+        $query->where('is_enterprise', true);
+    }
+
+    /**
+     * @param  Builder<Plan>  $query
+     */
+    #[Scope]
+    protected function standard(Builder $query): void
+    {
+        $query->where('is_enterprise', false);
     }
 
     /**

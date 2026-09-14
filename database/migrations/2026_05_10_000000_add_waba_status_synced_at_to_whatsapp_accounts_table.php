@@ -10,12 +10,14 @@ return new class() extends Migration
 {
     public function up(): void
     {
-        Schema::table('whatsapp_accounts', function (Blueprint $table) {
-            $table->timestamp('waba_status_synced_at')
-                ->nullable()
-                ->after('verification_status')
-                ->comment('Tracks when WABA status was last synced from Meta API');
-        });
+        if (! Schema::hasColumn('whatsapp_accounts', 'waba_status_synced_at')) {
+            Schema::table('whatsapp_accounts', function (Blueprint $table) {
+                $table->timestamp('waba_status_synced_at')
+                    ->nullable()
+                    ->after('verification_status')
+                    ->comment('Tracks when WABA status was last synced from Meta API');
+            });
+        }
     }
 
     public function down(): void

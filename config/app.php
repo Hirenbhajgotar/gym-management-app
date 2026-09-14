@@ -101,7 +101,10 @@ return [
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
-        ...array_filter(explode(',', env('APP_PREVIOUS_KEYS', ''))),
+        ...array_filter(
+            explode(',', is_string($keys = env('APP_PREVIOUS_KEYS')) ? $keys : ''),
+            fn (string $key): bool => $key !== '',
+        ),
     ],
 
     /*
@@ -129,6 +132,7 @@ return [
 
     'contact_email' => env('CONTACT_EMAIL', 'contact.fluxfitness@gmail.com'),
     'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
+    'contact_whatsapp' => env('CONTACT_WHATSAPP', '918469290865'),
     'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
     'backup_mail_to' => env('BACKUP_MAIL_TO', 'example@fluxfitness.com'),
     'meta_verification_link' => env('META_VERIFICATION_LINK', 'https://business.facebook.com/settings/verification/'),

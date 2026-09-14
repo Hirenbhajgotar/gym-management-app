@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Public Landing Page Redesign & Instant Callback Hub**:
+  - Re-architected public homepage (`HomeController` / `home-controller.blade.php`), navigation (`navbar.blade.php`), and footer (`footer.blade.php`) with modern SaaS styling, interactive feature showcases, ROI calculator, and FAQ sections.
+  - Introduced `RequestCallbackAction` and `HomeController::requestCallback()` enabling instant lead capture with E.164 phone normalization, rate limiting (3 requests/hour per IP), and 15-minute idempotency deduplication into `RequestContact`.
+  - Added `contact_whatsapp` config parameter in `config/app.php` (`CONTACT_WHATSAPP` env var) for direct WhatsApp customer support link resolution.
+  - Added `Enterprise & Franchise` tier definition to `PlanSeeder`.
+  - Added dedicated unit and feature test coverage in `RequestCallbackActionTest` and `HomeControllerTest`.
 - **Member Membership Freeze & Plan Extension Engine**:
   - Introduced `MemberFreezeService` providing atomic freeze/unfreeze operations with optional membership expiration extension (`extend_membership`).
   - Added gym-level configurable threshold settings (`min_freeze_days` default 7, `max_freeze_days` default 60) in `GymSettings`.
@@ -20,12 +26,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
 
 ### Changed
+- **Plan Pricing Caching & Model Touch Invalidation**:
+  - Refactored `HomeController` to use Livewire `#[Computed(persist: true)]` for `plans` and `enterprisePlans` with isolated cache keys (`Plan::ALL_PLANS_FOR_HOME_CACHE_KEY`, `Plan::ALL_ENTERPRISE_PLANS_FOR_HOME_CACHE_KEY`).
+  - Added `$touches = ['plan']` and `plan()` relationship to `PlanFeature` model to cascade timestamp updates and trigger `PlanObserver::clearCache()` on feature mutations.
+  - Added `standard()` and `enterprise()` query scopes and modernized scope method signatures to `void` on `Plan` model.
+- **Reverse Proxy & Header Trust Configuration**:
+  - Configured `$middleware->trustProxies()` in `bootstrap/app.php` across RFC1918 private subnets and loopback addresses to accurately resolve client IP (`Request::getClientIp()`) and protocols behind Nginx/Docker.
+  - Added `/health` proxy location block in `nginx.conf`.
 - **Meta WABA Template Language Resolution**: Refactored `MetaTemplateService::resolveLanguage()` to delegate directly to `TemplateFieldMapper::sanitizeLanguage()`, preserving both 2-letter ISO language codes (e.g. `en`, `hi`, `es`) and full locale codes (`en_US`, `en_GB`) for WABA templates.
 - **WhatsApp Setup Wizard Step Alignment & Slug Redirection**: Updated `EmbeddedSignupController` redirects (for OAuth callbacks, manual connection, and error states) to use semantic step slugs (`?setup_step=whats-app-business`) instead of hardcoded numeric step indices, decoupling controller navigation from wizard step renumbering.
 - **WABA Wizard Step Schema Alignment**: Aligned `SetupWizardSchema` step constants and `HasSetupState` state machine accessibility checks so that WABA Billing Mode is Step 2 (`WABA_BILLING_MODE_STEP = 2`) and WABA Account Connection is Step 3 (`WABA_ACCOUNT_STEP = 3`), removing deprecated dead constants.
 - **Embedded Signup Test Architecture**: Extracted `seedEmbeddedSignupSession()` helper to `WhatsAppSetupTestCase` to standardize session initialization across embedded signup controller tests.
 
 ### Fixed
+- **App Configuration & Migration Idempotency**:
+  - Hardened `APP_PREVIOUS_KEYS` array parsing in `config/app.php` to prevent type errors when environment variable is unset or empty.
+  - Added `Schema::hasColumn()` existence guard in `2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php` migration to prevent duplicate column addition errors on re-runs.
 - **Meta API Test Mocking**: Added comprehensive `Http::fake()` coverage for Meta Graph API token exchange, debug token, phone numbers, and WABA details in `EmbeddedSignupControllerTest`, preventing live network calls and asserting asynchronous `ImportWhatsAppTemplatesJob` dispatching and session flash flags on manual connect.
 - **WABA Language Resolution Test Coverage**: Added unit test coverage in `MetaTemplateServiceTest` verifying language resolution for 2-letter ISO codes (`en`, `hi`), full locale codes (`en_US`), and `null` fallbacks.
 - **Setup State Step Comments**: Corrected inverted step-number comments in `HasSetupState::determineSetupStep()` and `HasSetupState::isStepAccessible()`.
