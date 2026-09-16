@@ -133,6 +133,7 @@ return [
     'contact_email' => env('CONTACT_EMAIL', 'contact.fluxfitness@gmail.com'),
     'contact_phone' => env('CONTACT_PHONE', '+919265098227'),
     'contact_whatsapp' => env('CONTACT_WHATSAPP', '918469290865'),
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
     'system_tenant_id' => env('SYSTEM_TENANT_ID', 'system'),
     'backup_mail_to' => env('BACKUP_MAIL_TO', 'example@fluxfitness.com'),
     'meta_verification_link' => env('META_VERIFICATION_LINK', 'https://business.facebook.com/settings/verification/'),

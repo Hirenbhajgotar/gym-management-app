@@ -42,14 +42,20 @@ $app = Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(
-            at: [
+        /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
+        $trustedProxies = env('TRUSTED_PROXIES');
+        $proxies = is_string($trustedProxies) && $trustedProxies !== '' && $trustedProxies !== '*'
+            ? array_values(array_filter(array_map('trim', explode(',', $trustedProxies)), static fn (string $ip): bool => $ip !== ''))
+            : [
                 '127.0.0.1',
                 '::1',
                 '10.0.0.0/8',
                 '172.16.0.0/12',
                 '192.168.0.0/16',
-            ],
+            ];
+
+        $middleware->trustProxies(
+            at: $proxies,
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO
         );
 

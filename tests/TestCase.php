@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,8 @@ abstract class TestCase extends BaseTestCase
         putenv('DB_DATABASE=gym_app_test');
         $_ENV['DB_DATABASE'] = 'gym_app_test';
         $_SERVER['DB_DATABASE'] = 'gym_app_test';
+
+        RefreshDatabaseState::$migrated = true;
 
         parent::setUp();
 

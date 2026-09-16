@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Request Demo Hub & High-Converting Landing Architecture**:
+  - Dedicated configuration file `config/request-demo.php` encapsulating rate limiting rules (`REQUEST_DEMO_RATE_LIMIT_MAX`, `REQUEST_DEMO_RATE_LIMIT_DECAY`), notification overrides (`REQUEST_DEMO_FORCE_CONTACT_EMAIL`), DNS validation caching/TTL (`REQUEST_DEMO_DNS_CHECK_ENABLED`, `REQUEST_DEMO_DNS_CACHE_TTL`), dynamic WhatsApp messages, operator case study testimonials, and objection-handling FAQs.
+  - Re-engineered `/request-demo` page (`request-demo.blade.php`) featuring a dark-themed SaaS layout, 20-minute walkthrough agenda breakdown, real-time phone and email validation, verified gym case study metrics, Alpine.js interactive FAQ accordion, and direct WhatsApp support CTA (`https://wa.me/...`).
+  - Modernized `RequestDemo` Livewire component with typed properties, `whatsAppUrl` computed property, `resetForm()` lifecycle state reset, and isolated testimonial/FAQ retrieval methods.
+  - Added dedicated test suite in `tests/Feature/HomeControllerTest.php` for isolated home controller rendering verification.
 - **Public Landing Page Redesign & Instant Callback Hub**:
   - Re-architected public homepage (`HomeController` / `home-controller.blade.php`), navigation (`navbar.blade.php`), and footer (`footer.blade.php`) with modern SaaS styling, interactive feature showcases, ROI calculator, and FAQ sections.
   - Introduced `RequestCallbackAction` and `HomeController::requestCallback()` enabling instant lead capture with E.164 phone normalization, rate limiting (3 requests/hour per IP), and 15-minute idempotency deduplication into `RequestContact`.
@@ -26,6 +31,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
 
 ### Changed
+- **Request Demo Resilience & Validation Hardening**:
+  - Enhanced `ValidEmailDomain` rule with cached DNS lookups (`checkdnsrr` for MX or A records), configurable TTL, fail-open network exception handling, and a testable static closure resolver seam (`ValidEmailDomain::$resolver`).
+  - Hardened `RequestDemoNotification` with queued retries (`$tries = 3`), exponential `$backoff = [60, 300, 900]`, constructor property promotion, and structured error logging on permanent dispatch failure.
+  - Added `throttle:60,1` rate-limiting middleware to `/request-demo` route in `routes/web.php`.
+  - Updated `bootstrap/app.php` reverse proxy configuration to dynamically parse `TRUSTED_PROXIES` environment variable (supporting wildcard `*`, comma-separated IP lists, and fallback to RFC1918 subnets).
+  - Explicitly configured `APP_ENV=testing` in `phpunit.xml`.
 - **Plan Pricing Caching & Model Touch Invalidation**:
   - Refactored `HomeController` to use Livewire `#[Computed(persist: true)]` for `plans` and `enterprisePlans` with isolated cache keys (`Plan::ALL_PLANS_FOR_HOME_CACHE_KEY`, `Plan::ALL_ENTERPRISE_PLANS_FOR_HOME_CACHE_KEY`).
   - Added `$touches = ['plan']` and `plan()` relationship to `PlanFeature` model to cascade timestamp updates and trigger `PlanObserver::clearCache()` on feature mutations.
@@ -39,6 +50,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Embedded Signup Test Architecture**: Extracted `seedEmbeddedSignupSession()` helper to `WhatsAppSetupTestCase` to standardize session initialization across embedded signup controller tests.
 
 ### Fixed
+- **Request Demo Error Handling & Test Reliability**:
+  - Updated `RequestDemo::submitRequest()` to rethrow `ValidationException` for native Livewire form error bag handling while logging unexpected runtime exceptions.
+  - Refactored `RequestDemoTest` to verify DNS resolution pass/fail, rate limiter counting on both valid and invalid attempts, queued admin notifications, form reset state, and WhatsApp URL generation.
 - **App Configuration & Migration Idempotency**:
   - Hardened `APP_PREVIOUS_KEYS` array parsing in `config/app.php` to prevent type errors when environment variable is unset or empty.
   - Added `Schema::hasColumn()` existence guard in `2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php` migration to prevent duplicate column addition errors on re-runs.
