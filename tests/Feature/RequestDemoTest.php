@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\PaymentStatus;
+use App\Helpers\Number;
 use App\Livewire\Frontend\RequestDemo;
 use App\Models\Gym;
 use App\Models\MemberPayment;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\MessageBag;
 use Illuminate\Testing\PendingCommand;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -32,6 +34,7 @@ use Tests\TestCase;
 #[UsesClass(RequestDemoNotification::class)]
 #[UsesClass(Gym::class)]
 #[UsesClass(MemberPayment::class)]
+#[UsesClass(Number::class)]
 final class RequestDemoTest extends TestCase
 {
     use RefreshDatabase;
@@ -391,7 +394,7 @@ final class RequestDemoTest extends TestCase
             ->call('submitRequest');
 
         $blocked->assertHasErrors(['rate_limit']);
-        /** @var \Illuminate\Support\MessageBag $errors */
+        /** @var MessageBag $errors */
         $errors = $blocked->errors();
         $this->assertStringContainsString('Too many requests. Please try again in', $errors->first('rate_limit'));
 
@@ -571,8 +574,6 @@ final class RequestDemoTest extends TestCase
         $recent = RequestContact::factory()->create(['created_at' => now()->subDays(10)]);
         $old = RequestContact::factory()->create(['created_at' => now()->subDays(200)]);
 
-        // $this->artisan('model:prune', ['--model' => [RequestContact::class]])
-        //     ->assertSuccessful();
         $this->runCommand('model:prune', ['--model' => [RequestContact::class]])->assertSuccessful();
 
         $this->assertDatabaseHas('request_contacts', ['id' => $recent->id]);
@@ -615,7 +616,8 @@ final class RequestDemoTest extends TestCase
 
         $component = Livewire::test(RequestDemo::class);
 
-        $this->assertSame('3+', $component->get('activeGymsCount'));
+        $expectedGymsCount = Gym::query()->count() . '+';
+        $this->assertSame($expectedGymsCount, $component->get('activeGymsCount'));
         $this->assertSame('₹5 Lakh+', $component->get('monthlyDuesProcessed'));
     }
 

@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -166,7 +165,22 @@ class GymMember extends Model
     /**
      * Get the attributes that should be cast.
      *
-     * @return array<string, string>
+     * @return array{
+     *     dob: 'date',
+     *     membership_start: 'date',
+     *     membership_end: 'date',
+     *     age: 'integer',
+     *     latest_payment_at: 'date',
+     *     payment_status: 'App\Enums\PaymentStatus',
+     *     is_frozen: 'boolean',
+     *     frozen_at: 'datetime',
+     *     frozen_until: 'datetime',
+     *     extend_membership: 'boolean',
+     *     is_archived: 'boolean',
+     *     archived_at: 'datetime',
+     *     allow_whatsapp_marketing: 'boolean',
+     *     whatsapp_marketing_snapshot: 'boolean',
+     * }
      */
     protected function casts(): array
     {
@@ -202,8 +216,7 @@ class GymMember extends Model
 
                 if ($plan && $plan->duration) {
                     $membershipEndDate = Date::parse($member->membership_start)
-                        ->addMonths($plan->duration)
-                        ->toDateString();
+                        ->addMonths($plan->duration);
 
                     if (! $member->isDirty('membership_end')) {
                         $member->membership_end = $membershipEndDate;
@@ -558,6 +571,10 @@ class GymMember extends Model
 
     public function notifyExpiry(int $daysLeft): void
     {
+        if (! $this->membership_end) {
+            return;
+        }
+
         $this->notify(new MembershipExpiryNotification(
             member: $this,
             expiresAt: $this->membership_end,
@@ -584,6 +601,9 @@ class GymMember extends Model
 
     /**
      * Check if member is currently frozen
+     * Member is considered actively frozen if:
+     * 1. is_frozen is true AND
+     * 2. (frozen_until is null [manual freeze] OR frozen_until is in the future)
      */
     public function isFrozen(): bool
     {
@@ -635,6 +655,35 @@ class GymMember extends Model
     }
 
     /**
+     * Accessor to get the member's active membership plan.
+     * If no active plan, return null.
+     */
+    public function getActiveMembershipPlan(): ?MembershipPlan
+    {
+        $membershipEnd = $this->membership_end;
+        /** @var Carbon|null $membershipEnd */
+        if ($membershipEnd && $membershipEnd->isFuture()) {
+            return $this->membershipPlan;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the member has outstanding payments.
+     */
+    public function hasOutstandingPayments(): bool
+    {
+        $latestPayment = $this->latestPayment;
+        /** @var MemberPayment|null $latestPayment */
+        if ($latestPayment && $latestPayment->status === PaymentStatus::PENDING) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Load payments with their transactions once per request, whether
      * accessed via total_payments_amount, outstanding_balance, or both.
      *
@@ -658,11 +707,15 @@ class GymMember extends Model
         );
     }
 
-    /** @return Attribute<float, never> */
+    /**
+     * Outstanding balance attribute: (Sum of plan amounts) - (Sum of paid amounts).
+     *
+     * @return Attribute<float, never>
+     */
     protected function outstandingBalance(): Attribute
     {
         return Attribute::make(
-            get: function () {
+            get: function (): float {
                 $payments = $this->loadPaymentsWithTransactions();
 
                 $totalPlans = $payments->sum(fn (MemberPayment $payment): float => (float) $payment->amount);

@@ -41,7 +41,7 @@ final class ValidEmailDomainTest extends TestCase
             $failMessage = $message;
 
             /** @var Translator $translator */
-            $translator = app('translator');
+            $translator = resolve('translator');
 
             return new PotentiallyTranslatedString($message, $translator);
         };

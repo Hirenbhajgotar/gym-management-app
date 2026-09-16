@@ -47,15 +47,17 @@ class MemberFreezeService
             $member->is_frozen = true;
             $member->frozen_at = now();
             $member->frozen_reason = $reason;
-            $member->frozen_by = $frozenById;
+            $member->frozen_by = $frozenById !== null && $frozenById >= 0 ? $frozenById : null;
             $member->extend_membership = $extendMembership;
 
             if ($days !== null && $days > 0) {
                 $member->frozen_until = now()->addDays($days);
 
                 if ($extendMembership && $member->membership_end) {
-                    $minFreezeDays = (int) ($member->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS) ?? GymMember::DEFAULT_MIN_FREEZE_DAYS);
-                    $maxSetting = (int) ($member->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS) ?? GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                    $minSetting = $member->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS);
+                    $minFreezeDays = is_numeric($minSetting) ? (int) $minSetting : GymMember::DEFAULT_MIN_FREEZE_DAYS;
+                    $maxSettingVal = $member->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                    $maxSetting = is_numeric($maxSettingVal) ? (int) $maxSettingVal : GymMember::DEFAULT_MAX_FREEZE_DAYS;
                     $maxFreezeDays = $this->getMaxFreezeExtensionDays($member, $maxSetting);
 
                     if ($days >= $minFreezeDays) {
@@ -73,7 +75,7 @@ class MemberFreezeService
             if ($frozenById && function_exists('activity')) {
                 activity('gym_member')
                     ->performedOn($member)
-                    ->causedBy(User::find($frozenById))
+                    ->causedBy(User::query()->find($frozenById))
                     ->withProperties([
                         'actor_id' => $frozenById,
                         'days' => $days,
@@ -122,11 +124,13 @@ class MemberFreezeService
             $oldMembershipEnd = $member->membership_end?->copy();
 
             if ($member->extend_membership && $member->frozen_at !== null) {
-                $minFreezeDays = (int) ($member->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS) ?? GymMember::DEFAULT_MIN_FREEZE_DAYS);
-                $maxSetting = (int) ($member->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS) ?? GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                $minSetting = $member->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS);
+                $minFreezeDays = is_numeric($minSetting) ? (int) $minSetting : GymMember::DEFAULT_MIN_FREEZE_DAYS;
+                $maxSettingVal = $member->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                $maxSetting = is_numeric($maxSettingVal) ? (int) $maxSettingVal : GymMember::DEFAULT_MAX_FREEZE_DAYS;
                 $maxFreezeDays = $this->getMaxFreezeExtensionDays($member, $maxSetting);
 
-                $actualDaysFrozen = (int) max(0, (int) ceil($member->frozen_at->diffInDays(now())));
+                $actualDaysFrozen = max(0, (int) ceil($member->frozen_at->diffInDays(now())));
 
                 if ($member->frozen_until === null) {
                     // Manual freeze: apply extension if actualDays >= min
@@ -136,7 +140,7 @@ class MemberFreezeService
                     }
                 } else {
                     // Fixed freeze: adjust pre-extended days based on actual frozen days (handles early, exact, and late unfreeze)
-                    $preExtendedDays = (int) max(0, (int) ceil($member->frozen_at->diffInDays($member->frozen_until)));
+                    $preExtendedDays = max(0, (int) ceil($member->frozen_at->diffInDays($member->frozen_until)));
                     $preExtendedEffective = $preExtendedDays >= $minFreezeDays ? min($preExtendedDays, $maxFreezeDays) : 0;
                     $actualEffective = $actualDaysFrozen >= $minFreezeDays ? min($actualDaysFrozen, $maxFreezeDays) : 0;
 
@@ -158,7 +162,7 @@ class MemberFreezeService
             if ($unfrozenById && function_exists('activity')) {
                 activity('gym_member')
                     ->performedOn($member)
-                    ->causedBy(User::find($unfrozenById))
+                    ->causedBy(User::query()->find($unfrozenById))
                     ->withProperties([
                         'actor_id' => $unfrozenById,
                         'old_membership_end' => $oldMembershipEnd?->toDateString(),
@@ -206,7 +210,7 @@ class MemberFreezeService
 
         if ($member->membershipPlan && $member->membershipPlan->duration && $member->membershipPlan->duration > 0) {
             $now = now();
-            $planDays = (int) $now->diffInDays($now->copy()->addMonths((int) $member->membershipPlan->duration));
+            $planDays = (int) $now->diffInDays($now->copy()->addMonths($member->membershipPlan->duration));
 
             return min($maxSetting, $planDays);
         }
