@@ -190,6 +190,10 @@ class User extends Authenticatable implements FilamentUser, HasName, HasTenants,
 
     public function subscription(): ?Subscription
     {
+        if ($this->relationLoaded('activeSubscription')) {
+            return $this->activeSubscription;
+        }
+
         /** @var Subscription|null */
         return $this->activeSubscription()->first();
     }

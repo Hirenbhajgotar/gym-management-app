@@ -82,6 +82,11 @@ class Payment extends Model implements InvoiceablePayment
 
     public const PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY = 'profile_latest_payments_of_auth_user_';
 
+    public static function profileLatestPaymentsCacheKey(int|string|null $userId): string
+    {
+        return self::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . $userId;
+    }
+
     protected $fillable = [
         'user_id',
         'gym_id',

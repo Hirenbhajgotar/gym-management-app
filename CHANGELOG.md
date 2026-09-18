@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Frontend User Profile Hub & Modular Architecture**:
+  - Modularized the user profile view (`ProfileController` / `profile-controller.blade.php`) into 8 dedicated partial blade components: `_header.blade.php`, `_profile_card.blade.php`, `_subscription.blade.php`, `_plans.blade.php`, `_gyms.blade.php`, `_payments.blade.php`, `_qr_modal.blade.php`, and `_settings_modal.blade.php`.
+  - Added standalone high-resolution SVG QR code generation (`getCheckInQrCodeSvg()`, `getCheckoutQrCodeSvg()`) on `Gym` model using cached SVG generation (`QrGenerator`), decoupling QR rendering from Filament panel dependencies.
+  - Implemented timing-safe token verification methods `hasValidCheckInQrCodeToken()` and `hasValidCheckoutQrCodeToken()` on `Gym` model using `hash_equals()`.
+  - Added dedicated factory state helpers `withCheckInQrCodeToken()` and `withCheckoutQrCodeToken()` in `GymFactory`.
+  - Added comprehensive feature test suite in `tests/Feature/Frontend/ProfileTest.php` with 17 tests covering profile updates, password changes, checkout upgrades/renewals, invoice downloads, timing-safe QR verification, mass assignment guarding, and session management.
 - **Request Demo Hub & High-Converting Landing Architecture**:
   - Dedicated configuration file `config/request-demo.php` encapsulating rate limiting rules (`REQUEST_DEMO_RATE_LIMIT_MAX`, `REQUEST_DEMO_RATE_LIMIT_DECAY`), notification overrides (`REQUEST_DEMO_FORCE_CONTACT_EMAIL`), DNS validation caching/TTL (`REQUEST_DEMO_DNS_CHECK_ENABLED`, `REQUEST_DEMO_DNS_CACHE_TTL`), dynamic WhatsApp messages, operator case study testimonials, and objection-handling FAQs.
   - Re-engineered `/request-demo` page (`request-demo.blade.php`) featuring a dark-themed SaaS layout, 20-minute walkthrough agenda breakdown, real-time phone and email validation, verified gym case study metrics, Alpine.js interactive FAQ accordion, and direct WhatsApp support CTA (`https://wa.me/...`).
@@ -31,6 +37,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
 
 ### Changed
+- **Frontend User Profile Controller Modernization & Subscription Upgrades**:
+  - Re-engineered `ProfileController` with strict type hints, return types, PHPDoc blocks, and computed property caching.
+  - Added prorated plan upgrade checkout session handling (`CheckoutSession::TYPE_UPGRADE`) when `subscriptions.proration_enabled` is true.
+  - Added plan renewal checkout session support (`CheckoutSession::TYPE_RENEWAL`) resolving real-time active plan pricing.
+  - Added secure invoice download endpoint (`downloadInvoice()`) delegating to `InvoiceService` with user-scoped payment authorization.
+  - Optimized `User::subscription()` helper to reuse eager-loaded `activeSubscription` relation when available, eliminating redundant database queries.
+  - Introduced `Payment::profileLatestPaymentsCacheKey()` helper and updated `PaymentObserver::clearCache()` for authenticated user payment caching consistency.
+  - Registered `\Illuminate\Session\Middleware\AuthenticateSession` middleware in `bootstrap/app.php` to ensure session revocation across devices on password updates.
+  - Deprecated legacy profile layout `resources/views/frontend/layouts/profile.blade.php` to standardize on `x-frontend.layouts.app_new`.
+- **Gym Model Security Hardening**: Guarded sensitive QR code tokens (`qr_code_token`, `qr_code_checkout_token`) from mass assignment in `Gym` model.
 - **Request Demo Resilience & Validation Hardening**:
   - Enhanced `ValidEmailDomain` rule with cached DNS lookups (`checkdnsrr` for MX or A records), configurable TTL, fail-open network exception handling, and a testable static closure resolver seam (`ValidEmailDomain::$resolver`).
   - Hardened `RequestDemoNotification` with queued retries (`$tries = 3`), exponential `$backoff = [60, 300, 900]`, constructor property promotion, and structured error logging on permanent dispatch failure.

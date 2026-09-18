@@ -8,6 +8,7 @@ use App\Enums\DefaultRole;
 use App\Observers\GymObserver;
 use Database\Factories\GymFactory;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -19,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use LaraZeus\QrCode\Generator as QrGenerator;
 
 /**
  * @property int $id
@@ -81,14 +84,13 @@ use Illuminate\Support\Str;
  * @method static Builder<static>|Gym whereUpdatedAt($value)
  *
  * @mixin \Eloquent
- * @mixin IdeHelperGym
  */
 #[ObservedBy([GymObserver::class])]
 class Gym extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'logo', 'qr_code_token', 'qr_code_checkout_token'];
+    protected $fillable = ['name', 'slug', 'logo'];
 
     // =========================
     // Relationships
@@ -378,7 +380,28 @@ class Gym extends Model
      */
     public function hasValidCheckInQrCodeToken(string $token): bool
     {
-        return $this->qr_code_token === $token;
+        return is_string($this->qr_code_token) && $this->qr_code_token !== '' && hash_equals($this->qr_code_token, $token);
+    }
+
+    /**
+     * Get the SVG markup for the check-in QR code.
+     */
+    public function getCheckInQrCodeSvg(int $size = 240): ?string
+    {
+        if (blank($this->qr_code_token)) {
+            return null;
+        }
+
+        return Cache::remember("gym_checkin_qr_svg_{$this->id}_{$this->qr_code_token}_{$size}", now()->addDay(), function () use ($size): string {
+            $qr = (new QrGenerator())
+                ->size($size)
+                ->margin(1)
+                ->generate($this->getCheckInQrCodeUrl());
+
+            return $qr instanceof Htmlable
+                ? $qr->toHtml()
+                : (is_string($qr) ? $qr : '');
+        });
     }
 
     // =========================
@@ -416,6 +439,27 @@ class Gym extends Model
      */
     public function hasValidCheckoutQrCodeToken(string $token): bool
     {
-        return $this->qr_code_checkout_token === $token;
+        return is_string($this->qr_code_checkout_token) && $this->qr_code_checkout_token !== '' && hash_equals($this->qr_code_checkout_token, $token);
+    }
+
+    /**
+     * Get the SVG markup for the checkout QR code.
+     */
+    public function getCheckoutQrCodeSvg(int $size = 240): ?string
+    {
+        if (blank($this->qr_code_checkout_token)) {
+            return null;
+        }
+
+        return Cache::remember("gym_checkout_qr_svg_{$this->id}_{$this->qr_code_checkout_token}_{$size}", now()->addDay(), function () use ($size): string {
+            $qr = (new QrGenerator())
+                ->size($size)
+                ->margin(1)
+                ->generate($this->getCheckoutQrCodeUrl());
+
+            return $qr instanceof Htmlable
+                ? $qr->toHtml()
+                : (is_string($qr) ? $qr : '');
+        });
     }
 }

@@ -68,6 +68,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // ]);
 
         $middleware->web([
+            \Illuminate\Session\Middleware\AuthenticateSession::class,
             TeamsPermission::class, // Add custom middleware here
             ErrorContextMiddleware::class,
             ExportDownloadMiddleware::class,
