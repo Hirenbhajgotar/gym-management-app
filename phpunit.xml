@@ -19,6 +19,7 @@
     </source>
     <php>
         <ini name="memory_limit" value="512M"/>
+        <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_KEY" value="base64:w86hgQsrZ0dSMeE9vXS4QsQz2xaj60pDfcAHO7DLzc4="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

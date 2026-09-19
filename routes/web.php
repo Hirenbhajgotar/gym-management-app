@@ -34,7 +34,9 @@ Route::get('/blog/{slug}', BlogDetail::class)->name('blog.show');
 
 Route::get('/page/{slug}', CmsPageController::class)->name('cms.page');
 
-Route::get('/request-demo', RequestDemo::class)->name('request-demo');
+Route::get('/request-demo', RequestDemo::class)
+    ->middleware('throttle:60,1')
+    ->name('request-demo');
 
 Route::get('/profile', ProfileController::class)
     ->name('profile')

@@ -1,7 +1,7 @@
 ---
 feature: WhatsApp Filament Resources
 status: active
-last_updated: 2026-05-28
+last_updated: 2026-09-10
 related_docs:
   - whatsapp-overview.md
   - whatsapp-usage-logs-fields.md
@@ -11,15 +11,40 @@ related_docs:
   - whatsapp-templates-fields.md
 ---
 
-# WhatsApp Filament Resources
+# WhatsApp Filament Resources & Setup Wizard
 
 ## Overview
 
-The WhatsApp feature includes Filament Resources across both Admin and SuperAdmin panels for managing templates, usage logs, credit transactions, packages, and accounts.
+The WhatsApp feature includes Filament Resources and custom pages across both Admin and SuperAdmin panels for managing onboarding/setup wizards, templates, usage logs, credit transactions, packages, and accounts.
 
 ---
 
-## Admin Panel Resources
+## Admin Panel Pages & Resources
+
+### WhatsAppSetup Page (Setup Wizard)
+
+**File:** `app/Filament/Admin/Pages/WhatsAppSetup.php`
+**Schema:** `app/Filament/Admin/WhatsAppSetup/Schemas/SetupWizardSchema.php`
+**State Management:** `app/Filament/Admin/WhatsAppSetup/Concerns/HasSetupState.php`
+
+Multi-step onboarding wizard for connecting WhatsApp providers (Meta WABA or Twilio) and setting up templates/credits.
+
+**Step Structures by Provider:**
+
+| Step # | WABA Flow | Twilio Flow | URL Slug |
+|---|---|---|---|
+| **Step 1** | Provider Selection | Provider Selection | `provider-selection` |
+| **Step 2** | Billing Mode | Twilio Account | `billing-mode` (WABA) / `twilio-account` (Twilio) |
+| **Step 3** | WhatsApp Business (WABA) | Phone Number | `whats-app-business` (WABA) / `phone-number` (Twilio) |
+| **Step 4** | Templates (WABA) | Templates (Twilio) | `templates` |
+| **Step 5** | Welcome Credits (WABA) | Welcome Credits (Twilio) | `welcome-credits` |
+
+**State Engine & Navigation:**
+- `determineSetupStep()`: Evaluates tenant account status and provider configuration to automatically land the user on the next incomplete setup step.
+- `isStepAccessible($step)`: Restricts forward access to subsequent steps until prerequisite requirements (e.g. valid WABA connection and active account status for billing mode) are satisfied.
+- **Slug-Based Redirection**: External flows (e.g., Embedded Signup callbacks and error redirects) pass `setup_step=whats-app-business` rather than numeric indices, ensuring resilient navigation across wizard step schema modifications.
+
+---
 
 ### WhatsAppUsageLogResource
 

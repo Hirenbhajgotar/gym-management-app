@@ -132,6 +132,12 @@
     }
     </script>
 
+    <!-- Add required Google Fonts for the Kinetic Electric Lime design -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
     @stack('meta')
 
     <!-- Favicons -->
@@ -141,32 +147,32 @@
     <link rel="apple-touch-icon" href="{{ asset('fluxfitness-icon.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a3e 75%, #0f0f23 100%);
-        }
-
-        .feature-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .scroll-smooth {
-            scroll-behavior: smooth;
-        }
-    </style>
+    @fluxAppearance
 </head>
 
-<body class="gradient-bg text-white scroll-smooth">
+<body class="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary antialiased relative overflow-x-hidden min-h-screen">
+    <!-- Noise Texture Overlay -->
+    <div class="fixed inset-0 noise-overlay z-0"></div>
+
+    <!-- Ambient Glowing Backdrop Orbs -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="absolute top-[-10%] right-[-10%] w-[700px] h-[700px] bg-primary-container/10 blur-[140px] rounded-full animate-pulse"></div>
+        <div class="absolute top-[40%] left-[-15%] w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full animate-float"></div>
+        <div class="absolute bottom-[-10%] right-[10%] w-[650px] h-[650px] bg-primary-container/8 blur-[160px] rounded-full"></div>
+    </div>
+
     <!-- Navigation -->
     @include('frontend.layouts.navbar')
 
-    {{ $slot }}
+    <!-- Main Content -->
+    <main class="relative z-10">
+        {{ $slot }}
+    </main>
 
     <!-- Footer -->
     @include('frontend.layouts.footer')
+
+    @fluxScripts
 </body>
 
 </html>

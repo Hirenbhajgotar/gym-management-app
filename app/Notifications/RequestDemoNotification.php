@@ -9,20 +9,24 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class RequestDemoNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public RequestContact $requestContact;
+    public int $tries = 3;
+
+    /**
+     * @var array<int, int>
+     */
+    public array $backoff = [60, 300, 900];
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(RequestContact $requestContact)
-    {
-        $this->requestContact = $requestContact;
-    }
+    public function __construct(public RequestContact $requestContact) {}
 
     /**
      * Get the notification's delivery channels.
@@ -40,9 +44,10 @@ class RequestDemoNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $appName = config('app.name', 'Fluxfitness');
+        $safeName = str_replace(["\r", "\n"], '', $this->requestContact->name);
 
         return (new MailMessage())
-            ->subject('New Demo Request - ' . $this->requestContact->name)
+            ->subject('New Demo Request - ' . $safeName)
             ->greeting('Hello Admin,')
             ->line('You have received a new demo request.')
             ->line('')
@@ -51,26 +56,26 @@ class RequestDemoNotification extends Notification implements ShouldQueue
             ->line('• **Email:** ' . $this->requestContact->email)
             ->line('• **Phone:** ' . $this->requestContact->phone)
             ->lineIf(
-                $this->requestContact->company_name,
+                (bool) $this->requestContact->company_name,
                 '• **Company:** ' . $this->requestContact->company_name,
             )
             ->lineIf(
-                $this->requestContact->gym_size,
+                (bool) $this->requestContact->gym_size,
                 '• **Gym Size:** ' .
                     $this->requestContact->gym_size .
                     ' members',
             )
             ->line('')
-            ->lineIf($this->requestContact->message, '**Message:**')
+            ->lineIf((bool) $this->requestContact->message, '**Message:**')
             ->lineIf(
-                $this->requestContact->message,
-                $this->requestContact->message,
+                (bool) $this->requestContact->message,
+                (string) $this->requestContact->message,
             )
             ->line('')
             ->line('**Request Details:**')
             ->line(
                 '• **Submitted:** ' .
-                    $this->requestContact->created_at->format('M d, Y H:i A'),
+                    $this->requestContact->created_at?->format('M d, Y H:i A'),
             )
             ->line(
                 '• **IP Address:** ' .
@@ -92,9 +97,20 @@ class RequestDemoNotification extends Notification implements ShouldQueue
             'request_contact_id' => $this->requestContact->id,
             'name' => $this->requestContact->name,
             'email' => $this->requestContact->email,
-            'phone' => $this->requestContact->phone,
+            'phone' => (string) $this->requestContact->phone,
             'company_name' => $this->requestContact->company_name,
-            'created_at' => $this->requestContact->created_at->toISOString(),
+            'created_at' => $this->requestContact->created_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Handle a permanent job failure.
+     */
+    public function failed(?Throwable $exception): void
+    {
+        Log::error('RequestDemoNotification email dispatch failed permanently', [
+            'request_contact_id' => $this->requestContact->id,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 }

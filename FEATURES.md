@@ -29,6 +29,13 @@ A modern, multi-tenant **Gym Management & Operations Platform** built with **Lar
 
 ## 2. Member Management & Health Tracking
 * **Comprehensive Member Profiles**: Centralized records covering contact information, emergency contacts, medical history, joining dates, and membership status.
+* **Intelligent Membership Freeze & Expiry Extension Engine**:
+  * **Flexible Freeze Types**: Support for fixed-duration (date-based) and manual (indefinite) membership freezes.
+  * **Automated Expiration Extension (`extend_membership`)**: Automatically extends membership end date and synchronizes the active payment term date (`updateQuietly`) based on frozen duration.
+  * **Threshold & Plan Duration Safeguards**: Governed by gym-level settings (`min_freeze_days`, `max_freeze_days`) and capped by the member's plan duration to prevent monetization leakage.
+  * **Dynamic Proration & Early/Late Reconciliation**: Recalculates granted extensions in real time upon early return or late unfreeze.
+  * **Automated Expiry Checks & Simulation**: Daily automated scheduler (`gym:check-membership-expiry`) to auto-unfreeze expired freezes, with `--dry-run` simulation support.
+  * **Audit Trail & Concurrency Protection**: High-concurrency row locking (`lockForUpdate`), activity logging (`gym_member`), and queued transactional email notifications (`MemberFrozenNotification`).
 * **Body Measurements & Progress History**: Log and monitor metrics over time (weight, body fat percentage, chest, waist, hips, biceps) with visual progress charts.
 * **Membership Lifecycle Management**: Track statuses across *Active*, *Expiring Soon*, *Expired*, *Frozen*, and *Cancelled*.
 * **Member Notes & Interaction History**: Timeline of communications, plan upgrades, trainer interactions, and check-ins.

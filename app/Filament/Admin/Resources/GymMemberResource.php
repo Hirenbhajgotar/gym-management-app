@@ -22,6 +22,7 @@ use App\Models\Trainer;
 use App\Rules\ValidEmailDomain;
 use Closure;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Component as ComponentsComponent;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -267,6 +268,7 @@ class GymMemberResource extends BaseResource
                 IconColumn::make('is_frozen')
                     ->label('Frozen')
                     ->boolean()
+                    ->getStateUsing(fn (GymMember $record): bool => $record->isFrozen())
                     ->trueIcon('phosphor-prohibit')
                     ->falseIcon('heroicon-o-play')
                     ->trueColor('warning')
@@ -278,7 +280,7 @@ class GymMemberResource extends BaseResource
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
-                    ->visible(fn ($record) => $record?->is_frozen ?? true)
+                    ->visible(fn ($record) => $record?->isFrozen() ?? true)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('allow_whatsapp_marketing')
@@ -438,11 +440,19 @@ class GymMemberResource extends BaseResource
                         }),
 
                     Action::make('toggle_freeze')
-                        ->label(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze')
-                        ->icon(fn (GymMember $record) => $record->is_frozen ? 'heroicon-o-play' : 'phosphor-prohibit')
-                        ->color(fn (GymMember $record) => $record->is_frozen ? 'success' : 'danger')
-                        ->visible(fn (GymMember $record) => $record->is_frozen || $record->membership_end?->isFuture())
-                        ->tooltip(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze membership' : 'Freeze membership')
+                        ->label(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze' : 'Freeze')
+                        ->icon(fn (GymMember $record) => $record->isFrozen() ? 'heroicon-o-play' : 'phosphor-prohibit')
+                        ->color(fn (GymMember $record) => $record->isFrozen() ? 'success' : 'danger')
+                        ->visible(fn (GymMember $record) => $record->isFrozen() || $record->membership_end?->isFuture())
+                        ->tooltip(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze membership' : 'Freeze membership')
+                        ->authorize(fn (GymMember $record) => auth()->user()?->hasAnyRole([
+                            DefaultRole::SUPER_ADMIN->value,
+                            DefaultRole::ADMIN->value,
+                            DefaultRole::GYM_OWNER->value,
+                            DefaultRole::MANAGER->value,
+                            DefaultRole::RECEPTIONIST->value,
+                        ]) ?? false)
+                        ->requiresConfirmation()
                         ->form([
                             Textarea::make('reason')
                                 ->label('Reason for freezing (optional)')
@@ -452,29 +462,84 @@ class GymMemberResource extends BaseResource
                                 ->placeholder('Leave empty for manual unfreeze')
                                 ->numeric()
                                 ->minValue(1)
-                                ->helperText('Enter number of days or leave empty for manual unfreeze'),
+                                ->maxValue(365)
+                                ->helperText('Enter number of days (1-365) or leave empty for manual unfreeze'),
+                            Checkbox::make('extend_membership')
+                                ->label('Extend Membership Plan Expiration')
+                                ->default(true)
+                                ->hidden(fn (GymMember $record) => $record->isFrozen())
+                                ->helperText(function (GymMember $record) {
+                                    $min = (int) ($record->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS) ?? GymMember::DEFAULT_MIN_FREEZE_DAYS);
+                                    $max = (int) ($record->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS) ?? GymMember::DEFAULT_MAX_FREEZE_DAYS);
+
+                                    return "If checked, membership end date will be extended for freeze durations between {$min} and {$max} days.";
+                                }),
                         ])
                         ->action(function (GymMember $record, array $data) {
-                            if ($record->is_frozen) {
-                                $record->unfreeze();
+                            $userId = Auth::id() ? (int) Auth::id() : null;
+                            if ($record->isFrozen()) {
+                                $oldEnd = $record->membership_end?->toDateString();
+                                $unfrozen = $record->unfreeze(unfrozenById: $userId);
+                                if (! $unfrozen) {
+                                    Notification::make()
+                                        ->title('Unable to Unfreeze')
+                                        ->body('Member is not currently frozen.')
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+
+                                $newEnd = $record->membership_end?->toDateString();
+                                $endStr = $record->membership_end ? $record->membership_end->format('M j, Y') : 'N/A';
+
+                                $body = ($oldEnd !== $newEnd)
+                                    ? "Member membership unfrozen. Updated plan end date: {$endStr}"
+                                    : 'Member membership unfrozen.';
+
                                 Notification::make()
                                     ->title('Member Unfrozen')
+                                    ->body($body)
                                     ->success()
                                     ->send();
                             } else {
                                 $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
-                                $record->freeze(
+                                $extend = (bool) ($data['extend_membership'] ?? false);
+                                $oldEnd = $record->membership_end?->toDateString();
+
+                                $frozen = $record->freeze(
                                     reason: $data['reason'] ?? null,
-                                    days: $days
+                                    days: $days,
+                                    frozenById: $userId,
+                                    extendMembership: $extend,
                                 );
+
+                                if (! $frozen) {
+                                    Notification::make()
+                                        ->title('Unable to Freeze')
+                                        ->body('Member is already actively frozen.')
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+
+                                $newEnd = $record->membership_end?->toDateString();
+                                $endStr = $record->membership_end ? $record->membership_end->format('M j, Y') : 'N/A';
+
+                                $body = ($extend && $oldEnd !== $newEnd)
+                                    ? "Member membership frozen. Updated plan end date: {$endStr}"
+                                    : 'Member membership frozen.';
+
                                 Notification::make()
                                     ->title('Member Frozen')
+                                    ->body($body)
                                     ->success()
                                     ->send();
                             }
                         })
-                        ->modalHeading(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze Member' : 'Freeze Member')
-                        ->modalSubmitActionLabel(fn (GymMember $record) => $record->is_frozen ? 'Unfreeze' : 'Freeze'),
+                        ->modalHeading(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze Member' : 'Freeze Member')
+                        ->modalSubmitActionLabel(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze' : 'Freeze'),
 
                     Action::make('resend_consent_email')
                         ->label('Resend Consent Email')

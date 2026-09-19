@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -68,7 +69,7 @@ class ChurnRiskService
         // Factor 2: Payment History (Max 30 points)
         // If last payment failed or was late
         $lastPayment = $member->latestPayment;
-        if ($lastPayment && $lastPayment->status === 'failed') {
+        if ($lastPayment && ($lastPayment->status === PaymentStatus::FAILED || $lastPayment->status === 'failed')) {
             $score += 30;
         }
 
@@ -113,7 +114,7 @@ class ChurnRiskService
             $factors[] = 'Membership expiring soon';
         }
 
-        if ($member->latestPayment?->status === 'failed') {
+        if ($member->latestPayment?->status === PaymentStatus::FAILED || $member->latestPayment?->status === 'failed') {
             $factors[] = 'Last payment failed';
         }
 

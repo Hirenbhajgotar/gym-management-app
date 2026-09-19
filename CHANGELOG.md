@@ -8,7 +8,101 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [v1.7.1] - 2026-09-09 (Current GitHub Release)
+## [v1.7.2] - 2026-09-19 (Current GitHub Release)
+
+### Added
+- **Invoice PDF Engine & Modern Printable Views**:
+  - Introduced shared printable styling component `resources/views/invoices/partials/styles.blade.php` with `DejaVu Sans` typography, CSS `@page` margins, brand styling, badge statuses, info cards, itemized billing tables, and summary sections.
+  - Re-engineered `resources/views/invoices/default.blade.php` (for SaaS subscription invoices) and `resources/views/invoices/member.blade.php` (for gym member receipts) with clean modern layout, dynamic status badges (`Completed`, `Pending`, `Failed`), gym and member address rendering, payment method references, and gym owner contact details.
+  - Added dedicated `invoices` filesystem disk in `config/filesystems.php` (configured with `driver: local`, `visibility: private`, `throw: true`) and updated `filesystems.invoice_disk` configuration.
+  - Added `GymMember::memberResourceUrl(self|int $member, ?string $type = 'index'): string` helper to reliably generate Filament resource URLs for gym members across views.
+  - Added dedicated test suite in `tests/Feature/Filament/Admin/Clusters/Reports/Pages/MemberReportsTest.php` covering report generation, authorization, tenant isolation, plan distribution, churn metrics, and cache lifecycle.
+  - Added database migration `2026_09_18_185000_add_unique_to_invoice_number_columns.php` enforcing unique database constraints on `invoice_number` across both `payments` and `member_payments` tables.
+- **Frontend User Profile Hub & Modular Architecture**:
+  - Modularized the user profile view (`ProfileController` / `profile-controller.blade.php`) into 8 dedicated partial blade components: `_header.blade.php`, `_profile_card.blade.php`, `_subscription.blade.php`, `_plans.blade.php`, `_gyms.blade.php`, `_payments.blade.php`, `_qr_modal.blade.php`, and `_settings_modal.blade.php`.
+  - Added standalone high-resolution SVG QR code generation (`getCheckInQrCodeSvg()`, `getCheckoutQrCodeSvg()`) on `Gym` model using cached SVG generation (`QrGenerator`), decoupling QR rendering from Filament panel dependencies.
+  - Implemented timing-safe token verification methods `hasValidCheckInQrCodeToken()` and `hasValidCheckoutQrCodeToken()` on `Gym` model using `hash_equals()`.
+  - Added dedicated factory state helpers `withCheckInQrCodeToken()` and `withCheckoutQrCodeToken()` in `GymFactory`.
+  - Added comprehensive feature test suite in `tests/Feature/Frontend/ProfileTest.php` with 17 tests covering profile updates, password changes, checkout upgrades/renewals, invoice downloads, timing-safe QR verification, mass assignment guarding, and session management.
+- **Request Demo Hub & High-Converting Landing Architecture**:
+  - Dedicated configuration file `config/request-demo.php` encapsulating rate limiting rules (`REQUEST_DEMO_RATE_LIMIT_MAX`, `REQUEST_DEMO_RATE_LIMIT_DECAY`), notification overrides (`REQUEST_DEMO_FORCE_CONTACT_EMAIL`), DNS validation caching/TTL (`REQUEST_DEMO_DNS_CHECK_ENABLED`, `REQUEST_DEMO_DNS_CACHE_TTL`), dynamic WhatsApp messages, operator case study testimonials, and objection-handling FAQs.
+  - Re-engineered `/request-demo` page (`request-demo.blade.php`) featuring a dark-themed SaaS layout, 20-minute walkthrough agenda breakdown, real-time phone and email validation, verified gym case study metrics, Alpine.js interactive FAQ accordion, and direct WhatsApp support CTA (`https://wa.me/...`).
+  - Modernized `RequestDemo` Livewire component with typed properties, `whatsAppUrl` computed property, `resetForm()` lifecycle state reset, and isolated testimonial/FAQ retrieval methods.
+  - Added dedicated test suite in `tests/Feature/HomeControllerTest.php` for isolated home controller rendering verification.
+- **Public Landing Page Redesign & Instant Callback Hub**:
+  - Re-architected public homepage (`HomeController` / `home-controller.blade.php`), navigation (`navbar.blade.php`), and footer (`footer.blade.php`) with modern SaaS styling, interactive feature showcases, ROI calculator, and FAQ sections.
+  - Introduced `RequestCallbackAction` and `HomeController::requestCallback()` enabling instant lead capture with E.164 phone normalization, rate limiting (3 requests/hour per IP), and 15-minute idempotency deduplication into `RequestContact`.
+  - Added `contact_whatsapp` config parameter in `config/app.php` (`CONTACT_WHATSAPP` env var) for direct WhatsApp customer support link resolution.
+  - Added `Enterprise & Franchise` tier definition to `PlanSeeder`.
+  - Added dedicated unit and feature test coverage in `RequestCallbackActionTest` and `HomeControllerTest`.
+- **Member Membership Freeze & Plan Extension Engine**:
+  - Introduced `MemberFreezeService` providing atomic freeze/unfreeze operations with optional membership expiration extension (`extend_membership`).
+  - Added gym-level configurable threshold settings (`min_freeze_days` default 7, `max_freeze_days` default 60) in `GymSettings`.
+  - Added automatic expiration date reconciliation on early, exact, or late unfreezes, capped by individual membership plan durations.
+  - Implemented automatic synchronization of latest non-expired `MemberPayment` records using `updateQuietly()` to preserve report cache integrity.
+  - Added row locking (`lockForUpdate()`) for concurrency safety and full activity audit logging on both freeze and unfreeze events.
+  - Enhanced `CheckMembershipExpiry` command (`gym:check-membership-expiry`) with `--dry-run` preview capability and automated unfreezing for expired freeze periods.
+  - Enhanced `GymMemberResource` table action `toggle_freeze` with duration options, plan extension toggle, role-based authorization gates (`SUPER_ADMIN`, `ADMIN`, `GYM_OWNER`, `MANAGER`, `RECEPTIONIST`), and contextual notifications.
+  - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
+
+### Changed
+- **Invoice Generation & Authorization Hardening (`InvoiceService`)**:
+  - Standardized invoice number generation to format `INV-{YYYYMMDD}-{S|M}{gym_id}-{key}` with 4-digit key padding and regex format validation.
+  - Added `ensureInvoiceNumber(InvoiceablePayment $payment): string` return type for guaranteed format parity across invoice creators.
+  - Implemented `eagerLoadRelations()` to pre-load relational attributes (`user`, `gym.address.city`, `gym.address.state`, `member.address.city`, `member.address.state`, `membershipPlan`) preventing N+1 queries during PDF generation.
+  - Hardened authorization checks in `assertAccessible()` and `MemberInvoiceController::show()` to permit member user owners (`$payment->member->user_id === $authUser->id`) as well as tenant-scoped staff roles (`SUPER_ADMIN`, `GYM_OWNER`, `MANAGER`, `RECEPTIONIST`).
+  - Removed `invoice_number` and `invoice_path` from `$fillable` arrays on both `Payment` and `MemberPayment` models to guard against mass assignment.
+  - Updated `GymMemberImporter` to delegate invoice number generation directly to `resolve(InvoiceService::class)->ensureInvoiceNumber($payment)` and pass Carbon date instances directly in `beforeSave()`.
+  - Added explicit return type hints and generics on `MemberReports::getFilteredMembersQuery()`, `getGrowthData()`, and `getPlanDistribution()`.
+  - Updated `resources/views/filament/clusters/reports/pages/member-reports.blade.php` to render member links via `$member->memberResourceUrl($member, 'edit')`.
+- **Frontend User Profile Controller Modernization & Subscription Upgrades**:
+  - Re-engineered `ProfileController` with strict type hints, return types, PHPDoc blocks, and computed property caching.
+  - Added prorated plan upgrade checkout session handling (`CheckoutSession::TYPE_UPGRADE`) when `subscriptions.proration_enabled` is true.
+  - Added plan renewal checkout session support (`CheckoutSession::TYPE_RENEWAL`) resolving real-time active plan pricing.
+  - Added secure invoice download endpoint (`downloadInvoice()`) delegating to `InvoiceService` with user-scoped payment authorization.
+  - Optimized `User::subscription()` helper to reuse eager-loaded `activeSubscription` relation when available, eliminating redundant database queries.
+  - Introduced `Payment::profileLatestPaymentsCacheKey()` helper and updated `PaymentObserver::clearCache()` for authenticated user payment caching consistency.
+  - Registered `\Illuminate\Session\Middleware\AuthenticateSession` middleware in `bootstrap/app.php` to ensure session revocation across devices on password updates.
+  - Deprecated legacy profile layout `resources/views/frontend/layouts/profile.blade.php` to standardize on `x-frontend.layouts.app_new`.
+- **Gym Model Security Hardening**: Guarded sensitive QR code tokens (`qr_code_token`, `qr_code_checkout_token`) from mass assignment in `Gym` model.
+- **Request Demo Resilience & Validation Hardening**:
+  - Enhanced `ValidEmailDomain` rule with cached DNS lookups (`checkdnsrr` for MX or A records), configurable TTL, fail-open network exception handling, and a testable static closure resolver seam (`ValidEmailDomain::$resolver`).
+  - Hardened `RequestDemoNotification` with queued retries (`$tries = 3`), exponential `$backoff = [60, 300, 900]`, constructor property promotion, and structured error logging on permanent dispatch failure.
+  - Added `throttle:60,1` rate-limiting middleware to `/request-demo` route in `routes/web.php`.
+  - Updated `bootstrap/app.php` reverse proxy configuration to dynamically parse `TRUSTED_PROXIES` environment variable (supporting wildcard `*`, comma-separated IP lists, and fallback to RFC1918 subnets).
+  - Explicitly configured `APP_ENV=testing` in `phpunit.xml`.
+- **Plan Pricing Caching & Model Touch Invalidation**:
+  - Refactored `HomeController` to use Livewire `#[Computed(persist: true)]` for `plans` and `enterprisePlans` with isolated cache keys (`Plan::ALL_PLANS_FOR_HOME_CACHE_KEY`, `Plan::ALL_ENTERPRISE_PLANS_FOR_HOME_CACHE_KEY`).
+  - Added `$touches = ['plan']` and `plan()` relationship to `PlanFeature` model to cascade timestamp updates and trigger `PlanObserver::clearCache()` on feature mutations.
+  - Added `standard()` and `enterprise()` query scopes and modernized scope method signatures to `void` on `Plan` model.
+- **Reverse Proxy & Header Trust Configuration**:
+  - Configured `$middleware->trustProxies()` in `bootstrap/app.php` across RFC1918 private subnets and loopback addresses to accurately resolve client IP (`Request::getClientIp()`) and protocols behind Nginx/Docker.
+  - Added `/health` proxy location block in `nginx.conf`.
+- **Meta WABA Template Language Resolution**: Refactored `MetaTemplateService::resolveLanguage()` to delegate directly to `TemplateFieldMapper::sanitizeLanguage()`, preserving both 2-letter ISO language codes (e.g. `en`, `hi`, `es`) and full locale codes (`en_US`, `en_GB`) for WABA templates.
+- **WhatsApp Setup Wizard Step Alignment & Slug Redirection**: Updated `EmbeddedSignupController` redirects (for OAuth callbacks, manual connection, and error states) to use semantic step slugs (`?setup_step=whats-app-business`) instead of hardcoded numeric step indices, decoupling controller navigation from wizard step renumbering.
+- **WABA Wizard Step Schema Alignment**: Aligned `SetupWizardSchema` step constants and `HasSetupState` state machine accessibility checks so that WABA Billing Mode is Step 2 (`WABA_BILLING_MODE_STEP = 2`) and WABA Account Connection is Step 3 (`WABA_ACCOUNT_STEP = 3`), removing deprecated dead constants.
+- **Embedded Signup Test Architecture**: Extracted `seedEmbeddedSignupSession()` helper to `WhatsAppSetupTestCase` to standardize session initialization across embedded signup controller tests.
+
+### Fixed
+- **Churn Risk Payment Status Enum Handling**:
+  - Updated `ChurnRiskService::calculateRiskScore()` and `identifyRiskFactors()` to check against `PaymentStatus::FAILED` enum in addition to raw string values.
+- **Gym Member Latest Payment Association**:
+  - Removed redundant `where('gym_id', $this->gym_id)` constraint on `GymMember::latestPayment()` `hasOne` relationship to ensure accurate latest payment resolution.
+- **Invoice Service Test Coverage**:
+  - Expanded `tests/Feature/InvoiceServiceTest.php` with tests verifying member owner authorization, disk validation exceptions, invoice number uniqueness and format assertions, blade rendering, address inclusion, and queue job integration.
+- **Request Demo Error Handling & Test Reliability**:
+  - Updated `RequestDemo::submitRequest()` to rethrow `ValidationException` for native Livewire form error bag handling while logging unexpected runtime exceptions.
+  - Refactored `RequestDemoTest` to verify DNS resolution pass/fail, rate limiter counting on both valid and invalid attempts, queued admin notifications, form reset state, and WhatsApp URL generation.
+- **App Configuration & Migration Idempotency**:
+  - Hardened `APP_PREVIOUS_KEYS` array parsing in `config/app.php` to prevent type errors when environment variable is unset or empty.
+  - Added `Schema::hasColumn()` existence guard in `2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php` migration to prevent duplicate column addition errors on re-runs.
+- **Meta API Test Mocking**: Added comprehensive `Http::fake()` coverage for Meta Graph API token exchange, debug token, phone numbers, and WABA details in `EmbeddedSignupControllerTest`, preventing live network calls and asserting asynchronous `ImportWhatsAppTemplatesJob` dispatching and session flash flags on manual connect.
+- **WABA Language Resolution Test Coverage**: Added unit test coverage in `MetaTemplateServiceTest` verifying language resolution for 2-letter ISO codes (`en`, `hi`), full locale codes (`en_US`), and `null` fallbacks.
+- **Setup State Step Comments**: Corrected inverted step-number comments in `HasSetupState::determineSetupStep()` and `HasSetupState::isStepAccessible()`.
+
+---
+
+## [v1.7.1] - 2026-09-09
 
 ### Added
 - **Multi-Language WhatsApp Template Support**: Added `language` attribute support to `whatsapp_templates`, including `CreateTemplateData` and `UpdateTemplateData` DTOs, database migration, and provider synchronization.

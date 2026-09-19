@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $brief_description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Plan|null $plan
  *
  * @method static Builder<static>|PlanFeature newModelQuery()
  * @method static Builder<static>|PlanFeature newQuery()
@@ -37,6 +39,13 @@ class PlanFeature extends Model
 {
     use HasFactory;
 
+    /**
+     * Touch parent plan timestamp on feature mutations to clear cached pricing.
+     *
+     * @var array<int, string>
+     */
+    protected $touches = ['plan'];
+
     protected $fillable = [
         'plan_id',
         'feature_name',
@@ -44,4 +53,12 @@ class PlanFeature extends Model
         'brief_description',
         'order_column',
     ];
+
+    /**
+     * @return BelongsTo<Plan, $this>
+     */
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
 }

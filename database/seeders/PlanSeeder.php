@@ -106,6 +106,26 @@ class PlanSeeder extends Seeder
                     ['feature_name' => 'mobile_app', 'value' => 'true', 'description' => 'Mobile App'],
                 ],
             ],
+            [
+                'name' => 'Enterprise & Franchise',
+                'slug' => 'enterprise',
+                'description' => 'Custom tailored infrastructure with dedicated account manager, API access, multi-location franchise hierarchy, and white-labeled member app.',
+                'brief_description' => 'Custom infrastructure & multi-location franchise management',
+                'price_monthly' => 9999,
+                'price_yearly' => 99999,
+                'currency' => 'INR',
+                'is_active' => true,
+                'is_enterprise' => true,
+                'badge' => 'CUSTOM TAILORED',
+                'trial_days' => 14,
+                'features' => [
+                    ['feature_name' => 'max_gyms', 'value' => '-1', 'description' => 'Multi-Branch & Franchise Network Support'],
+                    ['feature_name' => 'max_users', 'value' => '-1', 'description' => 'Unlimited Gym Members & Athletes'],
+                    ['feature_name' => 'dedicated_manager', 'value' => 'true', 'description' => 'Dedicated Account Manager & Priority SLA'],
+                    ['feature_name' => 'custom_api', 'value' => 'true', 'description' => 'REST API Access & Custom Webhooks'],
+                    ['feature_name' => 'white_label_app', 'value' => 'true', 'description' => 'Fully Branded iOS & Android Member App'],
+                ],
+            ],
         ];
 
         foreach ($plans as $planData) {

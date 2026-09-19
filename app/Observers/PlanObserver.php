@@ -59,6 +59,7 @@ class PlanObserver implements ShouldHandleEventsAfterCommit
     protected function clearCache(Plan $plan): void
     {
         ParserHelper::clearCache(Plan::ALL_PLANS_FOR_HOME_CACHE_KEY);
+        ParserHelper::clearCache(Plan::ALL_ENTERPRISE_PLANS_FOR_HOME_CACHE_KEY);
         ParserHelper::clearCache(Plan::PROFILE_ALL_PLANS_CACHE_KEY);
         ParserHelper::clearCache(Plan::NAVIGATION_BADGE_CACHE_KEY);
     }

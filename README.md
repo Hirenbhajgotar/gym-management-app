@@ -2,6 +2,19 @@
 
 A comprehensive gym management system built with Laravel 12 and Filament v3, offering Software as a Service (SAAS) capabilities and integrated CRM functionality. The system is designed to help gym owners and administrators efficiently manage their facilities, members, staff, and business operations.
 
+---
+
+## 📚 Documentation & Reference Guides
+
+- **[Feature Overview & Catalog](FEATURES.md)** — Comprehensive breakdown of all platform modules, business workflows, and technical features.
+- **[Changelog & Releases](CHANGELOG.md)** — Complete release history, upgrade notes, and unreleased changes.
+- **[Technical Documentation (`/docs`)](docs/)**:
+  - [Biometric Hardware Integration](docs/biometric/) — ZKTeco, Hikvision, and eSSL hardware engines & consent architecture.
+  - [Dynamic QR Attendance System](docs/qr-attendance/) — Anti-proxy rotating QR check-in & kiosk scanners.
+  - [WhatsApp Automation Suite](docs/whatsapp/) — Meta Cloud API (WABA) & Twilio WhatsApp integration.
+
+---
+
 ## Features
 
 ### 🏢 Multi-Tenant SAAS Platform
@@ -30,77 +43,50 @@ Different user roles with specific permissions:
 - Automated notifications and follow-ups
 - Customer communication history
 
+### 💬 WhatsApp Marketing & Automation Suite
+
+- **Dual Meta & Twilio Integration**: Official Meta Cloud API (WABA embedded signup) and Twilio WhatsApp services
+- **Targeted Broadcast Campaigns**: High-throughput message broadcasting with queue chunking and delivery rate-limiting
+- **Automated Transactional Notifications**: Instant payment receipts, renewal alerts (T-7, T-3, T-1 days), OTP logins, and birthday wishes
+- **Prepaid Credit Wallet**: In-app credit top-ups via Razorpay with automated usage deduction and low-balance alerts
+
 ### 💪 Gym Management
 
 - **Membership Plans**
-  - Create and manage different membership packages
-  - Define duration and pricing
-  - Set plan-specific features and benefits
+  - Create and manage custom membership packages (durations, pricing, admission fees)
+  - Define plan-specific access rules and perks
   - Trial period management
 
 - **Payment Management**
-  - Process membership payments
-  - Track payment history
-  - Handle recurring payments
-  - Multiple payment method support
-  - Generate invoices and receipts
+  - Online checkout via Razorpay (UPI, Cards, NetBanking, Wallets)
+  - Partial payments, balance tracking, and installment plans
+  - Automated GST/tax invoice generation and receipts
 
-- **Trainer Management**
-  - Profile management
-  - Specialization tracking
-  - Experience and certification records
-  - Salary management:
-    - Basic salary
-    - Per-member training fees
-    - Total earnings calculation
-  - Availability tracking
+- **Trainer & Staff Management**
+  - Profile management and specialization tracking
+  - Trainer commission and per-member fee tracking
+  - Granular role-based portals (SuperAdmin, Gym Owner, Manager, Trainer, Receptionist)
 
 ### 📊 Member Management
 
-- Comprehensive member profiles
-- Membership status tracking
-- Payment history
-- Attendance records
-- Progress tracking
-- Personal trainer assignments
-- Health metrics monitoring
-- Profile photo management
+- Comprehensive member profiles with health metrics and body measurement tracking
+- **Intelligent Membership Freeze Engine**: Date-based or indefinite freeze with automated plan extension & threshold controls
+- Member status lifecycle tracking (*Active*, *Expiring Soon*, *Expired*, *Frozen*, *Cancelled*)
+- Interactive CRM with automated lead ingestion (Facebook, Instagram, IndiaMART, JustDial, Website)
 
-### ⏰ Attendance Management
+### ⏰ Smart Attendance & Access Control
 
-- Member check-in/check-out system
-- Attendance history
-- Automated attendance reports
-- Trainer attendance tracking
-- Real-time attendance monitoring
+- **Biometric Device Integration**: Provider-agnostic engine supporting ZKTeco, Hikvision, and eSSL hardware
+- **Dynamic Rotating QR Attendance**: Anti-proxy check-in with kiosk tablet scanning and geofencing
+- Automated door relay access control based on active membership status
+- Real-time facility occupancy counter and automated daily check-out
 
-### 🔐 Advanced Security & Permissions
+### 📈 Reporting, Analytics & Expenses
 
-- Role-based access control
-- Granular permissions system
-- Secure authentication
-- Activity logging
-- Data protection measures
-
-### 📈 Reporting & Analytics
-
-- Member statistics
-- Revenue reports
-- Attendance analytics
-- Trainer performance metrics
-- Lead conversion rates
-- Financial reports
-
-### 🔄 Additional Features
-
-- Responsive dashboard
-- Export/Import functionality for members and trainers
-- Email notifications
-- SMS notifications (optional)
-- File management system
-- Activity logging
-- Data backup and recovery
-- System settings management
+- Real-time revenue, cash flow, and attendance analytics
+- Operational expense tracking with category budget threshold alerts
+- AI-driven member churn risk indicators and retention metrics
+- Automated scheduled email reports with export capabilities (Excel, PDF)
 
 ## Deployment
 
@@ -110,7 +96,7 @@ Different user roles with specific permissions:
    - Copy `.env.example` to `.env`
    - Set `APP_ENV=production`
    - Configure database settings for production
-   - Set up Redis for queue and cache if using
+   - Set up Redis for queue, session, and cache
    - Configure mail settings for email notifications
 
 2. **Razorpay Configuration**
@@ -119,19 +105,21 @@ Different user roles with specific permissions:
    - Set `RAZORPAY_WEBHOOK_SECRET` with your webhook secret
    - Configure webhook URL in Razorpay dashboard: `https://yourdomain.com/payments/webhook`
 
-3. **Queue Configuration**
-   - Set `QUEUE_CONNECTION` to `database` or `redis`
+3. **Queue & WebSockets Configuration**
+   - Set `QUEUE_CONNECTION=redis`
    - Run queue worker: `php artisan queue:work`
-   - Schedule the renewal job to run daily at 2 AM
+   - Start Laravel Reverb WebSocket server: `php artisan reverb:start`
 
 4. **Scheduled Jobs**
-   The application includes scheduled jobs that should run periodically:
-   - Subscription renewal job (runs daily at 2 AM)
-   - Error report cleanup (runs daily at 1 AM)
-   - Subscription expiry alerts (runs daily at 9 AM)
+   The application includes scheduled jobs configured in `routes/console.php`:
+   - Membership expiry & freeze auto-unfreeze (`gym:check-membership-expiry` — daily)
+   - Subscription renewal & expiry alerts (`notification:send-subscription-expiry-alerts` — daily)
+   - Attendance auto checkout (`attendance:auto-checkout` — twice daily)
+   - WhatsApp scheduled broadcasts (`whatsapp:process-scheduled` — every 2 minutes)
+   - System backups (`backup:run` & `backup:clean` — daily)
 
    Add this to your server's crontab:
-   ```
+   ```bash
    * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
    ```
 
@@ -140,12 +128,13 @@ Different user roles with specific permissions:
    - Update `APP_URL` to use `https://`
 
 6. **File Permissions**
-   - Set proper permissions for storage and bootstrap/cache directories
+   - Set proper permissions for `storage/` and `bootstrap/cache/` directories
    - Ensure web server can write to these directories
 
-7. **Database Migration**
+7. **Database Migration & Permissions**
    - Run `php artisan migrate --force` in production
    - Run `php artisan db:seed` if needed
+   - Sync all panel roles and permissions: `php artisan permissions:sync`
 
 8. **Cache and Optimization**
    - Run `php artisan config:cache`
@@ -158,16 +147,36 @@ Different user roles with specific permissions:
 - **Framework**: Laravel 12
 - **Admin Panel**: Filament v3
 - **Frontend**: Livewire v3, Volt, and Flux UI
-- **Database**: MySQL/SQLite
+- **Database**: MySQL 8.0 / SQLite
 - **CSS**: Tailwind CSS v4
-- **Real-time Features**: Laravel Reverb
-- **Authentication**: Laravel Sanctum
-- **File Storage**: Laravel Storage
-- **Queue System**: Laravel Queue
-- **Caching**: Laravel Cache
+- **Real-time WebSockets**: Laravel Reverb & Laravel Echo
+- **Authentication & RBAC**: Laravel Sanctum & Spatie Laravel Permission
+- **Payment Gateway**: Razorpay
+- **Queue System**: Redis / Laravel Queue
+- **Caching & Sessions**: Redis & Laravel Cache
 - **Testing**: PHPUnit
 
-## Installation
+## 🐳 Docker Setup (Recommended)
+
+The project includes a complete Docker environment (App, Nginx web server, MySQL 8.0, Redis, and phpMyAdmin).
+
+```bash
+# 1. Start all container services
+docker-compose up -d
+
+# 2. Run migrations, permission sync, and initial seeders inside the app container
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan permissions:sync
+docker-compose exec app php artisan db:seed
+
+# 3. (Optional) Seed sample gym owner, branches, plans, trainers, and members
+docker-compose exec app php artisan app:seed-owner-data
+
+# 4. Run real-time development stack (Laravel server + Queue worker + Vite)
+docker-compose exec app composer run dev
+```
+
+## Local Installation (Without Docker)
 
 ```bash
 # Clone the repository
@@ -188,30 +197,51 @@ cp .env.example .env
 # Generate application key
 php artisan key:generate
 
-# Run migrations
+# Run database migrations
 php artisan migrate
 
-# Seed the database
+# Sync all roles and permissions across system and tenant panels
+php artisan permissions:sync
+
+# Seed initial system configuration and default admin
 php artisan db:seed
 
-# Build assets
+# (Optional) Seed sample gym owner, branches, plans, trainers, and members
+php artisan app:seed-owner-data
+
+# Build frontend assets
 npm run build
 
 # Start the development server
 composer run dev
 ```
 
-## Development
+### Fresh Database Setup (Development)
+
+To perform a clean database reset with permissions and sample records:
 
 ```bash
-# Start the development server with hot reload
+# Reset database and run seeders
+php artisan migrate:fresh --seed
+
+# Sync and refresh all panel permissions
+php artisan permissions:sync
+
+# Populate sample gym owner, trainers, and members data
+php artisan app:seed-owner-data
+```
+
+## Development & Quality Tools
+
+```bash
+# Start development server with hot reload
 composer run dev
 
-# Run tests
+# Run test suite
 composer run test
 
 # Format code using Laravel Pint
-vendor/bin/pint
+vendor/bin/pint --dirty
 ```
 
 ## Contributing

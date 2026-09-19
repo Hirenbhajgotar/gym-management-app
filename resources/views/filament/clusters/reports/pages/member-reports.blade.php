@@ -92,7 +92,7 @@
                                             Last visit: {{ $member->lastAttendance?->check_in_time?->diffForHumans() ?? 'Never' }}
                                         </div>
                                     </div>
-                                    <x-filament::button size="xs" color="gray" href="{{ \App\Filament\Admin\Resources\MemberResource::getUrl('edit', ['record' => $member->id]) }}">
+                                    <x-filament::button tag="a" size="xs" color="gray" href="{{ $member->memberResourceUrl($member, 'edit') }}">
                                         View
                                     </x-filament::button>
                                 </div>
