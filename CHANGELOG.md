@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v1.7.2] - 2026-09-19 (Current GitHub Release)
+
 ### Added
 - **Invoice PDF Engine & Modern Printable Views**:
   - Introduced shared printable styling component `resources/views/invoices/partials/styles.blade.php` with `DejaVu Sans` typography, CSS `@page` margins, brand styling, badge statuses, info cards, itemized billing tables, and summary sections.
@@ -100,7 +102,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [v1.7.1] - 2026-09-09 (Current GitHub Release)
+## [v1.7.1] - 2026-09-09
 
 ### Added
 - **Multi-Language WhatsApp Template Support**: Added `language` attribute support to `whatsapp_templates`, including `CreateTemplateData` and `UpdateTemplateData` DTOs, database migration, and provider synchronization.
