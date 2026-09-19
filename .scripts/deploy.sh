@@ -29,35 +29,32 @@ php artisan migrate --force
 # Clearing Cache
 echo "Clearing Cache..."
 php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan filament:clear
 
 # Running database seeder for roles and permissions
 echo "Running database seeder for roles and permissions..."
-php artisan db:seed --class=RolesAndPermissionsSeeder
-php artisan db:seed --class=PermissionDescriptionSeeder
+php artisan db:seed --class=RolesAndPermissionsSeeder --force
+php artisan db:seed --class=PermissionDescriptionSeeder --force
 
 # Restart queue workers after deployment
 echo "Restarting queue workers..."
-# php artisan queue:restart
-sudo supervisorctl reread
-sudo supervisorctl update
+php artisan queue:restart || true
+sudo supervisorctl reread || true
+sudo supervisorctl update || true
 sudo supervisorctl restart laravel-worker:* || true
 
 # Recreate cache
 echo "Recreating cache..."
 php artisan optimize
+php artisan filament:optimize || true
 
 # Set proper permissions
 echo "🔒 Setting permissions..."
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
+sudo chown -R www-data:www-data storage bootstrap/cache || true
+sudo chmod -R 775 storage bootstrap/cache || true
 
 # Restart PHP-FPM (adjust version if needed)
 echo "🔄 Restarting PHP-FPM..."
-sudo systemctl restart php8.3-fpm
+sudo systemctl restart php8.3-fpm || sudo systemctl restart php8.2-fpm || sudo systemctl restart php8.4-fpm || sudo systemctl restart php-fpm || true
 
 # Turn OFF Maintenance mode
 echo "Turning OFF Maintenance mode..."
