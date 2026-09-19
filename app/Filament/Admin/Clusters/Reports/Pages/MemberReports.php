@@ -131,8 +131,10 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
     /**
      * Get filtered members query builder.
+     *
+     * @return Builder<GymMember>
      */
-    public function getFilteredMembersQuery()
+    public function getFilteredMembersQuery(): Builder
     {
         /** @var Gym $gym */
         $gym = Filament::getTenant();
@@ -194,6 +196,8 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
     /**
      * Get growth data for chart.
+     *
+     * @return Collection<int, array{month: string, count: int, growth_rate: float, retention_rate: int}>
      */
     public function getGrowthData(): Collection
     {
@@ -231,6 +235,8 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
     /**
      * Get plan distribution data.
+     *
+     * @return Collection<int, array{name: string, count: int, revenue: float|int, color: string}>
      */
     public function getPlanDistribution(): Collection
     {

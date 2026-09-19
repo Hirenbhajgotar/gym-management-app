@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Invoice PDF Engine & Modern Printable Views**:
+  - Introduced shared printable styling component `resources/views/invoices/partials/styles.blade.php` with `DejaVu Sans` typography, CSS `@page` margins, brand styling, badge statuses, info cards, itemized billing tables, and summary sections.
+  - Re-engineered `resources/views/invoices/default.blade.php` (for SaaS subscription invoices) and `resources/views/invoices/member.blade.php` (for gym member receipts) with clean modern layout, dynamic status badges (`Completed`, `Pending`, `Failed`), gym and member address rendering, payment method references, and gym owner contact details.
+  - Added dedicated `invoices` filesystem disk in `config/filesystems.php` (configured with `driver: local`, `visibility: private`, `throw: true`) and updated `filesystems.invoice_disk` configuration.
+  - Added `GymMember::memberResourceUrl(self|int $member, ?string $type = 'index'): string` helper to reliably generate Filament resource URLs for gym members across views.
+  - Added dedicated test suite in `tests/Feature/Filament/Admin/Clusters/Reports/Pages/MemberReportsTest.php` covering report generation, authorization, tenant isolation, plan distribution, churn metrics, and cache lifecycle.
+  - Added database migration `2026_09_18_185000_add_unique_to_invoice_number_columns.php` enforcing unique database constraints on `invoice_number` across both `payments` and `member_payments` tables.
 - **Frontend User Profile Hub & Modular Architecture**:
   - Modularized the user profile view (`ProfileController` / `profile-controller.blade.php`) into 8 dedicated partial blade components: `_header.blade.php`, `_profile_card.blade.php`, `_subscription.blade.php`, `_plans.blade.php`, `_gyms.blade.php`, `_payments.blade.php`, `_qr_modal.blade.php`, and `_settings_modal.blade.php`.
   - Added standalone high-resolution SVG QR code generation (`getCheckInQrCodeSvg()`, `getCheckoutQrCodeSvg()`) on `Gym` model using cached SVG generation (`QrGenerator`), decoupling QR rendering from Filament panel dependencies.
@@ -37,6 +44,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Added comprehensive test suite in `GymMemberFreezeExtensionTest` with 27 unit/feature tests covering boundary conditions, proration logic, notifications, activity logs, and authorization.
 
 ### Changed
+- **Invoice Generation & Authorization Hardening (`InvoiceService`)**:
+  - Standardized invoice number generation to format `INV-{YYYYMMDD}-{S|M}{gym_id}-{key}` with 4-digit key padding and regex format validation.
+  - Added `ensureInvoiceNumber(InvoiceablePayment $payment): string` return type for guaranteed format parity across invoice creators.
+  - Implemented `eagerLoadRelations()` to pre-load relational attributes (`user`, `gym.address.city`, `gym.address.state`, `member.address.city`, `member.address.state`, `membershipPlan`) preventing N+1 queries during PDF generation.
+  - Hardened authorization checks in `assertAccessible()` and `MemberInvoiceController::show()` to permit member user owners (`$payment->member->user_id === $authUser->id`) as well as tenant-scoped staff roles (`SUPER_ADMIN`, `GYM_OWNER`, `MANAGER`, `RECEPTIONIST`).
+  - Removed `invoice_number` and `invoice_path` from `$fillable` arrays on both `Payment` and `MemberPayment` models to guard against mass assignment.
+  - Updated `GymMemberImporter` to delegate invoice number generation directly to `resolve(InvoiceService::class)->ensureInvoiceNumber($payment)` and pass Carbon date instances directly in `beforeSave()`.
+  - Added explicit return type hints and generics on `MemberReports::getFilteredMembersQuery()`, `getGrowthData()`, and `getPlanDistribution()`.
+  - Updated `resources/views/filament/clusters/reports/pages/member-reports.blade.php` to render member links via `$member->memberResourceUrl($member, 'edit')`.
 - **Frontend User Profile Controller Modernization & Subscription Upgrades**:
   - Re-engineered `ProfileController` with strict type hints, return types, PHPDoc blocks, and computed property caching.
   - Added prorated plan upgrade checkout session handling (`CheckoutSession::TYPE_UPGRADE`) when `subscriptions.proration_enabled` is true.
@@ -66,6 +82,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Embedded Signup Test Architecture**: Extracted `seedEmbeddedSignupSession()` helper to `WhatsAppSetupTestCase` to standardize session initialization across embedded signup controller tests.
 
 ### Fixed
+- **Churn Risk Payment Status Enum Handling**:
+  - Updated `ChurnRiskService::calculateRiskScore()` and `identifyRiskFactors()` to check against `PaymentStatus::FAILED` enum in addition to raw string values.
+- **Gym Member Latest Payment Association**:
+  - Removed redundant `where('gym_id', $this->gym_id)` constraint on `GymMember::latestPayment()` `hasOne` relationship to ensure accurate latest payment resolution.
+- **Invoice Service Test Coverage**:
+  - Expanded `tests/Feature/InvoiceServiceTest.php` with tests verifying member owner authorization, disk validation exceptions, invoice number uniqueness and format assertions, blade rendering, address inclusion, and queue job integration.
 - **Request Demo Error Handling & Test Reliability**:
   - Updated `RequestDemo::submitRequest()` to rethrow `ValidationException` for native Livewire form error bag handling while logging unexpected runtime exceptions.
   - Refactored `RequestDemoTest` to verify DNS resolution pass/fail, rate limiter counting on both valid and invalid attempts, queued admin notifications, form reset state, and WhatsApp URL generation.

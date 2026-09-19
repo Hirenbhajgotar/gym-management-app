@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Filament\Admin\Resources\GymMemberResource;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use App\Services\MemberFreezeService;
@@ -275,7 +276,6 @@ class GymMember extends Model
     public function latestPayment(): HasOne
     {
         return $this->hasOne(MemberPayment::class, 'member_id')
-            ->where('gym_id', $this->gym_id)
             ->latestOfMany();
     }
 
@@ -807,5 +807,20 @@ class GymMember extends Model
         return $this->update([
             'allow_whatsapp_marketing' => $allowed,
         ]);
+    }
+
+    public function memberResourceUrl(self|int $member, ?string $type = 'index'): string
+    {
+        $memberModel = $member instanceof self ? $member : self::query()->find($member);
+
+        if (! $memberModel) {
+            return GymMemberResource::getUrl('index');
+        }
+
+        return match ($type) {
+            'view' => GymMemberResource::getUrl('view', ['record' => $memberModel->id]),
+            'edit' => GymMemberResource::getUrl('edit', ['record' => $memberModel->id]),
+            default => GymMemberResource::getUrl('index'),
+        };
     }
 }

@@ -3,149 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Invoice {{ $invoice_number }}</title>
-    <style>
-        body { font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif; font-size: 14px; color: #1f2937; line-height: 1.5; margin: 0; padding: 0; }
-        .container { width: 100%; margin: 0 auto; background: #fff; }
-        .w-full { width: 100%; }
-        .w-half { width: 50%; }
-        .align-top { vertical-align: top; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .text-gray { color: #6b7280; }
-        .text-gray-900 { color: #111827; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mt-4 { margin-top: 1rem; }
-        .header { padding-bottom: 30px; border-bottom: 1px solid #e5e7eb; margin-bottom: 30px; }
-        .logo-text { font-size: 24px; font-weight: 800; color: #4f46e5; }
-        .invoice-label { font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; margin-bottom: 5px; }
-        .info-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; }
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        .items-table th { background-color: #f3f4f6; color: #374151; font-weight: 600; text-transform: uppercase; font-size: 11px; padding: 12px 16px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .items-table td { padding: 16px; border-bottom: 1px solid #f3f4f6; color: #374151; }
-        .totals-table { width: 100%; border-collapse: collapse; }
-        .totals-table td { padding: 8px 0; text-align: right; }
-        .totals-label { fontWeight: 600; color: #6b7280; padding-right: 20px; }
-        .grand-total-row td { padding-top: 15px; border-top: 2px solid #e5e7eb; }
-        .grand-total-value { font-size: 20px; font-weight: 700; color: #4f46e5; }
-        .params-list { margin: 0; padding-left: 20px; }
-        .badge { display: inline-block; padding: 6px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .badge-completed { background-color: #d1fae5; color: #065f46; }
-        .badge-pending { background-color: #fef3c7; color: #92400e; }
-        .badge-failed { background-color: #fee2e2; color: #b91c1c; }
-        .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; text-align: center; }
-    </style>
+    <title>Receipt {{ $invoice_number }}</title>
+    @include('invoices.partials.styles')
 </head>
 <body>
     <div class="container">
         <!-- Header -->
-        <table class="w-full header">
+        <table class="header-table">
             <tr>
-                <td class="w-half align-top">
-                    <div class="logo-text">
-                        @if ($gym->logo)
-                            <img src="{{ storage_path('app/public/' . $gym->logo) }}" alt="{{ $gym->name }}" style="height: 50px; width: auto;">
-                        @else
-                            {{ $gym->name }}
-                        @endif
-                    </div>
+                <td class="w-55 align-top">
+                    <table style="border-collapse: collapse; margin: 0; padding: 0;">
+                        <tr>
+                            @if(isset($gym->logo) && $gym->logo && file_exists(storage_path('app/public/' . $gym->logo)))
+                                <td style="padding: 0 10px 0 0; vertical-align: middle;">
+                                    <img src="{{ storage_path('app/public/' . $gym->logo) }}" alt="{{ $gym->name ?? 'Gym' }}" style="max-height: 36px; max-width: 100px;">
+                                </td>
+                            @else
+                                <td style="padding: 0 10px 0 0; vertical-align: middle;">
+                                    <div class="gym-initials-badge">
+                                        {{ mb_strtoupper(mb_substr($gym->name ?? 'G', 0, 1, 'UTF-8')) }}
+                                    </div>
+                                </td>
+                            @endif
+                            <td style="padding: 0; vertical-align: middle;">
+                                <div class="brand-name">{{ $gym->name ?? 'Gym' }}</div>
+                                <div class="brand-tagline">Official Member Payment Receipt</div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
-                <td class="w-half align-top text-right">
-                    <div class="invoice-label">Invoice</div>
-                    <div class="text-xl font-bold text-gray-900">#{{ $invoice_number }}</div>
-                    <div class="text-sm text-gray mt-4">
-                        Date: <span class="text-gray-900 font-bold">{{ $date }}</span>
+                <td class="w-45 align-top text-right">
+                    <div><span class="invoice-badge">RECEIPT</span></div>
+                    <div class="invoice-number">#{{ $invoice_number }}</div>
+                    <div class="invoice-date">Date: <strong>{{ $date }}</strong></div>
+                    <div>
+                        @php
+                            $statusVal = $payment->status?->value ?? 'completed';
+                        @endphp
+                        @if($statusVal === 'completed')
+                            <span class="badge badge-completed">PAID</span>
+                        @elseif($statusVal === 'pending')
+                            <span class="badge badge-pending">PENDING</span>
+                        @else
+                            <span class="badge badge-failed">{{ strtoupper($statusVal) }}</span>
+                        @endif
                     </div>
                 </td>
             </tr>
         </table>
 
-        <!-- Billing Info -->
-        <table class="w-full mb-4">
+        <!-- Subtle Cyan Accent Bar -->
+        <div class="accent-bar"></div>
+
+        <!-- Billing Info Cards Grid -->
+        <table class="info-grid-table">
             <tr>
-                <td class="w-half align-top">
-                    <div class="info-label">Billed To</div>
-                    @if($user)
-                        <div class="font-bold text-gray-900 mb-2">{{ $user->name }}</div>
-                        <div class="text-gray-600">{{ $user->email }}</div>
-                        <div class="text-gray-600">{{ $user->phone }}</div>
-                        @if($user->address)
-                            <div class="mt-4 text-gray-600">
-                                {{ $user->address->street }}<br>
-                                {{ $user->address->city?->name }}, {{ $user->address->state?->name }} {{ $user->address->postal_code }}
+                <!-- Billed To -->
+                <td class="w-half card-box">
+                    <div class="card-label">Billed To (Member)</div>
+                    @if($owner ?? $user)
+                        <div class="card-title">{{ ($owner ?? $user)->name }}</div>
+                        @if(($owner ?? $user)->email)
+                            <div class="card-text">{{ ($owner ?? $user)->email }}</div>
+                        @endif
+                        @if(($owner ?? $user)->phone)
+                            <div class="card-text">{{ ($owner ?? $user)->phone }}</div>
+                        @endif
+                        @if(($owner ?? $user)->address)
+                            <div class="card-row" style="margin-top: 2px;">
+                                {{ ($owner ?? $user)->address->street ?? '' }}
+                                @if(($owner ?? $user)->address->city)
+                                    <br>{{ ($owner ?? $user)->address->city->name }}, {{ ($owner ?? $user)->address->state?->name ?? '' }} {{ ($owner ?? $user)->address->postal_code ?? '' }}
+                                @endif
                             </div>
                         @endif
                     @else
-                        <div class="font-bold text-gray-900 mb-2">{{ $gym->name ?? 'Gym' }}</div>
+                        <div class="card-title">Member</div>
                     @endif
                 </td>
-                <td class="w-half align-top text-right">
-                    <div class="info-label">Pay To</div>
-                    <div class="font-bold text-gray-900 mb-2">{{ $gym->name }}</div>
-                    @if($gym->owner_email) <div class="text-gray-600">{{ $gym->owner_email }}</div> @endif
-                    @if($gym->phone) <div class="text-gray-600">{{ $gym->phone }}</div> @endif
-                    @if($gym->address)
-                        <div class="mt-4 text-gray-600">
-                            {{ $gym->address->street }}<br>
-                            {{ $gym->address->city?->name }}, {{ $gym->address->state?->name }} {{ $gym->address->postal_code }}
+
+                <!-- Pay To / Gym Info -->
+                <td class="w-half card-box">
+                    <div class="card-label">Pay To / Gym Details</div>
+                    <div class="card-title">{{ $gym->name ?? 'Gym' }}</div>
+                    @if($gym_owner_email ?? $gym?->owner_email)
+                        <div class="card-row"><strong>Email:</strong> {{ $gym_owner_email ?? $gym->owner_email }}</div>
+                    @endif
+                    @if($gym?->address)
+                        <div class="card-row" style="margin-top: 2px;">
+                            {{ $gym->address->street ?? '' }}
+                            @if($gym->address->city)
+                                <br>{{ $gym->address->city->name }}, {{ $gym->address->state?->name ?? '' }} {{ $gym->address->postal_code ?? '' }}
+                            @endif
                         </div>
                     @endif
-                    
-                    <div class="mt-4">
-                         <div class="info-label">Payment Status</div>
-                        @if($payment->status->value == 'completed')
-                            <span class="badge badge-completed">PAID</span>
-                        @elseif($payment->status->value == 'pending')
-                            <span class="badge badge-pending">PENDING</span>
-                        @else
-                            <span class="badge badge-failed">{{ strtoupper($payment->status->value) }}</span>
-                        @endif
-                    </div>
                 </td>
             </tr>
         </table>
 
-        <!-- Items -->
+        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Description</th>
-                    <th style="width: 25%;">Reference ID</th>
-                    <th style="width: 25%;" class="text-right">Amount</th>
+                    <th style="width: 52%;">Description</th>
+                    <th style="width: 24%;">Reference ID</th>
+                    <th style="width: 24%;" class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>
-                        <div class="font-bold mb-1">{{ $payment->membershipPlan->name ?? 'Membership' }} Plan</div>
-                        <div class="text-sm text-gray-600">Membership Fee</div>
+                        <div class="item-main-title">{{ $payment->membershipPlan->name ?? 'Gym Membership' }} Plan</div>
+                        <div class="item-sub-desc">
+                            Membership Subscription &bull; {{ $gym->name ?? 'Gym' }}
+                        </div>
                     </td>
-                    <td class="text-gray-600 font-mono text-xs">{{ $payment->razorpay_payment_id ?? 'N/A' }}</td>
-                    <td class="text-right font-bold">{!! $payment->formatted_amount !!}</td>
+                    <td>
+                        <span class="mono-ref">#{{ $payment->id }}</span>
+                    </td>
+                    <td class="item-amount-val">
+                        {{ $payment->formatted_amount }}
+                    </td>
                 </tr>
             </tbody>
         </table>
 
-         <!-- Totals -->
-        <table class="w-full">
+        <!-- Totals & Notes Section -->
+        <table class="summary-table">
             <tr>
-                <td style="width: 60%;">
-                    <div style="padding-right: 40px;">
-                        <div class="info-label">Note</div>
-                        <div class="text-sm text-gray-500">
-                            Thank you for your business. This is a computer-generated invoice from {{ $gym->name }}.
+                <td class="w-55 align-top">
+                    <div class="note-box">
+                        <div class="note-heading">Official Note</div>
+                        <div class="note-content">
+                            Thank you for your business. This is an electronically generated payment receipt from <strong>{{ $gym->name ?? 'your gym' }}</strong> and requires no physical signature.
                         </div>
                     </div>
                 </td>
-                <td style="width: 40%;">
+                <td class="w-45 align-top">
                     <table class="totals-table">
                         <tr>
-                            <td class="totals-label">Subtotal</td>
-                            <td class="totals-value">{!! $payment->formatted_amount !!}</td>
+                            <td class="totals-label">Subtotal:</td>
+                            <td class="totals-val">{{ $payment->formatted_amount }}</td>
                         </tr>
-                        <tr class="grand-total-row">
-                            <td class="totals-label grand-total-label">Total</td>
-                            <td class="totals-value grand-total-value">{!! $payment->formatted_amount !!}</td>
+                        <tr class="grand-total-divider">
+                            <td class="totals-label grand-total-label">
+                                {{ $payment->status === \App\Enums\PaymentStatus::COMPLETED ? 'Total Paid:' : 'Total Amount:' }}
+                            </td>
+                            <td class="totals-val grand-total-amount">{{ $payment->formatted_amount }}</td>
                         </tr>
                     </table>
                 </td>
@@ -154,7 +158,8 @@
 
         <!-- Footer -->
         <div class="footer">
-            &copy; {{ date('Y') }} {{ $gym->name }}. All rights reserved.
+            &copy; {{ date('Y') }} {{ $gym->name ?? 'Gym' }}. All rights reserved.<br>
+            Powered by {{ config('app.name', 'FluxFitness') }} Gym Management Platform
         </div>
     </div>
 </body>

@@ -17,12 +17,17 @@ class MemberInvoiceController extends Controller
 
         abort_unless($user !== null, 403);
 
-        abort_unless($user->hasAnyRole([
+        $payment->loadMissing(['member']);
+
+        $isMemberOwner = $payment->member?->user_id === $user->id;
+        $isStaff = $user->hasAnyRole([
             DefaultRole::SUPER_ADMIN->value,
             DefaultRole::GYM_OWNER->value,
             DefaultRole::MANAGER->value,
             DefaultRole::RECEPTIONIST->value,
-        ]), 403);
+        ]) && $user->gyms()->where('gyms.id', $payment->gym_id)->exists();
+
+        abort_unless($isMemberOwner || $isStaff, 403, 'You do not have access to this invoice.');
 
         return $invoiceService->viewInvoice($payment);
     }

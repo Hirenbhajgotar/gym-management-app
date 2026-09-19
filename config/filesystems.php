@@ -35,9 +35,18 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
-            'visibility' => 'public',
+            'serve' => false,
+            'visibility' => 'private',
             'throw' => false,
+            'report' => false,
+        ],
+
+        'invoices' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => false,
+            'visibility' => 'private',
+            'throw' => true,
             'report' => false,
         ],
 
@@ -80,6 +89,6 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
-    'invoice_disk' => env('INVOICE_DISK', 'local'),
+    'invoice_disk' => env('INVOICE_DISK', 'invoices'),
 
 ];

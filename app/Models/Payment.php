@@ -101,8 +101,6 @@ class Payment extends Model implements InvoiceablePayment
         'paid_at',
         'refunded_at',
         'refund_amount',
-        'invoice_number',
-        'invoice_path',
         'provisioned_at',
     ];
 
