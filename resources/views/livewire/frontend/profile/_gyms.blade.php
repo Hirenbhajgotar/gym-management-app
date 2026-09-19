@@ -1,5 +1,5 @@
-<!-- Gym Locations Card (With Live Metrics & Direct Dashboard Launcher per Gym) -->
-<div id="your-gyms" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-7 shadow-[0_0_40px_rgba(0,0,0,0.6)] backdrop-blur-xl space-y-4">
+<!-- Gym Locations Card -->
+<div id="your-gyms" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-7 shadow-xl backdrop-blur-xl space-y-4">
     <div class="flex items-center justify-between pb-3 border-b border-white/10">
         <div class="flex items-center gap-2.5">
             <span class="material-symbols-outlined text-cyan-400 text-xl">fitness_center</span>
@@ -18,12 +18,11 @@
                     $gymDashboardText = 'Dashboard';
                     $isActive = (bool) ($gym->is_active && ($gym->pivot->active ?? true));
 
-                    // Determine role-based dashboard URL for this specific gym
                     $pivotRole = $gym->pivot->role ?? null;
                     if ($this->user->hasRole('gym_owner') || $pivotRole === 'gym_owner') {
                         $gymDashboardUrl = route('filament.admin.pages.dashboard', ['tenant' => $gym->slug]);
                         $gymDashboardText = 'Admin Dashboard';
-                    } elseif ($this->user->hasAnyRole(['manager', 'receptionist']) || in_array($pivotRole, ['manager', 'receptionist'])) {
+                    } elseif ($this->user->hasAnyRole(['manager', 'receptionist']) || in_array($pivotRole, ['manager', 'receptionist'], true)) {
                         $gymDashboardUrl = route('filament.staff.pages.dashboard', ['tenant' => $gym->slug]);
                         $gymDashboardText = 'Staff Dashboard';
                     } elseif ($gym->slug) {
@@ -52,7 +51,7 @@
                         </span>
                     </div>
 
-                    <!-- Quick Branch Counts Bar -->
+                    <!-- Branch Metrics Bar -->
                     <div class="grid grid-cols-3 gap-2 pt-1 pb-1 text-center">
                         <div class="bg-black/30 border border-white/5 rounded-lg py-1.5 px-2">
                             <div class="text-[10px] font-bold font-mono uppercase text-gray-400">Members</div>
@@ -92,8 +91,7 @@
 
                         @if ($gymDashboardUrl !== '#' && $this->user->status === \App\Enums\UserStatus::ACTIVE)
                             <a href="{{ $gymDashboardUrl }}"
-                                class="group/btn relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs px-4 py-2.5 rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_20px_rgba(34,197,94,0.5)] active:scale-[0.98] transition-all uppercase tracking-wider">
-                                <span class="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover/btn:translate-x-[300%] transition-transform duration-700 ease-out"></span>
+                                class="group/btn w-full inline-flex items-center justify-center gap-2 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs px-4 py-2.5 rounded-lg shadow-lg active:scale-[0.98] transition-all uppercase tracking-wider">
                                 <span class="material-symbols-outlined text-base font-bold">dashboard</span>
                                 <span>Launch {{ $gymDashboardText }}</span>
                                 <span class="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>

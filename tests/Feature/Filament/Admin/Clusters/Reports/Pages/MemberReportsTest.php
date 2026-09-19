@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Livewire\Livewire;
+use Livewire\Livewire\Features\SupportTesting\Testable;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -367,7 +368,7 @@ final class MemberReportsTest extends TestCase
         ];
 
         /** @var array<int, array{month: string, count: int, growth_rate: float, retention_rate: int}> $growth */
-        $growth = $page->getGrowthData()->toArray();
+        $growth = $page->getGrowthData()->all();
 
         $this->assertCount(2, $growth);
         $this->assertEquals('Jan 2026', $growth[0]['month']);
@@ -589,7 +590,7 @@ final class MemberReportsTest extends TestCase
             'membership_end' => now()->addMonth(),
         ]);
 
-        /** @var \Livewire\Features\SupportTesting\Testable $testable */
+        /** @var Testable $testable */
         $testable = Livewire::test(EditGymMember::class, ['record' => $member->id]);
         $testable->assertSuccessful();
         $testable->assertFormSet([
