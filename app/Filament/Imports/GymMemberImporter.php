@@ -14,6 +14,7 @@ use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
 use App\Services\AvatarService;
+use App\Services\InvoiceService;
 use Date;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
@@ -221,8 +222,8 @@ class GymMemberImporter extends Importer
 
         if ($this->membershipPlan) {
             [$start, $end] = $this->calculateMembershipDates($this->membershipPlan);
-            $record->membership_start = $start->toDateString();
-            $record->membership_end = $end->toDateString();
+            $record->membership_start = $start;
+            $record->membership_end = $end;
         }
 
         // Auto-calculate archiving and WhatsApp marketing permissions based on membership_end
@@ -235,7 +236,7 @@ class GymMemberImporter extends Importer
 
             if ($membershipEnd->lt($twoYearsAgo)) {
                 $record->is_archived = true;
-                $record->archived_at = now()->toDateTimeString();
+                $record->archived_at = now();
                 $record->allow_whatsapp_marketing = false;
             } elseif ($membershipEnd->lt($oneYearAgo)) {
                 $record->is_archived = false;
@@ -427,11 +428,8 @@ class GymMemberImporter extends Importer
 
         $payment->syncStatusFromTransactions();
 
-        // Generate invoice number — same format as InvoiceService::ensureInvoiceNumber().
-        if (! $payment->invoice_number) {
-            $payment->invoice_number = 'INV-' . now()->format('Ymd') . '-' . $payment->gym_id . '-' . $payment->id;
-            $payment->saveQuietly();
-        }
+        // Generate invoice number via InvoiceService for guaranteed parity.
+        resolve(InvoiceService::class)->ensureInvoiceNumber($payment);
 
         return $payment;
     }

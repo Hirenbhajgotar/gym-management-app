@@ -95,8 +95,6 @@ class MemberPayment extends Model implements InvoiceablePayment
         'payment_date',
         'membership_start',
         'membership_end',
-        'invoice_number',
-        'invoice_path',
     ];
 
     /**

@@ -38,6 +38,7 @@ class CheckMembershipExpiry extends Command
         Log::info('Starting membership expiry check');
 
         try {
+            $unfrozenCount = $this->autoUnfreezeExpiredFreezes();
             $expiredMembersCount = $this->markExpiredGymMembers();
             $expiredPaymentsCount = $this->markExpiredMemberPayments();
 
@@ -45,6 +46,7 @@ class CheckMembershipExpiry extends Command
             $this->info('Membership expiry check completed.');
 
             Log::info('Membership expiry check completed', [
+                'auto_unfrozen_members' => $unfrozenCount,
                 'expired_members' => $expiredMembersCount,
                 'expired_payments' => $expiredPaymentsCount,
                 'dry_run' => $this->option('dry-run'),
@@ -60,6 +62,48 @@ class CheckMembershipExpiry extends Command
 
             return self::FAILURE;
         }
+    }
+
+    private function autoUnfreezeExpiredFreezes(): int
+    {
+        $query = GymMember::query()
+            ->where('is_frozen', true)
+            ->whereNotNull('frozen_until')
+            ->where('frozen_until', '<', now());
+
+        $count = $query->count();
+
+        if ($count === 0) {
+            $this->info('No expired member freezes found.');
+
+            return 0;
+        }
+
+        if ($this->option('dry-run')) {
+            $this->info("[DRY-RUN] {$count} frozen gym member(s) would be auto-unfrozen.");
+
+            return $count;
+        }
+
+        $unfrozenCount = 0;
+        $query->chunkById(100, function ($members) use (&$unfrozenCount) {
+            foreach ($members as $member) {
+                try {
+                    if ($member->autoUnfreezeIfExpired()) {
+                        $unfrozenCount++;
+                    }
+                } catch (Throwable $e) {
+                    Log::warning("Failed to auto-unfreeze member ID {$member->id}: {$e->getMessage()}", [
+                        'member_id' => $member->id,
+                        'exception' => $e,
+                    ]);
+                }
+            }
+        });
+
+        $this->info("Auto-unfrozen {$unfrozenCount} gym member(s).");
+
+        return $unfrozenCount;
     }
 
     private function markExpiredGymMembers(): int

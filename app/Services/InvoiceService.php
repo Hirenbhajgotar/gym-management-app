@@ -14,6 +14,8 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceService
@@ -23,7 +25,7 @@ class InvoiceService
      */
     public function generateInvoice(Payment $payment, bool $force = false): void
     {
-        $this->generate($payment, 'invoices.default', 'system_payment', $force);
+        $this->generate($payment, 'invoices.default', $force);
     }
 
     /**
@@ -31,27 +33,41 @@ class InvoiceService
      */
     public function generateMemberInvoice(MemberPayment $payment, bool $force = false): void
     {
-        $this->generate($payment, 'invoices.member', 'member_payment', $force);
+        $this->generate($payment, 'invoices.member', $force);
     }
 
-    private function generate(InvoiceablePayment $payment, string $view, string $type, bool $force = false): void
+    private function generate(InvoiceablePayment $payment, string $view, bool $force = false): void
     {
         if (! $force && $this->invoiceExists($payment)) {
             return;
         }
 
         $this->ensureInvoiceNumber($payment);
+        $this->eagerLoadRelations($payment);
+
+        $gym = $payment->getGym();
+        $owner = $payment->getInvoiceOwner();
 
         $data = [
             'payment' => $payment,
-            'user' => $payment->getInvoiceOwner(),
-            'gym' => $payment->getGym(),
+            'owner' => $owner,
+            'user' => $owner,
+            'gym' => $gym,
+            'gym_owner_email' => $gym?->owner_email,
             'invoice_number' => $payment->getInvoiceNumber(),
             'date' => $payment->getCreatedAt()?->format('M d, Y') ?? now()->format('M d, Y'),
-            'type' => $type,
         ];
 
         $this->createPdf($view, $data, $payment);
+    }
+
+    private function eagerLoadRelations(InvoiceablePayment $payment): void
+    {
+        if ($payment instanceof Payment) {
+            $payment->loadMissing(['user', 'gym.address.city', 'gym.address.state']);
+        } elseif ($payment instanceof MemberPayment) {
+            $payment->loadMissing(['member.address.city', 'member.address.state', 'gym.address.city', 'gym.address.state', 'membershipPlan']);
+        }
     }
 
     private function invoiceExists(InvoiceablePayment $payment): bool
@@ -61,15 +77,18 @@ class InvoiceService
         return $path !== null && $this->disk()->exists($path);
     }
 
-    private function ensureInvoiceNumber(InvoiceablePayment $payment): void
+    public function ensureInvoiceNumber(InvoiceablePayment $payment): string
     {
-        if ($payment->getInvoiceNumber() !== null) {
-            return;
+        $existing = $payment->getInvoiceNumber();
+        if ($existing !== null) {
+            return $existing;
         }
 
         $invoiceNumber = $this->buildInvoiceNumber($payment);
         $payment->setInvoiceNumber($invoiceNumber);
         $payment->saveInvoiceMetaQuietly();
+
+        return $invoiceNumber;
     }
 
     private function createPdf(string $view, array $data, InvoiceablePayment $payment): void
@@ -78,7 +97,9 @@ class InvoiceService
             $pdf = Pdf::loadView($view, $data);
 
             $path = "invoices/{$payment->getInvoiceNumber()}.pdf";
-            $this->disk()->put($path, $pdf->output());
+            $written = $this->disk()->put($path, $pdf->output());
+
+            throw_unless($written, RuntimeException::class, "Failed to write invoice PDF to disk: {$path}");
 
             $payment->setInvoicePath($path);
             $payment->saveInvoiceMetaQuietly();
@@ -129,20 +150,17 @@ class InvoiceService
         }
 
         if ($payment instanceof MemberPayment) {
-            $this->generate($payment, 'invoices.member', 'member_payment');
+            $this->generate($payment, 'invoices.member');
         } else {
-            $this->generate($payment, 'invoices.default', 'system_payment');
+            $this->generate($payment, 'invoices.default');
         }
     }
 
     private function disk(): Filesystem
     {
-        $name = config()->string('filesystems.invoice_disk', 'local');
+        $name = config()->string('filesystems.invoice_disk', 'invoices');
 
-        if (! array_key_exists($name, config()->array('filesystems.disks', []))) {
-            Log::warning('Configured invoice_disk is invalid, falling back to local', ['disk' => $name]);
-            $name = 'local';
-        }
+        throw_unless(array_key_exists($name, config()->array('filesystems.disks', [])), InvalidArgumentException::class, "Configured invoice disk [{$name}] is not defined in filesystems.disks.");
 
         return Storage::disk($name);
     }
@@ -151,11 +169,15 @@ class InvoiceService
     {
         $gymId = $payment->getGym()->id ?? '0';
         $date = ($payment->getCreatedAt() ?? now())->format('Ymd');
-        $key = str_pad((string) $payment->getInvoiceKey(), 10, '0', STR_PAD_LEFT);
+        $key = str_pad((string) $payment->getInvoiceKey(), 4, '0', STR_PAD_LEFT);
 
         $typePrefix = $payment instanceof MemberPayment ? 'M' : 'S';
 
-        return "INV-{$date}-{$typePrefix}{$gymId}{$key}";
+        $number = "INV-{$date}-{$typePrefix}{$gymId}-{$key}";
+
+        throw_unless(preg_match('/^INV-\d{8}-[SM]\d+-\d+$/', $number), InvalidArgumentException::class, "Generated invalid invoice number format: {$number}");
+
+        return $number;
     }
 
     /**
@@ -188,13 +210,15 @@ class InvoiceService
 
         $memberPayment->loadMissing(['member']);
 
-        abort_unless($authUser->gyms()->where('gyms.id', $memberPayment->gym_id)->exists(), 403, $message);
+        $isMemberOwner = $memberPayment->member?->user_id === $authUser->id;
+        $isGymStaff = $authUser->gyms()->where('gyms.id', $memberPayment->gym_id)->exists()
+            && $authUser->hasAnyRole([
+                DefaultRole::SUPER_ADMIN->value,
+                DefaultRole::GYM_OWNER->value,
+                DefaultRole::MANAGER->value,
+                DefaultRole::RECEPTIONIST->value,
+            ]);
 
-        abort_unless($authUser->hasAnyRole([
-            DefaultRole::SUPER_ADMIN->value,
-            DefaultRole::GYM_OWNER->value,
-            DefaultRole::MANAGER->value,
-            DefaultRole::RECEPTIONIST->value,
-        ]), 403, $message);
+        abort_unless($isMemberOwner || $isGymStaff, 403, $message);
     }
 }

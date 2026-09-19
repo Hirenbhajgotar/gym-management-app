@@ -80,7 +80,7 @@ class PageTest extends WhatsAppSetupTestCase
     }
 
     #[Test]
-    public function it_sets_step_2_for_waba_account_missing_waba_id(): void
+    public function it_sets_step_3_for_waba_account_missing_waba_id(): void
     {
         WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
@@ -93,11 +93,11 @@ class PageTest extends WhatsAppSetupTestCase
         /** @var Testable $setupPage */
         $setupPage = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
         $setupPage->assertSet('viewState', 'setup');
-        $setupPage->assertSet('setupStep', 2);
+        $setupPage->assertSet('setupStep', 3);
     }
 
     #[Test]
-    public function it_sets_step_2_for_pending_waba_account_with_waba_id(): void
+    public function it_sets_step_3_for_pending_waba_account_with_waba_id(): void
     {
         // This is the exact post-embedded-signup state: account exists,
         // waba_id filled, status PENDING (not yet ACTIVE).
@@ -112,13 +112,13 @@ class PageTest extends WhatsAppSetupTestCase
         /** @var Testable $setupPage */
         $setupPage = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
         $setupPage->assertSet('viewState', 'setup');
-        $setupPage->assertSet('setupStep', 2);
+        $setupPage->assertSet('setupStep', 3);
     }
 
     #[Test]
-    public function it_lands_on_setup_when_setup_step_2_requested_with_waba_account(): void
+    public function it_lands_on_setup_when_setup_step_whats_app_business_requested_with_waba_account(): void
     {
-        // Simulates the EmbeddedSignupController redirect to ?setup_step=2.
+        // Simulates the EmbeddedSignupController redirect to ?setup_step=whats-app-business.
         WhatsAppAccount::query()->create([
             'gym_id' => $this->gym->id,
             'provider_type' => WhatsAppProviderTypeEnum::WABA,
@@ -127,12 +127,12 @@ class PageTest extends WhatsAppSetupTestCase
             'verification_status' => WhatsAppAccountVerificationStatusEnum::PENDING,
         ]);
 
-        request()->merge(['setup_step' => '2']);
+        request()->merge(['setup_step' => 'whats-app-business']);
 
         /** @var Testable $setupPage */
         $setupPage = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
         $setupPage->assertSet('viewState', 'setup');
-        $setupPage->assertSet('setupStep', 2);
+        $setupPage->assertSet('setupStep', 3);
     }
 
     #[Test]
@@ -160,7 +160,7 @@ class PageTest extends WhatsAppSetupTestCase
     {
         // The previous behavior aborted with 403 here. A hard 403 on a normal
         // post-signup navigation broke the flow and produced a blank wizard.
-        request()->merge(['setup_step' => '2']);
+        request()->merge(['setup_step' => 'whats-app-business']);
 
         /** @var Testable $setupPage */
         $setupPage = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
@@ -190,7 +190,7 @@ class PageTest extends WhatsAppSetupTestCase
         /** @var Testable $setupPage */
         $setupPage = Livewire::actingAs($this->user)->test(WhatsAppSetup::class);
         $setupPage->assertSet('viewState', 'setup');
-        $setupPage->assertSet('setupStep', 2);
+        $setupPage->assertSet('setupStep', 3);
     }
 
     #[Test]
@@ -217,6 +217,11 @@ class PageTest extends WhatsAppSetupTestCase
     {
         $session = WabaSetupSession::createForGym($this->gym->id);
         $session->update(['expires_at' => now()->subHour()]);
+
+        $this->session([
+            'embedded_signup_tenant_id' => $this->gym->id,
+            'embedded_signup_tenant_slug' => $this->gym->slug,
+        ]);
 
         $response = $this->get(route('whatsapp.embedded-signup.callback', [
             'code' => 'test_code',

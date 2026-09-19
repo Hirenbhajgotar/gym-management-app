@@ -49,16 +49,14 @@
                     x-transition:leave="ease-in duration-200"
                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="relative transform overflow-hidden rounded-2xl bg-gray-900 border border-purple-500/20 text-left shadow-2xl transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
+                    class="relative transform overflow-hidden rounded-2xl bg-surface-container-low border border-outline-variant/40 text-left shadow-2xl transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
                     @click.away="open = false"
                     @keydown.escape.window="open = false"
                 >
                     <div class="absolute top-0 right-0 pt-4 pr-4 z-10">
-                        <button @click="open = false" type="button" class="text-gray-400 hover:text-white transition-colors bg-gray-800/50 rounded-full p-1 hover:bg-gray-700">
+                        <button @click="open = false" type="button" class="text-on-surface-variant hover:text-primary transition-colors bg-surface-container-high rounded-full p-1.5 hover:bg-surface-container-highest cursor-pointer">
                             <span class="sr-only">Close</span>
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <span class="material-symbols-outlined text-lg leading-none">close</span>
                         </button>
                     </div>
 

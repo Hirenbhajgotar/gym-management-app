@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
-use App\Notifications\MemberFrozenNotification;
+use App\Filament\Admin\Resources\GymMemberResource;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
+use App\Services\MemberFreezeService;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -122,6 +123,10 @@ class GymMember extends Model
 
     public const MEMBER_WEIGHT_PROGRESS_CACHE_KEY = 'member_weight_progress_';
 
+    public const DEFAULT_MIN_FREEZE_DAYS = 7;
+
+    public const DEFAULT_MAX_FREEZE_DAYS = 60;
+
     /**
      * Request-local cache for payments+transactions so total_payments_amount
      * and outstanding_balance don't each fire their own query.
@@ -151,6 +156,7 @@ class GymMember extends Model
         'frozen_until',
         'frozen_reason',
         'frozen_by',
+        'extend_membership',
         'is_archived',
         'archived_at',
         'allow_whatsapp_marketing',
@@ -160,7 +166,22 @@ class GymMember extends Model
     /**
      * Get the attributes that should be cast.
      *
-     * @return array<string, string>
+     * @return array{
+     *     dob: 'date',
+     *     membership_start: 'date',
+     *     membership_end: 'date',
+     *     age: 'integer',
+     *     latest_payment_at: 'date',
+     *     payment_status: 'App\Enums\PaymentStatus',
+     *     is_frozen: 'boolean',
+     *     frozen_at: 'datetime',
+     *     frozen_until: 'datetime',
+     *     extend_membership: 'boolean',
+     *     is_archived: 'boolean',
+     *     archived_at: 'datetime',
+     *     allow_whatsapp_marketing: 'boolean',
+     *     whatsapp_marketing_snapshot: 'boolean',
+     * }
      */
     protected function casts(): array
     {
@@ -174,6 +195,7 @@ class GymMember extends Model
             'is_frozen' => 'boolean',
             'frozen_at' => 'datetime',
             'frozen_until' => 'datetime',
+            'extend_membership' => 'boolean',
             'is_archived' => 'boolean',
             'archived_at' => 'datetime',
             'allow_whatsapp_marketing' => 'boolean',
@@ -195,8 +217,7 @@ class GymMember extends Model
 
                 if ($plan && $plan->duration) {
                     $membershipEndDate = Date::parse($member->membership_start)
-                        ->addMonths($plan->duration)
-                        ->toDateString();
+                        ->addMonths($plan->duration);
 
                     if (! $member->isDirty('membership_end')) {
                         $member->membership_end = $membershipEndDate;
@@ -254,7 +275,8 @@ class GymMember extends Model
      */
     public function latestPayment(): HasOne
     {
-        return $this->hasOne(MemberPayment::class, 'member_id')->latestOfMany();
+        return $this->hasOne(MemberPayment::class, 'member_id')
+            ->latestOfMany();
     }
 
     /**
@@ -549,6 +571,10 @@ class GymMember extends Model
 
     public function notifyExpiry(int $daysLeft): void
     {
+        if (! $this->membership_end) {
+            return;
+        }
+
         $this->notify(new MembershipExpiryNotification(
             member: $this,
             expiresAt: $this->membership_end,
@@ -575,6 +601,9 @@ class GymMember extends Model
 
     /**
      * Check if member is currently frozen
+     * Member is considered actively frozen if:
+     * 1. is_frozen is true AND
+     * 2. (frozen_until is null [manual freeze] OR frozen_until is in the future)
      */
     public function isFrozen(): bool
     {
@@ -582,7 +611,7 @@ class GymMember extends Model
             return false;
         }
 
-        // If frozen until is set and has passed, auto-unfreeze
+        // If frozen_until is set and has passed, member is no longer actively frozen
         $frozenUntil = $this->frozen_until;
         /** @var Carbon|null $frozenUntil */
         if ($frozenUntil !== null && $frozenUntil->isPast()) {
@@ -597,17 +626,9 @@ class GymMember extends Model
      * Call this explicitly from a scheduled command / job — NOT from
      * read paths — since it writes to the DB and sends a notification.
      */
-    public function autoUnfreezeIfExpired(): bool
+    public function autoUnfreezeIfExpired(bool $notify = true): bool
     {
-        $frozenUntil = $this->frozen_until;
-        /** @var Carbon|null $frozenUntil */
-        if ($this->is_frozen && $frozenUntil !== null && $frozenUntil->isPast()) {
-            $this->unfreeze();
-
-            return true;
-        }
-
-        return false;
+        return resolve(MemberFreezeService::class)->autoUnfreezeIfExpired($this, $notify);
     }
 
     /**
@@ -634,6 +655,35 @@ class GymMember extends Model
     }
 
     /**
+     * Accessor to get the member's active membership plan.
+     * If no active plan, return null.
+     */
+    public function getActiveMembershipPlan(): ?MembershipPlan
+    {
+        $membershipEnd = $this->membership_end;
+        /** @var Carbon|null $membershipEnd */
+        if ($membershipEnd && $membershipEnd->isFuture()) {
+            return $this->membershipPlan;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the member has outstanding payments.
+     */
+    public function hasOutstandingPayments(): bool
+    {
+        $latestPayment = $this->latestPayment;
+        /** @var MemberPayment|null $latestPayment */
+        if ($latestPayment && $latestPayment->status === PaymentStatus::PENDING) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Load payments with their transactions once per request, whether
      * accessed via total_payments_amount, outstanding_balance, or both.
      *
@@ -657,11 +707,15 @@ class GymMember extends Model
         );
     }
 
-    /** @return Attribute<float, never> */
+    /**
+     * Outstanding balance attribute: (Sum of plan amounts) - (Sum of paid amounts).
+     *
+     * @return Attribute<float, never>
+     */
     protected function outstandingBalance(): Attribute
     {
         return Attribute::make(
-            get: function () {
+            get: function (): float {
                 $payments = $this->loadPaymentsWithTransactions();
 
                 $totalPlans = $payments->sum(fn (MemberPayment $payment): float => (float) $payment->amount);
@@ -675,51 +729,34 @@ class GymMember extends Model
     /**
      * Freeze member (manual or date-based)
      */
-    public function freeze(?string $reason = null, ?int $days = null, ?int $frozenById = null): bool
+    public function freeze(?string $reason = null, ?int $days = null, ?int $frozenById = null, bool $extendMembership = false): bool
     {
-        $this->is_frozen = true;
-        $this->frozen_at = now();
-        $this->frozen_reason = $reason;
-        $this->frozen_by = $frozenById;
-
-        if ($days !== null && $days > 0) {
-            $this->frozen_until = now()->addDays($days);
-        } else {
-            $this->frozen_until = null;
-        }
-
-        $this->save();
-
-        // Send email notification
-        $this->notify(new MemberFrozenNotification(
-            member: $this,
-            isFrozen: true,
-            reason: $reason,
-            frozenUntil: $this->frozen_until
-        ));
-
-        return true;
+        return resolve(MemberFreezeService::class)->freeze($this, $reason, $days, $frozenById, $extendMembership);
     }
 
     /**
      * Unfreeze member
      */
-    public function unfreeze(?int $unfrozenById = null): bool
+    public function unfreeze(?int $unfrozenById = null, bool $notify = true): bool
     {
-        $this->is_frozen = false;
-        $this->frozen_at = null;
-        $this->frozen_until = null;
-        $this->frozen_reason = null;
-        $this->frozen_by = $unfrozenById;
-        $this->save();
+        return resolve(MemberFreezeService::class)->unfreeze($this, $unfrozenById, $notify);
+    }
 
-        // Send email notification
-        $this->notify(new MemberFrozenNotification(
-            member: $this,
-            isFrozen: false
-        ));
+    /**
+     * Get maximum allowed freeze extension days considering both gym settings and plan duration
+     */
+    public function getMaxFreezeExtensionDays(int $maxSetting): int
+    {
+        return resolve(MemberFreezeService::class)->getMaxFreezeExtensionDays($this, $maxSetting);
+    }
 
-        return true;
+    /**
+     * Sync latest payment membership_end date to match member's membership_end.
+     * Note: Syncing latest non-expired payment is intentional as it represents the current active billing term.
+     */
+    public function syncLatestPaymentMembershipEnd(): void
+    {
+        resolve(MemberFreezeService::class)->syncLatestPaymentMembershipEnd($this);
     }
 
     // =========================
@@ -770,5 +807,20 @@ class GymMember extends Model
         return $this->update([
             'allow_whatsapp_marketing' => $allowed,
         ]);
+    }
+
+    public function memberResourceUrl(self|int $member, ?string $type = 'index'): string
+    {
+        $memberModel = $member instanceof self ? $member : self::query()->find($member);
+
+        if (! $memberModel) {
+            return GymMemberResource::getUrl('index');
+        }
+
+        return match ($type) {
+            'view' => GymMemberResource::getUrl('view', ['record' => $memberModel->id]),
+            'edit' => GymMemberResource::getUrl('edit', ['record' => $memberModel->id]),
+            default => GymMemberResource::getUrl('index'),
+        };
     }
 }

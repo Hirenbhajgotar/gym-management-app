@@ -7,10 +7,11 @@ namespace App\Notifications;
 use App\Models\GymMember;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class MemberFrozenNotification extends Notification
+class MemberFrozenNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

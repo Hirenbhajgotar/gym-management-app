@@ -24,7 +24,7 @@ class EmbeddedSignupController extends Controller
         if (! $gym) {
             $route = route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant]);
 
-            return redirect($route . '?setup_step=2')->with('error', 'Tenant not found');
+            return redirect($route . '?setup_step=whats-app-business')->with('error', 'Tenant not found');
         }
 
         // Authorization: the authenticated user must belong to this gym.
@@ -36,7 +36,7 @@ class EmbeddedSignupController extends Controller
         if (! $metaWhatsAppProvider->isEmbeddedSignupEnabled()) {
             $route = route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant]);
 
-            return redirect($route . '?setup_step=2')->with('error', 'Embedded Signup is not enabled');
+            return redirect($route . '?setup_step=whats-app-business')->with('error', 'Embedded Signup is not enabled');
         }
 
         session(['embedded_signup_tenant_id' => $gym->id]);
@@ -68,12 +68,12 @@ class EmbeddedSignupController extends Controller
             : url('/admin');
 
         if ($error) {
-            return redirect($redirectUrl . '?setup_step=2')
+            return redirect($redirectUrl . '?setup_step=whats-app-business')
                 ->with('error', $errorDescription ?? $error);
         }
 
         if (! $code || ! $state) {
-            return redirect($redirectUrl . '?setup_step=2')
+            return redirect($redirectUrl . '?setup_step=whats-app-business')
                 ->with('error', 'Invalid callback parameters');
         }
 
@@ -89,7 +89,7 @@ class EmbeddedSignupController extends Controller
                 'session_tenant_id_from_request' => $tenantId,
             ]);
 
-            return redirect($redirectUrl . '?setup_step=2')
+            return redirect($redirectUrl . '?setup_step=whats-app-business')
                 ->with('error', 'Invalid OAuth state');
         }
 
@@ -102,7 +102,7 @@ class EmbeddedSignupController extends Controller
                 'status' => $setupSession->status->value,
             ]);
 
-            return redirect($redirectUrl . '?setup_step=2')
+            return redirect($redirectUrl . '?setup_step=whats-app-business')
                 ->with('error', 'Invalid OAuth state');
         }
 
@@ -118,7 +118,7 @@ class EmbeddedSignupController extends Controller
         ]);
 
         if (! $result['success']) {
-            return redirect($redirectUrl . '?setup_step=2')
+            return redirect($redirectUrl . '?setup_step=whats-app-business')
                 ->with('error', $result['error']);
         }
 
@@ -132,7 +132,7 @@ class EmbeddedSignupController extends Controller
             );
         }
 
-        return redirect($redirectUrl . '?setup_step=2')
+        return redirect($redirectUrl . '?setup_step=whats-app-business')
             ->with('success', 'WABA connected successfully')
             ->with('waba_id', $result['waba_id'] ?? null);
     }
@@ -143,7 +143,7 @@ class EmbeddedSignupController extends Controller
         $gym = $request->getGym();
 
         if ($gym === null) {
-            return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 2])
+            return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 'whats-app-business'])
                 ->with('error', 'Gym not found');
         }
 
@@ -159,7 +159,7 @@ class EmbeddedSignupController extends Controller
         );
 
         if (! $result['success']) {
-            return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 2])
+            return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 'whats-app-business'])
                 ->with('error', $result['error']);
         }
 
@@ -170,7 +170,7 @@ class EmbeddedSignupController extends Controller
         // once the import completes.
         dispatch(new ImportWhatsAppTemplatesJob($gym->id));
 
-        return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 2])
+        return to_route('filament.admin.pages.whats-app-setup', ['tenant' => $tenant, 'setup_step' => 'whats-app-business'])
             ->with('success', 'WABA connected manually. Importing your templates…')
             ->with('templates_import_pending', true);
     }

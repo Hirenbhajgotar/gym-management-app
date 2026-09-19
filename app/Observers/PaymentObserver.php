@@ -58,7 +58,9 @@ class PaymentObserver implements ShouldHandleEventsAfterCommit
 
     private function clearCache(Payment $payment): void
     {
-        ParserHelper::clearCache(Payment::PROFILE_LATEST_PAYMENTS_OF_AUTH_USER_CACHE_KEY . $payment->user_id);
+        if ($payment->user_id) {
+            ParserHelper::clearCache(Payment::profileLatestPaymentsCacheKey($payment->user_id));
+        }
 
         // Get gym_id from payment (assuming Payment has gym_id)
         $gymId = $payment->gym_id ?? $payment->member?->gym_id;

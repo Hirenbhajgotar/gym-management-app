@@ -208,8 +208,8 @@ trait HasSetupState
             }
         }
 
-        // WABA: Account setup step (Step 2)
-        // WABA: Billing mode step (Step 3) — only for WABA
+        // WABA: Account setup step (Step 3)
+        // WABA: Billing mode step (Step 2) — only for WABA
         if ($provider === WhatsAppProviderTypeEnum::WABA) {
             if (blank($this->whatsappAccount?->waba_id)) {
                 return SetupWizardSchema::WABA_ACCOUNT_STEP; // WabaAccountStep
@@ -293,11 +293,11 @@ trait HasSetupState
 
         // For WABA users, allow any step after connection
         if ($provider === WhatsAppProviderTypeEnum::WABA) {
-            // Step 2: WABA Account
+            // Step 3: WABA Account
             if ($step === SetupWizardSchema::WABA_ACCOUNT_STEP) {
                 return true;
             }
-            // Step 3: Billing Mode
+            // Step 2: Billing Mode
             if ($step === SetupWizardSchema::WABA_BILLING_MODE_STEP) {
                 return filled($this->whatsappAccount->waba_id)
                     && $this->accountStatus === WhatsAppAccountStatusEnum::ACTIVE;

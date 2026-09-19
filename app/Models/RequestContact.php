@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Support\Carbon;
 use Propaganistas\LaravelPhone\Casts\RawPhoneNumberCast;
 use Propaganistas\LaravelPhone\PhoneNumber;
@@ -58,7 +59,10 @@ use Propaganistas\LaravelPhone\PhoneNumber;
 #[ObservedBy([RequestContactObserver::class])]
 class RequestContact extends Model
 {
+    /** @use HasFactory<RequestContactFactory> */
     use HasFactory;
+
+    use Prunable;
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'request_contact_navigation_badge_count';
 
@@ -90,29 +94,56 @@ class RequestContact extends Model
 
     /**
      * Scope for uncontacted requests
+     *
+     * @param  Builder<self>  $query
      */
     #[Scope]
-    protected function uncontacted($query)
+    protected function uncontacted(Builder $query): void
     {
-        return $query->where('is_contacted', false);
+        $query->where('is_contacted', false);
     }
 
     /**
      * Scope for contacted requests
+     *
+     * @param  Builder<self>  $query
      */
     #[Scope]
-    protected function contacted($query)
+    protected function contacted(Builder $query): void
     {
-        return $query->where('is_contacted', true);
+        $query->where('is_contacted', true);
     }
 
     /**
      * Scope for recent requests (last 30 days)
+     *
+     * @param  Builder<self>  $query
      */
     #[Scope]
-    protected function recent($query)
+    protected function recent(Builder $query): void
     {
-        return $query->where('created_at', '>=', now()->subDays(30));
+        $query->where('created_at', '>=', now()->subDays(30));
+    }
+
+    /**
+     * Determine prunable query for old request contacts (PII retention).
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<=', now()->subDays(180));
+    }
+
+    /**
+     * Scope for requests older than specified days
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function olderThanDays(Builder $query, int $days = 180): void
+    {
+        $query->where('created_at', '<=', now()->subDays($days));
     }
 
     /**

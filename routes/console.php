@@ -53,7 +53,10 @@ Schedule::command('whatsapp:check-low-credits')->dailyAt('08:00');
 Schedule::command('attendance:auto-checkout')->twiceDailyAt(23, 1);
 
 // Check for expired memberships daily
-Schedule::command('gym:check-membership-expiry')->daily();
+Schedule::command('gym:check-membership-expiry')
+    ->daily()
+    ->withoutOverlapping(60)
+    ->onOneServer();
 
 // Reconcile completed subscription payments that were never provisioned
 // (e.g. webhook listener failed, queue down). Catches orphans quickly.
@@ -67,6 +70,9 @@ Schedule::command('owners:clean-deleted')->dailyAt('02:00');
 
 // Clean old converted and lost leads older than 2 months
 Schedule::command('leads:cleanup-old')->dailyAt('02:00');
+
+// Prune stale models daily (e.g. RequestContact submissions older than 180 days)
+Schedule::command('model:prune')->daily();
 
 // Send birthday notifications daily at 7 AM
 Schedule::command('notification:send-birthday-notifications')->dailyAt('07:00');

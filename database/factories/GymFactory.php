@@ -21,4 +21,22 @@ class GymFactory extends Factory
             'slug' => fake()->slug(),
         ];
     }
+
+    public function withCheckInQrCodeToken(?string $token = null): static
+    {
+        return $this->afterCreating(function (Gym $gym) use ($token) {
+            $gym->forceFill([
+                'qr_code_token' => $token ?? fake()->regexify('[A-Za-z0-9]{32}'),
+            ])->saveQuietly();
+        });
+    }
+
+    public function withCheckoutQrCodeToken(?string $token = null): static
+    {
+        return $this->afterCreating(function (Gym $gym) use ($token) {
+            $gym->forceFill([
+                'qr_code_checkout_token' => $token ?? fake()->regexify('[A-Za-z0-9]{32}'),
+            ])->saveQuietly();
+        });
+    }
 }

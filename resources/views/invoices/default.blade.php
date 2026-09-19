@@ -4,309 +4,176 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Invoice {{ $invoice_number }}</title>
-    <style>
-        body {
-            font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif;
-            font-size: 14px;
-            color: #1f2937; /* Gray 800 */
-            line-height: 1.5;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 100%;
-            margin: 0 auto;
-            background: #fff;
-        }
-        /* Layout Helpers */
-        .w-full { width: 100%; }
-        .w-half { width: 50%; }
-        .align-top { vertical-align: top; }
-        .text-right { text-align: right; }
-        .text-left { text-align: left; }
-        .text-center { text-align: center; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mt-4 { margin-top: 1rem; }
-        
-        /* Typography */
-        h1, h2, h3, h4 { margin: 0; font-weight: 700; }
-        .text-sm { font-size: 12px; }
-        .text-xs { font-size: 10px; }
-        .text-lg { font-size: 18px; }
-        .text-xl { font-size: 24px; }
-        .font-bold { font-weight: bold; }
-        .text-gray { color: #6b7280; }
-        .text-primary { color: #4f46e5; }
-        .uppercase { text-transform: uppercase; }
-        
-        /* Header */
-        .header {
-            padding-bottom: 30px;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 30px;
-        }
-        .logo-text {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            color: #4f46e5;
-        }
-        .invoice-label {
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: #9ca3af;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        
-        /* Info Section */
-        .info-table {
-            width: 100%;
-            margin-bottom: 40px;
-        }
-        .info-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-        .info-content {
-            font-size: 13px;
-        }
-        
-        /* Items Table */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        .items-table th {
-            background-color: #f3f4f6;
-            color: #374151;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .items-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f3f4f6;
-            color: #374151;
-        }
-        .items-table tr:last-child td {
-            border-bottom: none;
-        }
-        .item-description {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .item-subtext {
-            font-size: 12px;
-            color: #6b7280;
-        }
-        
-        /* Totals */
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .totals-table td {
-            padding: 8px 0;
-            text-align: right;
-        }
-        .totals-label {
-            font-weight: 600;
-            color: #6b7280;
-            padding-right: 20px;
-        }
-        .totals-value {
-            color: #111827;
-            width: 150px;
-        }
-        .grand-total-row td {
-            padding-top: 15px;
-            padding-bottom: 15px;
-            border-top: 2px solid #e5e7eb;
-        }
-        .grand-total-label {
-            font-size: 14px;
-            font-weight: 700;
-            color: #111827;
-        }
-        .grand-total-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #4f46e5;
-        }
-        
-        /* Footer */
-        .footer {
-            margin-top: 60px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 12px;
-            color: #9ca3af;
-            text-align: center;
-        }
-        
-        /* Status Badges */
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 9999px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .badge-completed {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-        .badge-pending {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        .badge-failed {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-    </style>
+    @include('invoices.partials.styles')
 </head>
 <body>
     <div class="container">
         <!-- Header -->
-        <table class="w-full header">
+        <table class="header-table">
             <tr>
-                <td class="w-half align-top">
-                    <div class="logo-text">
-                        <img src="{{ public_path('fluxfitness-logo.svg') }}" alt="{{ config('app.name') }}" style="height: 50px; width: auto;">
-                    </div>
+                <td class="w-55 align-top">
+                    <!-- Brand Identity -->
+                    <table class="brand-logo-table">
+                        <tr>
+                            @if(file_exists(public_path('fluxfitness-icon.png')))
+                                <td class="brand-icon-cell">
+                                    <img src="{{ public_path('fluxfitness-icon.png') }}" class="brand-icon-img" alt="{{ config('app.name', 'FluxFitness') }}">
+                                </td>
+                            @endif
+                            <td style="padding: 0; vertical-align: middle;">
+                                <div class="brand-name">
+                                    <span class="brand-dark">{{ strtoupper(substr(config('app.name', 'FluxFitness'), 0, 4)) }}</span><span class="brand-cyan">{{ strtoupper(substr(config('app.name', 'FluxFitness'), 4)) }}</span>
+                                </div>
+                                <div class="brand-tagline">Gym Operating System & Automation Platform</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="brand-contact">{{ config('app.contact_email', 'contact.fluxfitness@gmail.com') }} &bull; {{ parse_url(config('app.url', 'https://fluxfitness.com'), PHP_URL_HOST) ?? 'fluxfitness.com' }}</div>
                 </td>
-                <td class="w-half align-top text-right">
-                    <div class="invoice-label">Invoice</div>
-                    <div class="text-xl font-bold text-gray-900">#{{ $invoice_number }}</div>
-                    <div class="text-sm text-gray mt-4">
-                        Date: <span class="text-gray-900 font-bold">{{ $date }}</span>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <!-- Billing Info -->
-        <table class="info-table">
-            <tr>
-                <td class="w-half align-top">
-                    <div class="info-label">Billed To</div>
-                    <div class="info-content">
-
-                        @if($user)
-                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $user->name }}</div>
-                            <div class="text-gray-600">{{ $user->email }}</div>
-                            <div class="text-gray-600">{{ $user->phone }}</div>
-                        @else
-                            <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ $gym->name ?? 'Gym Owner' }}</div>
-                            <div class="text-gray-600">{{ $payment->metadata['owner_email'] ?? '' }}</div>
-                        @endif
-
-                        @if($gym && $gym->address)
-                            <div class="mt-4 text-gray-600">
-                                {{ $gym->address->street }}<br>
-                                {{ $gym->address->city?->name }}, {{ $gym->address->state?->name }} {{ $gym->address->postal_code }}
-                            </div>
-                        @endif
-                    </div>
-                </td>
-                <td class="w-half align-top text-right">
-                    <div class="info-label">Pay To</div>
-                    <div class="info-content">
-                        {{-- For System Payments: Pay to the Platform --}}
-                        <div class="font-bold text-gray-900 mb-2" style="font-size: 15px;">{{ config('app.name') }}</div>
-                        <div class="text-gray-600">{{ config('app.contact_email') }}</div>
-                    </div>
-
-                    <div class="mt-4">
-                         <div class="info-label">Payment Status</div>
-                        @if($payment->status->value == 'completed')
+                <td class="w-45 align-top text-right">
+                    <div><span class="invoice-badge">INVOICE</span></div>
+                    <div class="invoice-number">#{{ $invoice_number }}</div>
+                    <div class="invoice-date">Date: <strong>{{ $date }}</strong></div>
+                    <div>
+                        @php
+                            $statusVal = $payment->status?->value ?? 'completed';
+                        @endphp
+                        @if($statusVal === 'completed')
                             <span class="badge badge-completed">PAID</span>
-                        @elseif($payment->status->value == 'pending')
+                        @elseif($statusVal === 'pending')
                             <span class="badge badge-pending">PENDING</span>
                         @else
-                            <span class="badge badge-failed">{{ strtoupper($payment->status->value) }}</span>
+                            <span class="badge badge-failed">{{ strtoupper($statusVal) }}</span>
                         @endif
                     </div>
                 </td>
             </tr>
         </table>
 
-        <!-- Items -->
+        <!-- Subtle Cyan Accent Bar matching Homepage -->
+        <div class="accent-bar"></div>
+
+        <!-- Billing Info Cards Grid -->
+        <table class="info-grid-table">
+            <tr>
+                <!-- Billed To -->
+                <td class="w-half card-box">
+                    <div class="card-label">Billed To</div>
+                    @if($owner ?? $user)
+                        <div class="card-title">{{ ($owner ?? $user)->name }}</div>
+                        <div class="card-text">{{ ($owner ?? $user)->email }}</div>
+                        @if(($owner ?? $user)->phone)
+                            <div class="card-text">{{ ($owner ?? $user)->phone }}</div>
+                        @endif
+                    @else
+                        <div class="card-title">{{ $gym->name ?? 'Gym Owner' }}</div>
+                        <div class="card-text">{{ $payment->metadata['owner_email'] ?? '' }}</div>
+                    @endif
+
+                    @if($gym && $gym->name && ($owner ?? $user))
+                        <div class="card-row" style="margin-top: 3px;"><strong>Gym:</strong> {{ $gym->name }}</div>
+                    @endif
+
+                    @if($gym?->address)
+                        <div class="card-row" style="margin-top: 2px;">
+                            {{ $gym->address->street ?? '' }}
+                            @if($gym->address->city)
+                                <br>{{ $gym->address->city->name }}, {{ $gym->address->state?->name ?? '' }} {{ $gym->address->postal_code ?? '' }}
+                            @endif
+                        </div>
+                    @endif
+                </td>
+
+                <!-- Pay To / Payment Details -->
+                <td class="w-half card-box">
+                    <div class="card-label">Payment & Issuer Details</div>
+                    <div class="card-title">{{ config('app.name', 'FluxFitness') }}</div>
+                    <div class="card-row"><strong>Merchant Email:</strong> {{ config('app.contact_email', 'contact.fluxfitness@gmail.com') }}</div>
+                    
+                    <div class="card-row" style="margin-top: 3px;">
+                        <strong>Reference ID:</strong> 
+                        <span class="mono-ref">{{ $payment->razorpay_payment_id ?? 'N/A' }}</span>
+                    </div>
+                    
+                    <div class="card-row">
+                        <strong>Payment Type:</strong> 
+                        @if($payment->payment_type === 'whatsapp_package')
+                            WhatsApp Package
+                        @else
+                            {{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'Subscription')) }}
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Description</th>
-                    <th style="width: 25%;">Reference ID</th>
-                    <th style="width: 25%;" class="text-right">Amount</th>
+                    <th style="width: 52%;">Description</th>
+                    <th style="width: 24%;">Reference ID</th>
+                    <th style="width: 24%;" class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>
-                        @if($payment->payment_type == 'whatsapp_package')
-                            <div class="item-description">WhatsApp Message Package</div>
-                            <div class="item-subtext">
+                        @if($payment->payment_type === 'whatsapp_package')
+                            <div class="item-main-title">WhatsApp Message Package</div>
+                            <div class="item-sub-desc">
                                 {{ $payment->metadata['package_name'] ?? 'Message Package' }} 
-                                &bull; {{ $payment->metadata['message_count'] ?? 0 }} messages
+                                &bull; {{ number_format($payment->metadata['message_count'] ?? 0) }} Automated Messages
                             </div>
-                        @elseif(str_starts_with($payment->payment_type, 'subscription') || $payment->payment_type == 'gym_owner_registration')
-                            <div class="item-description">
-                                {{ $payment->metadata['plan_name'] ?? 'Subscription' }} Plan
+                        @elseif(str_starts_with($payment->payment_type ?? '', 'subscription') || $payment->payment_type === 'gym_owner_registration')
+                            <div class="item-main-title">
+                                {{ $payment->metadata['plan_name'] ?? 'Pro' }} Plan Subscription
                             </div>
-                            <div class="item-subtext">
-                                {{ ucfirst(str_replace('_', ' ', $payment->payment_type)) }}
+                            <div class="item-sub-desc">
+                                {{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'subscription')) }}
+                                @if(isset($payment->metadata['billing_cycle']))
+                                    &bull; {{ ucfirst($payment->metadata['billing_cycle']) }} Billing
+                                @endif
+                                &bull; Gym Operations, Billing & Member Management
                             </div>
                         @else
-                            <div class="item-description">{{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'Payment')) }}</div>
+                            <div class="item-main-title">{{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'Subscription Payment')) }}</div>
+                            <div class="item-sub-desc">{{ config('app.name', 'FluxFitness') }} Platform Service</div>
                         @endif
                     </td>
-                    <td class="text-gray-600 font-mono text-xs">
-                        {{ $payment->razorpay_payment_id ?? 'N/A' }}
+                    <td>
+                        <span class="mono-ref">{{ $payment->razorpay_payment_id ?? 'N/A' }}</span>
                     </td>
-                    <td class="text-right font-bold">
-                        {!! $payment->formatted_amount !!}
+                    <td class="item-amount-val">
+                        {{ $payment->formatted_amount }}
                     </td>
                 </tr>
             </tbody>
         </table>
 
-        <!-- Totals -->
-        <table class="w-full">
+        <!-- Totals & Notes Section -->
+        <table class="summary-table">
             <tr>
-                <td style="width: 60%;">
-                    <!-- Optional Notes Section -->
-                    <div style="padding-right: 40px;">
-                        <div class="info-label">Note</div>
-                        <div class="text-sm text-gray-500">
-                            Thank you for your business. This is a computer-generated invoice and requires no signature.
+                <td class="w-55 align-top">
+                    <div class="note-box">
+                        <div class="note-heading">Official Note & Verification</div>
+                        <div class="note-content">
+                            Thank you for your business. This is an electronically generated invoice and requires no physical signature.<br>
+                            For inquiries, please contact our support team at <strong>{{ config('app.contact_email', 'contact.fluxfitness@gmail.com') }}</strong>.
                         </div>
                     </div>
                 </td>
-                <td style="width: 40%;">
+                <td class="w-45 align-top">
                     <table class="totals-table">
                         <tr>
-                            <td class="totals-label">Subtotal</td>
-                            <td class="totals-value">{!! $payment->formatted_amount !!}</td>
+                            <td class="totals-label">Subtotal:</td>
+                            <td class="totals-val">{{ $payment->formatted_amount }}</td>
                         </tr>
-                        <!-- Tax rows can be added here if needed -->
-                        <tr class="grand-total-row">
-                            <td class="totals-label grand-total-label">Total</td>
-                            <td class="totals-value grand-total-value">{!! $payment->formatted_amount !!}</td>
+                        <tr class="grand-total-divider">
+                            <td class="totals-label grand-total-label">
+                                {{ $payment->status === \App\Enums\PaymentStatus::COMPLETED ? 'Total Paid:' : 'Total Amount:' }}
+                            </td>
+                            <td class="totals-val grand-total-amount">{{ $payment->formatted_amount }}</td>
                         </tr>
                     </table>
                 </td>
@@ -315,8 +182,8 @@
 
         <!-- Footer -->
         <div class="footer">
-            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
-            For any inquiries, please contact us at support@fluxfitness.com
+            &copy; {{ date('Y') }} {{ config('app.name', 'FluxFitness') }}. All rights reserved.<br>
+            Platform Service Invoice &bull; Generated for gym management services &bull; {{ parse_url(config('app.url', 'https://fluxfitness.com'), PHP_URL_HOST) ?? 'fluxfitness.com' }}
         </div>
     </div>
 </body>
